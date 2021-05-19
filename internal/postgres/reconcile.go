@@ -132,17 +132,22 @@ func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.P
 	return nil
 }
 
-// DataVolumeMount returns name and mount path of the PostgreSQL data volume.
+// DataVolumeMount returns the name and mount path of the PostgreSQL data volume.
 func DataVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "postgres-data", MountPath: dataMountPath}
+}
+
+// WALVolumeMount returns the name and mount path of the PostgreSQL WAL volume.
+func WALVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{Name: "postgres-wal", MountPath: walMountPath}
 }
 
 // InstancePod initializes outInstancePod with the database container and the
 // volumes needed by PostgreSQL.
 func InstancePod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
-	inDataVolume *corev1.PersistentVolumeClaim,
-	inSet *v1beta1.PostgresInstanceSetSpec,
+	inInstanceSpec *v1beta1.PostgresInstanceSetSpec,
+	inDataVolume, inWALVolume *corev1.PersistentVolumeClaim,
 	outInstancePod *corev1.PodSpec,
 ) {
 	dataVolumeMount := DataVolumeMount()
@@ -163,9 +168,9 @@ func InstancePod(ctx context.Context,
 
 		Env:       Environment(inCluster),
 		Image:     inCluster.Spec.Image,
-		Resources: inSet.Resources,
+		Resources: inInstanceSpec.Resources,
 
-		Ports: []v1.ContainerPort{{
+		Ports: []corev1.ContainerPort{{
 			Name:          naming.PortPostgreSQL,
 			ContainerPort: *inCluster.Spec.Port,
 			Protocol:      corev1.ProtocolTCP,
@@ -177,17 +182,34 @@ func InstancePod(ctx context.Context,
 	startup := corev1.Container{
 		Name: naming.ContainerPostgresStartup,
 
-		Command: []string{"install", "--directory", "--mode=0700",
-			DataDirectory(inCluster)},
+		Command:   startupCommand(inCluster, inInstanceSpec),
 		Env:       Environment(inCluster),
 		Image:     inCluster.Spec.Image,
-		Resources: inSet.Resources,
+		Resources: inInstanceSpec.Resources,
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
 		VolumeMounts:    []corev1.VolumeMount{dataVolumeMount},
 	}
 
+	outInstancePod.Volumes = []corev1.Volume{dataVolume}
+
+	if inWALVolume != nil {
+		walVolumeMount := WALVolumeMount()
+		walVolume := corev1.Volume{
+			Name: walVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: inWALVolume.Name,
+					ReadOnly:  false,
+				},
+			},
+		}
+
+		container.VolumeMounts = append(container.VolumeMounts, walVolumeMount)
+		startup.VolumeMounts = append(startup.VolumeMounts, walVolumeMount)
+		outInstancePod.Volumes = append(outInstancePod.Volumes, walVolume)
+	}
+
 	outInstancePod.Containers = []corev1.Container{container}
 	outInstancePod.InitContainers = []corev1.Container{startup}
-	outInstancePod.Volumes = []corev1.Volume{dataVolume}
 }

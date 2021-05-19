@@ -185,13 +185,19 @@ type PostgresInstanceSetSpec struct {
 	// +kubebuilder:validation:Minimum=0
 	Replicas *int32 `json:"replicas,omitempty"`
 
+	// Compute resources of a PostgreSQL container.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// Defines a PersistentVolumeClaim spec that is utilized to create and/or bind PGDATA volumes
-	// for each PostgreSQL instance
+	// Defines a PersistentVolumeClaim for PostgreSQL data.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// +kubebuilder:validation:Required
 	VolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"volumeClaimSpec"`
+
+	// Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log.
+	// More info: https://www.postgresql.org/docs/current/wal.html
+	// +optional
+	WALVolumeClaimSpec *corev1.PersistentVolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
 }
 
 func (s *PostgresInstanceSetSpec) Default(i int) {

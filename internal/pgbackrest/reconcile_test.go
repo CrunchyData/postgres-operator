@@ -312,3 +312,37 @@ func getContainerNames(containers []v1.Container) []string {
 	}
 	return names
 }
+
+func TestReplicaCreateCommand(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	instance := new(v1beta1.PostgresInstanceSetSpec)
+
+	t.Run("NoRepositories", func(t *testing.T) {
+		assert.Equal(t, 0, len(ReplicaCreateCommand(cluster, instance)))
+	})
+
+	t.Run("NoReadyRepositories", func(t *testing.T) {
+		cluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
+			Repos: []v1beta1.RepoStatus{{
+				Name: "repo2", ReplicaCreateBackupComplete: false,
+			}},
+		}
+
+		assert.Equal(t, 0, len(ReplicaCreateCommand(cluster, instance)))
+	})
+
+	t.Run("SomeReadyRepositories", func(t *testing.T) {
+		cluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
+			Repos: []v1beta1.RepoStatus{{
+				Name: "repo2", ReplicaCreateBackupComplete: true,
+			}, {
+				Name: "repo3", ReplicaCreateBackupComplete: true,
+			}},
+		}
+
+		assert.DeepEqual(t, ReplicaCreateCommand(cluster, instance), []string{
+			"pgbackrest", "restore", "--delta", "--stanza=db", "--repo=2",
+			"--link-map=pg_wal=/pgdata/pg0_wal",
+		})
+	})
+}

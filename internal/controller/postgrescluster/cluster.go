@@ -22,8 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -53,24 +51,9 @@ func (r *Reconciler) reconcileClusterConfigMap(
 			naming.LabelCluster: cluster.Name,
 		})
 
-	// if ConditionReplicaCreate is true, then populate replicaCreateRepoIndex using the repo name
-	// corresponding to the the pgBackRest repo status with ReplicaCreateBackupComplete set to true
-	// (only one repo should ever have this set to true at any given time)
-	var replicaCreateRepoIndex string
-	condition := meta.FindStatusCondition(cluster.Status.Conditions, ConditionReplicaCreate)
-	if condition != nil && (condition.Status == metav1.ConditionTrue) {
-		for _, r := range cluster.Status.PGBackRest.Repos {
-			if r.ReplicaCreateBackupComplete {
-				replicaCreateRepoIndex =
-					regexRepoIndex.FindString(r.Name)
-				break
-			}
-		}
-	}
-
 	if err == nil {
 		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser,
-			clusterConfigMap, replicaCreateRepoIndex)
+			clusterConfigMap)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, clusterConfigMap))

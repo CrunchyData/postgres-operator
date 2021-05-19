@@ -17,12 +17,10 @@ package patroni
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -41,25 +39,18 @@ func TestClusterConfigMap(t *testing.T) {
 	pgParameters := postgres.Parameters{}
 	pgUser := new(v1.Secret)
 
-	// this array represents the "replicaCreateRepoIndex" value passed to ClusterConfigMap
-	testCases := []string{"", "1"}
+	cluster.Default()
+	config := new(v1.ConfigMap)
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config))
 
-	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("ClusterConfigMap: replicaCreateRepoIndex=%s", tc), func(t *testing.T) {
-			cluster.Default()
-			config := new(v1.ConfigMap)
-			assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config, tc))
+	// The output of clusterYAML should go into config.
+	data, _ := clusterYAML(cluster, pgUser, pgHBAs, pgParameters)
+	assert.DeepEqual(t, config.Data["patroni.yaml"], data)
 
-			// The output of clusterYAML should go into config.
-			data, _ := clusterYAML(cluster, pgUser, pgHBAs, pgParameters, tc)
-			assert.DeepEqual(t, config.Data["patroni.yaml"], data)
-
-			// No change when called again.
-			before := config.DeepCopy()
-			assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config, tc))
-			assert.DeepEqual(t, config, before)
-		})
-	}
+	// No change when called again.
+	before := config.DeepCopy()
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config))
+	assert.DeepEqual(t, config, before)
 }
 
 func TestReconcileInstanceCertificates(t *testing.T) {
@@ -95,9 +86,9 @@ func TestInstanceConfigMap(t *testing.T) {
 
 	ctx := context.Background()
 	cluster := new(v1beta1.PostgresCluster)
-	instance := new(appsv1.StatefulSet)
+	instance := new(v1beta1.PostgresInstanceSetSpec)
 	config := new(v1.ConfigMap)
-	data, _ := instanceYAML(cluster, instance)
+	data, _ := instanceYAML(cluster, instance, nil)
 
 	assert.NilError(t, InstanceConfigMap(ctx, cluster, instance, config))
 
@@ -120,13 +111,14 @@ func TestInstancePod(t *testing.T) {
 	clusterPodService := new(v1.Service)
 	instanceCertficates := new(v1.Secret)
 	instanceConfigMap := new(v1.ConfigMap)
+	instanceSpec := new(v1beta1.PostgresInstanceSetSpec)
 	patroniLeaderService := new(v1.Service)
 	template := new(v1.PodTemplateSpec)
 
 	call := func() error {
 		return InstancePod(context.Background(),
 			cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
-			instanceCertficates, instanceConfigMap, template)
+			instanceSpec, instanceCertficates, instanceConfigMap, template)
 	}
 
 	assert.NilError(t, call())

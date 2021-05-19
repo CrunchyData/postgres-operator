@@ -20,11 +20,11 @@ import (
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -44,14 +44,13 @@ func ClusterConfigMap(ctx context.Context,
 	inParameters postgres.Parameters,
 	inPGUser *v1.Secret,
 	outClusterConfigMap *v1.ConfigMap,
-	replicaCreateRepoIndex string,
 ) error {
 	var err error
 
 	initialize.StringMap(&outClusterConfigMap.Data)
 
 	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inPGUser, inHBAs,
-		inParameters, replicaCreateRepoIndex)
+		inParameters)
 
 	return err
 }
@@ -59,14 +58,17 @@ func ClusterConfigMap(ctx context.Context,
 // InstanceConfigMap populates the shared ConfigMap with fields needed to run Patroni.
 func InstanceConfigMap(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
-	inInstance metav1.Object,
+	inInstanceSpec *v1beta1.PostgresInstanceSetSpec,
 	outInstanceConfigMap *v1.ConfigMap,
 ) error {
 	var err error
 
 	initialize.StringMap(&outInstanceConfigMap.Data)
 
-	outInstanceConfigMap.Data[configMapFileKey], err = instanceYAML(inCluster, inInstance)
+	command := pgbackrest.ReplicaCreateCommand(inCluster, inInstanceSpec)
+
+	outInstanceConfigMap.Data[configMapFileKey], err = instanceYAML(
+		inCluster, inInstanceSpec, command)
 
 	return err
 }
@@ -96,6 +98,7 @@ func InstancePod(ctx context.Context,
 	inClusterConfigMap *v1.ConfigMap,
 	inClusterPodService *v1.Service,
 	inPatroniLeaderService *v1.Service,
+	inInstanceSpec *v1beta1.PostgresInstanceSetSpec,
 	inInstanceCertificates *v1.Secret,
 	inInstanceConfigMap *v1.ConfigMap,
 	outInstancePod *v1.PodTemplateSpec,

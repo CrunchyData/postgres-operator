@@ -80,6 +80,9 @@ const (
 
 	// RolePostgresData is the LabelRole applied to PostgreSQL data volumes.
 	RolePostgresData = "pgdata"
+
+	// RolePostgresWAL is the LabelRole applied to PostgreSQL WAL volumes.
+	RolePostgresWAL = "pgwal"
 )
 
 // BackupJobType represents different types of backups (e.g. ad-hoc backups, scheduled backups,

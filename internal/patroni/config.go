@@ -21,11 +21,9 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -51,7 +49,6 @@ func quoteShellWord(s string) string {
 func clusterYAML(
 	cluster *v1beta1.PostgresCluster, pgUser *v1.Secret,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
-	replicaCreateRepoIndex string,
 ) (string, error) {
 	root := map[string]interface{}{
 		// The cluster identifier. This value cannot change during the cluster's
@@ -78,16 +75,7 @@ func clusterYAML(
 		},
 
 		"postgresql": map[string]interface{}{
-
 			// TODO(cbandy): "callbacks"
-
-			// When it is enabled, use pgBackRest to create replicas.
-			//
-			// NOTE(cbandy): Very few environment variables are set. This might belong
-			// in the instance configuration because of the data directory.
-			// NOTE(cbandy): Is there any chance a user might want to specify their own
-			// method? This is a list and cannot be merged.
-			"create_replica_methods": []string{},
 
 			// Custom configuration "must exist on all cluster nodes".
 			//
@@ -167,26 +155,6 @@ func clusterYAML(
 			// flexible approximation.
 			"mode": "off",
 		},
-	}
-
-	// If a replica creation repo index is provided, then configure and enable a pgBackRest
-	// replica creation method for that specific repo.
-	//
-	// Note that "no_master" is set to 1 in accordance with the example in the Patroni docs:
-	// https://patroni.readthedocs.io/en/latest/replica_bootstrap.html#building-replicas
-	// This setting allows for bootstrapping replicas even when there is no connection to the
-	// primary (e.g. for standby clusters that simply replay WAL from an archive).
-	if replicaCreateRepoIndex != "" {
-		pgConfig := root["postgresql"].(map[string]interface{})
-		pgConfig["create_replica_methods"] = []string{"pgbackrest", "basebackup"}
-		pgConfig["pgbackrest"] = map[string]interface{}{
-			"command": fmt.Sprintf("pgbackrest restore --stanza=%s --repo=%s --delta",
-				quoteShellWord(pgbackrest.DefaultStanzaName),
-				quoteShellWord(replicaCreateRepoIndex)),
-			"keep_data": true,
-			"no_master": 1,
-			"no_params": true,
-		}
 	}
 
 	if !ClusterBootstrapped(cluster) {
@@ -456,7 +424,10 @@ func instanceConfigFiles(cluster, instance *v1.ConfigMap) []v1.VolumeProjection 
 }
 
 // instanceYAML returns Patroni settings that apply to instance.
-func instanceYAML(cluster *v1beta1.PostgresCluster, _ metav1.Object) (string, error) {
+func instanceYAML(
+	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
+	pgbackrestReplicaCreateCommand []string,
+) (string, error) {
 	root := map[string]interface{}{
 		// Missing here is "name" which cannot be known until the instance Pod is
 		// created. That value should be injected using the downward API and the
@@ -469,33 +440,6 @@ func instanceYAML(cluster *v1beta1.PostgresCluster, _ metav1.Object) (string, er
 
 			// Missing here is "ports" which is is connascent with "postgresql.connect_address".
 			// See the PATRONI_KUBERNETES_PORTS env variable.
-		},
-
-		"postgresql": map[string]interface{}{
-			// TODO(cbandy): "bin_dir"
-
-			// Missing here is "connect_address" which cannot be known until the
-			// instance Pod is created. That value should be injected using the downward
-			// API and the PATRONI_POSTGRESQL_CONNECT_ADDRESS environment variable.
-
-			// Missing here is "listen" which is connascent with "connect_address".
-			// See the PATRONI_POSTGRESQL_LISTEN environment variable.
-
-			// During startup, Patroni checks that this path is writable whether we use passwords or not.
-			// - https://github.com/zalando/patroni/issues/1888
-			"pgpass": "/tmp/.pgpass",
-
-			// Prefer to use UNIX domain sockets for local connections. If the PostgreSQL
-			// parameter "unix_socket_directories" is set, Patroni will connect using one
-			// of those directories. Otherwise, it will use the client (libpq) default.
-			"use_unix_socket": true,
-
-			"parameters": map[string]interface{}{
-				// Set unix_socket_directories to /tmp so that Patroni has permission to
-				// create the socket. The default (/var/run/postgresql/) will be created
-				// as user:group 26:26 instead of postgres:postgres
-				"unix_socket_directories": "/tmp",
-			},
 		},
 
 		"restapi": map[string]interface{}{
@@ -513,16 +457,74 @@ func instanceYAML(cluster *v1beta1.PostgresCluster, _ metav1.Object) (string, er
 		},
 	}
 
+	postgresql := map[string]interface{}{
+		// TODO(cbandy): "bin_dir"
+
+		// Missing here is "connect_address" which cannot be known until the
+		// instance Pod is created. That value should be injected using the downward
+		// API and the PATRONI_POSTGRESQL_CONNECT_ADDRESS environment variable.
+
+		// Missing here is "listen" which is connascent with "connect_address".
+		// See the PATRONI_POSTGRESQL_LISTEN environment variable.
+
+		// During startup, Patroni checks that this path is writable whether we use passwords or not.
+		// - https://github.com/zalando/patroni/issues/1888
+		"pgpass": "/tmp/.pgpass",
+
+		// Prefer to use UNIX domain sockets for local connections. If the PostgreSQL
+		// parameter "unix_socket_directories" is set, Patroni will connect using one
+		// of those directories. Otherwise, it will use the client (libpq) default.
+		"use_unix_socket": true,
+
+		"parameters": map[string]interface{}{
+			// Set unix_socket_directories to /tmp so that Patroni has permission to
+			// create the socket. The default (/var/run/postgresql/) will be created
+			// as user:group 26:26 instead of postgres:postgres
+			"unix_socket_directories": "/tmp",
+		},
+	}
+	root["postgresql"] = postgresql
+
+	// The "basebackup" replica method is configured differently from others.
+	// Patroni prepends "--" before it calls `pg_basebackup`.
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/bootstrap.py#L45
+	postgresql["basebackup"] = []string{
+		// NOTE(cbandy): The "--waldir" option was introduced in PostgreSQL v10.
+		"waldir=" + postgres.WALDirectory(cluster, instance),
+	}
+	methods := []string{"basebackup"}
+
+	// Prefer a pgBackRest method when it is available, and fallback to other
+	// methods when it fails.
+	if command := pgbackrestReplicaCreateCommand; len(command) > 0 {
+		quoted := make([]string, len(command))
+		for i := range command {
+			quoted[i] = quoteShellWord(command[i])
+		}
+		postgresql["pgbackrest"] = map[string]interface{}{
+			"command":   strings.Join(quoted, " "),
+			"keep_data": true,
+			"no_master": true,
+			"no_params": true,
+		}
+		methods = append([]string{"pgbackrest"}, methods...)
+	}
+
+	// NOTE(cbandy): Is there any chance a user might want to specify their own
+	// method? This is a list and cannot be merged.
+	postgresql["create_replica_methods"] = methods
+
 	if !ClusterBootstrapped(cluster) {
 		// Populate some "bootstrap" fields to initialize the cluster.
 		// When Patroni is already bootstrapped, this section is ignored.
 		// - https://github.com/zalando/patroni/blob/v2.0.2/docs/SETTINGS.rst#bootstrap-configuration
 		// - https://github.com/zalando/patroni/blob/v2.0.2/docs/replica_bootstrap.rst#bootstrap
-
-		// The "initdb" bootstrap method is configured differently from others.
-		// Patroni prepends "--" before it calls `initdb`.
-		// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/bootstrap.py#L45
 		root["bootstrap"] = map[string]interface{}{
+			"method": "initdb",
+
+			// The "initdb" bootstrap method is configured differently from others.
+			// Patroni prepends "--" before it calls `initdb`.
+			// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/bootstrap.py#L45
 			"initdb": []string{
 				// Enable checksums on data pages to help detect corruption of
 				// storage that would otherwise be silent. This also enables
@@ -539,6 +541,9 @@ func instanceYAML(cluster *v1beta1.PostgresCluster, _ metav1.Object) (string, er
 				// - https://www.postgresql.org/docs/current/app-pgchecksums.html
 				"data-checksums",
 				"encoding=UTF8",
+
+				// NOTE(cbandy): The "--waldir" option was introduced in PostgreSQL v10.
+				"waldir=" + postgres.WALDirectory(cluster, instance),
 			},
 		}
 	}

@@ -16,7 +16,10 @@
 package pgbackrest
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -187,11 +190,14 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 		VolumeMounts: []v1.VolumeMount{sshVolumeMount},
 	}
 
-	// Mount the PostgreSQL data volume if it is present in the template.
-	pgdataMount := postgres.DataVolumeMount()
+	// Mount PostgreSQL volumes if they are present in the template.
+	postgresMounts := map[string]corev1.VolumeMount{
+		postgres.DataVolumeMount().Name: postgres.DataVolumeMount(),
+		postgres.WALVolumeMount().Name:  postgres.WALVolumeMount(),
+	}
 	for i := range template.Spec.Volumes {
-		if template.Spec.Volumes[i].Name == pgdataMount.Name {
-			container.VolumeMounts = append(container.VolumeMounts, pgdataMount)
+		if mount, ok := postgresMounts[template.Spec.Volumes[i].Name]; ok {
+			container.VolumeMounts = append(container.VolumeMounts, mount)
 		}
 	}
 
@@ -215,4 +221,30 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	}
 
 	return nil
+}
+
+// ReplicaCreateCommand returns the command that can initialize instance from
+// one of cluster's repositories. It returns nil when no repository is available.
+func ReplicaCreateCommand(
+	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
+) []string {
+	var name string
+	if cluster.Status.PGBackRest != nil {
+		for _, repo := range cluster.Status.PGBackRest.Repos {
+			if repo.ReplicaCreateBackupComplete {
+				name = repo.Name
+				break
+			}
+		}
+	}
+	if name == "" {
+		return nil
+	}
+
+	return []string{
+		"pgbackrest", "restore", "--delta",
+		"--stanza=" + DefaultStanzaName,
+		"--repo=" + strings.TrimPrefix(name, "repo"),
+		"--link-map=pg_wal=" + postgres.WALDirectory(cluster, instance),
+	}
 }

@@ -851,6 +851,7 @@ func (r *Reconciler) reconcileInstance(
 		instanceConfigMap    *v1.ConfigMap
 		instanceCertificates *v1.Secret
 		postgresDataVolume   *corev1.PersistentVolumeClaim
+		postgresWALVolume    *corev1.PersistentVolumeClaim
 	)
 
 	if err == nil {
@@ -864,12 +865,16 @@ func (r *Reconciler) reconcileInstance(
 		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance)
 	}
 	if err == nil {
+		postgresWALVolume, err = r.reconcilePostgresWALVolume(ctx, cluster, spec, instance)
+	}
+	if err == nil {
 		postgres.InstancePod(
-			ctx, cluster, postgresDataVolume, spec, &instance.Spec.Template.Spec)
+			ctx, cluster, spec, postgresDataVolume, postgresWALVolume,
+			&instance.Spec.Template.Spec)
 
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
-			instanceCertificates, instanceConfigMap, &instance.Spec.Template)
+			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
 	// Add pgBackRest containers, volumes, etc. to the instance Pod spec
@@ -1089,7 +1094,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 		})
 
 	if err == nil {
-		err = patroni.InstanceConfigMap(ctx, cluster, instance, instanceConfigMap)
+		err = patroni.InstanceConfigMap(ctx, cluster, spec, instanceConfigMap)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, instanceConfigMap))

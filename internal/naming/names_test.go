@@ -39,7 +39,7 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 	// Container names have to be unique within a Pod. The number of containers
 	// we deploy should be few enough that we can name them uniquely across all
 	// pods.
-	// - https://docs.k8s.io/reference/kubernetes-api/workloads-resources/pod-v1/
+	// - https://docs.k8s.io/reference/kubernetes-api/workload-resources/pod-v1/
 
 	names := sets.NewString()
 	for _, name := range []string{
@@ -195,6 +195,7 @@ func TestInstanceNamesUniqueAndValid(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
 			{"InstancePostgresDataVolume", InstancePostgresDataVolume(instance)},
+			{"InstancePostgresWALVolume", InstancePostgresWALVolume(instance)},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				assert.Equal(t, tt.value.Namespace, instance.Namespace)

@@ -17,7 +17,6 @@ package postgres
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -25,7 +24,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -179,23 +177,34 @@ func TestDataVolumeMount(t *testing.T) {
 	})
 }
 
+func TestWALVolumeMount(t *testing.T) {
+	mount := WALVolumeMount()
+
+	assert.DeepEqual(t, mount, corev1.VolumeMount{
+		Name:      "postgres-wal",
+		MountPath: "/pgwal",
+		ReadOnly:  false,
+	})
+}
+
 func TestInstancePod(t *testing.T) {
+	ctx := context.Background()
+
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	cluster.Spec.PostgresVersion = 11
 
 	dataVolume := new(corev1.PersistentVolumeClaim)
-	dataVolume.Name = "dv"
+	dataVolume.Name = "datavol"
 
-	set := new(v1beta1.PostgresInstanceSetSpec)
-	set.Resources.Requests = corev1.ResourceList{"cpu": resource.MustParse("9m")}
+	instance := new(v1beta1.PostgresInstanceSetSpec)
+	instance.Resources.Requests = corev1.ResourceList{"cpu": resource.MustParse("9m")}
 
+	// without WAL volume nor WAL volume spec
 	pod := new(corev1.PodSpec)
-	InstancePod(context.Background(), cluster, dataVolume, set, pod)
+	InstancePod(ctx, cluster, instance, dataVolume, nil, pod)
 
-	b, err := yaml.Marshal(pod)
-	assert.NilError(t, err)
-	assert.DeepEqual(t, string(b), strings.Trim(`
+	assert.Assert(t, marshalMatches(pod, `
 containers:
 - env:
   - name: PGDATA
@@ -215,10 +224,38 @@ containers:
     name: postgres-data
 initContainers:
 - command:
-  - install
-  - --directory
-  - --mode=0700
-  - /pgdata/pg11
+  - bash
+  - -ceu
+  - --
+  - |-
+    declare -r expected_major_version="$1" pgwal_directory="$2"
+    results() { printf '::postgres-operator: %s::%s\n' "$@"; }
+    directory() { [ -d "$1" ] || install --directory --mode=0700 "$1"; }
+    safelink() (
+      local desired="$1" name="$2" current
+      current=$(realpath "${name}")
+      if [ "${current}" = "${desired}" ]; then return; fi
+      set -x; mv --no-target-directory "${current}" "${desired}"
+      ln --no-dereference --force --symbolic "${desired}" "${name}"
+    )
+    echo Initializing ...
+    results 'uid' "$(id -u)" 'gid' "$(id -G)"
+    results 'postgres path' "$(command -v postgres)"
+    results 'postgres version' "${postgres_version:=$(postgres --version)}"
+    [[ "${postgres_version}" == *") ${expected_major_version}."* ]]
+    results 'config directory' "${PGDATA:?}"
+    postgres_data_directory=$([ -d "${PGDATA}" ] && postgres -C data_directory || echo "${PGDATA}")
+    results 'data directory' "${postgres_data_directory}"
+    [ "${postgres_data_directory}" = "${PGDATA}" ]
+    directory "${postgres_data_directory}"
+    [ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0
+    results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
+    [ "${postgres_data_version}" = "${expected_major_version}" ]
+    safelink "${pgwal_directory}" "${postgres_data_directory}/pg_wal"
+    results 'wal directory' "$(readlink -f "${postgres_data_directory}/pg_wal")"
+  - startup
+  - "11"
+  - /pgdata/pg11_wal
   env:
   - name: PGDATA
     value: /pgdata/pg11
@@ -239,6 +276,77 @@ initContainers:
 volumes:
 - name: postgres-data
   persistentVolumeClaim:
-    claimName: dv
-	`, "\t\n")+"\n")
+    claimName: datavol
+	`))
+
+	t.Run("WithWALVolumeWithoutWALVolumeSpec", func(t *testing.T) {
+		walVolume := new(corev1.PersistentVolumeClaim)
+		walVolume.Name = "walvol"
+
+		pod := new(corev1.PodSpec)
+		InstancePod(ctx, cluster, instance, dataVolume, walVolume, pod)
+
+		containers := pod.Containers[:0:0]
+		containers = append(containers, pod.Containers...)
+		containers = append(containers, pod.InitContainers...)
+
+		for _, container := range containers {
+			assert.Assert(t, marshalMatches(container.VolumeMounts, `
+- mountPath: /pgdata
+  name: postgres-data
+- mountPath: /pgwal
+  name: postgres-wal
+			`), "expected WAL mount in %q container", container.Name)
+		}
+
+		assert.Assert(t, marshalMatches(pod.Volumes, `
+- name: postgres-data
+  persistentVolumeClaim:
+    claimName: datavol
+- name: postgres-wal
+  persistentVolumeClaim:
+    claimName: walvol
+		`), "expected WAL volume")
+
+		// Startup moves WAL files to data volume.
+		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
+			[]string{"startup", "11", "/pgdata/pg11_wal"})
+	})
+
+	t.Run("WithWALVolumeWithWALVolumeSpec", func(t *testing.T) {
+		walVolume := new(corev1.PersistentVolumeClaim)
+		walVolume.Name = "walvol"
+
+		instance := new(v1beta1.PostgresInstanceSetSpec)
+		instance.WALVolumeClaimSpec = new(corev1.PersistentVolumeClaimSpec)
+
+		pod := new(corev1.PodSpec)
+		InstancePod(ctx, cluster, instance, dataVolume, walVolume, pod)
+
+		containers := pod.Containers[:0:0]
+		containers = append(containers, pod.Containers...)
+		containers = append(containers, pod.InitContainers...)
+
+		for _, container := range containers {
+			assert.Assert(t, marshalMatches(container.VolumeMounts, `
+- mountPath: /pgdata
+  name: postgres-data
+- mountPath: /pgwal
+  name: postgres-wal
+			`), "expected WAL mount in %s", container.Name)
+		}
+
+		assert.Assert(t, marshalMatches(pod.Volumes, `
+- name: postgres-data
+  persistentVolumeClaim:
+    claimName: datavol
+- name: postgres-wal
+  persistentVolumeClaim:
+    claimName: walvol
+		`), "expected WAL volume")
+
+		// Startup moves WAL files to WAL volume.
+		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
+			[]string{"startup", "11", "/pgwal/pg11_wal"})
+	})
 }
