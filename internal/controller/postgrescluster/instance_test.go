@@ -891,3 +891,72 @@ func TestDeleteInstance(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
+	type intentParams struct {
+		cluster                    *v1beta1.PostgresCluster
+		spec                       *v1beta1.PostgresInstanceSetSpec
+		clusterPodServiceName      string
+		instanceServiceAccountName string
+		existingReplicas           *int32
+		sts                        *appsv1.StatefulSet
+	}
+
+	for _, test := range []struct {
+		name string
+		ip   intentParams
+		run  func(*testing.T, *appsv1.StatefulSet)
+	}{{
+		name: "cluster pod service name",
+		ip: intentParams{
+			clusterPodServiceName: "daisy-svc",
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, ss.Spec.ServiceName, "daisy-svc")
+		},
+	}, {
+		name: "instance service account name",
+		ip: intentParams{
+			instanceServiceAccountName: "daisy-sa",
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, ss.Spec.Template.Spec.ServiceAccountName, "daisy-sa")
+		},
+	}} {
+		t.Run(test.name, func(t *testing.T) {
+			cluster := test.ip.cluster
+			if cluster == nil {
+				cluster = testCluster()
+			}
+
+			cluster.Default()
+			cluster.UID = types.UID("hippouid")
+			cluster.Namespace = test.name + "-ns"
+
+			spec := test.ip.spec
+			if spec == nil {
+				spec = new(v1beta1.PostgresInstanceSetSpec)
+				spec.Default(0)
+			}
+
+			clusterPodServiceName := test.ip.clusterPodServiceName
+			instanceServiceAccountName := test.ip.instanceServiceAccountName
+			existingReplicas := test.ip.existingReplicas
+
+			sts := test.ip.sts
+			if sts == nil {
+				sts = &appsv1.StatefulSet{}
+			}
+
+			generateInstanceStatefulSetIntent(context.Background(),
+				cluster, spec,
+				clusterPodServiceName,
+				instanceServiceAccountName,
+				existingReplicas,
+				sts,
+			)
+
+			test.run(t, sts)
+		})
+	}
+}

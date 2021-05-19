@@ -841,84 +841,10 @@ func (r *Reconciler) reconcileInstance(
 	instance.Namespace, instance.Name = existing.Namespace, existing.Name
 
 	err := errors.WithStack(r.setControllerReference(cluster, instance))
-
 	if err == nil {
-		instance.Annotations = naming.Merge(
-			cluster.Spec.Metadata.GetAnnotationsOrNil(),
-			spec.Metadata.GetAnnotationsOrNil())
-		instance.Labels = naming.Merge(
-			cluster.Spec.Metadata.GetLabelsOrNil(),
-			spec.Metadata.GetLabelsOrNil(),
-			map[string]string{
-				naming.LabelCluster:     cluster.Name,
-				naming.LabelInstanceSet: spec.Name,
-				naming.LabelInstance:    instance.Name,
-			})
-		instance.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{
-				naming.LabelCluster:     cluster.Name,
-				naming.LabelInstanceSet: spec.Name,
-				naming.LabelInstance:    instance.Name,
-			},
-		}
-		instance.Spec.Template.Annotations = naming.Merge(
-			cluster.Spec.Metadata.GetAnnotationsOrNil(),
-			spec.Metadata.GetAnnotationsOrNil(),
-		)
-		instance.Spec.Template.Labels = naming.Merge(
-			cluster.Spec.Metadata.GetLabelsOrNil(),
-			spec.Metadata.GetLabelsOrNil(),
-			map[string]string{
-				naming.LabelCluster:     cluster.Name,
-				naming.LabelInstanceSet: spec.Name,
-				naming.LabelInstance:    instance.Name,
-			})
-
-		// Don't clutter the namespace with extra ControllerRevisions.
-		// The "controller-revision-hash" label still exists on the Pod.
-		instance.Spec.RevisionHistoryLimit = initialize.Int32(0)
-
-		// Give the Pod a stable DNS record based on its name.
-		// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#stable-network-id
-		// - https://docs.k8s.io/concepts/services-networking/dns-pod-service/#pods
-		instance.Spec.ServiceName = clusterPodService.Name
-
-		// Disable StatefulSet's "RollingUpdate" strategy. The rolloutInstances
-		// method considers Pods across the entire PostgresCluster and deletes
-		// them to trigger updates.
-		// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#on-delete
-		instance.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
-
-		// Match the existing replica count, if any.
-		if existing.Spec.Replicas != nil {
-			instance.Spec.Replicas = initialize.Int32(*existing.Spec.Replicas)
-		} else {
-			instance.Spec.Replicas = initialize.Int32(1) // TODO(cbandy): start at zero, maybe
-		}
-
-		// Though we use a StatefulSet to keep an instance running, we only ever
-		// want one Pod from it.
-		if *instance.Spec.Replicas > 1 {
-			*instance.Spec.Replicas = 1
-		}
-
-		// Restart containers any time they stop, die, are killed, etc.
-		// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
-		instance.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyAlways
-
-		// ShareProcessNamespace makes Kubernetes' pause process PID 1 and lets
-		// containers see each other's processes.
-		// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
-		instance.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
-
-		instance.Spec.Template.Spec.ServiceAccountName = instanceServiceAccount.Name
-
-		podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
-		// set fsGroups if not OpenShift
-		if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
-			podSecurityContext.FSGroup = initialize.Int64(26)
-		}
-		instance.Spec.Template.Spec.SecurityContext = podSecurityContext
+		generateInstanceStatefulSetIntent(ctx, cluster, spec,
+			clusterPodService.Name, instanceServiceAccount.Name,
+			existing.Spec.Replicas, instance)
 	}
 
 	var (
@@ -980,6 +906,92 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	return err
+}
+
+func generateInstanceStatefulSetIntent(ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+	spec *v1beta1.PostgresInstanceSetSpec,
+	clusterPodServiceName string,
+	instanceServiceAccountName string,
+	existingReplicas *int32,
+	sts *appsv1.StatefulSet,
+) {
+	sts.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		spec.Metadata.GetAnnotationsOrNil())
+	sts.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		spec.Metadata.GetLabelsOrNil(),
+		map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: spec.Name,
+			naming.LabelInstance:    sts.Name,
+		})
+	sts.Spec.Selector = &metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: spec.Name,
+			naming.LabelInstance:    sts.Name,
+		},
+	}
+	sts.Spec.Template.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		spec.Metadata.GetAnnotationsOrNil(),
+	)
+	sts.Spec.Template.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		spec.Metadata.GetLabelsOrNil(),
+		map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: spec.Name,
+			naming.LabelInstance:    sts.Name,
+		})
+
+	// Don't clutter the namespace with extra ControllerRevisions.
+	// The "controller-revision-hash" label still exists on the Pod.
+	sts.Spec.RevisionHistoryLimit = initialize.Int32(0)
+
+	// Give the Pod a stable DNS record based on its name.
+	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#stable-network-id
+	// - https://docs.k8s.io/concepts/services-networking/dns-pod-service/#pods
+	sts.Spec.ServiceName = clusterPodServiceName
+
+	// Disable StatefulSet's "RollingUpdate" strategy. The rolloutInstances
+	// method considers Pods across the entire PostgresCluster and deletes
+	// them to trigger updates.
+	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#on-delete
+	sts.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
+
+	// Match the existing replica count, if any.
+	if existingReplicas != nil {
+		sts.Spec.Replicas = initialize.Int32(*existingReplicas)
+	} else {
+		sts.Spec.Replicas = initialize.Int32(1) // TODO(cbandy): start at zero, maybe
+	}
+
+	// Though we use a StatefulSet to keep an instance running, we only ever
+	// want one Pod from it.
+	if *sts.Spec.Replicas > 1 {
+		*sts.Spec.Replicas = 1
+	}
+
+	// Restart containers any time they stop, die, are killed, etc.
+	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
+	sts.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyAlways
+
+	// ShareProcessNamespace makes Kubernetes' pause process PID 1 and lets
+	// containers see each other's processes.
+	// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
+	sts.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
+
+	sts.Spec.Template.Spec.ServiceAccountName = instanceServiceAccountName
+
+	podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
+	// set fsGroups if not OpenShift
+	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
+		podSecurityContext.FSGroup = initialize.Int64(26)
+	}
+	sts.Spec.Template.Spec.SecurityContext = podSecurityContext
 }
 
 // addPGBackRestToInstancePodSpec adds pgBackRest configuration to the PodTemplateSpec.  This
