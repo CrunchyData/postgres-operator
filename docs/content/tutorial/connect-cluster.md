@@ -116,14 +116,14 @@ Following the example we've created, the hostname for our PostgreSQL cluster is 
 
 Knowing this, we can construct a [Postgres URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) that contains all of the connection info:
 
-`postgres://testuser:securerandomlygeneratedpassword@hippo.jkatz.svc.cluster.local:5432/hippo`
+`postgres://testuser:securerandomlygeneratedpassword@hippo.pgo.svc.cluster.local:5432/hippo`
 
 which breaks down as such:
 
 - `postgres`: the scheme, i.e. a Postgres URI
 - `testuser`: the name of the PostgreSQL user
 - `securerandomlygeneratedpassword`: the password for `testuser`
-- `hippo.jkatz.svc.cluster.local`: the hostname
+- `hippo.pgo.svc.cluster.local`: the hostname
 - `5432`: the port
 - `hippo`: the database you want to connect to
 
