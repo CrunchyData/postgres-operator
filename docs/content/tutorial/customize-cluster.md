@@ -54,8 +54,8 @@ spec:
         parameters:
           max_parallel_workers: 2
           max_worker_processes: 2
-          shared_buffers: 1Gi
-          work_mem: 2Mi
+          shared_buffers: 1GB
+          work_mem: 2MB
 ```
 
 (If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
@@ -158,7 +158,7 @@ As with the other changes, you can roll out the TLS customizations with `kubectl
 
 If your Postgres configuration settings are not present, you may need to check a few things. First, ensure that you are using the syntax that Postgres expects. You can see this in the [Postgres configuration documentation](https://www.postgresql.org/docs/current/runtime-config.html).
 
-Some settings, such as `shared_buffers`, require for Postgres to restart. You may need to ensure that Postgres succesfully executed this restart. If it did not, you can restart Postgres manually by executing into a Postgres instance and running `patronictl restart --force <clusterName>-ha`
+Some settings, such as `shared_buffers`, require for Postgres to restart. Patroni only performs a reload when parameter changes are identified.  Therefore, for parameters that require a restart, the restart can be performed manually by  executing into a Postgres instance and running `patronictl restart --force <clusterName>-ha`
 
 ## Next Steps
 
