@@ -78,6 +78,7 @@ type PostgresClusterSpec struct {
 	// The port on which PostgreSQL should listen.
 	// +optional
 	// +kubebuilder:default=5432
+	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
 	// The major version of PostgreSQL installed in the PostgreSQL container

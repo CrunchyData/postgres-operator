@@ -200,6 +200,8 @@ containers:
 - env:
   - name: PGDATA
     value: /pgdata/pg11
+  - name: PGPORT
+    value: "5432"
   name: database
   ports:
   - containerPort: 5432
@@ -220,6 +222,8 @@ initContainers:
   env:
   - name: PGDATA
     value: /pgdata/pg11
+  - name: PGPORT
+    value: "5432"
   name: postgres-startup
   resources:
     requests:

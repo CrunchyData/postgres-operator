@@ -43,8 +43,17 @@ func DataDirectory(cluster *v1beta1.PostgresCluster) string {
 // Environment returns the environment variables required to invoke PostgreSQL
 // utilities.
 func Environment(cluster *v1beta1.PostgresCluster) []corev1.EnvVar {
-	return []corev1.EnvVar{{
-		Name:  "PGDATA",
-		Value: ConfigDirectory(cluster),
-	}}
+	return []corev1.EnvVar{
+		// - https://www.postgresql.org/docs/current/reference-server.html
+		{
+			Name:  "PGDATA",
+			Value: ConfigDirectory(cluster),
+		},
+
+		// - https://www.postgresql.org/docs/current/libpq-envars.html
+		{
+			Name:  "PGPORT",
+			Value: fmt.Sprint(*cluster.Spec.Port),
+		},
+	}
 }

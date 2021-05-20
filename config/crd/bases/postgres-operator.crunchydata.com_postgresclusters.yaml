@@ -1059,6 +1059,7 @@ spec:
                     default: 8008
                     description: The port on which Patroni should listen.
                     format: int32
+                    minimum: 1024
                     type: integer
                   syncPeriodSeconds:
                     default: 10
@@ -1072,6 +1073,7 @@ spec:
                 default: 5432
                 description: The port on which PostgreSQL should listen.
                 format: int32
+                minimum: 1024
                 type: integer
               postgresVersion:
                 description: The major version of PostgreSQL installed in the PostgreSQL

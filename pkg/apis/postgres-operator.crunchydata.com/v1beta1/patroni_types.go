@@ -42,6 +42,7 @@ type PatroniSpec struct {
 	// The port on which Patroni should listen.
 	// +optional
 	// +kubebuilder:default=8008
+	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
 	// TODO(cbandy): Describe the downtime involved with changing.
