@@ -47,7 +47,7 @@ And use the following connection string to connect to your cluster:
 
 If you need to log in as the PostgreSQL superuser, you can do so with the following command:
 
-    PGPASSWORD=$(kubectl -n jkatz get secrets {{ .Values.name }}-postgres-secret -o jsonpath='{.data.password}' | base64 -d) psql -h localhost -U postgres {{ .Values.name }}
+    PGPASSWORD=$(kubectl -n {{ .Values.namespace }} get secrets {{ .Values.name }}-postgres-secret -o jsonpath='{.data.password}' | base64 -d) psql -h localhost -U postgres {{ .Values.name }}
 
 More information about the custom resource workflow the docs can be found here:
 
