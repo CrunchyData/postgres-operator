@@ -121,6 +121,33 @@ func TestClusterBackup(t *testing.T) {
 					requireWaitFor(t, more, 75*time.Second, time.Second,
 						"timeout waiting for backup to execute on %q in %q", cluster(), namespace())
 				})
+				t.Run("create backup noselector", func(t *testing.T) {
+					output, err := pgo("create", "schedule", cluster(), "-n", namespace(),
+						"--schedule-type=pgbackrest", "--schedule=* * * * *", "--pgbackrest-backup-type=full",
+					).Exec(t)
+					defer teardownSchedule(t, namespace(), cluster()+"-pgbackrest-full")
+					require.NoError(t, err)
+					require.Contains(t, output, "created")
+
+					output, err = pgo("show", "schedule", cluster(), "-n", namespace()).Exec(t)
+					require.NoError(t, err)
+					require.Contains(t, output, "pgbackrest-full")
+
+					requireClusterReady(t, namespace(), cluster(), time.Minute)
+					requireStanzaExists(t, namespace(), cluster(), 2*time.Minute)
+
+					output, err = pgo("show", "backup", cluster(), "-n", namespace()).Exec(t)
+					require.NoError(t, err)
+					before := strings.Count(output, "full backup")
+
+					more := func() bool {
+						output, err := pgo("show", "backup", cluster(), "-n", namespace()).Exec(t)
+						require.NoError(t, err)
+						return strings.Count(output, "full backup") > before
+					}
+					requireWaitFor(t, more, 75*time.Second, time.Second,
+						"timeout waiting for backup to execute on %q in %q", cluster(), namespace())
+				})
 			})
 
 			t.Run("delete schedule", func(t *testing.T) {
