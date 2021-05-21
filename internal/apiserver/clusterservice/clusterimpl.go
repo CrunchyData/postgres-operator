@@ -868,6 +868,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	// Create an instance of our CRD
 	newInstance := getClusterParams(request, clusterName, ns)
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	newInstance.Spec.BackrestStorageTypes = backrestStorageTypes
 

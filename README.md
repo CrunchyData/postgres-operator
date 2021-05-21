@@ -186,7 +186,7 @@ to start as quickly as:
 
 ```shell
 kubectl create namespace pgo
-kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.7.0-rc.1/installers/kubectl/postgres-operator.yml
+kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.7.0/installers/kubectl/postgres-operator.yml
 ```
 
 Otherwise, we highly recommend following the instructions from our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/).
