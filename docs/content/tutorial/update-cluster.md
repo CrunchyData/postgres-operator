@@ -59,4 +59,4 @@ Applying software updates for the other components in a Postgres cluster works s
 
 ## Next Steps
 
-Now that we know how to update our software components, let's look at how PGO handles [disaster recovery]({{< relref "./disaster-recovery.md" >}})!
+Now that we know how to update our software components, let's look at how PGO handles [disaster recovery]({{< relref "./backups.md" >}})!

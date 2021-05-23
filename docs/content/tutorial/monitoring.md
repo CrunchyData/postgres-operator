@@ -2,7 +2,7 @@
 title: "Monitoring"
 date:
 draft: false
-weight: 100
+weight: 90
 ---
 
 Coming Soon.
