@@ -11,7 +11,7 @@ This is where PGO comes in: PGO will help orchestrate rolling out any potentiall
 
 Let's dive in.
 
-## Resizing Memory and CPU
+## Resize Memory and CPU
 
 Memory and CPU resources are an important component for vertically scaling your Postgres cluster. Couple with [tweaks to your Postgres configuration file]({{< relref "./customize-cluster.md" >}}), allowing your cluster to have more memory and CPU allotted to it can help it to perform better under load.
 
@@ -87,6 +87,86 @@ Once all of the changes are applied, PGO will perform a "controlled switchover":
 
 By rolling out the changes in this way, PGO ensures there is minimal to zero disruption to your application: you are able to successfully roll out updates and your users may not even notice!
 
+## Resize PVC
+
+Your application is a success! Your data continues to grow, and it's becoming apparently that you need more disk. That's great: you can resize your PVC directly on your `postgresclusters.postgres-operator.crunchydata.com` custom resource with minimal to zero downtime.
+
+PVC resizing, also known as [volume expansion](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#expanding-persistent-volumes-claims), is a function of your storage class: it must support volume resizing. Additionally, PVCs can only be **sized up**: you cannot shrink the size of a PVC.
+
+You can adjust PVC sizes on all of the managed storage instances in a Postgres instance that are using Kubernetes storage. These include:
+
+- `spec.instances.volumeClaimSpec.resources.requests.storage`: The Postgres data directory (aka your database).
+- `spec.archive.pgbackrest.repos.volume.volumeClaimSpec.resources.requests.storage`: The pgBackRest repository when using "volume" storage
+
+The above should be familiar: it follows th esame pattern as the standard [Kubernetes PVC](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) structure.
+
+For example, let's say we want to update our `hippo` Postgres cluster so that each instance now uses a `10Gi` PVC and our backup repository uses a `20Gi` PVC. We can do so with the following markup:
+
+```
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres13-ha:centos8-13.2-0
+  postgresVersion: 13
+  instances:
+    - name: instance1
+      replicas: 2
+      resources:
+        limits:
+          cpu: 2.0
+          memory: 4Gi
+      volumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 10Gi
+  archive:
+    pgbackrest:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+      repoHost:
+        dedicated: {}
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+(If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
+
+In particular, we added the following to `spec.instances`:
+
+```
+volumeClaimSpec:
+  resources:
+    requests:
+      storage: 10Gi
+```
+
+and added the following to `spec.archive.pgbackrest.repos.volume`:
+
+```
+volumeClaimSpec:
+  accessModes:
+  - "ReadWriteOnce"
+  resources:
+    requests:
+      storage: 20Gi
+```
+
+Apply these updates to your Kubernetes cluster with the following command:
+
+```
+kubectl apply -k kustomize/postgres
+```
+
 ## Troubleshooting
 
 ### Postgres Pod Can't Be Scheduled
@@ -95,6 +175,14 @@ There are many reasons why a PostgreSQL Pod may not be scheduled:
 
 - **Resources are unavailable**. Ensure that you have a Kubernetes [Node](https://kubernetes.io/docs/concepts/architecture/nodes/) with enough resources to satisfy your memory or CPU Request.
 - **PVC cannot be provisioned**. Ensure that you request a PVC size that is available, or that your PVC storage class is set up correctly.
+
+### PVCs Do Not Resize
+
+Ensure that your storage class supports PVC resizing. You can check that by inspecting the `allowVolumeExpansion` attribute:
+
+```
+kubectl get sc
+```
 
 ## Next Steps
 
