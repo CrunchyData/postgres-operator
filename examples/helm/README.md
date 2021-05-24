@@ -64,7 +64,7 @@ The following values can also be set:
 - `ha`: Whether or not to deploy a high availability PostgreSQL cluster. Can be either `true` or `false`, defaults to `false`.
 - `imagePrefix`: The prefix of the container images to use for this PostgreSQL cluster. Default to `registry.developers.crunchydata.com/crunchydata`.
 - `image`: The name of the container image to use for the PostgreSQL cluster. Defaults to `crunchy-postgres-ha`.
-- `imageTag`: The container image tag to use. Defaults to `centos8-13.3-4.6.3-rc.1`.
+- `imageTag`: The container image tag to use. Defaults to `centos8-13.3-4.6.3`.
 - `memory`: The memory limit for the PostgreSQL cluster. Follows standard Kubernetes formatting.
 - `monitoring`: Whether or not to enable monitoring / metrics collection for this PostgreSQL instance. Can either be `true` or `false`, defaults to `false`.
 
@@ -103,7 +103,7 @@ PGPASSWORD="W4tch0ut4hippo$" psql -h localhost -U hippo hippo
 
 ## Notes
 
-Prior to PostgreSQL Operator 4.6.3-rc.1, you will have to manually clean up some of the artifacts when running `helm uninstall`.
+Prior to PostgreSQL Operator 4.6.3, you will have to manually clean up some of the artifacts when running `helm uninstall`.
 
 ## Additional Resources
 

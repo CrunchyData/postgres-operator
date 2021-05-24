@@ -53,7 +53,7 @@ cluster.
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
-    '{"ClientVersion":"4.6.3-rc.1",
+    '{"ClientVersion":"4.6.3",
     "Namespace":"pgouser1",
     "Name":"mycluster",
 $PGO_APISERVER_URL/clusters
@@ -72,7 +72,7 @@ show all of the clusters that are in the given namespace.
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
-  '{"ClientVersion":"4.6.3-rc.1",
+  '{"ClientVersion":"4.6.3",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/showclusters
@@ -82,7 +82,7 @@ $PGO_APISERVER_URL/showclusters
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
-  '{"ClientVersion":"4.6.3-rc.1",
+  '{"ClientVersion":"4.6.3",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/clustersdelete
@@ -90,7 +90,7 @@ $PGO_APISERVER_URL/clustersdelete
 
   Schemes: http, https
   BasePath: /
-  Version: 4.6.3-rc.1
+  Version: 4.6.3
   License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
   Contact: Crunchy Data<info@crunchydata.com> https://www.crunchydata.com/
 
