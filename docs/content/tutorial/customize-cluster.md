@@ -152,13 +152,31 @@ If  `spec.customTLSSecret` is provided you **must** also provide `spec.customRep
 
 As with the other changes, you can roll out the TLS customizations with `kubectl apply`.
 
+## Labels
+
+There are several ways to add your own custom Kubernetes [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/) to your Postgres cluster.
+
+- Cluster: You can apply labels to any PGO managed object in a cluster by editing the `spec.metadata.labels` section of the custom resource.
+- Postgres: You can apply labels to a Postgres instance set and its objects by editing `spec.instances.metadata.labels`.
+- pgBackRest: You can apply labels to pgBackRest and its objects by editing `postgresclusters.spec.archive.pgbackrest.metadata.labels`.
+- PgBouncer: You can apply labels to PgBouncer connection pooling instances by editing `spec.proxy.pgBouncer.metadata.labels`.
+
+## Annotations
+
+There are several ways to add your own custom Kubernetes [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) to your Postgres cluster.
+
+- Cluster: You can apply annotations to any PGO managed object in a cluster by editing the `spec.metadata.annotations` section of the custom resource.
+- Postgres: You can apply annotations to a Postgres instance set and its objects by editing `spec.instances.metadata.annotations`.
+- pgBackRest: You can apply annotations to pgBackRest and its objects by editing `spec.archive.pgbackrest.metadata.annotations`.
+- PgBouncer: You can apply annotations to PgBouncer connection pooling instances by editing `spec.proxy.pgBouncer.metadata.annotations`.
+
 ## Troubleshooting
 
 ### Changes Not Applied
 
 If your Postgres configuration settings are not present, you may need to check a few things. First, ensure that you are using the syntax that Postgres expects. You can see this in the [Postgres configuration documentation](https://www.postgresql.org/docs/current/runtime-config.html).
 
-Some settings, such as `shared_buffers`, require for Postgres to restart. Patroni only performs a reload when parameter changes are identified.  Therefore, for parameters that require a restart, the restart can be performed manually by  executing into a Postgres instance and running `patronictl restart --force <clusterName>-ha`
+Some settings, such as `shared_buffers`, require for Postgres to restart. Patroni only performs a reload when parameter changes are identified.  Therefore, for parameters that require a restart, the restart can be performed manually by  executing into a Postgres instance and running `patronictl restart --force <clusterName>-ha`.
 
 ## Next Steps
 

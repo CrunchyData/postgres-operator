@@ -53,9 +53,9 @@ This methodology also allows you to rollback changes from minor Postgres updates
 
 ## Applying Other Component Updates
 
-There are other components that go into a PGO Postgres cluster. These include pgBackRest, pgBouncer and others. Each one of these components has its own image: for example, you can find a reference to the pgBackRest image in the `spec.archive.pgbackrest.image` attribute.
+There are other components that go into a PGO Postgres cluster. These include pgBackRest, PgBouncer and others. Each one of these components has its own image: for example, you can find a reference to the pgBackRest image in the `spec.archive.pgbackrest.image` attribute.
 
-Applying software updates for the other components in a Postgres cluster works similarly to the above. As pgBackRest and pgBouncer are Kubernetes [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/), Kubernetes will help manage the rolling update to minimize disruption.
+Applying software updates for the other components in a Postgres cluster works similarly to the above. As pgBackRest and PgBouncer are Kubernetes [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/), Kubernetes will help manage the rolling update to minimize disruption.
 
 ## Next Steps
 
