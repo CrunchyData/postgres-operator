@@ -158,7 +158,7 @@ endif
 
 pgo-base: pgo-base-$(IMGBUILDER)
 
-pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile
+pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile licenses
 	$(IMGCMDSTEM) \
 		-f $(PGOROOT)/build/pgo-base/Dockerfile \
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
@@ -258,3 +258,8 @@ generate-rbac:
 hack/tools/envtest: SHELL = bash
 hack/tools/envtest:
 	source '$(shell $(GO) list -f '{{ .Dir }}' -m 'sigs.k8s.io/controller-runtime')/hack/setup-envtest.sh' && fetch_envtest_tools $@
+
+.PHONY: license licenses
+license: licenses
+licenses:
+	./bin/license_aggregator.sh ./cmd/...

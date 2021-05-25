@@ -18,7 +18,6 @@ LABEL vendor="Crunchy Data" \
 	io.openshift.tags="postgresql,postgres,sql,nosql,crunchy" \
 	io.k8s.description="Trusted open source PostgreSQL-as-a-Service"
 
-COPY redhat/licenses /licenses
 COPY redhat/atomic/help.1 /help.1
 COPY redhat/atomic/help.md /help.md
 COPY licenses /licenses
