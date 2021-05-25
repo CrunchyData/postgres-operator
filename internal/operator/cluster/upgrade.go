@@ -561,6 +561,11 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	}
 	delete(pgcluster.Spec.UserLabels, "service-type")
 
+	// 4.6.0 removed the "pg-pod-anti-affinity" label from user labels, as this is
+	// superfluous and handled through other processes. We can explicitly
+	// eliminate it
+	delete(pgcluster.Spec.UserLabels, "pg-pod-anti-affinity")
+
 	// 4.6.0 moved the "autofail" label to the DisableAutofail attribute. Given
 	// by default we need to start in an autofailover state, we just delete the
 	// legacy attribute
