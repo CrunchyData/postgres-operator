@@ -447,7 +447,8 @@ func (r *Reconciler) reconcileInstanceSets(
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate,
-			findAvailableInstanceNames(set, instances, clusterVolumes))
+			findAvailableInstanceNames(set, instances, clusterVolumes),
+			instances.bySet[cluster.Spec.InstanceSets[i].Name])
 		if err != nil {
 			return err
 		}
@@ -456,7 +457,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	// Scaledown is called on the whole cluster in order to consider all
 	// instances. This is necessary because we have no way to determine
 	// which instance or instance set contains the primary pod.
-	err := r.scaleDownInstances(ctx, cluster)
+	err := r.scaleDownInstances(ctx, cluster, instances)
 	if err != nil {
 		return err
 	}
@@ -744,35 +745,36 @@ func (r *Reconciler) rolloutInstances(
 func (r *Reconciler) scaleDownInstances(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
+	observedInstances *observedInstances,
 ) error {
-	pods := &v1.PodList{}
-	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
-	if err == nil {
-		err = errors.WithStack(
-			r.Client.List(ctx, pods,
-				client.InNamespace(cluster.Namespace),
-				client.MatchingLabelsSelector{Selector: selector},
-			))
-	}
-	if err != nil {
-		return err
-	}
 
+	// want defines the number of replicas we want for each instance set
 	want := map[string]int{}
 	for _, set := range cluster.Spec.InstanceSets {
 		want[set.Name] = int(*set.Replicas)
 	}
 
+	// grab all pods for the cluster using the observed instances
+	pods := []v1.Pod{}
+	for instanceIndex := range observedInstances.forCluster {
+		for podIndex := range observedInstances.forCluster[instanceIndex].Pods {
+			pods = append(pods, *observedInstances.forCluster[instanceIndex].Pods[podIndex])
+		}
+	}
+
+	// namesToKeep defines the names of any instances that should be kept
 	namesToKeep := sets.NewString()
-	for _, pod := range podsToKeep(pods.Items, want) {
+	for _, pod := range podsToKeep(pods, want) {
 		namesToKeep.Insert(pod.Labels[naming.LabelInstance])
 	}
 
-	for _, pod := range pods.Items {
-		if !namesToKeep.Has(pod.Labels[naming.LabelInstance]) {
-			err := r.deleteInstance(ctx, cluster, pod.Labels[naming.LabelInstance])
-			if err != nil {
-				return err
+	for _, instance := range observedInstances.forCluster {
+		for _, pod := range instance.Pods {
+			if !namesToKeep.Has(pod.Labels[naming.LabelInstance]) {
+				err := r.deleteInstance(ctx, cluster, pod.Labels[naming.LabelInstance])
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -836,27 +838,23 @@ func (r *Reconciler) scaleUpInstances(
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
 	availableInstanceNames []string,
-) (*appsv1.StatefulSetList, error) {
+	observedInstances []*Instance,
+) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
-	instances := &appsv1.StatefulSetList{}
-	selector, err := naming.AsSelector(naming.ClusterInstanceSet(cluster.Name, set.Name))
-	if err == nil {
-		err = errors.WithStack(
-			r.Client.List(ctx, instances,
-				client.InNamespace(cluster.Namespace),
-				client.MatchingLabelsSelector{Selector: selector},
-			))
-	}
-
 	instanceNames := sets.NewString()
-	for i := range instances.Items {
-		instanceNames.Insert(instances.Items[i].Name)
+	instances := []*appsv1.StatefulSet{}
+	for i := range observedInstances {
+		// an instance might not have a runner if it was deleted
+		if observedInstances[i].Runner != nil {
+			instanceNames.Insert(observedInstances[i].Name)
+			instances = append(instances, observedInstances[i].Runner)
+		}
 	}
 
 	// While there are fewer instances than specified, generate another empty one
 	// and append it.
-	for err == nil && len(instances.Items) < int(*set.Replicas) {
+	for len(instances) < int(*set.Replicas) {
 		var span trace.Span
 		ctx, span = r.Tracer.Start(ctx, "generateInstanceName")
 		next := naming.GenerateInstance(cluster, set)
@@ -874,16 +872,16 @@ func (r *Reconciler) scaleUpInstances(
 		span.End()
 
 		instanceNames.Insert(next.Name)
-		instances.Items = append(instances.Items, appsv1.StatefulSet{ObjectMeta: next})
+		instances = append(instances, &appsv1.StatefulSet{ObjectMeta: next})
 	}
-	for i := range instances.Items {
-		if err == nil {
-			err = r.reconcileInstance(
-				ctx, cluster, set, clusterConfigMap, clusterReplicationSecret,
-				rootCA, clusterPodService, instanceServiceAccount,
-				patroniLeaderService, primaryCertificate, &instances.Items[i],
-			)
-		}
+
+	var err error
+	for i := range instances {
+		err = r.reconcileInstance(
+			ctx, cluster, set, clusterConfigMap, clusterReplicationSecret,
+			rootCA, clusterPodService, instanceServiceAccount,
+			patroniLeaderService, primaryCertificate, instances[i],
+		)
 	}
 	if err == nil {
 		log.V(1).Info("reconciled instance set", "instance-set", set.Name)
