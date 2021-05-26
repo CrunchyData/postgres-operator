@@ -995,3 +995,117 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		})
 	}
 }
+
+func TestFindAvailableInstanceNames(t *testing.T) {
+
+	testCases := []struct {
+		setName               string
+		fakeObservedInstances *observedInstances
+		fakeClusterVolumes    []v1.PersistentVolumeClaim
+		expectedInstanceNames []string
+	}{{
+		setName: "instance1",
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{}},
+			}},
+			[]appsv1.StatefulSet{{}},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes:    []v1.PersistentVolumeClaim{{}},
+		expectedInstanceNames: []string{},
+	}, {
+		setName: "instance1",
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1"}}}},
+			[]v1.Pod{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-abc"}}}},
+		),
+		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+			Name: "instance1-abc",
+			Labels: map[string]string{
+				naming.LabelInstanceSet: "instance1",
+				naming.LabelInstance:    "instance1-abc"}}}},
+		expectedInstanceNames: []string{},
+	}, {
+		setName: "instance1",
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1"}}}},
+			[]v1.Pod{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-abc"}}}},
+		),
+		fakeClusterVolumes:    []v1.PersistentVolumeClaim{},
+		expectedInstanceNames: []string{},
+	}, {
+		setName: "instance1",
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1"}}}},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+			Name: "instance1-abc",
+			Labels: map[string]string{
+				naming.LabelInstanceSet: "instance1",
+				naming.LabelInstance:    "instance1-abc"}}}},
+		expectedInstanceNames: []string{"instance1-abc"},
+	}, {
+		setName: "instance1",
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1"}}}},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes: []v1.PersistentVolumeClaim{
+			{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-abc",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-abc"}}},
+			{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-def",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-def"}}},
+		},
+		expectedInstanceNames: []string{"instance1-abc", "instance1-def"},
+	}}
+
+	for _, tc := range testCases {
+		name := fmt.Sprintf("%d instance set(s), %d volume(s): %d expected instance names(s)",
+			len(tc.fakeObservedInstances.setNames), len(tc.fakeClusterVolumes),
+			len(tc.expectedInstanceNames))
+		t.Run(name, func(t *testing.T) {
+			assert.DeepEqual(t, findAvailableInstanceNames(tc.setName, tc.fakeObservedInstances,
+				tc.fakeClusterVolumes), tc.expectedInstanceNames)
+		})
+	}
+}

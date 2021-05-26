@@ -435,17 +435,19 @@ func (r *Reconciler) reconcileInstanceSets(
 	instances *observedInstances,
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
+	clusterVolumes []v1.PersistentVolumeClaim,
 ) error {
 
 	// Range over instance sets to scale up and ensure that each set has
 	// at least the number of replicas defined in the spec. The set can
 	// have more replicas than defined
-	for i := range cluster.Spec.InstanceSets {
+	for i, set := range cluster.Spec.InstanceSets {
 		_, err := r.scaleUpInstances(
 			ctx, cluster, &cluster.Spec.InstanceSets[i],
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
-			patroniLeaderService, primaryCertificate)
+			patroniLeaderService, primaryCertificate,
+			findAvailableInstanceNames(set.Name, instances, clusterVolumes))
 		if err != nil {
 			return err
 		}
@@ -466,6 +468,39 @@ func (r *Reconciler) reconcileInstanceSets(
 		})
 
 	return err
+}
+
+// findAvailableInstanceNames finds any instance names that are available for reuse within a
+// specific instance set.  Available instance names are determined by finding any instance PVCs
+// for the instance set specified that are not currently associated with an instance, and then
+// returning the instance names associated with those PVC's.
+func findAvailableInstanceNames(setName string, observedInstances *observedInstances,
+	clusterVolumes []v1.PersistentVolumeClaim) []string {
+
+	availableInstanceNames := []string{}
+
+	// first identify any volumes for the instance set specified
+	setVolumes := []v1.PersistentVolumeClaim{}
+	for _, pvc := range clusterVolumes {
+		if pvc.GetLabels()[naming.LabelInstanceSet] == setName {
+			setVolumes = append(setVolumes, pvc)
+		}
+	}
+
+	// Determine whether or not the PVC is associated with an existing instance within the same
+	// instance set.  If not, then the instance name associated with that PVC be be reused.
+SetVolumes:
+	for _, pvc := range setVolumes {
+		pvcInstanceName := pvc.GetLabels()[naming.LabelInstance]
+		for _, instance := range observedInstances.bySet[setName] {
+			if pvcInstanceName == instance.Name {
+				continue SetVolumes
+			}
+		}
+		availableInstanceNames = append(availableInstanceNames, pvcInstanceName)
+	}
+
+	return availableInstanceNames
 }
 
 // +kubebuilder:rbac:groups="",resources=pods,verbs=delete
@@ -767,6 +802,7 @@ func (r *Reconciler) scaleUpInstances(
 	instanceServiceAccount *v1.ServiceAccount,
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
+	availableInstanceNames []string,
 ) (*appsv1.StatefulSetList, error) {
 	log := logging.FromContext(ctx)
 
@@ -791,8 +827,16 @@ func (r *Reconciler) scaleUpInstances(
 		var span trace.Span
 		ctx, span = r.Tracer.Start(ctx, "generateInstanceName")
 		next := naming.GenerateInstance(cluster, set)
-		for instanceNames.Has(next.Name) {
-			next = naming.GenerateInstance(cluster, set)
+		// if there are any available instance names (as determined by observing any PVCs for the
+		// instance set that are not currently associated with an instance, e.g. in the event the
+		// instance STS was deleted), then reuse them instead of generating a new new name
+		if len(availableInstanceNames) > 0 {
+			next.Name = availableInstanceNames[0]
+			availableInstanceNames = availableInstanceNames[1:]
+		} else {
+			for instanceNames.Has(next.Name) {
+				next = naming.GenerateInstance(cluster, set)
+			}
 		}
 		span.End()
 

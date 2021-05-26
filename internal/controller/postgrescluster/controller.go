@@ -148,6 +148,7 @@ func (r *Reconciler) Reconcile(
 		clusterConfigMap         *v1.ConfigMap
 		clusterReplicationSecret *v1.Secret
 		clusterPodService        *v1.Service
+		clusterVolumes           []v1.PersistentVolumeClaim
 		instanceServiceAccount   *v1.ServiceAccount
 		instances                *observedInstances
 		patroniLeaderService     *v1.Service
@@ -192,7 +193,7 @@ func (r *Reconciler) Reconcile(
 		"pgbackrest --stanza="+pgbackrest.DefaultStanzaName+" archive-push %p")
 
 	if err == nil {
-		_, err = r.observePersistentVolumeClaims(ctx, cluster)
+		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
 	}
 	if err == nil {
 		instances, err = r.observeInstances(ctx, cluster)
@@ -238,7 +239,7 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount, instances,
-			patroniLeaderService, primaryCertificate)
+			patroniLeaderService, primaryCertificate, clusterVolumes)
 	}
 
 	if err == nil {
