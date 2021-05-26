@@ -999,12 +999,12 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 func TestFindAvailableInstanceNames(t *testing.T) {
 
 	testCases := []struct {
-		setName               string
+		set                   v1beta1.PostgresInstanceSetSpec
 		fakeObservedInstances *observedInstances
 		fakeClusterVolumes    []v1.PersistentVolumeClaim
 		expectedInstanceNames []string
 	}{{
-		setName: "instance1",
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{}},
@@ -1015,96 +1015,164 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		fakeClusterVolumes:    []v1.PersistentVolumeClaim{{}},
 		expectedInstanceNames: []string{},
 	}, {
-		setName: "instance1",
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
 			}},
 			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1",
-				Labels: map[string]string{
-					naming.LabelInstanceSet: "instance1"}}}},
-			[]v1.Pod{{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1",
-				Labels: map[string]string{
-					naming.LabelInstanceSet: "instance1",
-					naming.LabelInstance:    "instance1-abc"}}}},
-		),
-		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
-			Name: "instance1-abc",
-			Labels: map[string]string{
-				naming.LabelInstanceSet: "instance1",
-				naming.LabelInstance:    "instance1-abc"}}}},
-		expectedInstanceNames: []string{},
-	}, {
-		setName: "instance1",
-		fakeObservedInstances: newObservedInstances(
-			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
-				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
-			}},
-			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1",
-				Labels: map[string]string{
-					naming.LabelInstanceSet: "instance1"}}}},
-			[]v1.Pod{{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1",
-				Labels: map[string]string{
-					naming.LabelInstanceSet: "instance1",
-					naming.LabelInstance:    "instance1-abc"}}}},
-		),
-		fakeClusterVolumes:    []v1.PersistentVolumeClaim{},
-		expectedInstanceNames: []string{},
-	}, {
-		setName: "instance1",
-		fakeObservedInstances: newObservedInstances(
-			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
-				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
-			}},
-			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1",
+				Name: "instance1-abc",
 				Labels: map[string]string{
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]v1.Pod{},
 		),
 		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
-			Name: "instance1-abc",
+			Name: "instance1-abc-def",
 			Labels: map[string]string{
+				naming.LabelRole:        naming.RolePostgresData,
 				naming.LabelInstanceSet: "instance1",
 				naming.LabelInstance:    "instance1-abc"}}}},
-		expectedInstanceNames: []string{"instance1-abc"},
+		expectedInstanceNames: []string{},
 	}, {
-		setName: "instance1",
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
 			}},
 			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1",
+				Name: "instance1-abc",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1"}}}},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes:    []v1.PersistentVolumeClaim{},
+		expectedInstanceNames: []string{},
+	}, {
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-abc",
 				Labels: map[string]string{
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]v1.Pod{},
 		),
 		fakeClusterVolumes: []v1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1-abc",
+				Name: "instance1-abc-def",
 				Labels: map[string]string{
+					naming.LabelRole:        naming.RolePostgresData,
 					naming.LabelInstanceSet: "instance1",
 					naming.LabelInstance:    "instance1-abc"}}},
 			{ObjectMeta: metav1.ObjectMeta{
-				Name: "instance1-def",
+				Name: "instance1-abc-efg",
 				Labels: map[string]string{
+					naming.LabelRole:        naming.RolePostgresData,
 					naming.LabelInstanceSet: "instance1",
 					naming.LabelInstance:    "instance1-def"}}},
 		},
-		expectedInstanceNames: []string{"instance1-abc", "instance1-def"},
+		expectedInstanceNames: []string{"instance1-def"},
+	}, {
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-abc",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1"}}}},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+			Name: "instance1-abc-def",
+			Labels: map[string]string{
+				naming.LabelRole:        naming.RolePostgresData,
+				naming.LabelInstanceSet: "instance1",
+				naming.LabelInstance:    "instance1-def"}}}},
+		expectedInstanceNames: []string{"instance1-def"},
+	}, {
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
+			WALVolumeClaimSpec: &v1.PersistentVolumeClaimSpec{}},
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-abc",
+				Labels: map[string]string{
+					naming.LabelInstanceSet: "instance1"}}}},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes: []v1.PersistentVolumeClaim{
+			{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-abc-def",
+				Labels: map[string]string{
+					naming.LabelRole:        naming.RolePostgresData,
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-abc"}}},
+			{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-abc-def",
+				Labels: map[string]string{
+					naming.LabelRole:        naming.RolePostgresWAL,
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-abc"}}}},
+		expectedInstanceNames: []string{},
+	}, {
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
+			WALVolumeClaimSpec: &v1.PersistentVolumeClaimSpec{}},
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes: []v1.PersistentVolumeClaim{
+			{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-def-ghi",
+				Labels: map[string]string{
+					naming.LabelRole:        naming.RolePostgresData,
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-def"}}},
+			{ObjectMeta: metav1.ObjectMeta{
+				Name: "instance1-def-jkl",
+				Labels: map[string]string{
+					naming.LabelRole:        naming.RolePostgresWAL,
+					naming.LabelInstanceSet: "instance1",
+					naming.LabelInstance:    "instance1-def"}}}},
+		expectedInstanceNames: []string{"instance1-def"},
+	}, {
+		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
+			WALVolumeClaimSpec: &v1.PersistentVolumeClaimSpec{}},
+		fakeObservedInstances: newObservedInstances(
+			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			}},
+			[]appsv1.StatefulSet{},
+			[]v1.Pod{},
+		),
+		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+			Name: "instance1-def-ghi",
+			Labels: map[string]string{
+				naming.LabelRole:        naming.RolePostgresData,
+				naming.LabelInstanceSet: "instance1",
+				naming.LabelInstance:    "instance1-def"}}}},
+		expectedInstanceNames: []string{},
 	}}
 
 	for _, tc := range testCases {
-		name := fmt.Sprintf("%d instance set(s), %d volume(s): %d expected instance names(s)",
-			len(tc.fakeObservedInstances.setNames), len(tc.fakeClusterVolumes),
+		var walEnabled string
+		if tc.set.WALVolumeClaimSpec != nil {
+			walEnabled = ", WAL volume enabled"
+		}
+		name := fmt.Sprintf("%d set(s), %d volume(s)%s: expect %d instance names(s)",
+			len(tc.fakeObservedInstances.setNames), len(tc.fakeClusterVolumes), walEnabled,
 			len(tc.expectedInstanceNames))
 		t.Run(name, func(t *testing.T) {
-			assert.DeepEqual(t, findAvailableInstanceNames(tc.setName, tc.fakeObservedInstances,
+			assert.DeepEqual(t, findAvailableInstanceNames(tc.set, tc.fakeObservedInstances,
 				tc.fakeClusterVolumes), tc.expectedInstanceNames)
 		})
 	}

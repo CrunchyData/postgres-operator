@@ -447,7 +447,7 @@ func (r *Reconciler) reconcileInstanceSets(
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate,
-			findAvailableInstanceNames(set.Name, instances, clusterVolumes))
+			findAvailableInstanceNames(set, instances, clusterVolumes))
 		if err != nil {
 			return err
 		}
@@ -474,17 +474,48 @@ func (r *Reconciler) reconcileInstanceSets(
 // specific instance set.  Available instance names are determined by finding any instance PVCs
 // for the instance set specified that are not currently associated with an instance, and then
 // returning the instance names associated with those PVC's.
-func findAvailableInstanceNames(setName string, observedInstances *observedInstances,
-	clusterVolumes []v1.PersistentVolumeClaim) []string {
+func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
+	observedInstances *observedInstances, clusterVolumes []v1.PersistentVolumeClaim) []string {
 
 	availableInstanceNames := []string{}
 
-	// first identify any volumes for the instance set specified
+	// first identify any PGDATA volumes for the instance set specified
 	setVolumes := []v1.PersistentVolumeClaim{}
 	for _, pvc := range clusterVolumes {
-		if pvc.GetLabels()[naming.LabelInstanceSet] == setName {
+		// ignore PGDATA PVCs that are terminating
+		if pvc.GetDeletionTimestamp() != nil {
+			continue
+		}
+		pvcSet := pvc.GetLabels()[naming.LabelInstanceSet]
+		pvcRole := pvc.GetLabels()[naming.LabelRole]
+		if pvcRole == naming.RolePostgresData && pvcSet == set.Name {
 			setVolumes = append(setVolumes, pvc)
 		}
+	}
+
+	// If there is a WAL volume defined for the instance set, then a matching WAL volume
+	// must also be found in order for the volumes to be reused.  Therefore, filter out
+	// any available PGDATA volumes for the instance set that have no corresponding WAL
+	// volumes (which means new PVCs will simply be reconciled instead).
+	if set.WALVolumeClaimSpec != nil {
+		setVolumesWithWAL := []v1.PersistentVolumeClaim{}
+		for _, setVol := range setVolumes {
+			setVolInstance := setVol.GetLabels()[naming.LabelInstance]
+			for _, pvc := range clusterVolumes {
+				// ignore WAL PVCs that are terminating
+				if pvc.GetDeletionTimestamp() != nil {
+					continue
+				}
+				pvcSet := pvc.GetLabels()[naming.LabelInstanceSet]
+				pvcInstance := pvc.GetLabels()[naming.LabelInstance]
+				pvcRole := pvc.GetLabels()[naming.LabelRole]
+				if pvcRole == naming.RolePostgresWAL && pvcSet == set.Name &&
+					pvcInstance == setVolInstance {
+					setVolumesWithWAL = append(setVolumesWithWAL, pvc)
+				}
+			}
+		}
+		setVolumes = setVolumesWithWAL
 	}
 
 	// Determine whether or not the PVC is associated with an existing instance within the same
@@ -492,8 +523,10 @@ func findAvailableInstanceNames(setName string, observedInstances *observedInsta
 SetVolumes:
 	for _, pvc := range setVolumes {
 		pvcInstanceName := pvc.GetLabels()[naming.LabelInstance]
-		for _, instance := range observedInstances.bySet[setName] {
-			if pvcInstanceName == instance.Name {
+		for _, instance := range observedInstances.bySet[set.Name] {
+			// if there is an STS for the instance, and if the instance's name matches the instance
+			// name found on the PVC, then the instance name is not available for use
+			if instance.Runner != nil && pvcInstanceName == instance.Name {
 				continue SetVolumes
 			}
 		}
