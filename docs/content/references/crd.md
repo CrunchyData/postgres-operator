@@ -2386,7 +2386,7 @@ Defines a dedicated repository host configuration
     <tbody><tr>
         <td><b><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity">affinity</a></b></td>
         <td>object</td>
-        <td>Scheduling constraints of a Dedicated repo host pod. Changing this value causes Instance to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
+        <td>Scheduling constraints of the Dedicated repo host pod. Changing this value causes repo host to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedresources">resources</a></b></td>
@@ -2402,7 +2402,7 @@ Defines a dedicated repository host configuration
 
 
 
-Scheduling constraints of a Dedicated repo host pod. Changing this value causes Instance to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
+Scheduling constraints of the Dedicated repo host pod. Changing this value causes repo host to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 
 <table>
     <thead>
@@ -3856,12 +3856,17 @@ A label selector requirement is a selector that contains values, a key, and an o
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexresources">resources</a></b></td>
         <td>object</td>
-        <td>ResourceRequirements describes the compute resource requirements.</td>
+        <td>Compute resources of a PostgreSQL container.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">walVolumeClaimSpec</a></b></td>
+        <td>object</td>
+        <td>Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More info: https://www.postgresql.org/docs/current/wal.html</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexvolumeclaimspec">volumeClaimSpec</a></b></td>
         <td>object</td>
-        <td>Defines a PersistentVolumeClaim spec that is utilized to create and/or bind PGDATA volumes for each PostgreSQL instance</td>
+        <td>Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes</td>
         <td>true</td>
       </tr></tbody>
 </table>
@@ -4742,7 +4747,7 @@ Metadata contains metadata for PostgresCluster resources
 
 
 
-ResourceRequirements describes the compute resource requirements.
+Compute resources of a PostgreSQL container.
 
 <table>
     <thead>
@@ -4767,12 +4772,197 @@ ResourceRequirements describes the compute resource requirements.
 </table>
 
 
+### PostgresCluster.spec.instances[index].walVolumeClaimSpec
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
+
+
+
+Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More info: https://www.postgresql.org/docs/current/wal.html
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>accessModes</b></td>
+        <td>[]string</td>
+        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecdatasource">dataSource</a></b></td>
+        <td>object</td>
+        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecselector">selector</a></b></td>
+        <td>object</td>
+        <td>A label query over volumes to consider for binding.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClassName</b></td>
+        <td>string</td>
+        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeMode</b></td>
+        <td>string</td>
+        <td>volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### PostgresCluster.spec.instances[index].walVolumeClaimSpec.dataSource
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspec)</sup></sup>
+
+
+
+This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### PostgresCluster.spec.instances[index].walVolumeClaimSpec.resources
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspec)</sup></sup>
+
+
+
+Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### PostgresCluster.spec.instances[index].walVolumeClaimSpec.selector
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspec)</sup></sup>
+
+
+
+A label query over volumes to consider for binding.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### PostgresCluster.spec.instances[index].walVolumeClaimSpec.selector.matchExpressions[index]
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspecselector)</sup></sup>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 ### PostgresCluster.spec.instances[index].volumeClaimSpec
 <sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
 
 
 
-Defines a PersistentVolumeClaim spec that is utilized to create and/or bind PGDATA volumes for each PostgreSQL instance
+Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 
 <table>
     <thead>
