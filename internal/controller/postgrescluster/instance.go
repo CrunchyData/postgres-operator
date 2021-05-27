@@ -86,6 +86,24 @@ func (i Instance) IsReady() (ready bool, known bool) {
 	return false, false
 }
 
+// IsRunning returns whether or not container is running.
+func (i Instance) IsRunning(container string) (running bool, known bool) {
+	if len(i.Pods) == 1 {
+		for _, status := range i.Pods[0].Status.ContainerStatuses {
+			if status.Name == container {
+				return status.State.Running != nil, true
+			}
+		}
+		for _, status := range i.Pods[0].Status.InitContainerStatuses {
+			if status.Name == container {
+				return status.State.Running != nil, true
+			}
+		}
+	}
+
+	return false, false
+}
+
 // IsTerminating returns whether or not this instance is in the process of not
 // running.
 func (i Instance) IsTerminating() (terminating bool, known bool) {

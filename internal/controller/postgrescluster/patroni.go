@@ -102,13 +102,36 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 // +kubebuilder:rbac:resources=pods,verbs=get;list
 
 func (r *Reconciler) reconcilePatroniDynamicConfiguration(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, instances *observedInstances,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) error {
 	if !patroni.ClusterBootstrapped(cluster) {
 		// Patroni has not yet bootstrapped. Dynamic configuration happens through
 		// configuration files during bootstrap, so there's nothing to do here.
 		return nil
+	}
+
+	var pod *v1.Pod
+	for _, instance := range instances.forCluster {
+		if terminating, known := instance.IsTerminating(); !terminating && known {
+			running, known := instance.IsRunning(naming.ContainerDatabase)
+
+			if running && known && len(instance.Pods) > 0 {
+				pod = instance.Pods[0]
+				break
+			}
+		}
+	}
+	if pod == nil {
+		// There are no running Patroni containers; nothing to do.
+		return nil
+	}
+
+	// NOTE(cbandy): Despite the guards above, calling PodExec may still fail
+	// due to a missing or stopped container.
+
+	exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
 	// Deserialize the schemaless field. There will be no error because the
@@ -120,37 +143,8 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 
 	configuration = patroni.DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters)
 
-	pods := &v1.PodList{}
-	instances, err := naming.AsSelector(naming.ClusterPatronis(cluster))
-	if err == nil {
-		err = errors.WithStack(
-			r.Client.List(ctx, pods,
-				client.InNamespace(cluster.Namespace),
-				client.MatchingLabelsSelector{Selector: instances},
-			))
-	}
-
-	var pod *v1.Pod
-	if err == nil {
-		for i := range pods.Items {
-			if pods.Items[i].Status.Phase == v1.PodRunning {
-				pod = &pods.Items[i]
-				break
-			}
-		}
-		if pod == nil {
-			err = errors.New("could not find a running pod")
-		}
-	}
-	if err == nil {
-		exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
-			return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
-		}
-		err = errors.WithStack(
-			patroni.Executor(exec).ReplaceConfiguration(ctx, configuration))
-	}
-
-	return err
+	return errors.WithStack(
+		patroni.Executor(exec).ReplaceConfiguration(ctx, configuration))
 }
 
 // +kubebuilder:rbac:groups="",resources=services,verbs=create;patch

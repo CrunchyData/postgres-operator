@@ -45,6 +45,59 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestInstanceIsRunning(t *testing.T) {
+	var instance Instance
+	var known, running bool
+
+	// No pods
+	running, known = instance.IsRunning("any")
+	assert.Assert(t, !known)
+	assert.Assert(t, !running)
+
+	// No statuses
+	instance.Pods = []*corev1.Pod{{}}
+	running, known = instance.IsRunning("any")
+	assert.Assert(t, !known)
+	assert.Assert(t, !running)
+
+	// No states
+	instance.Pods[0].Status.ContainerStatuses = []corev1.ContainerStatus{{
+		Name: "c1",
+	}}
+	running, known = instance.IsRunning("c1")
+	assert.Assert(t, known)
+	assert.Assert(t, !running)
+
+	running, known = instance.IsRunning("missing")
+	assert.Assert(t, !known)
+	assert.Assert(t, !running)
+
+	// Running state
+	// - https://releases.k8s.io/v1.21.0/staging/src/k8s.io/kubectl/pkg/cmd/debug/debug.go#L668
+	instance.Pods[0].Status.ContainerStatuses[0].State.Running =
+		new(corev1.ContainerStateRunning)
+
+	running, known = instance.IsRunning("c1")
+	assert.Assert(t, known)
+	assert.Assert(t, running)
+
+	running, known = instance.IsRunning("missing")
+	assert.Assert(t, !known)
+	assert.Assert(t, !running)
+
+	// Init containers
+	instance.Pods[0].Status.InitContainerStatuses = []corev1.ContainerStatus{{
+		Name: "i1",
+		State: corev1.ContainerState{
+			Running: new(corev1.ContainerStateRunning),
+		},
+	}}
+
+	running, known = instance.IsRunning("i1")
+	assert.Assert(t, known)
+	assert.Assert(t, running)
+}
+
 func TestNewObservedInstances(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		cluster := new(v1beta1.PostgresCluster)

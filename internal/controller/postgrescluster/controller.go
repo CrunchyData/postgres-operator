@@ -232,7 +232,7 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
 	}
 	if err == nil {
-		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster, pgHBAs, pgParameters)
+		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster, instances, pgHBAs, pgParameters)
 	}
 
 	if err == nil {
