@@ -22,10 +22,10 @@ https://access.crunchydata.com/documentation/postgres-operator/latest/custom-res
 
 ## Setup
 
-If you are running Postgres Operator 4.5.2 or later, you can skip the below
+If you are running Postgres Operator 4.5.3 or later, you can skip the below
 step.
 
-### Before 4.5.2
+### Before 4.5.3
 
 ```
 cd postgres-operator/examples/helm/create-cluster
