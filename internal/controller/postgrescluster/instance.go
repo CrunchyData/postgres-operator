@@ -471,6 +471,11 @@ func (r *Reconciler) reconcileInstanceSets(
 	return err
 }
 
+// TODO (andrewlecuyer): If relevant instance volume (PVC) information is captured for each
+// Instance contained within observedInstances, this function might no longer be necessary.
+// Instead, available names could be derived by looking at observed Instances that have data
+// volumes, but no associated runner.
+
 // findAvailableInstanceNames finds any instance names that are available for reuse within a
 // specific instance set.  Available instance names are determined by finding any instance PVCs
 // for the instance set specified that are not currently associated with an instance, and then
@@ -520,18 +525,13 @@ func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
 	}
 
 	// Determine whether or not the PVC is associated with an existing instance within the same
-	// instance set.  If not, then the instance name associated with that PVC be be reused.
-SetVolumes:
+	// instance set.  If not, then the instance name associated with that PVC can be be reused.
 	for _, pvc := range setVolumes {
 		pvcInstanceName := pvc.GetLabels()[naming.LabelInstance]
-		for _, instance := range observedInstances.bySet[set.Name] {
-			// if there is an STS for the instance, and if the instance's name matches the instance
-			// name found on the PVC, then the instance name is not available for use
-			if instance.Runner != nil && pvcInstanceName == instance.Name {
-				continue SetVolumes
-			}
+		instance := observedInstances.byName[pvcInstanceName]
+		if instance == nil || instance.Runner == nil {
+			availableInstanceNames = append(availableInstanceNames, pvcInstanceName)
 		}
-		availableInstanceNames = append(availableInstanceNames, pvcInstanceName)
 	}
 
 	return availableInstanceNames
@@ -860,7 +860,7 @@ func (r *Reconciler) scaleUpInstances(
 		next := naming.GenerateInstance(cluster, set)
 		// if there are any available instance names (as determined by observing any PVCs for the
 		// instance set that are not currently associated with an instance, e.g. in the event the
-		// instance STS was deleted), then reuse them instead of generating a new new name
+		// instance STS was deleted), then reuse them instead of generating a new name
 		if len(availableInstanceNames) > 0 {
 			next.Name = availableInstanceNames[0]
 			availableInstanceNames = availableInstanceNames[1:]
