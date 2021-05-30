@@ -5,6 +5,7 @@ metadata:
   namespace: pgo
   labels:
     app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -12,6 +13,7 @@ metadata:
   name: pgo-metrics-deployer-cr
   labels:
     app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
 rules:
   - apiGroups:
       - ''
@@ -83,6 +85,7 @@ metadata:
   namespace: pgo
   labels:
     app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
 data:
   values.yaml: |-
     # =====================
@@ -137,6 +140,7 @@ metadata:
   name: pgo-metrics-deployer-crb
   labels:
     app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -153,6 +157,7 @@ metadata:
   namespace: pgo
   labels:
     app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
 spec:
   backoffLimit: 0
   template:
@@ -160,6 +165,7 @@ spec:
       name: pgo-metrics-deploy
       labels:
         app.kubernetes.io/name: postgres-operator-monitoring
+        vendor: crunchydata
     spec:
       serviceAccountName: pgo-metrics-deployer-sa
       restartPolicy: Never

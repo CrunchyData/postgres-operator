@@ -215,7 +215,8 @@
           command: |
             {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \
               --clusterrole cluster-admin \
-              --serviceaccount "{{ pgo_operator_namespace }}:postgres-operator"
+              --serviceaccount "{{ pgo_operator_namespace }}:postgres-operator" && \
+            {{ kubectl_or_oc }} label clusterrolebinding pgo-cluster-admin vendor=crunchydata
           when: pgo_cluster_admin_result.rc == 1
 
 
