@@ -3,7 +3,10 @@
     "kind": "ServiceAccount",
     "metadata": {
         "name": "pgo-default",
-        "namespace": "{{.TargetNamespace}}"
+        "namespace": "{{.TargetNamespace}}",
+        "labels": {
+          "vendor": "crunchydata"
+        }
     },
     "automountServiceAccountToken": false
 }

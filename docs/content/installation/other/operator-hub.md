@@ -25,6 +25,8 @@ If you plan to use AWS S3 to store backups and would like to have the keys avail
 kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-config \
   --from-literal=aws-s3-key="<your-aws-s3-key>" \
   --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
+kubectl -n "$PGO_OPERATOR_NAMESPACE" label secret pgo-backrest-repo-config \
+  vendor=crunchydata
 ```
 
 ### Certificates (optional)

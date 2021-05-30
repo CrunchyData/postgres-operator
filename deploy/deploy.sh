@@ -53,6 +53,8 @@ then
 		--from-literal=aws-s3-key="${pgbackrest_aws_s3_key}" \
 		--from-literal=aws-s3-key-secret="${pgbackrest_aws_s3_key_secret}" \
 		--from-literal=gcs-key="${pgbackrest_gcs_key}"
+  $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE label secret pgo-backrest-repo-config \
+		vendor=crunchydata
 fi
 
 #
@@ -65,11 +67,12 @@ then
 fi
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret tls pgo.tls --key=${PGOROOT}/conf/postgres-operator/server.key --cert=${PGOROOT}/conf/postgres-operator/server.crt
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE label secret pgo.tls vendor=crunchydata
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create configmap pgo-config \
 	--from-file=${PGOROOT}/conf/postgres-operator/pgo.yaml \
 	--from-file=${PGO_CONF_DIR}/pgo-configs
-
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE label configmap pgo-config vendor=crunchydata
 
 #
 # check if custom port value is set, otherwise set default values

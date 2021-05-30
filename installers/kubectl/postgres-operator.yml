@@ -3,11 +3,15 @@ kind: ServiceAccount
 metadata:
   name: pgo-deployer-sa
   namespace: pgo
+  labels:
+    vendor: crunchydata
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pgo-deployer-cr
+  labels:
+    vendor: crunchydata
 rules:
   - apiGroups:
       - ''
@@ -34,6 +38,7 @@ rules:
       - get
       - create
       - delete
+      - patch
   - apiGroups:
       - ''
     resources:
@@ -45,6 +50,7 @@ rules:
       - create
       - delete
       - list
+      - patch
   - apiGroups:
       - ''
     resources:
@@ -118,6 +124,8 @@ kind: ConfigMap
 metadata:
   name: pgo-deployer-cm
   namespace: pgo
+  labels:
+    vendor: crunchydata
 data:
   values.yaml: |-
     # =====================
@@ -249,6 +257,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: pgo-deployer-crb
+  labels:
+    vendor: crunchydata
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -263,11 +273,15 @@ kind: Job
 metadata:
   name: pgo-deploy
   namespace: pgo
+  labels:
+    vendor: crunchydata
 spec:
   backoffLimit: 0
   template:
     metadata:
       name: pgo-deploy
+      labels:
+        vendor: crunchydata
     spec:
       serviceAccountName: pgo-deployer-sa
       restartPolicy: Never
