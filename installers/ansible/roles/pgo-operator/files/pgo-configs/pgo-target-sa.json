@@ -3,6 +3,9 @@
     "kind": "ServiceAccount",
     "metadata": {
         "name": "pgo-target",
-        "namespace": "{{.TargetNamespace}}"
+        "namespace": "{{.TargetNamespace}}",
+        "labels": {
+          "vendor": "crunchydata"
+        }
     }
 }

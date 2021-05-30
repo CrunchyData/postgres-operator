@@ -55,6 +55,8 @@ kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-con
   --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/aws-s3-ca.crt \
   --from-literal=aws-s3-key="<your-aws-s3-key>" \
   --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
+kubectl -n "$PGO_OPERATOR_NAMESPACE" label secret pgo-backrest-repo-config \
+  vendor=crunchydata
 ```
 
 ### Certificates (optional)
