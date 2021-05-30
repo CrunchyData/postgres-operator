@@ -757,6 +757,9 @@ func initialize(clientset kubernetes.Interface, namespace string) (*v1.ConfigMap
 	cm := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: CustomConfigMapName,
+			Labels: map[string]string{
+				LABEL_VENDOR: LABEL_CRUNCHY,
+			},
 		},
 		Data: map[string]string{},
 	}

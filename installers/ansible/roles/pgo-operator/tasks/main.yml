@@ -215,7 +215,8 @@
           command: |
             {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \
               --clusterrole cluster-admin \
-              --serviceaccount "{{ pgo_operator_namespace }}:postgres-operator"
+              --serviceaccount "{{ pgo_operator_namespace }}:postgres-operator" && \
+            {{ kubectl_or_oc }} label clusterrolebinding pgo-cluster-admin vendor=crunchydata
           when: pgo_cluster_admin_result.rc == 1
 
 
@@ -270,6 +271,15 @@
             - (backrest_aws_s3_key | default('') != '') or
               (backrest_aws_s3_secret | default('') != '')
 
+        - name: Label PGO BackRest Repo Secret
+          command: |
+            {{ kubectl_or_oc }} label secret generic -n {{ pgo_operator_namespace }} \
+              pgo-backrest-repo-config vendor=crunchydata
+          when:
+            - pgo_backrest_repo_config_result.rc == 1
+            - (backrest_aws_s3_key | default('') != '') or
+              (backrest_aws_s3_secret | default('') != '')
+
     - name: PGO ConfigMap
       tags:
         - install
@@ -292,6 +302,12 @@
               --from-file=pgo.yaml='{{ output_dir }}/pgo.yaml' \
               --from-file='{{ role_path }}/files/pgo-configs' \
               -n {{ pgo_operator_namespace }}
+          when: pgo_config_result.rc == 1
+
+        - name: Label PGO ConfigMap
+          command: |
+            {{ kubectl_or_oc }} -n {{ pgo_operator_namespace }} label configmap \
+              pgo-config vendor=crunchydata
           when: pgo_config_result.rc == 1
 
     - name: PGO Service

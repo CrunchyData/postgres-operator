@@ -3,6 +3,9 @@
     "kind": "ServiceAccount",
     "metadata": {
         "name": "pgo-backrest",
-        "namespace": "{{.TargetNamespace}}"
+        "namespace": "{{.TargetNamespace}}",
+        "labels": {
+          "vendor": "crunchydata"
+        }
     }
 }

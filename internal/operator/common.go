@@ -514,6 +514,9 @@ func initializeOperatorBackrestSecret(clientset kubernetes.Interface, namespace 
 		secret = &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: config.SecretOperatorBackrestRepoConfig,
+				Labels: map[string]string{
+					config.LABEL_VENDOR: config.LABEL_CRUNCHY,
+				},
 			},
 			Data: map[string][]byte{},
 		}

@@ -4,6 +4,8 @@ kind: RoleBinding
 metadata:
   name: pgo-role
   namespace: "$PGO_OPERATOR_NAMESPACE"
+  labels:
+    vendor: crunchydata
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
