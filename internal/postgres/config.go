@@ -63,8 +63,8 @@ func DataDirectory(cluster *v1beta1.PostgresCluster) string {
 	return fmt.Sprintf("%s/pg%d", dataMountPath, cluster.Spec.PostgresVersion)
 }
 
-// WALDirectory returns the absolute path to the directory where instance stores
-// its WAL files.
+// WALDirectory returns the absolute path to the directory where an instance
+// stores its WAL files.
 // - https://www.postgresql.org/docs/current/wal.html
 func WALDirectory(
 	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
@@ -158,7 +158,7 @@ func startupCommand(
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/initdb/initdb.c;hb=REL_13_0#l2718
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_basebackup/pg_basebackup.c;hb=REL_13_0#l2621
 		`safelink "${pgwal_directory}" "${postgres_data_directory}/pg_wal"`,
-		`results 'wal directory' "$(readlink -f "${postgres_data_directory}/pg_wal")"`,
+		`results 'wal directory' "$(realpath "${postgres_data_directory}/pg_wal")"`,
 	}, "\n")
 
 	return append([]string{"bash", "-ceu", "--", script, "startup"}, args...)

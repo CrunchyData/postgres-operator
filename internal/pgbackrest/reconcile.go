@@ -224,7 +224,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	return nil
 }
 
-// ReplicaCreateCommand returns the command that can initialize instance from
+// ReplicaCreateCommand returns the command that can initialize an instance from
 // one of cluster's repositories. It returns nil when no repository is available.
 func ReplicaCreateCommand(
 	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,

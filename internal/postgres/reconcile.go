@@ -195,6 +195,8 @@ func InstancePod(ctx context.Context,
 
 	outInstancePod.Volumes = []corev1.Volume{dataVolume}
 
+	// Mount the WAL PVC whenever it exists. The startup command will move WAL
+	// files to or from this volume according to inInstanceSpec.
 	if inWALVolume != nil {
 		walVolumeMount := WALVolumeMount()
 		walVolume := corev1.Volume{

@@ -24,6 +24,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -42,7 +43,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-	"github.com/pkg/errors"
 )
 
 func TestInstanceIsRunning(t *testing.T) {
@@ -423,57 +423,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestReconcilePostgresDataVolume(t *testing.T) {
-	ctx := context.Background()
-
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() {
-		teardownTestEnv(t, tEnv)
-	})
-
-	r := &Reconciler{
-		Client: tClient,
-		Tracer: otel.Tracer(ControllerName),
-		Owner:  ControllerName,
-	}
-
-	storageClassName := "storage-class1"
-	set := &v1beta1.PostgresInstanceSetSpec{
-		Name: "instance2",
-		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-			Resources: v1.ResourceRequirements{
-				Requests: map[v1.ResourceName]resource.Quantity{
-					v1.ResourceStorage: resource.MustParse("256Mi"),
-				},
-			},
-			StorageClassName: &storageClassName,
-		},
-	}
-
-	ns := &v1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
-	cluster := testCluster()
-	cluster.Namespace = ns.Name
-
-	assert.NilError(t, tClient.Create(ctx, cluster))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
-
-	instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, set)}
-
-	pvc, err := r.reconcilePostgresDataVolume(ctx, cluster, set, instance)
-	assert.NilError(t, err)
-
-	assert.Equal(t, pvc.Labels[naming.LabelCluster], cluster.Name)
-	assert.Equal(t, pvc.Labels[naming.LabelInstance], instance.Name)
-	assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], set.Name)
-	assert.Equal(t, pvc.Labels[naming.LabelRole], "pgdata")
 }
 
 func TestPodsToKeep(t *testing.T) {

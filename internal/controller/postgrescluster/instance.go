@@ -461,12 +461,11 @@ func (r *Reconciler) reconcileInstanceSets(
 	// have more replicas than defined
 	for i, set := range cluster.Spec.InstanceSets {
 		_, err := r.scaleUpInstances(
-			ctx, cluster, &cluster.Spec.InstanceSets[i],
+			ctx, cluster, instances, &cluster.Spec.InstanceSets[i],
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate,
-			findAvailableInstanceNames(set, instances, clusterVolumes),
-			instances.bySet[cluster.Spec.InstanceSets[i].Name])
+			findAvailableInstanceNames(set, instances, clusterVolumes))
 		if err != nil {
 			return err
 		}
@@ -847,6 +846,7 @@ func podsToKeep(instances []v1.Pod, want map[string]int) []v1.Pod {
 func (r *Reconciler) scaleUpInstances(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
+	observed *observedInstances,
 	set *v1beta1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
 	clusterReplicationSecret *v1.Secret,
@@ -856,17 +856,17 @@ func (r *Reconciler) scaleUpInstances(
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
 	availableInstanceNames []string,
-	observedInstances []*Instance,
 ) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
 	instanceNames := sets.NewString()
 	instances := []*appsv1.StatefulSet{}
-	for i := range observedInstances {
+	for i := range observed.bySet[set.Name] {
+		oi := observed.bySet[set.Name][i]
 		// an instance might not have a runner if it was deleted
-		if observedInstances[i].Runner != nil {
-			instanceNames.Insert(observedInstances[i].Name)
-			instances = append(instances, observedInstances[i].Runner)
+		if oi.Runner != nil {
+			instanceNames.Insert(oi.Name)
+			instances = append(instances, oi.Runner)
 		}
 	}
 
@@ -896,7 +896,8 @@ func (r *Reconciler) scaleUpInstances(
 	var err error
 	for i := range instances {
 		err = r.reconcileInstance(
-			ctx, cluster, set, clusterConfigMap, clusterReplicationSecret,
+			ctx, cluster, observed.byName[instances[i].Name], set,
+			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate, instances[i],
 		)
@@ -915,6 +916,7 @@ func (r *Reconciler) scaleUpInstances(
 func (r *Reconciler) reconcileInstance(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
+	observed *Instance,
 	spec *v1beta1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
 	clusterReplicationSecret *v1.Secret,
@@ -958,7 +960,7 @@ func (r *Reconciler) reconcileInstance(
 		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance)
 	}
 	if err == nil {
-		postgresWALVolume, err = r.reconcilePostgresWALVolume(ctx, cluster, spec, instance)
+		postgresWALVolume, err = r.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
 	}
 	if err == nil {
 		postgres.InstancePod(
@@ -1122,43 +1124,6 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 	}
 
 	return nil
-}
-
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
-
-// reconcilePostgresDataVolume writes the PersistentVolumeClaim for instance's
-// PostgreSQL data volume.
-func (r *Reconciler) reconcilePostgresDataVolume(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	spec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
-) (*corev1.PersistentVolumeClaim, error) {
-	pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
-	pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
-
-	err := errors.WithStack(r.setControllerReference(cluster, pvc))
-
-	pvc.Annotations = naming.Merge(
-		cluster.Spec.Metadata.GetAnnotationsOrNil(),
-		spec.Metadata.GetAnnotationsOrNil())
-
-	pvc.Labels = naming.Merge(
-		cluster.Spec.Metadata.GetLabelsOrNil(),
-		spec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelCluster:     cluster.GetName(),
-			naming.LabelInstanceSet: spec.Name,
-			naming.LabelInstance:    instance.GetName(),
-			naming.LabelRole:        naming.RolePostgresData,
-		})
-
-	pvc.Spec = spec.VolumeClaimSpec
-
-	if err == nil {
-		err = r.handlePersistentVolumeClaimError(cluster,
-			errors.WithStack(r.apply(ctx, pvc)))
-	}
-
-	return pvc, err
 }
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch

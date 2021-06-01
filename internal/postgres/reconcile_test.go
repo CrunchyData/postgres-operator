@@ -259,7 +259,7 @@ initContainers:
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
     [ "${postgres_data_version}" = "${expected_major_version}" ]
     safelink "${pgwal_directory}" "${postgres_data_directory}/pg_wal"
-    results 'wal directory' "$(readlink -f "${postgres_data_directory}/pg_wal")"
+    results 'wal directory' "$(realpath "${postgres_data_directory}/pg_wal")"
   - startup
   - "11"
   - /pgdata/pg11_wal

@@ -20,10 +20,10 @@ package postgrescluster
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+	"gotest.tools/v3/assert/cmp"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +31,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/yaml"
+
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var (
@@ -38,6 +42,15 @@ var (
 	CrunchyPGBackRestImage = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0"
 	CrunchyPGBouncerImage  = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0"
 )
+
+// marshalMatches converts actual to YAML and compares that to expected.
+func marshalMatches(actual interface{}, expected string) cmp.Comparison {
+	b, err := yaml.Marshal(actual)
+	if err != nil {
+		return func() cmp.Result { return cmp.ResultFromError(err) }
+	}
+	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
+}
 
 func testVolumeClaimSpec() v1.PersistentVolumeClaimSpec {
 	// Defines a volume claim spec that can be used to create instances
