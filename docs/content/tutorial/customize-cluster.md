@@ -126,7 +126,7 @@ pgo create cluster hippo \
 
 ## Create a High Availability PostgreSQL Cluster
 
-[High availability]({{< relref "architecture/high-availability/_index.md" >}}) allows you to deploy PostgreSQL clusters with redundancy that allows them to be accessible by your applications even if there is a downtime event to your primary instance. The PostgreSQL clusters use the distributed consensus storage system that comes with Kubernetes so that availability is tied to that of your Kubenretes clusters. For an in-depth discussion of the topic, please read the [high availability]({{< relref "architecture/high-availability/_index.md" >}}) section of the documentation.
+[High availability]({{< relref "architecture/high-availability/_index.md" >}}) allows you to deploy PostgreSQL clusters with redundancy that allows them to be accessible by your applications even if there is a downtime event to your primary instance. The PostgreSQL clusters use the distributed consensus storage system that comes with Kubernetes so that availability is tied to that of your Kubernetes clusters. For an in-depth discussion of the topic, please read the [high availability]({{< relref "architecture/high-availability/_index.md" >}}) section of the documentation.
 
 To create a high availability PostgreSQL cluster with one replica, you can run the following command:
 

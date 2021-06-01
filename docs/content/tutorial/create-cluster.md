@@ -68,7 +68,7 @@ So what just happened? Let's break down what occurs during the create cluster pr
   - The PostgreSQL Pod, when it is started, provisions a PostgreSQL database and performs other bootstrapping functions, such as creating `testuser`.
   - The pgBackRest Pod, when it is started, initializes a pgBackRest repository. Note that the pgBackRest repository is not yet ready to start taking backups, but will be after the next step!
 
-3. When the PostgreSQL Operator detects that the PostgreSQL and pgBackRest deployments are up and running, it creates a Kubenretes Job to create a pgBackRest stanza. This is necessary as part of intializing the pgBackRest repository to accept backups from our PostgreSQL cluster.
+3. When the PostgreSQL Operator detects that the PostgreSQL and pgBackRest deployments are up and running, it creates a Kubernetes Job to create a pgBackRest stanza. This is necessary as part of intializing the pgBackRest repository to accept backups from our PostgreSQL cluster.
 
 4. When the PostgreSQL Operator detects that the stanza creation is completed, it will take an initial backup of the cluster.
 

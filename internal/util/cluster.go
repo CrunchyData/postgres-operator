@@ -550,7 +550,7 @@ func StopPostgreSQLInstance(clientset kubernetes.Interface, restconfig *rest.Con
 // The name must be a valid DNS 1123 value
 // THe prefix must be a valid DNS 1123 subdomain
 //
-// The value can be validated by machinery provided by Kubenretes
+// The value can be validated by machinery provided by Kubernetes
 //
 // Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 func ValidateLabels(labels map[string]string) error {
