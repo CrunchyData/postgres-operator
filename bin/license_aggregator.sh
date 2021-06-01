@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Inputs / outputs
-SCAN_DIR=${GOPATH:-~/go}/pkg/mod
+SCAN_DIR=${PGOROOT:-~/go/src/github.com/crunchydata/postgres-operator}/vendor
 OUT_DIR=licenses
 
 # Fail on error
