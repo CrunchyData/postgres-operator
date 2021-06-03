@@ -463,7 +463,8 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		},
 	}
 
-	podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
+	podSecurityContext := initialize.RestrictedPodSecurityContext()
+	podSecurityContext.SupplementalGroups = []int64{65534}
 	// set fsGroups if not OpenShift
 	if postgresCluster.Spec.OpenShift == nil || !*postgresCluster.Spec.OpenShift {
 		podSecurityContext.FSGroup = initialize.Int64(26)
@@ -559,8 +560,9 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 						{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
 						{Name: "SELECTOR", Value: selector},
 					},
-					Image: postgresCluster.Spec.Archive.PGBackRest.Image,
-					Name:  naming.PGBackRestRepoContainerName,
+					Image:           postgresCluster.Spec.Archive.PGBackRest.Image,
+					Name:            naming.PGBackRestRepoContainerName,
+					SecurityContext: initialize.RestrictedSecurityContext(),
 				}},
 				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
 				// controller when there is a failure (instead of the container simply restarting).
@@ -1712,8 +1714,9 @@ func (r *Reconciler) createCronJob(
 									// TODO(tjmoore4): This is likely the correct image to use, but the image
 									// value in the spec is currently optional. Should the image be required,
 									// or should this be referencing its own image spec value?
-									Image: cluster.Spec.Archive.PGBackRest.Image,
-									Args:  []string{"/bin/sh", "-c", "date; echo pgBackRest " + backupType + " backup scheduled..."},
+									Image:           cluster.Spec.Archive.PGBackRest.Image,
+									Args:            []string{"/bin/sh", "-c", "date; echo pgBackRest " + backupType + " backup scheduled..."},
+									SecurityContext: initialize.RestrictedSecurityContext(),
 								},
 							},
 						},

@@ -175,6 +175,8 @@ func diffCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 		ReadOnly:  true,
 	})
 
+	container.SecurityContext = initialize.RestrictedSecurityContext()
+
 	container.Env = envVar
 }
 

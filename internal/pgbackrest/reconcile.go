@@ -186,8 +186,9 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 				},
 			},
 		},
-		Name:         naming.PGBackRestRepoContainerName,
-		VolumeMounts: []v1.VolumeMount{sshVolumeMount},
+		Name:            naming.PGBackRestRepoContainerName,
+		VolumeMounts:    []v1.VolumeMount{sshVolumeMount},
+		SecurityContext: initialize.RestrictedSecurityContext(),
 	}
 
 	// Mount PostgreSQL volumes if they are present in the template.

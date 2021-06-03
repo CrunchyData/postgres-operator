@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 )
 
@@ -96,9 +97,10 @@ func addNSSWrapper(image string, template *v1.PodTemplateSpec) {
 
 	template.Spec.InitContainers = append(template.Spec.InitContainers,
 		v1.Container{
-			Command: []string{"bash", "-c", nssWrapperCmd},
-			Image:   image,
-			Name:    naming.ContainerNSSWrapperInit,
+			Command:         []string{"bash", "-c", nssWrapperCmd},
+			Image:           image,
+			Name:            naming.ContainerNSSWrapperInit,
+			SecurityContext: initialize.RestrictedSecurityContext(),
 		})
 }
 

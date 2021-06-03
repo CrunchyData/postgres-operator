@@ -238,6 +238,11 @@ containers:
     value: /tmp
   name: replication-cert-copy
   resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
   volumeMounts:
   - mountPath: /etc/patroni
     name: patroni-config

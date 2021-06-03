@@ -401,6 +401,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		assert.Equal(t, returnedCronJob.Spec.Schedule, testCronSchedule)
 		assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Name,
 			"pgbackrest")
+		assert.Assert(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].SecurityContext != &corev1.SecurityContext{})
 
 	})
 

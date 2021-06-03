@@ -219,6 +219,11 @@ containers:
   resources:
     requests:
       cpu: 9m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
   volumeMounts:
   - mountPath: /pgdata
     name: postgres-data

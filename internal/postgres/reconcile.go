@@ -45,9 +45,10 @@ func InitCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 		naming.ReplicationCACert, naming.ReplicationTmp)
 	template.Spec.InitContainers = append(template.Spec.InitContainers,
 		v1.Container{
-			Command: []string{"bash", "-c", cmd},
-			Image:   postgresCluster.Spec.Image,
-			Name:    naming.ContainerClientCertInit,
+			Command:         []string{"bash", "-c", cmd},
+			Image:           postgresCluster.Spec.Image,
+			Name:            naming.ContainerClientCertInit,
+			SecurityContext: initialize.RestrictedSecurityContext(),
 		})
 }
 
@@ -176,7 +177,8 @@ func InstancePod(ctx context.Context,
 			Protocol:      corev1.ProtocolTCP,
 		}},
 
-		VolumeMounts: []corev1.VolumeMount{dataVolumeMount},
+		VolumeMounts:    []corev1.VolumeMount{dataVolumeMount},
+		SecurityContext: initialize.RestrictedSecurityContext(),
 	}
 
 	startup := corev1.Container{

@@ -24,6 +24,7 @@ import (
 
 	"gotest.tools/v3/assert"
 	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -267,6 +268,7 @@ func TestAddNSSWrapper(t *testing.T) {
 				if c.Name == naming.ContainerNSSWrapperInit {
 					assert.Equal(t, expectedCmd, c.Command[2]) // ignore "bash -c"
 					assert.Assert(t, c.Image == image)
+					assert.Assert(t, c.SecurityContext != &corev1.SecurityContext{})
 					foundInitContainer = true
 					break
 				}

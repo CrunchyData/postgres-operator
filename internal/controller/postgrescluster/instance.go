@@ -1083,7 +1083,8 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 
 	sts.Spec.Template.Spec.ServiceAccountName = instanceServiceAccountName
 
-	podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
+	podSecurityContext := initialize.RestrictedPodSecurityContext()
+	podSecurityContext.SupplementalGroups = []int64{65534}
 	// set fsGroups if not OpenShift
 	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
 		podSecurityContext.FSGroup = initialize.Int64(26)
