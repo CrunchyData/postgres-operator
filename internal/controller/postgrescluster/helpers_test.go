@@ -34,9 +34,9 @@ import (
 )
 
 var (
-	CrunchyPostgresHAImage = "us.gcr.io/container-suite/crunchy-postgres-ha:centos8-13.2-4.7.0-beta.2"
-	CrunchyPGBackRestImage = "us.gcr.io/container-suite/crunchy-pgbackrest:centos8-13.2-4.7.0-beta.2"
-	CrunchyPGBouncerImage  = "us.gcr.io/container-suite/crunchy-pgbouncer:centos8-13.2-4.7.0-beta.2"
+	CrunchyPostgresHAImage = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0"
+	CrunchyPGBackRestImage = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0"
+	CrunchyPGBouncerImage  = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0"
 )
 
 func testVolumeClaimSpec() v1.PersistentVolumeClaimSpec {
@@ -58,7 +58,7 @@ func testCluster() *v1beta1.PostgresCluster {
 			Name: "hippo",
 		},
 		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: 12,
+			PostgresVersion: 13,
 			Image:           CrunchyPostgresHAImage,
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name:            "instance1",
