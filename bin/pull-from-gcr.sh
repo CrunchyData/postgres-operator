@@ -18,13 +18,7 @@ set -e -u
 REGISTRY='us.gcr.io/container-suite'
 VERSION=$PGO_IMAGE_TAG
 IMAGES=(
-    pgo-backrest-repo
-    pgo-sqlrunner
     postgres-operator
-    pgo-apiserver
-    pgo-backrest
-    pgo-client
-    pgo-deployer
     crunchy-postgres-exporter
 )
 

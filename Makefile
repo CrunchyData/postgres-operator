@@ -73,29 +73,15 @@ endif
 images = postgres-operator \
 	crunchy-postgres-exporter
 
-.PHONY: all installrbac setup setupnamespaces cleannamespaces \
-	deployoperator clean push pull release deploy
+.PHONY: all setup clean push pull release deploy
 
 
 #======= Main functions =======
 all: $(images:%=%-image)
 
-installrbac:
-	PGOROOT='$(PGOROOT)' ./deploy/install-rbac.sh
-
 setup:
 	PGOROOT='$(PGOROOT)' ./bin/get-deps.sh
 	./bin/check-deps.sh
-
-setupnamespaces:
-	PGOROOT='$(PGOROOT)' ./deploy/setupnamespaces.sh
-
-cleannamespaces:
-	PGOROOT='$(PGOROOT)' ./deploy/cleannamespaces.sh
-
-deployoperator:
-	PGOROOT='$(PGOROOT)' ./deploy/deploy.sh
-
 
 #=== postgrescluster CRD ===
 
@@ -133,9 +119,6 @@ undeploy:
 
 
 #======= Binary builds =======
-build-pgo-backrest:
-	$(GO_BUILD) -o bin/pgo-backrest/pgo-backrest ./cmd/pgo-backrest
-
 build-postgres-operator:
 	$(GO_BUILD) -o bin/postgres-operator ./cmd/postgres-operator
 
@@ -220,7 +203,6 @@ check-generate: generate-crd generate-deepcopy generate-rbac
 
 clean: clean-deprecated
 	rm -f bin/postgres-operator
-	rm -f bin/pgo-backrest/pgo-backrest
 	rm -f config/rbac/role.yaml
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
