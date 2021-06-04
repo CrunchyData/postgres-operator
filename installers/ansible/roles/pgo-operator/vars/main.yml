@@ -1,3 +1,0 @@
----
-pgo_client_url: "https://github.com/CrunchyData/postgres-operator/releases/download/v{{ pgo_client_version }}"
-pgo_keys_dir: "{{ ansible_env.HOME }}/.pgo/{{ pgo_operator_namespace }}"
