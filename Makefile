@@ -136,9 +136,6 @@ undeploy:
 build-pgo-backrest:
 	$(GO_BUILD) -o bin/pgo-backrest/pgo-backrest ./cmd/pgo-backrest
 
-build-pgo-rmdata:
-	$(GO_BUILD) -o bin/pgo-rmdata/pgo-rmdata ./cmd/pgo-rmdata
-
 build-postgres-operator:
 	$(GO_BUILD) -o bin/postgres-operator ./cmd/postgres-operator
 
@@ -224,7 +221,6 @@ check-generate: generate-crd generate-deepcopy generate-rbac
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f bin/pgo-backrest/pgo-backrest
-	rm -f bin/pgo-rmdata/pgo-rmdata
 	rm -f config/rbac/role.yaml
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*

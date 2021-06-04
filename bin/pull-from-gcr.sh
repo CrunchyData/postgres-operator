@@ -22,7 +22,6 @@ IMAGES=(
     pgo-sqlrunner
     postgres-operator
     pgo-apiserver
-    pgo-rmdata
     pgo-backrest
     pgo-client
     pgo-deployer

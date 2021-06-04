@@ -340,21 +340,10 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 
 // DeleteCluster ...
 func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) error {
-	var err error
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	// create rmdata job
-	isReplica := false
-	isBackup := false
-	removeData := true
-	removeBackup := false
-	err = CreateRmdataJob(clientset, cl, namespace, removeData, removeBackup, isReplica, isBackup)
-	if err != nil {
-		log.Error(err)
-	}
-
-	return err
+	return nil
 }
 
 // scaleReplicaCreateMissingService creates a service for cluster replicas if

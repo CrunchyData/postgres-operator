@@ -34,7 +34,6 @@ const (
 
 const (
 	LABEL_TARGET = "target"
-	LABEL_RMDATA = "pgrmdata"
 )
 
 const (

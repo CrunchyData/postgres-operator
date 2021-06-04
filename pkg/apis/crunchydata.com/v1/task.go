@@ -23,7 +23,6 @@ import (
 const PgtaskResourcePlural = "pgtasks"
 
 const (
-	PgtaskDeleteData   = "delete-data"
 	PgtaskFailover     = "failover"
 	PgtaskAutoFailover = "autofailover"
 	PgtaskAddPolicies  = "addpolicies"

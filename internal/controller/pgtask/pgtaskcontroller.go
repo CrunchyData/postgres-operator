@@ -25,7 +25,6 @@ import (
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/internal/operator/pgdump"
-	taskoperator "github.com/crunchydata/postgres-operator/internal/operator/task"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
@@ -128,13 +127,6 @@ func (c *Controller) processNextItem() bool {
 			log.Debugf("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
 		}
 
-	case crv1.PgtaskDeleteData:
-		log.Debug("delete data task added")
-		if !dupeDeleteData(c.Client, tmpTask, keyNamespace) {
-			taskoperator.RemoveData(keyNamespace, c.Client, tmpTask)
-		} else {
-			log.Debugf("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
-		}
 	case crv1.PgtaskBackrest:
 		log.Debug("backrest task added")
 		backrestoperator.Backrest(keyNamespace, c.Client, tmpTask)

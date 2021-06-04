@@ -63,8 +63,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	labelExists := func(k string) bool { _, ok := labels[k]; return ok }
 	// determine determine which handler to route the update event to
 	switch {
-	case labels[config.LABEL_RMDATA] == "true":
-		err = c.handleRMDataUpdate(job)
 	case labels[config.LABEL_BACKREST] == "true" ||
 		labels[config.LABEL_BACKREST_RESTORE] == "true":
 		c.handleBackrestUpdate(job)

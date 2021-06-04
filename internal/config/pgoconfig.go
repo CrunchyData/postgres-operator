@@ -149,10 +149,6 @@ var ServiceTemplate *template.Template
 
 const serviceTemplatePath = "cluster-service.json"
 
-var RmdatajobTemplate *template.Template
-
-const rmdatajobPath = "rmdata-job.json"
-
 var BackrestjobTemplate *template.Template
 
 const backrestjobPath = "backrest-job.json"
@@ -665,11 +661,6 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	}
 
 	ServiceTemplate, err = c.LoadTemplate(cMap, rootPath, serviceTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	RmdatajobTemplate, err = c.LoadTemplate(cMap, rootPath, rmdatajobPath)
 	if err != nil {
 		return err
 	}
