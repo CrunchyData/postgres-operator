@@ -26,9 +26,8 @@ import (
 // information on these selections, please consulting the ASCII man page
 // (`man ascii`)
 const (
-	// DefaultGeneratedPasswordLength is the length of what a generated password
-	// is if it's not set in the pgo.yaml file, and to create some semblance of
-	// consistency
+	// DefaultGeneratedPasswordLength is the default length of what a generated
+	// password should be if it's not set elsewhere
 	DefaultGeneratedPasswordLength = 24
 
 	// passwordCharLower is the lowest ASCII character to use for generating a

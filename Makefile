@@ -207,6 +207,8 @@ clean: clean-deprecated
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
 	[ ! -d hack/.kube ] || rm -r hack/.kube
+	[ ! -d bin/pgo-rmdata ] || rm -r bin/pgo-rmdata
+	[ ! -d bin/pgo-backrest ] || rm -r bin/pgo-backrest
 
 clean-deprecated:
 	@# packages used to be downloaded into the vendor directory
