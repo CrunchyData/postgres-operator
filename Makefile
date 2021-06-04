@@ -226,7 +226,6 @@ pull-%:
 	$(IMG_PUSHER_PULLER) pull $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
 generate: generate-crd generate-crd-docs generate-deepcopy generate-rbac
-	GOBIN='$(CURDIR)/hack/tools' ./hack/update-codegen.sh
 
 generate-crd:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
