@@ -86,11 +86,11 @@ spec:
       image: ""
   image: ""
   instances:
-  - name: "00"
+  - dataVolumeClaimSpec:
+      resources: {}
+    name: "00"
     replicas: 1
     resources: {}
-    volumeClaimSpec:
-      resources: {}
   patroni:
     dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
@@ -139,11 +139,11 @@ func TestPostgresInstanceSetSpecDefault(t *testing.T) {
 	b, err := yaml.Marshal(spec)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, string(b), strings.TrimSpace(`
+dataVolumeClaimSpec:
+  resources: {}
 name: "05"
 replicas: 1
 resources: {}
-volumeClaimSpec:
-  resources: {}
 	`)+"\n")
 }
 

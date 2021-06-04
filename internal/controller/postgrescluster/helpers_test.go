@@ -74,9 +74,9 @@ func testCluster() *v1beta1.PostgresCluster {
 			PostgresVersion: 13,
 			Image:           CrunchyPostgresHAImage,
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "instance1",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: testVolumeClaimSpec(),
+				Name:                "instance1",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: testVolumeClaimSpec(),
 			}},
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{

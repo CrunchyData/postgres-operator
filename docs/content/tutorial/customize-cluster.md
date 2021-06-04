@@ -28,7 +28,7 @@ spec:
         limits:
           cpu: 2.0
           memory: 4Gi
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
         resources:

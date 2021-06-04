@@ -177,7 +177,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					instances: [
 						{
 							replicas: 2,
-							volumeClaimSpec: {
+							dataVolumeClaimSpec: {
 								accessModes: [ReadWriteOnce],
 								resources: { requests: { storage: 1Gi } },
 							},
@@ -426,7 +426,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 			instances: [
 				{
 					replicas: 2,
-					volumeClaimSpec: {
+					dataVolumeClaimSpec: {
 						accessModes: [ReadWriteOnce],
 						resources: { requests: { storage: 1Gi } },
 					},

@@ -7,7 +7,7 @@ spec:
   postgresVersion: 13
   instances:
     - replicas: 2
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
         resources:

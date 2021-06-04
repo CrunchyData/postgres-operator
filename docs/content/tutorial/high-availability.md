@@ -38,7 +38,7 @@ spec:
   instances:
     - name: instance1
       replicas: 2
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
         resources:
@@ -242,7 +242,7 @@ spec:
   instances:
     - name: instance1
       replicas: 2
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
         resources:
@@ -314,7 +314,7 @@ spec:
   instances:
     - name: instance1
       replicas: 2
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
         resources:
@@ -372,7 +372,7 @@ spec:
   instances:
     - name: instance1
       replicas: 2
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
         resources:

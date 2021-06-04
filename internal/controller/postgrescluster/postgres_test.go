@@ -60,7 +60,7 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 	spec := &v1beta1.PostgresInstanceSetSpec{}
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		name: "some-instance",
-		volumeClaimSpec: {
+		dataVolumeClaimSpec: {
 			accessModes: [ReadWriteOnce],
 			resources: { requests: { storage: 1Gi } },
 			storageClassName: "storage-class-for-data",

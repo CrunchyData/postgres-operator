@@ -7,7 +7,7 @@ spec:
   postgresVersion: 13
   instances:
     - name: instance1
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteMany"
         resources:

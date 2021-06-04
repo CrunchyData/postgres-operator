@@ -645,13 +645,13 @@ func (in *PostgresInstanceSetSpec) DeepCopyInto(out *PostgresInstanceSetSpec) {
 		*out = new(v1.Affinity)
 		(*in).DeepCopyInto(*out)
 	}
+	in.DataVolumeClaimSpec.DeepCopyInto(&out.DataVolumeClaimSpec)
 	if in.Replicas != nil {
 		in, out := &in.Replicas, &out.Replicas
 		*out = new(int32)
 		**out = **in
 	}
 	in.Resources.DeepCopyInto(&out.Resources)
-	in.VolumeClaimSpec.DeepCopyInto(&out.VolumeClaimSpec)
 	if in.WALVolumeClaimSpec != nil {
 		in, out := &in.WALVolumeClaimSpec, &out.WALVolumeClaimSpec
 		*out = new(v1.PersistentVolumeClaimSpec)

@@ -2204,55 +2204,7 @@ spec:
                               type: array
                           type: object
                       type: object
-                    metadata:
-                      description: Metadata contains metadata for PostgresCluster
-                        resources
-                      properties:
-                        annotations:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        labels:
-                          additionalProperties:
-                            type: string
-                          type: object
-                      type: object
-                    name:
-                      default: ""
-                      type: string
-                    replicas:
-                      default: 1
-                      format: int32
-                      minimum: 0
-                      type: integer
-                    resources:
-                      description: Compute resources of a PostgreSQL container.
-                      properties:
-                        limits:
-                          additionalProperties:
-                            anyOf:
-                            - type: integer
-                            - type: string
-                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                            x-kubernetes-int-or-string: true
-                          description: 'Limits describes the maximum amount of compute
-                            resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
-                          type: object
-                        requests:
-                          additionalProperties:
-                            anyOf:
-                            - type: integer
-                            - type: string
-                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                            x-kubernetes-int-or-string: true
-                          description: 'Requests describes the minimum amount of compute
-                            resources required. If Requests is omitted for a container,
-                            it defaults to Limits if that is explicitly specified,
-                            otherwise to an implementation-defined value. More info:
-                            https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
-                          type: object
-                      type: object
-                    volumeClaimSpec:
+                    dataVolumeClaimSpec:
                       description: 'Defines a PersistentVolumeClaim for PostgreSQL
                         data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes'
                       properties:
@@ -2377,6 +2329,54 @@ spec:
                           description: VolumeName is the binding reference to the
                             PersistentVolume backing this claim.
                           type: string
+                      type: object
+                    metadata:
+                      description: Metadata contains metadata for PostgresCluster
+                        resources
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        labels:
+                          additionalProperties:
+                            type: string
+                          type: object
+                      type: object
+                    name:
+                      default: ""
+                      type: string
+                    replicas:
+                      default: 1
+                      format: int32
+                      minimum: 0
+                      type: integer
+                    resources:
+                      description: Compute resources of a PostgreSQL container.
+                      properties:
+                        limits:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: 'Limits describes the maximum amount of compute
+                            resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                          type: object
+                        requests:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          description: 'Requests describes the minimum amount of compute
+                            resources required. If Requests is omitted for a container,
+                            it defaults to Limits if that is explicitly specified,
+                            otherwise to an implementation-defined value. More info:
+                            https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                          type: object
                       type: object
                     walVolumeClaimSpec:
                       description: 'Defines a separate PersistentVolumeClaim for PostgreSQL''s
@@ -2505,7 +2505,7 @@ spec:
                           type: string
                       type: object
                   required:
-                  - volumeClaimSpec
+                  - dataVolumeClaimSpec
                   type: object
                 type: array
                 x-kubernetes-list-map-keys:

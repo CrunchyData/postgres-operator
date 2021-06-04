@@ -48,7 +48,7 @@ spec:
   postgresVersion: 13
   instances:
     - name: instance1
-      volumeClaimSpec:
+      dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
         resources:
@@ -76,7 +76,7 @@ What else happened? PGO read the value from `metadata.name` to provide the Postg
 
 PGO knows how many Postgres instances to create through the `spec.instances` section of the manifest. While `name` is optional, we opted to give it the name `instance1`. We could have also created multiple replicas and instances during cluster initialization, but we will cover that more when we discuss how to [scale and create a HA Postgres cluster]({{< relref "./high-availability.md" >}}).
 
-A very important piece of your `PostgresCluster` custom resource is the `volumeClaimSpec` section. This describes the storage that your Postgres instance will use. It is modeled after the [Persistent Volume Claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/). If you do not provide a `spec.instances.volumeClaimSpec.storageClassName`, then the default storage class in your Kubernetes environment is used.
+A very important piece of your `PostgresCluster` custom resource is the `dataVolumeClaimSpec` section. This describes the storage that your Postgres instance will use. It is modeled after the [Persistent Volume Claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/). If you do not provide a `spec.instances.dataVolumeClaimSpec.storageClassName`, then the default storage class in your Kubernetes environment is used.
 
 As part of creating a Postgres cluster, we also specify information about our backup archive. PGO uses [pgBackRest](https://pgbackrest.org/), an open source backup and restore tool designed to handle terabyte-scale backups. As part of initializing our cluster, we can specify where we want our backups and archives ([write-ahead logs or WAL](https://www.postgresql.org/docs/current/wal-intro.html)) stored. We will talk about this portion of the `PostgresCluster` spec in greater depth in the [disaster recovery]({{< relref "./backups.md" >}}) section of this tutorial, and also see how we can store backups in Amazon S3, Google GCS, and Azure Blob Storage.
 

@@ -57,7 +57,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 			naming.LabelRole:        naming.RolePostgresData,
 		})
 
-	pvc.Spec = instanceSpec.VolumeClaimSpec
+	pvc.Spec = instanceSpec.DataVolumeClaimSpec
 
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,

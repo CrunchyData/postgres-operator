@@ -3864,7 +3864,7 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td>Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More info: https://www.postgresql.org/docs/current/wal.html</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecinstancesindexvolumeclaimspec">volumeClaimSpec</a></b></td>
+        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspec">dataVolumeClaimSpec</a></b></td>
         <td>object</td>
         <td>Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes</td>
         <td>true</td>
@@ -4957,7 +4957,7 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index].volumeClaimSpec
+### PostgresCluster.spec.instances[index].dataVolumeClaimSpec
 <sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
 
 
@@ -4979,17 +4979,17 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
         <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecinstancesindexvolumeclaimspecdatasource">dataSource</a></b></td>
+        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecdatasource">dataSource</a></b></td>
         <td>object</td>
         <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecinstancesindexvolumeclaimspecresources">resources</a></b></td>
+        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
         <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecinstancesindexvolumeclaimspecselector">selector</a></b></td>
+        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecselector">selector</a></b></td>
         <td>object</td>
         <td>A label query over volumes to consider for binding.</td>
         <td>false</td>
@@ -5012,8 +5012,8 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
 </table>
 
 
-### PostgresCluster.spec.instances[index].volumeClaimSpec.dataSource
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexvolumeclaimspec)</sup></sup>
+### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.dataSource
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspec)</sup></sup>
 
 
 
@@ -5047,8 +5047,8 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 </table>
 
 
-### PostgresCluster.spec.instances[index].volumeClaimSpec.resources
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexvolumeclaimspec)</sup></sup>
+### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.resources
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspec)</sup></sup>
 
 
 
@@ -5077,8 +5077,8 @@ Resources represents the minimum resources the volume should have. More info: ht
 </table>
 
 
-### PostgresCluster.spec.instances[index].volumeClaimSpec.selector
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexvolumeclaimspec)</sup></sup>
+### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.selector
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspec)</sup></sup>
 
 
 
@@ -5094,7 +5094,7 @@ A label query over volumes to consider for binding.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecinstancesindexvolumeclaimspecselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecselectormatchexpressionsindex">matchExpressions</a></b></td>
         <td>[]object</td>
         <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
         <td>false</td>
@@ -5107,8 +5107,8 @@ A label query over volumes to consider for binding.
 </table>
 
 
-### PostgresCluster.spec.instances[index].volumeClaimSpec.selector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexvolumeclaimspecselector)</sup></sup>
+### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.selector.matchExpressions[index]
+<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspecselector)</sup></sup>
 
 
 

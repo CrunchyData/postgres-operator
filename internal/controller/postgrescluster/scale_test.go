@@ -122,34 +122,34 @@ func TestScaleDown(t *testing.T) {
 			name: "OneSet",
 			// Remove a single instance set from the spec
 			createSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}, {
-				Name:            "max",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "max",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			createRunningInstances: 2,
 			updateSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			updateRunningInstances: 1,
 		}, {
 			name: "InstancesWithOneSet",
 			// Decrease the number of replicas that are defined for one instance set
 			createSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(2),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(2),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			createRunningInstances: 2,
 			updateSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			updateRunningInstances: 1,
 			primaryTest: func(t *testing.T, old, new string) {
@@ -160,38 +160,38 @@ func TestScaleDown(t *testing.T) {
 			// Decrease the number of replicas that are defined for one instance set
 			// and ensure that the other instance set is unchanged
 			createSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(2),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(2),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}, {
-				Name:            "max",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "max",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			createRunningInstances: 3,
 			updateSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}, {
-				Name:            "max",
-				Replicas:        Int32(1),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "max",
+				Replicas:            Int32(1),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			updateRunningInstances: 2,
 		}, {
 			name: "OneSetToZero",
 			// Remove all replicas and ensure that the primary has been deleted
 			createSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(3),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(3),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			createRunningInstances: 3,
 			updateSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:            "daisy",
-				Replicas:        Int32(0),
-				VolumeClaimSpec: volumeClaimSpec,
+				Name:                "daisy",
+				Replicas:            Int32(0),
+				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			updateRunningInstances: 0,
 			primaryTest: func(t *testing.T, old, new string) {

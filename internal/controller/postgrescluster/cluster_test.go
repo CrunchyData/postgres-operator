@@ -317,13 +317,13 @@ func TestCustomLabels(t *testing.T) {
 		cluster.ObjectMeta.Name = "global-cluster"
 		cluster.ObjectMeta.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
-			Name:            "daisy-instance1",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "daisy-instance1",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}, {
-			Name:            "daisy-instance2",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "daisy-instance2",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		cluster.Spec.Metadata = &v1beta1.Metadata{
 			Labels: map[string]string{"my.cluster.label": "daisy"},
@@ -367,16 +367,16 @@ func TestCustomLabels(t *testing.T) {
 		cluster.ObjectMeta.Name = "instance-cluster"
 		cluster.ObjectMeta.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
-			Name:            "max-instance",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "max-instance",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 			Metadata: &v1beta1.Metadata{
 				Labels: map[string]string{"my.instance.label": "max"},
 			},
 		}, {
-			Name:            "lucy-instance",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "lucy-instance",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 			Metadata: &v1beta1.Metadata{
 				Labels: map[string]string{"my.instance.label": "lucy"},
 			},
@@ -579,13 +579,13 @@ func TestCustomAnnotations(t *testing.T) {
 		cluster.ObjectMeta.Name = "global-cluster"
 		cluster.ObjectMeta.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
-			Name:            "daisy-instance1",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "daisy-instance1",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}, {
-			Name:            "daisy-instance2",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "daisy-instance2",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		cluster.Spec.Metadata = &v1beta1.Metadata{
 			Annotations: map[string]string{"my.cluster.annotation": "daisy"},
@@ -630,16 +630,16 @@ func TestCustomAnnotations(t *testing.T) {
 		cluster.ObjectMeta.Name = "instance-cluster"
 		cluster.ObjectMeta.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
-			Name:            "max-instance",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "max-instance",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 			Metadata: &v1beta1.Metadata{
 				Annotations: map[string]string{"my.instance.annotation": "max"},
 			},
 		}, {
-			Name:            "lucy-instance",
-			Replicas:        Int32(1),
-			VolumeClaimSpec: testVolumeClaimSpec(),
+			Name:                "lucy-instance",
+			Replicas:            Int32(1),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
 			Metadata: &v1beta1.Metadata{
 				Annotations: map[string]string{"my.instance.annotation": "lucy"},
 			},

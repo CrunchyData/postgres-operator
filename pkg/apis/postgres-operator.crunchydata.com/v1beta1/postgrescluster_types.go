@@ -180,6 +180,11 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
+	// Defines a PersistentVolumeClaim for PostgreSQL data.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
+	// +kubebuilder:validation:Required
+	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
+
 	// +optional
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=0
@@ -188,11 +193,6 @@ type PostgresInstanceSetSpec struct {
 	// Compute resources of a PostgreSQL container.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// Defines a PersistentVolumeClaim for PostgreSQL data.
-	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
-	// +kubebuilder:validation:Required
-	VolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"volumeClaimSpec"`
 
 	// Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log.
 	// More info: https://www.postgresql.org/docs/current/wal.html

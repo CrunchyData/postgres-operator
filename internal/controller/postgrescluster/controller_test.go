@@ -444,7 +444,7 @@ spec:
   postgresVersion: 13
   instances:
   - name: samba
-    volumeClaimSpec:
+    dataVolumeClaimSpec:
       accessModes:
       - "ReadWriteMany"
       resources:
