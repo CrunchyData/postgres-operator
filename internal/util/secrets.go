@@ -20,13 +20,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
-
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
-
-// UserSecretFormat follows the pattern of how the user information is stored,
-// which is "<clusteRName>-<userName>-secret"
-const UserSecretFormat = "%s-%s" + crv1.UserSecretSuffix
 
 // The following constants are used as a part of password generation. For more
 // information on these selections, please consulting the ASCII man page
