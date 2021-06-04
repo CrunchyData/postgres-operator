@@ -22,7 +22,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -121,6 +123,10 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 }
 
 func TestReconcilePGBackRest(t *testing.T) {
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
 
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
@@ -434,6 +440,10 @@ func TestReconcilePGBackRest(t *testing.T) {
 }
 
 func TestReconcilePGBackRestRBAC(t *testing.T) {
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
 
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
@@ -1332,6 +1342,10 @@ func TestReconcileManualBackup(t *testing.T) {
 }
 
 func TestGetPGBackRestResources(t *testing.T) {
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
 
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)

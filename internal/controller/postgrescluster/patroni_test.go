@@ -20,6 +20,7 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -41,6 +42,11 @@ import (
 )
 
 func TestPatroniReplicationSecret(t *testing.T) {
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
+
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, tEnv) })

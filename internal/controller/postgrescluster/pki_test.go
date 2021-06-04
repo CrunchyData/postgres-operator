@@ -43,6 +43,11 @@ import (
 )
 
 func TestReconcileCerts(t *testing.T) {
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
+
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
 	ctx := context.Background()
