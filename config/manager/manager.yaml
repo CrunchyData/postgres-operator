@@ -13,11 +13,9 @@ spec:
         env:
         - name: CRUNCHY_DEBUG
           value: "true"
-        - name: PGO_DISABLE_PGCLUSTER
-          value: "true"
         - name: CRUNCHY_POSTGRES_OPERATOR_NAMESPACE
-          valueFrom: 
-            fieldRef: 
+          valueFrom:
+            fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
       serviceAccount: postgres-operator
