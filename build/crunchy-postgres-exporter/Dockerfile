@@ -3,6 +3,7 @@ ARG BASEVER
 ARG PREFIX
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
+ARG BASEOS
 ARG PGVERSION
 ARG PACKAGER
 ARG DFSET
@@ -16,21 +17,24 @@ LABEL name="crunchy-postgres-exporter" \
 
 RUN if [ "$DFSET" = "centos" ] ; then \
 	${PACKAGER} -y install epel-release \
-    && ${PACKAGER} install -y --setopt=skip_missing_names_on_install=False \
+    && ${PACKAGER} install -y \
+        --setopt=skip_missing_names_on_install=False \
         postgresql${PGVERSION} \
     && ${PACKAGER} -y clean all ; \
 fi
 
-RUN if [ "$DFSET" = "rhel" ] ; then \
+RUN if [ "$BASEOS" = "ubi8" ] ; then \
 	${PACKAGER} install -y \
-        postgresql${PGVERSION} \
+		findutils \
+		postgresql${PGVERSION} \
     && ${PACKAGER} -y clean all ; \
 fi
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
 
 ADD postgres_exporter.tar.gz /opt/cpm/bin
-ADD tools/pgmonitor/exporter/postgres /opt/cpm/conf
+ADD tools/pgmonitor/postgres_exporter/common /opt/cpm/conf
+ADD tools/pgmonitor/postgres_exporter/linux /opt/cpm/conf
 ADD bin/crunchy-postgres-exporter /opt/cpm/bin
 
 RUN chgrp -R 0 /opt/cpm/bin /opt/cpm/conf && \

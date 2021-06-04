@@ -22,7 +22,7 @@ POSTGRES_EXPORTER_PIDFILE=/tmp/postgres_exporter.pid
 CONFIG_DIR='/opt/cpm/conf'
 QUERIES=(
     queries_backrest
-    queries_common
+    queries_global
     queries_per_db
     queries_nodemx
 )
@@ -76,19 +76,7 @@ set_default_pg_exporter_env() {
 trap 'trap_sigterm' SIGINT SIGTERM
 
 set_default_postgres_exporter_env
-
-if [[ ! -v DATA_SOURCE_NAME ]]
-then
-    set_default_pg_exporter_env
-    if [[ ! -z "${EXPORTER_PG_PARAMS}" ]]
-    then
-        EXPORTER_PG_PARAMS="?${EXPORTER_PG_PARAMS}"
-    fi
-    export DATA_SOURCE_NAME="postgresql://${EXPORTER_PG_USER}:${EXPORTER_PG_PASSWORD}\
-@${EXPORTER_PG_HOST}:${EXPORTER_PG_PORT}/${EXPORTER_PG_DATABASE}${EXPORTER_PG_PARAMS}"
-fi
-
-
+set_default_pg_exporter_env
 
 if [[ ! ${#default_exporter_env_vars[@]} -eq 0 ]]
 then
@@ -99,16 +87,16 @@ fi
 # Check that postgres is accepting connections.
 echo_info "Waiting for PostgreSQL to be ready.."
 while true; do
-    ${PG_DIR?}/bin/pg_isready -d ${DATA_SOURCE_NAME}
+    ${PG_DIR?}/bin/pg_isready -q -h "${EXPORTER_PG_HOST}" -p "${EXPORTER_PG_PORT}"
     if [ $? -eq 0 ]; then
         break
     fi
     sleep 2
 done
 
-echo_info "Checking if PostgreSQL is accepting queries.."
+echo_info "Checking if "${EXPORTER_PG_USER}" is is created.."
 while true; do
-    ${PG_DIR?}/bin/psql "${DATA_SOURCE_NAME}" -c "SELECT now();"
+    PGPASSWORD="${EXPORTER_PG_PASSWORD}" ${PG_DIR?}/bin/psql -q -h "${EXPORTER_PG_HOST}" -p "${EXPORTER_PG_PORT}" -U "${EXPORTER_PG_USER}" -c "SELECT 1;" "${EXPORTER_PG_DATABASE}"
     if [ $? -eq 0 ]; then
         break
     fi
@@ -130,59 +118,91 @@ else
         then
             cat ${CONFIG_DIR?}/${query?}.yml >> /tmp/queries.yml
         else
-            echo_err "Custom Query file ${query?}.yml does not exist (it should).."
+            echo_err "Query file ${query?}.yml does not exist (it should).."
             exit 1
         fi
     done
 
-    VERSION=$(${PG_DIR?}/bin/psql "${DATA_SOURCE_NAME}" -qtAX -c "SELECT current_setting('server_version_num')")
-    if (( ${VERSION?} >= 90500 )) && (( ${VERSION?} < 90600 ))
+    VERSION=$(PGPASSWORD="${EXPORTER_PG_PASSWORD}" ${PG_DIR?}/bin/psql -h "${EXPORTER_PG_HOST}" -p "${EXPORTER_PG_PORT}" -U "${EXPORTER_PG_USER}" -qtAX -c "SELECT current_setting('server_version_num')" "${EXPORTER_PG_DATABASE}")
+    if (( ${VERSION?} >= 90600 )) && (( ${VERSION?} < 100000 ))
     then
-        if [[ -f ${CONFIG_DIR?}/queries_pg95.yml ]]
+        if [[ -f ${CONFIG_DIR?}/pg96/queries_general.yml ]]
         then
-            cat ${CONFIG_DIR?}/queries_pg95.yml >> /tmp/queries.yml
+            cat ${CONFIG_DIR?}/pg96/queries_general.yml >> /tmp/queries.yml
         else
-            echo_err "Custom Query file queries_pg95.yml does not exist (it should).."
-        fi
-    elif (( ${VERSION?} >= 90600 )) && (( ${VERSION?} < 100000 ))
-    then
-        if [[ -f ${CONFIG_DIR?}/queries_pg96.yml ]]
-        then
-            cat ${CONFIG_DIR?}/queries_pg96.yml >> /tmp/queries.yml
-        else
-            echo_err "Custom Query file queries_pg96.yml does not exist (it should).."
+            echo_err "Query file queries_general.yml does not exist (it should).."
         fi
     elif (( ${VERSION?} >= 100000 )) && (( ${VERSION?} < 110000 ))
     then
-        if [[ -f ${CONFIG_DIR?}/queries_pg10.yml ]]
+        if [[ -f ${CONFIG_DIR?}/pg10/queries_general.yml ]]
         then
-            cat ${CONFIG_DIR?}/queries_pg10.yml >> /tmp/queries.yml
+            cat ${CONFIG_DIR?}/pg10/queries_general.yml >> /tmp/queries.yml
         else
-            echo_err "Custom Query file queries_pg10.yml does not exist (it should).."
+            echo_err "Query file queries_general.yml does not exist (it should).."
+        fi
+        if [[ -f ${CONFIG_DIR?}/pg10/queries_pg_stat_statements.yml ]]
+        then
+          cat ${CONFIG_DIR?}/pg10/queries_pg_stat_statements.yml >> /tmp/queries.yml
+        else
+          echo_warn "Query file queries_pg_stat_statements.yml not loaded."
         fi
     elif (( ${VERSION?} >= 110000 )) && (( ${VERSION?} < 120000 ))
     then
-        if [[ -f ${CONFIG_DIR?}/queries_pg11.yml ]]
+        if [[ -f ${CONFIG_DIR?}/pg11/queries_general.yml ]]
         then
-            cat ${CONFIG_DIR?}/queries_pg11.yml >> /tmp/queries.yml
+            cat ${CONFIG_DIR?}/pg11/queries_general.yml >> /tmp/queries.yml
         else
-            echo_err "Custom Query file queries_pg11.yml does not exist (it should).."
+            echo_err "Query file queries_general.yml does not exist (it should).."
+        fi
+        if [[ -f ${CONFIG_DIR?}/pg11/queries_pg_stat_statements.yml ]]
+        then
+          cat ${CONFIG_DIR?}/pg11/queries_pg_stat_statements.yml >> /tmp/queries.yml
+        else
+          echo_warn "Query file queries_pg_stat_statements.yml not loaded."
         fi
     elif (( ${VERSION?} >= 120000 )) && (( ${VERSION?} < 130000 ))
     then
-        if [[ -f ${CONFIG_DIR?}/queries_pg12.yml ]]
+        if [[ -f ${CONFIG_DIR?}/pg12/queries_general.yml ]]
         then
-            cat ${CONFIG_DIR?}/queries_pg12.yml >> /tmp/queries.yml
+            cat ${CONFIG_DIR?}/pg12/queries_general.yml >> /tmp/queries.yml
         else
-            echo_err "Custom Query file queries_pg12.yml does not exist (it should).."
+            echo_err "Query file queries_general.yml does not exist (it should).."
         fi
-        elif (( ${VERSION?} >= 130000 ))
-    then
-        if [[ -f ${CONFIG_DIR?}/queries_pg13.yml ]]
+        if [[ -f ${CONFIG_DIR?}/pg12/queries_pg_stat_statements.yml ]]
         then
-            cat ${CONFIG_DIR?}/queries_pg13.yml >> /tmp/queries.yml
+          cat ${CONFIG_DIR?}/pg12/queries_pg_stat_statements.yml >> /tmp/queries.yml
         else
-            echo_err "Custom Query file queries_pg12.yml does not exist (it should).."
+          echo_warn "Query file queries_pg_stat_statements.yml not loaded."
+        fi
+        # queries_pg_stat_statements_reset is only available in PG12+. This may
+        # need to be updated based on a new path
+        if [[ -f ${CONFIG_DIR?}/pg12/queries_pg_stat_statements_reset_info.yml ]];
+        then
+          cat ${CONFIG_DIR?}/pg12/queries_pg_stat_statements_reset_info.yml >> /tmp/queries.yml
+        else
+          echo_warn "Query file queries_pg_stat_statements_reset_info.yml not loaded."
+        fi
+    elif (( ${VERSION?} >= 130000 ))
+    then
+        if [[ -f ${CONFIG_DIR?}/pg13/queries_general.yml ]]
+        then
+            cat ${CONFIG_DIR?}/pg13/queries_general.yml >> /tmp/queries.yml
+        else
+            echo_err "Query file queries_general.yml does not exist (it should).."
+        fi
+        if [[ -f ${CONFIG_DIR?}/pg13/queries_pg_stat_statements.yml ]]
+        then
+          cat ${CONFIG_DIR?}/pg13/queries_pg_stat_statements.yml >> /tmp/queries.yml
+        else
+          echo_warn "Query file queries_pg_stat_statements.yml not loaded."
+        fi
+        # queries_pg_stat_statements_reset is only available in PG12+. This may
+        # need to be updated based on a new path
+        if [[ -f ${CONFIG_DIR?}/pg13/queries_pg_stat_statements_reset_info.yml ]];
+        then
+          cat ${CONFIG_DIR?}/pg13/queries_pg_stat_statements_reset_info.yml >> /tmp/queries.yml
+        else
+          echo_warn "Query file queries_pg_stat_statements_reset_info.yml not loaded."
         fi
     else
         echo_err "Unknown or unsupported version of PostgreSQL.  Exiting.."
@@ -190,12 +210,16 @@ else
     fi
 fi
 
-sed -i "s/#PGBACKREST_INFO_THROTTLE_MINUTES#/${PGBACKREST_INFO_THROTTLE_MINUTES:-10}/g" /tmp/queries.yml
+sed -i \
+  -e "s/#PGBACKREST_INFO_THROTTLE_MINUTES#/${PGBACKREST_INFO_THROTTLE_MINUTES:-10}/g" \
+  -e "s/#PG_STAT_STATEMENTS_LIMIT#/${PG_STAT_STATEMENTS_LIMIT:-20}/g" \
+  -e "s/#PG_STAT_STATEMENTS_THROTTLE_MINUTES#/${PG_STAT_STATEMENTS_THROTTLE_MINUTES:--1}/g" \
+  /tmp/queries.yml
 
 PG_OPTIONS="--extend.query-path=${QUERY_DIR?}/queries.yml  --web.listen-address=:${POSTGRES_EXPORTER_PORT}"
 
 echo_info "Starting postgres-exporter.."
-${PG_EXP_HOME?}/postgres_exporter ${PG_OPTIONS?} >>/dev/stdout 2>&1 &
+DATA_SOURCE_URI="${EXPORTER_PG_HOST}:${EXPORTER_PG_PORT}/${EXPORTER_PG_DATABASE}?${EXPORTER_PG_PARAMS}" DATA_SOURCE_USER="${EXPORTER_PG_USER}" DATA_SOURCE_PASS="${EXPORTER_PG_PASSWORD}" ${PG_EXP_HOME?}/postgres_exporter ${PG_OPTIONS?} >>/dev/stdout 2>&1 &
 echo $! > $POSTGRES_EXPORTER_PIDFILE
 
 wait
