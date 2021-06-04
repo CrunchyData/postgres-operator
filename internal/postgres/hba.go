@@ -20,6 +20,16 @@ import (
 	"strings"
 )
 
+// NewHBAs returns HostBasedAuthentication records required by this package.
+func NewHBAs() HBAs {
+	return HBAs{
+		Mandatory: []HostBasedAuthentication{
+			// The "postgres" superuser must always be able to connect locally.
+			*NewHBA().Local().User("postgres").Method("peer"),
+		},
+	}
+}
+
 // HBAs is a pairing of HostBasedAuthentication records.
 type HBAs struct{ Mandatory, Default []HostBasedAuthentication }
 

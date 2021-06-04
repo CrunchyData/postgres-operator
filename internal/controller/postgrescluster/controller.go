@@ -159,9 +159,8 @@ func (r *Reconciler) Reconcile(
 	)
 
 	// TODO(cbandy): Accumulate postgres settings.
-	pgHBAs := postgres.HBAs{}
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().
-		User("postgres").Method("peer"))
+	pgHBAs := postgres.NewHBAs()
+
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TLS().
 		User(naming.PGReplicationUsername).Replication().Method("cert"))
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TLS().
@@ -176,14 +175,12 @@ func (r *Reconciler) Reconcile(
 	// - https://www.postgresql.org/docs/current/auth-password.html
 	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TLS().Method("md5"))
 
-	pgParameters := postgres.Parameters{}
-	pgParameters.Mandatory = postgres.NewParameterSet()
+	pgParameters := postgres.NewParameters()
 	pgParameters.Mandatory.Add("wal_level", "logical")
 	pgParameters.Mandatory.Add("ssl", "on")
 	pgParameters.Mandatory.Add("ssl_cert_file", "/pgconf/tls/tls.crt")
 	pgParameters.Mandatory.Add("ssl_key_file", "/pgconf/tls/tls.key")
 	pgParameters.Mandatory.Add("ssl_ca_file", "/pgconf/tls/ca.crt")
-	pgParameters.Default = postgres.NewParameterSet()
 	pgParameters.Default.Add("jit", "off")
 	pgParameters.Default.Add("password_encryption", "scram-sha-256")
 

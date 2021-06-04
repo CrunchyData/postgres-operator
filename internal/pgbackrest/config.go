@@ -39,9 +39,8 @@ const (
 	// DefaultStanzaName is the name of the default pgBackRest stanza
 	DefaultStanzaName = "db"
 
-	// default pgBackRest port and socket path
-	defaultPG1Port       = "5432"
-	defaultPG1SocketPath = "/tmp"
+	// default pgBackRest port
+	defaultPG1Port = "5432"
 
 	// configmap key references
 	cmJobKey     = "pgbackrest_job.conf"
@@ -238,7 +237,7 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir str
 	// index 1: https://github.com/pgbackrest/pgbackrest/issues/1197#issuecomment-708381800
 	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
 	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
-	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = defaultPG1SocketPath
+	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = postgres.SocketDirectory
 	i++
 
 	if len(otherPGHostNames) == 0 {
@@ -249,7 +248,7 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir str
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i)] = name + "-0." + serviceName
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = defaultPG1SocketPath
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = postgres.SocketDirectory
 		i++
 	}
 
@@ -300,7 +299,7 @@ func populateRepoHostConfigurationMap(serviceName, pgdataDir string,
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i+1)] = pgHost + "-0." + serviceName
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i+1)] = pgdataDir
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i+1)] = defaultPG1Port
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i+1)] = defaultPG1SocketPath
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i+1)] = postgres.SocketDirectory
 	}
 
 	return pgBackRestConfig

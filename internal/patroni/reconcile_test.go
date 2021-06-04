@@ -160,8 +160,6 @@ containers:
     value: '*:8008'
   - name: PATRONICTL_CONFIG_FILE
     value: /etc/patroni
-  - name: PGHOST
-    value: /tmp
   livenessProbe:
     failureThreshold: 3
     httpGet:
@@ -234,8 +232,6 @@ containers:
     value: '*:8008'
   - name: PATRONICTL_CONFIG_FILE
     value: /etc/patroni
-  - name: PGHOST
-    value: /tmp
   name: replication-cert-copy
   resources: {}
   securityContext:

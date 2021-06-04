@@ -209,6 +209,8 @@ containers:
 - env:
   - name: PGDATA
     value: /pgdata/pg11
+  - name: PGHOST
+    value: /tmp
   - name: PGPORT
     value: "5432"
   name: database
@@ -264,6 +266,8 @@ initContainers:
   env:
   - name: PGDATA
     value: /pgdata/pg11
+  - name: PGHOST
+    value: /tmp
   - name: PGPORT
     value: "5432"
   name: postgres-startup

@@ -16,10 +16,33 @@
 package postgres
 
 import (
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 )
+
+func TestNewHBAs(t *testing.T) {
+	matches := func(actual []HostBasedAuthentication, expected string) cmp.Comparison {
+		printed := make([]string, len(actual))
+		for i := range actual {
+			printed[i] = actual[i].String()
+		}
+
+		parsed := strings.Split(strings.Trim(expected, "\t\n"), "\n")
+		for i := range parsed {
+			parsed[i] = strings.Join(strings.Fields(parsed[i]), " ")
+		}
+
+		return cmp.DeepEqual(printed, parsed)
+	}
+
+	hba := NewHBAs()
+	assert.Assert(t, matches(hba.Mandatory, `
+local    all          "postgres"      peer
+	`))
+}
 
 func TestHostBasedAuthentication(t *testing.T) {
 	assert.Equal(t, `local all "postgres" peer`,

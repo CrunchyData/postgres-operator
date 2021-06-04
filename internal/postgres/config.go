@@ -42,6 +42,9 @@ safelink() (
 
 	// walMountPath is where to mount the optional WAL volume.
 	walMountPath = "/pgwal"
+
+	// SocketDirectory is where to bind and connect to UNIX sockets.
+	SocketDirectory = "/tmp"
 )
 
 // ConfigDirectory returns the absolute path to $PGDATA for cluster.
@@ -81,6 +84,10 @@ func Environment(cluster *v1beta1.PostgresCluster) []corev1.EnvVar {
 		},
 
 		// - https://www.postgresql.org/docs/current/libpq-envars.html
+		{
+			Name:  "PGHOST",
+			Value: SocketDirectory,
+		},
 		{
 			Name:  "PGPORT",
 			Value: fmt.Sprint(*cluster.Spec.Port),

@@ -383,12 +383,6 @@ func instanceEnvironment(
 			Name:  "PATRONICTL_CONFIG_FILE",
 			Value: configDirectory,
 		},
-
-		// PGHOST is set to /tmp to match the unix_socket_directories parameter for postgres
-		{
-			Name:  "PGHOST",
-			Value: "/tmp",
-		},
 	}
 
 	return variables
@@ -475,13 +469,6 @@ func instanceYAML(
 		// parameter "unix_socket_directories" is set, Patroni will connect using one
 		// of those directories. Otherwise, it will use the client (libpq) default.
 		"use_unix_socket": true,
-
-		"parameters": map[string]interface{}{
-			// Set unix_socket_directories to /tmp so that Patroni has permission to
-			// create the socket. The default (/var/run/postgresql/) will be created
-			// as user:group 26:26 instead of postgres:postgres
-			"unix_socket_directories": "/tmp",
-		},
 	}
 	root["postgresql"] = postgresql
 

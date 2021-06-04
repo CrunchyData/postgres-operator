@@ -19,6 +19,20 @@ import (
 	"strings"
 )
 
+// NewParameters returns ParameterSets required by this package.
+func NewParameters() Parameters {
+	parameters := Parameters{
+		Mandatory: NewParameterSet(),
+		Default:   NewParameterSet(),
+	}
+
+	// Use UNIX domain sockets for local connections.
+	// PostgreSQL must be restarted when changing this value.
+	parameters.Mandatory.Add("unix_socket_directories", SocketDirectory)
+
+	return parameters
+}
+
 // Parameters is a pairing of ParameterSets.
 type Parameters struct{ Mandatory, Default *ParameterSet }
 

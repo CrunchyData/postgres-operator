@@ -450,8 +450,6 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
-- name: PGHOST
-  value: /tmp
 	`)+"\n"))
 
 	t.Run("MatchingPorts", func(t *testing.T) {
@@ -494,8 +492,6 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
-- name: PGHOST
-  value: /tmp
 		`)+"\n"))
 	})
 }
@@ -523,8 +519,6 @@ postgresql:
   - waldir=/pgdata/pg12_wal
   create_replica_methods:
   - basebackup
-  parameters:
-    unix_socket_directories: /tmp
   pgpass: /tmp/.pgpass
   use_unix_socket: true
 restapi: {}
@@ -549,8 +543,6 @@ postgresql:
   create_replica_methods:
   - pgbackrest
   - basebackup
-  parameters:
-    unix_socket_directories: /tmp
   pgbackrest:
     command: '''some'' ''backrest'' ''cmd'''
     keep_data: true

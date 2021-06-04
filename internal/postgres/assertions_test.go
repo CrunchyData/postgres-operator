@@ -18,25 +18,14 @@ package postgres
 import (
 	"strings"
 
-	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert/cmp"
 	"sigs.k8s.io/yaml"
 )
 
 func marshalMatches(actual interface{}, expected string) cmp.Comparison {
 	b, err := yaml.Marshal(actual)
-	return func() cmp.Result {
-		if err != nil {
-			return cmp.ResultFromError(err)
-		}
-		diff := gocmp.Diff(string(b), strings.Trim(expected, "\t\n")+"\n")
-		if diff == "" {
-			return cmp.ResultSuccess
-		}
-		return cmp.ResultFailureTemplate(`
---- {{ with callArg 0 }}{{ formatNode . }}{{else}}←{{end}}
-+++ {{ with callArg 1 }}{{ formatNode . }}{{else}}→{{end}}
-{{ .Data.diff }}`,
-			map[string]interface{}{"diff": diff})
+	if err != nil {
+		return func() cmp.Result { return cmp.ResultFromError(err) }
 	}
+	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
 }

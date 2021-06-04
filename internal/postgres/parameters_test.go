@@ -21,6 +21,14 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+func TestNewParameters(t *testing.T) {
+	parameters := NewParameters()
+
+	assert.DeepEqual(t, parameters.Mandatory.AsMap(), map[string]string{
+		"unix_socket_directories": "/tmp",
+	})
+}
+
 func TestParameterSet(t *testing.T) {
 	ps := NewParameterSet()
 
