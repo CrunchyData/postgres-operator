@@ -210,7 +210,7 @@ containers:
   - name: PGDATA
     value: /pgdata/pg11
   - name: PGHOST
-    value: /tmp
+    value: /tmp/postgres
   - name: PGPORT
     value: "5432"
   name: database
@@ -267,7 +267,7 @@ initContainers:
   - name: PGDATA
     value: /pgdata/pg11
   - name: PGHOST
-    value: /tmp
+    value: /tmp/postgres
   - name: PGPORT
     value: "5432"
   name: postgres-startup

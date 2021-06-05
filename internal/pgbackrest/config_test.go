@@ -167,7 +167,7 @@ repo4-type=s3
 pg1-host=`+testInstanceName+`-0.testcluster-pods
 pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
 pg1-port=5432
-pg1-socket-path=/tmp
+pg1-socket-path=/tmp/postgres
 `)
 	})
 
@@ -203,7 +203,7 @@ repo4-type=s3
 [db]
 pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
 pg1-port=5432
-pg1-socket-path=/tmp
+pg1-socket-path=/tmp/postgres
 `)
 	})
 
