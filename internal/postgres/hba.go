@@ -26,6 +26,22 @@ func NewHBAs() HBAs {
 		Mandatory: []HostBasedAuthentication{
 			// The "postgres" superuser must always be able to connect locally.
 			*NewHBA().Local().User("postgres").Method("peer"),
+
+			// The replication user must always connect over TLS using certificate
+			// authentication. Patroni also connects to the "postgres" database
+			// when calling `pg_rewind`.
+			// - https://www.postgresql.org/docs/current/warm-standby.html#STREAMING-REPLICATION-AUTHENTICATION
+			*NewHBA().TLS().User(ReplicationUser).Method("cert").Replication(),
+			*NewHBA().TLS().User(ReplicationUser).Method("cert").Database("postgres"),
+			*NewHBA().TCP().User(ReplicationUser).Method("reject"),
+		},
+
+		Default: []HostBasedAuthentication{
+			// Allow TLS connections to any database using passwords. The "md5"
+			// authentication method automatically verifies passwords encrypted
+			// using either MD5 or SCRAM-SHA-256.
+			// - https://www.postgresql.org/docs/current/auth-password.html
+			*NewHBA().TLS().Method("md5"),
 		},
 	}
 }

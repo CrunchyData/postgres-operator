@@ -25,7 +25,19 @@ func TestNewParameters(t *testing.T) {
 	parameters := NewParameters()
 
 	assert.DeepEqual(t, parameters.Mandatory.AsMap(), map[string]string{
+		"ssl":           "on",
+		"ssl_ca_file":   "/pgconf/tls/ca.crt",
+		"ssl_cert_file": "/pgconf/tls/tls.crt",
+		"ssl_key_file":  "/pgconf/tls/tls.key",
+
 		"unix_socket_directories": "/tmp",
+
+		"wal_level": "logical",
+	})
+	assert.DeepEqual(t, parameters.Default.AsMap(), map[string]string{
+		"jit": "off",
+
+		"password_encryption": "scram-sha-256",
 	})
 }
 

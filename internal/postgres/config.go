@@ -45,6 +45,10 @@ safelink() (
 
 	// SocketDirectory is where to bind and connect to UNIX sockets.
 	SocketDirectory = "/tmp"
+
+	// ReplicationUser is the PostgreSQL role that will be created by Patroni
+	// for streaming replication and for `pg_rewind`.
+	ReplicationUser = "_crunchyrepl"
 )
 
 // ConfigDirectory returns the absolute path to $PGDATA for cluster.

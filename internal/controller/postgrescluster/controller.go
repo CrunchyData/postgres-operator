@@ -39,7 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -158,31 +157,10 @@ func (r *Reconciler) Reconcile(
 		err                      error
 	)
 
-	// TODO(cbandy): Accumulate postgres settings.
 	pgHBAs := postgres.NewHBAs()
-
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TLS().
-		User(naming.PGReplicationUsername).Replication().Method("cert"))
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TLS().
-		User(naming.PGReplicationUsername).Database("postgres").Method("cert"))
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().
-		User(naming.PGReplicationUsername).Method("reject"))
-
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
-	// The "md5" authentication method automatically verifies passwords encrypted
-	// using either MD5 or SCRAM-SHA-256.
-	// - https://www.postgresql.org/docs/current/auth-password.html
-	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TLS().Method("md5"))
-
 	pgParameters := postgres.NewParameters()
-	pgParameters.Mandatory.Add("wal_level", "logical")
-	pgParameters.Mandatory.Add("ssl", "on")
-	pgParameters.Mandatory.Add("ssl_cert_file", "/pgconf/tls/tls.crt")
-	pgParameters.Mandatory.Add("ssl_key_file", "/pgconf/tls/tls.key")
-	pgParameters.Mandatory.Add("ssl_ca_file", "/pgconf/tls/ca.crt")
-	pgParameters.Default.Add("jit", "off")
-	pgParameters.Default.Add("password_encryption", "scram-sha-256")
 
 	// enable archive mode and set archive command for pgBackRest
 	pgParameters.Mandatory.Add("archive_mode", "on")

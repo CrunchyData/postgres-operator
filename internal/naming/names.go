@@ -120,10 +120,6 @@ const (
 	// PGBackRestSSHVolume is the name the SSH volume used when configuring SSH in a pgBackRest Pod
 	PGBackRestSSHVolume = "ssh"
 
-	// PGReplicationUsername is the user account that will be created by patroni for replication.
-	// The replication account is used for both replication and pg_rewind
-	PGReplicationUsername = "_crunchyrepl"
-
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'

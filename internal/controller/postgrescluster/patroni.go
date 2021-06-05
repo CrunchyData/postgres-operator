@@ -281,7 +281,7 @@ func (r *Reconciler) reconcileReplicationSecret(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	clientLeaf := pki.NewLeafCertificate("", nil, nil)
-	clientLeaf.DNSNames = []string{naming.PGReplicationUsername}
+	clientLeaf.DNSNames = []string{postgres.ReplicationUser}
 	clientLeaf.CommonName = clientLeaf.DNSNames[0]
 
 	if data, ok := existing.Data[naming.ReplicationCert]; err == nil && ok {

@@ -30,6 +30,31 @@ func NewParameters() Parameters {
 	// PostgreSQL must be restarted when changing this value.
 	parameters.Mandatory.Add("unix_socket_directories", SocketDirectory)
 
+	// Enable logical replication in addition to streaming and WAL archiving.
+	// PostgreSQL must be restarted when changing this value.
+	// - https://www.postgresql.org/docs/current/runtime-config-wal.html#GUC-WAL-LEVEL
+	// - https://www.postgresql.org/docs/current/runtime-config-replication.html
+	// - https://www.postgresql.org/docs/current/logical-replication.html
+	parameters.Mandatory.Add("wal_level", "logical")
+
+	// Always enable SSL/TLS.
+	// PostgreSQL must be reloaded when changing this value.
+	// - https://www.postgresql.org/docs/current/ssl-tcp.html
+	parameters.Mandatory.Add("ssl", "on")
+	parameters.Mandatory.Add("ssl_cert_file", "/pgconf/tls/tls.crt")
+	parameters.Mandatory.Add("ssl_key_file", "/pgconf/tls/tls.key")
+	parameters.Mandatory.Add("ssl_ca_file", "/pgconf/tls/ca.crt")
+
+	// Just-in-Time compilation can degrade performance unexpectedly. Allow
+	// users to enable it for appropriate workloads.
+	// - https://www.postgresql.org/docs/current/jit.html
+	parameters.Default.Add("jit", "off")
+
+	// SCRAM-SHA-256 is preferred over MD5, but allow users to disable it when
+	// necessary.
+	// - https://www.postgresql.org/docs/current/auth-password.html
+	parameters.Default.Add("password_encryption", "scram-sha-256")
+
 	return parameters
 }
 
