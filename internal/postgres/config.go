@@ -138,6 +138,11 @@ func startupCommand(
 		`results 'data directory' "${postgres_data_directory}"`,
 		`[ "${postgres_data_directory}" = "${PGDATA}" ]`,
 
+		// Determine if the data directory has been prepared for bootstrapping the cluster
+		`bootstrap_dir="${postgres_data_directory}_bootstrap"`,
+		`[ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"`,
+		`[ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"`,
+
 		// pgBackRest expects the data directory to exist before doing a restore.
 		`directory "${postgres_data_directory}"`,
 

@@ -95,6 +95,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>The secret containing the Certificates and Keys to encrypt PostgreSQL traffic will need to contain the server TLS certificate, TLS key and the Certificate Authority certificate with the data keys set to tls.crt, tls.key and ca.crt, respectively. It will then be mounted as a volume projection to the '/pgconf/tls' directory. For more information on Kubernetes secret projections, please see https://k8s.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths NOTE: If CustomTLSSecret is provided, CustomReplicationClientTLSSecret MUST be provided and the ca.crt provided must be the same.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasource">dataSource</a></b></td>
+        <td>object</td>
+        <td>Specifies a data source for bootstrapping the PostgreSQL cluster.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecmetadata">metadata</a></b></td>
         <td>object</td>
         <td>Metadata contains metadata for PostgresCluster resources</td>
@@ -291,6 +296,70 @@ Maps a string key to a path within a volume.
         <td><b>path</b></td>
         <td>string</td>
         <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasource">
+  PostgresCluster.spec.dataSource
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Specifies a data source for bootstrapping the PostgreSQL cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgrescluster">postgresCluster</a></b></td>
+        <td>object</td>
+        <td>Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL data directory for a new PostgreSQL cluster using a pgBackRest restore.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepostgrescluster">
+  PostgresCluster.spec.dataSource.postgresCluster
+  <sup><sup><a href="#postgresclusterspecdatasource">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL data directory for a new PostgreSQL cluster using a pgBackRest restore.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>clusterName</b></td>
+        <td>string</td>
+        <td>The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster. PostgresCluster.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>options</b></td>
+        <td>[]string</td>
+        <td>Command line options to include when running the pgBackRest restore command. https://pgbackrest.org/command.html#command-restore</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>repoName</b></td>
+        <td>string</td>
+        <td>The name of the pgBackRest repo within the source PostgresCluster that contains the backups that should be utilized to perform a pgBackRest restore when initializing the data source for the new PostgresCluster.</td>
         <td>true</td>
       </tr></tbody>
 </table>

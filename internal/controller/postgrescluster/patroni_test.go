@@ -36,9 +36,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func TestPatroniReplicationSecret(t *testing.T) {
@@ -182,8 +182,8 @@ func TestReconcilePatroniStatus(t *testing.T) {
 
 	namespace := "test-reconcile-patroni-status"
 	systemIdentifier := "6952526174828511264"
-	createResources := func(index int, readyReplicas, replicas int32,
-		writeAnnotation bool) *v1beta1.PostgresCluster {
+	createResources := func(index, readyReplicas int,
+		writeAnnotation bool) (*v1beta1.PostgresCluster, *observedInstances) {
 
 		i := strconv.Itoa(index)
 		clusterName := "patroni-status-" + i
@@ -203,7 +203,7 @@ func TestReconcilePatroniStatus(t *testing.T) {
 			},
 		}
 
-		instance := &appsv1.StatefulSet{
+		runner := &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: namespace,
 				Name:      instanceName,
@@ -230,33 +230,25 @@ func TestReconcilePatroniStatus(t *testing.T) {
 		}
 		assert.NilError(t, tClient.Create(ctx, endpoints, &client.CreateOptions{}))
 
-		assert.NilError(t, tClient.Create(ctx, instance, &client.CreateOptions{}))
-		instanceWithStatus := instance.DeepCopy()
-		instanceWithStatus.Status = appsv1.StatefulSetStatus{
-			Replicas:      replicas,
-			ReadyReplicas: readyReplicas,
+		instance := &Instance{
+			Name: instanceName, Runner: runner,
 		}
-		assert.NilError(t,
-			tClient.Status().Patch(ctx, instanceWithStatus, client.MergeFrom(instance)))
+		for i := 0; i < readyReplicas; i++ {
+			instance.Pods = append(instance.Pods, &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{{
+						Type:    corev1.PodReady,
+						Status:  corev1.ConditionTrue,
+						Reason:  "test",
+						Message: "test",
+					}},
+				},
+			})
+		}
+		observedInstances := &observedInstances{}
+		observedInstances.forCluster = []*Instance{instance}
 
-		err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
-			sts := &appsv1.StatefulSet{}
-			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(instance), sts); err != nil {
-				return false, nil
-			}
-			if sts.Status.Replicas != replicas || sts.Status.ReadyReplicas != readyReplicas {
-				return false, nil
-			}
-			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(endpoints),
-				&corev1.Endpoints{}); err != nil {
-				return false, nil
-			}
-			return true, nil
-		})
-
-		assert.NilError(t, err)
-
-		return postgresCluster
+		return postgresCluster, observedInstances
 	}
 
 	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
@@ -264,25 +256,27 @@ func TestReconcilePatroniStatus(t *testing.T) {
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	testsCases := []struct {
-		errorExpected   bool
-		readyReplicas   int32
-		replias         int32
+		requeueExpected bool
+		readyReplicas   int
 		writeAnnotation bool
 	}{
-		{errorExpected: false, readyReplicas: 1, replias: 1, writeAnnotation: true},
-		{errorExpected: true, readyReplicas: 1, replias: 1, writeAnnotation: false},
-		{errorExpected: false, readyReplicas: 0, replias: 1, writeAnnotation: false},
-		{errorExpected: false, readyReplicas: 0, replias: 0, writeAnnotation: false},
+		{requeueExpected: false, readyReplicas: 1, writeAnnotation: true},
+		{requeueExpected: true, readyReplicas: 1, writeAnnotation: false},
+		{requeueExpected: false, readyReplicas: 0, writeAnnotation: false},
+		{requeueExpected: false, readyReplicas: 0, writeAnnotation: false},
 	}
 
 	for i, tc := range testsCases {
 		t.Run(fmt.Sprintf("%+v", tc), func(t *testing.T) {
-			postgresCluster := createResources(i, tc.readyReplicas, tc.replias, tc.writeAnnotation)
-			err := r.reconcilePatroniStatus(ctx, postgresCluster)
-			if !tc.errorExpected {
+			postgresCluster, observedInstances := createResources(i, tc.readyReplicas,
+				tc.writeAnnotation)
+			result, err := r.reconcilePatroniStatus(ctx, postgresCluster, observedInstances)
+			if tc.requeueExpected {
 				assert.NilError(t, err)
+				assert.Assert(t, result.RequeueAfter == 1*time.Second)
 			} else {
-				assert.ErrorContains(t, err, "detected ready instance but no initialize value")
+				assert.NilError(t, err)
+				assert.DeepEqual(t, result, reconcile.Result{})
 			}
 		})
 	}

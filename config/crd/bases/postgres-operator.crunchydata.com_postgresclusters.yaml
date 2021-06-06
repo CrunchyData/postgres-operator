@@ -1620,6 +1620,36 @@ spec:
                     description: Specify whether the Secret or its key must be defined
                     type: boolean
                 type: object
+              dataSource:
+                description: Specifies a data source for bootstrapping the PostgreSQL
+                  cluster.
+                properties:
+                  postgresCluster:
+                    description: Defines a pgBackRest data source that can be used
+                      to pre-populate the PostgreSQL data directory for a new PostgreSQL
+                      cluster using a pgBackRest restore.
+                    properties:
+                      clusterName:
+                        description: The name of an existing PostgresCluster to use
+                          as the datasource for the new PostgresCluster. PostgresCluster.
+                        type: string
+                      options:
+                        description: Command line options to include when running
+                          the pgBackRest restore command. https://pgbackrest.org/command.html#command-restore
+                        items:
+                          type: string
+                        type: array
+                      repoName:
+                        description: The name of the pgBackRest repo within the source
+                          PostgresCluster that contains the backups that should be
+                          utilized to perform a pgBackRest restore when initializing
+                          the data source for the new PostgresCluster.
+                        pattern: ^repo[1-4]
+                        type: string
+                    required:
+                    - repoName
+                    type: object
+                type: object
               image:
                 description: The image name to use for PostgreSQL containers
                 type: string

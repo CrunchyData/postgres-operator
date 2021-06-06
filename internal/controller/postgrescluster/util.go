@@ -84,7 +84,8 @@ func addNSSWrapper(image string, template *v1.PodTemplateSpec) {
 
 	for i, c := range template.Spec.Containers {
 		switch c.Name {
-		case naming.ContainerDatabase, naming.PGBackRestRepoContainerName:
+		case naming.ContainerDatabase, naming.PGBackRestRepoContainerName,
+			naming.PGBackRestRestoreContainerName:
 			passwd := fmt.Sprintf(nssWrapperDir, "postgres", "passwd")
 			group := fmt.Sprintf(nssWrapperDir, "postgres", "group")
 			template.Spec.Containers[i].Env = append(template.Spec.Containers[i].Env, []v1.EnvVar{

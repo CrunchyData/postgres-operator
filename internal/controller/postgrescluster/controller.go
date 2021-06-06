@@ -28,6 +28,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -157,6 +158,23 @@ func (r *Reconciler) Reconcile(
 		err                      error
 	)
 
+	// Define the function for the updating the PostgresCluster status. Returns any error that
+	// occurs while attempting to patch the status, while otherwise simply returning the
+	// Result and error variables that are populated while reconciling the PostgresCluster.
+	patchClusterStatus := func() (reconcile.Result, error) {
+		if !equality.Semantic.DeepEqual(before.Status, cluster.Status) {
+			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
+			// managed fields on the status subresource: https://issue.k8s.io/88901
+			if err := errors.WithStack(r.Client.Status().Patch(
+				ctx, cluster, client.MergeFrom(before), r.Owner)); err != nil {
+				log.Error(err, "patching cluster status")
+				return result, err
+			}
+			log.V(1).Info("patched cluster status")
+		}
+		return result, err
+	}
+
 	pgHBAs := postgres.NewHBAs()
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
@@ -176,7 +194,20 @@ func (r *Reconciler) Reconcile(
 		instances, err = r.observeInstances(ctx, cluster)
 	}
 	if err == nil {
-		err = r.reconcilePatroniStatus(ctx, cluster)
+		err = updateResult(r.reconcilePatroniStatus(ctx, cluster, instances))
+	}
+	// First handle reconciling any data source for the cluster.  The data source will only be
+	// reconciled prior to bootstrapping the cluster.  A condition is also set to indicate whether
+	// or not the data source for the cluster has been initialized.
+	if err == nil && cluster.Spec.DataSource != nil {
+		condition := meta.FindStatusCondition(cluster.Status.Conditions,
+			ConditionDataSourceInitialized)
+		if condition == nil || (condition.Status != metav1.ConditionTrue) {
+			if cluster.Spec.DataSource.PostgresCluster != nil {
+				err = r.reconcilePostgresClusterDataSource(ctx, cluster)
+			}
+			return patchClusterStatus()
+		}
 	}
 	if err == nil {
 		pgUser, err = r.reconcilePGUserSecret(ctx, cluster)
@@ -232,16 +263,9 @@ func (r *Reconciler) Reconcile(
 	// observedGeneration
 	cluster.Status.ObservedGeneration = cluster.GetGeneration()
 
-	if err == nil && !equality.Semantic.DeepEqual(before.Status, cluster.Status) {
-		// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
-		// managed fields on the status subresource: https://issue.k8s.io/88901
-		err = errors.WithStack(
-			r.Client.Status().Patch(ctx, cluster, client.MergeFrom(before), r.Owner))
-	}
-
 	log.V(1).Info("reconciled cluster")
 
-	return result, err
+	return patchClusterStatus()
 }
 
 // deleteControlled safely deletes object when it is controlled by cluster.

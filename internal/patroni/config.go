@@ -502,36 +502,47 @@ func instanceYAML(
 	postgresql["create_replica_methods"] = methods
 
 	if !ClusterBootstrapped(cluster) {
-		// Populate some "bootstrap" fields to initialize the cluster.
-		// When Patroni is already bootstrapped, this section is ignored.
-		// - https://github.com/zalando/patroni/blob/v2.0.2/docs/SETTINGS.rst#bootstrap-configuration
-		// - https://github.com/zalando/patroni/blob/v2.0.2/docs/replica_bootstrap.rst#bootstrap
-		root["bootstrap"] = map[string]interface{}{
-			"method": "initdb",
+		if cluster.Spec.DataSource != nil && cluster.Spec.DataSource.PostgresCluster != nil {
+			data_dir := postgres.DataDirectory(cluster)
+			root["bootstrap"] = map[string]interface{}{
+				"method": "existing",
+				"existing": map[string]interface{}{
+					"command":   fmt.Sprintf(`mv %q %q`, data_dir+"_bootstrap", data_dir),
+					"no_params": "true",
+				},
+			}
+		} else {
+			// Populate some "bootstrap" fields to initialize the cluster.
+			// When Patroni is already bootstrapped, this section is ignored.
+			// - https://github.com/zalando/patroni/blob/v2.0.2/docs/SETTINGS.rst#bootstrap-configuration
+			// - https://github.com/zalando/patroni/blob/v2.0.2/docs/replica_bootstrap.rst#bootstrap
+			root["bootstrap"] = map[string]interface{}{
+				"method": "initdb",
 
-			// The "initdb" bootstrap method is configured differently from others.
-			// Patroni prepends "--" before it calls `initdb`.
-			// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/bootstrap.py#L45
-			"initdb": []string{
-				// Enable checksums on data pages to help detect corruption of
-				// storage that would otherwise be silent. This also enables
-				// "wal_log_hints" which is a prerequisite for using `pg_rewind`.
-				// - https://www.postgresql.org/docs/current/app-initdb.html
-				// - https://www.postgresql.org/docs/current/app-pgrewind.html
-				// - https://www.postgresql.org/docs/current/runtime-config-wal.html
-				//
-				// The benefits of checksums in the Kubernetes storage landscape
-				// outweigh their negligible overhead, and enabling them later
-				// is costly. (Every file of the cluster must be rewritten.)
-				// PostgreSQL v12 introduced the `pg_checksums` utility which
-				// can cheaply disable them while PostgreSQL is stopped.
-				// - https://www.postgresql.org/docs/current/app-pgchecksums.html
-				"data-checksums",
-				"encoding=UTF8",
+				// The "initdb" bootstrap method is configured differently from others.
+				// Patroni prepends "--" before it calls `initdb`.
+				// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/bootstrap.py#L45
+				"initdb": []string{
+					// Enable checksums on data pages to help detect corruption of
+					// storage that would otherwise be silent. This also enables
+					// "wal_log_hints" which is a prerequisite for using `pg_rewind`.
+					// - https://www.postgresql.org/docs/current/app-initdb.html
+					// - https://www.postgresql.org/docs/current/app-pgrewind.html
+					// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+					//
+					// The benefits of checksums in the Kubernetes storage landscape
+					// outweigh their negligible overhead, and enabling them later
+					// is costly. (Every file of the cluster must be rewritten.)
+					// PostgreSQL v12 introduced the `pg_checksums` utility which
+					// can cheaply disable them while PostgreSQL is stopped.
+					// - https://www.postgresql.org/docs/current/app-pgchecksums.html
+					"data-checksums",
+					"encoding=UTF8",
 
-				// NOTE(cbandy): The "--waldir" option was introduced in PostgreSQL v10.
-				"waldir=" + postgres.WALDirectory(cluster, instance),
-			},
+					// NOTE(cbandy): The "--waldir" option was introduced in PostgreSQL v10.
+					"waldir=" + postgres.WALDirectory(cluster, instance),
+				},
+			}
 		}
 	}
 

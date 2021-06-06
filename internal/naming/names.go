@@ -114,6 +114,10 @@ const (
 	// SSH
 	PGBackRestRepoContainerName = "pgbackrest"
 
+	// PGBackRestRestoreContainerName is the name assigned to the container used to run pgBackRest
+	// restores
+	PGBackRestRestoreContainerName = "pgbackrest-restore"
+
 	// PGBackRestRepoName is the name used for a pgbackrest repository
 	PGBackRestRepoName = "%s-pgbackrest-repo-%s"
 
@@ -316,6 +320,14 @@ func PGBackRestCronJob(cluster *v1beta1.PostgresCluster, backuptype, repoName st
 	return metav1.ObjectMeta{
 		Namespace: cluster.GetNamespace(),
 		Name:      cluster.Name + "-pgbackrest-" + repoName + "-" + backuptype,
+	}
+}
+
+// PGBackRestRestoreJob returns the ObjectMeta for a pgBackRest restore Job
+func PGBackRestRestoreJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name:      cluster.Name + "-pgbackrest-restore",
 	}
 }
 

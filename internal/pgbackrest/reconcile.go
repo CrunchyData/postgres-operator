@@ -130,7 +130,7 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 // AddSSHToPod populates a Pod template Spec with with the container and volumes needed to enable
 // SSH within a Pod.  It will also mount the SSH configuration to any additional containers specified.
 func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	additionalVolumeMountContainers ...string) error {
+	enableSSHD bool, additionalVolumeMountContainers ...string) error {
 
 	sshConfigs := []v1.VolumeProjection{}
 	// stores all SSH configurations (ConfigMaps & Secrets)
@@ -176,33 +176,37 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 		ReadOnly:  true,
 	}
 
-	container := v1.Container{
-		Command: []string{"/usr/sbin/sshd", "-D", "-e"},
-		Image:   postgresCluster.Spec.Archive.PGBackRest.Image,
-		LivenessProbe: &v1.Probe{
-			Handler: v1.Handler{
-				TCPSocket: &v1.TCPSocketAction{
-					Port: intstr.FromInt(2022),
+	// Only add the SSHD container if requested.  Sometimes (e.g. when running a restore Job) it is
+	// not necessary to run a full SSHD server, but the various SSH configs are still needed.
+	if enableSSHD {
+		container := v1.Container{
+			Command: []string{"/usr/sbin/sshd", "-D", "-e"},
+			Image:   postgresCluster.Spec.Archive.PGBackRest.Image,
+			LivenessProbe: &v1.Probe{
+				Handler: v1.Handler{
+					TCPSocket: &v1.TCPSocketAction{
+						Port: intstr.FromInt(2022),
+					},
 				},
 			},
-		},
-		Name:            naming.PGBackRestRepoContainerName,
-		VolumeMounts:    []v1.VolumeMount{sshVolumeMount},
-		SecurityContext: initialize.RestrictedSecurityContext(),
-	}
-
-	// Mount PostgreSQL volumes if they are present in the template.
-	postgresMounts := map[string]corev1.VolumeMount{
-		postgres.DataVolumeMount().Name: postgres.DataVolumeMount(),
-		postgres.WALVolumeMount().Name:  postgres.WALVolumeMount(),
-	}
-	for i := range template.Spec.Volumes {
-		if mount, ok := postgresMounts[template.Spec.Volumes[i].Name]; ok {
-			container.VolumeMounts = append(container.VolumeMounts, mount)
+			Name:            naming.PGBackRestRepoContainerName,
+			VolumeMounts:    []v1.VolumeMount{sshVolumeMount},
+			SecurityContext: initialize.RestrictedSecurityContext(),
 		}
-	}
 
-	template.Spec.Containers = append(template.Spec.Containers, container)
+		// Mount PostgreSQL volumes if they are present in the template.
+		postgresMounts := map[string]corev1.VolumeMount{
+			postgres.DataVolumeMount().Name: postgres.DataVolumeMount(),
+			postgres.WALVolumeMount().Name:  postgres.WALVolumeMount(),
+		}
+		for i := range template.Spec.Volumes {
+			if mount, ok := postgresMounts[template.Spec.Volumes[i].Name]; ok {
+				container.VolumeMounts = append(container.VolumeMounts, mount)
+			}
+		}
+
+		template.Spec.Containers = append(template.Spec.Containers, container)
+	}
 
 	for _, name := range additionalVolumeMountContainers {
 		var containerFound bool

@@ -110,7 +110,8 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 
 	t.Run("Jobs", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
-			{"ClusterPGBouncer", PGBackRestBackupJob(cluster)},
+			{"PGBackRestBackupJob", PGBackRestBackupJob(cluster)},
+			{"PGBackRestRestoreJob", PGBackRestRestoreJob(cluster)},
 		})
 	})
 

@@ -187,6 +187,32 @@ func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec,
 	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmJobKey)
 }
 
+// RestoreCommand returns the command for performing a pgBackRest restore.  In addition to calling
+// the pgBackRest restore command with any pgBackRest options provided, the script also does the
+// following:
+// - Removes the patroni.dynamic.json file if present.  This ensures the configuration from the
+//   cluster being restored from is not utilized when bootstrapping a new cluster, and the
+//   configuration for the new cluster is utilized instead.
+// - Starts the database and allows recovery to complete.  A temporary postgresql.conf file
+//   with the minimum settings needed to safely start the database is created and utilized.
+// - Renames the data directory as needed to bootstrap the cluster using the restored database.
+//   This ensures compatibility with the "existing" bootstrap method that is included in the
+//   Patroni config when bootstrapping a cluster using an existing data directory.
+func RestoreCommand(args ...string) []string {
+
+	const restoreScript = `declare -r pgdata="$1" opts="$2"
+[ -d "${pgdata}" ] || install --directory --mode=0700 "${pgdata}"
+eval "pgbackrest restore ${opts}"
+rm -f "${pgdata}/patroni.dynamic.json"
+echo "unix_socket_directories = '/tmp'" > /tmp/postgres.restore.conf
+echo "archive_command = 'false'" >> /tmp/postgres.restore.conf
+pg_ctl start -D "${pgdata}" -o "--config-file=/tmp/postgres.restore.conf"
+until [[ $(psql -At -c "SELECT pg_catalog.pg_is_in_recovery()") == "f" ]]; do sleep 1; done    
+mv "${pgdata}" "${pgdata}_bootstrap"`
+
+	return append([]string{"bash", "-ceu", "--", restoreScript, "-"}, args...)
+}
+
 // populatePGInstanceConfigurationMap returns a map representing the pgBackRest configuration for
 // a PostgreSQL instance
 func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir string,

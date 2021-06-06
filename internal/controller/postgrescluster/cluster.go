@@ -32,6 +32,18 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// instanceReadyCount returns the postgrescluster's instance(s) replica counts
+func instanceReadyCount(cluster *v1beta1.PostgresCluster) int32 {
+
+	var instanceReadyCount int32
+	// check that all expected PostgreSQL instances are ready
+	for i := range cluster.Status.InstanceSets {
+		instanceReadyCount = cluster.Status.InstanceSets[i].ReadyReplicas +
+			instanceReadyCount
+	}
+	return instanceReadyCount
+}
+
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch
 
 // reconcileClusterConfigMap writes the ConfigMap that contains generated

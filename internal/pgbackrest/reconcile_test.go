@@ -247,7 +247,7 @@ func TestAddSSHToPod(t *testing.T) {
 				},
 			}
 
-			err := AddSSHToPod(postgresCluster, template,
+			err := AddSSHToPod(postgresCluster, template, true,
 				getContainerNames(tc.additionalSSHContainers)...)
 			assert.NilError(t, err)
 

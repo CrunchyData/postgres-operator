@@ -62,6 +62,12 @@ const (
 
 	LabelPGBackRestCronJob = labelPrefix + "pgbackrest-cronjob"
 
+	// LabelPGBackRestRestore is used to indicate that a Job or Pod is for a pgBackRest restore
+	LabelPGBackRestRestore = labelPrefix + "pgbackrest-restore"
+
+	// LabelStartupInstance is used to indicate the startup instance associated with a resource
+	LabelStartupInstance = labelPrefix + "startup-instance"
+
 	// LabelUserSecret is used to identify the secret containing the Postgres
 	// user connection information
 	LabelUserSecret = labelPrefix + "pguser"
@@ -132,6 +138,20 @@ func PGBackRestBackupJobLabels(clusterName, repoName string,
 func PGBackRestBackupJobSelector(clusterName, repoName string,
 	backupType BackupJobType) labels.Selector {
 	return PGBackRestBackupJobLabels(clusterName, repoName, backupType).AsSelector()
+}
+
+// PGBackRestRestoreJobLabels provides labels for pgBackRest restore Jobs.
+func PGBackRestRestoreJobLabels(clusterName string) labels.Set {
+	commonLabels := PGBackRestLabels(clusterName)
+	jobLabels := map[string]string{
+		LabelPGBackRestRestore: "",
+	}
+	return labels.Merge(jobLabels, commonLabels)
+}
+
+// PGBackRestRestoreJobSelector provides selector for querying pgBackRest restore Jobs.
+func PGBackRestRestoreJobSelector(clusterName string) labels.Selector {
+	return PGBackRestRestoreJobLabels(clusterName).AsSelector()
 }
 
 // PGBackRestRepoLabels provides common labels for pgBackRest repository

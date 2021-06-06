@@ -19,6 +19,9 @@ package pgbackrest
 
 import (
 	"context"
+	"io/ioutil"
+	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -293,4 +296,32 @@ pg1-socket-path=/tmp/postgres
   readOnly: true
 		`)+"\n"))
 	})
+}
+
+func TestRestoreCommand(t *testing.T) {
+	shellcheck, err := exec.LookPath("shellcheck")
+	if err != nil {
+		t.Skip(`requires "shellcheck" executable`)
+	} else {
+		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
+		assert.NilError(t, err)
+		t.Logf("using %q:\n%s", shellcheck, output)
+	}
+
+	pgdata := "/pgdata/pg13"
+	opts := []string{
+		"--stanza=" + DefaultStanzaName, "--pg1-path=" + pgdata,
+		"--repo=1"}
+	command := RestoreCommand(pgdata, strings.Join(opts, " "))
+
+	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+	assert.Assert(t, len(command) > 3)
+
+	dir := t.TempDir()
+	file := filepath.Join(dir, "script.bash")
+	assert.NilError(t, ioutil.WriteFile(file, []byte(command[3]), 0o600))
+
+	cmd := exec.Command(shellcheck, "--enable=all", file)
+	output, err := cmd.CombinedOutput()
+	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 }

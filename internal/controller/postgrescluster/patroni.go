@@ -18,16 +18,17 @@ package postgrescluster
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -201,55 +202,43 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 // reconcilePatroniStatus populates cluster.Status.Patroni with observations.
 func (r *Reconciler) reconcilePatroniStatus(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) error {
-	var status v1beta1.PatroniStatus
+	observedInstances *observedInstances,
+) (reconcile.Result, error) {
+	result := reconcile.Result{}
+	log := logging.FromContext(ctx)
+
+	var readyInstance bool
+	for _, instance := range observedInstances.forCluster {
+		if r, _ := instance.IsReady(); r {
+			readyInstance = true
+		}
+	}
 
 	dcs := &v1.Endpoints{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(dcs), dcs)))
 
-	if err == nil && dcs.Annotations["initialize"] != "" {
-		// After bootstrap, Patroni writes the cluster system identifier to DCS.
-		status.SystemIdentifier = dcs.Annotations["initialize"]
-		cluster.Status.Patroni = &status
-		return nil
-	}
-
-	// While we typically expect a value for the initialize key to be present in the Endpoints
-	// above by the time the StatefulSet for any instance indicates "ready" (since Patroni writes
-	// this value after successful cluster bootstrap, at which time the initial primary should
-	// transition to "ready"), sometimes this is not the case and the "initialize" key is not yet
-	// present.  Therefore, if a "ready" instance StatefulSet is detected in the cluster (as
-	// determined by its ReadyReplicas) we assume this is the case, and return an error in order to
-	// requeue and try again until the expected value is found.  Please note that another option
-	// would be to watch the Endpoints for the "initialize" value, which may be considered in a
-	// future implementation.
-	var instanceSelector labels.Selector
 	if err == nil {
-		instanceSelector, err = naming.AsSelector(naming.ClusterInstances(cluster.GetName()))
-	}
-
-	instances := &appsv1.StatefulSetList{}
-	if err == nil {
-		err = errors.WithStack(
-			r.Client.List(ctx, instances,
-				client.InNamespace(cluster.Namespace),
-				client.MatchingLabelsSelector{Selector: instanceSelector},
-			))
-	}
-
-	if err == nil {
-		for _, instance := range instances.Items {
-			if instance.Status.ReadyReplicas != 0 {
-				// TODO(andrewlecuyer): Returning an error to address a missing identifier in the
-				// Endpoints (despite a "ready" instance) is a symptom of a missed event.  Consider
-				// watching Endpoints instead to ensure the required events are not missed.
-				return errors.New("detected ready instance but no initialize value")
+		if dcs.Annotations["initialize"] != "" {
+			// After bootstrap, Patroni writes the cluster system identifier to DCS.
+			cluster.Status.Patroni = &v1beta1.PatroniStatus{
+				SystemIdentifier: dcs.Annotations["initialize"],
 			}
+		} else if readyInstance {
+			// While we typically expect a value for the initialize key to be present in the
+			// Endpoints above by the time the StatefulSet for any instance indicates "ready"
+			// (since Patroni writes this value after successful cluster bootstrap, at which time
+			// the initial primary should transition to "ready"), sometimes this is not the case
+			// and the "initialize" key is not yet present.  Therefore, if a "ready" instance
+			// is detected in the cluster we assume this is the case, and simply log a message and
+			// requeue in order to try again until the expected value is found.
+			log.Info("detected ready instance but no initialize value")
+			result.RequeueAfter = 1 * time.Second
+			return result, nil
 		}
 	}
 
-	return err
+	return result, err
 }
 
 // reconcileReplicationSecret creates a secret containing the TLS

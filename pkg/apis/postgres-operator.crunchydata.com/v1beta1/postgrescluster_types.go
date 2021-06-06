@@ -46,6 +46,10 @@ type PostgresClusterSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
+	// Specifies a data source for bootstrapping the PostgreSQL cluster.
+	// +optional
+	DataSource *DataSource `json:"dataSource,omitempty"`
+
 	// PostgreSQL archive configuration
 	// +kubebuilder:validation:Required
 	Archive Archive `json:"archive"`
@@ -108,6 +112,36 @@ type PostgresClusterSpec struct {
 	// Other resources, such as Services and Volumes, remain in place.
 	// +optional
 	Shutdown *bool `json:"shutdown,omitempty"`
+}
+
+// DataSource defines the source of the PostgreSQL data directory for a new PostgresCluster.
+type DataSource struct {
+	// Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL data
+	// directory for a new PostgreSQL cluster using a pgBackRest restore.
+	// +optional
+	PostgresCluster *PostgresClusterDataSource `json:"postgresCluster,omitempty"`
+}
+
+// PostgresClusterDataSource defines a data source for bootstrapping PostgreSQL clusters using a
+// an existing PostgresCluster.
+type PostgresClusterDataSource struct {
+
+	// The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster.
+	// PostgresCluster.
+	// +kubebuilder:validation:Required
+	ClusterName string `json:"clusterName,omitempty"`
+
+	// The name of the pgBackRest repo within the source PostgresCluster that contains the backups
+	// that should be utilized to perform a pgBackRest restore when initializing the data source
+	// for the new PostgresCluster.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=^repo[1-4]
+	RepoName string `json:"repoName"`
+
+	// Command line options to include when running the pgBackRest restore command.
+	// https://pgbackrest.org/command.html#command-restore
+	// +optional
+	Options []string `json:"options,omitempty"`
 }
 
 func (s *PostgresClusterSpec) Default() {

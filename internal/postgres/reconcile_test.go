@@ -254,6 +254,9 @@ initContainers:
     postgres_data_directory=$([ -d "${PGDATA}" ] && postgres -C data_directory || echo "${PGDATA}")
     results 'data directory' "${postgres_data_directory}"
     [ "${postgres_data_directory}" = "${PGDATA}" ]
+    bootstrap_dir="${postgres_data_directory}_bootstrap"
+    [ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"
+    [ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"
     directory "${postgres_data_directory}"
     [ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
