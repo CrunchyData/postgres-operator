@@ -143,9 +143,6 @@ const (
 	sshSecretNameSuffix = "%s-ssh"
 )
 
-// PostgresOperatorNamespace stores the Postgres Operator's namespace
-var PostgresOperatorNamespace string
-
 // AsObjectKey converts the ObjectMeta API type to a client.ObjectKey.
 // When you have a client.Object, use client.ObjectKeyFromObject() instead.
 func AsObjectKey(m metav1.ObjectMeta) client.ObjectKey {

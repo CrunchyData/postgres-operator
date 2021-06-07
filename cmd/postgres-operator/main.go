@@ -22,7 +22,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	"github.com/crunchydata/postgres-operator/internal/naming"
 	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 
@@ -58,13 +57,6 @@ func initLogging() {
 }
 
 func main() {
-
-	// get the Operator's namespace. If not set, log a fatal error.
-	naming.PostgresOperatorNamespace = os.Getenv("CRUNCHY_POSTGRES_OPERATOR_NAMESPACE")
-	if naming.PostgresOperatorNamespace == "" {
-		log.Fatalln("CRUNCHY_POSTGRES_OPERATOR_NAMESPACE environment variable is not set.")
-	}
-
 	otelFlush, err := initOpenTelemetry()
 	assertNoError(err)
 	defer otelFlush()

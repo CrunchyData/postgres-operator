@@ -109,7 +109,7 @@ deploy:
 deploy-dev: build-postgres-operator
 	$(PGO_KUBE_CLIENT) apply -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator postgres-operator
-	CRUNCHY_POSTGRES_OPERATOR_NAMESPACE=postgres-operator CRUNCHY_DEBUG=true \
+	CRUNCHY_DEBUG=true \
 		KUBECONFIG=hack/.kube/postgres-operator/postgres-operator \
 		bin/postgres-operator
 

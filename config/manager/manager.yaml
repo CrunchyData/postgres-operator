@@ -13,9 +13,4 @@ spec:
         env:
         - name: CRUNCHY_DEBUG
           value: "true"
-        - name: CRUNCHY_POSTGRES_OPERATOR_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
       serviceAccount: postgres-operator
