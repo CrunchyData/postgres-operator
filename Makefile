@@ -208,14 +208,15 @@ clean: clean-deprecated
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
 	[ ! -d hack/.kube ] || rm -r hack/.kube
-	[ ! -d bin/pgo-rmdata ] || rm -r bin/pgo-rmdata
-	[ ! -d bin/pgo-backrest ] || rm -r bin/pgo-backrest
 
 clean-deprecated:
 	@# packages used to be downloaded into the vendor directory
 	[ ! -d vendor ] || rm -r vendor
 	@# executables used to be compiled into the $GOBIN directory
 	[ ! -n '$(GOBIN)' ] || rm -f $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
+	@# executables used to be in subdirectories
+	[ ! -d bin/pgo-rmdata ] || rm -r bin/pgo-rmdata
+	[ ! -d bin/pgo-backrest ] || rm -r bin/pgo-backrest
 	[ ! -d bin/postgres-operator ] || rm -r bin/postgres-operator
 
 push: $(images:%=push-%) ;
