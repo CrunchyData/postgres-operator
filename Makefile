@@ -189,17 +189,17 @@ pgo-base-docker: pgo-base-build
 #======== Utility =======
 .PHONY: check
 check:
-	PGOROOT=$(PGOROOT) $(GO) test -cover ./...
+	$(GO) test -cover ./...
 
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
 .PHONY: check-envtest
 check-envtest: hack/tools/envtest
-	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" $(GO) test -count=1 -cover -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
+	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" $(GO) test -count=1 -cover -tags=envtest ./...
 
 .PHONY: check-envtest-existing
 check-envtest-existing:
 	${PGO_KUBE_CLIENT} apply -k ./config/dev
-	USE_EXISTING_CLUSTER=true $(GO) test -count=1 -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
+	USE_EXISTING_CLUSTER=true $(GO) test -count=1 -cover -tags=envtest ./...
 	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
 
