@@ -49,6 +49,7 @@ func TestLabelValuesValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsDNS1123Label(RolePrimary))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RoleReplica))
 	assert.Assert(t, nil == validation.IsDNS1123Label(string(BackupReplicaCreate)))
+	assert.Assert(t, nil == validation.IsDNS1123Label(RoleMonitoring))
 }
 
 func TestMerge(t *testing.T) {

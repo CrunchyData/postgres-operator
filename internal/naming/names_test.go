@@ -48,6 +48,7 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 		ContainerPGBouncer,
 		ContainerPGBouncerConfig,
 		ContainerPostgresStartup,
+		ContainerPGMonitorExporter,
 	} {
 		assert.Assert(t, !names.Has(name), "%q defined already", name)
 		assert.Assert(t, nil == validation.IsDNS1123Label(name))
@@ -136,6 +137,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PostgresTLSSecret", PostgresTLSSecret(cluster)},
 			{"ReplicationClientCertSecret", ReplicationClientCertSecret(cluster)},
 			{"PGBackRestSSHSecret", PGBackRestSSHSecret(cluster)},
+			{"MonitoringUserSecret", MonitoringUserSecret(cluster)},
 		})
 	})
 

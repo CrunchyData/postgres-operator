@@ -25,6 +25,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -42,6 +43,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
+	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -155,6 +157,7 @@ func (r *Reconciler) Reconcile(
 		primaryCertificate       *v1.SecretProjection
 		pgUser                   *v1.Secret
 		rootCA                   *pki.RootCertificateAuthority
+		monitoringSecret         *corev1.Secret
 		err                      error
 	)
 
@@ -176,6 +179,7 @@ func (r *Reconciler) Reconcile(
 	}
 
 	pgHBAs := postgres.NewHBAs()
+	pgmonitor.PostgreSQLHBAs(cluster, &pgHBAs)
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
 	pgParameters := postgres.NewParameters()
@@ -186,6 +190,8 @@ func (r *Reconciler) Reconcile(
 		`pgbackrest --stanza=`+pgbackrest.DefaultStanzaName+` archive-push "%p"`)
 	pgParameters.Mandatory.Add("restore_command",
 		`pgbackrest --stanza=`+pgbackrest.DefaultStanzaName+` archive-get %f "%p"`)
+
+	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
 	if err == nil {
 		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
@@ -242,7 +248,9 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster, instances, pgHBAs, pgParameters)
 	}
-
+	if err == nil {
+		monitoringSecret, err = r.reconcileMonitoringSecret(ctx, cluster)
+	}
 	if err == nil {
 		err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
@@ -255,6 +263,9 @@ func (r *Reconciler) Reconcile(
 	}
 	if err == nil {
 		err = r.reconcilePGBouncer(ctx, cluster, instances, primaryCertificate, rootCA)
+	}
+	if err == nil {
+		err = r.reconcilePGMonitor(ctx, cluster, instances, monitoringSecret)
 	}
 
 	// TODO reconcile pgadmin4

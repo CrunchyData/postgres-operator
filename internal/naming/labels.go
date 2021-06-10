@@ -89,6 +89,9 @@ const (
 
 	// RolePostgresWAL is the LabelRole applied to PostgreSQL WAL volumes.
 	RolePostgresWAL = "pgwal"
+
+	// RoleMonitoring is the LabelRole applied to Monitoring resources
+	RoleMonitoring = "monitoring"
 )
 
 // BackupJobType represents different types of backups (e.g. ad-hoc backups, scheduled backups,

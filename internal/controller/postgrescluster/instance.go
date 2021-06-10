@@ -1023,6 +1023,11 @@ func (r *Reconciler) reconcileInstance(
 		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, instance)
 	}
 
+	// Add pgMonitor resources to the instance Pod spec
+	if err == nil {
+		err = addPGMonitorToInstancePodSpec(cluster, &instance.Spec.Template)
+	}
+
 	// add the container for the initial copy of the mounted replication client
 	// certificate files to the /tmp directory and set the proper file permissions
 	postgres.InitCopyReplicationTLS(cluster, &instance.Spec.Template)

@@ -50,6 +50,9 @@ const (
 	// ContainerNSSWrapperInit is the name of the init container utilized to configure support
 	// for the nss_wrapper
 	ContainerNSSWrapperInit = "nss-wrapper-init"
+
+	// ContainerPGMonitorExporter is the name of a container running postgres_exporter
+	ContainerPGMonitorExporter = "exporter"
 )
 
 const (
@@ -241,6 +244,15 @@ func InstancePostgresWALVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: instance.GetNamespace(),
 		Name:      instance.GetName() + "-pgwal",
+	}
+}
+
+// MonitoringUserSecret returns ObjectMeta necessary to lookup the Secret
+// containing authentication credentials for monitoring tools.
+func MonitoringUserSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-monitoring",
 	}
 }
 

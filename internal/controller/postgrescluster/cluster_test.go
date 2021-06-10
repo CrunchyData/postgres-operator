@@ -840,14 +840,14 @@ func TestContainerSecurityContext(t *testing.T) {
 	// pods containers have the expected Security Context options
 	for _, pod := range pods.Items {
 		for _, container := range pod.Spec.Containers {
-			assert.Assert(t, *container.SecurityContext.Privileged == false)
-			assert.Assert(t, *container.SecurityContext.ReadOnlyRootFilesystem == true)
-			assert.Assert(t, *container.SecurityContext.AllowPrivilegeEscalation == false)
+			assert.Equal(t, *container.SecurityContext.Privileged, false)
+			assert.Equal(t, *container.SecurityContext.ReadOnlyRootFilesystem, true)
+			assert.Equal(t, *container.SecurityContext.AllowPrivilegeEscalation, false)
 		}
 		for _, initContainer := range pod.Spec.InitContainers {
-			assert.Assert(t, *initContainer.SecurityContext.Privileged == false)
-			assert.Assert(t, *initContainer.SecurityContext.ReadOnlyRootFilesystem == true)
-			assert.Assert(t, *initContainer.SecurityContext.AllowPrivilegeEscalation == false)
+			assert.Equal(t, *initContainer.SecurityContext.Privileged, false)
+			assert.Equal(t, *initContainer.SecurityContext.ReadOnlyRootFilesystem, true)
+			assert.Equal(t, *initContainer.SecurityContext.AllowPrivilegeEscalation, false)
 		}
 	}
 }
