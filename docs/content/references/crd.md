@@ -8,7 +8,7 @@ Packages:
 
 - [postgres-operator.crunchydata.com/v1beta1](#postgres-operatorcrunchydatacomv1beta1)
 
-# postgres-operator.crunchydata.com/v1beta1
+<h1 id="postgres-operatorcrunchydatacomv1beta1">postgres-operator.crunchydata.com/v1beta1</h1>
 
 Resource Types:
 
@@ -17,8 +17,7 @@ Resource Types:
 
 
 
-## PostgresCluster
-<sup><sup>[↩ Parent](#postgres-operatorcrunchydatacomv1beta1 )</sup></sup>
+<h2 id="postgrescluster">PostgresCluster</h2>
 
 
 
@@ -67,8 +66,10 @@ PostgresCluster is the Schema for the postgresclusters API
 </table>
 
 
-### PostgresCluster.spec
-<sup><sup>[↩ Parent](#postgrescluster)</sup></sup>
+<h3 id="postgresclusterspec">
+  PostgresCluster.spec
+  <sup><sup><a href="#postgrescluster">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -147,8 +148,10 @@ PostgresClusterSpec defines the desired state of PostgresCluster
 </table>
 
 
-### PostgresCluster.spec.customReplicationTLSSecret
-<sup><sup>[↩ Parent](#postgresclusterspec)</sup></sup>
+<h3 id="postgresclusterspeccustomreplicationtlssecret">
+  PostgresCluster.spec.customReplicationTLSSecret
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -182,8 +185,10 @@ The secret containing the replication client certificates and keys for secure co
 </table>
 
 
-### PostgresCluster.spec.customReplicationTLSSecret.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspeccustomreplicationtlssecret)</sup></sup>
+<h3 id="postgresclusterspeccustomreplicationtlssecretitemsindex">
+  PostgresCluster.spec.customReplicationTLSSecret.items[index]
+  <sup><sup><a href="#postgresclusterspeccustomreplicationtlssecret">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -217,8 +222,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.customTLSSecret
-<sup><sup>[↩ Parent](#postgresclusterspec)</sup></sup>
+<h3 id="postgresclusterspeccustomtlssecret">
+  PostgresCluster.spec.customTLSSecret
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -252,8 +259,10 @@ The secret containing the Certificates and Keys to encrypt PostgreSQL traffic wi
 </table>
 
 
-### PostgresCluster.spec.customTLSSecret.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspeccustomtlssecret)</sup></sup>
+<h3 id="postgresclusterspeccustomtlssecretitemsindex">
+  PostgresCluster.spec.customTLSSecret.items[index]
+  <sup><sup><a href="#postgresclusterspeccustomtlssecret">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -287,8 +296,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.metadata
-<sup><sup>[↩ Parent](#postgresclusterspec)</sup></sup>
+<h3 id="postgresclusterspecmetadata">
+  PostgresCluster.spec.metadata
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -317,8 +328,10 @@ Metadata contains metadata for PostgresCluster resources
 </table>
 
 
-### PostgresCluster.spec.patroni
-<sup><sup>[↩ Parent](#postgresclusterspec)</sup></sup>
+<h3 id="postgresclusterspecpatroni">
+  PostgresCluster.spec.patroni
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -357,8 +370,10 @@ Metadata contains metadata for PostgresCluster resources
 </table>
 
 
-### PostgresCluster.spec.proxy
-<sup><sup>[↩ Parent](#postgresclusterspec)</sup></sup>
+<h3 id="postgresclusterspecproxy">
+  PostgresCluster.spec.proxy
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -382,8 +397,10 @@ The specification of a proxy that connects to PostgreSQL.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer
-<sup><sup>[↩ Parent](#postgresclusterspecproxy)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncer">
+  PostgresCluster.spec.proxy.pgBouncer
+  <sup><sup><a href="#postgresclusterspecproxy">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -447,8 +464,10 @@ Defines a PgBouncer proxy and connection pooler.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncer)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinity">
+  PostgresCluster.spec.proxy.pgBouncer.affinity
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -482,8 +501,10 @@ Scheduling constraints of a PgBouncer pod. Changing this value causes PgBouncer 
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinity">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -512,8 +533,10 @@ Describes node affinity scheduling rules for the pod.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -542,8 +565,10 @@ An empty preferred scheduling term matches all objects with implicit weight 0 (i
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -572,8 +597,10 @@ A node selector term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -607,8 +634,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -642,8 +671,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecution">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -667,8 +698,10 @@ If the affinity requirements specified by this field are not met at scheduling t
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecution)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecution">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -697,8 +730,10 @@ A null or empty node selector term matches no objects. The requirements of them 
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -732,8 +767,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -767,8 +804,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinity">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -797,8 +836,10 @@ Describes pod affinity scheduling rules (e.g. co-locate this pod in the same nod
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodaffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -827,8 +868,10 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -862,8 +905,10 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -892,8 +937,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -927,8 +974,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodaffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -962,8 +1011,10 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -992,8 +1043,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1027,8 +1080,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinity">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1057,8 +1112,10 @@ Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodantiaffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1087,8 +1144,10 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1122,8 +1181,10 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1152,8 +1213,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1187,8 +1250,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodantiaffinity)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1222,8 +1287,10 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1252,8 +1319,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector)</sup></sup>
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1287,8 +1356,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncer)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfig">
+  PostgresCluster.spec.proxy.pgBouncer.config
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1327,8 +1398,10 @@ Configuration settings for the PgBouncer process. Changes to any of these values
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfig)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindex">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfig">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1367,8 +1440,10 @@ Projection that may be projected along with other supported volume types
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].configMap
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexconfigmap">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].configMap
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1402,8 +1477,10 @@ information about the configMap data to project
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].configMap.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindexconfigmap)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexconfigmapitemsindex">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].configMap.items[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindexconfigmap">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1437,8 +1514,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexdownwardapi">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1462,8 +1541,10 @@ information about the downwardAPI data to project
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindexdownwardapi)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexdownwardapiitemsindex">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI.items[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindexdownwardapi">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1502,8 +1583,10 @@ DownwardAPIVolumeFile represents information to create the file containing the p
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI.items[index].fieldRef
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindexdownwardapiitemsindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexdownwardapiitemsindexfieldref">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI.items[index].fieldRef
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1532,8 +1615,10 @@ Required: Selects a field of the pod: only annotations, labels, name and namespa
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI.items[index].resourceFieldRef
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindexdownwardapiitemsindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexdownwardapiitemsindexresourcefieldref">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].downwardAPI.items[index].resourceFieldRef
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1567,8 +1652,10 @@ Selects a resource of the container: only resources limits and requests (limits.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].secret
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexsecret">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].secret
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1602,8 +1689,10 @@ information about the secret data to project
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].secret.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindexsecret)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexsecretitemsindex">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].secret.items[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindexsecret">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1637,8 +1726,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.config.files[index].serviceAccountToken
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncerconfigfilesindex)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerconfigfilesindexserviceaccounttoken">
+  PostgresCluster.spec.proxy.pgBouncer.config.files[index].serviceAccountToken
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1672,8 +1763,10 @@ information about the serviceAccountToken data to project
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.customTLSSecret
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncer)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncercustomtlssecret">
+  PostgresCluster.spec.proxy.pgBouncer.customTLSSecret
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1707,8 +1800,10 @@ A secret projection containing a certificate and key with which to encrypt conne
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.customTLSSecret.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncercustomtlssecret)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncercustomtlssecretitemsindex">
+  PostgresCluster.spec.proxy.pgBouncer.customTLSSecret.items[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbouncercustomtlssecret">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1742,8 +1837,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.metadata
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncer)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncermetadata">
+  PostgresCluster.spec.proxy.pgBouncer.metadata
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1772,8 +1869,10 @@ Metadata contains metadata for PostgresCluster resources
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.resources
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncer)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncerresources">
+  PostgresCluster.spec.proxy.pgBouncer.resources
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1802,8 +1901,10 @@ Compute resources of a PgBouncer container. Changing this value causes PgBouncer
 </table>
 
 
-### PostgresCluster.spec.proxy.pgBouncer.tolerations[index]
-<sup><sup>[↩ Parent](#postgresclusterspecproxypgbouncer)</sup></sup>
+<h3 id="postgresclusterspecproxypgbouncertolerationsindex">
+  PostgresCluster.spec.proxy.pgBouncer.tolerations[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1847,8 +1948,10 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 </table>
 
 
-### PostgresCluster.spec.archive
-<sup><sup>[↩ Parent](#postgresclusterspec)</sup></sup>
+<h3 id="postgresclusterspecarchive">
+  PostgresCluster.spec.archive
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1872,8 +1975,10 @@ PostgreSQL archive configuration
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest
-<sup><sup>[↩ Parent](#postgresclusterspecarchive)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrest">
+  PostgresCluster.spec.archive.pgbackrest
+  <sup><sup><a href="#postgresclusterspecarchive">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1927,8 +2032,10 @@ pgBackRest archive configuration
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrest)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindex">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -1967,8 +2074,10 @@ Projection that may be projected along with other supported volume types
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].configMap
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexconfigmap">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].configMap
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2002,8 +2111,10 @@ information about the configMap data to project
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].configMap.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindexconfigmap)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexconfigmapitemsindex">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].configMap.items[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindexconfigmap">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2037,8 +2148,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexdownwardapi">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2062,8 +2175,10 @@ information about the downwardAPI data to project
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindexdownwardapi)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexdownwardapiitemsindex">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI.items[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindexdownwardapi">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2102,8 +2217,10 @@ DownwardAPIVolumeFile represents information to create the file containing the p
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI.items[index].fieldRef
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindexdownwardapiitemsindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexdownwardapiitemsindexfieldref">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI.items[index].fieldRef
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2132,8 +2249,10 @@ Required: Selects a field of the pod: only annotations, labels, name and namespa
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI.items[index].resourceFieldRef
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindexdownwardapiitemsindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexdownwardapiitemsindexresourcefieldref">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].downwardAPI.items[index].resourceFieldRef
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2167,8 +2286,10 @@ Selects a resource of the container: only resources limits and requests (limits.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].secret
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexsecret">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].secret
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2202,8 +2323,10 @@ information about the secret data to project
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].secret.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindexsecret)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexsecretitemsindex">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].secret.items[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindexsecret">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2237,8 +2360,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.configuration[index].serviceAccountToken
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestconfigurationindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestconfigurationindexserviceaccounttoken">
+  PostgresCluster.spec.archive.pgbackrest.configuration[index].serviceAccountToken
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2272,8 +2397,10 @@ information about the serviceAccountToken data to project
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.manual
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrest)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestmanual">
+  PostgresCluster.spec.archive.pgbackrest.manual
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2302,8 +2429,10 @@ Defines details for manual pgBackRest backup Jobs
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.metadata
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrest)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestmetadata">
+  PostgresCluster.spec.archive.pgbackrest.metadata
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2332,8 +2461,10 @@ Metadata contains metadata for PostgresCluster resources
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrest)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohost">
+  PostgresCluster.spec.archive.pgbackrest.repoHost
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2372,8 +2503,10 @@ Defines a pgBackRest repository host
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohost)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicated">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohost">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2402,8 +2535,10 @@ Defines a dedicated repository host configuration
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicated)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicated">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2437,8 +2572,10 @@ Scheduling constraints of the Dedicated repo host pod. Changing this value cause
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinity">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2467,8 +2604,10 @@ Describes node affinity scheduling rules for the pod.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2497,8 +2636,10 @@ An empty preferred scheduling term matches all objects with implicit weight 0 (i
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2527,8 +2668,10 @@ A node selector term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2562,8 +2705,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2597,8 +2742,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2622,8 +2769,10 @@ If the affinity requirements specified by this field are not met at scheduling t
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecution)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2652,8 +2801,10 @@ A null or empty node selector term matches no objects. The requirements of them 
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2687,8 +2838,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2722,8 +2875,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinity">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2752,8 +2907,10 @@ Describes pod affinity scheduling rules (e.g. co-locate this pod in the same nod
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2782,8 +2939,10 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2817,8 +2976,10 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2847,8 +3008,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2882,8 +3045,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2917,8 +3082,10 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2947,8 +3114,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -2982,8 +3151,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinity">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3012,8 +3183,10 @@ Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3042,8 +3215,10 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3077,8 +3252,10 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3107,8 +3284,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3142,8 +3321,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinity)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3177,8 +3358,10 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3207,8 +3390,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3242,8 +3427,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.resources
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostdedicated)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedresources">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.resources
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicated">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3272,8 +3459,10 @@ Resource requirements for the dedicated repository host
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.resources
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohost)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostresources">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.resources
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohost">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3302,8 +3491,10 @@ Resource requirements for a pgBackRest repository host
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.sshConfigMap
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohost)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostsshconfigmap">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.sshConfigMap
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohost">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3337,8 +3528,10 @@ ConfigMap containing custom SSH configuration
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.sshConfigMap.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostsshconfigmap)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostsshconfigmapitemsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.sshConfigMap.items[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostsshconfigmap">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3372,8 +3565,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.sshSecret
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohost)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostsshsecret">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.sshSecret
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohost">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3407,8 +3602,10 @@ Secret containing custom SSH keys
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repoHost.sshSecret.items[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestrepohostsshsecret)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestrepohostsshsecretitemsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.sshSecret.items[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostsshsecret">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3442,8 +3639,10 @@ Maps a string key to a path within a volume.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrest)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindex">
+  PostgresCluster.spec.archive.pgbackrest.repos[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3492,8 +3691,10 @@ PGBackRestRepo represents a pgBackRest repository.  Only one of its members may 
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].azure
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexazure">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].azure
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3517,8 +3718,10 @@ Represents a pgBackRest repository that is created using Azure storage
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].gcs
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexgcs">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].gcs
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3542,8 +3745,10 @@ Represents a pgBackRest repository that is created using Google Cloud Storage
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].s3
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexs3">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].s3
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3577,8 +3782,10 @@ RepoS3 represents a pgBackRest repository that is created using AWS S3 (or S3-co
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].schedules
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexschedules">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].schedules
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3612,8 +3819,10 @@ Defines the schedules for the pgBackRest backups Full, Differential and Incremen
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].volume
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindex)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexvolume">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].volume
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3637,8 +3846,10 @@ Represents a pgBackRest repository that is created using a PersistentVolumeClaim
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindexvolume)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspec">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindexvolume">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3692,8 +3903,10 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.dataSource
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspecdatasource">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.dataSource
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3727,8 +3940,10 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.resources
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspecresources">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.resources
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3757,8 +3972,10 @@ Resources represents the minimum resources the volume should have. More info: ht
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.selector
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspecselector">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.selector
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3787,8 +4004,10 @@ A label query over volumes to consider for binding.
 </table>
 
 
-### PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.selector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspecselector)</sup></sup>
+<h3 id="postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspecselectormatchexpressionsindex">
+  PostgresCluster.spec.archive.pgbackrest.repos[index].volume.volumeClaimSpec.selector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestreposindexvolumevolumeclaimspecselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3822,8 +4041,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index]
-<sup><sup>[↩ Parent](#postgresclusterspec)</sup></sup>
+<h3 id="postgresclusterspecinstancesindex">
+  PostgresCluster.spec.instances[index]
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3877,8 +4098,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinity">
+  PostgresCluster.spec.instances[index].affinity
+  <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3912,8 +4135,10 @@ Scheduling constraints of a Instance pod. Changing this value causes Instance to
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinity">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3942,8 +4167,10 @@ Describes node affinity scheduling rules for the pod.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -3972,8 +4199,10 @@ An empty preferred scheduling term matches all objects with implicit weight 0 (i
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4002,8 +4231,10 @@ A node selector term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4037,8 +4268,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4072,8 +4305,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4097,8 +4332,10 @@ If the affinity requirements specified by this field are not met at scheduling t
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecution)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4127,8 +4364,10 @@ A null or empty node selector term matches no objects. The requirements of them 
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4162,8 +4401,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">
+  PostgresCluster.spec.instances[index].affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4197,8 +4438,10 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinity">
+  PostgresCluster.spec.instances[index].affinity.podAffinity
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4227,8 +4470,10 @@ Describes pod affinity scheduling rules (e.g. co-locate this pod in the same nod
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4257,8 +4502,10 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4292,8 +4539,10 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4322,8 +4571,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4357,8 +4608,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4392,8 +4645,10 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4422,8 +4677,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4457,8 +4714,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinity">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4487,8 +4746,10 @@ Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodantiaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4517,8 +4778,10 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4552,8 +4815,10 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4582,8 +4847,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4617,8 +4884,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodantiaffinity)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4652,8 +4921,10 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4682,8 +4953,10 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-### PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4717,8 +4990,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index].metadata
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexmetadata">
+  PostgresCluster.spec.instances[index].metadata
+  <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4747,8 +5022,10 @@ Metadata contains metadata for PostgresCluster resources
 </table>
 
 
-### PostgresCluster.spec.instances[index].resources
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexresources">
+  PostgresCluster.spec.instances[index].resources
+  <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4777,8 +5054,10 @@ Compute resources of a PostgreSQL container.
 </table>
 
 
-### PostgresCluster.spec.instances[index].walVolumeClaimSpec
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspec">
+  PostgresCluster.spec.instances[index].walVolumeClaimSpec
+  <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4832,8 +5111,10 @@ Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More 
 </table>
 
 
-### PostgresCluster.spec.instances[index].walVolumeClaimSpec.dataSource
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspecdatasource">
+  PostgresCluster.spec.instances[index].walVolumeClaimSpec.dataSource
+  <sup><sup><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4867,8 +5148,10 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 </table>
 
 
-### PostgresCluster.spec.instances[index].walVolumeClaimSpec.resources
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspecresources">
+  PostgresCluster.spec.instances[index].walVolumeClaimSpec.resources
+  <sup><sup><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4897,8 +5180,10 @@ Resources represents the minimum resources the volume should have. More info: ht
 </table>
 
 
-### PostgresCluster.spec.instances[index].walVolumeClaimSpec.selector
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspecselector">
+  PostgresCluster.spec.instances[index].walVolumeClaimSpec.selector
+  <sup><sup><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4927,8 +5212,10 @@ A label query over volumes to consider for binding.
 </table>
 
 
-### PostgresCluster.spec.instances[index].walVolumeClaimSpec.selector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexwalvolumeclaimspecselector)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspecselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].walVolumeClaimSpec.selector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -4962,8 +5249,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.spec.instances[index].dataVolumeClaimSpec
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindex)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspec">
+  PostgresCluster.spec.instances[index].dataVolumeClaimSpec
+  <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5017,8 +5306,10 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
 </table>
 
 
-### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.dataSource
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspecdatasource">
+  PostgresCluster.spec.instances[index].dataVolumeClaimSpec.dataSource
+  <sup><sup><a href="#postgresclusterspecinstancesindexdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5052,8 +5343,10 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 </table>
 
 
-### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.resources
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspecresources">
+  PostgresCluster.spec.instances[index].dataVolumeClaimSpec.resources
+  <sup><sup><a href="#postgresclusterspecinstancesindexdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5082,8 +5375,10 @@ Resources represents the minimum resources the volume should have. More info: ht
 </table>
 
 
-### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.selector
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspec)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspecselector">
+  PostgresCluster.spec.instances[index].dataVolumeClaimSpec.selector
+  <sup><sup><a href="#postgresclusterspecinstancesindexdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5112,8 +5407,10 @@ A label query over volumes to consider for binding.
 </table>
 
 
-### PostgresCluster.spec.instances[index].dataVolumeClaimSpec.selector.matchExpressions[index]
-<sup><sup>[↩ Parent](#postgresclusterspecinstancesindexdatavolumeclaimspecselector)</sup></sup>
+<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspecselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].dataVolumeClaimSpec.selector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecselector">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5147,8 +5444,10 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-### PostgresCluster.status
-<sup><sup>[↩ Parent](#postgrescluster)</sup></sup>
+<h3 id="postgresclusterstatus">
+  PostgresCluster.status
+  <sup><sup><a href="#postgrescluster">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5202,8 +5501,10 @@ PostgresClusterStatus defines the observed state of PostgresCluster
 </table>
 
 
-### PostgresCluster.status.conditions[index]
-<sup><sup>[↩ Parent](#postgresclusterstatus)</sup></sup>
+<h3 id="postgresclusterstatusconditionsindex">
+  PostgresCluster.status.conditions[index]
+  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5253,8 +5554,10 @@ Condition contains details for one aspect of the current state of this API Resou
 </table>
 
 
-### PostgresCluster.status.instances[index]
-<sup><sup>[↩ Parent](#postgresclusterstatus)</sup></sup>
+<h3 id="postgresclusterstatusinstancesindex">
+  PostgresCluster.status.instances[index]
+  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5293,8 +5596,10 @@ Condition contains details for one aspect of the current state of this API Resou
 </table>
 
 
-### PostgresCluster.status.patroni
-<sup><sup>[↩ Parent](#postgresclusterstatus)</sup></sup>
+<h3 id="postgresclusterstatuspatroni">
+  PostgresCluster.status.patroni
+  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5318,8 +5623,10 @@ Condition contains details for one aspect of the current state of this API Resou
 </table>
 
 
-### PostgresCluster.status.pgbackrest
-<sup><sup>[↩ Parent](#postgresclusterstatus)</sup></sup>
+<h3 id="postgresclusterstatuspgbackrest">
+  PostgresCluster.status.pgbackrest
+  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5353,8 +5660,10 @@ Status information for pgBackRest
 </table>
 
 
-### PostgresCluster.status.pgbackrest.manualBackup
-<sup><sup>[↩ Parent](#postgresclusterstatuspgbackrest)</sup></sup>
+<h3 id="postgresclusterstatuspgbackrestmanualbackup">
+  PostgresCluster.status.pgbackrest.manualBackup
+  <sup><sup><a href="#postgresclusterstatuspgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5408,8 +5717,10 @@ Status information for manual backups
 </table>
 
 
-### PostgresCluster.status.pgbackrest.repoHost
-<sup><sup>[↩ Parent](#postgresclusterstatuspgbackrest)</sup></sup>
+<h3 id="postgresclusterstatuspgbackrestrepohost">
+  PostgresCluster.status.pgbackrest.repoHost
+  <sup><sup><a href="#postgresclusterstatuspgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5443,8 +5754,10 @@ Status information for the pgBackRest dedicated repository host
 </table>
 
 
-### PostgresCluster.status.pgbackrest.repos[index]
-<sup><sup>[↩ Parent](#postgresclusterstatuspgbackrest)</sup></sup>
+<h3 id="postgresclusterstatuspgbackrestreposindex">
+  PostgresCluster.status.pgbackrest.repos[index]
+  <sup><sup><a href="#postgresclusterstatuspgbackrest">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5493,8 +5806,10 @@ RepoVolumeStatus the status of a pgBackRest repository
 </table>
 
 
-### PostgresCluster.status.proxy
-<sup><sup>[↩ Parent](#postgresclusterstatus)</sup></sup>
+<h3 id="postgresclusterstatusproxy">
+  PostgresCluster.status.proxy
+  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
+</h3>
 
 
 
@@ -5518,8 +5833,10 @@ Current state of the PostgreSQL proxy.
 </table>
 
 
-### PostgresCluster.status.proxy.pgBouncer
-<sup><sup>[↩ Parent](#postgresclusterstatusproxy)</sup></sup>
+<h3 id="postgresclusterstatusproxypgbouncer">
+  PostgresCluster.status.proxy.pgBouncer
+  <sup><sup><a href="#postgresclusterstatusproxy">↩ Parent</a></sup></sup>
+</h3>
 
 
 
