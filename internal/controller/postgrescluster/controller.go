@@ -165,7 +165,9 @@ func (r *Reconciler) Reconcile(
 	// enable archive mode and set archive command for pgBackRest
 	pgParameters.Mandatory.Add("archive_mode", "on")
 	pgParameters.Mandatory.Add("archive_command",
-		"pgbackrest --stanza="+pgbackrest.DefaultStanzaName+" archive-push %p")
+		`pgbackrest --stanza=`+pgbackrest.DefaultStanzaName+` archive-push "%p"`)
+	pgParameters.Mandatory.Add("restore_command",
+		`pgbackrest --stanza=`+pgbackrest.DefaultStanzaName+` archive-get %f "%p"`)
 
 	if err == nil {
 		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
