@@ -2531,6 +2531,11 @@ Defines a dedicated repository host configuration
         <td>object</td>
         <td>Resource requirements for the dedicated repository host</td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecarchivepgbackrestrepohostdedicatedtolerationsindex">tolerations</a></b></td>
+        <td>[]object</td>
+        <td>Tolerations of a PgBackRest repo host pod. Changing this value causes a restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -3459,6 +3464,53 @@ Resource requirements for the dedicated repository host
 </table>
 
 
+<h3 id="postgresclusterspecarchivepgbackrestrepohostdedicatedtolerationsindex">
+  PostgresCluster.spec.archive.pgbackrest.repoHost.dedicated.tolerations[index]
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohostdedicated">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>effect</b></td>
+        <td>string</td>
+        <td>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tolerationSeconds</b></td>
+        <td>integer</td>
+        <td>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecarchivepgbackrestrepohostresources">
   PostgresCluster.spec.archive.pgbackrest.repoHost.resources
   <sup><sup><a href="#postgresclusterspecarchivepgbackrestrepohost">↩ Parent</a></sup></sup>
@@ -4083,6 +4135,11 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td><b><a href="#postgresclusterspecinstancesindexresources">resources</a></b></td>
         <td>object</td>
         <td>Compute resources of a PostgreSQL container.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindextolerationsindex">tolerations</a></b></td>
+        <td>[]object</td>
+        <td>Tolerations of a PostgreSQL pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">walVolumeClaimSpec</a></b></td>
@@ -5049,6 +5106,53 @@ Compute resources of a PostgreSQL container.
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
         <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindextolerationsindex">
+  PostgresCluster.spec.instances[index].tolerations[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>effect</b></td>
+        <td>string</td>
+        <td>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tolerationSeconds</b></td>
+        <td>integer</td>
+        <td>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
         <td>false</td>
       </tr></tbody>
 </table>

@@ -1085,6 +1085,7 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 
 	// Use scheduling constraints from the cluster spec.
 	sts.Spec.Template.Spec.Affinity = spec.Affinity
+	sts.Spec.Template.Spec.Tolerations = spec.Tolerations
 
 	// Though we use a StatefulSet to keep an instance running, we only ever
 	// want one Pod from it. This means that Replicas should only ever be

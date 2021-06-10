@@ -457,7 +457,8 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 					Annotations: annotations,
 				},
 				Spec: v1.PodSpec{
-					Affinity: postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Affinity,
+					Affinity:    postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Affinity,
+					Tolerations: postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Tolerations,
 				},
 			},
 		},
@@ -882,7 +883,6 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 		}
 		meta.SetStatusCondition(&postgresCluster.Status.Conditions, repoHostReady)
 	}()
-
 	var isCreate bool
 	if len(repoResources.hosts) == 0 {
 		name := fmt.Sprintf("%s-%s", postgresCluster.GetName(), "repo-host")

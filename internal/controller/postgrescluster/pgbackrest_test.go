@@ -117,6 +117,9 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &corev1.ResourceRequirements{},
 				Affinity:  &corev1.Affinity{},
+				Tolerations: []v1.Toleration{
+					{Key: "woot"},
+				},
 			},
 		}
 	}
@@ -233,6 +236,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 		// Ensure Affinity Spec has been added to dedicated repo
 		if repo.Spec.Template.Spec.Affinity == nil {
 			t.Error("dedicated repo host is missing affinity spec")
+		}
+
+		// Ensure Tolerations have been added to dedicated repo
+		if repo.Spec.Template.Spec.Tolerations == nil {
+			t.Error("dedicated repo host is missing tolerations")
 		}
 
 		// verify that the repohost container exists and contains the proper env vars

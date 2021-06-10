@@ -937,6 +937,16 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			assert.Assert(t, ss.Spec.Template.Spec.Affinity != nil)
 		},
 	}, {
+		name: "custom tolerations",
+		ip: intentParams{
+			spec: &v1beta1.PostgresInstanceSetSpec{
+				Tolerations: []v1.Toleration{},
+			},
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Assert(t, ss.Spec.Template.Spec.Tolerations != nil)
+		},
+	}, {
 		name: "shutdown replica",
 		ip: intentParams{
 			shutdown:        true,
