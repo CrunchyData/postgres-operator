@@ -3657,6 +3657,12 @@ spec:
                 required:
                 - pgBouncer
                 type: object
+              shutdown:
+                description: Whether or not the PostgreSQL cluster should be stopped.
+                  When this is true, workloads are scaled to zero and CronJobs are
+                  suspended. Other resources, such as Services and Volumes, remain
+                  in place.
+                type: boolean
             required:
             - archive
             - image
@@ -3906,6 +3912,10 @@ spec:
                         type: integer
                     type: object
                 type: object
+              startupInstance:
+                description: The previous leader instance to start first when a cluster
+                  is restarted after a shutdown
+                type: string
             type: object
         type: object
     served: true

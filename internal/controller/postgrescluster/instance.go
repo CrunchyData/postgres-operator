@@ -274,7 +274,6 @@ func (r *Reconciler) observeInstances(
 	cluster.Status.InstanceSets = cluster.Status.InstanceSets[:0]
 	for _, name := range observed.setNames.List() {
 		status := v1beta1.PostgresInstanceSetStatus{Name: name}
-
 		for _, instance := range observed.bySet[name] {
 			if ready, known := instance.IsReady(); known && ready {
 				status.ReadyReplicas++
@@ -289,6 +288,21 @@ func (r *Reconciler) observeInstances(
 		}
 
 		cluster.Status.InstanceSets = append(cluster.Status.InstanceSets, status)
+	}
+
+	// Go through the observed instances and check if a primary has been determined.
+	// If the cluster is being shutdown and this instance is the primary, store
+	// the instance name as the startup instance. If the primary can be determined
+	// from the instance and the cluster is not being shutdown, clear any stored
+	// startup instance values.
+	for _, instance := range observed.forCluster {
+		if primary, known := instance.IsPrimary(); primary && known {
+			if cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown {
+				cluster.Status.StartupInstance = instance.Name
+			} else {
+				cluster.Status.StartupInstance = ""
+			}
+		}
 	}
 
 	return observed, err
@@ -455,6 +469,11 @@ func (r *Reconciler) reconcileInstanceSets(
 	primaryCertificate *v1.SecretProjection,
 	clusterVolumes []v1.PersistentVolumeClaim,
 ) error {
+	// get the number of instance pods from the observedInstance information
+	var numInstancePods int
+	for i := range instances.forCluster {
+		numInstancePods += len(instances.forCluster[i].Pods)
+	}
 
 	// Range over instance sets to scale up and ensure that each set has
 	// at least the number of replicas defined in the spec. The set can
@@ -465,7 +484,8 @@ func (r *Reconciler) reconcileInstanceSets(
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate,
-			findAvailableInstanceNames(set, instances, clusterVolumes))
+			findAvailableInstanceNames(set, instances, clusterVolumes),
+			numInstancePods)
 		if err != nil {
 			return err
 		}
@@ -856,6 +876,7 @@ func (r *Reconciler) scaleUpInstances(
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
 	availableInstanceNames []string,
+	numInstancePods int,
 ) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
@@ -869,7 +890,6 @@ func (r *Reconciler) scaleUpInstances(
 			instances = append(instances, oi.Runner)
 		}
 	}
-
 	// While there are fewer instances than specified, generate another empty one
 	// and append it.
 	for len(instances) < int(*set.Replicas) {
@@ -900,6 +920,7 @@ func (r *Reconciler) scaleUpInstances(
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate, instances[i],
+			numInstancePods,
 		)
 	}
 	if err == nil {
@@ -926,6 +947,7 @@ func (r *Reconciler) reconcileInstance(
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
 	instance *appsv1.StatefulSet,
+	numInstancePods int,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
 	ctx = logging.NewContext(ctx, log)
@@ -934,12 +956,11 @@ func (r *Reconciler) reconcileInstance(
 	*instance = appsv1.StatefulSet{}
 	instance.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
 	instance.Namespace, instance.Name = existing.Namespace, existing.Name
-
 	err := errors.WithStack(r.setControllerReference(cluster, instance))
 	if err == nil {
 		generateInstanceStatefulSetIntent(ctx, cluster, spec,
-			clusterPodService.Name, instanceServiceAccount.Name,
-			existing.Spec.Replicas, instance)
+			clusterPodService.Name, instanceServiceAccount.Name, instance,
+			numInstancePods)
 	}
 
 	var (
@@ -1013,8 +1034,8 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	spec *v1beta1.PostgresInstanceSetSpec,
 	clusterPodServiceName string,
 	instanceServiceAccountName string,
-	existingReplicas *int32,
 	sts *appsv1.StatefulSet,
+	numInstancePods int,
 ) {
 	sts.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
@@ -1067,10 +1088,24 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 
 	// Though we use a StatefulSet to keep an instance running, we only ever
 	// want one Pod from it. This means that Replicas should only ever be
-	// 1, the default case, or 0, if existing replicas is set to 0
-	if existingReplicas != nil && *existingReplicas == 0 {
+	// 1, the default case for a running cluster, or 0, if the existing replicas
+	// value is set to 0 due to being 'shutdown'.
+	// The logic below is designed to make sure that the primary/leader instance
+	// is always the first to startup and the last to shutdown.
+	if cluster.Status.StartupInstance == "" {
+		// there is no designated startup instance; all instances should run.
+		sts.Spec.Replicas = initialize.Int32(1)
+	} else if cluster.Status.StartupInstance != sts.Name {
+		// there is a startup instance defined, but not this instance; do not run.
+		sts.Spec.Replicas = initialize.Int32(0)
+	} else if cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown &&
+		numInstancePods <= 1 {
+		// this is the last instance of the shutdown sequence; do not run.
 		sts.Spec.Replicas = initialize.Int32(0)
 	} else {
+		// this is the designated instance, but
+		// - others are still running during shutdown, or
+		// - it is time to startup.
 		sts.Spec.Replicas = initialize.Int32(1)
 	}
 

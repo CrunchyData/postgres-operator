@@ -96,6 +96,13 @@ type PostgresClusterSpec struct {
 	// The specification of a proxy that connects to PostgreSQL.
 	// +optional
 	Proxy *PostgresProxySpec `json:"proxy,omitempty"`
+
+	// Whether or not the PostgreSQL cluster should be stopped.
+	// When this is true, workloads are scaled to zero and CronJobs
+	// are suspended.
+	// Other resources, such as Services and Volumes, remain in place.
+	// +optional
+	Shutdown *bool `json:"shutdown,omitempty"`
 }
 
 func (s *PostgresClusterSpec) Default() {
@@ -145,6 +152,11 @@ type PostgresClusterStatus struct {
 	// Current state of the PostgreSQL proxy.
 	// +optional
 	Proxy PostgresProxyStatus `json:"proxy,omitempty"`
+
+	// The previous leader instance to start first when a cluster is
+	// restarted after a shutdown
+	// +optional
+	StartupInstance string `json:"startupInstance,omitempty"`
 
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional

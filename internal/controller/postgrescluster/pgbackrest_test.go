@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -65,6 +66,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			UID:       types.UID(clusterUID),
 		},
 		Spec: v1beta1.PostgresClusterSpec{
+			Shutdown:        initialize.Bool(false),
 			PostgresVersion: 13,
 			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{},
 			Archive: v1beta1.Archive{
@@ -435,6 +437,40 @@ func TestReconcilePGBackRest(t *testing.T) {
 
 		noscheduletestrepo := v1beta1.PGBackRestRepo{Name: "repo1"}
 		assert.Assert(t, !backupScheduleFound(noscheduletestrepo, "full"))
+
+	})
+
+	t.Run("pgbackrest schedule suspended status", func(t *testing.T) {
+
+		returnedCronJob := &batchv1beta1.CronJob{}
+		if err := tClient.Get(ctx, types.NamespacedName{
+			Name:      postgresCluster.Name + "-pgbackrest-repo1-full",
+			Namespace: postgresCluster.GetNamespace(),
+		}, returnedCronJob); err != nil {
+			assert.NilError(t, err)
+		}
+
+		t.Run("pgbackrest schedule suspended false", func(t *testing.T) {
+			assert.Assert(t, !*returnedCronJob.Spec.Suspend)
+		})
+
+		// set shutdown to true, which determines whether the CronJobs should
+		// be suspended
+		*postgresCluster.Spec.Shutdown = true
+		requeue := r.reconcilePGBackRestCronJob(context.Background(), postgresCluster)
+		assert.Assert(t, !requeue)
+
+		returnedCronJob = &batchv1beta1.CronJob{}
+		if err := tClient.Get(ctx, types.NamespacedName{
+			Name:      postgresCluster.Name + "-pgbackrest-repo1-full",
+			Namespace: postgresCluster.GetNamespace(),
+		}, returnedCronJob); err != nil {
+			assert.NilError(t, err)
+		}
+
+		t.Run("pgbackrest schedule suspended true", func(t *testing.T) {
+			assert.Assert(t, *returnedCronJob.Spec.Suspend)
+		})
 
 	})
 }

@@ -119,6 +119,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>The specification of a proxy that connects to PostgreSQL.</td>
         <td>false</td>
       </tr><tr>
+        <td><b>shutdown</b></td>
+        <td>boolean</td>
+        <td>Whether or not the PostgreSQL cluster should be stopped. When this is true, workloads are scaled to zero and CronJobs are suspended. Other resources, such as Services and Volumes, remain in place.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecarchive">archive</a></b></td>
         <td>object</td>
         <td>PostgreSQL archive configuration</td>
@@ -5187,6 +5192,11 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td><b><a href="#postgresclusterstatusproxy">proxy</a></b></td>
         <td>object</td>
         <td>Current state of the PostgreSQL proxy.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>startupInstance</b></td>
+        <td>string</td>
+        <td>The previous leader instance to start first when a cluster is restarted after a shutdown</td>
         <td>false</td>
       </tr></tbody>
 </table>

@@ -40,7 +40,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -901,8 +900,10 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		spec                       *v1beta1.PostgresInstanceSetSpec
 		clusterPodServiceName      string
 		instanceServiceAccountName string
-		existingReplicas           *int32
 		sts                        *appsv1.StatefulSet
+		shutdown                   bool
+		startupInstance            string
+		numInstancePods            int
 	}
 
 	for _, test := range []struct {
@@ -936,31 +937,65 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			assert.Assert(t, ss.Spec.Template.Spec.Affinity != nil)
 		},
 	}, {
-		name: "0 existing replicas",
+		name: "shutdown replica",
 		ip: intentParams{
-			existingReplicas: initialize.Int32(0),
+			shutdown:        true,
+			numInstancePods: 2,
+			startupInstance: "testInstance1",
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, *ss.Spec.Replicas, int32(0))
 		},
 	}, {
-		name: "1 existing replica",
+		name: "shutdown primary",
 		ip: intentParams{
-			existingReplicas: initialize.Int32(1),
+			shutdown:        true,
+			numInstancePods: 1,
+			startupInstance: "testInstance1",
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, *ss.Spec.Replicas, int32(0))
+		},
+	}, {
+		name: "startup primary",
+		ip: intentParams{
+			shutdown:        false,
+			numInstancePods: 0,
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, *ss.Spec.Replicas, int32(1))
 		},
 	}, {
-		name: "more than 1 existing replica",
+		name: "startup replica",
 		ip: intentParams{
-			existingReplicas: initialize.Int32(99),
+			shutdown:        false,
+			numInstancePods: 1,
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, *ss.Spec.Replicas, int32(1))
+		},
+	}, {
+		name: "do not startup replica",
+		ip: intentParams{
+			shutdown:        false,
+			numInstancePods: 0,
+			startupInstance: "testInstance1",
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, *ss.Spec.Replicas, int32(0))
+		},
+	}, {
+		name: "do not shutdown primary",
+		ip: intentParams{
+			shutdown:        true,
+			numInstancePods: 2,
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, *ss.Spec.Replicas, int32(1))
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
+
 			cluster := test.ip.cluster
 			if cluster == nil {
 				cluster = testCluster()
@@ -969,6 +1004,8 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			cluster.Default()
 			cluster.UID = types.UID("hippouid")
 			cluster.Namespace = test.name + "-ns"
+			cluster.Spec.Shutdown = &test.ip.shutdown
+			cluster.Status.StartupInstance = test.ip.startupInstance
 
 			spec := test.ip.spec
 			if spec == nil {
@@ -978,8 +1015,6 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 
 			clusterPodServiceName := test.ip.clusterPodServiceName
 			instanceServiceAccountName := test.ip.instanceServiceAccountName
-			existingReplicas := test.ip.existingReplicas
-
 			sts := test.ip.sts
 			if sts == nil {
 				sts = &appsv1.StatefulSet{}
@@ -989,8 +1024,8 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 				cluster, spec,
 				clusterPodServiceName,
 				instanceServiceAccountName,
-				existingReplicas,
 				sts,
+				test.ip.numInstancePods,
 			)
 
 			test.run(t, sts)

@@ -124,6 +124,11 @@ func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
 		return nil
 	}
 
+	// if pgBouncer is shutdown, there is nothing to do
+	if cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown {
+		return nil
+	}
+
 	// Patroni has bootstrapped. Prepare to either add or remove PgBouncer from
 	// PostgreSQL.
 
@@ -405,7 +410,12 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 			naming.LabelRole:    naming.RolePGBouncer,
 		})
 
-	deploy.Spec.Replicas = cluster.Spec.Proxy.PGBouncer.Replicas
+	// if the shutdown flag is set, set pgBouncer replicas to 0
+	if cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown {
+		deploy.Spec.Replicas = initialize.Int32(0)
+	} else {
+		deploy.Spec.Replicas = cluster.Spec.Proxy.PGBouncer.Replicas
+	}
 
 	// Don't clutter the namespace with extra ReplicaSets.
 	deploy.Spec.RevisionHistoryLimit = initialize.Int32(0)

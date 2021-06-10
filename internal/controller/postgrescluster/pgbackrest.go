@@ -465,6 +465,15 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	podSecurityContext := initialize.RestrictedPodSecurityContext()
 	podSecurityContext.SupplementalGroups = []int64{65534}
+
+	// if the cluster is set to be shutdown, stop repohost pod
+	if postgresCluster.Spec.Shutdown != nil && *postgresCluster.Spec.Shutdown {
+		repo.Spec.Replicas = initialize.Int32(0)
+	} else {
+		// the cluster should not be shutdown, set this value to 1
+		repo.Spec.Replicas = initialize.Int32(1)
+	}
+
 	// set fsGroups if not OpenShift
 	if postgresCluster.Spec.OpenShift == nil || !*postgresCluster.Spec.OpenShift {
 		podSecurityContext.FSGroup = initialize.Int64(26)
@@ -1532,7 +1541,7 @@ func getRepoHostStatus(repoHost *appsv1.StatefulSet) *v1beta1.RepoHostStatus {
 
 	repoHostStatus.TypeMeta = repoHost.TypeMeta
 
-	if repoHost.Status.ReadyReplicas == *repoHost.Spec.Replicas {
+	if repoHost.Status.ReadyReplicas > 0 {
 		repoHostStatus.Ready = true
 	} else {
 		repoHostStatus.Ready = false
@@ -1691,10 +1700,20 @@ func (r *Reconciler) createCronJob(
 	meta.Labels = labels
 	meta.Annotations = annotations
 
+	// if the cluster is shutdown, we will suspend the CronJob
+	shutdown := cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown
+
 	pgBackRestCronJob := &batchv1beta1.CronJob{
 		ObjectMeta: meta,
 		Spec: batchv1beta1.CronJobSpec{
 			Schedule: *schedule,
+			// if the cluster is shutdown, the cronjobs will be suspended
+			// TODO(tjmoore4): When the actual backups are added to the CronJob,
+			// other checks or delay logic may be required.
+			// Note that the any job executions that have already started will
+			// continue.
+			// https://v1-20.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/cron-job-v1beta1/#CronJobSpec
+			Suspend: &shutdown,
 			JobTemplate: batchv1beta1.JobTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: annotations,
