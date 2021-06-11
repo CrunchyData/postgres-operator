@@ -33,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -271,7 +270,6 @@ func (r *Reconciler) observeInstances(
 
 	observed := newObservedInstances(cluster, runners.Items, pods.Items)
 
-	var readyInstance bool
 	// Fill out status sorted by set name.
 	cluster.Status.InstanceSets = cluster.Status.InstanceSets[:0]
 	for _, name := range observed.setNames.List() {
@@ -279,7 +277,6 @@ func (r *Reconciler) observeInstances(
 		for _, instance := range observed.bySet[name] {
 			if ready, known := instance.IsReady(); known && ready {
 				status.ReadyReplicas++
-				readyInstance = true
 			}
 			if terminating, known := instance.IsTerminating(); known && !terminating {
 				status.Replicas++
@@ -476,20 +473,6 @@ func (r *Reconciler) reconcileInstanceSets(
 	var numInstancePods int
 	for i := range instances.forCluster {
 		numInstancePods += len(instances.forCluster[i].Pods)
-	}
-
-	// get the name of the primary from the observedInstance information
-	var primaryInstance string
-	for i := range instances.forCluster {
-		if primary, _ := instances.forCluster[i].IsPrimary(); primary {
-			primaryInstance = instances.forCluster[i].Name
-		}
-	}
-
-	// if unable to get the primary from observedInstances, get the startup
-	// value stored in the cluster's status
-	if primaryInstance == "" {
-		primaryInstance = r.startupInstance(ctx, cluster)
 	}
 
 	// Range over instance sets to scale up and ensure that each set has
@@ -935,8 +918,8 @@ func (r *Reconciler) scaleUpInstances(
 		// treat as primary if no primary instance name is set in scenarios where we simply want
 		// to scale and let the instances race for the leader key (e.g. in initdb scenarios when
 		// the cluster has not yet been bootstrapped)
-		isPrimary := instances[i].Name == primaryInstance ||
-			(!patroni.ClusterBootstrapped(cluster) && primaryInstance == "")
+		// isPrimary := instances[i].Name == primaryInstance ||
+		// 	(!patroni.ClusterBootstrapped(cluster) && primaryInstance == "")
 		err = r.reconcileInstance(
 			ctx, cluster, observed.byName[instances[i].Name], set,
 			clusterConfigMap, clusterReplicationSecret,
@@ -949,47 +932,7 @@ func (r *Reconciler) scaleUpInstances(
 		log.V(1).Info("reconciled instance set", "instance-set", set.Name)
 	}
 
-	return err
-}
-
-// +kubebuilder:rbac:groups="",resources=endpoints,verbs=get
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
-
-// startupInstance returns the name of the primary/leader StatefulSet.
-// If that fails for some reason, an error is logged.
-func (r *Reconciler) startupInstance(ctx context.Context,
-	cluster *v1beta1.PostgresCluster) string {
-
-	var err error
-	// Get the value stored in the Patroni.BootstrapInstance status.
-	if cluster.Status.StartupInstance != "" {
-		return cluster.Status.StartupInstance
-	}
-
-	// If neither value is set, use the first instance in the first InstanceSet.
-	// NOTE: When in a shutdown state and pods are stopped, information is no
-	// longer available via the observeInstances method
-	if patroni.ClusterBootstrapped(cluster) && len(cluster.Spec.InstanceSets) > 0 {
-		instances := &appsv1.StatefulSetList{}
-		selector, err := naming.AsSelector(naming.ClusterInstanceSet(cluster.Name,
-			cluster.Spec.InstanceSets[0].Name))
-		if err == nil {
-			err = errors.WithStack(
-				r.Client.List(ctx, instances,
-					client.InNamespace(cluster.Namespace),
-					client.MatchingLabelsSelector{Selector: selector},
-				))
-			if err == nil && len(instances.Items) > 0 {
-				return instances.Items[0].Name
-			}
-		}
-	}
-
-	// If something went wrong and no primary can be defined, log an
-	// error, including any returned error output, as this will likely
-	// prevent the postgrescluster from restarting properly.
-	log.Log.Error(err, "unable to determine primary instance")
-	return ""
+	return instances, err
 }
 
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=create;patch
@@ -1207,6 +1150,7 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
 			naming.PGBackRestRepoContainerName)
 		if err := pgbackrest.AddSSHToPod(cluster, template, true,
+			cluster.Spec.Archive.PGBackRest.RepoHost.Resources,
 			naming.ContainerDatabase); err != nil {
 			return err
 		}

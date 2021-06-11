@@ -284,7 +284,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
-				Resources: &v1.ResourceRequirements{},
+				Resources: v1.ResourceRequirements{},
 			},
 		},
 	}, {
@@ -302,7 +302,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
-				Resources: &v1.ResourceRequirements{},
+				Resources: v1.ResourceRequirements{},
 			},
 		},
 		sshConfig: &v1.ConfigMapProjection{

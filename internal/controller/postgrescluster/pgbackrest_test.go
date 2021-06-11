@@ -72,7 +72,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Image:           "test.com/crunchy-postgres-ha:test",
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -127,7 +127,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 	if includeDedicatedRepo {
 		postgresCluster.Spec.Archive.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
-				Resources: &corev1.ResourceRequirements{},
+				Resources: corev1.ResourceRequirements{},
 				Affinity:  &corev1.Affinity{},
 				Tolerations: []v1.Toleration{
 					{Key: "woot"},
@@ -2137,7 +2137,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
 				expectStartupInstanceStatus: true,
 				expectedClusterCondition: &metav1.Condition{
-					Type:    ConditionDataSourceInitialized,
+					Type:    ConditionPostgresDataInitialized,
 					Status:  metav1.ConditionTrue,
 					Reason:  "PGBackRestRestoreComplete",
 					Message: "pgBackRest restore completed successfully",
@@ -2158,10 +2158,10 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
 				expectStartupInstanceStatus: false,
 				expectedClusterCondition: &metav1.Condition{
-					Type:    ConditionDataSourceInitialized,
+					Type:    ConditionPostgresDataInitialized,
 					Status:  metav1.ConditionFalse,
 					Reason:  "PGBackRestRestoreFailed",
-					Message: "pgBackRest restore did not complete successfully",
+					Message: "pgBackRest restore failed",
 				},
 			},
 		}, {
@@ -2178,10 +2178,10 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
 				expectStartupInstanceStatus: false,
 				expectedClusterCondition: &metav1.Condition{
-					Type:    ConditionDataSourceInitialized,
+					Type:    ConditionPostgresDataInitialized,
 					Status:  metav1.ConditionTrue,
 					Reason:  "ClusterAlreadyBootstrapped",
-					Message: "The cluster has already been bootstrapped",
+					Message: "The cluster is already bootstrapped",
 				},
 			},
 		}, {
@@ -2277,7 +2277,6 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				}
 				assert.NilError(t, tClient.Create(ctx, sourceClusterPrimary))
 
-				//time.Sleep(3 * time.Second)
 				assert.NilError(t, r.reconcilePostgresClusterDataSource(ctx, cluster))
 
 				restoreJobs := &batchv1.JobList{}

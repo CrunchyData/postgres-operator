@@ -24,6 +24,7 @@ import (
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -209,6 +210,13 @@ func TestAddSSHToPod(t *testing.T) {
 		},
 	}
 
+	resources := v1.ResourceRequirements{
+		Requests: v1.ResourceList{
+			v1.ResourceCPU:    resource.MustParse("250m"),
+			v1.ResourceMemory: resource.MustParse("128Mi"),
+		},
+	}
+
 	testCases := []struct {
 		sshConfig               *v1.ConfigMapProjection
 		sshSecret               *v1.SecretProjection
@@ -247,7 +255,7 @@ func TestAddSSHToPod(t *testing.T) {
 				},
 			}
 
-			err := AddSSHToPod(postgresCluster, template, true,
+			err := AddSSHToPod(postgresCluster, template, true, resources,
 				getContainerNames(tc.additionalSSHContainers)...)
 			assert.NilError(t, err)
 
@@ -289,6 +297,8 @@ func TestAddSSHToPod(t *testing.T) {
 			for _, c := range template.Spec.Containers {
 				if c.Name == naming.PGBackRestRepoContainerName {
 					foundSSHContainer = true
+					// verify proper resources are present and correct
+					assert.DeepEqual(t, c.Resources, resources)
 				}
 				var foundVolumeMount bool
 				for _, vm := range c.VolumeMounts {

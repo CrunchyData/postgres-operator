@@ -130,7 +130,8 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 // AddSSHToPod populates a Pod template Spec with with the container and volumes needed to enable
 // SSH within a Pod.  It will also mount the SSH configuration to any additional containers specified.
 func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	enableSSHD bool, additionalVolumeMountContainers ...string) error {
+	enableSSHD bool, resources v1.ResourceRequirements,
+	additionalVolumeMountContainers ...string) error {
 
 	sshConfigs := []v1.VolumeProjection{}
 	// stores all SSH configurations (ConfigMaps & Secrets)
@@ -192,6 +193,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 			Name:            naming.PGBackRestRepoContainerName,
 			VolumeMounts:    []v1.VolumeMount{sshVolumeMount},
 			SecurityContext: initialize.RestrictedSecurityContext(),
+			Resources:       resources,
 		}
 
 		// Mount PostgreSQL volumes if they are present in the template.

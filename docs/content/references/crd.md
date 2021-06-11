@@ -357,10 +357,47 @@ Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL
         <td>Command line options to include when running the pgBackRest restore command. https://pgbackrest.org/command.html#command-restore</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusterresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource requirements for the pgBackRest restore Job.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>repoName</b></td>
         <td>string</td>
         <td>The name of the pgBackRest repo within the source PostgresCluster that contains the backups that should be utilized to perform a pgBackRest restore when initializing the data source for the new PostgresCluster.</td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepostgresclusterresources">
+  PostgresCluster.spec.dataSource.postgresCluster.resources
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgrescluster">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource requirements for the pgBackRest restore Job.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

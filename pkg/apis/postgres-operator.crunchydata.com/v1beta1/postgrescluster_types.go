@@ -27,7 +27,7 @@ type DedicatedRepo struct {
 
 	// Resource requirements for the dedicated repository host
 	// +optional
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Scheduling constraints of the Dedicated repo host pod.
 	// Changing this value causes repo host to restart.
@@ -142,6 +142,10 @@ type PostgresClusterDataSource struct {
 	// https://pgbackrest.org/command.html#command-restore
 	// +optional
 	Options []string `json:"options,omitempty"`
+
+	// Resource requirements for the pgBackRest restore Job.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 func (s *PostgresClusterSpec) Default() {

@@ -201,7 +201,7 @@ func (r *Reconciler) Reconcile(
 	// or not the data source for the cluster has been initialized.
 	if err == nil && cluster.Spec.DataSource != nil {
 		condition := meta.FindStatusCondition(cluster.Status.Conditions,
-			ConditionDataSourceInitialized)
+			ConditionPostgresDataInitialized)
 		if condition == nil || (condition.Status != metav1.ConditionTrue) {
 			if cluster.Spec.DataSource.PostgresCluster != nil {
 				err = r.reconcilePostgresClusterDataSource(ctx, cluster)

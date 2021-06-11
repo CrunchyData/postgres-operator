@@ -116,7 +116,7 @@ type PGBackRestRepoHost struct {
 
 	// Resource requirements for a pgBackRest repository host
 	// +optional
-	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// ConfigMap containing custom SSH configuration
 	// +optional

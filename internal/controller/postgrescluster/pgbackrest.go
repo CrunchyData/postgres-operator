@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -52,9 +52,9 @@ import (
 )
 
 const (
-	// ConditionDataSourceInitialized is the type used in a condition to indicate whether or not
-	// the data source for the cluster has been initialized
-	ConditionDataSourceInitialized = "DataSourceInitialized"
+	// PostgresDataInitialized is the type used in a condition to indicate whether or not the
+	// PostgresCluster's PostgreSQL data directory has been initialized (e.g. via a restore)
+	ConditionPostgresDataInitialized = "PostgresDataInitialized"
 
 	// ConditionManualBackupSuccessful is the type used in a condition to indicate whether or not
 	// the manual backup for the current backup ID (as provided via annotation) was successful
@@ -488,7 +488,8 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	repo.Spec.Template.Spec.SecurityContext = podSecurityContext
 
 	// add ssh pod info
-	if err := pgbackrest.AddSSHToPod(postgresCluster, &repo.Spec.Template, true); err != nil {
+	if err := pgbackrest.AddSSHToPod(postgresCluster, &repo.Spec.Template, true,
+		postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Resources); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	if err := pgbackrest.AddRepoVolumesToPod(postgresCluster, &repo.Spec.Template,
@@ -605,6 +606,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	repoName, configName, instanceName, configHash string) error {
 
 	// ensure options are properly set
+	// TODO (andrewlecuyer): move validation logic to a webhook
 	for _, opt := range cluster.Spec.DataSource.PostgresCluster.Options {
 		var msg string
 		switch {
@@ -616,6 +618,9 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		case strings.Contains(opt, "--pg1-path"):
 			msg = "Option '--pg1-path' is not allowed: the operator will automatically set this " +
 				"field"
+		case strings.Contains(opt, "--target-action"):
+			msg = "Option '--target-action' is not allowed: the operator will automatically set this " +
+				"field "
 		}
 		if msg != "" {
 			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource", msg, repoName)
@@ -645,6 +650,8 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		opts = append(opts, "--target-action=promote")
 	}
 
+	// NOTE (andrewlecuyer): Forcing users to put each argument separately might prevent the need
+	// to do any escaping or use eval.
 	cmd := pgbackrest.RestoreCommand(pgdata, strings.Join(opts, " "))
 
 	meta := naming.PGBackRestRestoreJob(cluster)
@@ -689,6 +696,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 						VolumeMounts:    []v1.VolumeMount{dataVolumeMount},
 						Env:             []v1.EnvVar{{Name: "PGHOST", Value: "/tmp"}},
 						SecurityContext: initialize.RestrictedSecurityContext(),
+						Resources:       cluster.Spec.DataSource.PostgresCluster.Resources,
 					}},
 					RestartPolicy: v1.RestartPolicyNever,
 					Volumes:       []v1.Volume{dataVolume},
@@ -702,7 +710,9 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		return errors.WithStack(err)
 	}
 
-	podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
+	podSecurityContext := initialize.RestrictedPodSecurityContext()
+	// TODO (andrewlecuyer): make supplemental groups configurable
+	podSecurityContext.SupplementalGroups = []int64{65534}
 	// set fsGroups if not OpenShift
 	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
 		podSecurityContext.FSGroup = initialize.Int64(26)
@@ -712,6 +722,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	if pgbackrest.RepoHostEnabled(sourceCluster) {
 		// add ssh configs to template
 		if err := pgbackrest.AddSSHToPod(sourceCluster, &restoreJob.Spec.Template, false,
+			cluster.Spec.DataSource.PostgresCluster.Resources,
 			naming.PGBackRestRestoreContainerName); err != nil {
 			return errors.WithStack(err)
 		}
@@ -932,7 +943,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		if completed {
 			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
 				ObservedGeneration: cluster.GetGeneration(),
-				Type:               ConditionDataSourceInitialized,
+				Type:               ConditionPostgresDataInitialized,
 				Status:             metav1.ConditionTrue,
 				Reason:             "PGBackRestRestoreComplete",
 				Message:            "pgBackRest restore completed successfully",
@@ -949,10 +960,10 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		} else if failed {
 			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
 				ObservedGeneration: cluster.GetGeneration(),
-				Type:               ConditionDataSourceInitialized,
+				Type:               ConditionPostgresDataInitialized,
 				Status:             metav1.ConditionFalse,
 				Reason:             "PGBackRestRestoreFailed",
-				Message:            "pgBackRest restore did not complete successfully",
+				Message:            "pgBackRest restore failed",
 			})
 			return nil
 		}
@@ -964,14 +975,14 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	// data source for the cluster was initialized).
 	if clusterBootstrapped {
 		condition := meta.FindStatusCondition(cluster.Status.Conditions,
-			ConditionDataSourceInitialized)
+			ConditionPostgresDataInitialized)
 		if condition == nil || (condition.Status != metav1.ConditionTrue) {
 			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
 				ObservedGeneration: cluster.GetGeneration(),
-				Type:               ConditionDataSourceInitialized,
+				Type:               ConditionPostgresDataInitialized,
 				Status:             metav1.ConditionTrue,
 				Reason:             "ClusterAlreadyBootstrapped",
-				Message:            "The cluster has already been bootstrapped",
+				Message:            "The cluster is already bootstrapped",
 			})
 		}
 		return nil
@@ -982,7 +993,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	if err := r.Client.Get(ctx,
 		client.ObjectKey{Name: sourceClusterName, Namespace: cluster.GetNamespace()},
 		sourceCluster); err != nil {
-		if kubeapi.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource", "PostgresCluster %q "+
 				"does not exist", sourceClusterName)
 			return nil
