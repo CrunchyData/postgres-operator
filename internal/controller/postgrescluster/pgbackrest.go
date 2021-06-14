@@ -869,9 +869,8 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		log.Info("pgBackRest config hash mismatch detected, requeuing to reattempt stanza create")
 		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
 	}
-
 	// reconcile the pgBackRest backup CronJobs
-	requeue := r.reconcilePGBackRestCronJob(ctx, postgresCluster)
+	requeue := r.reconcileScheduledBackups(ctx, postgresCluster, instances, sa)
 	// If the pgBackRest backup CronJob reconciliation function has encountered an error, requeue
 	// after 10 seconds. The error will not bubble up to allow the reconcile loop to continue.
 	// An error is not logged because an event was already created.
@@ -1475,6 +1474,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
+	//maybe use this?
 	spec, err := generateBackupJobSpecIntent(postgresCluster, selector.String(), containerName,
 		repoName, serviceAccount.GetName(), configName, labels, annotations, backupOpts...)
 	if err != nil {
@@ -2018,10 +2018,11 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 	return updatedRepoStatus
 }
 
-// reconcilePGBackRestCronJob creates a pgBackRest backup CronJob for each backup type defined
-// for each repo
-func (r *Reconciler) reconcilePGBackRestCronJob(
+// reconcileScheduledBackups is responsible for reconciling pgBackRest backup
+// schedules configured in the cluster definition
+func (r *Reconciler) reconcileScheduledBackups(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	instances *observedInstances, sa *v1.ServiceAccount,
 ) bool {
 	// requeue if there is an error during creation
 	var requeue bool
@@ -2032,20 +2033,22 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 		if repo.BackupSchedules != nil {
 			// next if the repo level schedule is not nil, create the CronJob.
 			if repo.BackupSchedules.Full != nil {
-				if err := r.createCronJob(ctx, cluster, repo.Name, full,
-					repo.BackupSchedules.Full); err != nil {
+				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
+					full, repo.BackupSchedules.Full, instances, sa); err != nil {
 					requeue = true
 				}
 			}
 			if repo.BackupSchedules.Differential != nil {
-				if err := r.createCronJob(ctx, cluster, repo.Name, differential,
-					repo.BackupSchedules.Differential); err != nil {
+				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
+					differential, repo.BackupSchedules.Differential,
+					instances, sa); err != nil {
 					requeue = true
 				}
 			}
 			if repo.BackupSchedules.Incremental != nil {
-				if err := r.createCronJob(ctx, cluster, repo.Name, incremental,
-					repo.BackupSchedules.Incremental); err != nil {
+				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
+					incremental, repo.BackupSchedules.Incremental,
+					instances, sa); err != nil {
 					requeue = true
 				}
 			}
@@ -2056,10 +2059,12 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 
 // +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=create;patch
 
-// createCronJob creates the CronJob for the given repo, pgBackRest backup type and schedule
-func (r *Reconciler) createCronJob(
-	ctx context.Context, cluster *v1beta1.PostgresCluster, repoName,
-	backupType string, schedule *string,
+// reconcilePGBackRestCronJob creates the CronJob for the given repo, pgBackRest
+// backup type and schedule
+func (r *Reconciler) reconcilePGBackRestCronJob(
+	ctx context.Context, cluster *v1beta1.PostgresCluster, repo v1beta1.PGBackRestRepo, //repoName,
+	backupType string, schedule *string, instances *observedInstances,
+	serviceAccount *v1.ServiceAccount,
 ) error {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoCronJob")
@@ -2070,22 +2075,98 @@ func (r *Reconciler) createCronJob(
 	labels := naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		cluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
-		naming.PGBackRestCronJobLabels(cluster.Name, repoName, backupType),
+		naming.PGBackRestCronJobLabels(cluster.Name, repo.Name, backupType),
 	)
-	meta := naming.PGBackRestCronJob(cluster, backupType, repoName)
-	meta.Labels = labels
-	meta.Annotations = annotations
+	objectmeta := naming.PGBackRestCronJob(cluster, backupType, repo.Name)
+	objectmeta.Labels = labels
+	objectmeta.Annotations = annotations
+
+	// if the cluster isn't bootstrapped, return
+	if !patroni.ClusterBootstrapped(cluster) {
+		return errors.New("cluster not bootstrapped")
+	}
+
+	// Determine if the replica create backup is complete and return if not. This allows for proper
+	// orchestration of backup Jobs since only one backup can be run at a time.
+	condition := meta.FindStatusCondition(cluster.Status.Conditions,
+		ConditionReplicaCreate)
+	if condition == nil || condition.Status != metav1.ConditionTrue {
+		return errors.New("replica creation backup not completed")
+	}
+
+	// Verify that status exists for the repo configured for the manual backup, and that a stanza
+	// has been created, before proceeding.  If either conditions are not true, then simply return
+	// without requeuing and record and event (subsequent events, e.g. successful stanza creation,
+	// writing of the proper repo status, adding a missing reop, etc. will trigger the reconciles
+	// needed to try again).
+	var statusFound, stanzaCreated bool
+	for _, repoStatus := range cluster.Status.PGBackRest.Repos {
+		if repoStatus.Name == repo.Name {
+			statusFound = true
+			stanzaCreated = repoStatus.StanzaCreated
+		}
+	}
+	if !statusFound {
+		r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidBackupRepo",
+			"Unable to find status for %q as configured for a scheduled backup.  Please ensure "+
+				"this repo is defined in the spec.", repo.Name)
+		return errors.New("valid backup repo status not found")
+	}
+	if !stanzaCreated {
+		r.Recorder.Eventf(cluster, v1.EventTypeWarning, "StanzaNotCreated",
+			"Stanza not created for %q as specified for a scheduled backup", repo.Name)
+		return errors.New("stanza not created")
+	}
+
+	// set backup type (i.e. "full", "diff", "incr")
+	backupOpts := []string{"--type=" + backupType}
+
+	// get pod name and container name as needed to exec into the proper pod and create
+	// the pgBackRest backup
+	selector, containerName, err := getPGBackRestExecSelector(cluster)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	// Leverage the observedInstances to determine the current primary.  This is needed to
+	// mount the proper configuration file to the backup when running without a dedicated repo
+	// host.  And even when running with a repo host, this ensure a backup is only attempted
+	// when the primary can be properly identified.
+	var primaryInstance string
+	for _, instance := range instances.forCluster {
+		if isPrimary, _ := instance.IsPrimary(); isPrimary {
+			primaryInstance = instance.Name
+			break
+		}
+	}
+	if primaryInstance == "" {
+		// TODO (andrewlecuyer): An error is returned here to ensure we requeue and try again in
+		// case leader election does not result in the event needed to trigger an another
+		// reconcile.  Once we ensure proper reconciliation following leader election, nil can be
+		// returned instead.
+		return errors.WithStack(
+			errors.New("unable to find primary when reconciling scheduled pgBackRest backup Job"))
+	}
+	// set the name of the pgbackrest config file that will be mounted to the backup Job
+	configName := primaryInstance + ".conf"
+	if pgbackrest.DedicatedRepoHostEnabled(cluster) {
+		configName = pgbackrest.CMRepoKey
+	}
+
+	jobSpec, err := generateBackupJobSpecIntent(cluster, selector.String(), containerName,
+		repo.Name, serviceAccount.GetName(), configName, labels, annotations, backupOpts...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
 	// if the cluster is shutdown, we will suspend the CronJob
 	shutdown := cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown
 
 	pgBackRestCronJob := &batchv1beta1.CronJob{
-		ObjectMeta: meta,
+		ObjectMeta: objectmeta,
 		Spec: batchv1beta1.CronJobSpec{
 			Schedule: *schedule,
-			// if the cluster is shutdown, the cronjobs will be suspended
-			// TODO(tjmoore4): When the actual backups are added to the CronJob,
-			// other checks or delay logic may be required.
+			// If the cluster is shutdown, the cronjobs will be suspended.
 			// Note that the any job executions that have already started will
 			// continue.
 			// https://v1-20.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/cron-job-v1beta1/#CronJobSpec
@@ -2095,28 +2176,7 @@ func (r *Reconciler) createCronJob(
 					Annotations: annotations,
 					Labels:      labels,
 				},
-				Spec: batchv1.JobSpec{
-					Template: v1.PodTemplateSpec{
-						ObjectMeta: metav1.ObjectMeta{
-							Annotations: annotations,
-							Labels:      labels,
-						},
-						Spec: v1.PodSpec{
-							RestartPolicy: "OnFailure",
-							Containers: []v1.Container{
-								{
-									Name: "pgbackrest",
-									// TODO(tjmoore4): This is likely the correct image to use, but the image
-									// value in the spec is currently optional. Should the image be required,
-									// or should this be referencing its own image spec value?
-									Image:           cluster.Spec.Archive.PGBackRest.Image,
-									Args:            []string{"/bin/sh", "-c", "date; echo pgBackRest " + backupType + " backup scheduled..."},
-									SecurityContext: initialize.RestrictedSecurityContext(),
-								},
-							},
-						},
-					},
-				},
+				Spec: *jobSpec,
 			},
 		},
 	}
@@ -2130,7 +2190,7 @@ func (r *Reconciler) createCronJob(
 
 	// set metadata
 	pgBackRestCronJob.SetGroupVersionKind(batchv1beta1.SchemeGroupVersion.WithKind("CronJob"))
-	err := errors.WithStack(r.setControllerReference(cluster, pgBackRestCronJob))
+	err = errors.WithStack(r.setControllerReference(cluster, pgBackRestCronJob))
 
 	if err == nil {
 		err = r.apply(ctx, pgBackRestCronJob)
