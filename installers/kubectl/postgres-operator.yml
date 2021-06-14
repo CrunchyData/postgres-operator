@@ -166,7 +166,6 @@ data:
     delete_operator_namespace: "false"
     delete_watched_namespaces: "false"
     disable_auto_failover: "false"
-    disable_fsgroup: "false"
     reconcile_rbac: "true"
     exporterport: "9187"
     metrics: "false"
