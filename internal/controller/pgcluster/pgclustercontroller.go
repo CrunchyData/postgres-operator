@@ -280,6 +280,10 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	if !reflect.DeepEqual(oldcluster.Spec.PMM, newcluster.Spec.PMM) {
+		rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdatePMMSidecar)
+	}
+
 	// see if any of the resource values have changed for the database or exporter container,
 	// if so, update them
 	if !reflect.DeepEqual(oldcluster.Spec.Resources, newcluster.Spec.Resources) ||

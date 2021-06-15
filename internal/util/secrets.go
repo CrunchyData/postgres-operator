@@ -19,8 +19,10 @@ import (
 	"context"
 	"crypto/rand"
 	"math/big"
+	mrand "math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -30,27 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
-
-// The following constants are used as a part of password generation. For more
-// information on these selections, please consulting the ASCII man page
-// (`man ascii`)
-const (
-	// passwordCharLower is the lowest ASCII character to use for generating a
-	// password, which is 40
-	passwordCharLower = 40
-	// passwordCharUpper is the highest ASCII character to use for generating a
-	// password, which is 126
-	passwordCharUpper = 126
-	// passwordCharExclude is a map of characters that we choose to exclude from
-	// the password to simplify usage in the shell. There is still enough entropy
-	// that exclusion of these characters is OK.
-	passwordCharExclude = "`\\"
-)
-
-// passwordCharSelector is a "big int" that we need to select the random ASCII
-// character for the password. Since the random integer generator looks for
-// values from [0,X), we need to force this to be [40,126]
-var passwordCharSelector = big.NewInt(passwordCharUpper - passwordCharLower)
 
 // CreateSecret create the secret, user, and primary secrets
 func CreateSecret(clientset kubernetes.Interface, db, secretName, username, password, namespace string, labels map[string]string) error {
@@ -70,31 +51,31 @@ func CreateSecret(clientset kubernetes.Interface, db, secretName, username, pass
 	return err
 }
 
-// GeneratePassword generates a password of a given length out of the acceptable
-// ASCII characters suitable for a password
-func GeneratePassword(length int) (string, error) {
-	password := make([]byte, length)
-	i := 0
+const (
+	passwordMaxLen = 20
+	passwordMinLen = 16
+	passSymbols    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"abcdefghijklmnopqrstuvwxyz" +
+		"0123456789"
+)
 
-	for i < length {
-		val, err := rand.Int(rand.Reader, passwordCharSelector)
-		// if there is an error generating the random integer, return
+//GeneratePassword generate random password
+func GeneratePassword(length int) (string, error) {
+	mrand.Seed(time.Now().UnixNano())
+	ln := mrand.Intn(passwordMaxLen-passwordMinLen) + passwordMinLen
+	if length > 0 {
+		ln = length
+	}
+	b := make([]byte, ln)
+	for i := 0; i < ln; i++ {
+		randInt, err := rand.Int(rand.Reader, big.NewInt(int64(len(passSymbols))))
 		if err != nil {
 			return "", err
 		}
-
-		char := byte(passwordCharLower + val.Int64())
-
-		// if the character is in the exclusion list, continue
-		if idx := strings.IndexAny(string(char), passwordCharExclude); idx > -1 {
-			continue
-		}
-
-		password[i] = char
-		i++
+		b[i] = passSymbols[randInt.Int64()]
 	}
 
-	return string(password), nil
+	return string(b), nil
 }
 
 // GeneratedPasswordLength returns the value for what the length of a

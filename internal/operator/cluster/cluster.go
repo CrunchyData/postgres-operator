@@ -70,6 +70,8 @@ const (
 
 	// pgBadgerContainerName is the name of the pgBadger container
 	pgBadgerContainerName = "pgbadger"
+
+	pmmContainerName = "pmm-client"
 )
 
 // systemLabels is a list of the system labels that need to be copied over when
