@@ -112,6 +112,10 @@ type PostgresClusterSpec struct {
 	// +optional
 	Proxy *PostgresProxySpec `json:"proxy,omitempty"`
 
+	// The specification of monitoring tools that connect to PostgreSQL
+	// +optional
+	Monitoring *MonitoringSpec `json:"monitoring,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should be stopped.
 	// When this is true, workloads are scaled to zero and CronJobs
 	// are suspended.
@@ -206,6 +210,10 @@ type PostgresClusterStatus struct {
 	// restarted after a shutdown
 	// +optional
 	StartupInstance string `json:"startupInstance,omitempty"`
+
+	// Current state of PostgreSQL cluster monitoring tool configuration
+	// +optional
+	Monitoring MonitoringStatus `json:"monitoring,omitempty"`
 
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional
@@ -375,4 +383,33 @@ func (meta *Metadata) GetAnnotationsOrNil() map[string]string {
 		return nil
 	}
 	return meta.Annotations
+}
+
+// MonitoringSpec is a union of the supported PostgreSQL Monitoring tools
+type MonitoringSpec struct {
+	// +optional
+	PGMonitor *PGMonitorSpec `json:"pgmonitor,omitempty"`
+}
+
+// Current state of PostgreSQL cluster monitoring tool configuration
+type MonitoringStatus struct {
+	// +optional
+	ExporterConfiguration string `json:"exporterConfiguration,omitempty"`
+}
+
+// PGMonitorSpec defines the desired state of the pgMonitor tool suite
+type PGMonitorSpec struct {
+	// +optional
+	Exporter *ExporterSpec `json:"exporter,omitempty"`
+}
+
+type ExporterSpec struct {
+	// The image name to use for crunchy-postgres-exporter containers
+	// +kubebuilder:validation:Required
+	Image string `json:"image"`
+
+	// Changing this value causes PostgreSQL and the exporter to restart.
+	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }

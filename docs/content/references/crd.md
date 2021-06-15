@@ -110,6 +110,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>Metadata contains metadata for PostgresCluster resources</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecmonitoring">monitoring</a></b></td>
+        <td>object</td>
+        <td>The specification of monitoring tools that connect to PostgreSQL</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>openshift</b></td>
         <td>boolean</td>
         <td>Whether or not the PostgreSQL cluster is being deployed to an OpenShift envioronment</td>
@@ -461,6 +466,124 @@ Metadata contains metadata for PostgresCluster resources
         <td><b>labels</b></td>
         <td>map[string]string</td>
         <td></td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoring">
+  PostgresCluster.spec.monitoring
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The specification of monitoring tools that connect to PostgreSQL
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitor">pgmonitor</a></b></td>
+        <td>object</td>
+        <td>PGMonitorSpec defines the desired state of the pgMonitor tool suite</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitor">
+  PostgresCluster.spec.monitoring.pgmonitor
+  <sup><sup><a href="#postgresclusterspecmonitoring">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+PGMonitorSpec defines the desired state of the pgMonitor tool suite
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporter">exporter</a></b></td>
+        <td>object</td>
+        <td></td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporter">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitor">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterresources">resources</a></b></td>
+        <td>object</td>
+        <td>Changing this value causes PostgreSQL and the exporter to restart. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>The image name to use for crunchy-postgres-exporter containers</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterresources">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.resources
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporter">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Changing this value causes PostgreSQL and the exporter to restart. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -5715,6 +5838,11 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td>Current state of PostgreSQL instances.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterstatusmonitoring">monitoring</a></b></td>
+        <td>object</td>
+        <td>Current state of PostgreSQL cluster monitoring tool configuration</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>observedGeneration</b></td>
         <td>integer</td>
         <td>observedGeneration represents the .metadata.generation on which the status was based.</td>
@@ -5834,6 +5962,33 @@ Condition contains details for one aspect of the current state of this API Resou
         <td>string</td>
         <td></td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterstatusmonitoring">
+  PostgresCluster.status.monitoring
+  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Current state of PostgreSQL cluster monitoring tool configuration
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>exporterConfiguration</b></td>
+        <td>string</td>
+        <td></td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

@@ -2686,6 +2686,53 @@ spec:
                       type: string
                     type: object
                 type: object
+              monitoring:
+                description: The specification of monitoring tools that connect to
+                  PostgreSQL
+                properties:
+                  pgmonitor:
+                    description: PGMonitorSpec defines the desired state of the pgMonitor
+                      tool suite
+                    properties:
+                      exporter:
+                        properties:
+                          image:
+                            description: The image name to use for crunchy-postgres-exporter
+                              containers
+                            type: string
+                          resources:
+                            description: 'Changing this value causes PostgreSQL and
+                              the exporter to restart. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers'
+                            properties:
+                              limits:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Limits describes the maximum amount
+                                  of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                type: object
+                              requests:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Requests describes the minimum amount
+                                  of compute resources required. If Requests is omitted
+                                  for a container, it defaults to Limits if that is
+                                  explicitly specified, otherwise to an implementation-defined
+                                  value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                type: object
+                            type: object
+                        required:
+                        - image
+                        type: object
+                    type: object
+                type: object
               openshift:
                 description: Whether or not the PostgreSQL cluster is being deployed
                   to an OpenShift envioronment
@@ -3936,6 +3983,12 @@ spec:
                 x-kubernetes-list-map-keys:
                 - name
                 x-kubernetes-list-type: map
+              monitoring:
+                description: Current state of PostgreSQL cluster monitoring tool configuration
+                properties:
+                  exporterConfiguration:
+                    type: string
+                type: object
               observedGeneration:
                 description: observedGeneration represents the .metadata.generation
                   on which the status was based.

@@ -63,6 +63,7 @@ spec:
   port: 5432
   postgresVersion: 0
 status:
+  monitoring: {}
   proxy:
     pgBouncer: {}
 		`)+"\n")
@@ -99,6 +100,7 @@ spec:
   port: 5432
   postgresVersion: 0
 status:
+  monitoring: {}
   proxy:
     pgBouncer: {}
 		`)+"\n")
