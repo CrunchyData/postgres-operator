@@ -78,9 +78,14 @@ kubectl_get_private "${OUTPUT_DIR}/pgouser" secret -n "${PGO_OPERATOR_NAMESPACE}
 kubectl_get_private "${OUTPUT_DIR}/client.crt" secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}'
 kubectl_get_private "${OUTPUT_DIR}/client.key" secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}'
 
+client_vars=$(cat <<EOF
+export "PATH=${OUTPUT_DIR}:\$PATH"
+export "PGOUSER=${OUTPUT_DIR}/pgouser"
+export "PGO_CA_CERT=${OUTPUT_DIR}/client.crt"
+export "PGO_CLIENT_CERT=${OUTPUT_DIR}/client.crt"
+export "PGO_CLIENT_KEY=${OUTPUT_DIR}/client.key"
+EOF
+)
+
 echo "pgo client files have been generated, please add the following to your bashrc"
-echo "export PATH=${OUTPUT_DIR}:\$PATH"
-echo "export PGOUSER=${OUTPUT_DIR}/pgouser"
-echo "export PGO_CA_CERT=${OUTPUT_DIR}/client.crt"
-echo "export PGO_CLIENT_CERT=${OUTPUT_DIR}/client.crt"
-echo "export PGO_CLIENT_KEY=${OUTPUT_DIR}/client.key"
+echo "$client_vars" | tee ${OUTPUT_DIR}/client-vars.rc
