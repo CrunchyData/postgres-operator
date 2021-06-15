@@ -42,6 +42,20 @@ $PGOROOT/examples/custom-config
 If you run the *create.sh* script there, it will create the configMap
 that will include the PostgreSQL configuration files within that directory.
 
+An example set of custom configuration using ConfigMap resource is found at:
+```
+$PGROOT/examples/custom-config-by-resource
+```
+
+In order to use custom configuration with Postgres cluster you need to update `customconfig` field in `pgCluster` 
+resource definition. Be aware of:
+* correct naming - `customconfig` field must not equal to `${namespace-name}-config` or 
+else it will conflict with other automatically created configmap
+* namespace specification - custom configmap must be in same namespace as postgres cluster. Thus if you change namespace
+in pgcluster resource definition be sure to set same namespace in configmap
+* it's not mandatory to set both `setup.sql` and `postgres-ha.yaml`
+* be aware of quotes in `setup.sql` - make sure you correctly quote user defined strings like usernames, passwords etc. 
+
 #### Config Files Purpose
 
 The *postgres-ha.yaml* file is the main configuration file that allows for the

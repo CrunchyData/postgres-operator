@@ -1,0 +1,62 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgo-custom-config
+  namespace: mycluster
+data:
+  postgres-ha.yaml: "---\nbootstrap:\n  dcs:\n    postgresql:\n      parameters:\n
+      \       logging_collector: on\n        log_directory: pglogs\n        log_min_duration_statement:
+      0\n        log_statement: none\n        max_wal_senders: 6\n        shared_preload_libraries:
+      pgaudit.so\n        shared_buffers: 256MB\n        temp_buffers: 10MB\n        work_mem:
+      5MB\npostgresql:  \n  pg_hba:\n    - local all postgres peer\n    - local all
+      crunchyadm peer\n    - host replication primaryuser 0.0.0.0/0 md5\n    - host
+      all primaryuser 0.0.0.0/0 reject\n    - host all postgres 0.0.0.0/0 md5\n    -
+      host all testuser1 0.0.0.0/0 md5\n    - host all testuser2 0.0.0.0/0 md5\n"
+  setup.sql: |
+    /*
+     * Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
+     * Licensed under the Apache License, Version 2.0 (the "License");
+     * you may not use this file except in compliance with the License.
+     * You may obtain a copy of the License at
+     *
+     * http://www.apache.org/licenses/LICENSE-2.0
+     *
+     * Unless required by applicable law or agreed to in writing, software
+     * distributed under the License is distributed on an "AS IS" BASIS,
+     * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     * See the License for the specific language governing permissions and
+     * limitations under the License.
+     */
+
+    --- System Setup
+    SET application_name="container_setup";
+
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+    CREATE EXTENSION IF NOT EXISTS pgaudit;
+
+    CREATE USER "${PGHA_USER}" LOGIN;
+    ALTER USER "${PGHA_USER}" PASSWORD $$${PGHA_USER_PASSWORD}$$;
+
+    CREATE USER testuser2 LOGIN;
+    ALTER USER testuser2 PASSWORD 'customconfpass';
+
+    CREATE DATABASE "${PGHA_DATABASE}";
+    GRANT ALL PRIVILEGES ON DATABASE "${PGHA_DATABASE}" TO testuser2;
+
+    --- PGHA_DATABASE Setup
+
+    \c "${PGHA_DATABASE}"
+
+    CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+    CREATE EXTENSION IF NOT EXISTS pgaudit;
+
+    CREATE SCHEMA IF NOT EXISTS AUTHORIZATION "${PGHA_USER}";
+
+    /* The following has been customized for the custom-config example */
+
+    CREATE DATABASE "customDatabase"
+    CREATE USER "customUser";
+    ALTER USER "customUser" PASSWORD 'customPassword';
+    GRANT ALL PRIVILEGES ON DATABASE customDatabase TO "customUser";
+    CREATE SCHEMA IF NOT EXISTS AUTHORIZATION "customUser";

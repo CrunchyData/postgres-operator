@@ -1,0 +1,95 @@
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: mycluster
+  labels:
+    autofail: "true"
+    crunchy-pgbadger: "false"
+    crunchy-pgha-scope: mycluster
+    crunchy-postgres-exporter: "false"
+    deployment-name: mycluster
+    name: mycluster
+    pg-cluster: mycluster
+    pg-pod-anti-affinity: ""
+    pgo-backrest: "true"
+    pgo-version: 4.5.0
+    pgouser: admin
+  name: mycluster
+  namespace: mycluster
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 3G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: mycluster
+    size: 3G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 3G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  annotations:
+  backrestLimits: {}
+  backrestRepoPath: ""
+  backrestResources:
+    memory: 48Mi
+  backrestS3Bucket: ""
+  backrestS3Endpoint: ""
+  backrestS3Region: ""
+  backrestS3URIStyle: ""
+  backrestS3VerifyTLS: ""
+  ccpimage: crunchy-postgres-ha
+  ccpimageprefix: registry.developers.crunchydata.com/crunchydata
+  ccpimagetag: centos7-12.4-4.5.0
+  clustername: mycluster
+  customconfig: "pgo-custom-config"
+  database: clusterDatabase
+  exporterport: "9187"
+  limits: {}
+  name: mycluster
+  namespace: mycluster
+  pgBouncer:
+    limits: {}
+    replicas: 1
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: registry.developers.crunchydata.com/crunchydata
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  policies: ""
+  port: "5432"
+  primarysecretname: mycluster-primaryuser-secret
+  replicas: "2"
+  rootsecretname: mycluster-postgres-secret
+  shutdown: false
+  standby: false
+  tablespaceMounts: {}
+  tls:
+    caSecret: ""
+    replicationTLSSecret: ""
+    tlsSecret: ""
+  tlsOnly: false
+  user: standard
+  userlabels:
+    crunchy-postgres-exporter: "false"
+    pg-pod-anti-affinity: ""
+    pgo-version: 4.5.0
+  usersecretname: mycluster-user-secret
