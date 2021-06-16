@@ -31,7 +31,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -40,7 +39,7 @@ import (
 
 // reconcilePGBouncer writes the objects necessary to run a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncer(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, instances *observedInstances,
 	primaryCertificate *corev1.SecretProjection,
 	root *pki.RootCertificateAuthority,
 ) error {
@@ -60,7 +59,7 @@ func (r *Reconciler) reconcilePGBouncer(
 		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret)
 	}
 	if err == nil {
-		err = r.reconcilePGBouncerInPostgreSQL(ctx, cluster, secret)
+		err = r.reconcilePGBouncerInPostgreSQL(ctx, cluster, instances, secret)
 	}
 	return err
 }
@@ -114,23 +113,27 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 // reconcilePGBouncerInPostgreSQL writes the user and other objects needed by
 // PgBouncer inside of PostgreSQL.
 func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
-	ctx context.Context, cluster *v1beta1.PostgresCluster, clusterSecret *corev1.Secret,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, instances *observedInstances,
+	clusterSecret *corev1.Secret,
 ) error {
-	if !patroni.ClusterBootstrapped(cluster) {
-		// Patroni has not yet bootstrapped; there is nothing to do.
-		// NOTE(cbandy): "Patroni bootstrapped" may not be the right check here.
-		// The following code needs to be able to execute SQL that writes
-		// objects in every PostgreSQL database (probably as the superuser).
+	var pod *corev1.Pod
+
+	// Find the PostgreSQL instance that can execute SQL that writes to every
+	// database. When there is none, return early.
+
+	for _, instance := range instances.forCluster {
+		writable, known := instance.IsWritable()
+		if writable && known && len(instance.Pods) > 0 {
+			pod = instance.Pods[0]
+			break
+		}
+	}
+	if pod == nil {
 		return nil
 	}
 
-	// if pgBouncer is shutdown, there is nothing to do
-	if cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown {
-		return nil
-	}
-
-	// Patroni has bootstrapped. Prepare to either add or remove PgBouncer from
-	// PostgreSQL.
+	// PostgreSQL is available for writes. Prepare to either add or remove
+	// PgBouncer objects.
 
 	action := func(ctx context.Context, exec postgres.Executor) error {
 		return errors.WithStack(pgbouncer.EnableInPostgreSQL(ctx, exec, clusterSecret))
@@ -167,31 +170,6 @@ func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
 		// TODO(cbandy): Give the user a way to trigger execution regardless.
 		// The value of an annotation could influence the hash, for example.
 		return nil
-	}
-
-	// The necessary SQL has not been applied. Find a pod that can write to cluster.
-
-	pods := &corev1.PodList{}
-	instances, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
-	if err == nil {
-		err = errors.WithStack(
-			r.Client.List(ctx, pods,
-				client.InNamespace(cluster.Namespace),
-				client.MatchingLabelsSelector{Selector: instances},
-			))
-	}
-
-	var pod *corev1.Pod
-	if err == nil {
-		for i := range pods.Items {
-			if pods.Items[i].Labels[naming.LabelRole] == naming.RolePatroniLeader {
-				pod = &pods.Items[i]
-				break
-			}
-		}
-		if pod == nil {
-			err = errors.New("could not find primary pod")
-		}
 	}
 
 	// Apply the necessary SQL and record its hash in cluster.Status. Include

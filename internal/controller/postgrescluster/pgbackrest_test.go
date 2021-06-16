@@ -596,6 +596,11 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
+	instances := newObservedInstances(postgresCluster, nil, []corev1.Pod{{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{"status": `"role":"master"`},
+		},
+	}})
 
 	stanzaCreateFail := func(namespace, pod, container string, stdin io.Reader, stdout,
 		stderr io.Writer, command ...string) error {
@@ -638,11 +643,8 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		Reason:             "RepoHostReady",
 		Message:            "pgBackRest dedicated repository host is ready",
 	})
-	postgresCluster.Status.Patroni = &v1beta1.PatroniStatus{
-		SystemIdentifier: "6952526174828511264",
-	}
 
-	configHashMistmatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, "abcde12345")
+	configHashMistmatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
 	assert.NilError(t, err)
 	assert.Assert(t, !configHashMistmatch)
 
@@ -686,7 +688,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		SystemIdentifier: "6952526174828511264",
 	}
 
-	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, "abcde12345")
+	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
 	assert.Error(t, err, "fake stanza create failed: ")
 	assert.Assert(t, !configHashMismatch)
 
@@ -813,6 +815,11 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
+	instances := newObservedInstances(postgresCluster, nil, []corev1.Pod{{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{"status": `"role":"master"`},
+		},
+	}})
 
 	// first add a fake dedicated repo pod to the env
 	repoHost := &corev1.Pod{
@@ -861,8 +868,8 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "hippo-sa"},
 	}
 
-	err = r.reconcileReplicaCreateBackup(ctx, postgresCluster, []*batchv1.Job{}, sa,
-		configHash, replicaCreateRepo)
+	err = r.reconcileReplicaCreateBackup(ctx, postgresCluster, instances,
+		[]*batchv1.Job{}, sa, configHash, replicaCreateRepo)
 	assert.NilError(t, err)
 
 	// now find the expected job
@@ -933,8 +940,8 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		batchv1.JobCondition{Type: batchv1.JobComplete, Status: corev1.ConditionTrue})
 
 	// call reconcile function again
-	err = r.reconcileReplicaCreateBackup(ctx, postgresCluster, []*batchv1.Job{&backupJob}, sa,
-		configHash, replicaCreateRepo)
+	err = r.reconcileReplicaCreateBackup(ctx, postgresCluster, instances,
+		[]*batchv1.Job{&backupJob}, sa, configHash, replicaCreateRepo)
 	assert.NilError(t, err)
 
 	// verify the proper conditions have been set
@@ -1014,6 +1021,8 @@ func TestReconcileManualBackup(t *testing.T) {
 		testDesc string
 		// whether or not the test only applies to configs with dedicated repo hosts
 		dedicatedOnly bool
+		// whether or not the primary instance should be read-only
+		standby bool
 		// whether or not to mock a current job in the env before reonciling (this job is not
 		// actully created, but rather just passed into the reconcile function under test)
 		createCurrentJob bool
@@ -1035,12 +1044,13 @@ func TestReconcileManualBackup(t *testing.T) {
 		// no event is expected)
 		expectedEventReason string
 	}{{
-		testDesc:         "cluster not bootstrapped should not reconcile",
+		testDesc:         "read-only cluster should not reconcile",
 		createCurrentJob: false,
 		clusterConditions: map[string]metav1.ConditionStatus{
 			ConditionRepoHostReady: metav1.ConditionTrue,
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
+		standby: true,
 		status: &v1beta1.PostgresClusterStatus{
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
@@ -1054,7 +1064,6 @@ func TestReconcileManualBackup(t *testing.T) {
 		createCurrentJob:  false,
 		clusterConditions: map[string]metav1.ConditionStatus{},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1070,7 +1079,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1085,7 +1093,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionRepoHostReady: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1102,7 +1109,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1118,7 +1124,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionFalse,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1134,7 +1139,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1150,7 +1154,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				ManualBackup: &v1beta1.PGBackRestManualBackupStatus{
 					ID: backupId, Finished: true},
@@ -1168,7 +1171,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1184,7 +1186,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{}},
 		},
@@ -1201,7 +1202,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1217,7 +1217,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1233,7 +1232,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1250,7 +1248,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1267,7 +1264,6 @@ func TestReconcileManualBackup(t *testing.T) {
 			ConditionReplicaCreate: metav1.ConditionTrue,
 		},
 		status: &v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -1314,6 +1310,14 @@ func TestReconcileManualBackup(t *testing.T) {
 							batchv1.JobCondition{Type: c, Status: corev1.ConditionTrue})
 					}
 					currentJobs = append(currentJobs, job)
+				}
+
+				if tc.standby {
+					instances.forCluster[0].Pods[0].Annotations = map[string]string{}
+				} else {
+					instances.forCluster[0].Pods[0].Annotations = map[string]string{
+						"status": `"role":"master"`,
+					}
 				}
 
 				err := r.reconcileManualBackup(ctx, postgresCluster, currentJobs, sa, instances)

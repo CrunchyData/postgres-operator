@@ -97,6 +97,46 @@ func TestInstanceIsRunning(t *testing.T) {
 	assert.Assert(t, running)
 }
 
+func TestInstanceIsWritable(t *testing.T) {
+	var instance Instance
+	var known, writable bool
+
+	// No pods
+	writable, known = instance.IsWritable()
+	assert.Assert(t, !known)
+	assert.Assert(t, !writable)
+
+	// No annotations
+	instance.Pods = []*corev1.Pod{{}}
+	writable, known = instance.IsWritable()
+	assert.Assert(t, !known)
+	assert.Assert(t, !writable)
+
+	// No role
+	instance.Pods[0].Annotations = map[string]string{"status": `{}`}
+	writable, known = instance.IsWritable()
+	assert.Assert(t, !known)
+	assert.Assert(t, !writable)
+
+	// Patroni leader
+	instance.Pods[0].Annotations["status"] = `{"role":"master"}`
+	writable, known = instance.IsWritable()
+	assert.Assert(t, known)
+	assert.Assert(t, writable)
+
+	// Patroni replica
+	instance.Pods[0].Annotations["status"] = `{"role":"replica"}`
+	writable, known = instance.IsWritable()
+	assert.Assert(t, known)
+	assert.Assert(t, !writable)
+
+	// Patroni standby leader
+	instance.Pods[0].Annotations["status"] = `{"role":"standby_leader"}`
+	writable, known = instance.IsWritable()
+	assert.Assert(t, known)
+	assert.Assert(t, !writable)
+}
+
 func TestNewObservedInstances(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		cluster := new(v1beta1.PostgresCluster)

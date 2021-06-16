@@ -827,7 +827,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	}
 
 	// reconcile the pgBackRest stanza for all configuration pgBackRest repos
-	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, configHash)
+	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, configHash)
 	// If a stanza create error then requeue but don't return the error.  This prevents
 	// stanza-create errors from bubbling up to the main Reconcile() function, which would
 	// prevent subsequent reconciles from occurring.  Also, this provides a better chance
@@ -865,7 +865,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 
 	// Reconcile the initial backup that is needed to enable replica creation using pgBackRest.
 	// This is done once stanza creation is successful
-	if err := r.reconcileReplicaCreateBackup(ctx, postgresCluster,
+	if err := r.reconcileReplicaCreateBackup(ctx, postgresCluster, instances,
 		repoResources.replicaCreateBackupJobs, sa, configHash, replicaCreateRepo); err != nil {
 		log.Error(err, "unable to reconcile replica creation backup")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
@@ -1308,9 +1308,20 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 		}
 	}
 
-	// nothing to reconcile if the cluster hasn't bootstrapped, or if a manual backup has not been
+	// pgBackRest connects to a PostgreSQL instance that is not in recovery to
+	// initiate a backup. Similar to "writable" but not exactly.
+	clusterWritable := false
+	for _, instance := range instances.forCluster {
+		writable, known := instance.IsWritable()
+		if writable && known {
+			clusterWritable = true
+			break
+		}
+	}
+
+	// nothing to reconcile if there is no postgres or if a manual backup has not been
 	// requested
-	if !patroni.ClusterBootstrapped(postgresCluster) || manualAnnotation == "" ||
+	if !clusterWritable || manualAnnotation == "" ||
 		postgresCluster.Spec.Archive.PGBackRest.Manual == nil {
 		return nil
 	}
@@ -1472,7 +1483,8 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 // reconcileReplicaCreateBackup is responsible for reconciling a full pgBackRest backup for the
 // cluster as required to create replicas
 func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, replicaCreateBackupJobs []*batchv1.Job,
+	postgresCluster *v1beta1.PostgresCluster, instances *observedInstances,
+	replicaCreateBackupJobs []*batchv1.Job,
 	serviceAccount *v1.ServiceAccount, configHash, replicaCreateRepoName string) error {
 
 	var replicaCreateRepoStatus *v1beta1.RepoStatus
@@ -1506,14 +1518,19 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		meta.SetStatusCondition(&postgresCluster.Status.Conditions, replicaCreate)
 	}()
 
-	// if the cluster has yet to be bootstrapped, or if the replicaCreateRepoStatus is nil,
-	// then simply return
-	if !patroni.ClusterBootstrapped(postgresCluster) || replicaCreateRepoStatus == nil {
-		return nil
+	// pgBackRest connects to a PostgreSQL instance that is not in recovery to
+	// initiate a backup. Similar to "writable" but not exactly.
+	clusterWritable := false
+	for _, instance := range instances.forCluster {
+		writable, known := instance.IsWritable()
+		if writable && known {
+			clusterWritable = true
+			break
+		}
 	}
 
-	// simply return if the backup is already complete
-	if replicaCreateRepoStatus.ReplicaCreateBackupComplete {
+	// return early when there is no postgres, no repo, or the backup is already complete.
+	if !clusterWritable || replicaCreateRepoStatus == nil || replicaCreateRepoStatus.ReplicaCreateBackupComplete {
 		return nil
 	}
 
@@ -1709,7 +1726,8 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 // indicating that pgBackRest configuration as stored in the pgBackRest ConfigMap has not yet
 // propagated to the Pod).
 func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, configHash string) (bool, error) {
+	postgresCluster *v1beta1.PostgresCluster,
+	instances *observedInstances, configHash string) (bool, error) {
 
 	// ensure conditions are set before returning as needed by subsequent reconcile functions
 	defer func() {
@@ -1747,8 +1765,17 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 		meta.SetStatusCondition(&postgresCluster.Status.Conditions, replicaCreateRepoReady)
 	}()
 
-	// determine if the cluster has been initialized
-	clusterBootstrapped := patroni.ClusterBootstrapped(postgresCluster)
+	// determine if the cluster has been initialized. pgBackRest compares the
+	// local PostgreSQL data directory to information it sees in a PostgreSQL
+	// instance that is not in recovery. Similar to "writable" but not exactly.
+	clusterWritable := false
+	for _, instance := range instances.forCluster {
+		writable, known := instance.IsWritable()
+		if writable && known {
+			clusterWritable = true
+			break
+		}
+	}
 
 	// determine if the dedicated repository host is ready using the repo host ready status
 	dedicatedRepoReady := true
@@ -1767,7 +1794,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 
 	// return if the cluster has not yet been initialized, or if it has been initialized and
 	// all stanzas have already been created successfully
-	if !clusterBootstrapped || !dedicatedRepoReady || stanzasCreated {
+	if !clusterWritable || !dedicatedRepoReady || stanzasCreated {
 		return false, nil
 	}
 

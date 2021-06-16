@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -118,6 +119,25 @@ func (i Instance) IsTerminating() (terminating bool, known bool) {
 	// - https://releases.k8s.io/v1.21.0/pkg/registry/core/pod/strategy.go#L135
 	// - https://releases.k8s.io/v1.21.0/staging/src/k8s.io/apiserver/pkg/registry/rest/delete.go
 	return i.Pods[0].DeletionTimestamp != nil, true
+}
+
+// IsWritable returns whether or not a PostgreSQL connection could write to its
+// database.
+func (i Instance) IsWritable() (writable, known bool) {
+	if len(i.Pods) != 1 {
+		return false, false
+	}
+
+	member := i.Pods[0].Annotations["status"]
+	role := strings.Index(member, `"role":`)
+
+	if role < 0 {
+		return false, false
+	}
+
+	// TODO(cbandy): Update this to consider when Patroni is paused.
+
+	return strings.HasPrefix(member[role:], `"role":"master"`), true
 }
 
 // PodMatchesPodTemplate returns whether or not the Pod for this instance
