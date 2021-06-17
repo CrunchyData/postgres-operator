@@ -470,6 +470,12 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		},
 	}
 
+	// Set the image pull secrets, if any exist.
+	// This is set here rather than using the service account due to the lack
+	// of propagation to existing pods when the CRD is updated:
+	// https://github.com/kubernetes/kubernetes/issues/88456
+	repo.Spec.Template.Spec.ImagePullSecrets = postgresCluster.Spec.ImagePullSecrets
+
 	podSecurityContext := initialize.RestrictedPodSecurityContext()
 	podSecurityContext.SupplementalGroups = []int64{65534}
 
@@ -590,6 +596,13 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 			},
 		},
 	}
+
+	// Set the image pull secrets, if any exist.
+	// This is set here rather than using the service account due to the lack
+	// of propagation to existing pods when the CRD is updated:
+	// https://github.com/kubernetes/kubernetes/issues/88456
+	jobSpec.Template.Spec.ImagePullSecrets = postgresCluster.Spec.ImagePullSecrets
+
 	// add pgBackRest configs to template
 	if err := pgbackrest.AddConfigsToPod(postgresCluster, &jobSpec.Template,
 		configName, naming.PGBackRestRepoContainerName); err != nil {
@@ -704,6 +717,12 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 			},
 		},
 	}
+
+	// Set the image pull secrets, if any exist.
+	// This is set here rather than using the service account due to the lack
+	// of propagation to existing pods when the CRD is updated:
+	// https://github.com/kubernetes/kubernetes/issues/88456
+	restoreJob.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 
 	restoreJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
 	if err := errors.WithStack(r.setControllerReference(cluster, restoreJob)); err != nil {
@@ -2101,6 +2120,13 @@ func (r *Reconciler) createCronJob(
 			},
 		},
 	}
+
+	// Set the image pull secrets, if any exist.
+	// This is set here rather than using the service account due to the lack
+	// of propagation to existing pods when the CRD is updated:
+	// https://github.com/kubernetes/kubernetes/issues/88456
+	pgBackRestCronJob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets =
+		cluster.Spec.ImagePullSecrets
 
 	// set metadata
 	pgBackRestCronJob.SetGroupVersionKind(batchv1beta1.SchemeGroupVersion.WithKind("CronJob"))

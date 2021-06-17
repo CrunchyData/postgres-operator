@@ -201,6 +201,7 @@ func Pod(
 	}
 
 	outPod.Containers = []corev1.Container{container, reloader}
+
 	outPod.Volumes = []corev1.Volume{backend, config, frontend}
 }
 

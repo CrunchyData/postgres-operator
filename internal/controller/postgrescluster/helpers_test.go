@@ -73,6 +73,9 @@ func testCluster() *v1beta1.PostgresCluster {
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 13,
 			Image:           CrunchyPostgresHAImage,
+			ImagePullSecrets: []v1.LocalObjectReference{{
+				Name: "myImagePullSecret"},
+			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name:                "instance1",
 				Replicas:            Int32(1),

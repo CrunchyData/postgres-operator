@@ -1681,6 +1681,19 @@ spec:
               image:
                 description: The image name to use for PostgreSQL containers
                 type: string
+              imagePullSecrets:
+                description: The image pull secrets used to pull from a private registry
+                  Changing this value causes all running pods to restart. https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+                items:
+                  description: LocalObjectReference contains enough information to
+                    let you locate the referenced object inside the same namespace.
+                  properties:
+                    name:
+                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        TODO: Add other useful fields. apiVersion, kind, uid?'
+                      type: string
+                  type: object
+                type: array
               instances:
                 items:
                   properties:

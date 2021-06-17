@@ -1153,6 +1153,12 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 		podSecurityContext.FSGroup = initialize.Int64(26)
 	}
 	sts.Spec.Template.Spec.SecurityContext = podSecurityContext
+
+	// Set the image pull secrets, if any exist.
+	// This is set here rather than using the service account due to the lack
+	// of propagation to existing pods when the CRD is updated:
+	// https://github.com/kubernetes/kubernetes/issues/88456
+	sts.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 }
 
 // addPGBackRestToInstancePodSpec adds pgBackRest configuration to the PodTemplateSpec.  This

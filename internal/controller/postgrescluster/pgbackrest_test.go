@@ -70,6 +70,9 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Shutdown:        initialize.Bool(false),
 			PostgresVersion: 13,
 			Image:           "test.com/crunchy-postgres-ha:test",
+			ImagePullSecrets: []v1.LocalObjectReference{{
+				Name: "myImagePullSecret"},
+			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
 				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
@@ -253,6 +256,18 @@ func TestReconcilePGBackRest(t *testing.T) {
 		// Ensure Tolerations have been added to dedicated repo
 		if repo.Spec.Template.Spec.Tolerations == nil {
 			t.Error("dedicated repo host is missing tolerations")
+		}
+
+		// Ensure imagePullSecret has been added to the dedicated repo
+		if repo.Spec.Template.Spec.ImagePullSecrets == nil {
+			t.Error("image pull secret is missing tolerations")
+		}
+
+		if repo.Spec.Template.Spec.ImagePullSecrets != nil {
+			if repo.Spec.Template.Spec.ImagePullSecrets[0].Name !=
+				"myImagePullSecret" {
+				t.Error("image pull secret name is not set correctly")
+			}
 		}
 
 		// verify that the repohost container exists and contains the proper env vars
@@ -935,6 +950,11 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	// verify volume for configuration is present
 	assert.Assert(t, len(backupJob.Spec.Template.Spec.Volumes) == 1)
 
+	// verify the image pull secret
+	assert.Assert(t, backupJob.Spec.Template.Spec.ImagePullSecrets != nil)
+	assert.Equal(t, backupJob.Spec.Template.Spec.ImagePullSecrets[0].Name,
+		"myImagePullSecret")
+
 	// now set the job to complete
 	backupJob.Status.Conditions = append(backupJob.Status.Conditions,
 		batchv1.JobCondition{Type: batchv1.JobComplete, Status: corev1.ConditionTrue})
@@ -1345,6 +1365,18 @@ func TestReconcileManualBackup(t *testing.T) {
 						}
 					}
 					assert.Assert(t, foundOwnershipRef)
+
+					// verify image pull secret
+					var foundImagePullSecret bool
+					for _, job := range jobs.Items {
+						if job.Spec.Template.Spec.ImagePullSecrets != nil &&
+							job.Spec.Template.Spec.ImagePullSecrets[0].Name ==
+								"myImagePullSecret" {
+							foundImagePullSecret = true
+							break
+						}
+					}
+					assert.Assert(t, foundImagePullSecret)
 
 					// verify status is populated with the proper ID
 					assert.Assert(t, postgresCluster.Status.PGBackRest.ManualBackup != nil)

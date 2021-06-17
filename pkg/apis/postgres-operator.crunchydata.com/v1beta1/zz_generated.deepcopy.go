@@ -600,6 +600,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(v1.SecretProjection)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ImagePullSecrets != nil {
+		in, out := &in.ImagePullSecrets, &out.ImagePullSecrets
+		*out = make([]v1.LocalObjectReference, len(*in))
+		copy(*out, *in)
+	}
 	if in.InstanceSets != nil {
 		in, out := &in.InstanceSets, &out.InstanceSets
 		*out = make([]PostgresInstanceSetSpec, len(*in))

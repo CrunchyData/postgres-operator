@@ -79,6 +79,12 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`
 
+	// The image pull secrets used to pull from a private registry
+	// Changing this value causes all running pods to restart.
+	// https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+	// +optional
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
 	// +listType=map
 	// +listMapKey=name
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`

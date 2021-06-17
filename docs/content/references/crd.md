@@ -100,6 +100,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>Specifies a data source for bootstrapping the PostgreSQL cluster.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecimagepullsecretsindex">imagePullSecrets</a></b></td>
+        <td>[]object</td>
+        <td>The image pull secrets used to pull from a private registry Changing this value causes all running pods to restart. https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecmetadata">metadata</a></b></td>
         <td>object</td>
         <td>Metadata contains metadata for PostgresCluster resources</td>
@@ -397,6 +402,33 @@ Resource requirements for the pgBackRest restore Job.
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
         <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecimagepullsecretsindex">
+  PostgresCluster.spec.imagePullSecrets[index]
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
         <td>false</td>
       </tr></tbody>
 </table>

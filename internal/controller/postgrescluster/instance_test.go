@@ -1043,6 +1043,13 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, *ss.Spec.Replicas, int32(1))
 		},
+	}, {
+		name: "check imagepullsecret",
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Assert(t, ss.Spec.Template.Spec.ImagePullSecrets != nil)
+			assert.Equal(t, ss.Spec.Template.Spec.ImagePullSecrets[0].Name,
+				"myImagePullSecret")
+		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
 

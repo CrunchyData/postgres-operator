@@ -428,6 +428,9 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 
 	deploy.Spec.Template.Spec.SecurityContext = initialize.RestrictedPodSecurityContext()
 
+	// set the image pull secrets, if any exist
+	deploy.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
+
 	if err == nil {
 		pgbouncer.Pod(cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)
 	}
