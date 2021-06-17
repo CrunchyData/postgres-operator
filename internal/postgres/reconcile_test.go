@@ -237,7 +237,6 @@ initContainers:
   - |-
     declare -r expected_major_version="$1" pgwal_directory="$2"
     results() { printf '::postgres-operator: %s::%s\n' "$@"; }
-    directory() { [ -d "$1" ] || install --directory --mode=0700 "$1"; }
     safelink() (
       local desired="$1" name="$2" current
       current=$(realpath "${name}")
@@ -257,7 +256,7 @@ initContainers:
     bootstrap_dir="${postgres_data_directory}_bootstrap"
     [ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"
     [ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"
-    directory "${postgres_data_directory}"
+    install --directory --mode=0700 "${postgres_data_directory}"
     [ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
     [ "${postgres_data_version}" = "${expected_major_version}" ]

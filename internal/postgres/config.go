@@ -114,10 +114,6 @@ func startupCommand(
 		// Function to log values in a basic structured format.
 		`results() { printf '::postgres-operator: %s::%s\n' "$@"; }`,
 
-		// PostgreSQL prefers its files to be writable by only itself.
-		// - https://www.postgresql.org/docs/current/creating-cluster.html
-		`directory() { [ -d "$1" ] || install --directory --mode=0700 "$1"; }`,
-
 		// Function to change a directory symlink while keeping the directory content.
 		strings.TrimSpace(bashSafeLink),
 
@@ -143,8 +139,13 @@ func startupCommand(
 		`[ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"`,
 		`[ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"`,
 
-		// pgBackRest expects the data directory to exist before doing a restore.
-		`directory "${postgres_data_directory}"`,
+		// PostgreSQL requires its directory to be writable by only itself.
+		// Pod "securityContext.fsGroup" sets g+w on directories for *some*
+		// storage providers.
+		// - https://www.postgresql.org/docs/current/creating-cluster.html
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_13_0#l319
+		// - https://issue.k8s.io/93802#issuecomment-717646167
+		`install --directory --mode=0700 "${postgres_data_directory}"`,
 
 		// When the data directory is empty, there's nothing more to do.
 		`[ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0`,
