@@ -359,7 +359,7 @@ Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL
     <tbody><tr>
         <td><b>clusterName</b></td>
         <td>string</td>
-        <td>The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster. PostgresCluster.</td>
+        <td>The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster. Defaults to the name of the PostgresCluster being created if not provided.</td>
         <td>false</td>
       </tr><tr>
         <td><b>options</b></td>
@@ -2283,6 +2283,11 @@ pgBackRest archive configuration
         <td><b><a href="#postgresclusterspecarchivepgbackrestreposindex">repos</a></b></td>
         <td>[]object</td>
         <td>Defines a pgBackRest repository</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecarchivepgbackrestrestore">restore</a></b></td>
+        <td>object</td>
+        <td>Defines details for performing an in-place restore using pgBackRest</td>
         <td>false</td>
       </tr><tr>
         <td><b>image</b></td>
@@ -4354,6 +4359,85 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecarchivepgbackrestrestore">
+  PostgresCluster.spec.archive.pgbackrest.restore
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines details for performing an in-place restore using pgBackRest
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>clusterName</b></td>
+        <td>string</td>
+        <td>The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster. Defaults to the name of the PostgresCluster being created if not provided.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>options</b></td>
+        <td>[]string</td>
+        <td>Command line options to include when running the pgBackRest restore command. https://pgbackrest.org/command.html#command-restore</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecarchivepgbackrestrestoreresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource requirements for the pgBackRest restore Job.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>Whether or not in-place pgBackRest restores are enabled for this PostgresCluster.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>repoName</b></td>
+        <td>string</td>
+        <td>The name of the pgBackRest repo within the source PostgresCluster that contains the backups that should be utilized to perform a pgBackRest restore when initializing the data source for the new PostgresCluster.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecarchivepgbackrestrestoreresources">
+  PostgresCluster.spec.archive.pgbackrest.restore.resources
+  <sup><sup><a href="#postgresclusterspecarchivepgbackrestrestore">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource requirements for the pgBackRest restore Job.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecinstancesindex">
   PostgresCluster.spec.instances[index]
   <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
@@ -5865,7 +5949,12 @@ PostgresClusterStatus defines the observed state of PostgresCluster
       </tr><tr>
         <td><b>startupInstance</b></td>
         <td>string</td>
-        <td>The previous leader instance to start first when a cluster is restarted after a shutdown</td>
+        <td>The instance that should be started first when bootstrapping and/or starting a PostgresCluster.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>startupInstanceSet</b></td>
+        <td>string</td>
+        <td>The instance set associated with the startupInstance</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -6053,6 +6142,11 @@ Status information for pgBackRest
         <td>[]object</td>
         <td>Status information for pgBackRest repositories</td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterstatuspgbackrestrestore">restore</a></b></td>
+        <td>object</td>
+        <td>Status information for in-place restores</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -6198,6 +6292,63 @@ RepoVolumeStatus the status of a pgBackRest repository
         <td><b>name</b></td>
         <td>string</td>
         <td>The name of the pgBackRest repository</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterstatuspgbackrestrestore">
+  PostgresCluster.status.pgbackrest.restore
+  <sup><sup><a href="#postgresclusterstatuspgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Status information for in-place restores
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>active</b></td>
+        <td>integer</td>
+        <td>The number of actively running manual backup Pods.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>completionTime</b></td>
+        <td>string</td>
+        <td>Represents the time the manual backup Job was determined by the Job controller to be completed.  This field is only set if the backup completed successfully. Additionally, it is represented in RFC3339 form and is in UTC.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>failed</b></td>
+        <td>integer</td>
+        <td>The number of Pods for the manual backup Job that reached the "Failed" phase.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>startTime</b></td>
+        <td>string</td>
+        <td>Represents the time the manual backup Job was acknowledged by the Job controller. It is represented in RFC3339 form and is in UTC.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>succeeded</b></td>
+        <td>integer</td>
+        <td>The number of Pods for the manual backup Job that reached the "Succeeded" phase.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>finished</b></td>
+        <td>boolean</td>
+        <td>Specifies whether or not the Job is finished executing (does not indicate success or failure).</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>id</b></td>
+        <td>string</td>
+        <td>A unique identifier for the manual backup as provided using the "pgbackrest-backup" annotation when initiating a backup.</td>
         <td>true</td>
       </tr></tbody>
 </table>

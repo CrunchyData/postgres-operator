@@ -29,7 +29,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -202,16 +201,26 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		err = updateResult(r.reconcilePatroniStatus(ctx, cluster, instances))
 	}
-	// First handle reconciling any data source for the cluster.  The data source will only be
-	// reconciled prior to bootstrapping the cluster.  A condition is also set to indicate whether
-	// or not the data source for the cluster has been initialized.
-	if err == nil && cluster.Spec.DataSource != nil {
-		condition := meta.FindStatusCondition(cluster.Status.Conditions,
-			ConditionPostgresDataInitialized)
-		if condition == nil || (condition.Status != metav1.ConditionTrue) {
-			if cluster.Spec.DataSource.PostgresCluster != nil {
-				err = r.reconcilePostgresClusterDataSource(ctx, cluster)
-			}
+	// reconcile the Pod service before reconciling any data source in case it is necessary
+	// to start Pods during data source reconcilition that require network connections (e.g.
+	// if it is necessary to start a dedicated repo host to bootstrap a new cluster using its
+	// own existing backups).
+	if err == nil {
+		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
+	}
+	// First handle reconciling any data source configured for the PostgresCluster.  This includes
+	// reconciling the data source defined to bootstrap a new cluster, as well as a reconciling
+	// a data source to perform restore in-place and re-bootstrap the cluster.
+	if err == nil {
+		// Since the PostgreSQL data source needs to be populated prior to bootstrapping the
+		// cluster, further reconciliation will not occur until the data source (if configured) is
+		// initialized.  Func reconcileDataSource() will therefore return a bool indicating that
+		// the controller should return early while data initialization is in progress, after
+		// which it will indicate that an early return is no longer needed, and reconciliation
+		// can proceed normally.
+		var returnEarly bool
+		returnEarly, err = r.reconcileDataSource(ctx, cluster, instances)
+		if err != nil || returnEarly {
 			return patchClusterStatus()
 		}
 	}
@@ -226,9 +235,6 @@ func (r *Reconciler) Reconcile(
 	}
 	if err == nil {
 		clusterReplicationSecret, err = r.reconcileReplicationSecret(ctx, cluster, rootCA)
-	}
-	if err == nil {
-		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
 	}
 	if err == nil {
 		patroniLeaderService, err = r.reconcilePatroniLeaderLease(ctx, cluster)

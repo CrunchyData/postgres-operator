@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PGBackRestManualBackupStatus struct {
+type PGBackRestJobStatus struct {
 
 	// A unique identifier for the manual backup as provided using the "pgbackrest-backup"
 	// annotation when initiating a backup.
@@ -93,6 +93,10 @@ type PGBackRestArchive struct {
 	// Defines details for manual pgBackRest backup Jobs
 	// +optional
 	Manual *PGBackRestManualBackup `json:"manual,omitempty"`
+
+	// Defines details for performing an in-place restore using pgBackRest
+	// +optional
+	Restore *PGBackRestRestore `json:"restore,omitempty"`
 }
 
 type PGBackRestManualBackup struct {
@@ -127,6 +131,16 @@ type PGBackRestRepoHost struct {
 	SSHSecret *corev1.SecretProjection `json:"sshSecret,omitempty"`
 }
 
+// PGBackRestRestore defines an in-place restore for the PostgresCluster.
+type PGBackRestRestore struct {
+
+	// Whether or not in-place pgBackRest restores are enabled for this PostgresCluster.
+	// +kubebuilder:default=false
+	Enabled *bool `json:"enabled"`
+
+	*PostgresClusterDataSource `json:",inline"`
+}
+
 // PGBackRestBackupSchedules defines a pgBackRest scheduled backup
 type PGBackRestBackupSchedules struct {
 	// Validation set to minimum length of six to account for @daily option
@@ -158,7 +172,7 @@ type PGBackRestStatus struct {
 
 	// Status information for manual backups
 	// +optional
-	ManualBackup *PGBackRestManualBackupStatus `json:"manualBackup,omitempty"`
+	ManualBackup *PGBackRestJobStatus `json:"manualBackup,omitempty"`
 
 	// Status information for the pgBackRest dedicated repository host
 	// +optional
@@ -169,6 +183,10 @@ type PGBackRestStatus struct {
 	// +listType=map
 	// +listMapKey=name
 	Repos []RepoStatus `json:"repos,omitempty"`
+
+	// Status information for in-place restores
+	// +optional
+	Restore *PGBackRestJobStatus `json:"restore,omitempty"`
 }
 
 // PGBackRestRepo represents a pgBackRest repository.  Only one of its members may be specified.

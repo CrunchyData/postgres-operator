@@ -52,7 +52,7 @@ import (
 )
 
 const (
-	// PostgresDataInitialized is the type used in a condition to indicate whether or not the
+	// ConditionPostgresDataInitialized is the type used in a condition to indicate whether or not the
 	// PostgresCluster's PostgreSQL data directory has been initialized (e.g. via a restore)
 	ConditionPostgresDataInitialized = "PostgresDataInitialized"
 
@@ -71,6 +71,10 @@ const (
 	// ConditionRepoHostReady is the type used in a condition to indicate whether or not a
 	// pgBackRest repository host PostgresCluster is ready
 	ConditionRepoHostReady = "PGBackRestRepoHostReady"
+
+	// ConditionPGBackRestRestoreProgressing is the type used in a condition to indicate that
+	// and in-place pgBackRest restore is in progress
+	ConditionPGBackRestRestoreProgressing = "PGBackRestoreProgressing"
 
 	// EventRepoHostNotFound is used to indicate that a pgBackRest repository was not
 	// found when reconciling
@@ -91,6 +95,11 @@ const (
 	// EventUnableToCreatePGBackRestCronJob is the event reason utilized when a pgBackRest backup
 	// CronJob fails to create successfully
 	EventUnableToCreatePGBackRestCronJob = "UnableToCreatePGBackRestCronJob"
+
+	// ReasonReadyForRestore is the reason utilized within ConditionPGBackRestRestoreProgressing
+	// to indicate that the restore Job can proceed because the cluster is now ready to be
+	// restored (i.e. it has been properly prepared for a restore).
+	ReasonReadyForRestore = "ReadyForRestore"
 )
 
 // backup types
@@ -309,6 +318,15 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 					}
 					break
 				}
+			}
+		case hasLabel(naming.LabelPGBackRestRestore):
+			// When a cluster is prepared for restore, the system identifier is removed from status
+			// and the cluster is therefore no longer bootstrapped.  Only once the restore Job is
+			// complete will the cluster then be bootstrapped again, which means by the time we
+			// detect a restore Job here and a bootstrapped cluster, the Job can be safely removed.
+			if !patroni.ClusterBootstrapped(postgresCluster) {
+				ownedNoDelete = append(ownedNoDelete, owned)
+				delete = false
 			}
 		}
 
@@ -612,28 +630,260 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 	return jobSpec, nil
 }
 
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=get
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=list
+
+// observeRestoreEnv observes the current Kubernetes environment to obtain any resources applicable
+// to performing pgBackRest restores (e.g. when initializing a new cluster using an existing
+// pgBackRest backup, or when restoring in-place).  This includes finding any existing Endpoints
+// created by Patroni (i.e. DCS, leader and failover Endpoints), while then also finding any existing
+// restore Jobs and then updating pgBackRest restore status accordingly.
+func (r *Reconciler) observeRestoreEnv(ctx context.Context,
+	cluster *v1beta1.PostgresCluster) ([]v1.Endpoints, *batchv1.Job, error) {
+
+	// lookup the various patroni endpoints
+	leaderEP, dcsEP, failoverEP := v1.Endpoints{}, v1.Endpoints{}, v1.Endpoints{}
+	currentEndpoints := []v1.Endpoints{}
+	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
+		&leaderEP); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, nil, errors.WithStack(err)
+		}
+	} else {
+		currentEndpoints = append(currentEndpoints, leaderEP)
+	}
+	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
+		&dcsEP); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, nil, errors.WithStack(err)
+		}
+	} else {
+		currentEndpoints = append(currentEndpoints, dcsEP)
+	}
+	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
+		&failoverEP); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, nil, errors.WithStack(err)
+		}
+	} else {
+		currentEndpoints = append(currentEndpoints, failoverEP)
+	}
+
+	restoreJobs := &batchv1.JobList{}
+	if err := r.Client.List(ctx, restoreJobs, &client.ListOptions{
+		LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
+	}); err != nil {
+		return nil, nil, errors.WithStack(err)
+	}
+	var restoreJob *batchv1.Job
+	if len(restoreJobs.Items) > 1 {
+		return nil, nil, errors.WithStack(
+			errors.New("invalid number of restore Jobs found when attempting to reconcile a " +
+				"pgBackRest data source"))
+	} else if len(restoreJobs.Items) == 1 {
+		restoreJob = &restoreJobs.Items[0]
+	}
+
+	if restoreJob != nil {
+
+		completed := jobCompleted(restoreJob)
+		failed := jobFailed(restoreJob)
+
+		if cluster.Status.PGBackRest != nil && cluster.Status.PGBackRest.Restore != nil {
+			cluster.Status.PGBackRest.Restore.StartTime = restoreJob.Status.StartTime
+			cluster.Status.PGBackRest.Restore.CompletionTime = restoreJob.Status.CompletionTime
+			cluster.Status.PGBackRest.Restore.Succeeded = restoreJob.Status.Succeeded
+			cluster.Status.PGBackRest.Restore.Failed = restoreJob.Status.Failed
+			cluster.Status.PGBackRest.Restore.Active = restoreJob.Status.Active
+			if completed || failed {
+				cluster.Status.PGBackRest.Restore.Finished = true
+			}
+		}
+
+		// update the data source initilialized condition if the Job has finished running, and is
+		// therefore in a completed or failed
+		if completed {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPostgresDataInitialized,
+				Status:             metav1.ConditionTrue,
+				Reason:             "PGBackRestRestoreComplete",
+				Message:            "pgBackRest restore completed successfully",
+			})
+			// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
+			if len(cluster.Status.Conditions) > 0 {
+				meta.RemoveStatusCondition(&cluster.Status.Conditions,
+					ConditionPGBackRestRestoreProgressing)
+			}
+		} else if failed {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPostgresDataInitialized,
+				Status:             metav1.ConditionFalse,
+				Reason:             "PGBackRestRestoreFailed",
+				Message:            "pgBackRest restore failed",
+			})
+		}
+	}
+
+	return currentEndpoints, restoreJob, nil
+}
+
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=delete
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=delete
+
+// prepareForRestore is responsible for reconciling an in place restore for the PostgresCluster.
+// This includes setting a "PreparingForRestore" condition, and then removing all existing
+// instance runners, as well as any Endpoints created by Patroni.  And once the cluster is no
+// longer running, the "PostgresDataInitialized" condition is removed, which will cause the
+// cluster to re-bootstrap using a restored data directory.
+func (r *Reconciler) prepareForRestore(ctx context.Context,
+	cluster *v1beta1.PostgresCluster, observed *observedInstances,
+	currentEndpoints []v1.Endpoints, restoreJob *batchv1.Job, restoreID string) error {
+
+	setPreparingClusterCondition := func(resource string) {
+		meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: cluster.GetGeneration(),
+			Type:               ConditionPGBackRestRestoreProgressing,
+			Status:             metav1.ConditionTrue,
+			Reason:             "RestoreInPlaceRequested",
+			Message: fmt.Sprintf("Preparing cluster to restore in-place: %s",
+				resource),
+		})
+	}
+
+	cluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{}
+	cluster.Status.PGBackRest.Restore = &v1beta1.PGBackRestJobStatus{
+		ID: restoreID,
+	}
+
+	// find all runners, the primary, and determine if the cluster is still running
+	var clusterRunning bool
+	runners := []*appsv1.StatefulSet{}
+	var primary *Instance
+	for i, instance := range observed.forCluster {
+		if !clusterRunning {
+			clusterRunning, _ = instance.IsRunning(naming.ContainerDatabase)
+		}
+		if instance.Runner != nil {
+			runners = append(runners, instance.Runner)
+		}
+		if isPrimary, _ := instance.IsPrimary(); isPrimary {
+			primary = observed.forCluster[i]
+		}
+	}
+
+	// Set the proper startup instance for the restore.  This specifically enables a delta
+	// restore by attempting to find an existing instance whose PVC (if it exists, e.g. as
+	// in the case of an in-place restore where all PVCs are kept in place) can be utilized
+	// for the restore.  The primary is preferred, but otherwise we will just grab the first
+	// runner we find.  If no runner can be identified, then a new instance name is
+	// generated, which means a non-delta restore will occur into an empty data volume (note that
+	// a new name/empty volume is always used when the restore is to bootstrap a new cluster).
+	if cluster.Status.StartupInstance == "" {
+		if primary != nil {
+			cluster.Status.StartupInstance = primary.Name
+			cluster.Status.StartupInstanceSet = primary.Spec.Name
+		} else if len(runners) > 0 {
+			cluster.Status.StartupInstance = runners[0].GetName()
+			cluster.Status.StartupInstanceSet =
+				runners[0].GetLabels()[naming.LabelInstanceSet]
+		} else if len(cluster.Spec.InstanceSets) > 0 {
+			cluster.Status.StartupInstance = naming.GenerateInstance(cluster,
+				&cluster.Spec.InstanceSets[0]).Name
+			cluster.Status.StartupInstanceSet = cluster.Spec.InstanceSets[0].Name
+		} else {
+			return errors.New("unable to determine startup instance for restore")
+		}
+	}
+
+	// remove any existing restore Jobs
+	if restoreJob != nil {
+		setPreparingClusterCondition("removing restore job")
+		if err := r.Client.Delete(ctx, restoreJob,
+			client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
+			return errors.WithStack(err)
+		}
+		return nil
+	}
+
+	if clusterRunning {
+		setPreparingClusterCondition("removing runners")
+		for _, runner := range runners {
+			err := r.Client.Delete(ctx, runner,
+				client.PropagationPolicy(metav1.DeletePropagationForeground))
+			if client.IgnoreNotFound(err) != nil {
+				return errors.WithStack(err)
+			}
+		}
+		return nil
+	}
+
+	// if everything is gone, proceed with re-bootstrapping the cluster via an in-place restore
+	if len(currentEndpoints) == 0 {
+		if len(cluster.Status.Conditions) > 0 {
+			// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
+			meta.RemoveStatusCondition(&cluster.Status.Conditions, ConditionPostgresDataInitialized)
+		}
+		meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: cluster.GetGeneration(),
+			Type:               ConditionPGBackRestRestoreProgressing,
+			Status:             metav1.ConditionTrue,
+			Reason:             ReasonReadyForRestore,
+			Message:            "Restoring cluster in-place",
+		})
+		// the cluster is no longer bootstrapped
+		cluster.Status.Patroni = nil
+		// the restore will change the contents of the database, so the pgbouncer hash is no longer
+		// valid
+		cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = ""
+		return nil
+	}
+
+	setPreparingClusterCondition("removing DCS")
+	// delete any Endpoints
+	for i := range currentEndpoints {
+		if err := r.Client.Delete(ctx, &currentEndpoints[i]); client.IgnoreNotFound(err) != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	return nil
+}
+
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=patch
+
 // reconcileRestoreJob is responsible for reconciling a Job that performs a pgBackRest restore in
 // order to populate a PGDATA directory.
 func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
-	cluster, sourceCluster *v1beta1.PostgresCluster, pgdataVolume *v1.PersistentVolumeClaim,
-	repoName, configName, instanceName, configHash string) error {
+	cluster, sourceCluster *v1beta1.PostgresCluster,
+	pgdataVolume, pgwalVolume *v1.PersistentVolumeClaim,
+	dataSource *v1beta1.PostgresClusterDataSource,
+	configName, instanceName, instanceSetName, configHash string) error {
+
+	repoName := dataSource.RepoName
+	options := dataSource.Options
 
 	// ensure options are properly set
 	// TODO (andrewlecuyer): move validation logic to a webhook
-	for _, opt := range cluster.Spec.DataSource.PostgresCluster.Options {
+	for _, opt := range options {
 		var msg string
 		switch {
 		case strings.Contains(opt, "--repo"):
 			msg = "Option '--repo' is not allowed: please use the 'repoName' field instead."
 		case strings.Contains(opt, "--stanza"):
 			msg = "Option '--stanza' is not allowed: the operator will automatically set this " +
-				"field"
+				"option"
 		case strings.Contains(opt, "--pg1-path"):
 			msg = "Option '--pg1-path' is not allowed: the operator will automatically set this " +
-				"field"
+				"option"
 		case strings.Contains(opt, "--target-action"):
 			msg = "Option '--target-action' is not allowed: the operator will automatically set this " +
-				"field "
+				"option "
+		case strings.Contains(opt, "--link-map"):
+			msg = "Option '--link-map' is not allowed: the operator will automatically set this " +
+				"option "
 		}
 		if msg != "" {
 			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource", msg, repoName)
@@ -644,12 +894,22 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	pgdata := postgres.DataDirectory(cluster)
 	// combine options provided by user in the spec with those populated by the operator for a
 	// successful restore
-	opts := append(cluster.Spec.DataSource.PostgresCluster.Options, []string{
+	opts := append(options, []string{
 		"--stanza=" + pgbackrest.DefaultStanzaName, "--pg1-path=" + pgdata,
 		"--repo=" + regexRepoIndex.FindString(repoName)}...)
+	var deltaOptFound bool
+	for _, opt := range opts {
+		if strings.Contains(opt, "--delta") {
+			deltaOptFound = true
+			break
+		}
+	}
+	if !deltaOptFound {
+		opts = append(opts, "--delta")
+	}
 
 	var foundTarget, foundTargetAction bool
-	for _, opt := range cluster.Spec.DataSource.PostgresCluster.Options {
+	for _, opt := range options {
 		switch {
 		case strings.Contains(opt, "--target"):
 			foundTarget = true
@@ -661,6 +921,13 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	// action that is explicitly set
 	if foundTarget && !foundTargetAction {
 		opts = append(opts, "--target-action=promote")
+	}
+
+	for i, instanceSpec := range cluster.Spec.InstanceSets {
+		if instanceSpec.Name == instanceSetName {
+			opts = append(opts, "--link-map=pg_wal="+postgres.WALDirectory(cluster,
+				&cluster.Spec.InstanceSets[i]))
+		}
 	}
 
 	// NOTE (andrewlecuyer): Forcing users to put each argument separately might prevent the need
@@ -692,6 +959,22 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 			},
 		},
 	}
+	volumes := []v1.Volume{dataVolume}
+	volumeMounts := []v1.VolumeMount{dataVolumeMount}
+
+	if pgwalVolume != nil {
+		walVolumeMount := postgres.WALVolumeMount()
+		walVolume := v1.Volume{
+			Name: walVolumeMount.Name,
+			VolumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pgwalVolume.GetName(),
+				},
+			},
+		}
+		volumes = append(volumes, walVolume)
+		volumeMounts = append(volumeMounts, walVolumeMount)
+	}
 
 	restoreJob := &batchv1.Job{
 		ObjectMeta: meta,
@@ -706,13 +989,13 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 						Command:         cmd,
 						Image:           cluster.Spec.Image,
 						Name:            naming.PGBackRestRestoreContainerName,
-						VolumeMounts:    []v1.VolumeMount{dataVolumeMount},
+						VolumeMounts:    volumeMounts,
 						Env:             []v1.EnvVar{{Name: "PGHOST", Value: "/tmp"}},
 						SecurityContext: initialize.RestrictedSecurityContext(),
-						Resources:       cluster.Spec.DataSource.PostgresCluster.Resources,
+						Resources:       dataSource.Resources,
 					}},
 					RestartPolicy: v1.RestartPolicyNever,
-					Volumes:       []v1.Volume{dataVolume},
+					Volumes:       volumes,
 				},
 			},
 		},
@@ -741,7 +1024,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	if pgbackrest.RepoHostEnabled(sourceCluster) {
 		// add ssh configs to template
 		if err := pgbackrest.AddSSHToPod(sourceCluster, &restoreJob.Spec.Template, false,
-			cluster.Spec.DataSource.PostgresCluster.Resources,
+			dataSource.Resources,
 			naming.PGBackRestRestoreContainerName); err != nil {
 			return errors.WithStack(err)
 		}
@@ -907,91 +1190,54 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 // This is specifically done by running a pgBackRest restore to populate a PostgreSQL data volume
 // for the PostgresCluster being reconciled using the backups of another PostgresCluster.
 func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
-	cluster *v1beta1.PostgresCluster) error {
+	cluster *v1beta1.PostgresCluster, dataSource *v1beta1.PostgresClusterDataSource,
+	configHash string) error {
 
-	sourceClusterName := cluster.Spec.DataSource.PostgresCluster.ClusterName
-	sourceRepoName := cluster.Spec.DataSource.PostgresCluster.RepoName
+	// grab cluster and repo name information from the data source
+	sourceClusterName := dataSource.ClusterName
+	// if the data source name is empty then we're restoring in-place and use the current cluster
+	// as the source cluster
+	if sourceClusterName == "" {
+		sourceClusterName = cluster.GetName()
+	}
+	// repo name is required by the api, so RepoName should be populated
+	sourceRepoName := dataSource.RepoName
 
-	hashFunc := func(jobConfigs []string) (string, error) {
-		return safeHash32(func(w io.Writer) (err error) {
-			for _, o := range jobConfigs {
-				_, err = w.Write([]byte(o))
-			}
-			return
-		})
-	}
-	configs := []string{sourceClusterName, sourceRepoName}
-	configs = append(configs, cluster.Spec.DataSource.PostgresCluster.Options...)
-	configHash, err := hashFunc(configs)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	// first look for an existing restore Job
-	restoreJobs := &batchv1.JobList{}
-	var restoreJob *batchv1.Job
-	if err := r.Client.List(ctx, restoreJobs, &client.ListOptions{
-		LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
-	}); err != nil {
-		return errors.WithStack(err)
-	}
-	if len(restoreJobs.Items) > 1 {
+	// Ensure we proper instance and instance set can be identified via the status.  The
+	// StartupInstance and StartupInstanceSet values should be populated when the cluster
+	// is being prepared for a restore, and should therefore always exist at this point.
+	// Therefore, if either are not found it is treated as an error.
+	instanceName := cluster.Status.StartupInstance
+	if instanceName == "" {
 		return errors.WithStack(
-			errors.New("invalid number of restore Jobs found when attempting to reconcile a " +
-				"pgBackRest data source"))
-	} else if len(restoreJobs.Items) == 1 {
-		restoreJob = &restoreJobs.Items[0]
+			errors.New("unable to find instance name for pgBackRest restore Job"))
+	}
+	instanceSetName := cluster.Status.StartupInstanceSet
+	if instanceSetName == "" {
+		return errors.WithStack(
+			errors.New("unable to find instance set name for pgBackRest restore Job"))
 	}
 
-	clusterBootstrapped := patroni.ClusterBootstrapped(cluster)
-	var instanceName string
-	if restoreJob != nil {
-		// grab the instance name associated with the restore job, which should always be present
-		instanceName = restoreJob.GetLabels()[naming.LabelStartupInstance]
-		if instanceName == "" {
-			return errors.WithStack(
-				errors.New("unable to find instance name for pgBackRest restore Job"))
+	// Ensure an instance set can be found in the current spec that corresponds to the
+	// instanceSetName.  A valid instance spec is needed to reconcile and cluster volumes
+	// below (e.g. the PGDATA and/or WAL volumes).
+	var instanceSet *v1beta1.PostgresInstanceSetSpec
+	for i, set := range cluster.Spec.InstanceSets {
+		if set.Name == instanceSetName {
+			instanceSet = &cluster.Spec.InstanceSets[i]
+			break
 		}
-		currentConfigHash := restoreJob.GetAnnotations()[naming.PGBackRestConfigHash]
-
-		completed := jobCompleted(restoreJob)
-		failed := jobFailed(restoreJob)
-		// update the data source initilialized condition if the Job has finished running, and is
-		// therefore in a completed or failed
-		if completed {
-			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
-				ObservedGeneration: cluster.GetGeneration(),
-				Type:               ConditionPostgresDataInitialized,
-				Status:             metav1.ConditionTrue,
-				Reason:             "PGBackRestRestoreComplete",
-				Message:            "pgBackRest restore completed successfully",
-			})
-			// set the startup instance in the status so the the first instance started for the
-			// cluster will utilize the data volume initialized via this Job
-			if !clusterBootstrapped && cluster.Status.StartupInstance == "" {
-				cluster.Status.StartupInstance = instanceName
-			}
-			return nil
-		} else if configHash != currentConfigHash {
-			return errors.WithStack(r.Client.Delete(ctx, restoreJob,
-				client.PropagationPolicy(metav1.DeletePropagationBackground)))
-		} else if failed {
-			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
-				ObservedGeneration: cluster.GetGeneration(),
-				Type:               ConditionPostgresDataInitialized,
-				Status:             metav1.ConditionFalse,
-				Reason:             "PGBackRestRestoreFailed",
-				Message:            "pgBackRest restore failed",
-			})
-			return nil
-		}
+	}
+	if instanceSet == nil {
+		return errors.WithStack(
+			errors.New("unable to determine the proper instance set for the restore"))
 	}
 
 	// If the cluster is already bootstrapped, or if the bootstrap Job is complete, then
 	// nothing to do.  However, also ensure the "data sources initialized" condition is set
 	// to true if for some reason it doesn't exist (e.g. if it was deleted since the
 	// data source for the cluster was initialized).
-	if clusterBootstrapped {
+	if patroni.ClusterBootstrapped(cluster) {
 		condition := meta.FindStatusCondition(cluster.Status.Conditions,
 			ConditionPostgresDataInitialized)
 		if condition == nil || (condition.Status != metav1.ConditionTrue) {
@@ -1006,30 +1252,54 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		return nil
 	}
 
-	// look up the source cluster
+	// Identify the proper source cluster.  If the source cluster configured matches the current
+	// cluster, then we do not need to lookup a cluster and simply copy the current PostgresCluster.
+	// Additionally, pgBackRest is reconciled to ensure any configuration needed to bootstrap the
+	// cluster exists (specifically since it may not yet exist, e.g. if we're initializing the
+	// data directory for a brand new PostgresCluster using existing backups for that cluster).
+	// If the source cluster is not the same as the current cluster, then look it up.
 	sourceCluster := &v1beta1.PostgresCluster{}
-	if err := r.Client.Get(ctx,
-		client.ObjectKey{Name: sourceClusterName, Namespace: cluster.GetNamespace()},
-		sourceCluster); err != nil {
-		if apierrors.IsNotFound(err) {
-			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource", "PostgresCluster %q "+
-				"does not exist", sourceClusterName)
-			return nil
-		}
-		return errors.WithStack(err)
-	}
-
-	sourceInstances, err := r.observeInstances(ctx, sourceCluster)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	// Any instance config will do.
 	var sourceClusterInstance string
-	for _, instance := range sourceInstances.forCluster {
-		if instance != nil {
-			sourceClusterInstance = instance.Name
-			break
+	if sourceClusterName == cluster.GetName() {
+		sourceCluster = cluster.DeepCopy()
+		sourceClusterInstance = instanceName
+		instance := &Instance{Name: sourceClusterInstance}
+		// Reconciling pgBackRest here will ensure a pgBackRest instance config file exists (since
+		// the cluster hasn't bootstrapped yet, and pgBackRest configs therefore have not yet been
+		// reconciled) as needed to properly configure the pgBackRest restore Job.
+		// Note that function reconcilePGBackRest only uses forCluster in observedInstances.
+		result, err := r.reconcilePGBackRest(ctx, cluster, &observedInstances{
+			forCluster: []*Instance{instance},
+		})
+		if err != nil || result != (reconcile.Result{}) {
+			return fmt.Errorf("unable to reconcile pgBackRest as needed to initialize "+
+				"PostgreSQL data for the cluster: %w", err)
+		}
+	} else {
+		if err := r.Client.Get(ctx,
+			client.ObjectKey{Name: sourceClusterName, Namespace: cluster.GetNamespace()},
+			sourceCluster); err != nil {
+			if apierrors.IsNotFound(err) {
+				r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource",
+					"PostgresCluster %q does not exist", sourceClusterName)
+				return nil
+			}
+			return errors.WithStack(err)
+		}
+		// Observe the source cluster and identify any existing instance name.  This will allow
+		// us to ensure a proper pgBackRest configuration file for the source cluster is mounted
+		// to the restore Job.
+		// Please note that any instance config will do, so here we just try to find any existing
+		// instance within the source cluster.
+		sourceInstances, err := r.observeInstances(ctx, sourceCluster)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		for _, instance := range sourceInstances.forCluster {
+			if instance != nil {
+				sourceClusterInstance = instance.Name
+				break
+			}
 		}
 	}
 	if sourceClusterInstance == "" {
@@ -1039,6 +1309,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	// set the name of the pgbackrest config file that will be mounted to the restore Job
 	configName := sourceClusterInstance + ".conf"
 
+	// verify the repo defined in the data source exists in the source cluster
 	var foundRepo bool
 	for _, repo := range sourceCluster.Spec.Archive.PGBackRest.Repos {
 		if repo.Name == sourceRepoName {
@@ -1047,33 +1318,31 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		}
 	}
 	if !foundRepo {
-		r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource", "PostgresCluster %q "+
-			"does not have a repo named %q defined", sourceClusterName, sourceRepoName)
+		r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource",
+			"PostgresCluster %q does not have a repo named %q defined",
+			sourceClusterName, sourceRepoName)
 		return nil
 	}
 
-	// generate instance meta so that we can attach an instance name to the restore
-	if len(cluster.Spec.InstanceSets) == 0 {
-		return errors.WithStack(
-			errors.New("no instance sets defined in spec0, unable to perform pgBackRest restore"))
-	}
-	instanceSet := &cluster.Spec.InstanceSets[0]
-	if instanceName == "" {
-		instanceName = naming.GenerateInstance(cluster, instanceSet).Name
-	}
-
-	// Reconcile the PGDATA volume for the restore.  We fake the instance STS here since when
+	// Define a fake STS to use when calling the reconcile functions below since when
 	// bootstrapping the cluster it will not exist until after the restore is complete.
-	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet,
-		&appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{
-			Name: instanceName, Namespace: cluster.GetNamespace(),
-		}})
+	fakeSTS := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{
+		Name:      instanceName,
+		Namespace: cluster.GetNamespace(),
+	}}
+	// Reconcile the PGDATA and WAL volumes for the restore
+	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	pgwal, err := r.reconcilePostgresWALVolume(ctx, cluster, instanceSet, fakeSTS, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if err := r.reconcileRestoreJob(ctx, cluster, sourceCluster, pgdata, sourceRepoName,
-		configName, instanceName, configHash); err != nil {
+	// reconcile the pgBackRest restore Job to populate the cluster's data directory
+	if err := r.reconcileRestoreJob(ctx, cluster, sourceCluster, pgdata, pgwal, dataSource,
+		configName, instanceName, instanceSetName, configHash); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -1347,7 +1616,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	// if there is an existing status, see if a new backup id has been provided, and if so reset
 	// the status and proceed with reconciling a new backup
 	if manualStatus == nil || manualStatus.ID != manualAnnotation {
-		manualStatus = &v1beta1.PGBackRestManualBackupStatus{
+		manualStatus = &v1beta1.PGBackRestJobStatus{
 			ID: manualAnnotation,
 		}
 		// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
@@ -1586,7 +1855,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	}
 
 	// determine if the dedicated repository host is ready using the repo host ready status
-	dedicatedRepoReady := true
+	var dedicatedRepoReady bool
 	condition = meta.FindStatusCondition(postgresCluster.Status.Conditions, ConditionRepoHostReady)
 	if condition != nil {
 		dedicatedRepoReady = (condition.Status == metav1.ConditionTrue)
@@ -1600,18 +1869,6 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 
 		failed := jobFailed(job)
 		completed := jobCompleted(job)
-
-		// Delete a running Job under the following conditions:
-		// - The dedicated repo host is not ready.  Wait for it to become ready, at which point the
-		//   Job will be recreated to try again.
-		// - The replica creation repo is not ready.  Wait for it to be ready (i.e. after
-		//   successful stanza creation) and try again.
-		if (!completed && !failed) && (!dedicatedRepoReady || !replicaRepoReady) {
-			if err := r.Client.Delete(ctx, job,
-				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
-				return errors.WithStack(err)
-			}
-		}
 
 		// determine if the replica creation repo has changed
 		replicaCreateRepoChanged := true
@@ -1646,8 +1903,9 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		}
 	}
 
-	// return if the replica repo or the dedicated repo host is not ready
-	if !dedicatedRepoReady || !replicaRepoReady {
+	// return if no job has been created and the replica repo or the dedicated repo host  is not
+	// ready
+	if job == nil && (!dedicatedRepoReady || !replicaRepoReady) {
 		return nil
 	}
 

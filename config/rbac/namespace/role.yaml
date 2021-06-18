@@ -24,6 +24,7 @@ rules:
   - endpoints
   verbs:
   - create
+  - delete
   - deletecollection
   - get
   - list

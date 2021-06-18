@@ -171,8 +171,11 @@ func clusterYAML(
 		}
 
 		// TODO(cbandy): This belongs somewhere else; postgres package?
+		// Create the role and then alter it to accommodate scenarios where the role already exists,
+		// but we still want to update the password, etc. (e.g. when restoring)
 		sql := `
-CREATE ROLE :"user" LOGIN PASSWORD :'password';
+CREATE ROLE :"user";
+ALTER ROLE :"user" LOGIN PASSWORD :'password';
 CREATE DATABASE :"dbname";
 GRANT ALL PRIVILEGES ON DATABASE :"dbname" TO :"user";
 `
@@ -183,8 +186,17 @@ GRANT ALL PRIVILEGES ON DATABASE :"dbname" TO :"user";
 			// Pass generated values as variables to psql and use --file to
 			// interpolate them safely in the initialization SQL.
 			// - https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
+			//
+			// TODO (andrewlecuyer): The SQL script will not fail on error to accommodate scenarios
+			// where the user, database, etc. might already exist (e.g. when restoring).  However,
+			// the script should be revisited to enable better error handling, and cleanly handle
+			// handle scenarios where these resources aleady exist. Additionally, consider moving
+			// this logic outside of the Patroni bootstrap process, e.g. as part the overall user
+			// management solution that will reconcile users, DB's, etc. throughout the lifetime of
+			// the PostgresCluster.  This will provide more granular control of the execution of
+			// this logic, which may differ at times, e.g. for standbys which are read-only.
 			"post_bootstrap": "bash -c " + quoteShellWord("psql"+
-				" --set=ON_ERROR_STOP=1"+
+				" --set=ON_ERROR_STOP=0"+
 				" --set=dbname="+quoteShellWord(string(pgUser.Data["dbname"]))+
 				" --set=password="+quoteShellWord(string(pgUser.Data["verifier"]))+
 				" --set=user="+quoteShellWord(string(pgUser.Data["user"]))+
@@ -528,7 +540,8 @@ func instanceYAML(
 	postgresql["create_replica_methods"] = methods
 
 	if !ClusterBootstrapped(cluster) {
-		if cluster.Spec.DataSource != nil && cluster.Spec.DataSource.PostgresCluster != nil {
+		// if restore status exists, then a restore occurred an the "existing" method is used
+		if cluster.Status.PGBackRest != nil && cluster.Status.PGBackRest.Restore != nil {
 			data_dir := postgres.DataDirectory(cluster)
 			root["bootstrap"] = map[string]interface{}{
 				"method": "existing",

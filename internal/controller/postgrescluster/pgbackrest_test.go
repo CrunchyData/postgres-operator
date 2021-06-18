@@ -69,10 +69,10 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 		Spec: v1beta1.PostgresClusterSpec{
 			Shutdown:        initialize.Bool(false),
 			PostgresVersion: 13,
-			Image:           "test.com/crunchy-postgres-ha:test",
 			ImagePullSecrets: []v1.LocalObjectReference{{
 				Name: "myImagePullSecret"},
 			},
+			Image: "example.com/crunchy-postgres-ha:test",
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
 				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
@@ -86,7 +86,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			}},
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{
-					Image: "test.com/crunchy-pgbackrest:test",
+					Image: "example.com/crunchy-pgbackrest:test",
 					Global: map[string]string{"repo2-test": "config",
 						"repo3-test": "config", "repo4-test": "config"},
 					Repos: []v1beta1.PGBackRestRepo{{
@@ -1252,7 +1252,7 @@ func TestReconcileManualBackup(t *testing.T) {
 		},
 		status: &v1beta1.PostgresClusterStatus{
 			PGBackRest: &v1beta1.PGBackRestStatus{
-				ManualBackup: &v1beta1.PGBackRestManualBackupStatus{
+				ManualBackup: &v1beta1.PGBackRestJobStatus{
 					ID: backupId, Finished: true},
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		},
@@ -2054,97 +2054,22 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 	namespace := ns.Name
 
-	generateJob := func(clusterName, instanceName, configHash string,
-		completed, failed *bool, dedicated bool) *batchv1.Job {
-
-		if !dedicated {
-			clusterName = clusterName + "-no-repo"
-		}
-
-		cluster := &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterName,
-				Namespace: namespace,
-			},
-		}
-		meta := naming.PGBackRestRestoreJob(cluster)
-		labels := naming.PGBackRestRestoreJobLabels(cluster.Name)
-		labels[naming.LabelStartupInstance] = instanceName
-		meta.Labels = labels
-		meta.Annotations = map[string]string{naming.PGBackRestConfigHash: configHash}
-
-		restoreJob := &batchv1.Job{
-			ObjectMeta: meta,
-			Spec: batchv1.JobSpec{
-				Template: v1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{Labels: labels}, // Add annotations
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{{
-							Image: "test",
-							Name:  naming.PGBackRestRestoreContainerName,
-						}},
-						RestartPolicy: v1.RestartPolicyNever,
-					},
-				},
-			},
-		}
-
-		if completed != nil {
-			if *completed {
-				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
-					Type:    batchv1.JobComplete,
-					Status:  corev1.ConditionTrue,
-					Reason:  "test",
-					Message: "test",
-				})
-			} else {
-				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
-					Type:    batchv1.JobComplete,
-					Status:  corev1.ConditionFalse,
-					Reason:  "test",
-					Message: "test",
-				})
-			}
-		} else if failed != nil {
-			if *failed {
-				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
-					Type:    batchv1.JobFailed,
-					Status:  corev1.ConditionTrue,
-					Reason:  "test",
-					Message: "test",
-				})
-			} else {
-				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
-					Type:    batchv1.JobFailed,
-					Status:  corev1.ConditionFalse,
-					Reason:  "test",
-					Message: "test",
-				})
-			}
-		}
-
-		return restoreJob
-	}
-
 	type testResult struct {
 		jobCount, pvcCount                                      int
 		invalidSourceRepo, invalidSourceCluster, invalidOptions bool
-		expectStartupInstanceStatus                             bool
 		expectedClusterCondition                                *metav1.Condition
 	}
 
 	for _, dedicated := range []bool{true, false} {
 		testCases := []struct {
 			desc                string
-			existingJob         *batchv1.Job
 			dataSource          *v1beta1.DataSource
 			clusterBootstrapped bool
 			sourceClusterName   string
 			sourceClusterRepos  []v1beta1.PGBackRestRepo
 			result              testResult
 		}{{
-			desc:        "initial reconcile",
-			existingJob: nil,
+			desc: "initial reconcile",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
 				ClusterName: "init-source", RepoName: "repo1",
 			}},
@@ -2154,12 +2079,10 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 1, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition:    nil,
+				expectedClusterCondition: nil,
 			},
 		}, {
-			desc:        "invalid source cluster",
-			existingJob: nil,
+			desc: "invalid source cluster",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
 				ClusterName: "the-wrong-source", RepoName: "repo1",
 			}},
@@ -2169,12 +2092,10 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: false, invalidSourceCluster: true, invalidOptions: false,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition:    nil,
+				expectedClusterCondition: nil,
 			},
 		}, {
-			desc:        "invalid source repo",
-			existingJob: nil,
+			desc: "invalid source repo",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
 				ClusterName: "invalid-repo", RepoName: "repo2",
 			}},
@@ -2184,12 +2105,10 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: true, invalidSourceCluster: false, invalidOptions: false,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition:    nil,
+				expectedClusterCondition: nil,
 			},
 		}, {
-			desc:        "invalid option: repo",
-			existingJob: nil,
+			desc: "invalid option: repo",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
 				ClusterName: "invalid-repo-option", RepoName: "repo1",
 				Options: []string{"--repo"},
@@ -2200,12 +2119,10 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition:    nil,
+				expectedClusterCondition: nil,
 			},
 		}, {
-			desc:        "invalid option: stanza",
-			existingJob: nil,
+			desc: "invalid option: stanza",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
 				ClusterName: "invalid-stanza-option", RepoName: "repo1",
 				Options: []string{"--stanza"},
@@ -2216,12 +2133,10 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition:    nil,
+				expectedClusterCondition: nil,
 			},
 		}, {
-			desc:        "invalid option: pg1-path",
-			existingJob: nil,
+			desc: "invalid option: pg1-path",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
 				ClusterName: "invalid-pgpath-option", RepoName: "repo1",
 				Options: []string{"--pg1-path"},
@@ -2232,56 +2147,12 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition:    nil,
+				expectedClusterCondition: nil,
 			},
 		}, {
-			desc: "restore job completed",
-			existingJob: generateJob("test-restore-completed", "test-restore-completed-instance-abcd",
-				"", initialize.Bool(true), nil, dedicated),
+			desc: "cluster bootstrapped init condition missing",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
-				ClusterName: "restore-completed", RepoName: "repo1",
-			}},
-			clusterBootstrapped: false,
-			sourceClusterName:   "restore-completed",
-			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
-			result: testResult{
-				jobCount: 1, pvcCount: 0,
-				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
-				expectStartupInstanceStatus: true,
-				expectedClusterCondition: &metav1.Condition{
-					Type:    ConditionPostgresDataInitialized,
-					Status:  metav1.ConditionTrue,
-					Reason:  "PGBackRestRestoreComplete",
-					Message: "pgBackRest restore completed successfully",
-				},
-			},
-		}, {
-			desc: "restore job failed",
-			existingJob: generateJob("test-restore-failed", "test-restore-failed-instance-abcd", "",
-				nil, initialize.Bool(true), dedicated),
-			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
-				ClusterName: "restore-failed", RepoName: "repo1",
-			}},
-			clusterBootstrapped: false,
-			sourceClusterName:   "restore-failed",
-			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
-			result: testResult{
-				jobCount: 1, pvcCount: 0,
-				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition: &metav1.Condition{
-					Type:    ConditionPostgresDataInitialized,
-					Status:  metav1.ConditionFalse,
-					Reason:  "PGBackRestRestoreFailed",
-					Message: "pgBackRest restore failed",
-				},
-			},
-		}, {
-			desc:        "cluster bootstrapped init condition missing",
-			existingJob: nil,
-			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
-				ClusterName: "init-cond-missing", RepoName: "repo1",
+				ClusterName: "bootstrapped-init-missing", RepoName: "repo1",
 			}},
 			clusterBootstrapped: true,
 			sourceClusterName:   "init-cond-missing",
@@ -2289,7 +2160,6 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
-				expectStartupInstanceStatus: false,
 				expectedClusterCondition: &metav1.Condition{
 					Type:    ConditionPostgresDataInitialized,
 					Status:  metav1.ConditionTrue,
@@ -2299,8 +2169,6 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			},
 		}, {
 			desc: "data source config change deletes job",
-			existingJob: generateJob("test-invalid-hash", "invalid-hash-instance-abcd",
-				"invalid-hash-value", nil, nil, dedicated),
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
 				ClusterName: "invalid-hash", RepoName: "repo1",
 			}},
@@ -2310,8 +2178,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			result: testResult{
 				jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
-				expectStartupInstanceStatus: false,
-				expectedClusterCondition:    nil,
+				expectedClusterCondition: nil,
 			},
 		}}
 
@@ -2327,30 +2194,6 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				}
 				clusterUID := "hippouid" + strconv.Itoa(i)
 
-				if tc.existingJob != nil {
-					if val := tc.existingJob.GetAnnotations()[naming.PGBackRestConfigHash]; val == "" {
-						hashFunc := func(jobConfigs []string) (string, error) {
-							return safeHash32(func(w io.Writer) (err error) {
-								for _, o := range jobConfigs {
-									_, err = w.Write([]byte(o))
-								}
-								return
-							})
-						}
-						sourceClusterName := tc.dataSource.PostgresCluster.ClusterName
-						sourceRepoName := tc.dataSource.PostgresCluster.RepoName
-						configs := []string{sourceClusterName, sourceRepoName}
-						configs = append(configs, tc.dataSource.PostgresCluster.Options...)
-						configHash, err := hashFunc(configs)
-						assert.NilError(t, err)
-						tc.existingJob.Annotations[naming.PGBackRestConfigHash] = configHash
-					}
-					origJob := tc.existingJob.DeepCopy()
-					assert.NilError(t, tClient.Create(ctx, tc.existingJob))
-					assert.NilError(t, tClient.Status().Update(ctx, origJob))
-					clusterName = tc.existingJob.GetLabels()[naming.LabelCluster]
-				}
-
 				cluster := fakePostgresCluster(clusterName, namespace, clusterUID, dedicated)
 				cluster.Spec.DataSource = tc.dataSource
 				assert.NilError(t, tClient.Create(ctx, cluster))
@@ -2359,8 +2202,9 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 						SystemIdentifier: "123456789",
 					}
 				}
+				cluster.Status.StartupInstance = "testinstance"
+				cluster.Status.StartupInstanceSet = "instance1"
 				assert.NilError(t, tClient.Status().Update(ctx, cluster))
-
 				if !dedicated {
 					tc.sourceClusterName = tc.sourceClusterName + "-no-repo"
 				}
@@ -2390,7 +2234,13 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				}
 				assert.NilError(t, tClient.Create(ctx, sourceClusterPrimary))
 
-				assert.NilError(t, r.reconcilePostgresClusterDataSource(ctx, cluster))
+				var pgclusterDataSource *v1beta1.PostgresClusterDataSource
+				if tc.dataSource != nil {
+					pgclusterDataSource = tc.dataSource.PostgresCluster
+				}
+				err := r.reconcilePostgresClusterDataSource(ctx, cluster, pgclusterDataSource,
+					"testhash")
+				assert.NilError(t, err)
 
 				restoreJobs := &batchv1.JobList{}
 				assert.NilError(t, tClient.List(ctx, restoreJobs, &client.ListOptions{
@@ -2445,9 +2295,484 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 						t.Error(err)
 					}
 				}
+			})
+		}
+	}
+}
 
-				if tc.result.expectStartupInstanceStatus {
-					assert.Assert(t, cluster.Status.StartupInstance != "")
+func TestObserveRestoreEnv(t *testing.T) {
+
+	// setup the test environment and ensure a clean teardown
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   tClient,
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	namespace := ns.Name
+
+	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
+
+		// if !dedicated {
+		// 	clusterName = clusterName + "-no-repo"
+		// }
+
+		cluster := &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterName,
+				Namespace: namespace,
+			},
+		}
+		meta := naming.PGBackRestRestoreJob(cluster)
+		labels := naming.PGBackRestRestoreJobLabels(cluster.Name)
+		meta.Labels = labels
+		meta.Annotations = map[string]string{naming.PGBackRestConfigHash: "testhash"}
+
+		restoreJob := &batchv1.Job{
+			ObjectMeta: meta,
+			Spec: batchv1.JobSpec{
+				Template: v1.PodTemplateSpec{
+					ObjectMeta: meta,
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{{
+							Image: "test",
+							Name:  naming.PGBackRestRestoreContainerName,
+						}},
+						RestartPolicy: v1.RestartPolicyNever,
+					},
+				},
+			},
+		}
+
+		if completed != nil {
+			if *completed {
+				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobComplete,
+					Status:  corev1.ConditionTrue,
+					Reason:  "test",
+					Message: "test",
+				})
+			} else {
+				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobComplete,
+					Status:  corev1.ConditionFalse,
+					Reason:  "test",
+					Message: "test",
+				})
+			}
+		} else if failed != nil {
+			if *failed {
+				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobFailed,
+					Status:  corev1.ConditionTrue,
+					Reason:  "test",
+					Message: "test",
+				})
+			} else {
+				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobFailed,
+					Status:  corev1.ConditionFalse,
+					Reason:  "test",
+					Message: "test",
+				})
+			}
+		}
+
+		return restoreJob
+	}
+
+	type testResult struct {
+		foundRestoreJob          bool
+		endpointCount            int
+		expectedClusterCondition *metav1.Condition
+	}
+
+	for _, dedicated := range []bool{true, false} {
+		testCases := []struct {
+			desc            string
+			createResources func(t *testing.T, cluster *v1beta1.PostgresCluster)
+			result          testResult
+		}{{
+			desc: "restore job and all patroni endpoints exist",
+			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
+				fakeLeaderEP := &v1.Endpoints{}
+				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
+				fakeLeaderEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
+				fakeDCSEP := &v1.Endpoints{}
+				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
+				fakeDCSEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
+				fakeFailoverEP := &v1.Endpoints{}
+				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
+				fakeFailoverEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
+
+				job := generateJob(cluster.Name, initialize.Bool(false), initialize.Bool(false))
+				assert.NilError(t, r.Client.Create(ctx, job))
+			},
+			result: testResult{
+				foundRestoreJob:          true,
+				endpointCount:            3,
+				expectedClusterCondition: nil,
+			},
+		}, {
+			desc: "patroni endpoints only exist",
+			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
+				fakeLeaderEP := &v1.Endpoints{}
+				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
+				fakeLeaderEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
+				fakeDCSEP := &v1.Endpoints{}
+				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
+				fakeDCSEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
+				fakeFailoverEP := &v1.Endpoints{}
+				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
+				fakeFailoverEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
+			},
+			result: testResult{
+				foundRestoreJob:          false,
+				endpointCount:            3,
+				expectedClusterCondition: nil,
+			},
+		}, {
+			desc: "restore job only exists",
+			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
+				job := generateJob(cluster.Name, initialize.Bool(false), initialize.Bool(false))
+				assert.NilError(t, r.Client.Create(ctx, job))
+			},
+			result: testResult{
+				foundRestoreJob:          true,
+				endpointCount:            0,
+				expectedClusterCondition: nil,
+			},
+		}, {
+			desc: "restore job completed data init condition true",
+			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
+				if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+					t.Skip("requires mocking of Job conditions")
+				}
+				job := generateJob(cluster.Name, initialize.Bool(true), nil)
+				assert.NilError(t, r.Client.Create(ctx, job.DeepCopy()))
+				assert.NilError(t, r.Client.Status().Update(ctx, job))
+			},
+			result: testResult{
+				foundRestoreJob: true,
+				endpointCount:   0,
+				expectedClusterCondition: &metav1.Condition{
+					Type:    ConditionPostgresDataInitialized,
+					Status:  metav1.ConditionTrue,
+					Reason:  "PGBackRestRestoreComplete",
+					Message: "pgBackRest restore completed successfully",
+				},
+			},
+		}, {
+			desc: "restore job failed data init condition false",
+			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
+				if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+					t.Skip("requires mocking of Job conditions")
+				}
+				job := generateJob(cluster.Name, nil, initialize.Bool(true))
+				assert.NilError(t, r.Client.Create(ctx, job.DeepCopy()))
+				assert.NilError(t, r.Client.Status().Update(ctx, job))
+			},
+			result: testResult{
+				foundRestoreJob: true,
+				endpointCount:   0,
+				expectedClusterCondition: &metav1.Condition{
+					Type:    ConditionPostgresDataInitialized,
+					Status:  metav1.ConditionFalse,
+					Reason:  "PGBackRestRestoreFailed",
+					Message: "pgBackRest restore failed",
+				},
+			},
+		}}
+
+		for i, tc := range testCases {
+			t.Run(tc.desc, func(t *testing.T) {
+
+				clusterName := "observe-restore-env" + strconv.Itoa(i)
+				if !dedicated {
+					clusterName = clusterName + "-no-repo"
+				}
+				clusterUID := clusterName
+				cluster := fakePostgresCluster(clusterName, namespace, clusterUID, dedicated)
+				tc.createResources(t, cluster)
+
+				endpoints, job, err := r.observeRestoreEnv(ctx, cluster)
+				assert.NilError(t, err)
+
+				assert.Assert(t, tc.result.foundRestoreJob == (job != nil))
+				assert.Assert(t, tc.result.endpointCount == len(endpoints))
+
+				if tc.result.expectedClusterCondition != nil {
+					condition := meta.FindStatusCondition(cluster.Status.Conditions,
+						tc.result.expectedClusterCondition.Type)
+					if assert.Check(t, condition != nil) {
+						assert.Equal(t, tc.result.expectedClusterCondition.Status, condition.Status)
+						assert.Equal(t, tc.result.expectedClusterCondition.Reason, condition.Reason)
+						assert.Equal(t, tc.result.expectedClusterCondition.Message, condition.Message)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestPrepareForRestore(t *testing.T) {
+
+	// setup the test environment and ensure a clean teardown
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   tClient,
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	namespace := ns.Name
+
+	generateJob := func(clusterName string) *batchv1.Job {
+
+		cluster := &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterName,
+				Namespace: namespace,
+			},
+		}
+		meta := naming.PGBackRestRestoreJob(cluster)
+		labels := naming.PGBackRestRestoreJobLabels(cluster.Name)
+		meta.Labels = labels
+		meta.Annotations = map[string]string{naming.PGBackRestConfigHash: "testhash"}
+
+		restoreJob := &batchv1.Job{
+			ObjectMeta: meta,
+			Spec: batchv1.JobSpec{
+				Template: v1.PodTemplateSpec{
+					ObjectMeta: meta,
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{{
+							Image: "test",
+							Name:  naming.PGBackRestRestoreContainerName,
+						}},
+						RestartPolicy: v1.RestartPolicyNever,
+					},
+				},
+			},
+		}
+
+		return restoreJob
+	}
+
+	type testResult struct {
+		restoreJobExists         bool
+		endpointCount            int
+		expectedClusterCondition *metav1.Condition
+	}
+	const primaryInstanceName = "primary-instance"
+	const primaryInstanceSetName = "primary-instance-set"
+
+	for _, dedicated := range []bool{true, false} {
+		testCases := []struct {
+			desc            string
+			createResources func(t *testing.T, cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints)
+			fakeObserved    *observedInstances
+			result          testResult
+		}{{
+			desc: "remove restore jobs",
+			createResources: func(t *testing.T,
+				cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
+				job := generateJob(cluster.Name)
+				assert.NilError(t, r.Client.Create(ctx, job))
+				return job, nil
+			},
+			result: testResult{
+				restoreJobExists: false,
+				endpointCount:    0,
+				expectedClusterCondition: &metav1.Condition{
+					Type:    ConditionPGBackRestRestoreProgressing,
+					Status:  metav1.ConditionTrue,
+					Reason:  "RestoreInPlaceRequested",
+					Message: "Preparing cluster to restore in-place: removing restore job",
+				},
+			},
+		}, {
+			desc: "remove patroni endpoints",
+			createResources: func(t *testing.T,
+				cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
+				fakeLeaderEP := v1.Endpoints{}
+				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
+				fakeLeaderEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, &fakeLeaderEP))
+				fakeDCSEP := v1.Endpoints{}
+				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
+				fakeDCSEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, &fakeDCSEP))
+				fakeFailoverEP := v1.Endpoints{}
+				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
+				fakeFailoverEP.ObjectMeta.Namespace = namespace
+				assert.NilError(t, r.Client.Create(ctx, &fakeFailoverEP))
+				return nil, []corev1.Endpoints{fakeLeaderEP, fakeDCSEP, fakeFailoverEP}
+			},
+			result: testResult{
+				restoreJobExists: false,
+				endpointCount:    0,
+				expectedClusterCondition: &metav1.Condition{
+					Type:    ConditionPGBackRestRestoreProgressing,
+					Status:  metav1.ConditionTrue,
+					Reason:  "RestoreInPlaceRequested",
+					Message: "Preparing cluster to restore in-place: removing DCS",
+				},
+			},
+		}, {
+			desc: "cluster fully prepared",
+			createResources: func(t *testing.T,
+				cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
+				return nil, []corev1.Endpoints{}
+			},
+			result: testResult{
+				restoreJobExists: false,
+				endpointCount:    0,
+				expectedClusterCondition: &metav1.Condition{
+					Type:    ConditionPGBackRestRestoreProgressing,
+					Status:  metav1.ConditionTrue,
+					Reason:  ReasonReadyForRestore,
+					Message: "Restoring cluster in-place",
+				},
+			},
+		}, {
+			desc: "primary as startup instance",
+			fakeObserved: &observedInstances{forCluster: []*Instance{{
+				Name: primaryInstanceName,
+				Spec: &v1beta1.PostgresInstanceSetSpec{Name: primaryInstanceSetName},
+				Pods: []*v1.Pod{{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
+					},
+				}}},
+			}},
+			createResources: func(t *testing.T,
+				cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
+				return nil, []corev1.Endpoints{}
+			},
+			result: testResult{
+				restoreJobExists: false,
+				endpointCount:    0,
+				expectedClusterCondition: &metav1.Condition{
+					Type:    ConditionPGBackRestRestoreProgressing,
+					Status:  metav1.ConditionTrue,
+					Reason:  ReasonReadyForRestore,
+					Message: "Restoring cluster in-place",
+				},
+			},
+		}}
+
+		for i, tc := range testCases {
+			t.Run(tc.desc, func(t *testing.T) {
+
+				clusterName := "prepare-for-restore-" + strconv.Itoa(i)
+				if !dedicated {
+					clusterName = clusterName + "-no-repo"
+				}
+				clusterUID := clusterName
+				cluster := fakePostgresCluster(clusterName, namespace, clusterUID, dedicated)
+				cluster.Status.Patroni = &v1beta1.PatroniStatus{SystemIdentifier: "abcde12345"}
+				cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = "abcde12345"
+				meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+					ObservedGeneration: cluster.GetGeneration(),
+					Type:               ConditionPostgresDataInitialized,
+					Status:             metav1.ConditionTrue,
+					Reason:             "PGBackRestRestoreComplete",
+					Message:            "pgBackRest restore completed successfully",
+				})
+
+				job, endpoints := tc.createResources(t, cluster)
+				restoreID := "test-restore-id"
+
+				fakeObserved := &observedInstances{forCluster: []*Instance{}}
+				if tc.fakeObserved != nil {
+					fakeObserved = tc.fakeObserved
+				}
+				assert.NilError(t, r.prepareForRestore(ctx, cluster, fakeObserved, endpoints,
+					job, restoreID))
+
+				var primaryInstance *Instance
+				for i, instance := range fakeObserved.forCluster {
+					isPrimary, _ := instance.IsPrimary()
+					if isPrimary {
+						primaryInstance = fakeObserved.forCluster[i]
+					}
+				}
+
+				if primaryInstance != nil {
+					assert.Assert(t, cluster.Status.StartupInstance == primaryInstanceName)
+				}
+
+				leaderEP, dcsEP, failoverEP := v1.Endpoints{}, v1.Endpoints{}, v1.Endpoints{}
+				currentEndpoints := []v1.Endpoints{}
+				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
+					&leaderEP); err != nil {
+					assert.NilError(t, client.IgnoreNotFound(err))
+				} else {
+					currentEndpoints = append(currentEndpoints, leaderEP)
+				}
+				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
+					&dcsEP); err != nil {
+					assert.NilError(t, client.IgnoreNotFound(err))
+				} else {
+					currentEndpoints = append(currentEndpoints, dcsEP)
+				}
+				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
+					&failoverEP); err != nil {
+					assert.NilError(t, client.IgnoreNotFound(err))
+				} else {
+					currentEndpoints = append(currentEndpoints, failoverEP)
+				}
+
+				restoreJobs := &batchv1.JobList{}
+				assert.NilError(t, r.Client.List(ctx, restoreJobs, &client.ListOptions{
+					LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
+				}))
+
+				assert.Assert(t, tc.result.endpointCount == len(currentEndpoints))
+				assert.Assert(t, tc.result.restoreJobExists == (len(restoreJobs.Items) == 1))
+
+				if tc.result.expectedClusterCondition != nil {
+					condition := meta.FindStatusCondition(cluster.Status.Conditions,
+						tc.result.expectedClusterCondition.Type)
+					if assert.Check(t, condition != nil) {
+						assert.Equal(t, tc.result.expectedClusterCondition.Status, condition.Status)
+						assert.Equal(t, tc.result.expectedClusterCondition.Reason, condition.Reason)
+						assert.Equal(t, tc.result.expectedClusterCondition.Message, condition.Message)
+					}
+					if tc.result.expectedClusterCondition.Reason == ReasonReadyForRestore {
+						assert.Assert(t, cluster.Status.Patroni == nil)
+						assert.Assert(t, cluster.Status.Proxy.PGBouncer.PostgreSQLRevision == "")
+						assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
+							ConditionPostgresDataInitialized) == nil)
+					}
 				}
 			})
 		}

@@ -137,8 +137,8 @@ type DataSource struct {
 type PostgresClusterDataSource struct {
 
 	// The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster.
-	// PostgresCluster.
-	// +kubebuilder:validation:Required
+	// Defaults to the name of the PostgresCluster being created if not provided.
+	// +optional
 	ClusterName string `json:"clusterName,omitempty"`
 
 	// The name of the pgBackRest repo within the source PostgresCluster that contains the backups
@@ -206,10 +206,14 @@ type PostgresClusterStatus struct {
 	// +optional
 	Proxy PostgresProxyStatus `json:"proxy,omitempty"`
 
-	// The previous leader instance to start first when a cluster is
-	// restarted after a shutdown
+	// The instance that should be started first when bootstrapping and/or starting a
+	// PostgresCluster.
 	// +optional
 	StartupInstance string `json:"startupInstance,omitempty"`
+
+	// The instance set associated with the startupInstance
+	// +optional
+	StartupInstanceSet string `json:"startupInstanceSet,omitempty"`
 
 	// Current state of PostgreSQL cluster monitoring tool configuration
 	// +optional

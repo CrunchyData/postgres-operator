@@ -29,6 +29,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -310,6 +311,16 @@ func (r *Reconciler) observeInstances(
 		cluster.Status.InstanceSets = append(cluster.Status.InstanceSets, status)
 	}
 
+	// Determine if a restore is in progress.  If so, simply return to ensure the startup instance
+	// remains properly set throughout the duration of the restore.
+	restoreCondition := meta.FindStatusCondition(cluster.Status.Conditions,
+		ConditionPGBackRestRestoreProgressing)
+	restoringInPlace := restoreCondition != nil &&
+		(restoreCondition.Status == metav1.ConditionTrue)
+	if restoringInPlace {
+		return observed, err
+	}
+
 	// Go through the observed instances and check if a primary has been determined.
 	// If the cluster is being shutdown and this instance is the primary, store
 	// the instance name as the startup instance. If the primary can be determined
@@ -321,6 +332,7 @@ func (r *Reconciler) observeInstances(
 				cluster.Status.StartupInstance = instance.Name
 			} else {
 				cluster.Status.StartupInstance = ""
+				cluster.Status.StartupInstanceSet = ""
 			}
 		}
 	}
@@ -935,11 +947,6 @@ func (r *Reconciler) scaleUpInstances(
 
 	var err error
 	for i := range instances {
-		// treat as primary if no primary instance name is set in scenarios where we simply want
-		// to scale and let the instances race for the leader key (e.g. in initdb scenarios when
-		// the cluster has not yet been bootstrapped)
-		// isPrimary := instances[i].Name == primaryInstance ||
-		// 	(!patroni.ClusterBootstrapped(cluster) && primaryInstance == "")
 		err = r.reconcileInstance(
 			ctx, cluster, observed.byName[instances[i].Name], set,
 			clusterConfigMap, clusterReplicationSecret,

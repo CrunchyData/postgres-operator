@@ -18,10 +18,13 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -189,6 +192,127 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 	}
 
 	return err
+}
+
+// reconcileDataSource is responsible for reconciling the data source for a PostgreSQL cluster.
+// This involves ensuring the PostgreSQL data directory for the cluster is properly poplulated
+// prior to bootstrapping the cluster, specifically according to any data source configured in the
+// PostgresCluster spec.
+func (r *Reconciler) reconcileDataSource(ctx context.Context,
+	cluster *v1beta1.PostgresCluster, observed *observedInstances) (bool, error) {
+
+	// a hash func to hash the pgBackRest restore options
+	hashFunc := func(jobConfigs []string) (string, error) {
+		return safeHash32(func(w io.Writer) (err error) {
+			for _, o := range jobConfigs {
+				_, err = w.Write([]byte(o))
+			}
+			return
+		})
+	}
+
+	// observe all resources currently relevant to reonciling data sources, and update status
+	// accordingly
+	endpoints, restoreJob, err := r.observeRestoreEnv(ctx, cluster)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	// determine if the user wants to initialize the PG data directory
+	postgresDataInitRequested := cluster.Spec.DataSource != nil &&
+		cluster.Spec.DataSource.PostgresCluster != nil
+
+	// determine if the user has requested an in-place restore
+	restoreID := cluster.GetAnnotations()[naming.PGBackRestRestore]
+	restoreInPlaceRequested := restoreID != "" &&
+		cluster.Spec.Archive.PGBackRest.Restore != nil &&
+		*cluster.Spec.Archive.PGBackRest.Restore.Enabled
+
+	// Set the proper data source for the restore based on whether we're initializing the PG
+	// data directory (e.g. for a new PostgreSQL cluster), or restoring an existing cluster
+	// in place (and therefore recreating the data directory).  If the user hasn't requested
+	// PG data initialization or an in-place restore, then simply return.
+	var dataSource *v1beta1.PostgresClusterDataSource
+	switch {
+	case restoreInPlaceRequested:
+		dataSource = cluster.Spec.Archive.PGBackRest.Restore.PostgresClusterDataSource
+	case postgresDataInitRequested:
+		// there is no restore annotation when initializing a new cluster, so we create a
+		// restore ID for bootstrap
+		restoreID = "~pgo-bootstrap-" + cluster.GetName()
+		dataSource = cluster.Spec.DataSource.PostgresCluster
+	default:
+		return false, nil
+	}
+
+	// check the cluster's conditions to determine if the PG data for the cluster has been
+	// initialized
+	dataSourceCondition := meta.FindStatusCondition(cluster.Status.Conditions,
+		ConditionPostgresDataInitialized)
+	postgresDataInitialized := dataSourceCondition != nil &&
+		(dataSourceCondition.Status == metav1.ConditionTrue)
+
+	// check the cluster's conditions to determine if an in-place restore is in progress,
+	// and if the reason for that condition indicates that the cluster has been prepared for
+	// restore
+	restoreCondition := meta.FindStatusCondition(cluster.Status.Conditions,
+		ConditionPGBackRestRestoreProgressing)
+	restoringInPlace := restoreCondition != nil &&
+		(restoreCondition.Status == metav1.ConditionTrue)
+	readyForRestore := restoreCondition != nil &&
+		restoringInPlace &&
+		(restoreCondition.Reason == ReasonReadyForRestore)
+
+	// check the restore status to see if the ID for the restore currently being requested (as
+	// provided by the user via annotation) has changed
+	var restoreIDStatus string
+	if cluster.Status.PGBackRest != nil && cluster.Status.PGBackRest.Restore != nil {
+		restoreIDStatus = cluster.Status.PGBackRest.Restore.ID
+	}
+	restoreIDChanged := (restoreID != restoreIDStatus)
+
+	// calculate the configHash for the options in the current data source, and if an existing
+	// restore Job exists, determine if the config has changed
+	configs := []string{dataSource.ClusterName, dataSource.RepoName}
+	configs = append(configs, dataSource.Options...)
+	configHash, err := hashFunc(configs)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+	var configChanged bool
+	if restoreJob != nil {
+		configChanged =
+			(configHash != restoreJob.GetAnnotations()[naming.PGBackRestConfigHash])
+	}
+
+	// Proceed with preparing the cluster for restore (e.g. tearning down runners, the DCS,
+	// etc.) if:
+	// - A restore is already in progress, but the cluster has not yet been prepared
+	// - A restore is already in progress, but the config hash changed
+	// - The restore ID has changed (i.e. the user provide a new value for the restore
+	//   annotation, inidicating they want a new in-place restore)
+	if (restoringInPlace && (!readyForRestore || configChanged)) || restoreIDChanged {
+		if err := r.prepareForRestore(ctx, cluster, observed, endpoints,
+			restoreJob, restoreID); err != nil {
+			return true, err
+		}
+		// return early and don't restore (i.e. populate the data dir) until the cluster is
+		// prepared for restore
+		return true, nil
+	}
+
+	// simply return if data is already initialized
+	if postgresDataInitialized {
+		return false, nil
+	}
+
+	// proceed with initializing the PG data directory if not already initialized
+	if err := r.reconcilePostgresClusterDataSource(ctx, cluster, dataSource,
+		configHash); err != nil {
+		return true, err
+	}
+	// return early until the PG data directory is initialized
+	return true, nil
 }
 
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get

@@ -61,8 +61,9 @@ bootstrap:
       use_slots: false
     ttl: 30
   post_bootstrap: |-
-    bash -c 'psql --set=ON_ERROR_STOP=1 --set=dbname='"'"'choco'"'"'"'"'"'"'"'"'late'"'"' --set=password='"'"'digest$and==:stuff'"'"' --set=user='"'"'johann'"'"' --file=- <<< '"'"'
-    CREATE ROLE :"user" LOGIN PASSWORD :'"'"'"'"'"'"'"'"'password'"'"'"'"'"'"'"'"';
+    bash -c 'psql --set=ON_ERROR_STOP=0 --set=dbname='"'"'choco'"'"'"'"'"'"'"'"'late'"'"' --set=password='"'"'digest$and==:stuff'"'"' --set=user='"'"'johann'"'"' --file=- <<< '"'"'
+    CREATE ROLE :"user";
+    ALTER ROLE :"user" LOGIN PASSWORD :'"'"'"'"'"'"'"'"'password'"'"'"'"'"'"'"'"';
     CREATE DATABASE :"dbname";
     GRANT ALL PRIVILEGES ON DATABASE :"dbname" TO :"user";
     '"'"''

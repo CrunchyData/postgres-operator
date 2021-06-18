@@ -39,4 +39,10 @@ const (
 	// configuration, e.g. because a failover has occurred, or because dedicated repo host has been
 	// enabled or disabled.
 	PGBackRestCurrentConfig = annotationPrefix + "pgbackrest-config"
+
+	// PGBackRestRestore is the annotation that is added to a PostgresCluster to initiate an in-place
+	// restore.  The value of the annotation will be a unique identfier for a restore Job (e.g. a
+	// timestamp), which will be stored in the PostgresCluster status to properly track completion
+	// of the Job.
+	PGBackRestRestore = annotationPrefix + "pgbackrest-restore"
 )

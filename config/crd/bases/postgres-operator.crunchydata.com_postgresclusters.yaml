@@ -1506,6 +1506,66 @@ spec:
                         x-kubernetes-list-map-keys:
                         - name
                         x-kubernetes-list-type: map
+                      restore:
+                        description: Defines details for performing an in-place restore
+                          using pgBackRest
+                        properties:
+                          clusterName:
+                            description: The name of an existing PostgresCluster to
+                              use as the datasource for the new PostgresCluster. Defaults
+                              to the name of the PostgresCluster being created if
+                              not provided.
+                            type: string
+                          enabled:
+                            default: false
+                            description: Whether or not in-place pgBackRest restores
+                              are enabled for this PostgresCluster.
+                            type: boolean
+                          options:
+                            description: Command line options to include when running
+                              the pgBackRest restore command. https://pgbackrest.org/command.html#command-restore
+                            items:
+                              type: string
+                            type: array
+                          repoName:
+                            description: The name of the pgBackRest repo within the
+                              source PostgresCluster that contains the backups that
+                              should be utilized to perform a pgBackRest restore when
+                              initializing the data source for the new PostgresCluster.
+                            pattern: ^repo[1-4]
+                            type: string
+                          resources:
+                            description: Resource requirements for the pgBackRest
+                              restore Job.
+                            properties:
+                              limits:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Limits describes the maximum amount
+                                  of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                type: object
+                              requests:
+                                additionalProperties:
+                                  anyOf:
+                                  - type: integer
+                                  - type: string
+                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                  x-kubernetes-int-or-string: true
+                                description: 'Requests describes the minimum amount
+                                  of compute resources required. If Requests is omitted
+                                  for a container, it defaults to Limits if that is
+                                  explicitly specified, otherwise to an implementation-defined
+                                  value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                type: object
+                            type: object
+                        required:
+                        - enabled
+                        - repoName
+                        type: object
                     required:
                     - image
                     type: object
@@ -1631,7 +1691,9 @@ spec:
                     properties:
                       clusterName:
                         description: The name of an existing PostgresCluster to use
-                          as the datasource for the new PostgresCluster. PostgresCluster.
+                          as the datasource for the new PostgresCluster. Defaults
+                          to the name of the PostgresCluster being created if not
+                          provided.
                         type: string
                       options:
                         description: Command line options to include when running
@@ -4108,6 +4170,51 @@ spec:
                     x-kubernetes-list-map-keys:
                     - name
                     x-kubernetes-list-type: map
+                  restore:
+                    description: Status information for in-place restores
+                    properties:
+                      active:
+                        description: The number of actively running manual backup
+                          Pods.
+                        format: int32
+                        type: integer
+                      completionTime:
+                        description: Represents the time the manual backup Job was
+                          determined by the Job controller to be completed.  This
+                          field is only set if the backup completed successfully.
+                          Additionally, it is represented in RFC3339 form and is in
+                          UTC.
+                        format: date-time
+                        type: string
+                      failed:
+                        description: The number of Pods for the manual backup Job
+                          that reached the "Failed" phase.
+                        format: int32
+                        type: integer
+                      finished:
+                        description: Specifies whether or not the Job is finished
+                          executing (does not indicate success or failure).
+                        type: boolean
+                      id:
+                        description: A unique identifier for the manual backup as
+                          provided using the "pgbackrest-backup" annotation when initiating
+                          a backup.
+                        type: string
+                      startTime:
+                        description: Represents the time the manual backup Job was
+                          acknowledged by the Job controller. It is represented in
+                          RFC3339 form and is in UTC.
+                        format: date-time
+                        type: string
+                      succeeded:
+                        description: The number of Pods for the manual backup Job
+                          that reached the "Succeeded" phase.
+                        format: int32
+                        type: integer
+                    required:
+                    - finished
+                    - id
+                    type: object
                 type: object
               proxy:
                 description: Current state of the PostgreSQL proxy.
@@ -4129,8 +4236,11 @@ spec:
                     type: object
                 type: object
               startupInstance:
-                description: The previous leader instance to start first when a cluster
-                  is restarted after a shutdown
+                description: The instance that should be started first when bootstrapping
+                  and/or starting a PostgresCluster.
+                type: string
+              startupInstanceSet:
+                description: The instance set associated with the startupInstance
                 type: string
             type: object
         type: object

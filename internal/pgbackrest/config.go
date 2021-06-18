@@ -201,13 +201,15 @@ func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec,
 func RestoreCommand(pgdata string, args ...string) []string {
 
 	const restoreScript = `declare -r pgdata="$1" opts="$2"
-[ -d "${pgdata}" ] || install --directory --mode=0700 "${pgdata}"
+install --directory --mode=0700 "${pgdata}"
 eval "pgbackrest restore ${opts}"
 rm -f "${pgdata}/patroni.dynamic.json"
 echo "unix_socket_directories = '/tmp'" > /tmp/postgres.restore.conf
 echo "archive_command = 'false'" >> /tmp/postgres.restore.conf
+echo "archive_mode = 'on'" >> /tmp/postgres.restore.conf
 pg_ctl start -D "${pgdata}" -o "--config-file=/tmp/postgres.restore.conf"
-until [[ $(psql -At -c "SELECT pg_catalog.pg_is_in_recovery()") == "f" ]]; do sleep 1; done    
+until [[ $(psql -At -c "SELECT pg_catalog.pg_is_in_recovery()") == "f" ]]; do sleep 1; done
+pg_ctl stop -D "${pgdata}"
 mv "${pgdata}" "${pgdata}_bootstrap"`
 
 	return append([]string{"bash", "-ceu", "--", restoreScript, "-", pgdata}, args...)
