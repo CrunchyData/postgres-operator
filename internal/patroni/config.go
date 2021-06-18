@@ -218,7 +218,10 @@ func DynamicConfiguration(
 	root["loop_wait"] = *cluster.Spec.Patroni.SyncPeriodSeconds
 
 	// Copy the "postgresql" section before making any changes.
-	postgresql := make(map[string]interface{})
+	postgresql := map[string]interface{}{
+		// TODO(cbandy): explain this. requires an archive, perhaps.
+		"use_slots": false,
+	}
 	if section, ok := root["postgresql"].(map[string]interface{}); ok {
 		for k, v := range section {
 			postgresql[k] = v

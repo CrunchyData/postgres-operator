@@ -54,6 +54,7 @@ bootstrap:
       parameters: {}
       pg_hba: []
       use_pg_rewind: true
+      use_slots: false
     ttl: 30
   post_bootstrap: |-
     bash -c 'psql --set=ON_ERROR_STOP=1 --set=dbname='"'"'choco'"'"'"'"'"'"'"'"'late'"'"' --set=password='"'"'digest$and==:stuff'"'"' --set=user='"'"'johann'"'"' --file=- <<< '"'"'
@@ -127,6 +128,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -143,6 +145,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -167,6 +170,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -182,6 +186,26 @@ func TestDynamicConfiguration(t *testing.T) {
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+			},
+		},
+		{
+			name: "postgresql: defaults and overrides",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"use_pg_rewind": "overridden",
+					"use_slots":     "input",
+				},
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     "input",
 				},
 			},
 		},
@@ -199,6 +223,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -222,6 +247,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -252,6 +278,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -282,6 +309,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -299,6 +327,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -323,6 +352,7 @@ func TestDynamicConfiguration(t *testing.T) {
 						"local all all peer",
 					},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -347,6 +377,7 @@ func TestDynamicConfiguration(t *testing.T) {
 						"custom",
 					},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
@@ -372,6 +403,7 @@ func TestDynamicConfiguration(t *testing.T) {
 						"custom",
 					},
 					"use_pg_rewind": true,
+					"use_slots":     false,
 				},
 			},
 		},
