@@ -16,12 +16,16 @@
 package patroni
 
 import (
+	"io/ioutil"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -576,7 +580,8 @@ postgresql:
   - pgbackrest
   - basebackup
   pgbackrest:
-    command: '''some'' ''backrest'' ''cmd'''
+    command: '''bash'' ''-ceu'' ''--'' ''install --directory --mode=0700 "${PGDATA?}"
+      && exec "$@"'' ''-'' ''some'' ''backrest'' ''cmd'''
     keep_data: true
     no_master: true
     no_params: true
@@ -585,6 +590,69 @@ postgresql:
 restapi: {}
 tags: {}
 	`, "\t\n")+"\n")
+}
+
+func TestPGBackRestCreateReplicaCommand(t *testing.T) {
+	t.Parallel()
+
+	shellcheck, err := exec.LookPath("shellcheck")
+	if err != nil {
+		t.Skip(`requires "shellcheck" executable`)
+	} else {
+		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
+		assert.NilError(t, err)
+		t.Logf("using %q:\n%s", shellcheck, output)
+	}
+
+	cluster := new(v1beta1.PostgresCluster)
+	instance := new(v1beta1.PostgresInstanceSetSpec)
+
+	data, err := instanceYAML(cluster, instance, []string{"some", "backrest", "cmd"})
+	assert.NilError(t, err)
+
+	var parsed struct {
+		PostgreSQL struct {
+			PGBackRest struct {
+				Command string
+			}
+		}
+	}
+	assert.NilError(t, yaml.Unmarshal([]byte(data), &parsed))
+
+	dir := t.TempDir()
+
+	// The command should be compatible with any shell.
+	{
+		command := parsed.PostgreSQL.PGBackRest.Command
+		file := filepath.Join(dir, "command.sh")
+		assert.NilError(t, ioutil.WriteFile(file, []byte(command), 0o600))
+
+		cmd := exec.Command(shellcheck, "--enable=all", "--shell=sh", file)
+		output, err := cmd.CombinedOutput()
+		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+	}
+
+	// Naive parsing of shell words...
+	command := strings.Split(strings.Trim(parsed.PostgreSQL.PGBackRest.Command, "'"), "' '")
+
+	// Expect a bash command with an inline script.
+	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+	assert.Assert(t, len(command) > 3)
+	script := command[3]
+
+	// It should call the pgBackRest command.
+	assert.Assert(t, strings.HasSuffix(script, ` exec "$@"`))
+	assert.DeepEqual(t, command[len(command)-3:], []string{"some", "backrest", "cmd"})
+
+	// It should pass shellcheck.
+	{
+		file := filepath.Join(dir, "script.bash")
+		assert.NilError(t, ioutil.WriteFile(file, []byte(script), 0o600))
+
+		cmd := exec.Command(shellcheck, "--enable=all", file)
+		output, err := cmd.CombinedOutput()
+		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+	}
 }
 
 func TestProbeTiming(t *testing.T) {

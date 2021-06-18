@@ -303,6 +303,11 @@ func instanceEnvironment(
 	}
 	portsYAML, _ := yaml.Marshal(ports)
 
+	// NOTE(cbandy): Patroni consumes and then removes environment variables
+	// starting with "PATRONI_".
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/config.py#L247
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/postmaster.py#L215-L216
+
 	variables := []v1.EnvVar{
 		// Set "name" to the v1.Pod's name. Required when using Kubernetes for DCS.
 		// Patroni must be restarted when changing this value.
@@ -487,6 +492,24 @@ func instanceYAML(
 	// Prefer a pgBackRest method when it is available, and fallback to other
 	// methods when it fails.
 	if command := pgbackrestReplicaCreateCommand; len(command) > 0 {
+
+		// Regardless of the "keep_data" setting below, Patroni deletes the
+		// data directory when all methods fail. pgBackRest will not restore
+		// when the data directory is missing, so create it before running the
+		// command. PostgreSQL requires that the directory is writable by only
+		// itself.
+		// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L249
+		// - https://github.com/pgbackrest/pgbackrest/blob/release/2.34/src/command/restore/restore.c#L62-L65
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_13_0#l319
+		//
+		// NOTE(cbandy): The "PATRONI_POSTGRESQL_DATA_DIR" environment variable
+		// is defined in this package, but it is removed by Patroni at runtime.
+		command = append([]string{
+			"bash", "-ceu", "--",
+			`install --directory --mode=0700 "${PGDATA?}" && exec "$@"`,
+			"-",
+		}, command...)
+
 		quoted := make([]string, len(command))
 		for i := range command {
 			quoted[i] = quoteShellWord(command[i])
