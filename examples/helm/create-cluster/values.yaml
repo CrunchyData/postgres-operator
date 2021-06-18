@@ -2,16 +2,8 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 # The values is for the namespace and the postgresql cluster name
-ccpimage: crunchy-postgres-ha
-ccpimageprefix: registry.developers.crunchydata.com/crunchydata
-ccpimagetag: centos7-12.4-4.5.0
-namespace: pgo
-pgclustername: hippo
-pgoimageprefix: registry.developers.crunchydata.com/crunchydata
-pgoversion: 4.5.0
-hipposecretuser: "hippo"
-hipposecretpassword: "Supersecurepassword*"
-postgressecretuser: "postgres"
-postgressecretpassword: "Anothersecurepassword*"
-primaryusersecretuser: "primaryuser"
-primaryusersecretpassword: "Moresecurepassword*"
+pgbackrestimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0
+pgbouncerimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0
+postgresclustername: hippo
+postgreshaimage: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0
+postgresversion: 13
