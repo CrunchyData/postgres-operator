@@ -97,7 +97,7 @@ COMMIT;`))
 			assert.Assert(t, stdout != nil, "should capture stdout")
 			assert.Assert(t, stderr != nil, "should capture stderr")
 			gomega.NewWithT(t).Expect(command).To(gomega.ContainElement(
-				`SELECT current_database()`,
+				`SELECT pg_catalog.current_database()`,
 			), "expected the default database")
 
 			b, err := ioutil.ReadAll(stdin)

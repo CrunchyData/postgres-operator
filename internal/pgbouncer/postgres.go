@@ -123,7 +123,7 @@ SELECT pg_catalog.format('DROP OWNED BY %I CASCADE', :'username')
 	if err == nil {
 		// Remove the PgBouncer user now that the objects and other privileges are gone.
 		stdout, stderr, err = exec.ExecInDatabasesFromQuery(ctx,
-			`SELECT current_database()`,
+			`SELECT pg_catalog.current_database()`,
 			`SET client_min_messages = WARNING; DROP ROLE IF EXISTS :"username";`,
 			map[string]string{
 				"username": postgresqlUser,

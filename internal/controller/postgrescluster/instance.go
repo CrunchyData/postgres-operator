@@ -673,7 +673,7 @@ func (r *Reconciler) rolloutInstance(
 
 			start := time.Now()
 			stdout, stderr, err := postgres.Executor(exec).
-				ExecInDatabasesFromQuery(ctx, `SELECT current_database()`,
+				ExecInDatabasesFromQuery(ctx, `SELECT pg_catalog.current_database()`,
 					`SET statement_timeout = :'timeout'; CHECKPOINT;`,
 					map[string]string{
 						"timeout":       fmt.Sprintf("%ds", graceSeconds),
