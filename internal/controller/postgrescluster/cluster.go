@@ -22,6 +22,7 @@ import (
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -143,9 +144,10 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 	clusterPrimaryService.Spec.Selector = nil
 
 	clusterPrimaryService.Spec.Ports = []v1.ServicePort{{
-		Name:     naming.PortPostgreSQL,
-		Port:     *cluster.Spec.Port,
-		Protocol: v1.ProtocolTCP,
+		Name:       naming.PortPostgreSQL,
+		Port:       *cluster.Spec.Port,
+		Protocol:   v1.ProtocolTCP,
+		TargetPort: intstr.FromString(naming.PortPostgreSQL),
 	}}
 
 	if err == nil {
