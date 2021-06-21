@@ -32,7 +32,7 @@ import (
 const (
 	// defaultCertificateExpiration sets the default expiration time for a leaf
 	// certificate
-	defaultCertificateExpiration = 90 * 24 * time.Hour
+	defaultCertificateExpiration = 365 * 24 * time.Hour
 )
 
 // LeafCertificate contains the ability to generate the necessary components of
