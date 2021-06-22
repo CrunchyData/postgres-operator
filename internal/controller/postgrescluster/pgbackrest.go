@@ -630,6 +630,8 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 	return jobSpec, nil
 }
 
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=list;delete
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=list;delete
 // +kubebuilder:rbac:groups="",resources=endpoints,verbs=get
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=list
 
@@ -714,6 +716,31 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 			if len(cluster.Status.Conditions) > 0 {
 				meta.RemoveStatusCondition(&cluster.Status.Conditions,
 					ConditionPGBackRestRestoreProgressing)
+			}
+
+			// cleanup any configuration created solely for the restore, e.g. if we restored across
+			// namespaces and had to create configuration resources locally for the source cluster
+			restoreConfigMaps := &v1.ConfigMapList{}
+			if err := r.Client.List(ctx, restoreConfigMaps, &client.ListOptions{
+				LabelSelector: naming.PGBackRestRestoreConfigSelector(cluster.GetName()),
+			}, client.InNamespace(cluster.Namespace)); err != nil {
+				return nil, nil, errors.WithStack(err)
+			}
+			for i := range restoreConfigMaps.Items {
+				if err := r.Client.Delete(ctx, &restoreConfigMaps.Items[i]); err != nil {
+					return nil, nil, errors.WithStack(err)
+				}
+			}
+			restoreSecrets := &v1.SecretList{}
+			if err := r.Client.List(ctx, restoreSecrets, &client.ListOptions{
+				LabelSelector: naming.PGBackRestRestoreConfigSelector(cluster.GetName()),
+			}, client.InNamespace(cluster.Namespace)); err != nil {
+				return nil, nil, errors.WithStack(err)
+			}
+			for i := range restoreSecrets.Items {
+				if err := r.Client.Delete(ctx, &restoreSecrets.Items[i]); err != nil {
+					return nil, nil, errors.WithStack(err)
+				}
 			}
 		} else if failed {
 			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
@@ -1115,8 +1142,9 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	}
 	// sort to ensure consistent ordering of hosts when creating pgBackRest configs
 	sort.Strings(instanceNames)
-	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, repoHostName,
-		configHash, instanceNames, repoResources.sshSecret); err != nil {
+	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, nil, repoHostName,
+		configHash, naming.ClusterPodService(postgresCluster).Name,
+		postgresCluster.GetNamespace(), instanceNames, repoResources.sshSecret); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest configuration")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
@@ -1193,12 +1221,17 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, dataSource *v1beta1.PostgresClusterDataSource,
 	configHash string) error {
 
-	// grab cluster and repo name information from the data source
+	// grab cluster, namespaces and repo name information from the data source
 	sourceClusterName := dataSource.ClusterName
 	// if the data source name is empty then we're restoring in-place and use the current cluster
 	// as the source cluster
 	if sourceClusterName == "" {
 		sourceClusterName = cluster.GetName()
+	}
+	// if data source namespace is empty then use the same namespace as the current cluster
+	sourceClusterNamespace := dataSource.ClusterNamespace
+	if sourceClusterNamespace == "" {
+		sourceClusterNamespace = cluster.GetNamespace()
 	}
 	// repo name is required by the api, so RepoName should be populated
 	sourceRepoName := dataSource.RepoName
@@ -1260,7 +1293,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	// If the source cluster is not the same as the current cluster, then look it up.
 	sourceCluster := &v1beta1.PostgresCluster{}
 	var sourceClusterInstance string
-	if sourceClusterName == cluster.GetName() {
+	if sourceClusterName == cluster.GetName() && sourceClusterNamespace == cluster.GetNamespace() {
 		sourceCluster = cluster.DeepCopy()
 		sourceClusterInstance = instanceName
 		instance := &Instance{Name: sourceClusterInstance}
@@ -1277,7 +1310,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		}
 	} else {
 		if err := r.Client.Get(ctx,
-			client.ObjectKey{Name: sourceClusterName, Namespace: cluster.GetNamespace()},
+			client.ObjectKey{Name: sourceClusterName, Namespace: sourceClusterNamespace},
 			sourceCluster); err != nil {
 			if apierrors.IsNotFound(err) {
 				r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidDataSource",
@@ -1295,17 +1328,34 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		for _, instance := range sourceInstances.forCluster {
-			if instance != nil {
-				sourceClusterInstance = instance.Name
-				break
+
+		instances := []*Instance{}
+		for i := range sourceInstances.forCluster {
+			instances = append(instances, sourceInstances.forCluster[i])
+		}
+		if len(instances) > 0 {
+			// sort to ensure consistency in the instance utilized
+			sort.Slice(instances, func(i, j int) bool {
+				return instances[i].Name < instances[j].Name
+			})
+			sourceClusterInstance = instances[0].Name
+		}
+		if sourceClusterInstance == "" {
+			return errors.WithStack(
+				errors.New("unable to find instance in source cluster for pgBackRest restore"))
+		}
+
+		// If restoring across namespaces, then any SSH secrets must be copied and recreated in the
+		// current cluster's local namespace, and the proper SSH and pgBackRest configuration for
+		// the source cluster must also be generated in the current cluster's namespace
+		if cluster.GetNamespace() != sourceCluster.GetNamespace() {
+			if err := r.copyRestoreConfiguration(ctx, cluster, sourceCluster,
+				sourceClusterInstance); err != nil {
+				return errors.WithStack(err)
 			}
 		}
 	}
-	if sourceClusterInstance == "" {
-		return errors.WithStack(
-			errors.New("unable to find instance in source cluster for pgBackRest restore"))
-	}
+
 	// set the name of the pgbackrest config file that will be mounted to the restore Job
 	configName := sourceClusterInstance + ".conf"
 
@@ -1349,17 +1399,111 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	return nil
 }
 
+// copyRestoreConfiguration copies pgBackRest configuration from another cluster for use by
+// the current PostgresCluster (e.g. when restoring across namespaces, and the configuration
+// for the source cluster needs to be copied into the PostgresCluster's local namespace).
+func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
+	cluster, sourceCluster *v1beta1.PostgresCluster, sourceClusterInstance string) error {
+
+	origSourceCluster := sourceCluster.DeepCopy()
+	sourceCluster.ObjectMeta.Name = cluster.GetName() + "-restore"
+	sourceCluster.ObjectMeta.Namespace = cluster.GetNamespace()
+	sourceCluster.ObjectMeta.Labels = cluster.GetLabels()
+	sourceCluster.ObjectMeta.Annotations = cluster.GetAnnotations()
+	var repoHostName string
+	if pgbackrest.DedicatedRepoHostEnabled(sourceCluster) {
+		repoHosts := &appsv1.StatefulSetList{}
+		selector := naming.PGBackRestDedicatedSelector(origSourceCluster.GetName())
+		if err := r.Client.List(ctx, repoHosts,
+			client.InNamespace(origSourceCluster.GetNamespace()),
+			client.MatchingLabelsSelector{Selector: selector}); err != nil {
+			return errors.WithStack(err)
+		}
+		if len(repoHosts.Items) != 1 {
+			return errors.WithStack(errors.New("Invalid number of repo hosts found " +
+				"while reconciling restore job"))
+		}
+		repoHostName = repoHosts.Items[0].GetName()
+	}
+	sourceSSHConfig := &v1.Secret{}
+	if pgbackrest.RepoHostEnabled(origSourceCluster) {
+		if err := r.Client.Get(ctx,
+			naming.AsObjectKey(naming.PGBackRestSSHSecret(origSourceCluster)),
+			sourceSSHConfig); err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	metadata := naming.PGBackRestSSHSecret(sourceCluster)
+	// label according to PostgresCluster being created (not the source cluster)
+	metadata.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestRestoreConfigLabels(cluster.GetName()),
+	)
+	metadata.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	restoreSSHConfig := &v1.Secret{
+		ObjectMeta: metadata,
+		Data:       sourceSSHConfig.Data,
+	}
+	// set ownership refs according to PostgresCluster being created (not the source cluster)
+	if err := r.setOwnerReference(cluster, restoreSSHConfig); err != nil {
+		return errors.WithStack(err)
+	}
+	restoreSSHConfig.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	// Create metadata that can be used to override metadata (labels, annotations and ownership
+	// refs) in pgBackRest configuration resources.  This allows us to copy resources from
+	// another cluster, but ensure pertinent metadata details are set according to the cluster
+	// currently being reocnciled (ensuring proper garbage collection, etc.).
+	overrideMetadata := &metav1.ObjectMeta{
+		Annotations:     metadata.GetAnnotations(),
+		Labels:          metadata.GetLabels(),
+		OwnerReferences: restoreSSHConfig.OwnerReferences,
+	}
+	if err := r.reconcilePGBackRestConfig(ctx, sourceCluster, overrideMetadata, repoHostName, "",
+		naming.ClusterPodService(origSourceCluster).Name, origSourceCluster.GetNamespace(),
+		[]string{sourceClusterInstance}, restoreSSHConfig); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
 // reconcileRepoHosts is responsible for reconciling the pgBackRest ConfigMaps and Secrets.
+//
+// Please note that while the metadata for any resources generated within this function is
+// typically generated to the PostgresCluster provided, an optional metadataOverride
+// parameter can also be provided that can be used to override the labels, annotations and/or
+// ownerships refs for any resources created by this function (note thatall other fields in
+// metadataOverride are ignored).  This is useful in scenarios where the contents of the
+// configuration resources should be reconciled according to the PostgresCluster provided,
+// but those same resources need to be labeled, owned, etc. independently of that PostgresCluster
+// (e.g. according to another cluster, such as when performing a restore across namespaces and
+// copying configuration from a source cluster).
 func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, repoHostName, configHash string,
+	postgresCluster *v1beta1.PostgresCluster, metadataOverride *metav1.ObjectMeta,
+	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string, sshSecret *v1.Secret) error {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoConfig")
 	errMsg := "reconciling pgBackRest configuration"
 
+	// create a function that can be used to override metadata according to the metadataOverride
+	// parameter provided
+	overrideMetadata := func(metadata metav1.ObjectMeta) metav1.ObjectMeta {
+		name := metadata.Name
+		namespace := metadata.Namespace
+		metadata = *metadataOverride
+		metadata.Name = name
+		metadata.Namespace = namespace
+		return metadata
+	}
+
 	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
-		configHash, instanceNames)
-	if err := controllerutil.SetControllerReference(postgresCluster, backrestConfig,
+		configHash, serviceName, serviceNamespace, instanceNames)
+	if metadataOverride != nil {
+		backrestConfig.ObjectMeta = overrideMetadata(backrestConfig.ObjectMeta)
+	} else if err := controllerutil.SetControllerReference(postgresCluster, backrestConfig,
 		r.Client.Scheme()); err != nil {
 		return err
 	}
@@ -1375,8 +1519,9 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	}
 
 	sshdConfig := pgbackrest.CreateSSHConfigMapIntent(postgresCluster)
-	// set ownership references
-	if err := controllerutil.SetControllerReference(postgresCluster, &sshdConfig,
+	if metadataOverride != nil {
+		sshdConfig.ObjectMeta = overrideMetadata(sshdConfig.ObjectMeta)
+	} else if err := controllerutil.SetControllerReference(postgresCluster, &sshdConfig,
 		r.Client.Scheme()); err != nil {
 		log.Error(err, errMsg)
 		return err
@@ -1386,12 +1531,15 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 		return err
 	}
 
-	sshdSecret, err := pgbackrest.CreateSSHSecretIntent(postgresCluster, sshSecret)
+	sshdSecret, err := pgbackrest.CreateSSHSecretIntent(postgresCluster, sshSecret,
+		serviceName, serviceNamespace)
 	if err != nil {
 		log.Error(err, errMsg)
 		return err
 	}
-	if err := controllerutil.SetControllerReference(postgresCluster, &sshdSecret,
+	if metadataOverride != nil {
+		sshdSecret.ObjectMeta = overrideMetadata(sshdSecret.ObjectMeta)
+	} else if err := controllerutil.SetControllerReference(postgresCluster, &sshdSecret,
 		r.Client.Scheme()); err != nil {
 		return err
 	}
@@ -1903,9 +2051,10 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		}
 	}
 
+	dedicatedEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
 	// return if no job has been created and the replica repo or the dedicated repo host  is not
 	// ready
-	if job == nil && (!dedicatedRepoReady || !replicaRepoReady) {
+	if job == nil && ((dedicatedEnabled && !dedicatedRepoReady) || !replicaRepoReady) {
 		return nil
 	}
 

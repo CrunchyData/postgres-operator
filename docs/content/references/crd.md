@@ -359,7 +359,12 @@ Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL
     <tbody><tr>
         <td><b>clusterName</b></td>
         <td>string</td>
-        <td>The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster. Defaults to the name of the PostgresCluster being created if not provided.</td>
+        <td>The name of an existing PostgresCluster to use as the data source for the new PostgresCluster. Defaults to the name of the PostgresCluster being created if not provided.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>clusterNamespace</b></td>
+        <td>string</td>
+        <td>The namespace of the cluster specified as the data source using the clusterName field. Defaults to the namespace of the PostgresCluster being created if not provided.</td>
         <td>false</td>
       </tr><tr>
         <td><b>options</b></td>
@@ -4380,7 +4385,12 @@ Defines details for performing an in-place restore using pgBackRest
     <tbody><tr>
         <td><b>clusterName</b></td>
         <td>string</td>
-        <td>The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster. Defaults to the name of the PostgresCluster being created if not provided.</td>
+        <td>The name of an existing PostgresCluster to use as the data source for the new PostgresCluster. Defaults to the name of the PostgresCluster being created if not provided.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>clusterNamespace</b></td>
+        <td>string</td>
+        <td>The namespace of the cluster specified as the data source using the clusterName field. Defaults to the namespace of the PostgresCluster being created if not provided.</td>
         <td>false</td>
       </tr><tr>
         <td><b>options</b></td>

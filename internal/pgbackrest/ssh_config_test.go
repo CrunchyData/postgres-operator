@@ -121,7 +121,8 @@ func TestSSHDConfiguration(t *testing.T) {
 			// locally scoped 'secretInitial' variable
 			var err error
 
-			secretInitial, err = CreateSSHSecretIntent(postgresCluster, nil)
+			secretInitial, err = CreateSSHSecretIntent(postgresCluster, nil,
+				naming.ClusterPodService(postgresCluster).Name, ns.GetName())
 
 			assert.NilError(t, err)
 

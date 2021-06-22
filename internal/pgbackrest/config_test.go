@@ -94,6 +94,8 @@ func TestPGBackRestConfiguration(t *testing.T) {
 	testRepoName := "repo-host"
 	testConfigHash := "abcde12345"
 
+	domain := naming.KubernetesClusterDomain(context.Background())
+
 	t.Run("pgbackrest configmap checks", func(t *testing.T) {
 
 		// setup the test environment and ensure a clean teardown
@@ -109,7 +111,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 			pghosts := []string{testInstanceName}
 			// create the configmap struct
 			cmInitial = CreatePGBackRestConfigMapIntent(postgresCluster, testRepoName,
-				testConfigHash, pghosts)
+				testConfigHash, naming.ClusterPodService(postgresCluster).Name, "test-ns", pghosts)
 
 			// check that there is configmap data
 			assert.Assert(t, cmInitial.Data != nil)
@@ -167,7 +169,7 @@ repo4-test=config
 repo4-type=s3
 
 [db]
-pg1-host=`+testInstanceName+`-0.testcluster-pods
+pg1-host=`+testInstanceName+`-0.testcluster-pods.test-ns.svc.`+domain+`
 pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
 pg1-port=5432
 pg1-socket-path=/tmp/postgres
@@ -179,22 +181,22 @@ pg1-socket-path=/tmp/postgres
 		assert.Equal(t, getCMData(cmReturned, testInstanceName+".conf"),
 			`[global]
 log-path=/tmp
-repo1-host=`+testRepoName+`-0.testcluster-pods
+repo1-host=`+testRepoName+`-0.testcluster-pods.test-ns.svc.`+domain+`
 repo1-host-user=postgres
 repo1-path=/pgbackrest/repo1
 repo2-azure-container=container
-repo2-host=repo-host-0.testcluster-pods
+repo2-host=repo-host-0.testcluster-pods.test-ns.svc.`+domain+`
 repo2-host-user=postgres
 repo2-path=/pgbackrest/repo2
 repo2-test=config
 repo2-type=azure
 repo3-gcs-bucket=bucket
-repo3-host=repo-host-0.testcluster-pods
+repo3-host=repo-host-0.testcluster-pods.test-ns.svc.`+domain+`
 repo3-host-user=postgres
 repo3-path=/pgbackrest/repo3
 repo3-test=config
 repo3-type=gcs
-repo4-host=repo-host-0.testcluster-pods
+repo4-host=repo-host-0.testcluster-pods.test-ns.svc.`+domain+`
 repo4-host-user=postgres
 repo4-path=/pgbackrest/repo4
 repo4-s3-bucket=bucket

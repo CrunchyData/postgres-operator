@@ -16,6 +16,7 @@
 package pgbackrest
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -98,7 +99,7 @@ func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.Confi
 // CreateSSHSecretIntent creates the secret containing the new public private key pair to use
 // when connecting to and from the pgBackRest repo pod.
 func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
-	currentSSHSecret *v1.Secret) (v1.Secret, error) {
+	currentSSHSecret *v1.Secret, serviceName, serviceNamespace string) (v1.Secret, error) {
 
 	meta := naming.PGBackRestSSHSecret(postgresCluster)
 	meta.Annotations = naming.Merge(
@@ -153,7 +154,9 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 	// if the known_hosts is not ok, populate with the knownHosts key
 	if _, ok := secret.Data[knownHostsKey]; !ok {
 		secret.Data[knownHostsKey] = []byte(fmt.Sprintf(
-			"*.%s %s", naming.ClusterPodService(postgresCluster).Name, string(keys.Public)))
+			"*.%s.%s.svc.%s %s", serviceName,
+			serviceNamespace, naming.KubernetesClusterDomain(context.Background()),
+			string(keys.Public)))
 	}
 
 	return secret, nil

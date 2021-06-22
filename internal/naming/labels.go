@@ -65,6 +65,10 @@ const (
 	// LabelPGBackRestRestore is used to indicate that a Job or Pod is for a pgBackRest restore
 	LabelPGBackRestRestore = labelPrefix + "pgbackrest-restore"
 
+	// LabelPGBackRestRestore is used to indicate that a configuration resource (e.g. a ConfigMap
+	// or Secret) is for a pgBackRest restore
+	LabelPGBackRestRestoreConfig = labelPrefix + "pgbackrest-restore-config"
+
 	// LabelStartupInstance is used to indicate the startup instance associated with a resource
 	LabelStartupInstance = labelPrefix + "startup-instance"
 
@@ -141,6 +145,22 @@ func PGBackRestBackupJobLabels(clusterName, repoName string,
 func PGBackRestBackupJobSelector(clusterName, repoName string,
 	backupType BackupJobType) labels.Selector {
 	return PGBackRestBackupJobLabels(clusterName, repoName, backupType).AsSelector()
+}
+
+// PGBackRestRestoreConfigLabels provides labels for configuration (e.g. ConfigMaps and Secrets)
+// generated to perform a pgBackRest restore.
+func PGBackRestRestoreConfigLabels(clusterName string) labels.Set {
+	commonLabels := PGBackRestLabels(clusterName)
+	jobLabels := map[string]string{
+		LabelPGBackRestRestoreConfig: "",
+	}
+	return labels.Merge(jobLabels, commonLabels)
+}
+
+// PGBackRestRestoreConfigSelector provides selector for querying pgBackRest restore config
+// resources.
+func PGBackRestRestoreConfigSelector(clusterName string) labels.Selector {
+	return PGBackRestRestoreConfigLabels(clusterName).AsSelector()
 }
 
 // PGBackRestRestoreJobLabels provides labels for pgBackRest restore Jobs.

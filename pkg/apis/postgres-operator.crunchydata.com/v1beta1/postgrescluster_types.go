@@ -136,10 +136,15 @@ type DataSource struct {
 // an existing PostgresCluster.
 type PostgresClusterDataSource struct {
 
-	// The name of an existing PostgresCluster to use as the datasource for the new PostgresCluster.
+	// The name of an existing PostgresCluster to use as the data source for the new PostgresCluster.
 	// Defaults to the name of the PostgresCluster being created if not provided.
 	// +optional
 	ClusterName string `json:"clusterName,omitempty"`
+
+	// The namespace of the cluster specified as the data source using the clusterName field.
+	// Defaults to the namespace of the PostgresCluster being created if not provided.
+	// +optional
+	ClusterNamespace string `json:"clusterNamespace,omitempty"`
 
 	// The name of the pgBackRest repo within the source PostgresCluster that contains the backups
 	// that should be utilized to perform a pgBackRest restore when initializing the data source

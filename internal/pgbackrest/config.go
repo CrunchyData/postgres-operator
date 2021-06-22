@@ -16,6 +16,7 @@
 package pgbackrest
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -69,7 +70,8 @@ const (
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
 func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
-	repoHostName, configHash string, instanceNames []string) *v1.ConfigMap {
+	repoHostName, configHash, serviceName, serviceNamespace string,
+	instanceNames []string) *v1.ConfigMap {
 
 	meta := naming.PGBackRestConfig(postgresCluster)
 	meta.Annotations = naming.Merge(
@@ -91,14 +93,10 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	// create an empty map for the config data
 	initialize.StringMap(&cm.Data)
 
-	var serviceName string
 	addInstanceHosts := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil) &&
 		(postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated == nil)
 	addDedicatedHost := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil) &&
 		(postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
-	if addInstanceHosts || addDedicatedHost {
-		serviceName = naming.ClusterPodService(postgresCluster).Name
-	}
 
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	for i, name := range instanceNames {
@@ -109,14 +107,16 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 			otherInstances = append(otherInstances[:i], otherInstances[i+1:]...)
 		}
 		cm.Data[name+".conf"] = getConfigString(
-			populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir, otherInstances,
+			populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName,
+				pgdataDir, otherInstances,
 				postgresCluster.Spec.Archive.PGBackRest.Repos,
 				postgresCluster.Spec.Archive.PGBackRest.Global))
 	}
 
 	if addDedicatedHost && repoHostName != "" {
 		cm.Data[CMRepoKey] = getConfigString(
-			populateRepoHostConfigurationMap(serviceName, pgdataDir, instanceNames,
+			populateRepoHostConfigurationMap(serviceName, serviceNamespace,
+				pgdataDir, instanceNames,
 				postgresCluster.Spec.Archive.PGBackRest.Repos,
 				postgresCluster.Spec.Archive.PGBackRest.Global))
 	}
@@ -217,7 +217,7 @@ mv "${pgdata}" "${pgdata}_bootstrap"`
 
 // populatePGInstanceConfigurationMap returns a map representing the pgBackRest configuration for
 // a PostgreSQL instance
-func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir string,
+func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName, pgdataDir string,
 	otherPGHostNames []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string) map[string]map[string]string {
 
@@ -245,8 +245,10 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir str
 			repoConfigs = getExternalRepoConfigs(repo)
 		}
 
-		if repoHostName != "" && serviceName != "" {
-			pgBackRestConfig["global"][repo.Name+"-host"] = repoHostName + "-0." + serviceName
+		if repoHostName != "" {
+			pgBackRestConfig["global"][repo.Name+"-host"] = repoHostName + "-0." + serviceName +
+				"." + serviceNamespace + ".svc." +
+				naming.KubernetesClusterDomain(context.Background())
 			pgBackRestConfig["global"][repo.Name+"-host-user"] = "postgres"
 		}
 		pgBackRestConfig["global"][repo.Name+"-path"] = defaultRepo1Path + repo.Name
@@ -285,7 +287,7 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir str
 
 // populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
-func populateRepoHostConfigurationMap(serviceName, pgdataDir string,
+func populateRepoHostConfigurationMap(serviceName, serviceNamespace, pgdataDir string,
 	pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string) map[string]map[string]string {
 
@@ -324,7 +326,9 @@ func populateRepoHostConfigurationMap(serviceName, pgdataDir string,
 
 	// set the configs for all PG hosts
 	for i, pgHost := range pgHosts {
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i+1)] = pgHost + "-0." + serviceName
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i+1)] = pgHost + "-0." + serviceName +
+			"." + serviceNamespace + ".svc." +
+			naming.KubernetesClusterDomain(context.Background())
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i+1)] = pgdataDir
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i+1)] = defaultPG1Port
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i+1)] = postgres.SocketDirectory

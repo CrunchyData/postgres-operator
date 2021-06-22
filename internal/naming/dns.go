@@ -28,7 +28,7 @@ import (
 // name is the fully qualified domain name (FQDN).
 func InstancePodDNSNames(ctx context.Context, instance *appsv1.StatefulSet) []string {
 	var (
-		domain    = kubernetesClusterDomain(ctx)
+		domain    = KubernetesClusterDomain(ctx)
 		namespace = instance.Namespace
 		name      = instance.Name + "-0." + instance.Spec.ServiceName
 	)
@@ -47,7 +47,7 @@ func InstancePodDNSNames(ctx context.Context, instance *appsv1.StatefulSet) []st
 // ServiceDNSNames returns the possible DNS names for service. The first name
 // is the fully qualified domain name (FQDN).
 func ServiceDNSNames(ctx context.Context, service *corev1.Service) []string {
-	domain := kubernetesClusterDomain(ctx)
+	domain := KubernetesClusterDomain(ctx)
 
 	return []string{
 		service.Name + "." + service.Namespace + ".svc." + domain,
@@ -58,7 +58,7 @@ func ServiceDNSNames(ctx context.Context, service *corev1.Service) []string {
 }
 
 // kubernetesClusterDomain looks up the Kubernetes cluster domain name.
-func kubernetesClusterDomain(ctx context.Context) string {
+func KubernetesClusterDomain(ctx context.Context) string {
 	ctx, span := tracer.Start(ctx, "kubernetes-domain-lookup")
 	defer span.End()
 

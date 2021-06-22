@@ -37,6 +37,7 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepoHost))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepoVolume))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestore))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestoreConfig))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelStartupInstance))
 }
 
@@ -208,4 +209,13 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 	assert.Equal(t, pgBackRestRestoreJobLabels.Get(LabelCluster), clusterName)
 	assert.Check(t, pgBackRestRestoreJobLabels.Has(LabelPGBackRest))
 	assert.Check(t, pgBackRestRestoreJobLabels.Has(LabelPGBackRestRestore))
+
+	// verify the labels that identify pgBackRest restore configuration resources
+	pgBackRestRestoreConfigLabels := PGBackRestRestoreConfigLabels(clusterName)
+	assert.Equal(t, pgBackRestRestoreConfigLabels.Get(LabelCluster), clusterName)
+	assert.Check(t, pgBackRestRestoreConfigLabels.Has(LabelPGBackRest))
+	assert.Check(t, pgBackRestRestoreConfigLabels.Has(LabelPGBackRestRestoreConfig))
+
+	pgBackRestRestoreConfigSelector := PGBackRestRestoreConfigSelector(clusterName)
+	assert.Check(t, pgBackRestRestoreConfigSelector.Matches(pgBackRestRestoreConfigLabels))
 }

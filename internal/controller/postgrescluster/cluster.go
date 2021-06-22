@@ -195,7 +195,7 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 }
 
 // reconcileDataSource is responsible for reconciling the data source for a PostgreSQL cluster.
-// This involves ensuring the PostgreSQL data directory for the cluster is properly poplulated
+// This involves ensuring the PostgreSQL data directory for the cluster is properly populated
 // prior to bootstrapping the cluster, specifically according to any data source configured in the
 // PostgresCluster spec.
 func (r *Reconciler) reconcileDataSource(ctx context.Context,
@@ -211,7 +211,7 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 		})
 	}
 
-	// observe all resources currently relevant to reonciling data sources, and update status
+	// observe all resources currently relevant to reconciling data sources, and update status
 	// accordingly
 	endpoints, restoreJob, err := r.observeRestoreEnv(ctx, cluster)
 	if err != nil {
@@ -285,12 +285,12 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 			(configHash != restoreJob.GetAnnotations()[naming.PGBackRestConfigHash])
 	}
 
-	// Proceed with preparing the cluster for restore (e.g. tearning down runners, the DCS,
+	// Proceed with preparing the cluster for restore (e.g. tearing down runners, the DCS,
 	// etc.) if:
 	// - A restore is already in progress, but the cluster has not yet been prepared
 	// - A restore is already in progress, but the config hash changed
 	// - The restore ID has changed (i.e. the user provide a new value for the restore
-	//   annotation, inidicating they want a new in-place restore)
+	//   annotation, indicating they want a new in-place restore)
 	if (restoringInPlace && (!readyForRestore || configChanged)) || restoreIDChanged {
 		if err := r.prepareForRestore(ctx, cluster, observed, endpoints,
 			restoreJob, restoreID); err != nil {

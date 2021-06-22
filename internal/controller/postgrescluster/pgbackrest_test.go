@@ -1120,7 +1120,7 @@ func TestReconcileManualBackup(t *testing.T) {
 		dedicatedOnly bool
 		// whether or not the primary instance should be read-only
 		standby bool
-		// whether or not to mock a current job in the env before reonciling (this job is not
+		// whether or not to mock a current job in the env before reconciling (this job is not
 		// actully created, but rather just passed into the reconcile function under test)
 		createCurrentJob bool
 		// conditions to apply to the job if created (these are always set to "true")
@@ -2323,10 +2323,6 @@ func TestObserveRestoreEnv(t *testing.T) {
 	namespace := ns.Name
 
 	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
-
-		// if !dedicated {
-		// 	clusterName = clusterName + "-no-repo"
-		// }
 
 		cluster := &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{

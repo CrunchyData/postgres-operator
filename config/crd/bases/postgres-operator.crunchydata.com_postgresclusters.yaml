@@ -1512,9 +1512,15 @@ spec:
                         properties:
                           clusterName:
                             description: The name of an existing PostgresCluster to
-                              use as the datasource for the new PostgresCluster. Defaults
-                              to the name of the PostgresCluster being created if
-                              not provided.
+                              use as the data source for the new PostgresCluster.
+                              Defaults to the name of the PostgresCluster being created
+                              if not provided.
+                            type: string
+                          clusterNamespace:
+                            description: The namespace of the cluster specified as
+                              the data source using the clusterName field. Defaults
+                              to the namespace of the PostgresCluster being created
+                              if not provided.
                             type: string
                           enabled:
                             default: false
@@ -1691,9 +1697,14 @@ spec:
                     properties:
                       clusterName:
                         description: The name of an existing PostgresCluster to use
-                          as the datasource for the new PostgresCluster. Defaults
+                          as the data source for the new PostgresCluster. Defaults
                           to the name of the PostgresCluster being created if not
                           provided.
+                        type: string
+                      clusterNamespace:
+                        description: The namespace of the cluster specified as the
+                          data source using the clusterName field. Defaults to the
+                          namespace of the PostgresCluster being created if not provided.
                         type: string
                       options:
                         description: Command line options to include when running
