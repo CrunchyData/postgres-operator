@@ -1474,7 +1474,6 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
-	//maybe use this?
 	spec, err := generateBackupJobSpecIntent(postgresCluster, selector.String(), containerName,
 		repoName, serviceAccount.GetName(), configName, labels, annotations, backupOpts...)
 	if err != nil {
@@ -2024,6 +2023,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instances *observedInstances, sa *v1.ServiceAccount,
 ) bool {
+	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoCronJob")
 	// requeue if there is an error during creation
 	var requeue bool
 
@@ -2035,6 +2035,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 			if repo.BackupSchedules.Full != nil {
 				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
 					full, repo.BackupSchedules.Full, instances, sa); err != nil {
+					log.Error(err, "unable to reconcile Full backup for "+repo.Name)
 					requeue = true
 				}
 			}
@@ -2042,6 +2043,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
 					differential, repo.BackupSchedules.Differential,
 					instances, sa); err != nil {
+					log.Error(err, "unable to reconcile Differential backup for "+repo.Name)
 					requeue = true
 				}
 			}
@@ -2049,6 +2051,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
 					incremental, repo.BackupSchedules.Incremental,
 					instances, sa); err != nil {
+					log.Error(err, "unable to reconcile Incremental backup for "+repo.Name)
 					requeue = true
 				}
 			}
@@ -2062,7 +2065,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 // reconcilePGBackRestCronJob creates the CronJob for the given repo, pgBackRest
 // backup type and schedule
 func (r *Reconciler) reconcilePGBackRestCronJob(
-	ctx context.Context, cluster *v1beta1.PostgresCluster, repo v1beta1.PGBackRestRepo, //repoName,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, repo v1beta1.PGBackRestRepo,
 	backupType string, schedule *string, instances *observedInstances,
 	serviceAccount *v1.ServiceAccount,
 ) error {
@@ -2083,7 +2086,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 
 	// if the cluster isn't bootstrapped, return
 	if !patroni.ClusterBootstrapped(cluster) {
-		return errors.New("cluster not bootstrapped")
+		return nil
 	}
 
 	// Determine if the replica create backup is complete and return if not. This allows for proper
@@ -2091,10 +2094,10 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 	condition := meta.FindStatusCondition(cluster.Status.Conditions,
 		ConditionReplicaCreate)
 	if condition == nil || condition.Status != metav1.ConditionTrue {
-		return errors.New("replica creation backup not completed")
+		return nil
 	}
 
-	// Verify that status exists for the repo configured for the manual backup, and that a stanza
+	// Verify that status exists for the repo configured for the scheduled backup, and that a stanza
 	// has been created, before proceeding.  If either conditions are not true, then simply return
 	// without requeuing and record and event (subsequent events, e.g. successful stanza creation,
 	// writing of the proper repo status, adding a missing reop, etc. will trigger the reconciles
@@ -2110,12 +2113,12 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 		r.Recorder.Eventf(cluster, v1.EventTypeWarning, "InvalidBackupRepo",
 			"Unable to find status for %q as configured for a scheduled backup.  Please ensure "+
 				"this repo is defined in the spec.", repo.Name)
-		return errors.New("valid backup repo status not found")
+		return nil
 	}
 	if !stanzaCreated {
 		r.Recorder.Eventf(cluster, v1.EventTypeWarning, "StanzaNotCreated",
 			"Stanza not created for %q as specified for a scheduled backup", repo.Name)
-		return errors.New("stanza not created")
+		return nil
 	}
 
 	// set backup type (i.e. "full", "diff", "incr")

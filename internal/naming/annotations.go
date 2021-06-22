@@ -27,12 +27,6 @@ const (
 	// ID associated with a specific manual backup Job.
 	PGBackRestBackup = annotationPrefix + "pgbackrest-backup"
 
-	// PGBackRestScheduledBackup is the annotation that is added to a PostgresCluster to identify
-	// a scheduled backup.  The value of the annotation will be a unique identfier for a backup Job
-	// (e.g. a timestamp), which will be stored in the PostgresCluster status to properly track completion
-	// of the Job.
-	PGBackRestScheduledBackup = annotationPrefix + "pgbackrest-scheduled-backup"
-
 	// PGBackRestConfigHash is an annotation used to specify the hash value associated with a
 	// repo configuration as needed to detect configuration changes that invalidate running Jobs
 	// (and therefore must be recreated)

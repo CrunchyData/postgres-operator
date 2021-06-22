@@ -2500,12 +2500,16 @@ func TestReconcileScheduledBackups(t *testing.T) {
 		status *v1beta1.PostgresClusterStatus
 		// whether or not the test should expect a Job to be reconciled
 		expectReconcile bool
+		// whether or not the test should expect a Job to be reqeued
+		expectRequeue bool
 		// the reason associated with the expected event for the test (can be empty if
 		// no event is expected)
 		expectedEventReason string
+		// the observed instances
+		instances *observedInstances
 	}{
 		{
-			testDesc: "should reconcile",
+			testDesc: "should reconcile, no requeue",
 			clusterConditions: map[string]metav1.ConditionStatus{
 				ConditionRepoHostReady: metav1.ConditionTrue,
 				ConditionReplicaCreate: metav1.ConditionTrue,
@@ -2516,15 +2520,17 @@ func TestReconcileScheduledBackups(t *testing.T) {
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
 			expectReconcile: true,
+			expectRequeue:   false,
 		}, {
-			testDesc: "cluster not bootstrapped should not reconcile",
+			testDesc: "cluster not bootstrapped, should not reconcile",
 			status: &v1beta1.PostgresClusterStatus{
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
 			expectReconcile: false,
+			expectRequeue:   false,
 		}, {
-			testDesc:      "no repo host ready condition should not reconcile",
+			testDesc:      "no repo host ready condition, should not reconcile",
 			dedicatedOnly: true,
 			status: &v1beta1.PostgresClusterStatus{
 				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
@@ -2532,16 +2538,18 @@ func TestReconcileScheduledBackups(t *testing.T) {
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
 			expectReconcile: false,
+			expectRequeue:   false,
 		}, {
-			testDesc: "no replica create condition should not reconcile",
+			testDesc: "no replica create condition, should not reconcile",
 			status: &v1beta1.PostgresClusterStatus{
 				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
 			expectReconcile: false,
+			expectRequeue:   false,
 		}, {
-			testDesc:      "false repo host ready condition should not reconcile",
+			testDesc:      "false repo host ready condition, should not reconcile",
 			dedicatedOnly: true,
 			status: &v1beta1.PostgresClusterStatus{
 				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
@@ -2549,16 +2557,18 @@ func TestReconcileScheduledBackups(t *testing.T) {
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
 			expectReconcile: false,
+			expectRequeue:   false,
 		}, {
-			testDesc: "false replica create condition should not reconcile",
+			testDesc: "false replica create condition, should not reconcile",
 			status: &v1beta1.PostgresClusterStatus{
 				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
 			expectReconcile: false,
+			expectRequeue:   false,
 		}, {
-			testDesc: "missing repo status should not reconcile",
+			testDesc: "missing repo status, should not reconcile",
 			clusterConditions: map[string]metav1.ConditionStatus{
 				ConditionRepoHostReady: metav1.ConditionTrue,
 				ConditionReplicaCreate: metav1.ConditionTrue,
@@ -2569,7 +2579,22 @@ func TestReconcileScheduledBackups(t *testing.T) {
 					Repos: []v1beta1.RepoStatus{}},
 			},
 			expectReconcile:     false,
+			expectRequeue:       false,
 			expectedEventReason: "InvalidBackupRepo",
+		}, {
+			testDesc: "no primary defined, should not reconcile, requeue true",
+			clusterConditions: map[string]metav1.ConditionStatus{
+				ConditionRepoHostReady: metav1.ConditionTrue,
+				ConditionReplicaCreate: metav1.ConditionTrue,
+			},
+			status: &v1beta1.PostgresClusterStatus{
+				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+				PGBackRest: &v1beta1.PGBackRestStatus{
+					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+			},
+			instances:       &observedInstances{},
+			expectReconcile: false,
+			expectRequeue:   true,
 		}}
 
 	for _, dedicated := range []bool{true, false} {
@@ -2600,10 +2625,43 @@ func TestReconcileScheduledBackups(t *testing.T) {
 				assert.NilError(t, tClient.Create(ctx, postgresCluster))
 				assert.NilError(t, tClient.Status().Update(ctx, postgresCluster))
 
-				requeue := r.reconcileScheduledBackups(ctx, postgresCluster, instances, sa)
+				var requeue bool
+				if tc.instances != nil {
+					requeue = r.reconcileScheduledBackups(ctx, postgresCluster, tc.instances, sa)
+				} else {
+					requeue = r.reconcileScheduledBackups(ctx, postgresCluster, instances, sa)
+				}
 
-				if tc.expectReconcile {
-					// verify expected behavior when a reconcile is expected
+				if !tc.expectReconcile && !tc.expectRequeue {
+					// expect no reconcile, no requeue
+					assert.Assert(t, !requeue)
+
+					// if an event is expected, the check for it
+					if tc.expectedEventReason != "" {
+						events := &corev1.EventList{}
+						err := wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+							if err := tClient.List(ctx, events, &client.MatchingFields{
+								"involvedObject.kind":      "PostgresCluster",
+								"involvedObject.name":      clusterName,
+								"involvedObject.namespace": ns.GetName(),
+								"involvedObject.uid":       string(postgresCluster.GetUID()),
+								"reason":                   tc.expectedEventReason,
+							}); err != nil {
+								return false, err
+							}
+							if len(events.Items) != 1 {
+								return false, nil
+							}
+							return true, nil
+						})
+						assert.NilError(t, err)
+					}
+				} else if !tc.expectReconcile && tc.expectRequeue {
+					// expect requeue, no reconcile
+					assert.Assert(t, requeue)
+					return
+				} else {
+					// expect reconcile, no requeue
 					assert.Assert(t, !requeue)
 
 					// check for all three defined backup types
@@ -2625,32 +2683,6 @@ func TestReconcileScheduledBackups(t *testing.T) {
 						assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Name,
 							"pgbackrest")
 						assert.Assert(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].SecurityContext != &corev1.SecurityContext{})
-					}
-
-					return
-				} else {
-					// verify expected results when a reconcile is not expected
-					assert.Assert(t, requeue)
-
-					// if an event is expected, the check for it
-					if tc.expectedEventReason != "" {
-						events := &corev1.EventList{}
-						err := wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
-							if err := tClient.List(ctx, events, &client.MatchingFields{
-								"involvedObject.kind":      "PostgresCluster",
-								"involvedObject.name":      clusterName,
-								"involvedObject.namespace": ns.GetName(),
-								"involvedObject.uid":       string(postgresCluster.GetUID()),
-								"reason":                   tc.expectedEventReason,
-							}); err != nil {
-								return false, err
-							}
-							if len(events.Items) != 1 {
-								return false, nil
-							}
-							return true, nil
-						})
-						assert.NilError(t, err)
 					}
 					return
 				}
