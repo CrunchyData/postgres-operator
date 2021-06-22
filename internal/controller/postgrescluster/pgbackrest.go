@@ -201,7 +201,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	}, {
 		Group:   batchv1beta1.SchemeGroupVersion.Group,
 		Version: batchv1beta1.SchemeGroupVersion.Version,
-		Kind:    "CronJob",
+		Kind:    "CronJobList",
 	}}
 
 	selector := naming.PGBackRestSelector(postgresCluster.GetName())
@@ -217,10 +217,16 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 			continue
 		}
 
+		// store objects owned directly by the PostgreSQL cluster
 		owned := []unstructured.Unstructured{}
+		// store objects that are not directly owned by the postgrescluster,
+		// which will include the Jobs created by the scheduled backup CronJobs
+		other := []unstructured.Unstructured{}
 		for i, u := range uList.Items {
 			if metav1.IsControlledBy(&uList.Items[i], postgresCluster) {
 				owned = append(owned, u)
+			} else {
+				other = append(other, u)
 			}
 		}
 
@@ -233,6 +239,13 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 			repoResources, uList); err != nil {
 			return nil, errors.WithStack(err)
 		}
+
+		// if the current objects are Jobs, update the status for the Jobs
+		// created by the pgBackRest scheduled backup CronJobs
+		if gvk.Kind == "JobList" {
+			r.setScheduledJobStatus(ctx, postgresCluster, other)
+		}
+
 	}
 
 	return repoResources, nil
@@ -428,7 +441,7 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 		for i := range stsList.Items {
 			repoResources.hosts = append(repoResources.hosts, &stsList.Items[i])
 		}
-	case "CronJob":
+	case "CronJobList":
 		var cronList batchv1beta1.CronJobList
 		if err := runtime.DefaultUnstructuredConverter.
 			FromUnstructured(uList.UnstructuredContent(), &cronList); err != nil {
@@ -442,6 +455,61 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 	}
 
 	return nil
+}
+
+// setScheduledJobStatus sets the status of the scheduled pgBackRest backup Jobs
+// on the postgres cluster CRD
+func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster,
+	items []unstructured.Unstructured) {
+	log := logging.FromContext(ctx)
+
+	uList := &unstructured.UnstructuredList{}
+	uList.Items = items
+	var jobList batchv1.JobList
+
+	for _, u := range uList.Items {
+		if u.GetKind() == "Job" {
+			if err := runtime.DefaultUnstructuredConverter.
+				FromUnstructured(uList.UnstructuredContent(), &jobList); err != nil {
+				// as this is only setting a status that is not otherwise used
+				// by the Operator, simply log an error and return rather than
+				// bubble this up to the other functions
+				log.Error(err, "unable to convert unstructured objects to jobs, "+
+					"unable to set scheduled backup status")
+				return
+			}
+		}
+	}
+
+	// TODO(tjmoore4): PGBackRestScheduledBackupStatus can likely be combined with
+	// PGBackRestJobStatus as they both contain most of the same information
+	scheduledStatus := []v1beta1.PGBackRestScheduledBackupStatus{}
+	for _, job := range jobList.Items {
+		// we only care about the scheduled backup Jobs created by the
+		// associated CronJobs
+		sbs := v1beta1.PGBackRestScheduledBackupStatus{}
+		if job.GetLabels()[naming.LabelPGBackRestCronJob] != "" {
+			if len(job.OwnerReferences) > 0 {
+				sbs.CronJobName = job.OwnerReferences[0].Name
+			}
+			sbs.RepoName = job.GetLabels()[naming.LabelPGBackRestRepo]
+			sbs.Type = job.GetLabels()[naming.LabelPGBackRestCronJob]
+			sbs.StartTime = job.Status.StartTime
+			sbs.CompletionTime = job.Status.CompletionTime
+			sbs.Active = job.Status.Active
+			sbs.Succeeded = job.Status.Succeeded
+			sbs.Failed = job.Status.Failed
+
+			scheduledStatus = append(scheduledStatus, sbs)
+		}
+	}
+
+	// if nil, create the pgBackRest status
+	if postgresCluster.Status.PGBackRest == nil {
+		postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{}
+	}
+	postgresCluster.Status.PGBackRest.ScheduledBackups = scheduledStatus
 }
 
 // generateRepoHostIntent creates and populates StatefulSet with the PostgresCluster's full intent

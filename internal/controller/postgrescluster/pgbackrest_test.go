@@ -40,7 +40,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -3026,4 +3028,102 @@ func TestReconcileScheduledBackups(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestSetScheduledJobStatus(t *testing.T) {
+
+	// setup the test environment and ensure a clean teardown
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	clusterName := "hippocluster"
+	clusterUID := "hippouid"
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+
+	t.Run("set scheduled backup status", func(t *testing.T) {
+		// create a PostgresCluster to test with
+		postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
+
+		testJob := &batchv1.Job{
+			TypeMeta: metav1.TypeMeta{
+				Kind: "Job",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:   "TestJob",
+				Labels: map[string]string{"postgres-operator.crunchydata.com/pgbackrest-cronjob": "full"},
+			},
+			Status: batchv1.JobStatus{
+				Active:    1,
+				Succeeded: 2,
+				Failed:    3,
+			},
+		}
+
+		// convert the runtime.Object to an unstructured object
+		unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(testJob)
+		assert.NilError(t, err)
+		unstructuredJob := &unstructured.Unstructured{
+			Object: unstructuredObj,
+		}
+
+		// add it to an unstructured list
+		uList := &unstructured.UnstructuredList{}
+		uList.Items = append(uList.Items, *unstructuredJob)
+
+		// set the status
+		r.setScheduledJobStatus(ctx, postgresCluster, uList.Items)
+
+		assert.Assert(t, len(postgresCluster.Status.PGBackRest.ScheduledBackups) > 0)
+		assert.Equal(t, postgresCluster.Status.PGBackRest.ScheduledBackups[0].Active, int32(1))
+		assert.Equal(t, postgresCluster.Status.PGBackRest.ScheduledBackups[0].Succeeded, int32(2))
+		assert.Equal(t, postgresCluster.Status.PGBackRest.ScheduledBackups[0].Failed, int32(3))
+	})
+
+	t.Run("fail to set scheduled backup status due to missing label", func(t *testing.T) {
+		// create a PostgresCluster to test with
+		postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
+
+		testJob := &batchv1.Job{
+			TypeMeta: metav1.TypeMeta{
+				Kind: "Job",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "TestJob",
+			},
+			Status: batchv1.JobStatus{
+				Active:    1,
+				Succeeded: 2,
+				Failed:    3,
+			},
+		}
+
+		// convert the runtime.Object to an unstructured object
+		unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(testJob)
+		assert.NilError(t, err)
+		unstructuredJob := &unstructured.Unstructured{
+			Object: unstructuredObj,
+		}
+
+		// add it to an unstructured list
+		uList := &unstructured.UnstructuredList{}
+		uList.Items = append(uList.Items, *unstructuredJob)
+
+		// set the status
+		r.setScheduledJobStatus(ctx, postgresCluster, uList.Items)
+		assert.Assert(t, len(postgresCluster.Status.PGBackRest.ScheduledBackups) == 0)
+	})
 }

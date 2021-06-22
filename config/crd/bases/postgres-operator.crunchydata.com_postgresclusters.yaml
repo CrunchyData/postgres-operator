@@ -4244,6 +4244,51 @@ spec:
                     - finished
                     - id
                     type: object
+                  scheduledBackups:
+                    description: Status information for scheduled backups
+                    items:
+                      properties:
+                        active:
+                          description: The number of actively running manual backup
+                            Pods.
+                          format: int32
+                          type: integer
+                        completionTime:
+                          description: Represents the time the manual backup Job was
+                            determined by the Job controller to be completed.  This
+                            field is only set if the backup completed successfully.
+                            Additionally, it is represented in RFC3339 form and is
+                            in UTC.
+                          format: date-time
+                          type: string
+                        cronJobName:
+                          description: The name of the associated pgBackRest scheduled
+                            backup CronJob
+                          type: string
+                        failed:
+                          description: The number of Pods for the manual backup Job
+                            that reached the "Failed" phase.
+                          format: int32
+                          type: integer
+                        repo:
+                          description: The name of the associated pgBackRest repository
+                          type: string
+                        startTime:
+                          description: Represents the time the manual backup Job was
+                            acknowledged by the Job controller. It is represented
+                            in RFC3339 form and is in UTC.
+                          format: date-time
+                          type: string
+                        succeeded:
+                          description: The number of Pods for the manual backup Job
+                            that reached the "Succeeded" phase.
+                          format: int32
+                          type: integer
+                        type:
+                          description: The pgBackRest backup type for this Job
+                          type: string
+                      type: object
+                    type: array
                 type: object
               proxy:
                 description: Current state of the PostgreSQL proxy.

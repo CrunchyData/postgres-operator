@@ -6194,6 +6194,11 @@ Status information for pgBackRest
         <td>object</td>
         <td>Status information for in-place restores</td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterstatuspgbackrestscheduledbackupsindex">scheduledBackups</a></b></td>
+        <td>[]object</td>
+        <td>Status information for scheduled backups</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -6397,6 +6402,68 @@ Status information for in-place restores
         <td>string</td>
         <td>A unique identifier for the manual backup as provided using the "pgbackrest-backup" annotation when initiating a backup.</td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterstatuspgbackrestscheduledbackupsindex">
+  PostgresCluster.status.pgbackrest.scheduledBackups[index]
+  <sup><sup><a href="#postgresclusterstatuspgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>active</b></td>
+        <td>integer</td>
+        <td>The number of actively running manual backup Pods.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>completionTime</b></td>
+        <td>string</td>
+        <td>Represents the time the manual backup Job was determined by the Job controller to be completed.  This field is only set if the backup completed successfully. Additionally, it is represented in RFC3339 form and is in UTC.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>cronJobName</b></td>
+        <td>string</td>
+        <td>The name of the associated pgBackRest scheduled backup CronJob</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>failed</b></td>
+        <td>integer</td>
+        <td>The number of Pods for the manual backup Job that reached the "Failed" phase.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>repo</b></td>
+        <td>string</td>
+        <td>The name of the associated pgBackRest repository</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>startTime</b></td>
+        <td>string</td>
+        <td>Represents the time the manual backup Job was acknowledged by the Job controller. It is represented in RFC3339 form and is in UTC.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>succeeded</b></td>
+        <td>integer</td>
+        <td>The number of Pods for the manual backup Job that reached the "Succeeded" phase.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>The pgBackRest backup type for this Job</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

@@ -56,6 +56,44 @@ type PGBackRestJobStatus struct {
 	Failed int32 `json:"failed,omitempty"`
 }
 
+type PGBackRestScheduledBackupStatus struct {
+
+	// The name of the associated pgBackRest scheduled backup CronJob
+	// +kubebuilder:validation:Required
+	CronJobName string `json:"cronJobName,omitempty"`
+
+	// The name of the associated pgBackRest repository
+	// +kubebuilder:validation:Required
+	RepoName string `json:"repo,omitempty"`
+
+	// The pgBackRest backup type for this Job
+	// +kubebuilder:validation:Required
+	Type string `json:"type,omitempty"`
+
+	// Represents the time the manual backup Job was acknowledged by the Job controller.
+	// It is represented in RFC3339 form and is in UTC.
+	// +optional
+	StartTime *metav1.Time `json:"startTime,omitempty"`
+
+	// Represents the time the manual backup Job was determined by the Job controller
+	// to be completed.  This field is only set if the backup completed successfully.
+	// Additionally, it is represented in RFC3339 form and is in UTC.
+	// +optional
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+
+	// The number of actively running manual backup Pods.
+	// +optional
+	Active int32 `json:"active,omitempty"`
+
+	// The number of Pods for the manual backup Job that reached the "Succeeded" phase.
+	// +optional
+	Succeeded int32 `json:"succeeded,omitempty"`
+
+	// The number of Pods for the manual backup Job that reached the "Failed" phase.
+	// +optional
+	Failed int32 `json:"failed,omitempty"`
+}
+
 // PGBackRestArchive defines a pgBackRest archive configuration
 type PGBackRestArchive struct {
 	// +optional
@@ -173,6 +211,10 @@ type PGBackRestStatus struct {
 	// Status information for manual backups
 	// +optional
 	ManualBackup *PGBackRestJobStatus `json:"manualBackup,omitempty"`
+
+	// Status information for scheduled backups
+	// +optional
+	ScheduledBackups []PGBackRestScheduledBackupStatus `json:"scheduledBackups,omitempty"`
 
 	// Status information for the pgBackRest dedicated repository host
 	// +optional
