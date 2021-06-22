@@ -16,19 +16,16 @@ limitations under the License.
 */
 
 import (
-	"context"
 	"os"
 	"strings"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
-	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	log "github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
-
 	"k8s.io/client-go/rest"
 	cruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 )
 
@@ -47,13 +44,6 @@ func initLogging() {
 	}
 	// TODO: change "0.0.1"
 	logging.SetLogFunc(verbosity, logging.Logrus(os.Stdout, "0.0.1", 1))
-
-	// Configure the deprecated logrus singleton.
-	logging.CrunchyLogger(logging.SetParameters())
-	if verbosity > 0 {
-		log.SetLevel(log.DebugLevel)
-	}
-	log.Debug("debug flag set to true")
 }
 
 func main() {
@@ -65,18 +55,10 @@ func main() {
 
 	// create a context that will be used to stop all controllers on a SIGTERM or SIGINT
 	ctx := cruntime.SetupSignalHandler()
-	cruntime.SetLogger(logging.FromContext(ctx))
-
-	// If the postgrescluster controllers are enabled, the associated controller runtime manager
-	// will block until a shutdown signal is received.  Otherwise wait for the shutdown signal here.
-	enablePostgresClusterControllers(ctx)
-}
-
-// enablePostgresClusterControllers enables all controllers needed to manage PostgreSQL clusters using
-// the 'postgrescluster' custom resource
-func enablePostgresClusterControllers(ctx context.Context) {
-
 	log := logging.FromContext(ctx)
+	log.V(1).Info("debug flag set to true")
+
+	cruntime.SetLogger(log)
 
 	cfg, err := runtime.GetConfig()
 	assertNoError(err)
