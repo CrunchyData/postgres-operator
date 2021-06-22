@@ -862,9 +862,10 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 		})
 		// the cluster is no longer bootstrapped
 		cluster.Status.Patroni = nil
-		// the restore will change the contents of the database, so the pgbouncer hash is no longer
-		// valid
+		// the restore will change the contents of the database, so the pgbouncer and exporter hashes
+		// are no longer valid
 		cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = ""
+		cluster.Status.Monitoring.ExporterConfiguration = ""
 		return nil
 	}
 

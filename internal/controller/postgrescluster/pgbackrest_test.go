@@ -2696,6 +2696,7 @@ func TestPrepareForRestore(t *testing.T) {
 				cluster := fakePostgresCluster(clusterName, namespace, clusterUID, dedicated)
 				cluster.Status.Patroni = &v1beta1.PatroniStatus{SystemIdentifier: "abcde12345"}
 				cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = "abcde12345"
+				cluster.Status.Monitoring.ExporterConfiguration = "abcde12345"
 				meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
 					ObservedGeneration: cluster.GetGeneration(),
 					Type:               ConditionPostgresDataInitialized,
@@ -2766,6 +2767,7 @@ func TestPrepareForRestore(t *testing.T) {
 					if tc.result.expectedClusterCondition.Reason == ReasonReadyForRestore {
 						assert.Assert(t, cluster.Status.Patroni == nil)
 						assert.Assert(t, cluster.Status.Proxy.PGBouncer.PostgreSQLRevision == "")
+						assert.Assert(t, cluster.Status.Monitoring.ExporterConfiguration == "")
 						assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
 							ConditionPostgresDataInitialized) == nil)
 					}
