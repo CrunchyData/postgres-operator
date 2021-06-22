@@ -290,7 +290,7 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			// spec then delete it.  Otherwise add it to the slice and continue.
 			// If a volume (PVC) is identified for a repo that no longer exists in the
 			// spec then delete it.  Otherwise add it to the slice and continue.
-			for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 				// we only care about cleaning up local repo volumes (PVCs), and ignore other repo
 				// types (e.g. for external Azure, GCS or S3 repositories)
 				if repo.Volume != nil &&
@@ -302,14 +302,14 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 		case hasLabel(naming.LabelPGBackRestBackup):
 			// If a Job is identified for a repo that no longer exists in the spec then
 			// delete it.  Otherwise add it to the slice and continue.
-			for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
 					ownedNoDelete = append(ownedNoDelete, owned)
 					delete = false
 				}
 			}
 		case hasLabel(naming.LabelPGBackRestCronJob):
-			for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
 					if backupScheduleFound(repo,
 						owned.GetLabels()[naming.LabelPGBackRestCronJob]) {
@@ -452,10 +452,10 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	annotations := naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	labels := naming.Merge(
 		postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
 	)
 
@@ -481,8 +481,8 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 					Annotations: annotations,
 				},
 				Spec: v1.PodSpec{
-					Affinity:    postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Affinity,
-					Tolerations: postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Tolerations,
+					Affinity:    postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Affinity,
+					Tolerations: postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Tolerations,
 				},
 			},
 		},
@@ -513,7 +513,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	// add ssh pod info
 	if err := pgbackrest.AddSSHToPod(postgresCluster, &repo.Spec.Template, true,
-		postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Resources); err != nil {
+		postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Resources); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	if err := pgbackrest.AddRepoVolumesToPod(postgresCluster, &repo.Spec.Template,
@@ -528,7 +528,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest
 	// container
-	addNSSWrapper(postgresCluster.Spec.Archive.PGBackRest.Image, &repo.Spec.Template)
+	addNSSWrapper(postgresCluster.Spec.Backups.PGBackRest.Image, &repo.Spec.Template)
 	addTMPEmptyDir(&repo.Spec.Template)
 
 	// set ownership references
@@ -545,10 +545,10 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 
 	annotations := naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	labels := naming.Merge(
 		postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRepoVolumeLabels(postgresCluster.GetName(), repoName),
 	)
 
@@ -601,7 +601,7 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 						{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
 						{Name: "SELECTOR", Value: selector},
 					},
-					Image:           postgresCluster.Spec.Archive.PGBackRest.Image,
+					Image:           postgresCluster.Spec.Backups.PGBackRest.Image,
 					Name:            naming.PGBackRestRepoContainerName,
 					SecurityContext: initialize.RestrictedSecurityContext(),
 				}},
@@ -1066,7 +1066,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest restore
 	// container
-	addNSSWrapper(cluster.Spec.Archive.PGBackRest.Image, &restoreJob.Spec.Template)
+	addNSSWrapper(cluster.Spec.Backups.PGBackRest.Image, &restoreJob.Spec.Template)
 	addTMPEmptyDir(&restoreJob.Spec.Template)
 
 	return errors.WithStack(r.apply(ctx, restoreJob))
@@ -1104,8 +1104,8 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 
 	var repoHost *appsv1.StatefulSet
 	var repoHostName string
-	dedicatedEnabled := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil) &&
-		(postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
+	dedicatedEnabled := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil) &&
+		(postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
 	if dedicatedEnabled {
 		// reconcile the pgbackrest repository host
 		repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources)
@@ -1362,7 +1362,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 
 	// verify the repo defined in the data source exists in the source cluster
 	var foundRepo bool
-	for _, repo := range sourceCluster.Spec.Archive.PGBackRest.Repos {
+	for _, repo := range sourceCluster.Spec.Backups.PGBackRest.Repos {
 		if repo.Name == sourceRepoName {
 			foundRepo = true
 			break
@@ -1437,12 +1437,12 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 	metadata := naming.PGBackRestSSHSecret(sourceCluster)
 	// label according to PostgresCluster being created (not the source cluster)
 	metadata.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
-		cluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRestoreConfigLabels(cluster.GetName()),
 	)
 	metadata.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
-		cluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	restoreSSHConfig := &v1.Secret{
 		ObjectMeta: metadata,
 		Data:       sourceSSHConfig.Data,
@@ -1512,7 +1512,7 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 		return errors.WithStack(err)
 	}
 
-	repoHostConfigured := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil)
+	repoHostConfigured := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil)
 
 	if !repoHostConfigured {
 		log.V(1).Info("skipping SSH reconciliation, no repo hosts configured")
@@ -1581,19 +1581,19 @@ func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
 	}
 
 	sa.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
 	binding.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	binding.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
 	role.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	role.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
 
 	binding.RoleRef = rbacv1.RoleRef{
@@ -1758,7 +1758,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	// nothing to reconcile if there is no postgres or if a manual backup has not been
 	// requested
 	if !clusterWritable || manualAnnotation == "" ||
-		postgresCluster.Spec.Archive.PGBackRest.Manual == nil {
+		postgresCluster.Spec.Backups.PGBackRest.Manual == nil {
 		return nil
 	}
 
@@ -1807,7 +1807,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	// writing of the proper repo status, adding a missing reop, etc. will trigger the reconciles
 	// needed to try again).
 	var statusFound, stanzaCreated bool
-	repoName := postgresCluster.Spec.Archive.PGBackRest.Manual.RepoName
+	repoName := postgresCluster.Spec.Backups.PGBackRest.Manual.RepoName
 	for _, repo := range postgresCluster.Status.PGBackRest.Repos {
 		if repo.Name == repoName {
 			statusFound = true
@@ -1830,7 +1830,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	// and not using the "--repo" option in the "manual.options" field.  Therefore, record a
 	// warning event and return if a "--repo" option is found.  Reconciliation will then be
 	// reattempted when "--repo" is removed from "manual.options" and the spec is updated.
-	backupOpts := postgresCluster.Spec.Archive.PGBackRest.Manual.Options
+	backupOpts := postgresCluster.Spec.Backups.PGBackRest.Manual.Options
 	for _, opt := range backupOpts {
 		if strings.Contains(opt, "--repo") {
 			r.Recorder.Eventf(postgresCluster, v1.EventTypeWarning, "InvalidManualBackup",
@@ -1881,11 +1881,11 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 
 	var labels, annotations map[string]string
 	labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestBackupJobLabels(postgresCluster.GetName(), repoName,
 			naming.BackupManual))
 	annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil(),
 		map[string]string{
 			naming.PGBackRestBackup: manualAnnotation,
 		})
@@ -2068,11 +2068,11 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 
 	var labels, annotations map[string]string
 	labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestBackupJobLabels(postgresCluster.GetName(),
-			postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name, naming.BackupReplicaCreate))
+			postgresCluster.Spec.Backups.PGBackRest.Repos[0].Name, naming.BackupReplicaCreate))
 	annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil(),
 		map[string]string{
 			naming.PGBackRestCurrentConfig: configName,
 			naming.PGBackRestConfigHash:    configHash,
@@ -2112,7 +2112,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	errMsg := "reconciling repository volume"
 	repoVols := []*v1.PersistentVolumeClaim{}
 	var replicaCreateRepoName string
-	for i, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+	for i, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		// the repo at index 0 is the replica creation repo
 		if i == 0 {
 			replicaCreateRepoName = repo.Name
@@ -2158,10 +2158,10 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	// ensure conditions are set before returning as needed by subsequent reconcile functions
 	defer func() {
 		var replicaCreateRepoStatus *v1beta1.RepoStatus
-		if len(postgresCluster.Spec.Archive.PGBackRest.Repos) == 0 {
+		if len(postgresCluster.Spec.Backups.PGBackRest.Repos) == 0 {
 			return
 		}
-		replicaCreateRepoName := postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name
+		replicaCreateRepoName := postgresCluster.Spec.Backups.PGBackRest.Repos[0].Name
 		for i, r := range postgresCluster.Status.PGBackRest.Repos {
 			if r.Name == replicaCreateRepoName {
 				replicaCreateRepoStatus = &postgresCluster.Status.PGBackRest.Repos[i]
@@ -2435,7 +2435,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 	// requeue if there is an error during creation
 	var requeue bool
 
-	for _, repo := range cluster.Spec.Archive.PGBackRest.Repos {
+	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
 		// if the repo level backup schedules block has not been created,
 		// there are no schedules defined
 		if repo.BackupSchedules != nil {
@@ -2482,10 +2482,10 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 
 	annotations := naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
-		cluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	labels := naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
-		cluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestCronJobLabels(cluster.Name, repo.Name, backupType),
 	)
 	objectmeta := naming.PGBackRestCronJob(cluster, backupType, repo.Name)

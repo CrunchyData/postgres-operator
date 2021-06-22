@@ -95,7 +95,7 @@ func TestScaleDown(t *testing.T) {
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 13,
 			Image:           CrunchyPostgresHAImage,
-			Archive: v1beta1.Archive{
+			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: CrunchyPGBackRestImage,
 					RepoHost: &v1beta1.PGBackRestRepoHost{

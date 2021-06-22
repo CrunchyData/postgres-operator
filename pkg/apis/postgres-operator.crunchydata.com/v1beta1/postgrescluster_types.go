@@ -50,9 +50,9 @@ type PostgresClusterSpec struct {
 	// +optional
 	DataSource *DataSource `json:"dataSource,omitempty"`
 
-	// PostgreSQL archive configuration
+	// PostgreSQL backup configuration
 	// +kubebuilder:validation:Required
-	Archive Archive `json:"archive"`
+	Backups Backups `json:"backups"`
 
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the
@@ -183,8 +183,8 @@ func (s *PostgresClusterSpec) Default() {
 	}
 }
 
-// Archive defines a PostgreSQL archive configuration
-type Archive struct {
+// Backups defines a PostgreSQL archive configuration
+type Backups struct {
 
 	// pgBackRest archive configuration
 	// +kubebuilder:validation:Required

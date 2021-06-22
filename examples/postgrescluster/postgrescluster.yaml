@@ -13,7 +13,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0
       repoHost:

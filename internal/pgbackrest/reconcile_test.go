@@ -57,7 +57,7 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 
 	for _, tc := range testsCases {
 		t.Run(fmt.Sprintf("repos=%d, containers=%d", len(tc.repos), len(tc.containers)), func(t *testing.T) {
-			postgresCluster.Spec.Archive.PGBackRest.Repos = tc.repos
+			postgresCluster.Spec.Backups.PGBackRest.Repos = tc.repos
 			template := &v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: tc.containers,
@@ -131,7 +131,7 @@ func TestAddConfigsToPod(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("configs=%d, containers=%d", len(tc.configs), len(tc.containers)), func(t *testing.T) {
-			postgresCluster.Spec.Archive.PGBackRest.Configuration = tc.configs
+			postgresCluster.Spec.Backups.PGBackRest.Configuration = tc.configs
 			template := &v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: tc.containers,
@@ -202,7 +202,7 @@ func TestAddSSHToPod(t *testing.T) {
 			Name: "hippo",
 		},
 		Spec: v1beta1.PostgresClusterSpec{
-			Archive: v1beta1.Archive{
+			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					RepoHost: &v1beta1.PGBackRestRepoHost{},
 				},
@@ -241,10 +241,10 @@ func TestAddSSHToPod(t *testing.T) {
 		postgresCluster := postgresClusterBase.DeepCopy()
 
 		if customConfig {
-			postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
+			postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
 		}
 		if customSecret {
-			postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHSecret = tc.sshSecret
+			postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret = tc.sshSecret
 		}
 
 		t.Run(testRunStr, func(t *testing.T) {

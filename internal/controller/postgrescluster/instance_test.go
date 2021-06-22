@@ -274,7 +274,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			UID:       clusterUID,
 		},
 		Spec: v1beta1.PostgresClusterSpec{
-			Archive: v1beta1.Archive{
+			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
@@ -358,7 +358,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		customSecret := (tc.sshSecret != nil)
 		t.Run(fmt.Sprintf("repoHost:%t, dedicated:%t", repoHost, dedicated), func(t *testing.T) {
 
-			postgresCluster.Spec.Archive.PGBackRest.RepoHost = tc.repoHost
+			postgresCluster.Spec.Backups.PGBackRest.RepoHost = tc.repoHost
 			template := &v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{Name: naming.ContainerDatabase}},
@@ -367,10 +367,10 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 			if repoHost {
 				if customConfig {
-					postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
+					postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
 				}
 				if customSecret {
-					postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHSecret = tc.sshSecret
+					postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret = tc.sshSecret
 				}
 			}
 
@@ -380,7 +380,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			// if there is no dedicated repo host configured, verfiy pgBackRest repos are mounted to the
 			// instance Pod
 			if !dedicated {
-				for _, r := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+				for _, r := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 					var foundRepo bool
 					for _, v := range template.Spec.Volumes {
 						if r.Name == v.Name {

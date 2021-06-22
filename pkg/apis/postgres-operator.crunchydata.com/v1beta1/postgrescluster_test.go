@@ -50,7 +50,7 @@ kind: PostgresCluster
 metadata:
   creationTimestamp: null
 spec:
-  archive:
+  backups:
     pgbackrest:
       image: ""
   image: ""
@@ -82,7 +82,7 @@ kind: PostgresCluster
 metadata:
   creationTimestamp: null
 spec:
-  archive:
+  backups:
     pgbackrest:
       image: ""
   image: ""

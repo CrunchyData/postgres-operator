@@ -34,7 +34,7 @@ import (
 func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	containerNames ...string) error {
 
-	for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		// we only care about repos created using PVCs
 		if repo.Volume == nil {
 			continue
@@ -79,7 +79,7 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 	configName string, containerNames ...string) error {
 
 	// grab user provided configs
-	pgBackRestConfigs := postgresCluster.Spec.Archive.PGBackRest.Configuration
+	pgBackRestConfigs := postgresCluster.Spec.Backups.PGBackRest.Configuration
 	// add default pgbackrest configs
 	defaultConfig := v1.VolumeProjection{
 		ConfigMap: &v1.ConfigMapProjection{
@@ -135,7 +135,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 
 	sshConfigs := []v1.VolumeProjection{}
 	// stores all SSH configurations (ConfigMaps & Secrets)
-	if postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHConfiguration == nil {
+	if postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration == nil {
 		sshConfigs = append(sshConfigs, v1.VolumeProjection{
 			ConfigMap: &v1.ConfigMapProjection{
 				LocalObjectReference: v1.LocalObjectReference{
@@ -145,10 +145,10 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 		})
 	} else {
 		sshConfigs = append(sshConfigs, v1.VolumeProjection{
-			ConfigMap: postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHConfiguration,
+			ConfigMap: postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration,
 		})
 	}
-	if postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHSecret == nil {
+	if postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret == nil {
 		sshConfigs = append(sshConfigs, v1.VolumeProjection{
 			Secret: &v1.SecretProjection{
 				LocalObjectReference: v1.LocalObjectReference{
@@ -158,7 +158,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 		})
 	} else {
 		sshConfigs = append(sshConfigs, v1.VolumeProjection{
-			Secret: postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHSecret,
+			Secret: postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret,
 		})
 	}
 	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
@@ -182,7 +182,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	if enableSSHD {
 		container := v1.Container{
 			Command: []string{"/usr/sbin/sshd", "-D", "-e"},
-			Image:   postgresCluster.Spec.Archive.PGBackRest.Image,
+			Image:   postgresCluster.Spec.Backups.PGBackRest.Image,
 			LivenessProbe: &v1.Probe{
 				Handler: v1.Handler{
 					TCPSocket: &v1.TCPSocketAction{

@@ -57,7 +57,7 @@ func TestCalculateConfigHashes(t *testing.T) {
 			Namespace: "calculate-config-hasges",
 		},
 		Spec: v1beta1.PostgresClusterSpec{
-			Archive: v1beta1.Archive{
+			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
@@ -103,7 +103,7 @@ func TestCalculateConfigHashes(t *testing.T) {
 	// order of the repos slice
 	shuffleCluster := postgresCluster.DeepCopy()
 	for i := 0; i < 10; i++ {
-		repos := shuffleCluster.Spec.Archive.PGBackRest.Repos
+		repos := shuffleCluster.Spec.Backups.PGBackRest.Repos
 		rand.Shuffle(len(repos), func(i, j int) {
 			repos[i], repos[j] = repos[j], repos[i]
 		})
@@ -117,11 +117,11 @@ func TestCalculateConfigHashes(t *testing.T) {
 		modCluster := postgresCluster.DeepCopy()
 		switch i {
 		case 0:
-			modCluster.Spec.Archive.PGBackRest.Repos[i].Azure.Container = "modified-container"
+			modCluster.Spec.Backups.PGBackRest.Repos[i].Azure.Container = "modified-container"
 		case 1:
-			modCluster.Spec.Archive.PGBackRest.Repos[i].GCS.Bucket = "modified-bucket"
+			modCluster.Spec.Backups.PGBackRest.Repos[i].GCS.Bucket = "modified-bucket"
 		case 2:
-			modCluster.Spec.Archive.PGBackRest.Repos[i].S3.Bucket = "modified-bucket"
+			modCluster.Spec.Backups.PGBackRest.Repos[i].S3.Bucket = "modified-bucket"
 		}
 		hashMap, hash, err := CalculateConfigHashes(modCluster)
 		assert.NilError(t, err)

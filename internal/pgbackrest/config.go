@@ -76,9 +76,9 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	meta := naming.PGBackRestConfig(postgresCluster)
 	meta.Annotations = naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestConfigLabels(postgresCluster.GetName()),
 	)
 
@@ -93,10 +93,10 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	// create an empty map for the config data
 	initialize.StringMap(&cm.Data)
 
-	addInstanceHosts := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil) &&
-		(postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated == nil)
-	addDedicatedHost := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil) &&
-		(postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
+	addInstanceHosts := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil) &&
+		(postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated == nil)
+	addDedicatedHost := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil) &&
+		(postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
 
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	for i, name := range instanceNames {
@@ -109,16 +109,16 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 		cm.Data[name+".conf"] = getConfigString(
 			populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName,
 				pgdataDir, otherInstances,
-				postgresCluster.Spec.Archive.PGBackRest.Repos,
-				postgresCluster.Spec.Archive.PGBackRest.Global))
+				postgresCluster.Spec.Backups.PGBackRest.Repos,
+				postgresCluster.Spec.Backups.PGBackRest.Global))
 	}
 
 	if addDedicatedHost && repoHostName != "" {
 		cm.Data[CMRepoKey] = getConfigString(
 			populateRepoHostConfigurationMap(serviceName, serviceNamespace,
 				pgdataDir, instanceNames,
-				postgresCluster.Spec.Archive.PGBackRest.Repos,
-				postgresCluster.Spec.Archive.PGBackRest.Global))
+				postgresCluster.Spec.Backups.PGBackRest.Repos,
+				postgresCluster.Spec.Backups.PGBackRest.Global))
 	}
 
 	cm.Data[ConfigHashKey] = configHash

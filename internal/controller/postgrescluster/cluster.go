@@ -225,8 +225,8 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	// determine if the user has requested an in-place restore
 	restoreID := cluster.GetAnnotations()[naming.PGBackRestRestore]
 	restoreInPlaceRequested := restoreID != "" &&
-		cluster.Spec.Archive.PGBackRest.Restore != nil &&
-		*cluster.Spec.Archive.PGBackRest.Restore.Enabled
+		cluster.Spec.Backups.PGBackRest.Restore != nil &&
+		*cluster.Spec.Backups.PGBackRest.Restore.Enabled
 
 	// Set the proper data source for the restore based on whether we're initializing the PG
 	// data directory (e.g. for a new PostgreSQL cluster), or restoring an existing cluster
@@ -235,7 +235,7 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	var dataSource *v1beta1.PostgresClusterDataSource
 	switch {
 	case restoreInPlaceRequested:
-		dataSource = cluster.Spec.Archive.PGBackRest.Restore.PostgresClusterDataSource
+		dataSource = cluster.Spec.Backups.PGBackRest.Restore.PostgresClusterDataSource
 	case postgresDataInitRequested:
 		// there is no restore annotation when initializing a new cluster, so we create a
 		// restore ID for bootstrap

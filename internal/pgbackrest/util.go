@@ -32,14 +32,14 @@ const maxPGBackrestRepos = 4
 // RepoHostEnabled determines whether not a pgBackRest repository host is enabled according to the
 // provided PostgresCluster
 func RepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
-	return (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil)
+	return (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil)
 }
 
 // DedicatedRepoHostEnabled determines whether not a pgBackRest dedicated repository host is
 // enabled according to the provided PostgresCluster
 func DedicatedRepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
-	return (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil &&
-		postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
+	return (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil &&
+		postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
 }
 
 // CalculateConfigHashes calculates hashes for any external pgBackRest repostority configuration
@@ -59,7 +59,7 @@ func CalculateConfigHashes(
 
 	var err error
 	repoConfigHashes := make(map[string]string)
-	for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		// hashes are only calculated for external repo configs
 		if repo.Volume != nil {
 			continue

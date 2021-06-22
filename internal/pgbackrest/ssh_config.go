@@ -66,9 +66,9 @@ func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.Confi
 	meta := naming.PGBackRestSSHConfig(postgresCluster)
 	meta.Annotations = naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
 	)
 
@@ -104,9 +104,9 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 	meta := naming.PGBackRestSSHSecret(postgresCluster)
 	meta.Annotations = naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
 	)
 

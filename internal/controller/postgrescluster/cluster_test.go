@@ -329,7 +329,7 @@ func TestCustomLabels(t *testing.T) {
 			Labels: map[string]string{"my.cluster.label": "daisy"},
 		}
 		testCronSchedule := "@yearly"
-		cluster.Spec.Archive.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
+		cluster.Spec.Backups.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
 			Full:         &testCronSchedule,
 			Differential: &testCronSchedule,
 			Incremental:  &testCronSchedule,
@@ -420,11 +420,11 @@ func TestCustomLabels(t *testing.T) {
 		cluster := testCluster()
 		cluster.ObjectMeta.Name = "pgbackrest-cluster"
 		cluster.ObjectMeta.Namespace = ns.Name
-		cluster.Spec.Archive.PGBackRest.Metadata = &v1beta1.Metadata{
+		cluster.Spec.Backups.PGBackRest.Metadata = &v1beta1.Metadata{
 			Labels: map[string]string{"my.pgbackrest.label": "lucy"},
 		}
 		testCronSchedule := "@yearly"
-		cluster.Spec.Archive.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
+		cluster.Spec.Backups.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
 			Full:         &testCronSchedule,
 			Differential: &testCronSchedule,
 			Incremental:  &testCronSchedule,
@@ -591,7 +591,7 @@ func TestCustomAnnotations(t *testing.T) {
 			Annotations: map[string]string{"my.cluster.annotation": "daisy"},
 		}
 		testCronSchedule := "@yearly"
-		cluster.Spec.Archive.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
+		cluster.Spec.Backups.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
 			Full:         &testCronSchedule,
 			Differential: &testCronSchedule,
 			Incremental:  &testCronSchedule,
@@ -683,11 +683,11 @@ func TestCustomAnnotations(t *testing.T) {
 		cluster := testCluster()
 		cluster.ObjectMeta.Name = "pgbackrest-cluster"
 		cluster.ObjectMeta.Namespace = ns.Name
-		cluster.Spec.Archive.PGBackRest.Metadata = &v1beta1.Metadata{
+		cluster.Spec.Backups.PGBackRest.Metadata = &v1beta1.Metadata{
 			Annotations: map[string]string{"my.pgbackrest.annotation": "lucy"},
 		}
 		testCronSchedule := "@yearly"
-		cluster.Spec.Archive.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
+		cluster.Spec.Backups.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
 			Full:         &testCronSchedule,
 			Differential: &testCronSchedule,
 			Incremental:  &testCronSchedule,

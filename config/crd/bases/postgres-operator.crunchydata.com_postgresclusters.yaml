@@ -36,8 +36,8 @@ spec:
           spec:
             description: PostgresClusterSpec defines the desired state of PostgresCluster
             properties:
-              archive:
-                description: PostgreSQL archive configuration
+              backups:
+                description: PostgreSQL backup configuration
                 properties:
                   pgbackrest:
                     description: pgBackRest archive configuration
@@ -3947,7 +3947,7 @@ spec:
                   in place.
                 type: boolean
             required:
-            - archive
+            - backups
             - image
             - instances
             - postgresVersion

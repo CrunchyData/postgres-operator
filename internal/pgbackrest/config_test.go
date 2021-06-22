@@ -50,7 +50,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 		},
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
-			Archive: v1beta1.Archive{
+			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Global: map[string]string{"repo2-test": "config", "repo4-test": "config",
 						"repo3-test": "config"},

@@ -84,7 +84,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 					},
 				},
 			}},
-			Archive: v1beta1.Archive{
+			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: "example.com/crunchy-pgbackrest:test",
 					Global: map[string]string{"repo2-test": "config",
@@ -130,7 +130,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 	}
 
 	if includeDedicatedRepo {
-		postgresCluster.Spec.Archive.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
+		postgresCluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: corev1.ResourceRequirements{},
 				Affinity:  &corev1.Affinity{},
@@ -239,7 +239,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	}
 
 	// repo is the first defined repo
-	repo := postgresCluster.Spec.Archive.PGBackRest.Repos[0]
+	repo := postgresCluster.Spec.Backups.PGBackRest.Repos[0]
 
 	// test that the repo was created properly
 	t.Run("verify pgbackrest dedicated repo StatefulSet", func(t *testing.T) {
@@ -393,7 +393,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 		assert.Assert(t, len(repoVols.Items) > 0)
 
-		for _, r := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+		for _, r := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 			if r.Volume == nil {
 				continue
 			}
@@ -820,7 +820,7 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 		cluster: &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{
 							Dedicated: &v1beta1.DedicatedRepo{},
@@ -839,7 +839,7 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 		cluster: &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{},
 					},
@@ -855,7 +855,7 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 		cluster: &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{},
 				},
 			},
@@ -953,7 +953,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		SystemIdentifier: "6952526174828511264",
 	}
 
-	replicaCreateRepo := postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name
+	replicaCreateRepo := postgresCluster.Spec.Backups.PGBackRest.Repos[0].Name
 	configHash := "abcde12345"
 
 	sa := &corev1.ServiceAccount{
@@ -1388,7 +1388,7 @@ func TestReconcileManualBackup(t *testing.T) {
 				ctx := context.Background()
 
 				postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), "", dedicated)
-				postgresCluster.Spec.Archive.PGBackRest.Manual = tc.manual
+				postgresCluster.Spec.Backups.PGBackRest.Manual = tc.manual
 				postgresCluster.Status = *tc.status
 				postgresCluster.Annotations = map[string]string{naming.PGBackRestBackup: tc.backupId}
 				for condition, status := range tc.clusterConditions {
@@ -1576,7 +1576,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 					},
@@ -1614,7 +1614,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{Name: "repo4"}},
 					},
@@ -1651,7 +1651,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{
 							Name:   "repo1",
@@ -1691,7 +1691,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{
 							Name:   "repo4",
@@ -1733,7 +1733,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{
 							Dedicated: &v1beta1.DedicatedRepo{},
@@ -1774,7 +1774,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{},
 					},
@@ -1813,7 +1813,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{},
 				},
 			},
@@ -1842,7 +1842,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{
 							Dedicated: &v1beta1.DedicatedRepo{},
@@ -1875,7 +1875,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{},
 					},
@@ -1906,7 +1906,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{},
 				},
 			},
@@ -1935,7 +1935,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{
 							Dedicated: &v1beta1.DedicatedRepo{},
@@ -1968,7 +1968,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{},
 					},
@@ -1999,7 +1999,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Archive: v1beta1.Archive{
+				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{},
 				},
 			},
@@ -2210,7 +2210,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				}
 				sourceCluster := fakePostgresCluster(tc.sourceClusterName, namespace,
 					"source"+clusterUID, dedicated)
-				sourceCluster.Spec.Archive.PGBackRest.Repos = tc.sourceClusterRepos
+				sourceCluster.Spec.Backups.PGBackRest.Repos = tc.sourceClusterRepos
 				assert.NilError(t, tClient.Create(ctx, sourceCluster))
 
 				sourceClusterPrimary := &v1.Pod{

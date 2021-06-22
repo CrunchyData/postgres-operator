@@ -1188,7 +1188,7 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
 			naming.PGBackRestRepoContainerName)
 		if err := pgbackrest.AddSSHToPod(cluster, template, true,
-			cluster.Spec.Archive.PGBackRest.RepoHost.Resources,
+			cluster.Spec.Backups.PGBackRest.RepoHost.Resources,
 			naming.ContainerDatabase); err != nil {
 			return err
 		}
