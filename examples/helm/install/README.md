@@ -13,6 +13,14 @@ https://access.crunchydata.com/documentation/postgres-operator/latest
 ## CRD
 With Helm v3, CRDs created by this chart are not updated by default and should be manually updated. Consult also the [Helm Documentation on CRDs](https://helm.sh/docs/chart_best_practices/custom_resource_definitions).
 
+## Configuration
+There are a couple configuration options when using the Helm installer. These options are found in the values.yaml file.
+### Image
+You can update your image repository and tag to point to a specific registry and operator image.
+
+### Namespace Mode
+The Helm installer defaults to a multi-namespace mode and will create a clusterrole and clusterrolebinding for the operator service account. You can limit the operator to a single namespace by setting `singleNamespace: true`. In this mode the installer will create a role and rolebinding.
+
 ## Installing
 For this exmple we will deploy the operator into the postgres-operator namespace. Return to the helm directory:
 ```

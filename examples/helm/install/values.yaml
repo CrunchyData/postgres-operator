@@ -4,7 +4,7 @@
 
 ## Provide image repository and tag
 image:
-  repository: us.gcr.io/container-suite
+  repository: gcr.io/crunchy-dev-test
   tag: "ubi8-5.0.0-beta.1-0"
 
 ## install in default or single namespace mode
