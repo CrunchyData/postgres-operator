@@ -26,9 +26,9 @@ Return to the helm directory:
 cd postgres-operator/examples/helm
 ```
 
-The following commands will allow you to execute a dry run first with debug 
-if you want to verify everthing is set correctly. Then after everything looks good 
-run the install command with out the flags
+The following commands will allow you to execute a dry run first with the debug flag
+in order to verify everything is set correctly. After verifying your settings, run the install 
+command without the flags:
 ```
 helm install --dry-run --debug -n postgres-operator postgres-cluster create-cluster
 
@@ -44,7 +44,7 @@ kubectl get all -n postgres-operator
 ```
 
 ## delete the hippo cluster
-run the following helm command to delete the cluster 
+To delete the cluster, run the following helm command
 
 ```
 helm uninstall postgres-cluster -n postgres-operator
