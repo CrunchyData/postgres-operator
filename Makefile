@@ -6,7 +6,7 @@ PGO_BASEOS ?= centos8
 BASE_IMAGE_OS ?= $(PGO_BASEOS)
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-PGO_VERSION ?= v1beta1
+PGO_VERSION ?= $(shell git describe --tags)
 PGO_PG_VERSION ?= 13
 PGO_PG_FULLVERSION ?= 13.2
 PGO_BACKREST_VERSION ?= 2.29
@@ -120,7 +120,8 @@ undeploy:
 
 #======= Binary builds =======
 build-postgres-operator:
-	$(GO_BUILD) -o bin/postgres-operator ./cmd/postgres-operator
+	$(GO_BUILD) -ldflags '-X "main.versionString=$(PGO_VERSION)"' \
+		-o bin/postgres-operator ./cmd/postgres-operator
 
 build-pgo-%:
 	$(info No binary build needed for $@)

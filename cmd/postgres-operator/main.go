@@ -29,6 +29,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 )
 
+var versionString string
+
 // assertNoError panics when err is not nil.
 func assertNoError(err error) {
 	if err != nil {
@@ -42,8 +44,7 @@ func initLogging() {
 	if strings.EqualFold(os.Getenv("CRUNCHY_DEBUG"), "true") {
 		verbosity = 1
 	}
-	// TODO: change "0.0.1"
-	logging.SetLogFunc(verbosity, logging.Logrus(os.Stdout, "0.0.1", 1))
+	logging.SetLogFunc(verbosity, logging.Logrus(os.Stdout, versionString, 1))
 }
 
 func main() {
