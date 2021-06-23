@@ -8,7 +8,7 @@ This example assumes you have the Crunchy PostgreSQL Operator installed
 in a namespace called postgres-operator.  
 
 ## Helm
-Helm will also need to be installed for this example to run
+Helm will also need to be installed for this example to run.
 
 ## Documenation
 Please see the documentation for more guidance using custom resources:
@@ -21,7 +21,7 @@ For this example we will deploy the cluster into the
 postgres-operator namespace where the operator is installed 
 and running.
 
-return to the create-cluster directory
+Return to the helm directory: 
 ```
 cd postgres-operator/examples/helm
 ```
