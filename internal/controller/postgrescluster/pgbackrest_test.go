@@ -565,25 +565,39 @@ func TestReconcilePGBackRest(t *testing.T) {
 			assert.Assert(t, !*returnedCronJob.Spec.Suspend)
 		})
 
-		// set shutdown to true, which determines whether the CronJobs should
-		// be suspended
-		*postgresCluster.Spec.Shutdown = true
-		requeue := r.reconcileScheduledBackups(context.Background(),
-			postgresCluster, instances, serviceAccount)
-		assert.Assert(t, !requeue)
+		t.Run("shutdown", func(t *testing.T) {
+			*postgresCluster.Spec.Shutdown = true
+			postgresCluster.Spec.Standby = nil
 
-		returnedCronJob = &batchv1beta1.CronJob{}
-		if err := tClient.Get(ctx, types.NamespacedName{
-			Name:      postgresCluster.Name + "-pgbackrest-repo1-full",
-			Namespace: postgresCluster.GetNamespace(),
-		}, returnedCronJob); err != nil {
-			assert.NilError(t, err)
-		}
+			requeue := r.reconcileScheduledBackups(ctx,
+				postgresCluster, instances, serviceAccount)
+			assert.Assert(t, !requeue)
 
-		t.Run("pgbackrest schedule suspended true", func(t *testing.T) {
+			assert.NilError(t, tClient.Get(ctx, types.NamespacedName{
+				Name:      postgresCluster.Name + "-pgbackrest-repo1-full",
+				Namespace: postgresCluster.GetNamespace(),
+			}, returnedCronJob))
+
 			assert.Assert(t, *returnedCronJob.Spec.Suspend)
 		})
 
+		t.Run("standby", func(t *testing.T) {
+			*postgresCluster.Spec.Shutdown = false
+			postgresCluster.Spec.Standby = &v1beta1.PostgresStandbySpec{
+				Enabled: true,
+			}
+
+			requeue := r.reconcileScheduledBackups(ctx,
+				postgresCluster, instances, serviceAccount)
+			assert.Assert(t, !requeue)
+
+			assert.NilError(t, tClient.Get(ctx, types.NamespacedName{
+				Name:      postgresCluster.Name + "-pgbackrest-repo1-full",
+				Namespace: postgresCluster.GetNamespace(),
+			}, returnedCronJob))
+
+			assert.Assert(t, *returnedCronJob.Spec.Suspend)
+		})
 	})
 }
 

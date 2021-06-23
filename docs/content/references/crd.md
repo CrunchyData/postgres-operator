@@ -140,9 +140,14 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>Whether or not the PostgreSQL cluster should be stopped. When this is true, workloads are scaled to zero and CronJobs are suspended. Other resources, such as Services and Volumes, remain in place.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecstandby">standby</a></b></td>
+        <td>object</td>
+        <td>Run this cluster as a read-only copy of an existing cluster or archive.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecbackups">backups</a></b></td>
         <td>object</td>
-        <td>PostgreSQL archive configuration</td>
+        <td>PostgreSQL backup configuration</td>
         <td>true</td>
       </tr><tr>
         <td><b>image</b></td>
@@ -2214,6 +2219,38 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 </table>
 
 
+<h3 id="postgresclusterspecstandby">
+  PostgresCluster.spec.standby
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Run this cluster as a read-only copy of an existing cluster or archive.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>Whether or not the PostgreSQL cluster should be read-only. When this is true, WAL files are applied from the pgBackRest repository.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>repoName</b></td>
+        <td>string</td>
+        <td>The name of the pgBackRest repository to follow for WAL files.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackups">
   PostgresCluster.spec.backups
   <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
@@ -2221,7 +2258,7 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 
 
 
-PostgreSQL archive configuration
+PostgreSQL backup configuration
 
 <table>
     <thead>
@@ -4469,7 +4506,7 @@ Resource requirements for the pgBackRest restore Job.
     <tbody><tr>
         <td><b><a href="#postgresclusterspecinstancesindexaffinity">affinity</a></b></td>
         <td>object</td>
-        <td>Scheduling constraints of a Instance pod. Changing this value causes Instance to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
+        <td>Scheduling constraints of a PostgreSQL pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexmetadata">metadata</a></b></td>
@@ -4517,7 +4554,7 @@ Resource requirements for the pgBackRest restore Job.
 
 
 
-Scheduling constraints of a Instance pod. Changing this value causes Instance to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
+Scheduling constraints of a PostgreSQL pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 
 <table>
     <thead>

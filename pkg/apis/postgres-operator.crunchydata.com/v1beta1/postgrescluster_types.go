@@ -122,6 +122,10 @@ type PostgresClusterSpec struct {
 	// Other resources, such as Services and Volumes, remain in place.
 	// +optional
 	Shutdown *bool `json:"shutdown,omitempty"`
+
+	// Run this cluster as a read-only copy of an existing cluster or archive.
+	// +optional
+	Standby *PostgresStandbySpec `json:"standby,omitempty"`
 }
 
 // DataSource defines the source of the PostgreSQL data directory for a new PostgresCluster.
@@ -252,8 +256,8 @@ type PostgresInstanceSetSpec struct {
 	// +kubebuilder:default=""
 	Name string `json:"name"`
 
-	// Scheduling constraints of a Instance pod. Changing this value causes
-	// Instance to restart.
+	// Scheduling constraints of a PostgreSQL pod. Changing this value causes
+	// PostgreSQL to restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
@@ -324,6 +328,20 @@ func (s *PostgresProxySpec) Default() {
 
 type PostgresProxyStatus struct {
 	PGBouncer PGBouncerPodStatus `json:"pgBouncer,omitempty"`
+}
+
+// PostgresStandbySpec defines if/how the cluster should be a hot standby.
+type PostgresStandbySpec struct {
+	// Whether or not the PostgreSQL cluster should be read-only. When this is
+	// true, WAL files are applied from the pgBackRest repository.
+	// +optional
+	// +kubebuilder:default=true
+	Enabled bool `json:"enabled"`
+
+	// The name of the pgBackRest repository to follow for WAL files.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=^repo[1-4]
+	RepoName string `json:"repoName"`
 }
 
 // +kubebuilder:object:root=true

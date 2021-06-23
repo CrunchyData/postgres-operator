@@ -388,3 +388,28 @@ volumes:
 		assert.DeepEqual(t, template, before)
 	})
 }
+
+func TestPodIsStandbyLeader(t *testing.T) {
+	// No object
+	assert.Assert(t, !PodIsStandbyLeader(nil))
+
+	// No annotations
+	pod := &v1.Pod{}
+	assert.Assert(t, !PodIsStandbyLeader(pod))
+
+	// No role
+	pod.Annotations = map[string]string{"status": `{}`}
+	assert.Assert(t, !PodIsStandbyLeader(pod))
+
+	// Leader
+	pod.Annotations["status"] = `{"role":"master"}`
+	assert.Assert(t, !PodIsStandbyLeader(pod))
+
+	// Replica
+	pod.Annotations["status"] = `{"role":"replica"}`
+	assert.Assert(t, !PodIsStandbyLeader(pod))
+
+	// Standby leader
+	pod.Annotations["status"] = `{"role":"standby_leader"}`
+	assert.Assert(t, PodIsStandbyLeader(pod))
+}

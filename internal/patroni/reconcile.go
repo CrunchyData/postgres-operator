@@ -18,8 +18,10 @@ package patroni
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -244,4 +246,17 @@ func instanceProbes(cluster *v1beta1.PostgresCluster, container *v1.Container) {
 		Port:   intstr.FromInt(int(*cluster.Spec.Patroni.Port)),
 		Scheme: v1.URISchemeHTTPS,
 	}
+}
+
+// PodIsStandbyLeader returns whether or not pod is currently acting as a "standby_leader".
+func PodIsStandbyLeader(pod metav1.Object) bool {
+	if pod == nil {
+		return false
+	}
+
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L190
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L294
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L353
+	status := pod.GetAnnotations()["status"]
+	return strings.Contains(status, `"role":"standby_leader"`)
 }

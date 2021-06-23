@@ -182,13 +182,7 @@ func (r *Reconciler) Reconcile(
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
 	pgParameters := postgres.NewParameters()
-
-	// enable archive mode and set archive command for pgBackRest
-	pgParameters.Mandatory.Add("archive_mode", "on")
-	pgParameters.Mandatory.Add("archive_command",
-		`pgbackrest --stanza=`+pgbackrest.DefaultStanzaName+` archive-push "%p"`)
-	pgParameters.Mandatory.Add("restore_command",
-		`pgbackrest --stanza=`+pgbackrest.DefaultStanzaName+` archive-get %f "%p"`)
+	pgbackrest.PostgreSQL(cluster, &pgParameters)
 
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
@@ -376,6 +370,7 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&batchv1beta1.CronJob{}).
+		Watches(&source.Kind{Type: &v1.Pod{}}, r.watchPods()).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
 			r.controllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)

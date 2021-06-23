@@ -355,4 +355,17 @@ func TestReplicaCreateCommand(t *testing.T) {
 			"--link-map=pg_wal=/pgdata/pg0_wal",
 		})
 	})
+
+	t.Run("Standby", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Standby = &v1beta1.PostgresStandbySpec{
+			Enabled:  true,
+			RepoName: "repo7",
+		}
+
+		assert.DeepEqual(t, ReplicaCreateCommand(cluster, instance), []string{
+			"pgbackrest", "restore", "--delta", "--stanza=db", "--repo=7",
+			"--link-map=pg_wal=/pgdata/pg0_wal",
+		})
+	})
 }

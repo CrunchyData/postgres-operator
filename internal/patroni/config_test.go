@@ -412,13 +412,72 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "standby_cluster: input passes through",
+			input: map[string]interface{}{
+				"standby_cluster": map[string]interface{}{
+					"primary_slot_name": "str",
+				},
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+				"standby_cluster": map[string]interface{}{
+					"primary_slot_name": "str",
+				},
+			},
+		},
+		{
+			name: "standby_cluster: spec overrides input",
+			cluster: &v1beta1.PostgresCluster{
+				Spec: v1beta1.PostgresClusterSpec{
+					Standby: &v1beta1.PostgresStandbySpec{
+						Enabled: true,
+					},
+				},
+			},
+			input: map[string]interface{}{
+				"standby_cluster": map[string]interface{}{
+					"restore_command": "overridden",
+					"unrelated":       "input",
+				},
+			},
+			params: postgres.Parameters{
+				Mandatory: parameters(map[string]string{
+					"restore_command": "mandatory",
+				}),
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"restore_command": "mandatory",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+				"standby_cluster": map[string]interface{}{
+					"create_replica_methods": []string{"pgbackrest"},
+					"restore_command":        "mandatory",
+					"unrelated":              "input",
+				},
+			},
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cluster := tt.cluster
 			if cluster == nil {
 				cluster = new(v1beta1.PostgresCluster)
-				cluster.Default()
 			}
+			cluster.Default()
 			actual := DynamicConfiguration(cluster, tt.input, tt.hbas, tt.params)
 			assert.DeepEqual(t, tt.expected, actual)
 		})

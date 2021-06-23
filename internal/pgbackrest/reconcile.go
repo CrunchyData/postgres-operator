@@ -230,28 +230,39 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	return nil
 }
 
-// ReplicaCreateCommand returns the command that can initialize an instance from
-// one of cluster's repositories. It returns nil when no repository is available.
+// ReplicaCreateCommand returns the command that can initialize the PostgreSQL
+// data directory on an instance from one of cluster's repositories. It returns
+// nil when no repository is available.
 func ReplicaCreateCommand(
 	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
 ) []string {
-	var name string
+	command := func(repoName string) []string {
+		return []string{
+			"pgbackrest", "restore", "--delta",
+			"--stanza=" + DefaultStanzaName,
+			"--repo=" + strings.TrimPrefix(repoName, "repo"),
+			"--link-map=pg_wal=" + postgres.WALDirectory(cluster, instance),
+		}
+	}
+
+	if cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled {
+		// Patroni initializes standby clusters using the same command it uses
+		// for any replica. Assume the repository in the spec has a stanza
+		// and can be used to restore. The repository name is validated by the
+		// Kubernetes API and begins with "repo".
+		//
+		// NOTE(cbandy): A standby cluster cannot use "online" stanza-create
+		// nor create backups because every instance is always in recovery.
+		return command(cluster.Spec.Standby.RepoName)
+	}
+
 	if cluster.Status.PGBackRest != nil {
 		for _, repo := range cluster.Status.PGBackRest.Repos {
 			if repo.ReplicaCreateBackupComplete {
-				name = repo.Name
-				break
+				return command(repo.Name)
 			}
 		}
 	}
-	if name == "" {
-		return nil
-	}
 
-	return []string{
-		"pgbackrest", "restore", "--delta",
-		"--stanza=" + DefaultStanzaName,
-		"--repo=" + strings.TrimPrefix(name, "repo"),
-		"--link-map=pg_wal=" + postgres.WALDirectory(cluster, instance),
-	}
+	return nil
 }

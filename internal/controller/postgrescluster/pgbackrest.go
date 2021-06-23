@@ -2570,18 +2570,17 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 		return errors.WithStack(err)
 	}
 
-	// if the cluster is shutdown, we will suspend the CronJob
-	shutdown := cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown
+	// Suspend cronjobs when shutdown or read-only. Any jobs that have already
+	// started will continue.
+	// - https://docs.k8s.io/reference/kubernetes-api/workload-resources/cron-job-v1beta1/#CronJobSpec
+	suspend := (cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown) ||
+		(cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled)
 
 	pgBackRestCronJob := &batchv1beta1.CronJob{
 		ObjectMeta: objectmeta,
 		Spec: batchv1beta1.CronJobSpec{
 			Schedule: *schedule,
-			// If the cluster is shutdown, the cronjobs will be suspended.
-			// Note that the any job executions that have already started will
-			// continue.
-			// https://v1-20.docs.kubernetes.io/docs/reference/kubernetes-api/workload-resources/cron-job-v1beta1/#CronJobSpec
-			Suspend: &shutdown,
+			Suspend:  &suspend,
 			JobTemplate: batchv1beta1.JobTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: annotations,

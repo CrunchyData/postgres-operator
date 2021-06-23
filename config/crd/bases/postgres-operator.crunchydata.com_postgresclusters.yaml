@@ -1771,8 +1771,8 @@ spec:
                 items:
                   properties:
                     affinity:
-                      description: 'Scheduling constraints of a Instance pod. Changing
-                        this value causes Instance to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node'
+                      description: 'Scheduling constraints of a PostgreSQL pod. Changing
+                        this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node'
                       properties:
                         nodeAffinity:
                           description: Describes node affinity scheduling rules for
@@ -3946,6 +3946,24 @@ spec:
                   suspended. Other resources, such as Services and Volumes, remain
                   in place.
                 type: boolean
+              standby:
+                description: Run this cluster as a read-only copy of an existing cluster
+                  or archive.
+                properties:
+                  enabled:
+                    default: true
+                    description: Whether or not the PostgreSQL cluster should be read-only.
+                      When this is true, WAL files are applied from the pgBackRest
+                      repository.
+                    type: boolean
+                  repoName:
+                    description: The name of the pgBackRest repository to follow for
+                      WAL files.
+                    pattern: ^repo[1-4]
+                    type: string
+                required:
+                - repoName
+                type: object
             required:
             - backups
             - image
