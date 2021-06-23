@@ -47,5 +47,5 @@ kubectl get all -n postgres-operator
 run the following helm command to delete the cluster 
 
 ```
-helm delete postgres-cluster -n postgres-operator
+helm uninstall postgres-cluster -n postgres-operator
 ```

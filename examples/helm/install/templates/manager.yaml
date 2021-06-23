@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    {{- include "install.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "install.crunchyLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "install.crunchyLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: operator
+        image: "{{ .Values.image.repository }}/postgres-operator:{{ .Values.image.tag }}"
+        env:
+        - name: CRUNCHY_DEBUG
+          value: "true"
+        {{- if .Values.singleNamespace }}
+        - name: PGO_TARGET_NAMESPACE
+          valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.namespace } }
+        {{- end }}
+      serviceAccount: {{ include "install.serviceAccountName" . }}
