@@ -464,22 +464,16 @@ func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
 	items []unstructured.Unstructured) {
 	log := logging.FromContext(ctx)
 
-	uList := &unstructured.UnstructuredList{}
-	uList.Items = items
+	uList := &unstructured.UnstructuredList{Items: items}
 	var jobList batchv1.JobList
-
-	for _, u := range uList.Items {
-		if u.GetKind() == "Job" {
-			if err := runtime.DefaultUnstructuredConverter.
-				FromUnstructured(uList.UnstructuredContent(), &jobList); err != nil {
-				// as this is only setting a status that is not otherwise used
-				// by the Operator, simply log an error and return rather than
-				// bubble this up to the other functions
-				log.Error(err, "unable to convert unstructured objects to jobs, "+
-					"unable to set scheduled backup status")
-				return
-			}
-		}
+	if err := runtime.DefaultUnstructuredConverter.
+		FromUnstructured(uList.UnstructuredContent(), &jobList); err != nil {
+		// as this is only setting a status that is not otherwise used
+		// by the Operator, simply log an error and return rather than
+		// bubble this up to the other functions
+		log.Error(err, "unable to convert unstructured objects to jobs, "+
+			"unable to set scheduled backup status")
+		return
 	}
 
 	// TODO(tjmoore4): PGBackRestScheduledBackupStatus can likely be combined with
