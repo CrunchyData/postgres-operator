@@ -23,7 +23,7 @@ and running.
 
 return to the create-cluster directory
 ```
-cd postgres-operator/examples/helm/create-cluster
+cd postgres-operator/examples/helm
 ```
 
 The following commands will allow you to execute a dry run first with debug 
@@ -40,7 +40,7 @@ namespace by running these few commands
 
 ```
 helm list
-kubectl get all -n pgo
+kubectl get all -n postgres-operator
 ```
 
 ## delete the hippo cluster

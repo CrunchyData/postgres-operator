@@ -13,7 +13,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  archive:
+  backups:
     pgbackrest:
       image: {{ .Values.pgbackrestimage}}
       repoHost:
