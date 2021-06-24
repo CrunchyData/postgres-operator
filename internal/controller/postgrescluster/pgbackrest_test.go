@@ -69,6 +69,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			UID:       types.UID(clusterUID),
 		},
 		Spec: v1beta1.PostgresClusterSpec{
+			Port:            initialize.Int32(5432),
 			Shutdown:        initialize.Bool(false),
 			PostgresVersion: 13,
 			ImagePullSecrets: []v1.LocalObjectReference{{

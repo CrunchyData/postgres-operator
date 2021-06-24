@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -50,6 +51,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 		},
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
+			Port:            initialize.Int32(2345),
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Global: map[string]string{"repo2-test": "config", "repo4-test": "config",
@@ -171,7 +173,7 @@ repo4-type=s3
 [db]
 pg1-host=`+testInstanceName+`-0.testcluster-pods.test-ns.svc.`+domain+`
 pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
-pg1-port=5432
+pg1-port=2345
 pg1-socket-path=/tmp/postgres
 `)
 	})
@@ -207,7 +209,7 @@ repo4-type=s3
 
 [db]
 pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
-pg1-port=5432
+pg1-port=2345
 pg1-socket-path=/tmp/postgres
 `)
 	})

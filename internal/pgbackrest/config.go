@@ -40,9 +40,6 @@ const (
 	// DefaultStanzaName is the name of the default pgBackRest stanza
 	DefaultStanzaName = "db"
 
-	// default pgBackRest port
-	defaultPG1Port = "5432"
-
 	// configmap key references
 	cmJobKey     = "pgbackrest_job.conf"
 	cmPrimaryKey = "pgbackrest_primary.conf"
@@ -99,6 +96,8 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 		(postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
 
 	pgdataDir := postgres.DataDirectory(postgresCluster)
+	// Port will always be populated, since the API will set a default of 5432 if not provided
+	pgPort := *postgresCluster.Spec.Port
 	for i, name := range instanceNames {
 		otherInstances := make([]string, 0)
 		if addInstanceHosts {
@@ -108,7 +107,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 		}
 		cm.Data[name+".conf"] = getConfigString(
 			populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName,
-				pgdataDir, otherInstances,
+				pgdataDir, pgPort, otherInstances,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global))
 	}
@@ -116,7 +115,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	if addDedicatedHost && repoHostName != "" {
 		cm.Data[CMRepoKey] = getConfigString(
 			populateRepoHostConfigurationMap(serviceName, serviceNamespace,
-				pgdataDir, instanceNames,
+				pgdataDir, pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global))
 	}
@@ -218,7 +217,7 @@ mv "${pgdata}" "${pgdata}_bootstrap"`
 // populatePGInstanceConfigurationMap returns a map representing the pgBackRest configuration for
 // a PostgreSQL instance
 func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName, pgdataDir string,
-	otherPGHostNames []string, repos []v1beta1.PGBackRestRepo,
+	pgPort int32, otherPGHostNames []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
@@ -266,7 +265,7 @@ func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostN
 	// Now add all PG instances to the stanza section. Make sure the local PG host is always
 	// index 1: https://github.com/pgbackrest/pgbackrest/issues/1197#issuecomment-708381800
 	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
-	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
+	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = fmt.Sprint(pgPort)
 	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = postgres.SocketDirectory
 	i++
 
@@ -277,7 +276,7 @@ func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostN
 	for _, name := range otherPGHostNames {
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i)] = name + "-0." + serviceName
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = fmt.Sprint(pgPort)
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = postgres.SocketDirectory
 		i++
 	}
@@ -288,7 +287,7 @@ func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostN
 // populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
 func populateRepoHostConfigurationMap(serviceName, serviceNamespace, pgdataDir string,
-	pgHosts []string, repos []v1beta1.PGBackRestRepo,
+	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
@@ -330,7 +329,7 @@ func populateRepoHostConfigurationMap(serviceName, serviceNamespace, pgdataDir s
 			"." + serviceNamespace + ".svc." +
 			naming.KubernetesClusterDomain(context.Background())
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i+1)] = pgdataDir
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i+1)] = defaultPG1Port
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i+1)] = fmt.Sprint(pgPort)
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i+1)] = postgres.SocketDirectory
 	}
 
