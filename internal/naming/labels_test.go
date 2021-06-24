@@ -38,6 +38,7 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepoVolume))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestore))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestoreConfig))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGMonitorDiscovery))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelStartupInstance))
 }
 

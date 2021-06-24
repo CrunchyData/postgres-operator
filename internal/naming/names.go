@@ -56,6 +56,7 @@ const (
 )
 
 const (
+	PortExporter   = "exporter"
 	PortPGBouncer  = "pgbouncer"
 	PortPostgreSQL = "postgres"
 )

@@ -111,6 +111,10 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 			}}}
 		assert.DeepEqual(t, container.Env, expectedENV)
 
+		assert.Assert(t, container.Ports[0].ContainerPort == int32(9187))
+		assert.Assert(t, container.Ports[0].Name == "exporter")
+		assert.Assert(t, container.Ports[0].Protocol == "TCP")
+
 		assert.Assert(t, template.Spec.Volumes != nil)
 		found := false
 		for _, v := range template.Spec.Volumes {

@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	exporterPort = "9187"
+	exporterPort = int32(9187)
 
 	// TODO: With the current implementation of the crunchy-postgres-exporter
 	// it makes sense to hard-code the database. When moving away from the
@@ -283,7 +283,7 @@ func addPGMonitorExporterToInstancePodSpec(
 		},
 		Env: []corev1.EnvVar{
 			{Name: "CONFIG_DIR", Value: "/opt/cpm/conf"},
-			{Name: "POSTGRES_EXPORTER_PORT", Value: exporterPort},
+			{Name: "POSTGRES_EXPORTER_PORT", Value: fmt.Sprint(exporterPort)},
 			{Name: "PGBACKREST_INFO_THROTTLE_MINUTES", Value: "10"},
 			{Name: "PG_STAT_STATEMENTS_LIMIT", Value: "20"},
 			{Name: "PG_STAT_STATEMENTS_THROTTLE_MINUTES", Value: "-1"},
@@ -306,6 +306,13 @@ func addPGMonitorExporterToInstancePodSpec(
 			}},
 		},
 		SecurityContext: securityContext,
+		// ContainerPort is needed to support proper target discovery by Prometheus for pgMonitor
+		// integration
+		Ports: []corev1.ContainerPort{{
+			ContainerPort: exporterPort,
+			Name:          naming.PortExporter,
+			Protocol:      corev1.ProtocolTCP,
+		}},
 	}
 
 	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
@@ -382,6 +389,10 @@ func addPGMonitorExporterToInstancePodSpec(
 	template.Spec.Containers[index].VolumeMounts = append(
 		template.Spec.Containers[index].VolumeMounts,
 		volumeMount)
+
+	// add the proper label to support Pod discovery by Prometheus per pgMonitor configuration
+	initialize.Labels(template)
+	template.Labels[naming.LabelPGMonitorDiscovery] = "true"
 
 	return nil
 }

@@ -69,6 +69,10 @@ const (
 	// or Secret) is for a pgBackRest restore
 	LabelPGBackRestRestoreConfig = labelPrefix + "pgbackrest-restore-config"
 
+	// LabelPGMonitorDiscovery is the label added to Pods running the "exporter" container to
+	// support discovery by Prometheus according to pgMonitor configuration
+	LabelPGMonitorDiscovery = labelPrefix + "crunchy-postgres-exporter"
+
 	// LabelStartupInstance is used to indicate the startup instance associated with a resource
 	LabelStartupInstance = labelPrefix + "startup-instance"
 
