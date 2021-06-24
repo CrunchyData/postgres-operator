@@ -2,7 +2,7 @@
 ## Provide image repository and tag
 image:
   repository: registry.developers.crunchydata.com/crunchydata
-  tag: "ubi8-5.0.0-beta.1-0"
+  tag: "ubi8-5.0.0-0"
 
 ## Install in default or single namespace mode
 singleNamespace: false

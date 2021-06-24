@@ -44,7 +44,7 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres13-ha:centos8-13.2-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
   postgresVersion: 13
   instances:
     - name: instance1

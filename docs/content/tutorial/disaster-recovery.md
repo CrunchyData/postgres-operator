@@ -39,7 +39,7 @@ spec:
     postgresCluster:
       clusterName: hippo
       repoName: repo1
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres13-ha:centos8-13.2-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
   postgresVersion: 13
   instances:
     - dataVolumeClaimSpec:
@@ -103,7 +103,7 @@ spec:
       options:
       - --type=time
       - --target="2021-06-09 14:15:11 EDT"
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres13-ha:centos8-13.2-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
   postgresVersion: 13
   instances:
     - dataVolumeClaimSpec:

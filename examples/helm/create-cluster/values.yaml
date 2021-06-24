@@ -7,6 +7,6 @@ postgresclustername: hippo
 postgresversion: 13
 
 # Images
-postgreshaimage: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0
-pgbackrestimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0
-pgbouncerimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0
+postgreshaimage: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+pgbackrestimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+pgbouncerimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.15-0
