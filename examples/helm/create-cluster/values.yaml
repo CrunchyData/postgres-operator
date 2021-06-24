@@ -1,9 +1,12 @@
-# Default values for pg_deployment in SDX.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-# The values is for the namespace and the postgresql cluster name
+---
+# Cluster name
+postgresclustername: hippo
+
+# PostgreSQL Version
+# Version should match version defined in PostgreSQL images
+postgresversion: 13
+
+# Images
+postgreshaimage: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0
 pgbackrestimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0
 pgbouncerimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0
-postgresclustername: hippo
-postgreshaimage: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0
-postgresversion: 13

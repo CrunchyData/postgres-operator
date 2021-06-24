@@ -1,11 +1,8 @@
-# Default values for install.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
+---
 ## Provide image repository and tag
 image:
   repository: registry.developers.crunchydata.com/crunchydata
   tag: "ubi8-5.0.0-beta.1-0"
 
-## install in default or single namespace mode
+## Install in default or single namespace mode
 singleNamespace: false
