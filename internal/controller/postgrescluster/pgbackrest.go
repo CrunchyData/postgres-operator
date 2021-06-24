@@ -2190,7 +2190,9 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 			errors = append(errors, err)
 			continue
 		}
-		repoVols = append(repoVols, repo)
+		if repo != nil {
+			repoVols = append(repoVols, repo)
+		}
 	}
 
 	postgresCluster.Status.PGBackRest.Repos =
