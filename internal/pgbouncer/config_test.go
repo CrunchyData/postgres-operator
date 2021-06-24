@@ -25,9 +25,20 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestPrettyYAML(t *testing.T) {
+	b, err := yaml.Marshal(iniValueSet{
+		"x": "y",
+		"z": "",
+	}.String())
+	assert.NilError(t, err)
+	assert.Assert(t, strings.HasPrefix(string(b), `|`),
+		"expected literal block scalar, got:\n%s", b)
+}
 
 func TestAuthFileContents(t *testing.T) {
 	t.Parallel()
@@ -76,7 +87,7 @@ listen_addr = *
 listen_port = 8888
 server_tls_ca_file = /etc/pgbouncer/~postgres-operator-backend/ca.crt
 server_tls_sslmode = verify-full
-unix_socket_dir = 
+unix_socket_dir =
 
 [databases]
 * = host=foo-baz-primary port=9999
@@ -119,7 +130,7 @@ listen_addr = *
 listen_port = 8888
 server_tls_ca_file = /etc/pgbouncer/~postgres-operator-backend/ca.crt
 server_tls_sslmode = verify-full
-unix_socket_dir = 
+unix_socket_dir =
 
 [databases]
 appdb = conn=str

@@ -61,7 +61,11 @@ func (vs iniValueSet) String() string {
 
 	var b strings.Builder
 	for _, k := range keys {
-		_, _ = fmt.Fprintf(&b, "%s = %s\n", k, vs[k])
+		if len(vs[k]) <= 0 {
+			_, _ = fmt.Fprintf(&b, "%s =\n", k)
+		} else {
+			_, _ = fmt.Fprintf(&b, "%s = %s\n", k, vs[k])
+		}
 	}
 	return b.String()
 }
