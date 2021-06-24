@@ -13,4 +13,8 @@ spec:
         env:
         - name: CRUNCHY_DEBUG
           value: "true"
-      serviceAccount: postgres-operator
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+      serviceAccountName: postgres-operator
