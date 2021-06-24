@@ -3,7 +3,7 @@ kind: PostgresCluster
 metadata:
   name: keycloakdb
 spec:
-  image: us.gcr.io/container-suite/crunchy-postgres-ha:centos8-13.2-4.7.0-beta.2
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.2-4.7.0-beta.2
   postgresVersion: 13
   instances:
     - replicas: 2
@@ -17,7 +17,7 @@ spec:
     pgbackrest:
       repoHost:
         dedicated: {}
-        image: us.gcr.io/container-suite/crunchy-pgbackrest:centos8-13.2-4.7.0-beta.2
+        image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.2-4.7.0-beta.2
       repos:
       - name: repo1
         volume:
