@@ -187,8 +187,7 @@ func diffCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 // Patroni reload whenever a change in the directory is detected
 // TODO(tjmoore4): The use of 'patronictl reload' can likely be replaced
 // with a signal. This may allow for removing the loaded Patroni config
-// from the sidecar. See:
-// https://github.com/CrunchyData/savannah/pull/87#discussion_r632762637
+// from the sidecar.
 func copyReplicationCerts(patroniScope string) []string {
 	script := fmt.Sprintf(`
 declare -r mountDir=%s
