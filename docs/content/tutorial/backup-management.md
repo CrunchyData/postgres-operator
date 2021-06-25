@@ -99,6 +99,13 @@ PGO will detect this annotation and create a new, one-off backup Job!
 
 If you intend to take one-off backups with similar settings in the future, you can leave those in the spec; just update the annotation to a different value the next time you are taking a backup.
 
+To re-run the command above, you will need to add the `--overwrite` flag so the annotation's value can be updated, i.e.
+
+```
+kubectl annotate -n postgres-operator postgrescluster hippo --overwrite \
+  postgres-operator.crunchydata.com/pgbackrest-backup="$( date '+%F_%H:%M:%S' )"
+```
+
 ## Next Steps
 
 We've covered the fundamental tasks with managing backups. What about [restores]({{< relref "./disaster-recovery.md" >}})? Or [cloning data into new Postgres clusters]({{< relref "./disaster-recovery.md" >}})? Let's explore!

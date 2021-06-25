@@ -170,6 +170,27 @@ There are several ways to add your own custom Kubernetes [Annotations](https://k
 - pgBackRest: You can apply annotations to pgBackRest and its objects by editing `spec.archive.pgbackrest.metadata.annotations`.
 - PgBouncer: You can apply annotations to PgBouncer connection pooling instances by editing `spec.proxy.pgBouncer.metadata.annotations`.
 
+## Separate WAL PVCs
+
+PostgreSQL commits transactions by storing changes in its [Write-Ahead Log (WAL)](https://www.postgresql.org/docs/current/wal-intro.html). Because the way WAL files are accessed and 
+utilized often differs from that of data files, and in high-performance situations, it can desirable to put WAL files on separate storage volume. With PGO, this can be done by adding
+the `walVolumeClaimSpec` block to your desired instance in your PostgresCluster spec, either when your cluster is created or anytime thereafter:
+
+```
+spec:
+  instances:
+    - name: instance
+      walVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteMany"
+        resources:
+          requests:
+            storage: 1Gi
+```
+
+This volume can be removed later by removing the `walVolumeClaimSpec` section from the instance. Note that when changing the WAL directory, care is taken so as not to lose any WAL files. PGO only
+deletes the PVC once there are no longer any WAL files on the previously configured volume.
+
 ## Troubleshooting
 
 ### Changes Not Applied

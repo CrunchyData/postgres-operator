@@ -48,7 +48,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -88,7 +88,14 @@ You can set up a PITR using the [restore](https://pgbackrest.org/command.html#co
 - `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11 EDT`.
 - `--set` (optional): Choose which backup to start the PITR from.
 
-Let's use the `elephant` example above. Let's say we want to perform a point-in-time-recovery (PITR) to `2021-06-09 14:15:11 EDT`, we can use the following manifest:
+A few quick notes before we begin:
+
+- To perform a PITR, you must have a backup that is at least as old as your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
+- All relevant WAL files must be successfully pushed for the restore to complete correctly.
+- Be sure to select the correct repository name containing the desired backup!
+
+
+With that in mind, let's use the `elephant` example above. Let's say we want to perform a point-in-time-recovery (PITR) to `2021-06-09 14:15:11 EDT`, we can use the following manifest:
 
 ```
 apiVersion: postgres-operator.crunchydata.com/v1beta1
@@ -112,7 +119,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -143,7 +150,56 @@ Notice how we put in the options to specify where to make the PITR.
 
 Using the above manfiest, PGO will go ahead and create a new Postgres cluster that recovers its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
 
-Note that to perform a PITR, you must have a backup that is at least as old as your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
+## Perform an In-Place Point-in-time-Recovery (PITR)
+
+Similar to the PITR restore described above, you may want to perform a similar reversion back to a state before a change occurred, but without creating another PostgreSQL cluster. Fortunately, PGO can help you do this as well.
+
+You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore) command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers the disaster recovery capabilities of PGO. You will need to set a few options on `spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
+
+- `--type=time`: This tells pgBackRest to perform a PITR.
+- `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11 EDT`.
+- `--set` (optional): Choose which backup to start the PITR from.
+
+A few quick notes before we begin:
+
+- To perform a PITR, you must have a backup that is at least as old as your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
+- All relevant WAL files must be successfully pushed for the restore to complete correctly.
+- Be sure to select the correct repository name containing the desired backup!
+
+To perform an in-place restore, users will first fill out the restore section of the spec as follows:
+
+```
+spec:
+  backups:
+    pgbackrest:
+      restore:
+        enabled: true
+        repoName: repo1
+        options:
+        - --type=time
+        - --target="2021-06-09 14:15:11 EDT"
+```
+
+And to trigger the restore, you will then annotate the PostgresCluster as follows:
+
+```
+kubectl annotate postgrescluster hippo --overwrite \
+  postgres-operator.crunchydata.com/pgbackrest-restore=id1
+```
+
+And once the restore is complete, in-place restores can be disabled:
+
+```
+spec:
+  backups:
+    pgbackrest:
+      restore:
+        enabled: false
+```
+
+Notice how we put in the options to specify where to make the PITR.
+
+Using the above manfiest, PGO will go ahead and re-create your Postgres cluster that will recover its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
 
 ## Next Steps
 
