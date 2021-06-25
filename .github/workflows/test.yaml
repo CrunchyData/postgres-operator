@@ -2,10 +2,9 @@ on:
   pull_request:
     branches:
       - master
-      - savannah
   push:
     branches:
-      - savannah
+      - master
 
 jobs:
   go-test:
