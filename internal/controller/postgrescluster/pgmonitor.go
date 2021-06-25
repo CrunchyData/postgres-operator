@@ -30,6 +30,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -47,6 +48,11 @@ const (
 	// https://kubernetes.io/docs/concepts/cluster-administration/networking/
 	// https://releases.k8s.io/v1.21.0/pkg/kubelet/kubelet_pods.go#L343
 	exporterHost = "localhost"
+)
+
+var (
+	oneMillicore = resource.MustParse("1m")
+	oneMebibyte  = resource.MustParse("1Mi")
 )
 
 // If pgMonitor is enabled the pgMonitor sidecar(s) have been added to the
@@ -345,34 +351,40 @@ func addPGMonitorExporterToInstancePodSpec(
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "limits.cpu",
+						Divisor:       oneMillicore,
 					},
 				}, {
 					Path: "cpu_request",
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "requests.cpu",
+						Divisor:       oneMillicore,
 					},
 				}, {
 					Path: "mem_limit",
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "limits.memory",
+						Divisor:       oneMebibyte,
 					},
 				}, {
 					Path: "mem_request",
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "requests.memory",
+						Divisor:       oneMebibyte,
 					},
 				}, {
 					Path: "labels",
 					FieldRef: &corev1.ObjectFieldSelector{
-						FieldPath: "metadata.labels",
+						APIVersion: corev1.SchemeGroupVersion.Version,
+						FieldPath:  "metadata.labels",
 					},
 				}, {
 					Path: "annotations",
 					FieldRef: &corev1.ObjectFieldSelector{
-						FieldPath: "metadata.annotations",
+						APIVersion: corev1.SchemeGroupVersion.Version,
+						FieldPath:  "metadata.annotations",
 					},
 				}},
 			},
