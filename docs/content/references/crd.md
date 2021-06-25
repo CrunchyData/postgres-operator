@@ -554,6 +554,11 @@ PGMonitorSpec defines the desired state of the pgMonitor tool suite
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindex">configuration</a></b></td>
+        <td>[]object</td>
+        <td>Projected volumes containing custom PostgreSQL Exporter configuration.  Currently supports the customization of PostgreSQL Exporter queries. If a "queries.yaml" file is detected in any volume projected using this field, it will be loaded using the "extend.query-path" flag: https://github.com/prometheus-community/postgres_exporter#flags Changing the values of field causes PostgreSQL and the exporter to restart.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterresources">resources</a></b></td>
         <td>object</td>
         <td>Changing this value causes PostgreSQL and the exporter to restart. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers</td>
@@ -562,6 +567,371 @@ PGMonitorSpec defines the desired state of the pgMonitor tool suite
         <td><b>image</b></td>
         <td>string</td>
         <td>The image name to use for crunchy-postgres-exporter containers</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindex">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index]
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporter">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Projection that may be projected along with other supported volume types
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexconfigmap">configMap</a></b></td>
+        <td>object</td>
+        <td>information about the configMap data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapi">downwardAPI</a></b></td>
+        <td>object</td>
+        <td>information about the downwardAPI data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexsecret">secret</a></b></td>
+        <td>object</td>
+        <td>information about the secret data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexserviceaccounttoken">serviceAccountToken</a></b></td>
+        <td>object</td>
+        <td>information about the serviceAccountToken data to project</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexconfigmap">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].configMap
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the configMap data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexconfigmapitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexconfigmapitemsindex">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].configMap.items[index]
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexconfigmap">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key to project.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapi">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].downwardAPI
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the downwardAPI data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>Items is a list of DownwardAPIVolume file</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindex">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].downwardAPI.items[index]
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapi">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
+        <td>object</td>
+        <td>Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindexresourcefieldref">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindexfieldref">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].downwardAPI.items[index].fieldRef
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>Version of the schema the FieldPath is written in terms of, defaults to "v1".</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>Path of the field to select in the specified API version.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindexresourcefieldref">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].downwardAPI.items[index].resourceFieldRef
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>Container name: required for volumes, optional for env vars</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>Specifies the output format of the exposed resources, defaults to "1"</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>Required: resource to select</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexsecret">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].secret
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the secret data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexsecretitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the Secret or its key must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexsecretitemsindex">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].secret.items[index]
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexsecret">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key to project.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexporterconfigurationindexserviceaccounttoken">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.configuration[index].serviceAccountToken
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the serviceAccountToken data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>audience</b></td>
+        <td>string</td>
+        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>expirationSeconds</b></td>
+        <td>integer</td>
+        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>Path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
       </tr></tbody>
 </table>

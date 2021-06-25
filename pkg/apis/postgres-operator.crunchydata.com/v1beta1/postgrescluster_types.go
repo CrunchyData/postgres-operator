@@ -431,6 +431,15 @@ type PGMonitorSpec struct {
 }
 
 type ExporterSpec struct {
+
+	// Projected volumes containing custom PostgreSQL Exporter configuration.  Currently supports
+	// the customization of PostgreSQL Exporter queries. If a "queries.yaml" file is detected in
+	// any volume projected using this field, it will be loaded using the "extend.query-path" flag:
+	// https://github.com/prometheus-community/postgres_exporter#flags
+	// Changing the values of field causes PostgreSQL and the exporter to restart.
+	// +optional
+	Configuration []corev1.VolumeProjection `json:"configuration,omitempty"`
+
 	// The image name to use for crunchy-postgres-exporter containers
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`

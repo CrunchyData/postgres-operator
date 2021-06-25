@@ -313,11 +313,26 @@ func addPGMonitorExporterToInstancePodSpec(
 			Name:          naming.PortExporter,
 			Protocol:      corev1.ProtocolTCP,
 		}},
+		VolumeMounts: []corev1.VolumeMount{{
+			Name: "exporter-config",
+			// this is the path for custom config as defined in the start.sh script for the exporter container
+			MountPath: "/conf",
+		}},
 	}
-
 	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
 
-	volume := corev1.Volume{
+	// add custom exporter config volume
+	configVolume := corev1.Volume{
+		Name: "exporter-config",
+		VolumeSource: corev1.VolumeSource{
+			Projected: &corev1.ProjectedVolumeSource{
+				Sources: cluster.Spec.Monitoring.PGMonitor.Exporter.Configuration,
+			},
+		},
+	}
+	template.Spec.Volumes = append(template.Spec.Volumes, configVolume)
+
+	podInfoVolume := corev1.Volume{
 		Name: "podinfo",
 		VolumeSource: corev1.VolumeSource{
 			DownwardAPI: &corev1.DownwardAPIVolumeSource{
@@ -363,7 +378,7 @@ func addPGMonitorExporterToInstancePodSpec(
 			},
 		},
 	}
-	template.Spec.Volumes = append(template.Spec.Volumes, volume)
+	template.Spec.Volumes = append(template.Spec.Volumes, podInfoVolume)
 
 	var index int
 	found := false

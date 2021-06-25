@@ -135,6 +135,58 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		assert.Assert(t, found)
 	})
 
+	t.Run("CustomConfig", func(t *testing.T) {
+		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
+			PGMonitor: &v1beta1.PGMonitorSpec{
+				Exporter: &v1beta1.ExporterSpec{
+					Image:     image,
+					Resources: resources,
+					Configuration: []corev1.VolumeProjection{{ConfigMap: &corev1.ConfigMapProjection{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "exporter-custom-config-test",
+						},
+					}},
+					},
+				},
+			},
+		}
+		template := &corev1.PodTemplateSpec{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{
+					Name: naming.ContainerDatabase,
+				}},
+			},
+		}
+
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template))
+
+		var foundConfigVolume bool
+		for _, v := range template.Spec.Volumes {
+			if v.Name == "exporter-config" {
+				assert.DeepEqual(t, v, corev1.Volume{
+					Name: "exporter-config",
+					VolumeSource: corev1.VolumeSource{
+						Projected: &corev1.ProjectedVolumeSource{
+							Sources: cluster.Spec.Monitoring.PGMonitor.Exporter.Configuration,
+						},
+					},
+				})
+				foundConfigVolume = true
+				break
+			}
+		}
+		assert.Assert(t, foundConfigVolume)
+
+		container := getContainerWithName(template.Spec.Containers, naming.ContainerPGMonitorExporter)
+		var foundConfigMount bool
+		for _, vm := range container.VolumeMounts {
+			if vm.Name == "exporter-config" && vm.MountPath == "/conf" {
+				foundConfigMount = true
+				break
+			}
+		}
+		assert.Assert(t, foundConfigMount)
+	})
 }
 
 func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
