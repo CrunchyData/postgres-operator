@@ -8,6 +8,7 @@ pygmentsCodeFences = true
 pygmentsStyle = "monokailight"
 publishDir = ""
 canonifyurls = true
+relativeURLs = true
 
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir= false
