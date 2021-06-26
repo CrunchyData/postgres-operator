@@ -1,5 +1,0 @@
-namespace: postgres-operator
-
-resources:
-- postgres.yaml
-- keycloak.yaml
