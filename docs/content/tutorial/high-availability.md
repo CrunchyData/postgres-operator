@@ -44,7 +44,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -258,7 +258,7 @@ spec:
                 matchLabels:
                   postgres-operator.crunchydata.com/cluster: hippo
                   postgres-operator.crunchydata.com/instance-set: instance1
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -328,7 +328,7 @@ spec:
               matchLabels:
                 postgres-operator.crunchydata.com/cluster: hippo
                 postgres-operator.crunchydata.com/instance-set: instance1
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -387,7 +387,7 @@ spec:
                 operator: In
                 values:
                 - db
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:

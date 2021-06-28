@@ -40,7 +40,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -96,7 +96,7 @@ PVC resizing, also known as [volume expansion](https://kubernetes.io/docs/concep
 You can adjust PVC sizes on all of the managed storage instances in a Postgres instance that are using Kubernetes storage. These include:
 
 - `spec.instances.dataVolumeClaimSpec.resources.requests.storage`: The Postgres data directory (aka your database).
-- `spec.archive.pgbackrest.repos.volume.volumeClaimSpec.resources.requests.storage`: The pgBackRest repository when using "volume" storage
+- `spec.backups.pgbackrest.repos.volume.volumeClaimSpec.resources.requests.storage`: The pgBackRest repository when using "volume" storage
 
 The above should be familiar: it follows the same pattern as the standard [Kubernetes PVC](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) structure.
 
@@ -123,7 +123,7 @@ spec:
         resources:
           requests:
             storage: 10Gi
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -150,7 +150,7 @@ dataVolumeClaimSpec:
       storage: 10Gi
 ```
 
-and added the following to `spec.archive.pgbackrest.repos.volume`:
+and added the following to `spec.backups.pgbackrest.repos.volume`:
 
 ```
 volumeClaimSpec:

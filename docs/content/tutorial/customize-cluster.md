@@ -34,7 +34,7 @@ spec:
         resources:
           requests:
             storage: 1Gi
-  archive:
+  backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
       repoHost:
@@ -105,8 +105,6 @@ There are a few different TLS endpoints that can be customized for PGO, includin
 
 You TLS certificate should have a Common Name (CN) setting that matches the primary Service name. This is the name of the cluster suffixed with `-primary`. For example, for our `hippo` cluster this would be `hippo-primary`.
 
-(TODO: Do we want to provide an example for how to generate this?)
-
 To customize the TLS for a Postgres cluster, you will need to create a Secret in the Namespace of your Postgres cluster that contains the  TLS key (`tls.key`), TLS certificate (`tls.crt`) and the CA certificate (`ca.crt`) to use. The Secret should contain the following values:
 
 ```
@@ -158,7 +156,7 @@ There are several ways to add your own custom Kubernetes [Labels](https://kubern
 
 - Cluster: You can apply labels to any PGO managed object in a cluster by editing the `spec.metadata.labels` section of the custom resource.
 - Postgres: You can apply labels to a Postgres instance set and its objects by editing `spec.instances.metadata.labels`.
-- pgBackRest: You can apply labels to pgBackRest and its objects by editing `postgresclusters.spec.archive.pgbackrest.metadata.labels`.
+- pgBackRest: You can apply labels to pgBackRest and its objects by editing `postgresclusters.spec.backups.pgbackrest.metadata.labels`.
 - PgBouncer: You can apply labels to PgBouncer connection pooling instances by editing `spec.proxy.pgBouncer.metadata.labels`.
 
 ## Annotations
@@ -167,7 +165,7 @@ There are several ways to add your own custom Kubernetes [Annotations](https://k
 
 - Cluster: You can apply annotations to any PGO managed object in a cluster by editing the `spec.metadata.annotations` section of the custom resource.
 - Postgres: You can apply annotations to a Postgres instance set and its objects by editing `spec.instances.metadata.annotations`.
-- pgBackRest: You can apply annotations to pgBackRest and its objects by editing `spec.archive.pgbackrest.metadata.annotations`.
+- pgBackRest: You can apply annotations to pgBackRest and its objects by editing `spec.backups.pgbackrest.metadata.annotations`.
 - PgBouncer: You can apply annotations to PgBouncer connection pooling instances by editing `spec.proxy.pgBouncer.metadata.annotations`.
 
 ## Separate WAL PVCs

@@ -20,13 +20,13 @@ Let's explore the various disaster recovery features work in PGO by first lookin
 
 ## Understanding Backup Configuration and Basic Operations
 
-The backup configuration for a PGO managed Postgres cluster resides in the `spec.archive.pgbackrest` section of a custom resource. In addition to indicate which version of pgBackRest to use, this section allows you to configure the fundamental backup settings for your Postgres cluster, including:
+The backup configuration for a PGO managed Postgres cluster resides in the `spec.backups.pgbackrest` section of a custom resource. In addition to indicate which version of pgBackRest to use, this section allows you to configure the fundamental backup settings for your Postgres cluster, including:
 
-- `spec.archive.pgbackrest.configuration` - allows to add additional configuration and references to Secrets that are needed for configuration your backups. For example, this may reference a Secret that contains your S3 credentials.
-- `spec.archive.pgbackrest.global` - a convenience to apply global [pgBackRest configuration](https://pgbackrest.org/configuration.html). An example of this may be setting the global pgBackRest logging level (e.g. `log-level-console: info`), or provide configuration to optimize performance.
-- `spec.archive.pgbackrest.repos` - information on each specific pgBackRest backup repository. This allows you to configure where and how your backups are stored. You can keep backups in up to four (4) different locations!
+- `spec.backups.pgbackrest.configuration` - allows to add additional configuration and references to Secrets that are needed for configuration your backups. For example, this may reference a Secret that contains your S3 credentials.
+- `spec.backups.pgbackrest.global` - a convenience to apply global [pgBackRest configuration](https://pgbackrest.org/configuration.html). An example of this may be setting the global pgBackRest logging level (e.g. `log-level-console: info`), or provide configuration to optimize performance.
+- `spec.backups.pgbackrest.repos` - information on each specific pgBackRest backup repository. This allows you to configure where and how your backups are stored. You can keep backups in up to four (4) different locations!
 
-You can configure the `repos` section based on the backup storage system you are looking to use. Specifically, you configure your `repos` section according to the storage type you are using. There are four storage types available in `spec.archive.pgbackrest.repos`:
+You can configure the `repos` section based on the backup storage system you are looking to use. Specifically, you configure your `repos` section according to the storage type you are using. There are four storage types available in `spec.backups.pgbackrest.repos`:
 
 | Storage Type | Description  |
 |--------------| ------------ |
@@ -36,13 +36,13 @@ You can configure the `repos` section based on the backup storage system you are
 | `volume`     | For use with a Kubernetes [Persistent Volume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/). |
 
 
-Regardless of the backup storage system you select, you **must** assign a name to `spec.archive.pgbackrest.repos.name`, e.g. `repo1`. pgBackRest follows the convention of assigning configuration to a specific repository using a `repoN` format, e.g. `repo1`, `repo2`, etc. You can customize your configuration based upon the name that you assign in the spec. We will cover this topic further in the multi-repository example.
+Regardless of the backup storage system you select, you **must** assign a name to `spec.backups.pgbackrest.repos.name`, e.g. `repo1`. pgBackRest follows the convention of assigning configuration to a specific repository using a `repoN` format, e.g. `repo1`, `repo2`, etc. You can customize your configuration based upon the name that you assign in the spec. We will cover this topic further in the multi-repository example.
 
-By default, backups are stored in a directory that follows the pattern `pgbackrest/repoN` where `N` is the number of the repo. This typically does not present issues when storing your backup information in a Kubernetes volume, but it can present complications if you are storing all of your backups in the same backup in a blob storage system like S3/GCS/Azure. You can avoid conflicts by setting the `repoN-path` variable in `spec.archive.pgbackrest.global`. The convention we recommend for setting this variable is `/pgbackrest/$NAMESPACE/$CLUSTER_NAME/repoN`. For example, if I have a cluster named `hippo` in the namespace `postgres-operator`, I would set the following:
+By default, backups are stored in a directory that follows the pattern `pgbackrest/repoN` where `N` is the number of the repo. This typically does not present issues when storing your backup information in a Kubernetes volume, but it can present complications if you are storing all of your backups in the same backup in a blob storage system like S3/GCS/Azure. You can avoid conflicts by setting the `repoN-path` variable in `spec.backups.pgbackrest.global`. The convention we recommend for setting this variable is `/pgbackrest/$NAMESPACE/$CLUSTER_NAME/repoN`. For example, if I have a cluster named `hippo` in the namespace `postgres-operator`, I would set the following:
 
 ```
 spec:
-  archive:
+  backups:
     pgbackrest:
       global:
         repo1-path: /pgbackrest/postgres-operator/hippo/repo1
@@ -73,7 +73,7 @@ The simplest way to get started storing backups is to use a Kubernetes Volume. T
 
 The one requirement of volume is that you need to fill out the `volumeClaimSpec` attribute. This attribute uses the same format as a [persistent volume claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) spec! In fact, we performed a similar set up when we [created a Postgres cluster]({{< relref "./create-cluster.md">}}).
 
-In the above example, we assume that the Kubernetes cluster is using a default storage class. If your cluster does not have a default storage class, or you wish to use a different storage class, you will have to set `spec.archive.pgbackrest.repos.volume.volumeClaimSpec.storageClassName`.
+In the above example, we assume that the Kubernetes cluster is using a default storage class. If your cluster does not have a default storage class, or you wish to use a different storage class, you will have to set `spec.backups.pgbackrest.repos.volume.volumeClaimSpec.storageClassName`.
 
 ## Using S3
 
@@ -124,7 +124,7 @@ There is an example for creating a Postgres cluster that uses GCS for backups in
 
 First, copy your GCS key secret (which is a JSON file) into `kustomize/gcs/gcs-key.json`. Note that a `.gitignore` directive prevents you from committing this file.
 
-Next, open the `postgres.yaml` file and edit `spec.archive.pgbackrest.gcs.repos.gcs.bucket` to the name of the GCS bucket that you want to back up to. If you are deploying to OpenShift, ensure to set `spec.openshift` to `true`.
+Next, open the `postgres.yaml` file and edit `spec.backups.pgbackrest.gcs.repos.gcs.bucket` to the name of the GCS bucket that you want to back up to. If you are deploying to OpenShift, ensure to set `spec.openshift` to `true`.
 
 Save this file, and then run:
 
@@ -193,7 +193,7 @@ While storing Postgres archives (write-ahead log [WAL] files) occurs in parallel
 
 ## Custom Backup Configuration
 
-Most of your backup configuration can be configured through the `spec.archive.pgbackrest.global` attribute, or through information that you supply in the ConfigMap or Secret that you refer to in `spec.archive.pgbackrest.configuration`. You can also provide additional Secret values if need be, e.g. `repo1-cipher-pass` for encrypting backups.
+Most of your backup configuration can be configured through the `spec.backups.pgbackrest.global` attribute, or through information that you supply in the ConfigMap or Secret that you refer to in `spec.backups.pgbackrest.configuration`. You can also provide additional Secret values if need be, e.g. `repo1-cipher-pass` for encrypting backups.
 
 The full list of [pgBackRest configuration options](https://pgbackrest.org/configuration.html) is available here:
 

@@ -27,13 +27,13 @@ However, in a [disaster recovery]({{< relref "./disaster-recovery.md" >}}) scena
 
 Selecting the appropriate backup strategy for your Postgres cluster is outside the scope of this tutorial, but let's look at how we can set up scheduled backups.
 
-Backup schedules are stored in the `spec.archive.pgbackrest.repos.schedules` section. Each value in this section accepts a [cron-formatted](https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax) string that dictates the backup schedule. The available keys are `full`, `differential`, and `incremental` for full, differential, and incremental backups respectively.
+Backup schedules are stored in the `spec.backups.pgbackrest.repos.schedules` section. Each value in this section accepts a [cron-formatted](https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax) string that dictates the backup schedule. The available keys are `full`, `differential`, and `incremental` for full, differential, and incremental backups respectively.
 
 Let's say that our backup policy is to take a full backup once a day at 1am and take incremental backups every four hours. We would want to add configuration to our spec that looks similar to:
 
 ```
 spec:
-  archive:
+  backups:
     pgbackrest:
       repos:
       - name: repo1
@@ -55,11 +55,11 @@ There are two different types of backup retention you can set:
 - `count`: This is based on the number of backups you want to keep. This is the default.
 - `time`: This is based on the total number of days you would like to keep the a backup.
 
-Let's look at an example where we keep full backups for 14 days. The most convenient way to do this is through the `spec.archive.pgbackrest.global` section, e.g.:
+Let's look at an example where we keep full backups for 14 days. The most convenient way to do this is through the `spec.backups.pgbackrest.global` section, e.g.:
 
 ```
 spec:
-  archive:
+  backups:
     pgbackrest:
       global:
         repo1-retention-full: "14"
@@ -72,13 +72,13 @@ For a full list of available configuration options, please visit the [pgBackRest
 
 There are times where you may want to take a one-off backup, such as before major application changes or updates. This is not your typical declarative action -- in fact a one-off backup is imperative in its nature! -- but it is possibly to take a one-off backup of your Postgres cluster with PGO.
 
-First, you need to configure your spec to be able to take a one-off backup, you will need to edit the `spec.archive.pgbackrest.manual` section of your custom resource. This will contain information about the type of backup you want to take and any other [pgBackRest configuration](https://pgbackrest.org/configuration.html) options.
+First, you need to configure your spec to be able to take a one-off backup, you will need to edit the `spec.backups.pgbackrest.manual` section of your custom resource. This will contain information about the type of backup you want to take and any other [pgBackRest configuration](https://pgbackrest.org/configuration.html) options.
 
 Let's configure the custom resource to take a one-off full backup:
 
 ```
 spec:
-  archive:
+  backups:
     pgbackrest:
       manual:
         repoName: repo1
