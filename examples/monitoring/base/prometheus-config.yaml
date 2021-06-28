@@ -1,0 +1,73 @@
+apiVersion: v1
+data:
+  prometheus.yml: |+
+    ###
+    #
+    # Copyright 2017-2021 Crunchy Data Solutions, Inc. All Rights Reserved.
+    #
+    ###
+
+    ---
+    global:
+      scrape_interval: 15s
+      scrape_timeout: 15s
+      evaluation_interval: 5s
+
+    scrape_configs:
+    - job_name: 'crunchy-postgres-exporter'
+      kubernetes_sd_configs:
+      - role: pod
+
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_crunchy_postgres_exporter]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        action: drop
+        regex: 5432
+      - source_labels: [__meta_kubernetes_pod_container_port_number]
+        action: drop
+        regex: ^$
+      - source_labels: [__meta_kubernetes_namespace]
+        action: replace
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_cluster]
+        target_label: pg_cluster
+        separator: ':'
+        replacement: '$1$2'
+      - source_labels: [__meta_kubernetes_pod_ip]
+        target_label: ip
+        replacement: '$1'
+      - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_instance]
+        target_label: deployment
+        replacement: '$1'
+      - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_role]
+        target_label: role
+        replacement: '$1'
+      - source_labels: [dbname]
+        target_label: dbname
+        replacement: '$1'
+      - source_labels: [relname]
+        target_label: relname
+        replacement: '$1'
+      - source_labels: [schemaname]
+        target_label: schemaname
+        replacement: '$1'
+
+    rule_files:
+      - /etc/prometheus/alert-rules.d/*.yml
+    alerting:
+      alertmanagers:
+      - scheme: http
+        static_configs:
+        - targets:
+          - "crunchy-alertmanager:9093"
+
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
+  name: crunchy-prometheus

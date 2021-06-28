@@ -1,0 +1,88 @@
+apiVersion: v1
+data:
+  alertmanager.yml: |
+    ###
+    #
+    # Copyright 2017-2021 Crunchy Data Solutions, Inc. All Rights Reserved.
+    #
+    ###
+
+    # Based on upstream example file found here: https://github.com/prometheus/alertmanager/blob/master/doc/examples/simple.yml
+    global:
+        smtp_smarthost: 'localhost: 25'
+        smtp_require_tls: false
+        smtp_from: 'Alertmanager <abc@yahoo.com>'
+    #    smtp_smarthost: 'smtp.example.com:587'
+    #    smtp_from: 'Alertmanager <abc@yahoo.com>'
+    #    smtp_auth_username: '<username>'
+    #    smtp_auth_password: '<password>'
+
+    # templates:
+    # - '/etc/alertmanager/template/*.tmpl'
+
+    inhibit_rules:
+    # Apply inhibition of warning if the alertname for the same system and service is already critical
+    - source_match:
+        severity: 'critical'
+      target_match:
+        severity: 'warning'
+      equal: ['alertname', 'job', 'service']
+
+    receivers:
+    - name: 'default-receiver'
+      email_configs:
+      - to: 'example@yourcompany.com'
+        send_resolved: true
+
+    ## Examples of alternative alert receivers. See documentation for more info on how to configure these fully
+    #- name: 'pagerduty-dba'
+    #  pagerduty_configs:
+    #      - service_key: <RANDOMKEYSTUFF>
+
+    #- name: 'pagerduty-sre'
+    #  pagerduty_configs:
+    #      - service_key: <RANDOMKEYSTUFF>
+
+    #- name: 'dba-team'
+    #  email_configs:
+    #  - to: 'example-dba-team@crunchydata.com'
+    #    send_resolved: true
+
+    #- name: 'sre-team'
+    #  email_configs:
+    #  - to: 'example-sre-team@crunchydata.com'
+    #    send_resolved: true
+
+    route:
+        receiver: default-receiver
+        group_by: [severity, service, job, alertname]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 24h
+
+    ## Example routes to show how to route outgoing alerts based on the content of that alert
+    #    routes:
+    #    - match_re:
+    #        service: ^(postgresql|mysql|oracle)$
+    #      receiver: dba-team
+    #      # sub route to send critical dba alerts to pagerduty
+    #      routes:
+    #      - match:
+    #          severity: critical
+    #        receiver: pagerduty-dba
+    #
+    #    - match:
+    #        service: system
+    #      receiver: sre-team
+    #      # sub route to send critical sre alerts to pagerduty
+    #      routes:
+    #      - match:
+    #          severity: critical
+    #        receiver: pagerduty-sre
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
+  name: alertmanager-config
+

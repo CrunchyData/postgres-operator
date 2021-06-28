@@ -1,0 +1,35 @@
+kind: Kustomization
+apiVersion: kustomize.config.k8s.io/v1beta1
+namespace: postgres-operator
+resources:
+  - pvcs.yaml
+# configuration files
+  - prometheus-config.yaml
+  - alertmanager-config.yaml
+  - alertmanager-rules-config.yaml
+  - grafana-datasources.yaml
+# secrets
+  - grafana-secret.yaml
+# RBAC
+  - rbac-sa.yaml
+  - rbac-cr.yaml
+  - rbac-crb.yaml
+# Deployments
+  - deploy-alertmanager.yaml
+  - deploy-grafana.yaml
+  - deploy-prometheus.yaml
+# Services
+  - service.yaml
+configMapGenerator:
+- name: grafana-dashboards
+  files:
+    - dashboards/pgbackrest.json
+    - dashboards/pod_details.json
+    - dashboards/postgres_overview.json
+    - dashboards/postgresql_details.json
+    - dashboards/postgresql_service_health.json
+    - dashboards/prometheus_alerts.json
+    - dashboards/query_statistics.json
+    - dashboards/crunchy_grafana_dashboards.yml
+generatorOptions:
+ disableNameSuffixHash: true

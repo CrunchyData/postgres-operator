@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
+    name: crunchy-alertmanager
+  name: crunchy-alertmanager
+spec:
+  type: ClusterIP
+  ports:
+  - name: alertmanager
+    port: 9093
+  selector:
+    name: crunchy-alertmanager
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
+    name: crunchy-grafana
+  name: crunchy-grafana
+spec:
+  type: ClusterIP
+  ports:
+  - name: grafana
+    port: 3000
+  selector:
+    name: crunchy-grafana
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
+    name: crunchy-prometheus
+  name: crunchy-prometheus
+spec:
+  type: ClusterIP
+  ports:
+  - name: prometheus
+    port: 9090
+  selector:
+    name: crunchy-prometheus

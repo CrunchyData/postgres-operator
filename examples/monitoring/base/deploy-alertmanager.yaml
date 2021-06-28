@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    app.kubernetes.io/name: postgres-operator-monitoring
+  name: crunchy-alertmanager
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-operator-monitoring
+      name: crunchy-alertmanager
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-operator-monitoring
+        name: crunchy-alertmanager
+    spec:
+      containers:
+      - args:
+        - --config.file=/etc/alertmanager/alertmanager.yml
+        - --storage.path=/alertmanager
+        - --log.level=info
+        - --cluster.advertise-address=0.0.0.0:9093
+        image: prom/alertmanager:v0.22.2
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/healthy
+            port: 9093
+            scheme: HTTP
+          initialDelaySeconds: 25
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: alertmanager
+        ports:
+        - containerPort: 9093
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/ready
+            port: 9093
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/alertmanager
+          name: alertmanagerconf
+        - mountPath: /alertmanager
+          name: alertmanagerdata
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 26
+        # supplementalGroups : 65534
+      schedulerName: default-scheduler
+      serviceAccount: alertmanager
+      serviceAccountName: alertmanager
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: alertmanagerdata
+        persistentVolumeClaim:
+          claimName: alertmanagerdata
+      - configMap:
+          defaultMode: 420
+          name: alertmanager-config
+        name: alertmanagerconf

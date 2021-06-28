@@ -1,0 +1,331 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "PROMETHEUS",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "6.7.4"
+    },
+    {
+      "type": "panel",
+      "id": "graph",
+      "name": "Graph",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "$$hashKey": "object:111",
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1596817489973,
+  "links": [
+    {
+      "icon": "external link",
+      "includeVars": true,
+      "keepTime": true,
+      "tags": [],
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "PROMETHEUS",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "height": "480",
+      "hiddenSeries": false,
+      "id": 1,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "maxPerRow": 2,
+      "nullPointMode": "null",
+      "options": {
+        "dataLinks": []
+      },
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeat": null,
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(ccp_stat_user_tables_n_tup_ins{pg_cluster=\"[[cluster]]\", pod=~\"[[pod]]\", dbname=~\"[[dbname]]\", schemaname=~\"[[schemaname]]\", relname=~\"[[tablename]]\"}[60s]))",
+          "format": "time_series",
+          "intervalFactor": 2,
+          "legendFormat": "inserts - [[dbname]].[[schemaname]].[[tablename]]",
+          "refId": "A",
+          "step": 60
+        },
+        {
+          "expr": "sum(rate(ccp_stat_user_tables_n_tup_upd{pg_cluster=\"[[cluster]]\", pod=~\"[[pod]]\", dbname=~\"[[dbname]]\", schemaname=~\"[[schemaname]]\", relname=~\"[[tablename]]\"}[60s]))",
+          "format": "time_series",
+          "intervalFactor": 2,
+          "legendFormat": "Updates - [[dbname]].[[schemaname]].[[tablename]]",
+          "refId": "B",
+          "step": 60
+        },
+        {
+          "expr": "sum(rate(ccp_stat_user_tables_n_tup_del{pg_cluster=\"[[cluster]]\", pod=~\"[[pod]]\", dbname=~\"[[dbname]]\", schemaname=~\"[[schemaname]]\", relname=~\"[[tablename]]\"}[60s]))",
+          "format": "time_series",
+          "intervalFactor": 2,
+          "legendFormat": "Deletes - [[dbname]].[[schemaname]].[[tablename]]",
+          "refId": "C",
+          "step": 60
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "CRUD",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 22,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allValue": null,
+        "current": {},
+        "datasource": "PROMETHEUS",
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "index": -1,
+        "label": null,
+        "multi": false,
+        "name": "cluster",
+        "options": [],
+        "query": "label_values(pg_cluster)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "PROMETHEUS",
+        "definition": "label_values({pg_cluster=\"[[cluster]]\"},pod)",
+        "hide": 0,
+        "includeAll": true,
+        "index": -1,
+        "label": "pod",
+        "multi": true,
+        "name": "pod",
+        "options": [],
+        "query": "label_values({pg_cluster=\"[[cluster]]\"},pod)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "PROMETHEUS",
+        "definition": "label_values(ccp_database_size_bytes{pg_cluster=\"[[cluster]]\"},dbname)",
+        "hide": 0,
+        "includeAll": true,
+        "index": -1,
+        "label": "dbname",
+        "multi": true,
+        "name": "dbname",
+        "options": [],
+        "query": "label_values(ccp_database_size_bytes{pg_cluster=\"[[cluster]]\"},dbname)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "PROMETHEUS",
+        "definition": "",
+        "hide": 0,
+        "includeAll": true,
+        "index": -1,
+        "label": "schemaname",
+        "multi": true,
+        "name": "schemaname",
+        "options": [],
+        "query": "label_values(ccp_stat_user_tables_n_tup_ins{pg_cluster=\"[[cluster]]\",dbname=~\"[[dbname]]\"},schemaname)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "PROMETHEUS",
+        "definition": "",
+        "hide": 0,
+        "includeAll": true,
+        "index": -1,
+        "label": null,
+        "multi": true,
+        "name": "tablename",
+        "options": [],
+        "query": "label_values(ccp_stat_user_tables_n_tup_ins{pg_cluster=\"[[cluster]]\",dbname=~\"[[dbname]]\",schemaname=~\"[[schemaname]]\"},relname)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-5m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "browser",
+  "title": "CRUD_Details",
+  "uid": "cruddetails",
+  "variables": {
+    "list": []
+  },
+  "version": 2
+}

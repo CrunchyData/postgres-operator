@@ -1,0 +1,16 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: postgres-operator-monitoring
+    vendor: crunchydata
+  name: prometheus-cr
+rules:
+- resources:
+  - pods
+  apiGroups:
+  - ""
+  verbs:
+  - get
+  - list
+  - watch
