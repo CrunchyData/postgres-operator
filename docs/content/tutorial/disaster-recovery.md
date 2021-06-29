@@ -90,7 +90,7 @@ You can set up a PITR using the [restore](https://pgbackrest.org/command.html#co
 
 A few quick notes before we begin:
 
-- To perform a PITR, you must have a backup that is at least as old as your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
+- To perform a PITR, you must have a backup that is older than your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
 - All relevant WAL files must be successfully pushed for the restore to complete correctly.
 - Be sure to select the correct repository name containing the desired backup!
 
@@ -148,7 +148,7 @@ spec:
 
 Notice how we put in the options to specify where to make the PITR.
 
-Using the above manfiest, PGO will go ahead and create a new Postgres cluster that recovers its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
+Using the above manifest, PGO will go ahead and create a new Postgres cluster that recovers its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
 
 ## Perform an In-Place Point-in-time-Recovery (PITR)
 
@@ -162,7 +162,7 @@ You can set up a PITR using the [restore](https://pgbackrest.org/command.html#co
 
 A few quick notes before we begin:
 
-- To perform a PITR, you must have a backup that is at least as old as your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
+- To perform a PITR, you must have a backup that is older than your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
 - All relevant WAL files must be successfully pushed for the restore to complete correctly.
 - Be sure to select the correct repository name containing the desired backup!
 
@@ -199,7 +199,107 @@ spec:
 
 Notice how we put in the options to specify where to make the PITR.
 
-Using the above manfiest, PGO will go ahead and re-create your Postgres cluster that will recover its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
+Using the above manifest, PGO will go ahead and re-create your Postgres cluster that will recover its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
+
+
+## Standby Cluster
+
+Advanced high-availability and disaster recovery strategies involve spreading
+your database clusters across multiple data centers to help maximize uptime.
+In Kubernetes, this technique is known as "[federation](https://en.wikipedia.org/wiki/Federation_(information_technology))".
+Federated Kubernetes clusters are able to communicate with each other,
+coordinate changes, and provide resiliency for applications that have high
+uptime requirements.
+
+As of this writing, federation in Kubernetes is still in ongoing development.
+In the meantime, PGO provides a way to deploy Postgres clusters that can span
+multiple Kubernetes clusters using an external storage system:
+
+- Amazon S3, or a system that uses the S3 protocol,
+- Azure Blob Storage, or
+- Google Cloud Storage
+
+Standby Postgres clusters are managed just like any other Postgres cluster in PGO.
+For example, adding replicas to a standby cluster is matter of increasing the
+`spec.instances.replicas` value. The main difference is that PostgreSQL data in
+the cluster is read-only: one PostgreSQL instance is reading in the database
+changes from an external repository while the other instances are replicas of it.
+This is known as [cascading replication](https://www.postgresql.org/docs/current/warm-standby.html#CASCADING-REPLICATION).
+
+The following manifest defines a Postgres cluster that recovers from WAL files
+stored in an S3 bucket:
+
+```
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo-standby
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+  postgresVersion: 13
+  instances:
+    - dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+      repos:
+      - name: repo1
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+  standby:
+    enabled: true
+    repoName: repo1
+```
+
+There comes a time where a standby cluster needs to be promoted to an active
+cluster. Promoting a standby cluster means that a PostgreSQL instance within
+it will start accepting both reads and writes. This has the net effect of
+pushing WAL (transaction archives) to the pgBackRest repository, so we need to
+take a few steps first to ensure we don't accidentally create a split-brain scenario.
+
+First, if this is not a disaster scenario, you will want to "shutdown" the
+active PostgreSQL cluster. This can be done with the `spec.shutdown` attribute:
+
+```
+spec:
+  shutdown: true
+```
+
+The effect of this is that all the Kubernetes workloads for this cluster are
+scaled to 0. You can verify this with the following command:
+
+```
+kubectl get deploy,sts,cronjob --selector=postgres-operator.crunchydata.com/cluster=hippo
+
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/hippo-pgbouncer   0/0     0            0           1h
+
+NAME                             READY   AGE
+statefulset.apps/hippo-00-lwgx   0/0     1h
+
+NAME                                        SCHEDULE   SUSPEND   ACTIVE
+cronjob.batch/hippo-pgbackrest-repo1-full   @daily     True      0
+```
+
+We can then promote the standby cluster by removing or disabling its
+`spec.standby` section:
+
+```
+spec:
+  standby:
+    enabled: false
+```
+
+This change triggers the promotion of the standby leader to a primary PostgreSQL
+instance, and the cluster begins accepting writes.
+
 
 ## Next Steps
 
