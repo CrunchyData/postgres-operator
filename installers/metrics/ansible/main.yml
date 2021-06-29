@@ -1,7 +1,0 @@
----
-- name: Deploy Crunchy PostgreSQL Operator Monitoring
-  hosts: all
-  gather_facts: true
-  roles:
-    - pgo-metrics-preflight
-    - pgo-metrics
