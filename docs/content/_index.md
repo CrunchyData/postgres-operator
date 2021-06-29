@@ -18,14 +18,14 @@ Designed for your GitOps workflows, it is [easy to get started]({{< relref "quic
 
 With conveniences like cloning Postgres clusters to using rolling updates to roll out disruptive changes with minimal downtime, PGO is ready to support your Postgres data at every stage of your release pipeline. Built for resiliency and uptime, PGO will keep your desired Postgres in a desired state so you do not need to worry about it.
 
-PGO is developed with over six years of production experience in automating Postgres management on Kubernetes, providing a seamless cloud native Postgres solution to keep your data always available.
+PGO is developed with many years of production experience in automating Postgres management on Kubernetes, providing a seamless cloud native Postgres solution to keep your data always available.
 
 ## Supported Platforms
 
 PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
 - Kubernetes 1.18+
-- OpenShift 4.4+
+- OpenShift 4.5+
 - Google Kubernetes Engine (GKE), including Anthos
 - Amazon EKS
 - Microsoft AKS

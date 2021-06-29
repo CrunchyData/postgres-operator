@@ -9,24 +9,31 @@
 
 [PGO](https://github.com/CrunchyData/postgres-operator), the [Postgres Operator](https://github.com/CrunchyData/postgres-operator) from [Crunchy Data](https://www.crunchydata.com), gives you a **declarative Postgres** solution that automatically manages your [PostgreSQL](https://www.postgresql.org) clusters.
 
-Designed for your GitOps workflows, it is [easy to get started](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/) with Postgres on Kubernetes with PGO. Within a few moments, you can have a production grade Postgres cluster complete with high availability, disaster recovery, and monitoring, all over secure TLS communications. Even better, PGO lets you easily customize your Postgres cluster to tailor it to your workload!
+Designed for your GitOps workflows, it is [easy to get started](https://access.crunchydata.com/documentation/postgres-operator/v5/quickstart/) with Postgres on Kubernetes with PGO. Within a few moments, you can have a production grade Postgres cluster complete with high availability, disaster recovery, and monitoring, all over secure TLS communications. Even better, PGO lets you easily customize your Postgres cluster to tailor it to your workload!
 
 With conveniences like cloning Postgres clusters to using rolling updates to roll out disruptive changes with minimal downtime, PGO is ready to support your Postgres data at every stage of your release pipeline. Built for resiliency and uptime, PGO will keep your desired Postgres in a desired state so you do not need to worry about it.
 
-PGO is developed with over six years of production experience in automating Postgres management on Kubernetes, providing a seamless cloud native Postgres solution to keep your data always available.
+PGO is developed with many years of production experience in automating Postgres management on Kubernetes, providing a seamless cloud native Postgres solution to keep your data always available.
 
 # Installation
 
-We recommend following our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/) for how to install and get up and running with PGO, the Postgres Operator from Crunchy Data. However, if you just can't wait to try it out, here are some instructions to get Postgres up and running on Kubernetes:
+We recommend following our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/v5/quickstart/) for how to install and get up and running with PGO, the Postgres Operator from Crunchy Data. However, if you just can't wait to try it out, here are some instructions to get Postgres up and running on Kubernetes:
 
-1. [Fork the Postgres Operator examples repository](https://github.com/CrunchyData/postgres-operator-examples/fork) and clone it to your host machine.
-1. Go into your directory and run `kubectl apply -k kustomize/install`
+1. [Fork the Postgres Operator examples repository](https://github.com/CrunchyData/postgres-operator-examples/fork) and clone it to your host machine. For example:
 
-For more information please read the [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/) and [Tutorial](https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/).
+```
+YOUR_GITHUB_UN="<your GitHub username>"
+git clone --depth 1 "git@github.com:${YOUR_GITHUB_UN}/postgres-operator-examples.git"
+cd postgres-operator-examples
+```
+
+2. Run `kubectl apply -k kustomize/install`
+
+For more information please read the [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/v5/quickstart/) and [Tutorial](https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/).
 
 # Cloud Native Postgres for Kubernetes
 
-PGO, the Postgres Operator from Crunchy Data, comes with all of the features you need for a complete cloud native Postgres experience!
+PGO, the Postgres Operator from Crunchy Data, comes with all of the features you need for a complete cloud native Postgres experience on Kubernetes!
 
 #### PostgreSQL Cluster [Provisioning][provisioning]
 
@@ -43,13 +50,13 @@ Support for [standby PostgreSQL clusters][multiple-cluster] that work both withi
 
 #### [Disaster Recovery][disaster-recovery]
 
-Backups and restores leverage the open source [pgBackRest][] utility and
-[includes support for full, incremental, and differential backups as well as efficient delta restores][disaster-recovery].
+[Backups][backups] and [restores][disaster-recovery] leverage the open source [pgBackRest][] utility and
+[includes support for full, incremental, and differential backups as well as efficient delta restores][backups].
 Set how long you want your backups retained for. Works great with very large databases!
 
-#### Security and TLS
+#### Security and [TLS][tls]
 
-PGO enforces that all connections are over TLS. You can also bring your own TLS infrastructure if you do not want to use the defaults provided by PGO.
+PGO enforces that all connections are over [TLS][tls]. You can also [bring your own TLS infrastructure][tls] if you do not want to use the defaults provided by PGO.
 
 PGO runs containers with locked-down settings and provides Postgres credentials in a secure, convenient way for connecting your applications to your data.
 
@@ -57,71 +64,74 @@ PGO runs containers with locked-down settings and provides Postgres credentials 
 
 [Track the health of your PostgreSQL clusters][monitoring] using the open source [pgMonitor][] library.
 
-#### PostgreSQL User Management
+#### [Upgrade Management][update-postgres]
 
-Quickly add and remove users from your PostgreSQL clusters with powerful commands. Manage password
-expiration policies or use your preferred PostgreSQL authentication scheme.
-
-#### Upgrade Management
-
-Safely apply PostgreSQL updates with minimal availability impact to your PostgreSQL clusters.
+Safely [apply PostgreSQL updates][update-postgres] with minimal impact to the availability of your PostgreSQL clusters.
 
 #### Advanced Replication Support
 
-Choose between [asynchronous replication][high-availability] and [synchronous replication][high-availability-sync]
+Choose between [asynchronous][high-availability] and synchronous replication
 for workloads that are sensitive to losing transactions.
 
-#### Clone
+#### [Clone][clone]
 
-Create new clusters from your existing clusters or backups with [`pgo create cluster --restore-from`][pgo-create-cluster].
+[Create new clusters from your existing clusters or backups][clone] with efficient data cloning.
 
-#### Connection Pooling
+#### [Connection Pooling][pool]
 
-Use [pgBouncer][] for connection pooling
+Advanced [connection pooling][pool] support using [pgBouncer][].
 
-#### Node Affinity
+#### Pod Anti-Affinity, Node Affinity, Pod Tolerations
 
-Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference
+Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference. Set your [pod anti-affinity][k8s-anti-affinity], node affinity, Pod tolerations and more rules to customize your deployment topology!
 
-#### Scheduled Backups
+#### [Scheduled Backups][backup-management]
 
-Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur][disaster-recovery-scheduling] on each PostgreSQL cluster.
+Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur][backup-management] on each PostgreSQL cluster.
 
-#### Backup to S3
+#### Backup to Local Storage, [S3][backups-s3], [GCS][backups-gcs], [Azure][backups-azure], or a Combo!
 
-[Store your backups in Amazon S3][disaster-recovery-s3] or any object storage system that supports
-the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
+[Store your backups in Amazon S3][backups-s3] or any object storage system that supports
+the S3 protocol. You can also store backups in [Google Cloud Storage][backups-gcs] and [Azure Blog Strage][backups-azure].
 
+You can also [mix-and-match][backups-multi]: PGO lets you [store backups in multiple locations][backups-multi].
 
-#### Full Customizability
+#### [Full Customizability][customize-cluster]
 
-The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Service up and running on Kubernetes-enabled platforms, but we know that there are further customizations that you can make. As such, the Crunchy PostgreSQL Operator allows you to further customize your deployments, including:
+PGO makes it easy to fully customize your Postgres cluster to tailor to your workload:
 
-- Selecting different storage classes for your primary, replica, and backup storage
-- Select your own container resources class for each PostgreSQL cluster deployment; differentiate between resources applied for primary and replica clusters!
+- Choose the resources for your Postgres cluster: [container resources and storage size][resize-cluster]. [Resize at any time][resize-cluster] with minimal disruption.
 - Use your own container image repository, including support `imagePullSecrets` and private repositories
-- [Customize your PostgreSQL configuration](https://access.crunchydata.com/documentation/postgres-operator/latest/advanced/custom-configuration/)
-- Bring your own trusted certificate authority (CA) for use with the Operator API server
-- Override your PostgreSQL configuration for each cluster
+- [Customize your PostgreSQL configuration][customize-cluster]
 
+#### [Namespaces][k8s-namespaces]
 
-[disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/
-[disaster-recovery-s3]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#using-s3
-[disaster-recovery-scheduling]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#scheduling-backups
-[high-availability]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/
-[high-availability-sync]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#synchronous-replication-guarding-against-transactions-loss
-[monitoring]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/
-[multiple-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/
-[pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
-[pgo-task-tls]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/common-tasks/#enable-tls
-[provisioning]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/
+Deploy PGO to watch Postgres clusters in all of your [namespaces][k8s-namespaces], or [restrict which namespaces][single-namespace] you want PGO to manage Postgres clusters in!
 
+[backups]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/backups/
+[backups-s3]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/backups/#using-s3
+[backups-gcs]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/backups/#using-google-cloud-storage-gcs
+[backups-azure]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/backups/#using-azure-blob-storage
+[backups-multi]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/backups/#set-up-multiple-backup-repositories
+[backup-management]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/backup-management/
+[clone]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/disaster-recovery/#clone-a-postgres-cluster
+[customize-cluster]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/customize-cluster/
+[disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/disaster-recovery/
+[high-availability]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/high-availability/
+[monitoring]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/monitoring/
+[multiple-cluster]: https://access.crunchydata.com/documentation/postgres-operator/v5/architecture/high-availability/multi-cluster-kubernetes/
+[pool]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/connection-pooling/
+[provisioning]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/create-cluster/
+[resize-cluster]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/resize-cluster/
+[single-namespace]: https://access.crunchydata.com/documentation/postgres-operator/v5/installation/kustomize/#installation-mode
+[tls]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/customize-cluster/#customize-tls
+[update-postgres]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/update-cluster/
 [k8s-anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
 [k8s-namespaces]: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 [k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
 
 [pgBackRest]: https://www.pgbackrest.org
-[pgBouncer]: https://access.crunchydata.com/documentation/pgbouncer/
+[pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/connection-pooling/
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
 
 ## Included Components
@@ -131,14 +141,17 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 - [PostgreSQL](https://www.postgresql.org)
   - [PostgreSQL Contrib Modules](https://www.postgresql.org/docs/current/contrib.html)
   - [PL/Python + PL/Python 3](https://www.postgresql.org/docs/current/plpython.html)
+  - [PL/Perl](https://www.postgresql.org/docs/current/plperl.html)
   - [pgAudit](https://www.pgaudit.org/)
   - [pgAudit Analyze](https://github.com/pgaudit/pgaudit_analyze)
+  - [pg_cron](https://github.com/citusdata/pg_cron)
   - [pg_partman](https://github.com/pgpartman/pg_partman)
   - [pgnodemx](https://github.com/CrunchyData/pgnodemx)
   - [set_user](https://github.com/pgaudit/set_user)
+  - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache-licensed community edition)
   - [wal2json](https://github.com/eulerto/wal2json)
 - [pgBackRest](https://pgbackrest.org/)
-- [pgBouncer](https://www.pgbouncer.org/)
+- [pgBouncer](http://pgbouncer.github.io/)
 - [pgAdmin 4](https://www.pgadmin.org/)
 - [pgMonitor](https://github.com/CrunchyData/pgmonitor)
 - [Patroni](https://patroni.readthedocs.io/)
@@ -148,7 +161,6 @@ In addition to the above, the geospatially enhanced PostgreSQL + PostGIS contain
 
 - [PostGIS](http://postgis.net/)
 - [pgRouting](https://pgrouting.org/)
-- [PL/R](https://github.com/postgres-plr/plr)
 
 [PostgreSQL Operator Monitoring](https://crunchydata.github.io/postgres-operator/latest/architecture/monitoring/) uses the following components:
 
@@ -170,7 +182,7 @@ For more information about which versions of the PostgreSQL Operator include whi
 PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
 - Kubernetes 1.18+
-- OpenShift 4.4+
+- OpenShift 4.5+
 - Google Kubernetes Engine (GKE), including Anthos
 - Amazon EKS
 - Microsoft AKS
@@ -187,28 +199,21 @@ as set of contributing guidelines that you can review here:
 
 - [Contributing Guidelines](CONTRIBUTING.md)
 
-If you want to learn how to get up your development environment, please read our
-documentation here:
-
- - [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/latest/contributing/developer-setup/)
-
 Once you are ready to submit a Pull Request, please ensure you do the following:
 
 1. Reviewing the [contributing guidelines](CONTRIBUTING.md) and ensure your
 that you have followed the commit message format, added testing where
 appropriate, documented your changes, etc.
 1. Open up a pull request based upon the guidelines. If you are adding a new
-feature, please open up the pull request on the `master` branch. If you have
-a bug fix for a supported version, open up a pull request against the supported
-version branch (e.g. `REL_4_2` for 4.2)
+feature, please open up the pull request on the `master` branch.
 1. Please be as descriptive in your pull request as possible. If you are
 referencing an issue, please be sure to include the issue in your pull request
 
-# Support
+## Support
 
 If you believe you have found a bug or have detailed feature request, please open a GitHub issue and follow the guidelines for submitting a bug.
 
-For general questions or community support, we welcome you to [join the PostgreSQL Operator community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) at [https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) and ask your question there.
+For general questions or community support, we welcome you to [join the PGO project community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) at [https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) and ask your question there.
 
 For other information, please visit the [Support](https://access.crunchydata.com/documentation/postgres-operator/latest/support/) section of the documentation.
 
@@ -237,6 +242,6 @@ When a PostgreSQL Operator general availability (GA) release occurs, the contain
 
 The image rollout can occur over the course of several days.
 
-To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers/newsletter)
+To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers/newsletter). You can also [join the PGO project community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join)
 
 The PGO Postgres Operator project source code is available subject to the [Apache 2.0 license](LICENSE.md) with the PGO logo and branding assets covered by [our trademark guidelines](docs/static/logos/TRADEMARKS.md).
