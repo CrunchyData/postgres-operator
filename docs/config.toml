@@ -62,3 +62,8 @@ weight = 20
 name = "<i class='fas fa-book'></i> <label>EPUB</label>"
 url = "/epub/postgres_operator.epub"
 weight = 30
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
