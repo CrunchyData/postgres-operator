@@ -44,4 +44,4 @@ Now that we can monitor our cluster, let's explore how [connection pooling]({{< 
 [Grafana]: https://grafana.com/
 [Prometheus]: https://prometheus.io/
 [Alertmanager]: https://prometheus.io/docs/alerting/latest/alertmanager/
-[PGO Monitoring]: {{< relref "installation/monitoring/" >}}
+[PGO Monitoring]: {{< relref "installation/monitoring/_index.md" >}}
