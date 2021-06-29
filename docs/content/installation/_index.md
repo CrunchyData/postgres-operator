@@ -2,7 +2,7 @@
 title: "Installation"
 date:
 draft: false
-weight: 15
+weight: 30
 ---
 
 This section provides detailed instructions for anything and everything related to installing PGO
