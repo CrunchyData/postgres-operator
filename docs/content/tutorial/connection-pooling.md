@@ -190,7 +190,7 @@ spec:
 
 ### Tolerations
 
-You can deploy PgBouncer instances to [Nodes with Taints](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) by setting [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) through `spec.proxy.pgBouncer.tolerations`. This attribute follows the [Kubernetes standard tolerations] layout.
+You can deploy PgBouncer instances to [Nodes with Taints](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) by setting [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) through `spec.proxy.pgBouncer.tolerations`. This attribute follows the Kubernetes standard tolerations layout.
 
 For example, if there were a set of Nodes with a Taint of `role=connection-poolers:NoSchedule` that you want to schedule your PgBouncer instances to, you could apply the following configuration:
 
