@@ -537,7 +537,7 @@ func instanceYAML(
 		// command. PostgreSQL requires that the directory is writable by only
 		// itself.
 		// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L249
-		// - https://github.com/pgbackrest/pgbackrest/blob/release/2.34/src/command/restore/restore.c#L62-L65
+		// - https://github.com/pgbackrest/pgbackrest/issues/1445
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_13_0#l319
 		//
 		// NOTE(cbandy): The "PATRONI_POSTGRESQL_DATA_DIR" environment variable
