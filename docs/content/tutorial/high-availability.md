@@ -382,7 +382,7 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchFields:
+            - matchExpressions:
               - key: workload-role
                 operator: In
                 values:
