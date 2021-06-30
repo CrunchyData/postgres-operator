@@ -5,7 +5,7 @@ draft: false
 weight: 90
 ---
 
-While having [high availability]({{< relref "high-availability.md" >}}) and [disaster recovery]({{< relref "disaster-recovery.md" >}}) systems in place helps in the event of something going wrong with your PostgreSQL cluster, monitoring helps you anticipate problems before they happen. Additionally, monitoring can help you diagnose and resolve issues that may cause degraded performance rather than downtime.
+While having [high availability]({{< relref "tutorial/high-availability.md" >}}) and [disaster recovery]({{< relref "tutorial/disaster-recovery.md" >}}) systems in place helps in the event of something going wrong with your PostgreSQL cluster, monitoring helps you anticipate problems before they happen. Additionally, monitoring can help you diagnose and resolve issues that may cause degraded performance rather than downtime.
 
 Let's look at how PGO allows you to enable monitoring in your cluster.
 
