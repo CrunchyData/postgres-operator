@@ -1,10 +1,10 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: {{ .Values.postgresclustername }}
+  name: {{ .Values.name }}
 spec:
-  image: {{ .Values.postgreshaimage }}
-  postgresVersion: {{ .Values.postgresversion }}
+  image: {{ .Values.postgres }}
+  postgresVersion: {{ .Values.postgresVersion }}
   instances:
     - name: instance1
       dataVolumeClaimSpec:
@@ -15,7 +15,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: {{ .Values.pgbackrestimage}}
+      image: {{ .Values.pgBackRest}}
       repoHost:
         dedicated: {}
       repos:
@@ -37,4 +37,4 @@ spec:
                 storage: 1Gi
   proxy:
     pgBouncer:
-      image: {{ .Values.pgbouncerimage}}
+      image: {{ .Values.pgBouncer}}

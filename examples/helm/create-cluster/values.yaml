@@ -1,12 +1,12 @@
 ---
 # Cluster name
-postgresclustername: hippo
+name: hippo
 
 # PostgreSQL Version
 # Version should match version defined in PostgreSQL images
-postgresversion: 13
+postgresVersion: 13
 
 # Images
-postgreshaimage: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
-pgbackrestimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
-pgbouncerimage: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.15-0
+postgres: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+pgBackRest: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+pgBouncer: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.15-0
