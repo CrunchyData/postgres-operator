@@ -218,7 +218,11 @@ clean-deprecated:
 	@# executables used to be in subdirectories
 	[ ! -d bin/pgo-rmdata ] || rm -r bin/pgo-rmdata
 	[ ! -d bin/pgo-backrest ] || rm -r bin/pgo-backrest
+	[ ! -d bin/pgo-scheduler ] || rm -r bin/pgo-scheduler
 	[ ! -d bin/postgres-operator ] || rm -r bin/postgres-operator
+	@# keys used to be generated before install
+	[ ! -d conf/pgo-backrest-repo ] || rm -r conf/pgo-backrest-repo
+	[ ! -d conf/postgres-operator ] || rm -r conf/postgres-operator
 
 push: $(images:%=push-%) ;
 
