@@ -164,6 +164,7 @@ pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile licenses
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
 		--build-arg BASE_IMAGE_OS=$(BASE_IMAGE_OS) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
+		--build-arg RELVER=$(PGO_VERSION) \
 		--build-arg DOCKERBASEREGISTRY=$(DOCKERBASEREGISTRY) \
 		--build-arg PACKAGER=$(PACKAGER) \
 		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
