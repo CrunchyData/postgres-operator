@@ -54,7 +54,7 @@ Unfortunately, the default setting for dynamic provisinoing of volumes in mulit-
 
 Within the PostgreSQL Operator, a **node label** is implemented as a `preferredDuringSchedulingIgnoredDuringExecution` node
 affinity rule, which is an affinity rule that Kubernetes will attempt to adhere to when scheduling any pods for the cluster,
-but _will not guarantee_. More information on node affinity rules can be found [here](https://kubernetes.i/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity)). 
+but _will not guarantee_. More information on node affinity rules can be found [here](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity)). 
 
 By using `Immediate` for the `volumeBindingMode` in a multi-zone cluster environment, the scheduler will ignore any requested
 _(but not mandatory)_ scheduling requirements if necessary to ensure the pod can be scheduled. The scheduler will ultimately
