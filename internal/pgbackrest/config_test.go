@@ -109,7 +109,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 		})
 
 		t.Run("create pgbackrest configmap struct", func(t *testing.T) {
-			// create an array of one host string vlaue
+			// create an array of one host string value
 			pghosts := []string{testInstanceName}
 			// create the configmap struct
 			cmInitial = CreatePGBackRestConfigMapIntent(postgresCluster, testRepoName,

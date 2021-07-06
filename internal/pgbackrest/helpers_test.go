@@ -39,7 +39,7 @@ const (
 	testFieldOwner  = "pgbackrestConfigTestFieldOwner"
 )
 
-// getCMData returns the 'Data' content from the specifified configmap
+// getCMData returns the 'Data' content from the specified configmap
 func getCMData(cm v1.ConfigMap, key string) string {
 
 	return cm.Data[key]

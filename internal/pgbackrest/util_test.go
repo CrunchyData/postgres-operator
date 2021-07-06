@@ -54,7 +54,7 @@ func TestCalculateConfigHashes(t *testing.T) {
 	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "config-hashes",
-			Namespace: "calculate-config-hasges",
+			Namespace: "calculate-config-hashes",
 		},
 		Spec: v1beta1.PostgresClusterSpec{
 			Backups: v1beta1.Backups{

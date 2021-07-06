@@ -21,7 +21,7 @@ const (
 	Finalizer = annotationPrefix + "finalizer"
 
 	// PGBackRestBackup is the annotation that is added to a PostgresCluster to initiate a manual
-	// backup.  The value of the annotation will be a unique identfier for a backup Job (e.g. a
+	// backup.  The value of the annotation will be a unique identifier for a backup Job (e.g. a
 	// timestamp), which will be stored in the PostgresCluster status to properly track completion
 	// of the Job.  Also used to annotate the backup Job itself as needed to identify the backup
 	// ID associated with a specific manual backup Job.

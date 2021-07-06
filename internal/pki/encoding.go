@@ -33,7 +33,7 @@ const (
 )
 
 type Certificate struct {
-	// Certifiate is the byte encoded value for the certificate
+	// Certificate is the byte encoded value for the certificate
 	Certificate []byte
 }
 

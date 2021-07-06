@@ -27,7 +27,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-// TestPKI does a full test of generating a valid ceritificate chain
+// TestPKI does a full test of generating a valid certificate chain
 func TestPKI(t *testing.T) {
 	// generate the root CA
 	rootCA := NewRootCertificateAuthority()

@@ -194,7 +194,7 @@ GRANT ALL PRIVILEGES ON DATABASE :"dbname" TO :"user";
 			// TODO (andrewlecuyer): The SQL script will not fail on error to accommodate scenarios
 			// where the user, database, etc. might already exist (e.g. when restoring).  However,
 			// the script should be revisited to enable better error handling, and cleanly handle
-			// handle scenarios where these resources aleady exist. Additionally, consider moving
+			// handle scenarios where these resources already exist. Additionally, consider moving
 			// this logic outside of the Patroni bootstrap process, e.g. as part the overall user
 			// management solution that will reconcile users, DB's, etc. throughout the lifetime of
 			// the PostgresCluster.  This will provide more granular control of the execution of

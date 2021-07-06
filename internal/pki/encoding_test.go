@@ -80,7 +80,7 @@ func TestCertificate(t *testing.T) {
 			t.Fatalf("expected pem type %q actual %q", block.Type, pemCertificateType)
 		}
 
-		// ensure the cerificates match
+		// ensure the certificates match
 		if !bytes.Equal(certificate.Certificate, block.Bytes) {
 			t.Fatalf("pem encoded certificate does not match certificate")
 		}

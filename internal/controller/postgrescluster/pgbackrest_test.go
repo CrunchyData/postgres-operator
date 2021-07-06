@@ -819,7 +819,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	})
 	assert.NilError(t, err)
 
-	// status should indicate stanaza were not created
+	// status should indicate stanza were not created
 	for _, r := range postgresCluster.Status.PGBackRest.Repos {
 		assert.Assert(t, !r.StanzaCreated)
 	}
@@ -1138,7 +1138,7 @@ func TestReconcileManualBackup(t *testing.T) {
 		// whether or not the primary instance should be read-only
 		standby bool
 		// whether or not to mock a current job in the env before reconciling (this job is not
-		// actully created, but rather just passed into the reconcile function under test)
+		// actually created, but rather just passed into the reconcile function under test)
 		createCurrentJob bool
 		// conditions to apply to the job if created (these are always set to "true")
 		jobConditions []batchv1.JobConditionType
@@ -1339,7 +1339,7 @@ func TestReconcileManualBackup(t *testing.T) {
 		expectCurrentJobDeletion: false,
 		expectReconcile:          true,
 	}, {
-		testDesc:         "reconcile new job when in-progess job exists for another id",
+		testDesc:         "reconcile new job when in-progress job exists for another id",
 		createCurrentJob: true,
 		clusterConditions: map[string]metav1.ConditionStatus{
 			ConditionRepoHostReady: metav1.ConditionTrue,
@@ -2840,7 +2840,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 		status *v1beta1.PostgresClusterStatus
 		// whether or not the test should expect a Job to be reconciled
 		expectReconcile bool
-		// whether or not the test should expect a Job to be reqeued
+		// whether or not the test should expect a Job to be requeued
 		expectRequeue bool
 		// the reason associated with the expected event for the test (can be empty if
 		// no event is expected)

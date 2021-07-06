@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 )
 
-// maxPGBackrestRepos is the maxium number of repositories that can be configured according to the
+// maxPGBackrestRepos is the maximum number of repositories that can be configured according to the
 // multi-repository solution implemented within pgBackRest
 const maxPGBackrestRepos = 4
 
@@ -42,7 +42,7 @@ func DedicatedRepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
 }
 
-// CalculateConfigHashes calculates hashes for any external pgBackRest repostority configuration
+// CalculateConfigHashes calculates hashes for any external pgBackRest repository configuration
 // present in the PostgresCluster spec (e.g. configuration for Azure, GCR and/or S3 repositories).
 // Additionally it returns a hash of the hashes for each external repository.
 func CalculateConfigHashes(

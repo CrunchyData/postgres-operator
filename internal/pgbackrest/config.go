@@ -43,7 +43,7 @@ const (
 	// configmap key references
 	cmJobKey     = "pgbackrest_job.conf"
 	cmPrimaryKey = "pgbackrest_primary.conf"
-	// CMRepoKey is the name of the configuration file for a pgBackRest  deidicated repository host
+	// CMRepoKey is the name of the configuration file for a pgBackRest dedicated repository host
 	CMRepoKey = "pgbackrest_repo.conf"
 
 	// ConfigDir is the pgBackRest configuration directory

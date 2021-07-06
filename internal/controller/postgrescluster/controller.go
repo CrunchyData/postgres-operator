@@ -196,7 +196,7 @@ func (r *Reconciler) Reconcile(
 		err = updateResult(r.reconcilePatroniStatus(ctx, cluster, instances))
 	}
 	// reconcile the Pod service before reconciling any data source in case it is necessary
-	// to start Pods during data source reconcilition that require network connections (e.g.
+	// to start Pods during data source reconciliation that require network connections (e.g.
 	// if it is necessary to start a dedicated repo host to bootstrap a new cluster using its
 	// own existing backups).
 	if err == nil {

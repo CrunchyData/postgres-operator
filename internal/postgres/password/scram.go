@@ -197,7 +197,7 @@ func NewSCRAMPassword(password string) *SCRAMPassword {
 	}
 }
 
-// scramGenerateSalt generates aseries of cryptographic bytes of a specified
+// scramGenerateSalt generates a series of cryptographic bytes of a specified
 // length for purposes of SCRAM. must be at least 1
 func scramGenerateSalt(length int) ([]byte, error) {
 	// length must be at least one

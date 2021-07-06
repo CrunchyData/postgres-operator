@@ -176,7 +176,7 @@ acquiring the leader lock, the Patroni leader:
 | - | synchronous_mode_strict | Only | mutable | cluster | (default: false)
 | - | synchronous_node_count  | Only | mutable | cluster | (default: 1)
 | - | master_stop_timeout     | Yes  | mutable | cluster | (default: 0)
-| - | master_start_timeout    | Yes  | mutable | cluster | (defualt: 300)
+| - | master_start_timeout    | Yes  | mutable | cluster | (default: 300)
 ||
 |||||| Setting `host`, `port`, or `restore_command` enables standby behavior.
 | - | standby_cluster.create_replica_methods   | Only | immutable | cluster | List of methods to use when creating a standby leader. See `postgresql.create_replica_methods`. (default: basebackup)

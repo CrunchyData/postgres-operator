@@ -94,7 +94,7 @@ func TestSCRAMBuild(t *testing.T) {
 				return []byte("h1pp0p4rty2020"), nil
 			}
 
-			// a crednetial is valid if it generates the specified md5 hash
+			// a credential is valid if it generates the specified md5 hash
 			for _, credentials := range credentialList {
 				t.Run(credentials[0], func(t *testing.T) {
 					scram := NewSCRAMPassword(credentials[0])

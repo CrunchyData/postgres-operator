@@ -67,7 +67,7 @@ func (r *Reconciler) reconcilePGMonitor(ctx context.Context,
 	return err
 }
 
-// reconcilePGMonitorExporter peforms setup the postgres_exporter sidecar
+// reconcilePGMonitorExporter performs setup the postgres_exporter sidecar
 // - PodExec to get setup.sql file for the postgres version
 // - PodExec to run the sql in the primary database
 // Status.Monitoring.ExporterConfiguration is used to determine when the

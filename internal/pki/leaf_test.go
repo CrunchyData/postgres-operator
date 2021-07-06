@@ -47,7 +47,7 @@ func TestLeafCertificate(t *testing.T) {
 		// see if certificate can be parsed
 		x509RootCA, err := x509.ParseCertificate(rootCA.Certificate.Certificate)
 		if err != nil {
-			t.Fatalf("expected valid x509 root ceriticate, actual %s", err.Error())
+			t.Fatalf("expected valid x509 root certificate, actual %s", err.Error())
 		}
 
 		t.Run("valid", func(t *testing.T) {
@@ -224,7 +224,7 @@ func TestLeafCertificate(t *testing.T) {
 				rootCA.Certificate = nil
 
 				if err := cert.Generate(rootCA); !errors.Is(err, ErrInvalidCertificateAuthority) {
-					t.Fatalf("expected invalid certificertte authority")
+					t.Fatalf("expected invalid certificate authority")
 				}
 			})
 

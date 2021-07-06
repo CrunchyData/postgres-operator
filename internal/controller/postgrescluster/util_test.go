@@ -218,7 +218,7 @@ func TestAddNSSWrapper(t *testing.T) {
 		tcName      string
 		podTemplate *v1.PodTemplateSpec
 	}{{
-		tcName: "database and pgbackest containers",
+		tcName: "database and pgbackrest containers",
 		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
 			Containers: []v1.Container{
 				{Name: "database"}, {Name: "pgbackrest"}, {Name: "dontmodify"},

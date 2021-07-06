@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	// errMsgConfigHashMismatch is the error message displayed when a configration hash mismatch
+	// errMsgConfigHashMismatch is the error message displayed when a configuration hash mismatch
 	// is detected while attempting stanza creation
 	errMsgConfigHashMismatch = "postgres operator error: pgBackRest config hash mismatch"
 )

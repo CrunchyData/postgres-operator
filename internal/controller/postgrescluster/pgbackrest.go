@@ -284,7 +284,7 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			// If a dedicated repo host resource and a dedicated repo host is enabled, then
 			// add to the slice and do not delete.  Note that dedicated repo host resources are
 			// checked before repo host resources since both share the same "repo-host" label, and
-			// we need to distiguish (and seprately handle) dedicated repo host resources.
+			// we need to distinguish (and separately handle) dedicated repo host resources.
 			if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
 				ownedNoDelete = append(ownedNoDelete, owned)
 				delete = false
@@ -293,7 +293,7 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			// If a repo host is enabled and this is a repo host resource, then add to the
 			// slice and do not delete.  Note that dedicated repo host resources are checked
 			// before repo host resources since both share the same "repo-host" label, and
-			// we need to distiguish (and seprately handle) dedicated repo host resources.
+			// we need to distinguish (and separately handle) dedicated repo host resources.
 			if pgbackrest.RepoHostEnabled(postgresCluster) {
 				ownedNoDelete = append(ownedNoDelete, owned)
 				delete = false
@@ -374,7 +374,7 @@ func backupScheduleFound(repo v1beta1.PGBackRestRepo, backupType string) bool {
 	return false
 }
 
-// unstructuredToRepoResources converts unstructred pgBackRest repository resources (specifically
+// unstructuredToRepoResources converts unstructured pgBackRest repository resources (specifically
 // unstructured StatefulSetLists and PersistentVolumeClaimList) into their structured equivalent.
 func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind string,
 	repoResources *RepoResources, uList *unstructured.UnstructuredList) error {
@@ -764,7 +764,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 			}
 		}
 
-		// update the data source initilialized condition if the Job has finished running, and is
+		// update the data source initialized condition if the Job has finished running, and is
 		// therefore in a completed or failed
 		if completed {
 			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
@@ -1229,7 +1229,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// (assuming no other reconcile errors bubble up to the Reconcile() function and block the
 	// status update).  And finally, add some time to each requeue to slow down subsequent
 	// stanza create attempts in order to prevent pgBackRest mis-configuration (e.g. due to
-	// custom confiugration) from spamming the logs, while also ensuring stanza creation is
+	// custom configuration) from spamming the logs, while also ensuring stanza creation is
 	// re-attempted until successful (e.g. allowing users to correct mis-configurations in
 	// custom configuration and ensure stanzas are still created).
 	if err != nil {
@@ -1517,7 +1517,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 	// Create metadata that can be used to override metadata (labels, annotations and ownership
 	// refs) in pgBackRest configuration resources.  This allows us to copy resources from
 	// another cluster, but ensure pertinent metadata details are set according to the cluster
-	// currently being reocnciled (ensuring proper garbage collection, etc.).
+	// currently being reconciled (ensuring proper garbage collection, etc.).
 	overrideMetadata := &metav1.ObjectMeta{
 		Annotations:     metadata.GetAnnotations(),
 		Labels:          metadata.GetLabels(),
@@ -1537,7 +1537,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 // Please note that while the metadata for any resources generated within this function is
 // typically generated to the PostgresCluster provided, an optional metadataOverride
 // parameter can also be provided that can be used to override the labels, annotations and/or
-// ownerships refs for any resources created by this function (note thatall other fields in
+// ownerships refs for any resources created by this function (note that all other fields in
 // metadataOverride are ignored).  This is useful in scenarios where the contents of the
 // configuration resources should be reconciled according to the PostgresCluster provided,
 // but those same resources need to be labeled, owned, etc. independently of that PostgresCluster
@@ -1866,7 +1866,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	// Verify that status exists for the repo configured for the manual backup, and that a stanza
 	// has been created, before proceeding.  If either conditions are not true, then simply return
 	// without requeuing and record and event (subsequent events, e.g. successful stanza creation,
-	// writing of the proper repo status, adding a missing reop, etc. will trigger the reconciles
+	// writing of the proper repo status, adding a missing repo, etc. will trigger the reconciles
 	// needed to try again).
 	var statusFound, stanzaCreated bool
 	repoName := postgresCluster.Spec.Backups.PGBackRest.Manual.RepoName
@@ -2212,7 +2212,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 // reconcileStanzaCreate is responsible for ensuring stanzas are properly created for the
 // pgBackRest repositories configured for a PostgresCluster.  If the bool returned from this
 // function is false, this indicates that a pgBackRest config hash mismatch was identified that
-// prevented the "pgbackrest stanza-create" command from running (with a config has mitmatch
+// prevented the "pgbackrest stanza-create" command from running (with a config has mismatch
 // indicating that pgBackRest configuration as stored in the pgBackRest ConfigMap has not yet
 // propagated to the Pod).
 func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
