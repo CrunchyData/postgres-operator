@@ -126,7 +126,7 @@ Notice this part of the manifest:
       key: password
 ```
 
-The above manfiest shows how all of these values are derived from the `hippo-pguser` Secret. This means that we do not need to know any of the connection credentials or have to insecurely pass them around -- they are made directly available to the application!
+The above manifest shows how all of these values are derived from the `hippo-pguser` Secret. This means that we do not need to know any of the connection credentials or have to insecurely pass them around -- they are made directly available to the application!
 
 Using this method, you can tie application directly into your GitOps pipeline that connect to Postgres without any prior knowledge of how PGO will deploy Postgres: all of the information your application needs is propagated into the Secret!
 

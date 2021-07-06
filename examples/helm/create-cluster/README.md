@@ -10,7 +10,7 @@ in a namespace called postgres-operator.
 ## Helm
 Helm will also need to be installed for this example to run.
 
-## Documenation
+## Documentation
 Please see the documentation for more guidance using custom resources:
 
 https://access.crunchydata.com/documentation/postgres-operator/latest/custom-resources/
