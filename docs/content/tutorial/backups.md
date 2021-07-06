@@ -124,7 +124,7 @@ There is an example for creating a Postgres cluster that uses GCS for backups in
 
 First, copy your GCS key secret (which is a JSON file) into `kustomize/gcs/gcs-key.json`. Note that a `.gitignore` directive prevents you from committing this file.
 
-Next, open the `postgres.yaml` file and edit `spec.backups.pgbackrest.gcs.repos.gcs.bucket` to the name of the GCS bucket that you want to back up to. If you are deploying to OpenShift, ensure to set `spec.openshift` to `true`.
+Next, open the `postgres.yaml` file and edit `spec.backups.pgbackrest.repos.gcs.bucket` to the name of the GCS bucket that you want to back up to. If you are deploying to OpenShift, ensure to set `spec.openshift` to `true`.
 
 Save this file, and then run:
 
