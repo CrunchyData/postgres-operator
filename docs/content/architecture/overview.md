@@ -22,7 +22,7 @@ to create several
 [custom resource definitions (CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#customresourcedefinitions)
 that allow for the management of PostgreSQL clusters.
 
-The main custom resource definition is [`postgresclusters.postgres-operator.crunchydata.com`]({{< relref "references/crd.md" >}}). This allows you to contorl all the information about a Postgres cluster, including:
+The main custom resource definition is [`postgresclusters.postgres-operator.crunchydata.com`]({{< relref "references/crd.md" >}}). This allows you to control all the information about a Postgres cluster, including:
 
 - General information
 - Resource allocation

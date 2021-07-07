@@ -237,7 +237,7 @@ somewhere, or perhaps the query could be rewritten to be more efficient.
 - Query Max Runtime (Top N): This highlights the N number of slowest queries by
 absolute runtime. This could indicate that a specific query or the system as a
 whole may need more resources.
-- Query Total Runtime (Top N): This highlights the N of slowest queres by
+- Query Total Runtime (Top N): This highlights the N of slowest queries by
 aggregate runtime. This could indicate that a ORM is looping over a single query
 and executing it many times that could possibly be rewritten as a single, faster
 query.
@@ -265,7 +265,7 @@ Issues a warning at 75% and goes critical above 90%.
 danger of running out of disk space. Issues a warning at 75% and goes critical
 at 90%.
 - `PGReplicationByteLag`: Indicates that a replica is too far behind a primary
-instance, which coul risk data loss in a failover scenario. Issues a warning at
+instance, which could risk data loss in a failover scenario. Issues a warning at
 50MB an goes critical at 100MB.
 - `PGReplicationSlotsInactive`: Indicates that a replication slot is inactive.
 Not attending to this can lead to out-of-disk errors.

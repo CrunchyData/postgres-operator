@@ -79,7 +79,7 @@ Let's test our high availability set up.
 
 ## Testing Your HA Cluster
 
-An important part of buildin a resilient Postgres environment is testing its resiliency, so let's run a few tests to see how PGO performs under pressure!
+An important part of building a resilient Postgres environment is testing its resiliency, so let's run a few tests to see how PGO performs under pressure!
 
 ### Test #1: Remove a Service
 
@@ -190,7 +190,7 @@ which should yield something similar to:
 hippo-instance1-6kbw
 ```
 
-You can test that the failover successfully occurred in a few ways. You can connect to the example Keycloak application that we [deployed in the previous section]({{< relref "./connect-cluster.md" >}}). Based on Keycloak's connection retry logic, you may need to wait a moment for it to reconnect, but you will see it connected and resume being able to read and write data. You can also connect to the Postgres instance directly and exceute the following command:
+You can test that the failover successfully occurred in a few ways. You can connect to the example Keycloak application that we [deployed in the previous section]({{< relref "./connect-cluster.md" >}}). Based on Keycloak's connection retry logic, you may need to wait a moment for it to reconnect, but you will see it connected and resume being able to read and write data. You can also connect to the Postgres instance directly and execute the following command:
 
 ```
 SELECT NOT pg_catalog.pg_is_in_recovery() is_primary;

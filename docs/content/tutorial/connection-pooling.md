@@ -134,7 +134,7 @@ For a reference on [PgBouncer configuration](https://www.pgbouncer.org/config.ht
 
 ### Replicas
 
-PGO deploys one PgBouncer instance by default. You may want to run mutliple PgBouncer instances to have some level of redundancy, though you still want to be mindful of how many connections are going to your Postgres database!
+PGO deploys one PgBouncer instance by default. You may want to run multiple PgBouncer instances to have some level of redundancy, though you still want to be mindful of how many connections are going to your Postgres database!
 
 You can manage the number of PgBouncer instances that are deployed through the `spec.proxy.pgBouncer.replicas` attribute.
 

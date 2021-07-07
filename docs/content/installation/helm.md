@@ -64,7 +64,7 @@ Specifically, if this setting is set to `false` (which is the default), then a C
 ClusterRoleBinding will be created, and PGO will manage PostgreSQL clusters in all namespaces.
 However, if this setting is set to `true`, then a Role and RoleBinding will be created instead,
 allowing PGO to only manage PostgreSQL clusters in the same namespace utilized when installing
-the the PGO Helm chart.
+the PGO Helm chart.
 
 ## Install
 

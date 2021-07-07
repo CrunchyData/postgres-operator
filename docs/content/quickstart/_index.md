@@ -47,7 +47,7 @@ kubectl -n postgres-operator get pods \
   --field-selector=status.phase=Running
 ```
 
-If the PGO Pod is healthy, you should see outpout similar to:
+If the PGO Pod is healthy, you should see output similar to:
 
 ```
 NAME                                READY   STATUS    RESTARTS   AGE
@@ -130,7 +130,7 @@ psql -h localhost
 
 The information provided in the user Secret will allow you to connect an application directly to your PostgreSQL database.
 
-For example, let's connect [Keycloak](https://www.keycloak.org/). Keycloak is a popular open source identity management tool that is backed by a PostgreSQL database. Using the `hippo` cluster we created, we can deploy the the following manifest file:
+For example, let's connect [Keycloak](https://www.keycloak.org/). Keycloak is a popular open source identity management tool that is backed by a PostgreSQL database. Using the `hippo` cluster we created, we can deploy the following manifest file:
 
 ```
 cat <<EOF >> keycloak.yaml

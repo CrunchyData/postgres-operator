@@ -21,7 +21,7 @@ PostgreSQL clusters, specifically using Crunchy PostgreSQL Exporter data stored 
 which is used in collaboration with the Crunchy PostgreSQL Exporter to provide and store
 metrics
 - [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) - Handles alerts 
-sent by Prometheus by deduplicating, grouping, and routing them to reciever integrations.
+sent by Prometheus by deduplicating, grouping, and routing them to receiver integrations.
 
 By leveraging the installation method described in this section, PGO Monitoring can be deployed
 alongside PGO.

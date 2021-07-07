@@ -65,7 +65,7 @@ defined for your Kubernetes environment:
 
 And to modify the configuration for the various storage resources (i.e. PersistentVolumeClaims)
 created by the PGO Monitoring installer, the `kustomize/monitoring/pvcs.yaml` file can also
-be modfied.
+be modified.
 
 Additionally, it is also possible to further customize the configuration for the various components
 comprising the PGO Monitoring stack (Grafana, Prometheus and/or AlertManager) by modifying the
