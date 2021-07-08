@@ -32,7 +32,7 @@ import (
 )
 
 // ExecPolicy execute a sql policy against a cluster
-func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
+func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace, policyName, clusterName, port string) error {
 	ctx := context.TODO()
 
 	// fetch the policy sql
@@ -46,11 +46,10 @@ func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace,
 	stdin := strings.NewReader(sql)
 
 	// now, we need to ensure we can get the Pod name of the primary PostgreSQL
-	// instance. Thname being passed in is actually the "serviceName" of the Pod
-	// We can isolate the exact Pod we want by using this (LABEL_SERVICE_NAME) and
-	// the LABEL_PGHA_ROLE labels
+	// instance. We can isolate the exact Pod we want by using the
+	// LABEL_PG_CLUSTER and LABEL_PGHA_ROLE labels
 	selector := fmt.Sprintf("%s=%s,%s=%s",
-		config.LABEL_SERVICE_NAME, serviceName,
+		config.LABEL_PG_CLUSTER, clusterName,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 
 	podList, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
