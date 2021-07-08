@@ -203,7 +203,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 	if request.DryRun {
 		for _, d := range allDeployments {
-			log.Debugf("deployment : %s", d.ObjectMeta.Name)
+			log.Debugf("deployment: %s", d.ObjectMeta.Name)
 			resp.Name = append(resp.Name, d.ObjectMeta.Name)
 		}
 		return resp
@@ -223,7 +223,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
-			Get(d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], metav1.GetOptions{})
+			Get(d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], metav1.GetOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -231,7 +231,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 		}
 
 		if err := util.ExecPolicy(apiserver.Clientset, apiserver.RESTConfig,
-			ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], cl.Spec.Port); err != nil {
+			ns, request.Name, d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER], cl.Spec.Port); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
