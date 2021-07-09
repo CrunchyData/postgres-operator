@@ -970,31 +970,41 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// the deployment template always tries to mount /sshd volume
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 
-	if _, err := apiserver.Clientset.
-		CoreV1().Secrets(request.Namespace).
-		Get(secretName, metav1.GetOptions{}); kubeapi.IsNotFound(err) {
-		// determine if a custom CA secret should be used
-		backrestS3CACert := []byte{}
+	// determine if a custom CA secret should be used
+	backrestS3CACert := []byte{}
 
-		if request.BackrestS3CASecretName != "" {
-			backrestSecret, err := apiserver.Clientset.
-				CoreV1().Secrets(request.Namespace).
-				Get(request.BackrestS3CASecretName, metav1.GetOptions{})
-
-			if err != nil {
-				log.Error(err)
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = fmt.Sprintf("Error finding pgBackRest S3 CA secret \"%s\": %s",
-					request.BackrestS3CASecretName, err.Error())
-				return resp
-			}
-
-			// attempt to retrieves the custom CA, assuming it has the name
-			// "aws-s3-ca.crt"
-			backrestS3CACert = backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
+	if request.BackrestS3CASecretName != "" {
+		backrestSecret, err := apiserver.Clientset.
+			CoreV1().Secrets(request.Namespace).
+			Get(request.BackrestS3CASecretName, metav1.GetOptions{})
+		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("Error finding pgBackRest S3 CA secret \"%s\": %s",
+				request.BackrestS3CASecretName, err.Error())
+			return resp
 		}
 
-		// set up the secret for the cluster that contains the pgBackRest
+		// attempt to retrieves the custom CA, assuming it has the name
+		// "aws-s3-ca.crt"
+		backrestS3CACert = backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
+	}
+
+	// save the S3 credentials in a single map so it can be used to either create a new
+	// secret or update an existing one
+	s3Credentials := map[string][]byte{
+		util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert:    backrestS3CACert,
+		util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       []byte(request.BackrestS3Key),
+		util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: []byte(request.BackrestS3KeySecret),
+	}
+
+	_, err = apiserver.Clientset.CoreV1().Secrets(request.Namespace).
+		Get(secretName, metav1.GetOptions{})
+
+	switch {
+	case kubeapi.IsNotFound(err):
+		// The pgBackRest repo config secret was not found, create it.
+		// Set up the secret for the cluster that contains the pgBackRest
 		// information
 		secret := &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -1005,11 +1015,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 					config.LABEL_PGO_BACKREST_REPO: "true",
 				},
 			},
-			Data: map[string][]byte{
-				util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert:    backrestS3CACert,
-				util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       []byte(request.BackrestS3Key),
-				util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: []byte(request.BackrestS3KeySecret),
-			},
+			Data: s3Credentials,
 		}
 
 		if _, err := apiserver.Clientset.CoreV1().Secrets(ns).Create(secret); err != nil && !kubeapi.IsAlreadyExists(err) {
@@ -1017,10 +1023,22 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
 			return resp
 		}
-	} else if err != nil {
+
+	case err != nil:
+		// An error occurred other than 'not found'. Log the error received when
+		// attempting to get the pgBackRest repo config secret, then return.
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = fmt.Sprintf("could not query if backrest repo secret exits: %s", err)
 		return resp
+	default:
+		// the pgBackRest repo config secret already exists, update any provided
+		// S3 credential information
+		err = updateRepoSecret(apiserver.Clientset, secretName, request.Namespace, s3Credentials)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("could not update backrest repo secret: %s", err)
+			return resp
+		}
 	}
 
 	//create a workflow for this new cluster
@@ -1051,6 +1069,28 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	// and return!
 	return resp
+}
+
+// updateRepoSecret updates the existing pgBackRest repo config secret with any
+// provided S3/GCS connection information.
+func updateRepoSecret(clientset kubernetes.Interface, secretName,
+	namespace string, connectionInfo map[string][]byte) error {
+
+	// Get the secret
+	secret, err := clientset.CoreV1().Secrets(namespace).
+		Get(secretName, metav1.GetOptions{})
+	// The secret should already exist at this point. If there is any error,
+	// return.
+	if err != nil {
+		return err
+	}
+
+	// update the secret data
+	for k, v := range connectionInfo {
+		secret.Data[k] = v
+	}
+	_, err = clientset.CoreV1().Secrets(secret.Namespace).Update(secret)
+	return err
 }
 
 func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
