@@ -3023,6 +3023,18 @@ func TestReconcileScheduledBackups(t *testing.T) {
 						assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Name,
 							"pgbackrest")
 						assert.Assert(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].SecurityContext != &corev1.SecurityContext{})
+
+						// verify the image pull secret
+						if returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets == nil {
+							t.Error("image pull secret is missing tolerations")
+						}
+
+						if returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets != nil {
+							if returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.ImagePullSecrets[0].Name !=
+								"myImagePullSecret" {
+								t.Error("image pull secret name is not set correctly")
+							}
+						}
 					}
 					return
 				}
