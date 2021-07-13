@@ -20,7 +20,7 @@ if command -v oc >/dev/null; then
 	kubectl() { oc "$@"; }
 elif ! command -v kubectl >/dev/null; then
 	# Use a version of `kubectl` that matches the Kubernetes server.
-	eval "kubectl() { kubectl-$( kubectl-1.16 version --output=json |
+	eval "kubectl() { kubectl-$( kubectl-1.19 version --output=json |
 		jq --raw-output '.serverVersion | .major + "." + .minor')"' "$@"; }'
 fi
 
