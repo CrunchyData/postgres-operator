@@ -2,26 +2,54 @@
 apiVersion: crunchydata.com/v1
 kind: Pgcluster
 metadata:
-  name: example
-  labels: { archive: 'false' }
+  annotations: { current-primary: 'hippo' }
+  name: hippo
+  labels:
+    crunchy-pgha-scope: hippo
+    deployment-name: hippo
+    name: hippo
+    namespace: pgo
+    pg-cluster: hippo
+    pgo-version: '${PGO_VERSION}'
 spec:
-  name: example
-  clustername: example
+  name: hippo
+  namespace: pgo
+  clustername: hippo
   ccpimage: crunchy-postgres-ha
   ccpimagetag: '${CCP_IMAGE_TAG}'
-  PrimaryStorage:
-    accessmode: ReadWriteOnce
-    size: 1G
-    storageclass: standard
+  BackrestStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 5Gi
+    storageclass: ""
     storagetype: dynamic
-  database: example
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: hippo
+    size: 5Gi
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 5Gi
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  database: hippo
   exporterport: '9187'
   pgbadgerport: '10000'
+  podAntiAffinity:
+    default: preferred
   port: '5432'
-  primarysecretname: example-primaryuser
-  rootsecretname: example-postgresuser
-  usersecretname: example-primaryuser
-  userlabels: { archive: 'false' }
+  user: hippo
+  userlabels:
+    pgo-version: '${PGO_VERSION}'
 
 ---
 apiVersion: crunchydata.com/v1

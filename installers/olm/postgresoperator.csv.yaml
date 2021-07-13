@@ -107,8 +107,6 @@ spec:
                 - endpoints
                 - pods
                 - pods/exec
-                - pods/log
-                - replicasets
                 - secrets
                 - services
                 - persistentvolumeclaims
@@ -122,9 +120,18 @@ spec:
                 - delete
                 - deletecollection
             - apiGroups:
+                - ''
+              resources:
+                - pods/log
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
                 - apps
               resources:
                 - deployments
+                - replicasets
               verbs:
                 - get
                 - list
@@ -200,10 +207,16 @@ spec:
                   vendor: crunchydata
               spec:
                 serviceAccountName: pgo
+                securityContext:
+                  runAsNonRoot: true
                 containers:
                   - name: apiserver
                     image: '${PGO_IMAGE_PREFIX}/pgo-apiserver:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      privileged: false
+                      readOnlyRootFilesystem: true
                     ports:
                       - containerPort: 8443
                     readinessProbe:
@@ -226,14 +239,76 @@ spec:
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
                       - { name: CRUNCHY_DEBUG, value: 'false' }
+                      - { name: EVENT_ADDR, value: 'localhost:4150' }
                       - { name: PORT, value: '8443' }
+                    volumeMounts:
+                      - mountPath: /tmp
+                        name: tmp
 
                   - name: operator
                     image: '${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      privileged: false
+                      readOnlyRootFilesystem: true
                     env:
                       - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
                       - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
                       - { name: CRUNCHY_DEBUG, value: 'false' }
+                      - { name: EVENT_ADDR, value: 'localhost:4150' }
+
+                  - name: scheduler
+                    image: '${PGO_IMAGE_PREFIX}/pgo-scheduler:${PGO_IMAGE_TAG}'
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      privileged: false
+                      readOnlyRootFilesystem: true
+                    livenessProbe:
+                      exec:
+                        command: [
+                          "bash",
+                          "-c",
+                          "test -n \"$(find /tmp/scheduler.hb -newermt '61 sec ago')\""
+                        ]
+                        failureThreshold: 2
+                        initialDelaySeconds: 60
+                        periodSeconds: 60
+                    env:
+                      - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
+                      - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+                      - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+
+                      - { name: CRUNCHY_DEBUG, value: 'false' }
+                      - { name: EVENT_ADDR, value: 'localhost:4150' }
+                      - { name: TIMEOUT, value: '3600' }
+                    volumeMounts:
+                      - mountPath: /tmp
+                        name: tmp
+
+                  - name: event
+                    image: '${PGO_IMAGE_PREFIX}/pgo-event:${PGO_IMAGE_TAG}'
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
+                      privileged: false
+                      readOnlyRootFilesystem: true
+                    livenessProbe:
+                      httpGet:
+                        path: /ping
+                        port: 4151
+                      initialDelaySeconds: 15
+                      periodSeconds: 5
+                    env:
+                      - { name: TIMEOUT, value: '3600' }
+                    volumeMounts:
+                      - mountPath: /tmp
+                        name: tmp
+                volumes:
+                  - name: tmp
+                    emptyDir:
+                      medium: Memory
+                      sizeLimit: 16Mi

@@ -56,22 +56,6 @@
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:number'
 
-    - path: rootsecretname
-      displayName: PostgreSQL superuser credentials
-      description: The name of the Secret that contains the PostgreSQL superuser credentials
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes:Secret'
-    - path: primarysecretname
-      displayName: PostgreSQL support service credentials
-      description: The name of the Secret that contains the credentials used for managing cluster instance authentication, e.g. connections for replicas
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes:Secret'
-    - path: usersecretname
-      displayName: PostgreSQL user credentials
-      description: The name of the Secret that contains the PostgreSQL user credentials for logging into the PostgreSQL cluster
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes:Secret'
-
     # `operator-sdk scorecard` expects this field to have a descriptor.
     - path: PrimaryStorage
       displayName: PostgreSQL Primary Storage
