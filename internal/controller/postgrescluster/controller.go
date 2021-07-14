@@ -25,7 +25,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -156,7 +155,7 @@ func (r *Reconciler) Reconcile(
 		primaryCertificate       *v1.SecretProjection
 		pgUser                   *v1.Secret
 		rootCA                   *pki.RootCertificateAuthority
-		monitoringSecret         *corev1.Secret
+		monitoringSecret         *v1.Secret
 		err                      error
 	)
 
