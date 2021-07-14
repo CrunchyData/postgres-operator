@@ -26,7 +26,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -141,20 +140,20 @@ func (r *Reconciler) Reconcile(
 	if cluster.Name == "postgres" {
 		log.Info("cluster name not allowed")
 		r.Recorder.Eventf(cluster,
-			v1.EventTypeWarning, "InvalidName", "%q is not allowed", cluster.Name)
+			corev1.EventTypeWarning, "InvalidName", "%q is not allowed", cluster.Name)
 		return result, nil
 	}
 
 	var (
-		clusterConfigMap         *v1.ConfigMap
-		clusterReplicationSecret *v1.Secret
-		clusterPodService        *v1.Service
-		clusterVolumes           []v1.PersistentVolumeClaim
-		instanceServiceAccount   *v1.ServiceAccount
+		clusterConfigMap         *corev1.ConfigMap
+		clusterReplicationSecret *corev1.Secret
+		clusterPodService        *corev1.Service
+		clusterVolumes           []corev1.PersistentVolumeClaim
+		instanceServiceAccount   *corev1.ServiceAccount
 		instances                *observedInstances
-		patroniLeaderService     *v1.Service
-		primaryCertificate       *v1.SecretProjection
-		pgUser                   *v1.Secret
+		patroniLeaderService     *corev1.Service
+		primaryCertificate       *corev1.SecretProjection
+		pgUser                   *corev1.Secret
 		rootCA                   *pki.RootCertificateAuthority
 		monitoringSecret         *corev1.Secret
 		err                      error
@@ -358,19 +357,19 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workerCount,
 		}).
-		Owns(&v1.ConfigMap{}).
-		Owns(&v1.Endpoints{}).
-		Owns(&v1.PersistentVolumeClaim{}).
-		Owns(&v1.Secret{}).
-		Owns(&v1.Service{}).
-		Owns(&v1.ServiceAccount{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.Endpoints{}).
+		Owns(&corev1.PersistentVolumeClaim{}).
+		Owns(&corev1.Secret{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.ServiceAccount{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&appsv1.StatefulSet{}).
 		Owns(&batchv1.Job{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&batchv1beta1.CronJob{}).
-		Watches(&source.Kind{Type: &v1.Pod{}}, r.watchPods()).
+		Watches(&source.Kind{Type: &corev1.Pod{}}, r.watchPods()).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
 			r.controllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)

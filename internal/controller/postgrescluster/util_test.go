@@ -25,7 +25,6 @@ import (
 	"gotest.tools/v3/assert"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -190,7 +189,7 @@ func TestUpdateReconcileResult(t *testing.T) {
 
 func TestAddNSSWrapper(t *testing.T) {
 
-	databaseBackrestContainerCount := func(template *v1.PodTemplateSpec) int {
+	databaseBackrestContainerCount := func(template *corev1.PodTemplateSpec) int {
 		var count int
 		for _, c := range template.Spec.Containers {
 			switch c.Name {
@@ -205,7 +204,7 @@ func TestAddNSSWrapper(t *testing.T) {
 
 	image := "test-image"
 
-	expectedEnv := []v1.EnvVar{
+	expectedEnv := []corev1.EnvVar{
 		{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
 		{Name: "NSS_WRAPPER_PASSWD", Value: "/tmp/nss_wrapper/postgres/passwd"},
 		{Name: "NSS_WRAPPER_GROUP", Value: "/tmp/nss_wrapper/postgres/group"},
@@ -216,25 +215,25 @@ func TestAddNSSWrapper(t *testing.T) {
 
 	testCases := []struct {
 		tcName      string
-		podTemplate *v1.PodTemplateSpec
+		podTemplate *corev1.PodTemplateSpec
 	}{{
 		tcName: "database and pgbackrest containers",
-		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
-			Containers: []v1.Container{
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{Name: "database"}, {Name: "pgbackrest"}, {Name: "dontmodify"},
 			}}},
 	}, {
 		tcName: "database container only",
-		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
-			Containers: []v1.Container{{Name: "database"}, {Name: "dontmodify"}}}},
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{Name: "database"}, {Name: "dontmodify"}}}},
 	}, {
 		tcName: "pgbackest container only",
-		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
-			Containers: []v1.Container{{Name: "dontmodify"}, {Name: "pgbackrest"}}}},
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{Name: "dontmodify"}, {Name: "pgbackrest"}}}},
 	}, {
 		tcName: "other containers",
-		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
-			Containers: []v1.Container{
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
 				{Name: "dontmodify1"}, {Name: "dontmodify2"}}}},
 	}}
 
@@ -290,7 +289,7 @@ func TestJobCompleted(t *testing.T) {
 			Status: batchv1.JobStatus{
 				Conditions: []batchv1.JobCondition{{
 					Type:   batchv1.JobComplete,
-					Status: v1.ConditionTrue,
+					Status: corev1.ConditionTrue,
 				}},
 			},
 		},
@@ -301,7 +300,7 @@ func TestJobCompleted(t *testing.T) {
 			Status: batchv1.JobStatus{
 				Conditions: []batchv1.JobCondition{{
 					Type:   batchv1.JobComplete,
-					Status: v1.ConditionFalse,
+					Status: corev1.ConditionFalse,
 				}},
 			},
 		},
@@ -312,7 +311,7 @@ func TestJobCompleted(t *testing.T) {
 			Status: batchv1.JobStatus{
 				Conditions: []batchv1.JobCondition{{
 					Type:   batchv1.JobComplete,
-					Status: v1.ConditionUnknown,
+					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
@@ -344,7 +343,7 @@ func TestJobFailed(t *testing.T) {
 			Status: batchv1.JobStatus{
 				Conditions: []batchv1.JobCondition{{
 					Type:   batchv1.JobFailed,
-					Status: v1.ConditionTrue,
+					Status: corev1.ConditionTrue,
 				}},
 			},
 		},
@@ -355,7 +354,7 @@ func TestJobFailed(t *testing.T) {
 			Status: batchv1.JobStatus{
 				Conditions: []batchv1.JobCondition{{
 					Type:   batchv1.JobFailed,
-					Status: v1.ConditionFalse,
+					Status: corev1.ConditionFalse,
 				}},
 			},
 		},
@@ -366,7 +365,7 @@ func TestJobFailed(t *testing.T) {
 			Status: batchv1.JobStatus{
 				Conditions: []batchv1.JobCondition{{
 					Type:   batchv1.JobFailed,
-					Status: v1.ConditionUnknown,
+					Status: corev1.ConditionUnknown,
 				}},
 			},
 		},
