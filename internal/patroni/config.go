@@ -260,7 +260,17 @@ func DynamicConfiguration(
 	// Override the above with mandatory parameters.
 	if pgParameters.Mandatory != nil {
 		for k, v := range pgParameters.Mandatory.AsMap() {
-			parameters[k] = v
+			// Unlike other PostgreSQL parameters that have mandatory values,
+			// shared_preload_libraries is a comma separated list that can have
+			// other values appended in addition to the mandatory values. Below,
+			// any values provided in the CRD are appended after the mandatory
+			// values.
+			s, ok := parameters[k].(string)
+			if k == "shared_preload_libraries" && ok {
+				parameters[k] = v + "," + s
+			} else {
+				parameters[k] = v
+			}
 		}
 	}
 	postgresql["parameters"] = parameters

@@ -319,6 +319,60 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
+			name: "postgresql.parameters: mandatory shared_preload_libraries",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"shared_preload_libraries": "given",
+					},
+				},
+			},
+			params: postgres.Parameters{
+				Mandatory: parameters(map[string]string{
+					"shared_preload_libraries": "mandatory",
+				}),
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"shared_preload_libraries": "mandatory,given",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+			},
+		},
+		{
+			name: "postgresql.parameters: mandatory shared_preload_libraries bad type",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"shared_preload_libraries": 1,
+					},
+				},
+			},
+			params: postgres.Parameters{
+				Mandatory: parameters(map[string]string{
+					"shared_preload_libraries": "mandatory",
+				}),
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"shared_preload_libraries": "mandatory",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+			},
+		},
+		{
 			name: "postgresql.pg_hba: wrong-type is ignored",
 			input: map[string]interface{}{
 				"postgresql": map[string]interface{}{
