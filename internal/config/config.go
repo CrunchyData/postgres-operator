@@ -22,18 +22,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// a list of container images that are available
-// The Red Hat Marketplace requires environment variables to be used for any
-// image except the Operator's own image (see
-//  https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/offline-enabled-operators#golang-operators)
-// Any container images that the Operator might require to perform its functions
-// must be made available. Because a user could potentially use any of the images
-// below, each is defined separately. (See
-//	https://docs.openshift.com/container-platform/4.7/operators/operator_sdk/osdk-generating-csvs.html#olm-enabling-operator-for-restricted-network_osdk-generating-csvs)
-// This approach works with the concept of image streams and can allow for automatic
-// updates when the container image is changed (See
-//  https://docs.openshift.com/container-platform/4.7/openshift_images/images-understand.html#images-imagestream-use_images-understand)
-
 // defaultFromEnv reads the environment variable key when value is empty.
 func defaultFromEnv(value, key string) string {
 	if value == "" {
@@ -41,6 +29,14 @@ func defaultFromEnv(value, key string) string {
 	}
 	return value
 }
+
+// Red Hat Marketplace requires operators to use environment variables be used
+// for any image other than the operator itself. Those variables must start with
+// "RELATED_IMAGE_" so that OSBS can transform their tag values into digests
+// for a "disconncted" OLM CSV.
+
+// - https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/offline-enabled-operators
+// - https://osbs.readthedocs.io/en/latest/users.html#pullspec-locations
 
 // PGBackRestContainerImage returns the container image to use for pgBackRest.
 func PGBackRestContainerImage(cluster *v1beta1.PostgresCluster) string {

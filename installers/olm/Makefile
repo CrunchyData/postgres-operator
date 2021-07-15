@@ -1,99 +1,110 @@
 .DEFAULT_GOAL := help
 .SUFFIXES:
 
-CCP_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
-CCP_PG_FULLVERSION ?= 13.3
-CCP_POSTGIS_VERSION ?= 3.0
 CONTAINER ?= docker
-KUBECONFIG ?= $(HOME)/.kube/config
-OLM_SDK_VERSION ?= 0.15.1
-OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_SDK_VERSION)
-OLM_VERSION ?= 0.15.1
-PGO_BASEOS ?= centos8
-PGO_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
-PGO_VERSION ?= 4.7.0
-PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
-CCP_POSTGIS_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(CCP_POSTGIS_VERSION)-$(PGO_VERSION)
+PGO_VERSION ?= 5.0.0
 
-OLM_TOOLS_BASH = $(CONTAINER) run --net=host --rm --tty $(CONTAINER_ARGS) \
-		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,ro' \
-		 --mount 'type=bind,source=$(CURDIR)/..,target=/mnt/installers' \
-		 --workdir '/mnt/installers/$(basename $(notdir $(CURDIR)))' \
-		 '$(OLM_TOOLS)'
+OS_KERNEL  ?= $(shell bash -c 'echo $${1,,}' - `uname -s`)
+OS_MACHINE ?= $(shell bash -c 'echo $${1/x86_/amd}' - `uname -m`)
+SYSTEM = $(OS_KERNEL)-$(OS_MACHINE)
 
-export CCP_IMAGE_PREFIX CCP_IMAGE_TAG CCP_POSTGIS_IMAGE_TAG
-export KUBECONFIG
-export OLM_SDK_VERSION
-export PGO_IMAGE_PREFIX PGO_IMAGE_TAG PGO_VERSION
+export PATH := $(CURDIR)/tools/$(SYSTEM):$(PATH)
+
+export PGO_VERSION
+
+distros = upstream openshift redhat
+
+.PHONY: bundles
+bundles: ## Build OLM bundles
+bundles: $(distros:%=bundles/%)
+
+# https://olm.operatorframework.io/docs/tasks/creating-operator-bundle/#validating-your-bundle
+# https://github.com/operator-framework/community-operators/blob/8a36a33/docs/packaging-required-criteria-ocp.md
+.PHONY: bundles/openshift
+bundles/openshift:
+	./generate.sh openshift
+	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
+	env operator-sdk bundle validate $@ --select-optional='name=community' --optional-values='index-path=$@/Dockerfile'
+
+# https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/reviewing-your-metadata-bundle
+.PHONY: bundles/redhat
+bundles/redhat:
+	./generate.sh redhat
+	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
+
+# https://olm.operatorframework.io/docs/tasks/creating-operator-bundle/#validating-your-bundle
+# https://github.com/operator-framework/community-operators/blob/8a36a33/docs/packaging-required-criteria-ocp.md
+.PHONY: bundles/upstream
+bundles/upstream:
+	./generate.sh upstream
+	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
+	env operator-sdk bundle validate $@ --select-optional='name=community' --optional-values='index-path=$@/Dockerfile'
 
 .PHONY: clean
-clean:
+clean: clean-deprecated
+clean: ## Remove generated files and downloaded tools
+	rm -rf ./bundles ./projects ./tools
+
+.PHONY: clean-deprecated
+clean-deprecated:
 	rm -rf ./package
 
-.PHONY: catalog-source
-catalog-source: ## Upload package and version bundle to a Kubernetes namespace
-	@test -n '$(NAMESPACE)' || { >&2 echo Must choose a NAMESPACE; exit 1; }
-	./install.sh registry '$(NAMESPACE)' olm-registry
-	./install.sh catalog_source '$(NAMESPACE)' olm-catalog-source '$(NAMESPACE)' olm-registry
-
-.PHONY: courier-verify
-courier-verify:
-	operator-courier verify --ui_validate_io ./package
-
-.PHONY: docker-package
-docker-package: image-tools
-docker-package: ## Build package and version bundle from inside a container
-	$(OLM_TOOLS_BASH) make package courier-verify
-
-.PHONY: docker-shell
-docker-shell: image-tools
-docker-shell: CONTAINER_ARGS = --interactive
-docker-shell: ## Start a shell inside a container with all the tools needed to build and test
-	$(OLM_TOOLS_BASH)
-
-.PHONY: docker-verify
-docker-verify: image-tools
-	$(OLM_TOOLS_BASH) make verify
-
 .PHONY: help
-help: ALIGN=14
+help: ALIGN=18
 help: ## Print this message
 	@awk -F ': ## ' -- "/^[^':]+: ## /"' { printf "'$$(tput bold)'%-$(ALIGN)s'$$(tput sgr0)' %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-.PHONY: image-tools
-image-tools:
-	$(CONTAINER) build --file Dockerfile --tag '$(OLM_TOOLS)' --build-arg OLM_SDK_VERSION='$(OLM_SDK_VERSION)' .
-
-.PHONY: install
-install: ## Install the package in a Kubernetes namespace
-	@test -n '$(NAMESPACE)' || { >&2 echo Must choose a NAMESPACE; exit 1; }
-	./install.sh operator '$(NAMESPACE)' '$(NAMESPACE)'
-
 .PHONY: install-olm
 install-olm: ## Install OLM in Kubernetes
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/crds.yaml
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/olm.yaml
+	env operator-sdk olm install
 
-.PHONY: package
-package: export PACKAGE_NAME := postgresql
-package: ## Build package and version bundle
-	./generate.sh
+.PHONY: tools
+tools: ## Download tools needed to build bundles
 
-.PHONY: package-openshift
-package-openshift: export K8S_DISTRIBUTION := openshift
-package-openshift: package
+tools: tools/$(SYSTEM)/jq
+tools/$(SYSTEM)/jq:
+	install -d '$(dir $@)'
+	curl -fSL -o '$@' "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-$$(SYSTEM='$(SYSTEM)'; \
+		case "$$SYSTEM" in \
+			(linux-*) echo "$${SYSTEM/-amd/}";; (darwin-*) echo "$${SYSTEM/darwin/osx}";; (*) echo '$(SYSTEM)';; \
+		esac)"
+	chmod u+x '$@'
 
-.PHONY: package-redhat
-package-redhat: export K8S_DISTRIBUTION := openshift
-package-redhat: export PACKAGE_NAME := crunchy-postgres-operator
-package-redhat: CCP_IMAGE_PREFIX := registry.connect.redhat.com/crunchydata
-package-redhat: PGO_IMAGE_PREFIX := registry.connect.redhat.com/crunchydata
-package-redhat: PGO_BASEOS := $(subst centos,rhel,$(PGO_BASEOS))
-package-redhat:
-	./generate.sh
-	cd ./package && zip -r '$(PACKAGE_NAME)-$(PGO_VERSION).zip' *.yaml '$(PGO_VERSION)'
+tools: tools/$(SYSTEM)/kubectl
+tools/$(SYSTEM)/kubectl:
+	install -d '$(dir $@)'
+	curl -fSL -o '$@' 'https://dl.k8s.io/release/$(shell curl -Ls https://dl.k8s.io/release/stable-1.21.txt)/bin/$(OS_KERNEL)/$(OS_MACHINE)/kubectl'
+	chmod u+x '$@'
 
-.PHONY: verify
-verify: ## Install and test the package in a new (random) Kubernetes namespace then clean up
-	./verify.sh
+# quay.io/operator-framework/operator-sdk
+tools: tools/$(SYSTEM)/operator-sdk
+tools/$(SYSTEM)/operator-sdk:
+	install -d '$(dir $@)'
+	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-sdk/releases/download/v1.9.0/operator-sdk_$(OS_KERNEL)_$(OS_MACHINE)'
+	chmod u+x '$@'
+
+tools: tools/$(SYSTEM)/opm
+tools/$(SYSTEM)/opm:
+	install -d '$(dir $@)'
+	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-registry/releases/download/v1.17.5/$(OS_KERNEL)-$(OS_MACHINE)-opm'
+	chmod u+x '$@'
+
+tools/$(SYSTEM)/venv:
+	install -d '$(dir $@)'
+	python3 -m venv '$@'
+
+tools: tools/$(SYSTEM)/yq
+tools/$(SYSTEM)/yq: | tools/$(SYSTEM)/venv
+	'tools/$(SYSTEM)/venv/bin/python' -m pip install yq
+	cd '$(dir $@)' && ln -s venv/bin/yq
+
+.PHONY: validate-bundles
+validate-bundles: ## Build temporary bundle images and run scorecard tests in Kubernetes
+validate-bundles: $(distros:%=validate-%-image)
+validate-bundles: $(distros:%=validate-%-directory)
+
+validate-%-directory:
+	./validate-directory.sh 'bundles/$*'
+
+validate-%-image:
+	./validate-image.sh '$(CONTAINER)' 'bundles/$*'

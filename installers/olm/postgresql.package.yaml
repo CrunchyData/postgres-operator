@@ -1,5 +1,0 @@
-packageName: '${PACKAGE_NAME}'
-defaultChannel: stable
-channels:
-  - name: stable
-    currentCSV: 'postgresoperator.v${PGO_VERSION}'

@@ -1,0 +1,17 @@
+# Custom resources that are imported into the ClusterServiceVersion.
+#
+# The first for each GVK appears in the "Custom Resource Definitions" section on
+# the details page at OperatorHub.io: https://operatorhub.io/operator/postgresql
+#
+# The "metadata.name" fields should be unique so they can be given a description
+# that is presented by compatible UIs.
+# https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.18.2/doc/design/building-your-csv.md#crd-templates
+#
+# The "image" fields should be omitted so the defaults are used.
+# https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/offline-enabled-operators
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- postgrescluster.example.yaml
