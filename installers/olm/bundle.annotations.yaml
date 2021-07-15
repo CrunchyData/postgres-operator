@@ -1,0 +1,42 @@
+---
+annotations:
+  # https://olm.operatorframework.io/docs/tasks/creating-operator-bundle/
+  # https://docs.openshift.com/container-platform/4.7/operators/understanding/olm-packaging-format.html
+  operators.operatorframework.io.bundle.mediatype.v1: registry+v1
+  operators.operatorframework.io.bundle.manifests.v1: manifests/
+  operators.operatorframework.io.bundle.metadata.v1: metadata/
+
+  operators.operatorframework.io.test.mediatype.v1: scorecard+v1
+  operators.operatorframework.io.test.config.v1: tests/scorecard/
+
+  # "package.v1" is the name of the PackageManifest. It also determines the URL
+  # of the details page at OperatorHub.io; "postgresql" here becomes:
+  # https://operatorhub.io/operator/postgresql
+  #
+  # A package consists of multiple bundles (versions) arranged into channels.
+  # https://olm.operatorframework.io/docs/concepts/olm-architecture/operator-catalog/creating-an-update-graph/
+  operators.operatorframework.io.bundle.package.v1: '${PACKAGE_NAME}'
+
+  # "channels.v1" is the comma-separated list of channels from which this bundle
+  # can be installed.
+  #
+  # "channel.default.v1" is the default channel of the PackageManifest. It is
+  # the first channel presented, the first used to satisfy dependencies, and
+  # the one used by a Subscription that does not specify a channel. OLM uses
+  # the value from the bundle with the highest semantic version.
+  #
+  # https://olm.operatorframework.io/docs/best-practices/channel-naming/
+  operators.operatorframework.io.bundle.channels.v1: stable
+  operators.operatorframework.io.bundle.channel.default.v1: stable
+
+  # OpenShift v4.6 is the first version to support CustomResourceDefinition v1.
+  # https://github.com/operator-framework/community-operators/blob/8a36a33/docs/packaging-required-criteria-ocp.md
+  # https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/bundle-directory
+  com.redhat.delivery.operator.bundle: true
+  com.redhat.openshift.versions: 'v4.6'
+
+  # https://github.com/opencontainers/image-spec/blob/master/annotations.md
+  org.opencontainers.image.authors: info@crunchydata.com
+  org.opencontainers.image.url: https://crunchydata.com
+  org.opencontainers.image.vendor: Crunchy Data
+...
