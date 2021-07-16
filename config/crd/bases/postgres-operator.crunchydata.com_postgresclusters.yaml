@@ -2542,7 +2542,7 @@ spec:
                     replicas:
                       default: 1
                       format: int32
-                      minimum: 0
+                      minimum: 1
                       type: integer
                     resources:
                       description: Compute resources of a PostgreSQL container.
@@ -2743,6 +2743,7 @@ spec:
                   required:
                   - dataVolumeClaimSpec
                   type: object
+                minItems: 1
                 type: array
                 x-kubernetes-list-map-keys:
                 - name

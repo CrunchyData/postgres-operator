@@ -87,6 +87,7 @@ type PostgresClusterSpec struct {
 
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MinItems=1
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 
 	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift envioronment
@@ -269,7 +270,7 @@ type PostgresInstanceSetSpec struct {
 
 	// +optional
 	// +kubebuilder:default=1
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Minimum=1
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// Compute resources of a PostgreSQL container.

@@ -77,7 +77,9 @@ func TestReconcileCerts(t *testing.T) {
 		},
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
-			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{},
+			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+				Name: "instance",
+			}},
 		},
 	}
 	cluster1.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
@@ -95,7 +97,9 @@ func TestReconcileCerts(t *testing.T) {
 		},
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
-			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{},
+			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+				Name: "instance",
+			}},
 		},
 	}
 	cluster2.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
