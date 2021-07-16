@@ -31,6 +31,9 @@ type PGBouncerConfiguration struct {
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 
+	// NOTE(cbandy): map[string]string fields are not presented in the OpenShift
+	// web console: https://github.com/openshift/console/issues/9538
+
 	// Settings that apply to the entire PgBouncer process.
 	// More info: https://www.pgbouncer.org/config.html
 	// +optional

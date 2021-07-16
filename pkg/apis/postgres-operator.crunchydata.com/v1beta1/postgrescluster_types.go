@@ -82,6 +82,7 @@ type PostgresClusterSpec struct {
 	// the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion},
 	// e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.
 	// +optional
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
 	Image string `json:"image,omitempty"`
 
 	// The image pull secrets used to pull from a private registry
@@ -93,6 +94,7 @@ type PostgresClusterSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=2
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 
 	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift environment
@@ -112,6 +114,7 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=10
 	// +kubebuilder:validation:Maximum=13
+	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
 	PostgresVersion int `json:"postgresVersion"`
 
 	// The PostGIS extension version installed in the PostgreSQL image.
@@ -260,6 +263,7 @@ type PostgresClusterStatus struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=type
+	// +operator-sdk:csv:customresourcedefinitions:type=status,xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
@@ -367,6 +371,7 @@ type PostgresStandbySpec struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Secret,v1},{Service,v1},{CronJob,v1beta1},{Deployment,v1},{Job,v1},{StatefulSet,v1},{PersistentVolumeClaim,v1}}
 
 // PostgresCluster is the Schema for the postgresclusters API
 type PostgresCluster struct {
