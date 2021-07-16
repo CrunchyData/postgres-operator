@@ -89,7 +89,7 @@ type PostgresClusterSpec struct {
 	// +listMapKey=name
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 
-	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift envioronment
+	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift environment
 	// +optional
 	OpenShift *bool `json:"openshift,omitempty"`
 
