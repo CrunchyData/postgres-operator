@@ -6419,7 +6419,7 @@ Condition contains details for one aspect of the current state of this API Resou
       </tr><tr>
         <td><b>status</b></td>
         <td>enum</td>
-        <td>status of the condition, one of True, False, Unknown. [True False Unknown]</td>
+        <td>status of the condition, one of True, False, Unknown.</td>
         <td>true</td>
       </tr><tr>
         <td><b>type</b></td>
