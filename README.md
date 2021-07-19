@@ -92,7 +92,7 @@ Choose the type of backup (full, incremental, differential) and [how frequently 
 #### Backup to Local Storage, [S3][backups-s3], [GCS][backups-gcs], [Azure][backups-azure], or a Combo!
 
 [Store your backups in Amazon S3][backups-s3] or any object storage system that supports
-the S3 protocol. You can also store backups in [Google Cloud Storage][backups-gcs] and [Azure Blog Strage][backups-azure].
+the S3 protocol. You can also store backups in [Google Cloud Storage][backups-gcs] and [Azure Blob Strage][backups-azure].
 
 You can also [mix-and-match][backups-multi]: PGO lets you [store backups in multiple locations][backups-multi].
 
