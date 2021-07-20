@@ -1030,11 +1030,11 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 
 	annotations := naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
-		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil(),
 		map[string]string{naming.PGBackRestConfigHash: configHash})
 	labels := naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
-		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRestoreJobLabels(cluster.Name),
 		map[string]string{naming.LabelStartupInstance: instanceName},
 	)
