@@ -177,11 +177,13 @@ type PostgresClusterDataSource struct {
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// Affinity settings for the pgBackRest restore Job.
+	// Scheduling constraints of the pgBackRest restore Job.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
-	// Toleration settings for the pgBackRest restore Job.
+	// Tolerations of the pgBackRest restore Job.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }

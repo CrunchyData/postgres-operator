@@ -2317,6 +2317,205 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	}
 }
 
+func TestGenerateRestoreJobIntent(t *testing.T) {
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	r := Reconciler{
+		Client: cc,
+	}
+
+	t.Run("empty", func(t *testing.T) {
+		err := r.generateRestoreJobIntent(&v1beta1.PostgresCluster{}, "", "",
+			[]string{}, []corev1.VolumeMount{}, []corev1.Volume{},
+			&v1beta1.PostgresClusterDataSource{}, &batchv1.Job{})
+		assert.NilError(t, err)
+	})
+
+	configHash := "hash"
+	instanceName := "name"
+	cmd := []string{"cmd", "blah"}
+	volumeMounts := []corev1.VolumeMount{{
+		Name: "mount",
+	}}
+	volumes := []corev1.Volume{{
+		Name: "volume",
+	}}
+	dataSource := &v1beta1.PostgresClusterDataSource{
+		// ClusterName/Namespace, Repo, and Options are tested in
+		// TestReconcilePostgresClusterDataSource
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceStorage: resource.MustParse("1Gi"),
+			},
+		},
+		Affinity: &corev1.Affinity{
+			NodeAffinity: &corev1.NodeAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+					NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+						MatchExpressions: []corev1.NodeSelectorRequirement{{
+							Key:      "key",
+							Operator: "Exist",
+						}},
+					}},
+				},
+			},
+		},
+		Tolerations: []corev1.Toleration{{
+			Key:      "key",
+			Operator: "Exist",
+		}},
+	}
+	cluster := &v1beta1.PostgresCluster{
+		Spec: v1beta1.PostgresClusterSpec{
+			Metadata: &v1beta1.Metadata{
+				Labels:      map[string]string{"Global": "test"},
+				Annotations: map[string]string{"Global": "test"},
+			},
+			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
+				Metadata: &v1beta1.Metadata{
+					Labels:      map[string]string{"Backrest": "test"},
+					Annotations: map[string]string{"Backrest": "test"},
+				},
+			}},
+			Image:            "image",
+			ImagePullSecrets: []corev1.LocalObjectReference{{Name: "Secret"}},
+		},
+	}
+
+	for _, openshift := range []bool{true, false} {
+		test := "job"
+		cluster.Spec.OpenShift = initialize.Bool(false)
+		if openshift {
+			cluster.Spec.OpenShift = initialize.Bool(true)
+			test = test + "-openshift"
+		}
+		job := &batchv1.Job{}
+		err := r.generateRestoreJobIntent(cluster, configHash, instanceName,
+			cmd, volumeMounts, volumes, dataSource, job)
+		assert.NilError(t, err, job)
+
+		t.Run(test, func(t *testing.T) {
+			t.Run("ObjectMeta", func(t *testing.T) {
+				t.Run("Name", func(t *testing.T) {
+					assert.Equal(t, job.ObjectMeta.Name,
+						naming.PGBackRestRestoreJob(cluster).Name)
+				})
+				t.Run("Namespace", func(t *testing.T) {
+					assert.Equal(t, job.ObjectMeta.Namespace,
+						naming.PGBackRestRestoreJob(cluster).Namespace)
+				})
+				t.Run("Annotations", func(t *testing.T) {
+					// configHash is defined as an annotation on the job
+					annotations := labels.Set(job.GetAnnotations())
+					assert.Assert(t, annotations.Has("Global"))
+					assert.Assert(t, annotations.Has("Backrest"))
+					assert.Equal(t, annotations.Get(naming.PGBackRestConfigHash), configHash)
+				})
+				t.Run("Labels", func(t *testing.T) {
+					// instanceName is defined as a label on the job
+					label := labels.Set(job.GetLabels())
+					assert.Equal(t, label.Get("Global"), "test")
+					assert.Equal(t, label.Get("Backrest"), "test")
+					assert.Equal(t, label.Get(naming.LabelStartupInstance), instanceName)
+				})
+			})
+			t.Run("Spec", func(t *testing.T) {
+				t.Run("Template", func(t *testing.T) {
+					t.Run("ObjectMeta", func(t *testing.T) {
+						t.Run("Annotations", func(t *testing.T) {
+							annotations := labels.Set(job.Spec.Template.GetAnnotations())
+							assert.Assert(t, annotations.Has("Global"))
+							assert.Assert(t, annotations.Has("Backrest"))
+							assert.Equal(t, annotations.Get(naming.PGBackRestConfigHash), configHash)
+						})
+						t.Run("Labels", func(t *testing.T) {
+							label := labels.Set(job.Spec.Template.GetLabels())
+							assert.Equal(t, label.Get("Global"), "test")
+							assert.Equal(t, label.Get("Backrest"), "test")
+							assert.Equal(t, label.Get(naming.LabelStartupInstance), instanceName)
+						})
+					})
+					t.Run("Spec", func(t *testing.T) {
+						t.Run("Containers", func(t *testing.T) {
+							assert.Assert(t, len(job.Spec.Template.Spec.Containers) == 1)
+							t.Run("Command", func(t *testing.T) {
+								assert.DeepEqual(t, job.Spec.Template.Spec.Containers[0].Command,
+									[]string{"cmd", "blah"})
+							})
+							t.Run("Image", func(t *testing.T) {
+								assert.Equal(t, job.Spec.Template.Spec.Containers[0].Image,
+									"image")
+							})
+							t.Run("Name", func(t *testing.T) {
+								assert.Equal(t, job.Spec.Template.Spec.Containers[0].Name,
+									naming.PGBackRestRestoreContainerName)
+							})
+							t.Run("VolumeMount", func(t *testing.T) {
+								assert.DeepEqual(t, job.Spec.Template.Spec.Containers[0].VolumeMounts,
+									[]corev1.VolumeMount{{
+										Name: "mount",
+									}})
+							})
+							t.Run("Env", func(t *testing.T) {
+								assert.DeepEqual(t, job.Spec.Template.Spec.Containers[0].Env,
+									[]corev1.EnvVar{{Name: "PGHOST", Value: "/tmp"}})
+							})
+							t.Run("SecurityContext", func(t *testing.T) {
+								assert.DeepEqual(t, job.Spec.Template.Spec.Containers[0].SecurityContext,
+									initialize.RestrictedSecurityContext())
+							})
+							t.Run("Resources", func(t *testing.T) {
+								assert.DeepEqual(t, job.Spec.Template.Spec.Containers[0].Resources,
+									dataSource.Resources)
+							})
+						})
+						t.Run("RestartPolicy", func(t *testing.T) {
+							assert.Equal(t, job.Spec.Template.Spec.RestartPolicy,
+								corev1.RestartPolicyNever)
+						})
+						t.Run("Volumes", func(t *testing.T) {
+							assert.DeepEqual(t, job.Spec.Template.Spec.Volumes,
+								[]corev1.Volume{{
+									Name: "volume",
+								}})
+						})
+						t.Run("Affinity", func(t *testing.T) {
+							assert.DeepEqual(t, job.Spec.Template.Spec.Affinity,
+								dataSource.Affinity)
+						})
+						t.Run("Tolerations", func(t *testing.T) {
+							assert.DeepEqual(t, job.Spec.Template.Spec.Tolerations,
+								dataSource.Tolerations)
+						})
+						t.Run("ImagePullSecret", func(t *testing.T) {
+							assert.DeepEqual(t, job.Spec.Template.Spec.ImagePullSecrets,
+								[]corev1.LocalObjectReference{{
+									Name: "Secret",
+								}})
+						})
+						t.Run("PodSecurityContext", func(t *testing.T) {
+							// podSecurityContext will differ based on the environment where
+							// the cluster is installed. If installing in a non-Openshift
+							// environment, update the Context that is expected
+							var fsgroup *int64
+							if !openshift {
+								fsgroup = initialize.Int64(26)
+							}
+							assert.DeepEqual(t, job.Spec.Template.Spec.SecurityContext,
+								&corev1.PodSecurityContext{
+									SupplementalGroups: []int64{65534},
+									FSGroup:            fsgroup,
+									RunAsNonRoot:       initialize.Bool(true),
+								})
+						})
+					})
+				})
+			})
+		})
+	}
+}
+
 func TestObserveRestoreEnv(t *testing.T) {
 
 	// setup the test environment and ensure a clean teardown

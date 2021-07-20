@@ -28,6 +28,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -1026,21 +1027,6 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	// to do any escaping or use eval.
 	cmd := pgbackrest.RestoreCommand(pgdata, strings.Join(opts, " "))
 
-	meta := naming.PGBackRestRestoreJob(cluster)
-
-	annotations := naming.Merge(
-		cluster.Spec.Metadata.GetAnnotationsOrNil(),
-		cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil(),
-		map[string]string{naming.PGBackRestConfigHash: configHash})
-	labels := naming.Merge(
-		cluster.Spec.Metadata.GetLabelsOrNil(),
-		cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
-		naming.PGBackRestRestoreJobLabels(cluster.Name),
-		map[string]string{naming.LabelStartupInstance: instanceName},
-	)
-	meta.Annotations = annotations
-	meta.Labels = labels
-
 	// create the volume resources required for the postgres data directory
 	dataVolumeMount := postgres.DataVolumeMount()
 	dataVolume := v1.Volume{
@@ -1068,50 +1054,11 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		volumeMounts = append(volumeMounts, walVolumeMount)
 	}
 
-	restoreJob := &batchv1.Job{
-		ObjectMeta: meta,
-		Spec: batchv1.JobSpec{
-			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: annotations,
-					Labels:      labels,
-				},
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{{
-						Command:         cmd,
-						Image:           config.PostgresContainerImage(cluster),
-						Name:            naming.PGBackRestRestoreContainerName,
-						VolumeMounts:    volumeMounts,
-						Env:             []v1.EnvVar{{Name: "PGHOST", Value: "/tmp"}},
-						SecurityContext: initialize.RestrictedSecurityContext(),
-						Resources:       dataSource.Resources,
-					}},
-					RestartPolicy: v1.RestartPolicyNever,
-					Volumes:       volumes,
-				},
-			},
-		},
-	}
-
-	// Set the image pull secrets, if any exist.
-	// This is set here rather than using the service account due to the lack
-	// of propagation to existing pods when the CRD is updated:
-	// https://github.com/kubernetes/kubernetes/issues/88456
-	restoreJob.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
-
-	restoreJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
-	if err := errors.WithStack(r.setControllerReference(cluster, restoreJob)); err != nil {
+	restoreJob := &batchv1.Job{}
+	if err := r.generateRestoreJobIntent(cluster, configHash, instanceName, cmd,
+		volumeMounts, volumes, dataSource, restoreJob); err != nil {
 		return errors.WithStack(err)
 	}
-
-	podSecurityContext := initialize.RestrictedPodSecurityContext()
-	// TODO (andrewlecuyer): make supplemental groups configurable
-	podSecurityContext.SupplementalGroups = []int64{65534}
-	// set fsGroups if not OpenShift
-	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
-		podSecurityContext.FSGroup = initialize.Int64(26)
-	}
-	restoreJob.Spec.Template.Spec.SecurityContext = podSecurityContext
 
 	if pgbackrest.RepoHostEnabled(sourceCluster) {
 		// add ssh configs to template
@@ -1135,6 +1082,74 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	addTMPEmptyDir(&restoreJob.Spec.Template)
 
 	return errors.WithStack(r.apply(ctx, restoreJob))
+}
+
+func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
+	configHash, instanceName string, cmd []string,
+	volumeMounts []corev1.VolumeMount, volumes []corev1.Volume,
+	dataSource *v1beta1.PostgresClusterDataSource, job *batchv1.Job) error {
+
+	meta := naming.PGBackRestRestoreJob(cluster)
+
+	annotations := naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil(),
+		map[string]string{naming.PGBackRestConfigHash: configHash})
+	labels := naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestRestoreJobLabels(cluster.Name),
+		map[string]string{naming.LabelStartupInstance: instanceName},
+	)
+	meta.Annotations = annotations
+	meta.Labels = labels
+
+	job.ObjectMeta = meta
+	job.Spec = batchv1.JobSpec{
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: annotations,
+				Labels:      labels,
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{
+					Command:         cmd,
+					Image:           config.PostgresContainerImage(cluster),
+					Name:            naming.PGBackRestRestoreContainerName,
+					VolumeMounts:    volumeMounts,
+					Env:             []corev1.EnvVar{{Name: "PGHOST", Value: "/tmp"}},
+					SecurityContext: initialize.RestrictedSecurityContext(),
+					Resources:       dataSource.Resources,
+				}},
+				RestartPolicy: corev1.RestartPolicyNever,
+				Volumes:       volumes,
+				Affinity:      dataSource.Affinity,
+				Tolerations:   dataSource.Tolerations,
+			},
+		},
+	}
+
+	// Set the image pull secrets, if any exist.
+	// This is set here rather than using the service account due to the lack
+	// of propagation to existing pods when the CRD is updated:
+	// https://github.com/kubernetes/kubernetes/issues/88456
+	job.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
+
+	podSecurityContext := initialize.RestrictedPodSecurityContext()
+	// TODO (andrewlecuyer): make supplemental groups configurable
+	podSecurityContext.SupplementalGroups = []int64{65534}
+	// set fsGroups if not OpenShift
+	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
+		podSecurityContext.FSGroup = initialize.Int64(26)
+	}
+	job.Spec.Template.Spec.SecurityContext = podSecurityContext
+
+	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
+	if err := errors.WithStack(r.setControllerReference(cluster, job)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // reconcilePGBackRest is responsible for reconciling any/all pgBackRest resources owned by a
