@@ -176,6 +176,14 @@ type PostgresClusterDataSource struct {
 	// Resource requirements for the pgBackRest restore Job.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Affinity settings for the pgBackRest restore Job.
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Toleration settings for the pgBackRest restore Job.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 func (s *PostgresClusterSpec) Default() {
