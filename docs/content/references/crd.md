@@ -369,7 +369,7 @@ Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL
     <tbody><tr>
         <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinity">affinity</a></b></td>
         <td>object</td>
-        <td>Affinity settings for the pgBackRest restore Job.</td>
+        <td>Scheduling constraints of the pgBackRest restore Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
         <td><b>clusterName</b></td>
@@ -394,7 +394,7 @@ Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL
       </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepostgresclustertolerationsindex">tolerations</a></b></td>
         <td>[]object</td>
-        <td>Toleration settings for the pgBackRest restore Job.</td>
+        <td>Tolerations of the pgBackRest restore Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
         <td>false</td>
       </tr><tr>
         <td><b>repoName</b></td>
@@ -412,7 +412,7 @@ Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL
 
 
 
-Affinity settings for the pgBackRest restore Job.
+Scheduling constraints of the pgBackRest restore Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 
 <table>
     <thead>
@@ -5746,7 +5746,7 @@ Defines details for performing an in-place restore using pgBackRest
     <tbody><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinity">affinity</a></b></td>
         <td>object</td>
-        <td>Affinity settings for the pgBackRest restore Job.</td>
+        <td>Scheduling constraints of the pgBackRest restore Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
         <td><b>clusterName</b></td>
@@ -5771,7 +5771,7 @@ Defines details for performing an in-place restore using pgBackRest
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrestoretolerationsindex">tolerations</a></b></td>
         <td>[]object</td>
-        <td>Toleration settings for the pgBackRest restore Job.</td>
+        <td>Tolerations of the pgBackRest restore Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
         <td>false</td>
       </tr><tr>
         <td><b>enabled</b></td>
@@ -5794,7 +5794,7 @@ Defines details for performing an in-place restore using pgBackRest
 
 
 
-Affinity settings for the pgBackRest restore Job.
+Scheduling constraints of the pgBackRest restore Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 
 <table>
     <thead>

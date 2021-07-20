@@ -1513,8 +1513,8 @@ spec:
                           using pgBackRest
                         properties:
                           affinity:
-                            description: Affinity settings for the pgBackRest restore
-                              Job.
+                            description: 'Scheduling constraints of the pgBackRest
+                              restore Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node'
                             properties:
                               nodeAffinity:
                                 description: Describes node affinity scheduling rules
@@ -2253,8 +2253,8 @@ spec:
                                 type: object
                             type: object
                           tolerations:
-                            description: Toleration settings for the pgBackRest restore
-                              Job.
+                            description: 'Tolerations of the pgBackRest restore Job.
+                              More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration'
                             items:
                               description: The pod this Toleration is attached to
                                 tolerates any taint that matches the triple <key,value,effect>
@@ -2423,8 +2423,8 @@ spec:
                       cluster using a pgBackRest restore.
                     properties:
                       affinity:
-                        description: Affinity settings for the pgBackRest restore
-                          Job.
+                        description: 'Scheduling constraints of the pgBackRest restore
+                          Job. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node'
                         properties:
                           nodeAffinity:
                             description: Describes node affinity scheduling rules
@@ -3117,8 +3117,8 @@ spec:
                             type: object
                         type: object
                       tolerations:
-                        description: Toleration settings for the pgBackRest restore
-                          Job.
+                        description: 'Tolerations of the pgBackRest restore Job. More
+                          info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration'
                         items:
                           description: The pod this Toleration is attached to tolerates
                             any taint that matches the triple <key,value,effect> using

@@ -18,8 +18,12 @@ There are several attributes on the custom resource that are important to unders
 Please review the table below to understand how each of these attributes work in the context of setting up a restore operation.
 
 - `spec.dataSource.postgresCluster.clusterName`: The name of the cluster that you are restoring from. This corresponds to the `metadata.name` attribute on a different `postgrescluster` custom resource.
+- `spec.dataSource.postgresCluster.clusterNamespace`: The namespace of the cluster that you are restoring from. Used when the cluster exists in a different namespace.
 - `spec.dataSource.postgresCluster.repoName`: The name of the pgBackRest repository from the `spec.dataSource.postgresCluster.clusterName` to use for the restore. Can be one of `repo1`, `repo2`, `repo3`, or `repo4`. The repository must exist in the other cluster.
 - `spec.dataSource.postgresCluster.options`: Any additional [pgBackRest restore options](https://pgbackrest.org/command.html#command-restore) or general options you would like to pass in. For example, you may want to set `--process-max` to help improve performance on larger databases.
+- `spec.dataSource.postgresCluster.resources`: Setting [resource limits and requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits) of the restore job can ensure that it runs efficiently.
+- `spec.dataSource.postgresCluster.affinity`: Custom [Kubernetes affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/) rules constrain the restore job so that it only runs on certain nodes.
+- `spec.dataSource.postgresCluster.tolerations`: Custom [Kubernetes tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) allow the restore job to run on [tainted](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) nodes.
 
 Let's walk through some examples for how we can clone and restore our databases.
 
