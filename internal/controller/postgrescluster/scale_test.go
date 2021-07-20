@@ -179,24 +179,6 @@ func TestScaleDown(t *testing.T) {
 				DataVolumeClaimSpec: volumeClaimSpec,
 			}},
 			updateRunningInstances: 2,
-		}, {
-			name: "OneSetToZero",
-			// Remove all replicas and ensure that the primary has been deleted
-			createSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:                "daisy",
-				Replicas:            Int32(3),
-				DataVolumeClaimSpec: volumeClaimSpec,
-			}},
-			createRunningInstances: 3,
-			updateSet: []v1beta1.PostgresInstanceSetSpec{{
-				Name:                "daisy",
-				Replicas:            Int32(0),
-				DataVolumeClaimSpec: volumeClaimSpec,
-			}},
-			updateRunningInstances: 0,
-			primaryTest: func(t *testing.T, old, new string) {
-				assert.Equal(t, new, "", "There should not be a primary instance")
-			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

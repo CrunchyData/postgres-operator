@@ -61,7 +61,9 @@ func TestDeleteControlled(t *testing.T) {
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		spec: {
 			postgresVersion: 13,
-			instances: [],
+			instances: [{
+				name: instance,
+			}],
 		},
 	}`), cluster))
 
@@ -173,13 +175,20 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 	}
 
 	Specify(`"postgres" cluster not allowed`, func() {
-		cluster := create(`{
-metadata: { name: postgres },
-spec: {
-	postgresVersion: 13,
-	instances: [],
-},
-		}`)
+		cluster := create(`
+metadata:
+    name: postgres
+spec:
+    postgresVersion: 13
+    instances:
+    - name: samba
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteMany"
+        resources:
+        requests:
+            storage: 1Gi
+`)
 		Expect(reconcile(cluster)).To(BeZero())
 
 		Expect(test.Recorder.Events).To(Not(BeEmpty()))
@@ -201,13 +210,20 @@ spec: {
 		var cluster *v1beta1.PostgresCluster
 
 		BeforeEach(func() {
-			cluster = create(`{
-metadata: { name: carlos },
-spec: {
-	postgresVersion: 13,
-	instances: [],
-},
-			}`)
+			cluster = create(`
+metadata:
+  name: carlos
+spec:
+  postgresVersion: 13
+  instances:
+  - name: samba
+    dataVolumeClaimSpec:
+      accessModes:
+      - "ReadWriteMany"
+      resources:
+        requests:
+          storage: 1Gi
+`)
 			Expect(reconcile(cluster)).To(BeZero())
 		})
 
