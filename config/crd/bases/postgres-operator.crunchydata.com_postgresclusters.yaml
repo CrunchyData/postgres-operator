@@ -3061,7 +3061,7 @@ spec:
                 type: object
               openshift:
                 description: Whether or not the PostgreSQL cluster is being deployed
-                  to an OpenShift envioronment
+                  to an OpenShift environment
                 type: boolean
               patroni:
                 properties:
