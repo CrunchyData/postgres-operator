@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -1048,7 +1049,9 @@ func (r *Reconciler) reconcileInstance(
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
 	// containers
 	if err == nil {
-		addNSSWrapper(cluster.Spec.Image, &instance.Spec.Template)
+		addNSSWrapper(config.PostgresContainerImage(cluster),
+			&instance.Spec.Template)
+
 	}
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
 	// all containers included within that spec

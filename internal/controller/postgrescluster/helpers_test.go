@@ -38,6 +38,8 @@ import (
 )
 
 var (
+	//TODO(tjmoore4): With the new RELATED_IMAGES defaulting behavior, tests could be refactored
+	// to reference those environment variables instead of hard coded image values
 	CrunchyPostgresHAImage = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0"
 	CrunchyPGBackRestImage = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0"
 	CrunchyPGBouncerImage  = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0"

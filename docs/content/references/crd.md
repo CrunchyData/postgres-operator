@@ -100,6 +100,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>Specifies a data source for bootstrapping the PostgreSQL cluster.</td>
         <td>false</td>
       </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>The image name to use for PostgreSQL containers. When omitted, the value comes from an operator environment variable. For standard PostgreSQL images, the format is RELATED_IMAGE_POSTGRES_{postgresVersion}, e.g. RELATED_IMAGE_POSTGRES_13. For PostGIS enabled PostgreSQL images, the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion}, e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecimagepullsecretsindex">imagePullSecrets</a></b></td>
         <td>[]object</td>
         <td>The image pull secrets used to pull from a private registry Changing this value causes all running pods to restart. https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/</td>
@@ -130,6 +135,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>The port on which PostgreSQL should listen.</td>
         <td>false</td>
       </tr><tr>
+        <td><b>postGISVersion</b></td>
+        <td>string</td>
+        <td>The PostGIS extension version installed in the PostgreSQL image. When image is not set, indicates a PostGIS enabled image will be used.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecproxy">proxy</a></b></td>
         <td>object</td>
         <td>The specification of a proxy that connects to PostgreSQL.</td>
@@ -150,11 +160,6 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>PostgreSQL backup configuration</td>
         <td>true</td>
       </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>The image name to use for PostgreSQL containers</td>
-        <td>true</td>
-      </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindex">instances</a></b></td>
         <td>[]object</td>
         <td></td>
@@ -162,7 +167,7 @@ PostgresClusterSpec defines the desired state of PostgresCluster
       </tr><tr>
         <td><b>postgresVersion</b></td>
         <td>integer</td>
-        <td>The major version of PostgreSQL installed in the PostgreSQL container</td>
+        <td>The major version of PostgreSQL installed in the PostgreSQL image</td>
         <td>true</td>
       </tr></tbody>
 </table>
@@ -559,15 +564,15 @@ PGMonitorSpec defines the desired state of the pgMonitor tool suite
         <td>Projected volumes containing custom PostgreSQL Exporter configuration.  Currently supports the customization of PostgreSQL Exporter queries. If a "queries.yaml" file is detected in any volume projected using this field, it will be loaded using the "extend.query-path" flag: https://github.com/prometheus-community/postgres_exporter#flags Changing the values of field causes PostgreSQL and the exporter to restart.</td>
         <td>false</td>
       </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>The image name to use for crunchy-postgres-exporter containers. The image may also be set using the RELATED_IMAGE_PGEXPORTER environment variable.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterresources">resources</a></b></td>
         <td>object</td>
         <td>Changing this value causes PostgreSQL and the exporter to restart. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers</td>
         <td>false</td>
-      </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>The image name to use for crunchy-postgres-exporter containers</td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -1072,6 +1077,11 @@ Defines a PgBouncer proxy and connection pooler.
         <td>A secret projection containing a certificate and key with which to encrypt connections to PgBouncer. The "tls.crt", "tls.key", and "ca.crt" paths must be PEM-encoded certificates and keys. Changing this value causes PgBouncer to restart. More info: https://kubernetes.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths</td>
         <td>false</td>
       </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>Name of a container image that can run PgBouncer 1.15 or newer. Changing this value causes PgBouncer to restart. The image may also be set using the RELATED_IMAGE_PGBOUNCER environment variable. More info: https://kubernetes.io/docs/concepts/containers/images</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncermetadata">metadata</a></b></td>
         <td>object</td>
         <td>Metadata contains metadata for PostgresCluster resources</td>
@@ -1096,11 +1106,6 @@ Defines a PgBouncer proxy and connection pooler.
         <td>[]object</td>
         <td>Tolerations of a PgBouncer pod. Changing this value causes PgBouncer to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
         <td>false</td>
-      </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>Name of a container image that can run PgBouncer 1.15 or newer. Changing this value causes PgBouncer to restart. More info: https://kubernetes.io/docs/concepts/containers/images</td>
-        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -2677,6 +2682,11 @@ pgBackRest archive configuration
         <td>Global pgBackRest configuration settings.  These settings are included in the "global" section of the pgBackRest configuration generated by the PostgreSQL Operator, and then mounted under "/etc/pgbackrest/conf.d": https://pgbackrest.org/configuration.html</td>
         <td>false</td>
       </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>The image name to use for pgBackRest containers.  Utilized to run pgBackRest repository hosts and backups. The image may also be set using the RELATED_IMAGE_PGBACKREST environment variable</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestmanual">manual</a></b></td>
         <td>object</td>
         <td>Defines details for manual pgBackRest backup Jobs</td>
@@ -2701,11 +2711,6 @@ pgBackRest archive configuration
         <td>object</td>
         <td>Defines details for performing an in-place restore using pgBackRest</td>
         <td>false</td>
-      </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>The image name to use for pgBackRest containers.  Utilized to run pgBackRest repository hosts and backups.</td>
-        <td>true</td>
       </tr></tbody>
 </table>
 

@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -131,8 +132,8 @@ func Pod(
 		},
 	}
 
-	config := corev1.Volume{Name: "pgbouncer-config"}
-	config.Projected = &corev1.ProjectedVolumeSource{
+	configVol := corev1.Volume{Name: "pgbouncer-config"}
+	configVol.Projected = &corev1.ProjectedVolumeSource{
 		Sources: podConfigFiles(
 			inCluster.Spec.Proxy.PGBouncer.Config, inConfigMap, inSecret),
 	}
@@ -141,7 +142,7 @@ func Pod(
 		Name: naming.ContainerPGBouncer,
 
 		Command:   []string{"pgbouncer", iniFileAbsolutePath},
-		Image:     inCluster.Spec.Proxy.PGBouncer.Image,
+		Image:     config.PGBouncerContainerImage(inCluster),
 		Resources: inCluster.Spec.Proxy.PGBouncer.Resources,
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
@@ -155,7 +156,7 @@ func Pod(
 
 	container.VolumeMounts = []corev1.VolumeMount{
 		{
-			Name:      config.Name,
+			Name:      configVol.Name,
 			MountPath: configDirectory,
 			ReadOnly:  true,
 		},
@@ -178,12 +179,12 @@ func Pod(
 		Name: naming.ContainerPGBouncerConfig,
 
 		Command: reloadCommand(naming.ContainerPGBouncerConfig),
-		Image:   inCluster.Spec.Proxy.PGBouncer.Image,
+		Image:   config.PGBouncerContainerImage(inCluster),
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
 
 		VolumeMounts: []corev1.VolumeMount{{
-			Name:      config.Name,
+			Name:      configVol.Name,
 			MountPath: configDirectory,
 			ReadOnly:  true,
 		}},
@@ -202,7 +203,7 @@ func Pod(
 
 	outPod.Containers = []corev1.Container{container, reloader}
 
-	outPod.Volumes = []corev1.Volume{backend, config, frontend}
+	outPod.Volumes = []corev1.Volume{backend, configVol, frontend}
 }
 
 // PostgreSQL populates outHBAs with any records needed to run PgBouncer.

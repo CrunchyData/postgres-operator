@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -590,7 +591,8 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest
 	// container
-	addNSSWrapper(postgresCluster.Spec.Backups.PGBackRest.Image, &repo.Spec.Template)
+	addNSSWrapper(
+		config.PGBackRestContainerImage(postgresCluster), &repo.Spec.Template)
 	addTMPEmptyDir(&repo.Spec.Template)
 
 	// set ownership references
@@ -663,7 +665,7 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 						{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
 						{Name: "SELECTOR", Value: selector},
 					},
-					Image:           postgresCluster.Spec.Backups.PGBackRest.Image,
+					Image:           config.PGBackRestContainerImage(postgresCluster),
 					Name:            naming.PGBackRestRepoContainerName,
 					SecurityContext: initialize.RestrictedSecurityContext(),
 				}},
@@ -1077,7 +1079,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Command:         cmd,
-						Image:           cluster.Spec.Image,
+						Image:           config.PostgresContainerImage(cluster),
 						Name:            naming.PGBackRestRestoreContainerName,
 						VolumeMounts:    volumeMounts,
 						Env:             []v1.EnvVar{{Name: "PGHOST", Value: "/tmp"}},
@@ -1128,7 +1130,8 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest restore
 	// container
-	addNSSWrapper(cluster.Spec.Backups.PGBackRest.Image, &restoreJob.Spec.Template)
+	addNSSWrapper(config.PGBackRestContainerImage(cluster), &restoreJob.Spec.Template)
+
 	addTMPEmptyDir(&restoreJob.Spec.Template)
 
 	return errors.WithStack(r.apply(ctx, restoreJob))

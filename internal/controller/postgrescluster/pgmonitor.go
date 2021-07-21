@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -282,7 +283,7 @@ func addPGMonitorExporterToInstancePodSpec(
 	securityContext := initialize.RestrictedSecurityContext()
 	exporterContainer := corev1.Container{
 		Name:      naming.ContainerPGMonitorExporter,
-		Image:     cluster.Spec.Monitoring.PGMonitor.Exporter.Image,
+		Image:     config.PGExporterContainerImage(cluster),
 		Resources: cluster.Spec.Monitoring.PGMonitor.Exporter.Resources,
 		Command: []string{
 			"/opt/cpm/bin/start.sh",

@@ -113,10 +113,11 @@ type PGBackRestArchive struct {
 	// +optional
 	Global map[string]string `json:"global,omitempty"`
 
-	// The image name to use for pgBackRest containers.  Utilized to run pgBackRest repository
-	// hosts and backups.
-	// +kubebuilder:validation:Required
-	Image string `json:"image"`
+	// The image name to use for pgBackRest containers.  Utilized to run
+	// pgBackRest repository hosts and backups. The image may also be set using
+	// the RELATED_IMAGE_PGBACKREST environment variable
+	// +optional
+	Image string `json:"image,omitempty"`
 
 	// Defines a pgBackRest repository
 	// +kubebuilder:validation:Required

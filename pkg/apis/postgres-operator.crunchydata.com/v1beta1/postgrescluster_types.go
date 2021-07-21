@@ -75,9 +75,14 @@ type PostgresClusterSpec struct {
 	// +optional
 	CustomReplicationClientTLSSecret *corev1.SecretProjection `json:"customReplicationTLSSecret,omitempty"`
 
-	// The image name to use for PostgreSQL containers
-	// +kubebuilder:validation:Required
-	Image string `json:"image"`
+	// The image name to use for PostgreSQL containers. When omitted, the value
+	// comes from an operator environment variable. For standard PostgreSQL images,
+	// the format is RELATED_IMAGE_POSTGRES_{postgresVersion},
+	// e.g. RELATED_IMAGE_POSTGRES_13. For PostGIS enabled PostgreSQL images,
+	// the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion},
+	// e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.
+	// +optional
+	Image string `json:"image,omitempty"`
 
 	// The image pull secrets used to pull from a private registry
 	// Changing this value causes all running pods to restart.
@@ -103,11 +108,16 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
-	// The major version of PostgreSQL installed in the PostgreSQL container
+	// The major version of PostgreSQL installed in the PostgreSQL image
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=10
 	// +kubebuilder:validation:Maximum=13
 	PostgresVersion int `json:"postgresVersion"`
+
+	// The PostGIS extension version installed in the PostgreSQL image.
+	// When image is not set, indicates a PostGIS enabled image will be used.
+	// +optional
+	PostGISVersion string `json:"postGISVersion,omitempty"`
 
 	// The specification of a proxy that connects to PostgreSQL.
 	// +optional
@@ -441,9 +451,10 @@ type ExporterSpec struct {
 	// +optional
 	Configuration []corev1.VolumeProjection `json:"configuration,omitempty"`
 
-	// The image name to use for crunchy-postgres-exporter containers
-	// +kubebuilder:validation:Required
-	Image string `json:"image"`
+	// The image name to use for crunchy-postgres-exporter containers. The image may
+	// also be set using the RELATED_IMAGE_PGEXPORTER environment variable.
+	// +optional
+	Image string `json:"image,omitempty"`
 
 	// Changing this value causes PostgreSQL and the exporter to restart.
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers

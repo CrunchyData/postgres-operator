@@ -78,9 +78,11 @@ type PGBouncerPodSpec struct {
 	CustomTLSSecret *corev1.SecretProjection `json:"customTLSSecret,omitempty"`
 
 	// Name of a container image that can run PgBouncer 1.15 or newer. Changing
-	// this value causes PgBouncer to restart.
+	// this value causes PgBouncer to restart. The image may also be set using
+	// the RELATED_IMAGE_PGBOUNCER environment variable.
 	// More info: https://kubernetes.io/docs/concepts/containers/images
-	Image string `json:"image"`
+	// +optional
+	Image string `json:"image,omitempty"`
 
 	// Port on which PgBouncer should listen for client connections. Changing
 	// this value causes PgBouncer to restart.

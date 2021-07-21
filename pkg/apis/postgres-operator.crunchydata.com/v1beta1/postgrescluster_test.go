@@ -51,9 +51,7 @@ metadata:
   creationTimestamp: null
 spec:
   backups:
-    pgbackrest:
-      image: ""
-  image: ""
+    pgbackrest: {}
   instances: null
   patroni:
     dynamicConfiguration: null
@@ -83,9 +81,7 @@ metadata:
   creationTimestamp: null
 spec:
   backups:
-    pgbackrest:
-      image: ""
-  image: ""
+    pgbackrest: {}
   instances:
   - dataVolumeClaimSpec:
       resources: {}
@@ -126,7 +122,6 @@ status:
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 pgBouncer:
   config: {}
-  image: ""
   port: 5432
   replicas: 1
   resources: {}
