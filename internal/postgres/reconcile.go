@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -46,7 +47,7 @@ func InitCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 	template.Spec.InitContainers = append(template.Spec.InitContainers,
 		v1.Container{
 			Command:         []string{"bash", "-c", cmd},
-			Image:           postgresCluster.Spec.Image,
+			Image:           config.PostgresContainerImage(postgresCluster),
 			Name:            naming.ContainerClientCertInit,
 			SecurityContext: initialize.RestrictedSecurityContext(),
 		})
@@ -168,7 +169,7 @@ func InstancePod(ctx context.Context,
 		// Patroni will set the command and probes.
 
 		Env:       Environment(inCluster),
-		Image:     inCluster.Spec.Image,
+		Image:     config.PostgresContainerImage(inCluster),
 		Resources: inInstanceSpec.Resources,
 
 		Ports: []corev1.ContainerPort{{
@@ -186,7 +187,7 @@ func InstancePod(ctx context.Context,
 
 		Command:   startupCommand(inCluster, inInstanceSpec),
 		Env:       Environment(inCluster),
-		Image:     inCluster.Spec.Image,
+		Image:     config.PostgresContainerImage(inCluster),
 		Resources: inInstanceSpec.Resources,
 
 		SecurityContext: initialize.RestrictedSecurityContext(),

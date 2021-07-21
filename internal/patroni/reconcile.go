@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
@@ -169,7 +170,7 @@ func diffCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 		naming.ContainerClientCertCopy)
 
 	container.Command = copyReplicationCerts(naming.PatroniScope(postgresCluster))
-	container.Image = postgresCluster.Spec.Image
+	container.Image = config.PostgresContainerImage(postgresCluster)
 
 	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, v1.VolumeMount{
 		Name:      volumeName,

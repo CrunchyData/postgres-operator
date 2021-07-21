@@ -23,6 +23,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -182,7 +183,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	if enableSSHD {
 		container := v1.Container{
 			Command: []string{"/usr/sbin/sshd", "-D", "-e"},
-			Image:   postgresCluster.Spec.Backups.PGBackRest.Image,
+			Image:   config.PGBackRestContainerImage(postgresCluster),
 			LivenessProbe: &v1.Probe{
 				Handler: v1.Handler{
 					TCPSocket: &v1.TCPSocketAction{

@@ -286,7 +286,9 @@ spec:
                         type: object
                       image:
                         description: The image name to use for pgBackRest containers.  Utilized
-                          to run pgBackRest repository hosts and backups.
+                          to run pgBackRest repository hosts and backups. The image
+                          may also be set using the RELATED_IMAGE_PGBACKREST environment
+                          variable
                         type: string
                       manual:
                         description: Defines details for manual pgBackRest backup
@@ -1572,8 +1574,6 @@ spec:
                         - enabled
                         - repoName
                         type: object
-                    required:
-                    - image
                     type: object
                 required:
                 - pgbackrest
@@ -1752,7 +1752,12 @@ spec:
                     type: object
                 type: object
               image:
-                description: The image name to use for PostgreSQL containers
+                description: The image name to use for PostgreSQL containers. When
+                  omitted, the value comes from an operator environment variable.
+                  For standard PostgreSQL images, the format is RELATED_IMAGE_POSTGRES_{postgresVersion},
+                  e.g. RELATED_IMAGE_POSTGRES_13. For PostGIS enabled PostgreSQL images,
+                  the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion},
+                  e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.
                 type: string
               imagePullSecrets:
                 description: The image pull secrets used to pull from a private registry
@@ -3025,7 +3030,8 @@ spec:
                             type: array
                           image:
                             description: The image name to use for crunchy-postgres-exporter
-                              containers
+                              containers. The image may also be set using the RELATED_IMAGE_PGEXPORTER
+                              environment variable.
                             type: string
                           resources:
                             description: 'Changing this value causes PostgreSQL and
@@ -3055,8 +3061,6 @@ spec:
                                   value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                             type: object
-                        required:
-                        - image
                         type: object
                     type: object
                 type: object
@@ -3096,9 +3100,14 @@ spec:
                 format: int32
                 minimum: 1024
                 type: integer
+              postGISVersion:
+                description: The PostGIS extension version installed in the PostgreSQL
+                  image. When image is not set, indicates a PostGIS enabled image
+                  will be used.
+                type: string
               postgresVersion:
                 description: The major version of PostgreSQL installed in the PostgreSQL
-                  container
+                  image
                 maximum: 13
                 minimum: 10
                 type: integer
@@ -4088,7 +4097,8 @@ spec:
                       image:
                         description: 'Name of a container image that can run PgBouncer
                           1.15 or newer. Changing this value causes PgBouncer to restart.
-                          More info: https://kubernetes.io/docs/concepts/containers/images'
+                          The image may also be set using the RELATED_IMAGE_PGBOUNCER
+                          environment variable. More info: https://kubernetes.io/docs/concepts/containers/images'
                         type: string
                       metadata:
                         description: Metadata contains metadata for PostgresCluster
@@ -4188,8 +4198,6 @@ spec:
                               type: string
                           type: object
                         type: array
-                    required:
-                    - image
                     type: object
                 required:
                 - pgBouncer
@@ -4220,7 +4228,6 @@ spec:
                 type: object
             required:
             - backups
-            - image
             - instances
             - postgresVersion
             type: object
