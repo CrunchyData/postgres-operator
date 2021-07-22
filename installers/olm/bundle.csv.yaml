@@ -16,7 +16,7 @@ metadata:
     # https://sdk.operatorframework.io/docs/advanced-topics/operator-capabilities/operator-capabilities/
     categories: Database
     capabilities: Auto Pilot
-    description: Enterprise open source PostgreSQL-as-a-Service
+    description: Production Postgres Made Easy
 
     # The following appear on the details page at OperatorHub.io:
     # https://operatorhub.io/operator/postgresql
@@ -28,7 +28,7 @@ metadata:
 spec:
   # The following affect how the package is indexed at OperatorHub.io:
   # https://operatorhub.io/
-  displayName: Crunchy PostgreSQL for Kubernetes
+  displayName: Crunchy Postgres for Kubernetes
   provider:
     # These values become labels on the PackageManifest.
     name: Crunchy Data
@@ -43,7 +43,7 @@ spec:
 
   # The following appear on the details page at OperatorHub.io:
   # https://operatorhub.io/operator/postgresql
-  description: |- # description.*.md
+  description: |- # description.md
   version: '' # generate.sh
   links:
     - name: Crunchy Data
