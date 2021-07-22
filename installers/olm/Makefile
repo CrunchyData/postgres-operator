@@ -12,7 +12,7 @@ export PATH := $(CURDIR)/tools/$(SYSTEM):$(PATH)
 
 export PGO_VERSION
 
-distros = upstream openshift redhat
+distros = community redhat
 
 .PHONY: bundles
 bundles: ## Build OLM bundles
@@ -20,9 +20,9 @@ bundles: $(distros:%=bundles/%)
 
 # https://olm.operatorframework.io/docs/tasks/creating-operator-bundle/#validating-your-bundle
 # https://github.com/operator-framework/community-operators/blob/8a36a33/docs/packaging-required-criteria-ocp.md
-.PHONY: bundles/openshift
-bundles/openshift:
-	./generate.sh openshift
+.PHONY: bundles/community
+bundles/community:
+	./generate.sh community
 	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
 	env operator-sdk bundle validate $@ --select-optional='name=community' --optional-values='index-path=$@/Dockerfile'
 
@@ -31,14 +31,6 @@ bundles/openshift:
 bundles/redhat:
 	./generate.sh redhat
 	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
-
-# https://olm.operatorframework.io/docs/tasks/creating-operator-bundle/#validating-your-bundle
-# https://github.com/operator-framework/community-operators/blob/8a36a33/docs/packaging-required-criteria-ocp.md
-.PHONY: bundles/upstream
-bundles/upstream:
-	./generate.sh upstream
-	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
-	env operator-sdk bundle validate $@ --select-optional='name=community' --optional-values='index-path=$@/Dockerfile'
 
 .PHONY: clean
 clean: clean-deprecated

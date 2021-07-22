@@ -15,7 +15,7 @@ annotations:
   #
   # A package consists of multiple bundles (versions) arranged into channels.
   # https://olm.operatorframework.io/docs/concepts/olm-architecture/operator-catalog/creating-an-update-graph/
-  operators.operatorframework.io.bundle.package.v1: '${PACKAGE_NAME}'
+  operators.operatorframework.io.bundle.package.v1: '' # generate.sh
 
   # "channels.v1" is the comma-separated list of channels from which this bundle
   # can be installed.

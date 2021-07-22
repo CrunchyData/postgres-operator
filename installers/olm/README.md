@@ -35,7 +35,7 @@ make bundles validate-bundles
 ```
 
 ```sh
-BUNDLE_DIRECTORY='bundles/upstream'
+BUNDLE_DIRECTORY='bundles/community'
 BUNDLE_IMAGE='gcr.io/.../postgres-operator-bundle:latest'
 INDEX_IMAGE='gcr.io/.../postgres-operator-bundle-index:latest'
 NAMESPACE='pgo'

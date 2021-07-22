@@ -11,12 +11,10 @@ bundle_directory="bundles/${DISTRIBUTION}"
 project_directory="projects/${DISTRIBUTION}"
 go_api_directory=$(cd ../../pkg/apis && pwd)
 
-render() { envsubst '$PACKAGE_NAME $PGO_VERSION'; }
-
-export PACKAGE_NAME='postgresql'
+package_name='postgresql'
 case "${DISTRIBUTION}" in
 	# https://redhat-connect.gitbook.io/certified-operator-guide/appendix/what-if-ive-already-published-a-community-operator
-	'redhat') PACKAGE_NAME='crunchy-postgres-operator' ;;
+	'redhat') package_name='crunchy-postgres-operator' ;;
 esac
 
 operator_yamls=$(kubectl kustomize "config/${DISTRIBUTION}")
@@ -61,8 +59,11 @@ kubectl kustomize "${project_directory}/config/scorecard" \
 	> "${bundle_directory}/tests/scorecard/config.yaml"
 
 # Render bundle annotations and strip comments.
-render < bundle.annotations.yaml > "${bundle_directory}/metadata/annotations.yaml"
-yq --in-place --yaml-roundtrip '.' "${bundle_directory}/metadata/annotations.yaml"
+yq --yaml-roundtrip < bundle.annotations.yaml > "${bundle_directory}/metadata/annotations.yaml" \
+	--arg package "${package_name}" \
+'
+	.annotations["operators.operatorframework.io.bundle.package.v1"] = $package |
+.'
 
 # Copy annotations into Dockerfile LABELs.
 labels=$(yq --raw-output < "${bundle_directory}/metadata/annotations.yaml" \
@@ -110,7 +111,7 @@ yq --yaml-roundtrip < bundle.csv.yaml > "${bundle_directory}/manifests/${csv_ste
 	--argjson crds "${crd_descriptions}" \
 	--arg examples "${crd_examples}" \
 	--arg version "${PGO_VERSION}" \
-	--arg description "$(render < description.upstream.md)" \
+	--arg description "$(< description.md)" \
 	--arg icon "$(base64 ../seal.svg | tr -d '\n')" \
 	--arg stem "${csv_stem}" \
 '
@@ -129,23 +130,11 @@ yq --yaml-roundtrip < bundle.csv.yaml > "${bundle_directory}/manifests/${csv_ste
 .'
 
 case "${DISTRIBUTION}" in
-	'openshift')
-		yq --in-place --yaml-roundtrip \
-			--arg description "$(render < description.openshift.md)" \
-		'
-			.spec.description = $description |
-			.spec.displayName = "Crunchy PostgreSQL for OpenShift" |
-		.' \
-			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
-		;;
 	'redhat')
 		# https://redhat-connect.gitbook.io/certified-operator-guide/appendix/what-if-ive-already-published-a-community-operator
 		yq --in-place --yaml-roundtrip \
-			--arg description "$(render < description.openshift.md)" \
 		'
 			.metadata.annotations.certified = "true" |
-			.spec.description = $description |
-			.spec.displayName = "Crunchy PostgreSQL for OpenShift" |
 		.' \
 			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
 		;;

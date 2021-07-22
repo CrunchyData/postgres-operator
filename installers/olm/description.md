@@ -1,8 +1,20 @@
-Crunchy PostgreSQL for Kubernetes lets you run your own production-grade PostgreSQL-as-a-Service on Kubernetes!
+[PGO](https://github.com/CrunchyData/postgres-operator), the
+[Postgres Operator](https://github.com/CrunchyData/postgres-operator) from
+[Crunchy Data](https://www.crunchydata.com), gives you a **declarative Postgres** solution that
+automatically manages your [PostgreSQL](https://www.postgresql.org) clusters.
 
-Powered by the Crunchy [Postgres Operator](https://github.com/CrunchyData/postgres-operator), Crunchy PostgreSQL
-for Kubernetes automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes by
-providing the essential features you need to keep your PostgreSQL clusters up and running, including:
+Designed for your GitOps workflows, it is [easy to get started](https://access.crunchydata.com/documentation/postgres-operator/v5/quickstart/)
+with Postgres on Kubernetes with PGO. Within a few moments, you can have a production grade Postgres
+cluster complete with high availability, disaster recovery, and monitoring, all over secure TLS communications.
+Even better, PGO lets you easily customize your Postgres cluster to tailor it to your workload!
+
+With conveniences like cloning Postgres clusters to using rolling updates to roll out disruptive
+changes with minimal downtime, PGO is ready to support your Postgres data at every stage of your
+release pipeline. Built for resiliency and uptime, PGO will keep your desired Postgres in a desired
+state so you do not need to worry about it.
+
+PGO is developed with many years of production experience in automating Postgres management on
+Kubernetes, providing a seamless cloud native Postgres solution to keep your data always available.
 
 - **PostgreSQL Cluster Provisioning**: [Create, Scale, & Delete PostgreSQL clusters with ease][provisioning],
   while fully customizing your Pods and PostgreSQL configuration!
@@ -42,7 +54,7 @@ and much more!
 [k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
 
 [pgBackRest]: https://www.pgbackrest.org
-[pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/pgbouncer/
+[pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/connection-pooling/
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
 
 
