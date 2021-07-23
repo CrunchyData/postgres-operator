@@ -30,9 +30,9 @@ The following commands will allow you to execute a dry run first with the debug 
 in order to verify everything is set correctly. After verifying your settings, run the install 
 command without the flags:
 ```
-helm install --dry-run --debug -n postgres-operator postgres-cluster create-cluster
+helm install --dry-run --debug -n postgres-operator pgo create-cluster
 
-helm install -n postgres-operator postgres-cluster create-cluster
+helm install -n postgres-operator pgo create-cluster
 ```
 ## Verify
 Now you can verify your Hippo cluster has deployed into the postgres-operator
