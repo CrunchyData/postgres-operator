@@ -29,12 +29,12 @@ cd postgres-operator/examples/helm
 
 The following commands will deploy the operator into the postgres-operator namespace. The `--dry-run` flag will allow you to verify that your configuration is set correctly. 
 ```
-helm install --dry-run -n postgres-operator postgres-operator install
+helm install --dry-run -n postgres-operator pgo install
 ```
 
 Then run the install command without the flag.
 ```
-helm install -n postgres-operator postgres-operator install
+helm install -n postgres-operator pgo install
 ```
 
 ## Verify
@@ -65,5 +65,5 @@ kubectl get role -n postgres-operator
 Run the following helm command to uninstall the operator:
 
 ```
-helm uninstall -n postgres-operator postgres-operator
+helm uninstall -n postgres-operator pgo
 ```

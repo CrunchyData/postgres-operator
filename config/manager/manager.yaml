@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres-operator
+  name: pgo
 spec:
   replicas: 1
   template:
@@ -27,4 +27,4 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-      serviceAccountName: postgres-operator
+      serviceAccountName: pgo

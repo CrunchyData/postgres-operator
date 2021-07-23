@@ -9,4 +9,4 @@ roleRef:
   name: postgres-operator
 subjects:
 - kind: ServiceAccount
-  name: postgres-operator
+  name: pgo
