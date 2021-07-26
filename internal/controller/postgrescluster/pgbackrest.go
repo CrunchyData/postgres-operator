@@ -882,7 +882,9 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 			cluster.Status.StartupInstanceSet =
 				runners[0].GetLabels()[naming.LabelInstanceSet]
 		} else if len(cluster.Spec.InstanceSets) > 0 {
-			cluster.Status.StartupInstance = naming.GenerateInstance(cluster,
+			// Generate a hash that will be used make sure that the startup
+			// instance is named consistently
+			cluster.Status.StartupInstance = naming.GenerateStartupInstance(cluster,
 				&cluster.Spec.InstanceSets[0]).Name
 			cluster.Status.StartupInstanceSet = cluster.Spec.InstanceSets[0].Name
 		} else {

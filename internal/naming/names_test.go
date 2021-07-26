@@ -239,3 +239,24 @@ func TestGenerateInstance(t *testing.T) {
 	assert.Equal(t, cluster.Namespace, instance.Namespace)
 	assert.Assert(t, strings.HasPrefix(instance.Name, cluster.Name+"-"+set.Name+"-"))
 }
+
+// TestGenerateStartupInstance ensures that a consistent ObjectMeta will be
+// provided assuming the same cluster name and instance set name is passed
+// into GenerateStartupInstance
+func TestGenerateStartupInstance(t *testing.T) {
+	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns1", Name: "pg0",
+		},
+	}
+	set := &v1beta1.PostgresInstanceSetSpec{Name: "hippos"}
+
+	instanceOne := GenerateStartupInstance(cluster, set)
+
+	assert.Equal(t, cluster.Namespace, instanceOne.Namespace)
+	assert.Assert(t, strings.HasPrefix(instanceOne.Name, cluster.Name+"-"+set.Name+"-"))
+
+	instanceTwo := GenerateStartupInstance(cluster, set)
+	assert.DeepEqual(t, instanceOne, instanceTwo)
+
+}
