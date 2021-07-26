@@ -17,6 +17,7 @@ package naming
 
 import (
 	"fmt"
+	"hash/fnv"
 
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -206,6 +207,24 @@ func GenerateInstance(
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-" + set.Name + "-" + rand.String(4),
+	}
+}
+
+// GenerateStartupInstance returns a stable name that's shaped like
+// GenerateInstance above. The stable name is based on a four character
+// hash of the cluster name and instance set name
+func GenerateStartupInstance(
+	cluster *v1beta1.PostgresCluster, set *v1beta1.PostgresInstanceSetSpec,
+) metav1.ObjectMeta {
+	// Calculate a stable name that's shaped like GenerateInstance above.
+	// hash.Hash.Write never returns an error: https://pkg.go.dev/hash#Hash.
+	hash := fnv.New32()
+	_, _ = hash.Write([]byte(cluster.Name + set.Name))
+	suffix := rand.SafeEncodeString(fmt.Sprint(hash.Sum32()))[:4]
+
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-" + set.Name + "-" + suffix,
 	}
 }
 

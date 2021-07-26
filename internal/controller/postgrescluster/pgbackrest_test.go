@@ -2703,7 +2703,11 @@ func TestPrepareForRestore(t *testing.T) {
 		}}
 
 		for i, tc := range testCases {
-			t.Run(tc.desc, func(t *testing.T) {
+			name := tc.desc
+			if !dedicated {
+				name = tc.desc + "-no-repo"
+			}
+			t.Run(name, func(t *testing.T) {
 
 				clusterName := "prepare-for-restore-" + strconv.Itoa(i)
 				if !dedicated {
@@ -2742,6 +2746,9 @@ func TestPrepareForRestore(t *testing.T) {
 
 				if primaryInstance != nil {
 					assert.Assert(t, cluster.Status.StartupInstance == primaryInstanceName)
+				} else {
+					assert.Equal(t, cluster.Status.StartupInstance,
+						naming.GenerateStartupInstance(cluster, &cluster.Spec.InstanceSets[0]).Name)
 				}
 
 				leaderEP, dcsEP, failoverEP := v1.Endpoints{}, v1.Endpoints{}, v1.Endpoints{}
