@@ -122,7 +122,7 @@ PostgresClusterSpec defines the desired state of PostgresCluster
       </tr><tr>
         <td><b>openshift</b></td>
         <td>boolean</td>
-        <td>Whether or not the PostgreSQL cluster is being deployed to an OpenShift environment</td>
+        <td>Whether or not the PostgreSQL cluster is being deployed to an OpenShift environment. If the field is unset, the operator will automatically detect the environment.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecpatroni">patroni</a></b></td>

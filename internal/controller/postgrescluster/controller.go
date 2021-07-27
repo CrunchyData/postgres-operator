@@ -57,10 +57,11 @@ const (
 
 // Reconciler holds resources for the PostgresCluster reconciler
 type Reconciler struct {
-	Client   client.Client
-	Owner    client.FieldOwner
-	Recorder record.EventRecorder
-	Tracer   trace.Tracer
+	Client      client.Client
+	Owner       client.FieldOwner
+	Recorder    record.EventRecorder
+	Tracer      trace.Tracer
+	IsOpenShift bool
 
 	PodExec func(
 		namespace, pod, container string,
@@ -106,6 +107,10 @@ func (r *Reconciler) Reconcile(
 	// is necessary because controller-runtime makes a copy before returning
 	// from its cache.
 	cluster.Default()
+
+	if cluster.Spec.OpenShift == nil {
+		cluster.Spec.OpenShift = &r.IsOpenShift
+	}
 
 	// Keep a copy of cluster prior to any manipulations.
 	before := cluster.DeepCopy()

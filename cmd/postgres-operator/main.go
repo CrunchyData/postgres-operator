@@ -16,10 +16,12 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"os"
 	"strings"
 
 	"go.opentelemetry.io/otel"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	cruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -75,7 +77,7 @@ func main() {
 	assertNoError(err)
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	err = addControllersToManager(mgr)
+	err = addControllersToManager(ctx, mgr)
 	assertNoError(err)
 
 	log.Info("starting controller runtime manager and will wait for signal to exit")
@@ -85,12 +87,36 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr manager.Manager) error {
+func addControllersToManager(ctx context.Context, mgr manager.Manager) error {
 	r := &postgrescluster.Reconciler{
-		Client:   mgr.GetClient(),
-		Owner:    postgrescluster.ControllerName,
-		Recorder: mgr.GetEventRecorderFor(postgrescluster.ControllerName),
-		Tracer:   otel.Tracer(postgrescluster.ControllerName),
+		Client:      mgr.GetClient(),
+		Owner:       postgrescluster.ControllerName,
+		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
+		Tracer:      otel.Tracer(postgrescluster.ControllerName),
+		IsOpenShift: isOpenshift(ctx, mgr.GetConfig()),
 	}
 	return r.SetupWithManager(mgr)
+}
+
+func isOpenshift(ctx context.Context, cfg *rest.Config) bool {
+	log := logging.FromContext(ctx)
+
+	const openShiftAPIGroupSuffix = ".openshift.io"
+
+	client, err := discovery.NewDiscoveryClientForConfig(cfg)
+	assertNoError(err)
+
+	groups, _, err := client.ServerGroupsAndResources()
+	assertNoError(err)
+
+	// If we detect that any API group name ends with "openshift.io", we'll
+	// return that this is an OpenShift environment
+	for _, g := range groups {
+		if strings.HasSuffix(g.Name, openShiftAPIGroupSuffix) {
+			log.Info("detected OpenShift environment")
+			return true
+		}
+	}
+
+	return false
 }

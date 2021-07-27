@@ -4478,7 +4478,8 @@ spec:
                 type: object
               openshift:
                 description: Whether or not the PostgreSQL cluster is being deployed
-                  to an OpenShift environment
+                  to an OpenShift environment. If the field is unset, the operator
+                  will automatically detect the environment.
                 type: boolean
               patroni:
                 properties:
