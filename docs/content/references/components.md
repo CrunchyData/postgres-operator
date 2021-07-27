@@ -23,22 +23,22 @@ needed to deploy PostgreSQL clusters using PGO.
 
 | Component | Version | PGO Version Min. | PGO Version Max. |
 |-----------|---------|------------------|------------------|
-| `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.0 |
-| `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-ha` | 13.3 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-ha` | 12.7 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-ha` | 11.12 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-ha` | 10.17 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 13.3-3.1 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 13.3-3.0 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 12.7-3.0 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 12.7-2.5 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 11.12-2.5 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 11.12-2.4 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 10.17-2.4 | 5.0.0 | 5.0.0 |
-| `crunchy-postgres-gis-ha` | 10.17-2.3 | 5.0.0 | 5.0.0 |
+| `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.1 |
+| `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-ha` | 13.3 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-ha` | 12.7 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-ha` | 11.12 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-ha` | 10.17 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 13.3-3.1 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 13.3-3.0 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 12.7-3.0 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 12.7-2.5 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 11.12-2.5 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 11.12-2.4 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 10.17-2.4 | 5.0.0 | 5.0.1 |
+| `crunchy-postgres-gis-ha` | 10.17-2.3 | 5.0.0 | 5.0.1 |
 
-The Crunchy Postgres components include Patroni 2.0.2.
+The Crunchy Postgres components include Patroni 2.1.0.
 
 ## Extensions Compatibility
 
