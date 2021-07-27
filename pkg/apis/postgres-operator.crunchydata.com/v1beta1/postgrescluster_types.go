@@ -95,7 +95,9 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 
-	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift environment
+	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift
+	// environment. If the field is unset, the operator will automatically
+	// detect the environment.
 	// +optional
 	OpenShift *bool `json:"openshift,omitempty"`
 
