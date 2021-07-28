@@ -108,9 +108,9 @@ deploy:
 # Deploy the PostgreSQL Operator locally
 deploy-dev: build-postgres-operator
 	$(PGO_KUBE_CLIENT) apply -k ./config/dev
-	hack/create-kubeconfig.sh postgres-operator postgres-operator
+	hack/create-kubeconfig.sh postgres-operator pgo
 	CRUNCHY_DEBUG=true \
-		KUBECONFIG=hack/.kube/postgres-operator/postgres-operator \
+		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		bin/postgres-operator
 
 # Undeploy the PostgreSQL Operator
