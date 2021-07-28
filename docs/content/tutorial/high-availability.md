@@ -60,8 +60,6 @@ spec:
                 storage: 1Gi
 ```
 
-(If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
-
 Apply these updates to your Kubernetes cluster with the following command:
 
 ```
@@ -274,8 +272,6 @@ spec:
                 storage: 1Gi
 ```
 
-(If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
-
 Apply those changes in your Kubernetes cluster.
 
 Let's take a closer look at this section:
@@ -343,8 +339,6 @@ spec:
               requests:
                 storage: 1Gi
 ```
-
-(If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
 
 Apply those changes in your Kubernetes cluster.
 

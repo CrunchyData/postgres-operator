@@ -58,8 +58,6 @@ spec:
           work_mem: 2MB
 ```
 
-(If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
-
 In particular, we added the following to `spec`:
 
 ```
