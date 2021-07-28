@@ -33,20 +33,28 @@ import (
 // AddRepoVolumesToPod adds pgBackRest repository volumes to the provided Pod template spec, while
 // also adding associated volume mounts to the containers specified.
 func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	containerNames ...string) error {
+	repoPVCNames map[string]string, containerNames ...string) error {
 
 	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		// we only care about repos created using PVCs
 		if repo.Volume == nil {
 			continue
 		}
-		repoVolName := repo.Name
-		template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
-			Name: repoVolName,
+
+		var repoVolName string
+		if repoPVCNames[repo.Name] != "" {
+			// if there is an existing volume for this PVC, use it
+			repoVolName = repoPVCNames[repo.Name]
+		} else {
+			// use the default name to create a new volume
+			repoVolName = naming.PGBackRestRepoVolume(postgresCluster,
+				repo.Name).Name
+		}
+		template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
+			Name: repo.Name,
 			VolumeSource: v1.VolumeSource{
 				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-					ClaimName: naming.PGBackRestRepoVolume(postgresCluster,
-						repoVolName).Name},
+					ClaimName: repoVolName},
 			},
 		})
 
@@ -65,8 +73,8 @@ func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.
 			}
 			template.Spec.Containers[index].VolumeMounts =
 				append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
-					Name:      repoVolName,
-					MountPath: "/pgbackrest/" + repoVolName,
+					Name:      repo.Name,
+					MountPath: "/pgbackrest/" + repo.Name,
 				})
 		}
 	}
