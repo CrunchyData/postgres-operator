@@ -28,6 +28,8 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -452,7 +454,24 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
 ) (*corev1.PersistentVolumeClaim, error) {
-	pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+
+	labelMap := map[string]string{
+		naming.LabelCluster:     cluster.Name,
+		naming.LabelInstanceSet: instanceSpec.Name,
+		naming.LabelInstance:    instance.Name,
+		naming.LabelRole:        naming.RolePostgresData,
+	}
+
+	var pvc *v1.PersistentVolumeClaim
+	if existingPVCName := r.getPGPVCNames(ctx, cluster, labelMap); existingPVCName != "" {
+		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.GetNamespace(),
+			Name:      existingPVCName,
+		}}
+	} else {
+		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+	}
+
 	pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
 
 	err := errors.WithStack(r.setControllerReference(cluster, pvc))
@@ -464,12 +483,8 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	pvc.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		instanceSpec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelCluster:     cluster.Name,
-			naming.LabelInstanceSet: instanceSpec.Name,
-			naming.LabelInstance:    instance.Name,
-			naming.LabelRole:        naming.RolePostgresData,
-		})
+		labelMap,
+	)
 
 	pvc.Spec = instanceSpec.DataVolumeClaimSpec
 
@@ -491,7 +506,24 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
 	observed *Instance,
 ) (*corev1.PersistentVolumeClaim, error) {
-	pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresWALVolume(instance)}
+
+	labelMap := map[string]string{
+		naming.LabelCluster:     cluster.Name,
+		naming.LabelInstanceSet: instanceSpec.Name,
+		naming.LabelInstance:    instance.Name,
+		naming.LabelRole:        naming.RolePostgresWAL,
+	}
+
+	var pvc *v1.PersistentVolumeClaim
+	if existingPVCName := r.getPGPVCNames(ctx, cluster, labelMap); existingPVCName != "" {
+		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
+			Namespace: cluster.GetNamespace(),
+			Name:      existingPVCName,
+		}}
+	} else {
+		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresWALVolume(instance)}
+	}
+
 	pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
 
 	if instanceSpec.WALVolumeClaimSpec == nil {
@@ -549,12 +581,8 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 	pvc.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		instanceSpec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelCluster:     cluster.Name,
-			naming.LabelInstanceSet: instanceSpec.Name,
-			naming.LabelInstance:    instance.Name,
-			naming.LabelRole:        naming.RolePostgresWAL,
-		})
+		labelMap,
+	)
 
 	pvc.Spec = *instanceSpec.WALVolumeClaimSpec
 

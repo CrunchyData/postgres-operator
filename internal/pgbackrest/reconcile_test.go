@@ -35,25 +35,62 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 	testsCases := []struct {
 		repos      []v1beta1.PGBackRestRepo
 		containers []v1.Container
+		testMap    map[string]string
 	}{{
 		repos: []v1beta1.PGBackRestRepo{
 			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 		},
 		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		testMap:    map[string]string{},
 	}, {
 		repos: []v1beta1.PGBackRestRepo{
 			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 		},
 		containers: []v1.Container{{Name: "database"}},
+		testMap:    map[string]string{},
 	}, {
 		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
 		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		testMap:    map[string]string{},
 	}, {
 		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
 		containers: []v1.Container{{Name: "database"}},
-	}}
+		testMap:    map[string]string{},
+	},
+		// rerun the same tests, but this time simulate an existing PVC
+		{
+			repos: []v1beta1.PGBackRestRepo{
+				{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
+				{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
+			},
+			containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repos: []v1beta1.PGBackRestRepo{
+				{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
+				{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
+			},
+			containers: []v1.Container{{Name: "database"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+			containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+			containers: []v1.Container{{Name: "database"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}}
 
 	for _, tc := range testsCases {
 		t.Run(fmt.Sprintf("repos=%d, containers=%d", len(tc.repos), len(tc.containers)), func(t *testing.T) {
@@ -63,8 +100,7 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 					Containers: tc.containers,
 				},
 			}
-
-			err := AddRepoVolumesToPod(postgresCluster, template, getContainerNames(tc.containers)...)
+			err := AddRepoVolumesToPod(postgresCluster, template, tc.testMap, getContainerNames(tc.containers)...)
 			assert.NilError(t, err)
 
 			// verify volumes and volume mounts

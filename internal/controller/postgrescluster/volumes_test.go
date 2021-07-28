@@ -27,6 +27,7 @@ import (
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -468,5 +470,156 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 				// - https://git.k8s.io/enhancements/keps/sig-storage/1790-recover-resize-failure
 			})
 		})
+	})
+}
+
+func TestGetPVCNameMethods(t *testing.T) {
+
+	ctx := context.Background()
+	tEnv, cc, _ := setupTestEnv(t, t.Name())
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	// Stub to see that handlePersistentVolumeClaimError returns nil.
+	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testcluster",
+			Namespace: ns.Name,
+		},
+	}
+	cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{{
+		Name:   "testrepo1",
+		Volume: &v1beta1.RepoPVC{},
+	}}
+
+	reconciler := &Reconciler{
+		Recorder: new(record.FakeRecorder),
+		Client:   cc,
+	}
+
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testvolume",
+			Namespace: ns.Name,
+			Labels: map[string]string{
+				naming.LabelCluster: cluster.Name,
+			},
+		},
+		Spec: v1.PersistentVolumeClaimSpec{
+			AccessModes: []v1.PersistentVolumeAccessMode{
+				"ReadWriteMany",
+			},
+			Resources: corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("1Gi"),
+				},
+			},
+		},
+	}
+
+	pgDataPVC := pvc.DeepCopy()
+	pgDataPVC.Name = "testpgdatavol"
+	pgDataPVC.Labels = map[string]string{
+		naming.LabelCluster:     cluster.Name,
+		naming.LabelInstanceSet: "testinstance1",
+		naming.LabelInstance:    "testinstance1-abcd",
+		naming.LabelRole:        naming.RolePostgresData,
+	}
+	assert.NilError(t, cc.Create(ctx, pgDataPVC))
+
+	walPVC := pvc.DeepCopy()
+	walPVC.Name = "testwalvol"
+	walPVC.Labels = map[string]string{
+		naming.LabelCluster:     cluster.Name,
+		naming.LabelInstanceSet: "testinstance1",
+		naming.LabelInstance:    "testinstance1-abcd",
+		naming.LabelRole:        naming.RolePostgresWAL,
+	}
+	assert.NilError(t, cc.Create(ctx, walPVC))
+
+	repoPVC1 := pvc.DeepCopy()
+	repoPVC1.Name = "testrepovol1"
+	repoPVC1.Labels = map[string]string{
+		naming.LabelCluster:              cluster.Name,
+		naming.LabelPGBackRest:           "",
+		naming.LabelPGBackRestRepo:       "testrepo1",
+		naming.LabelPGBackRestRepoVolume: "",
+	}
+	assert.NilError(t, cc.Create(ctx, repoPVC1))
+
+	repoPVC2 := pvc.DeepCopy()
+	repoPVC2.Name = "testrepovol2"
+	repoPVC2.Labels = map[string]string{
+		naming.LabelCluster:              cluster.Name,
+		naming.LabelPGBackRest:           "",
+		naming.LabelPGBackRestRepo:       "testrepo2",
+		naming.LabelPGBackRestRepoVolume: "",
+	}
+	// don't create this one yet
+
+	t.Run("get first volume created", func(t *testing.T) {
+		// getPVCName should normally find 1 PVC, but in cases where multiples
+		// are found, the first sorted PVC name will be returned.
+		testMap := map[string]string{
+			naming.LabelCluster: cluster.Name,
+		}
+
+		selector, err := naming.AsSelector(metav1.LabelSelector{
+			MatchLabels: testMap,
+		})
+
+		assert.NilError(t, err)
+		assert.Assert(t, reconciler.getPVCName(ctx, cluster, selector) == "testpgdatavol")
+
+	})
+
+	t.Run("get pgdata PVC", func(t *testing.T) {
+
+		assert.Assert(t, reconciler.getPGPVCNames(ctx, cluster, map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: "testinstance1",
+			naming.LabelInstance:    "testinstance1-abcd",
+			naming.LabelRole:        naming.RolePostgresData,
+		}) == "testpgdatavol")
+	})
+
+	t.Run("get wal PVC", func(t *testing.T) {
+
+		assert.Assert(t, reconciler.getPGPVCNames(ctx, cluster, map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: "testinstance1",
+			naming.LabelInstance:    "testinstance1-abcd",
+			naming.LabelRole:        naming.RolePostgresWAL,
+		}) == "testwalvol")
+	})
+
+	t.Run("get one repo PVC", func(t *testing.T) {
+		expectedMap := map[string]string{
+			"testrepo1": "testrepovol1",
+		}
+		assert.DeepEqual(t, reconciler.getRepoPVCNames(ctx, cluster), expectedMap)
+	})
+
+	t.Run("get two repo PVCs", func(t *testing.T) {
+		assert.NilError(t, cc.Create(ctx, repoPVC2))
+
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{{
+			Name:   "testrepo1",
+			Volume: &v1beta1.RepoPVC{},
+		}, {
+			Name:   "testrepo2",
+			Volume: &v1beta1.RepoPVC{},
+		}}
+
+		expectedMap := map[string]string{
+			"testrepo1": "testrepovol1",
+			"testrepo2": "testrepovol2",
+		}
+		assert.DeepEqual(t, reconciler.getRepoPVCNames(ctx, cluster), expectedMap)
 	})
 }

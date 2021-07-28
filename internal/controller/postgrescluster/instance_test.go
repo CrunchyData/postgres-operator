@@ -317,28 +317,34 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		repoHost  *v1beta1.PGBackRestRepoHost
 		sshConfig *v1.ConfigMapProjection
 		sshSecret *v1.SecretProjection
+		testMap   map[string]string
 	}{{
 		repoHost: nil,
+		testMap:  map[string]string{},
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{},
+		testMap:  map[string]string{},
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: v1.ResourceRequirements{},
 			},
 		},
+		testMap: map[string]string{},
 	}, {
 		repoHost: nil,
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+		testMap: map[string]string{},
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{},
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+		testMap: map[string]string{},
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
@@ -349,7 +355,60 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-	}}
+		testMap: map[string]string{},
+	},
+		// rerun the same tests, but this time simulate an existing PVC
+		{
+			repoHost: nil,
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repoHost: &v1beta1.PGBackRestRepoHost{},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repoHost: &v1beta1.PGBackRestRepoHost{
+				Dedicated: &v1beta1.DedicatedRepo{
+					Resources: v1.ResourceRequirements{},
+				},
+			},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repoHost: nil,
+			sshConfig: &v1.ConfigMapProjection{
+				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
+			sshSecret: &v1.SecretProjection{
+				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repoHost: &v1beta1.PGBackRestRepoHost{},
+			sshConfig: &v1.ConfigMapProjection{
+				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
+			sshSecret: &v1.SecretProjection{
+				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repoHost: &v1beta1.PGBackRestRepoHost{
+				Dedicated: &v1beta1.DedicatedRepo{
+					Resources: v1.ResourceRequirements{},
+				},
+			},
+			sshConfig: &v1.ConfigMapProjection{
+				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
+			sshSecret: &v1.SecretProjection{
+				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}}
 
 	for _, tc := range testCases {
 		repoHost := (tc.repoHost != nil)
@@ -374,7 +433,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 				}
 			}
 
-			err := addPGBackRestToInstancePodSpec(postgresCluster, template, instance)
+			err := addPGBackRestToInstancePodSpec(postgresCluster, template, instance, tc.testMap)
 			assert.NilError(t, err)
 
 			// if there is no dedicated repo host configured, verfiy pgBackRest repos are mounted to the

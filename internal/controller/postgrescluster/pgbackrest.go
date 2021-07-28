@@ -135,7 +135,7 @@ type RepoResources struct {
 func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string) (*appsv1.StatefulSet, error) {
 
-	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName)
+	repo, err := r.generateRepoHostIntent(ctx, postgresCluster, repoHostName)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster, spec *v1.PersistentVolumeClaimSpec,
 	repoName string) (*v1.PersistentVolumeClaim, error) {
 
-	repo, err := r.generateRepoVolumeIntent(postgresCluster, spec, repoName)
+	repo, err := r.generateRepoVolumeIntent(ctx, postgresCluster, spec, repoName)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -511,8 +511,9 @@ func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
 // generateRepoHostIntent creates and populates StatefulSet with the PostgresCluster's full intent
 // as needed to create and reconcile a pgBackRest dedicated repository host within the kubernetes
 // cluster.
-func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresCluster,
-	repoHostName string) (*appsv1.StatefulSet, error) {
+func (r *Reconciler) generateRepoHostIntent(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster, repoHostName string,
+) (*appsv1.StatefulSet, error) {
 
 	annotations := naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
@@ -581,7 +582,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		return nil, errors.WithStack(err)
 	}
 	if err := pgbackrest.AddRepoVolumesToPod(postgresCluster, &repo.Spec.Template,
-		naming.PGBackRestRepoContainerName); err != nil {
+		r.getRepoPVCNames(ctx, postgresCluster), naming.PGBackRestRepoContainerName); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	// add configs to pod
@@ -605,8 +606,9 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	return repo, nil
 }
 
-func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresCluster,
-	spec *v1.PersistentVolumeClaimSpec, repoName string) (*v1.PersistentVolumeClaim, error) {
+func (r *Reconciler) generateRepoVolumeIntent(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster, spec *v1.PersistentVolumeClaimSpec,
+	repoName string) (*v1.PersistentVolumeClaim, error) {
 
 	annotations := naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
@@ -617,8 +619,18 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 		naming.PGBackRestRepoVolumeLabels(postgresCluster.GetName(), repoName),
 	)
 
-	// generate metadata
+	// generate the default metadata
 	meta := naming.PGBackRestRepoVolume(postgresCluster, repoName)
+
+	// but if there is an existing volume for this PVC, use it
+	repoPVCNames := r.getRepoPVCNames(ctx, postgresCluster)
+	if repoPVCNames[repoName] != "" {
+		meta = metav1.ObjectMeta{
+			Name:      repoPVCNames[repoName],
+			Namespace: postgresCluster.GetNamespace(),
+		}
+	}
+
 	meta.Labels = labels
 	meta.Annotations = annotations
 
