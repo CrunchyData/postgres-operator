@@ -12,7 +12,7 @@ As part of the installation, please be sure that you have done the following:
 1. [Forked the Postgres Operator examples repository](https://github.com/CrunchyData/postgres-operator-examples/fork) and cloned it to your host machine.
 1. Installed PGO to the `postgres-operator` namespace. If you are inside your `postgres-operator-examples` directory, you can run the `kubectl apply -k kustomize/install` command.
 
-Throughout this tutorial, we will be building on the example provided in the `kustomize/postgres`. If you are using OpenShift, you will want to use the example in the `kustomize/openshift` directory, but in this tutorial, treat references to `kustomize/postgres` as the equivalent of taking action on files in `kustomize/openshift`.
+Throughout this tutorial, we will be building on the example provided in the `kustomize/postgres`.
 
 When referring to a nested object within a YAML manifest, we will be using the `.` format similar to `kubectl explain`. For example, if we want to refer to the deepest element in this yaml file:
 

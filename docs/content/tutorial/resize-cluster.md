@@ -56,8 +56,6 @@ spec:
                 storage: 1Gi
 ```
 
-(If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
-
 In particular, we added the following to `spec.instances`:
 
 ```
@@ -138,8 +136,6 @@ spec:
               requests:
                 storage: 20Gi
 ```
-
-(If you are on OpenShift, ensure that `spec.openshift` is set to `true`).
 
 In particular, we added the following to `spec.instances`:
 

@@ -15,13 +15,7 @@ Creating a Postgres cluster is pretty simple. Using the example in the `kustomiz
 kubectl apply -k kustomize/postgres
 ```
 
-and PGO will create a simple Postgres cluster named `hippo` in the `postgres-operator` namespace. Note that if you are on OpenShift, you will need to set `spec.openshift` to `true`. You can also run the example from the `kustomize/openshift` directory:
-
-```
-kubectl apply -k kustomize/openshift
-```
-
-You can track the status of your Postgres cluster using `kubectl describe` on the `postgresclusters.postgres-operator.crunchydata.com` custom resource:
+and PGO will create a simple Postgres cluster named `hippo` in the `postgres-operator` namespace. You can track the status of your Postgres cluster using `kubectl describe` on the `postgresclusters.postgres-operator.crunchydata.com` custom resource:
 
 ```
 kubectl -n postgres-operator describe postgresclusters.postgres-operator.crunchydata.com hippo

@@ -62,12 +62,6 @@ Let's create a simple Postgres cluster. You can do this by executing the followi
 kubectl apply -k kustomize/postgres
 ```
 
-If you are on OpenShift, use the following command instead:
-
-```
-kubectl apply -k kustomize/openshift
-```
-
 This will create a Postgres cluster named `hippo` in the `postgres-operator` namespace. You can track the progress of your cluster using the following command:
 
 ```

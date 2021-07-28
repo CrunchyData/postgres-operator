@@ -106,7 +106,7 @@ s3:
   region: "<YOUR_AWS_S3_REGION>"
 ```
 
-Again, replace these values with the values that match your S3 configuration. If you are deploying to OpenShift, ensure to set `spec.openshift` to `true`.
+Again, replace these values with the values that match your S3 configuration.
 
 When your configuration is saved, you can deploy your cluster:
 
@@ -124,7 +124,7 @@ There is an example for creating a Postgres cluster that uses GCS for backups in
 
 First, copy your GCS key secret (which is a JSON file) into `kustomize/gcs/gcs-key.json`. Note that a `.gitignore` directive prevents you from committing this file.
 
-Next, open the `postgres.yaml` file and edit `spec.backups.pgbackrest.repos.gcs.bucket` to the name of the GCS bucket that you want to back up to. If you are deploying to OpenShift, ensure to set `spec.openshift` to `true`.
+Next, open the `postgres.yaml` file and edit `spec.backups.pgbackrest.repos.gcs.bucket` to the name of the GCS bucket that you want to back up to.
 
 Save this file, and then run:
 
@@ -163,7 +163,7 @@ azure:
   container: "<YOUR_AZURE_CONTAINER>"
 ```
 
-Again, replace these values with the values that match your Azure configuration. If you are deploying to OpenShift, ensure to set `spec.openshift` to `true`.
+Again, replace these values with the values that match your Azure configuration.
 
 When your configuration is saved, you can deploy your cluster:
 
