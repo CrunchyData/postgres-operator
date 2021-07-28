@@ -40,6 +40,41 @@ func ExampleExecutor_execCmd() {
 	})
 }
 
+func TestExecutorExec(t *testing.T) {
+	expected := errors.New("pass-through")
+	fn := func(
+		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error {
+		b, err := ioutil.ReadAll(stdin)
+		assert.NilError(t, err)
+		assert.Equal(t, string(b), `statements; to run;`)
+
+		assert.DeepEqual(t, command, []string{
+			"psql", "-Xw", "--file=-",
+			"--set=CASE=sEnSiTiVe",
+			"--set=different=vars",
+			"--set=lots=of",
+		})
+
+		_, _ = io.WriteString(stdout, "some stdout")
+		_, _ = io.WriteString(stderr, "and stderr")
+		return expected
+	}
+
+	stdout, stderr, err := Executor(fn).Exec(
+		context.Background(),
+		strings.NewReader(`statements; to run;`),
+		map[string]string{
+			"lots":      "of",
+			"different": "vars",
+			"CASE":      "sEnSiTiVe",
+		})
+
+	assert.Equal(t, expected, err, "expected function to be called")
+	assert.Equal(t, stdout, "some stdout")
+	assert.Equal(t, stderr, "and stderr")
+}
+
 func TestExecutorExecInDatabasesFromQuery(t *testing.T) {
 	expected := errors.New("splat")
 	fn := func(

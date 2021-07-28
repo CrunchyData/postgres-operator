@@ -51,7 +51,8 @@ func NewParameters() Parameters {
 	parameters.Default.Add("jit", "off")
 
 	// SCRAM-SHA-256 is preferred over MD5, but allow users to disable it when
-	// necessary.
+	// necessary. PostgreSQL 10 is the first to support SCRAM-SHA-256, and
+	// PostgreSQL 14 makes it the default.
 	// - https://www.postgresql.org/docs/current/auth-password.html
 	parameters.Default.Add("password_encryption", "scram-sha-256")
 

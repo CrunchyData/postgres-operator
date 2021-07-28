@@ -174,38 +174,6 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		return result
 	}
 
-	Specify(`"postgres" cluster not allowed`, func() {
-		cluster := create(`
-metadata:
-    name: postgres
-spec:
-    postgresVersion: 13
-    instances:
-    - name: samba
-      dataVolumeClaimSpec:
-        accessModes:
-        - "ReadWriteMany"
-        resources:
-        requests:
-            storage: 1Gi
-`)
-		Expect(reconcile(cluster)).To(BeZero())
-
-		Expect(test.Recorder.Events).To(Not(BeEmpty()))
-		Expect(<-test.Recorder.Events).To(Equal(`Warning InvalidName "postgres" is not allowed` +
-			` involvedObject{kind=PostgresCluster,apiVersion=postgres-operator.crunchydata.com/v1beta1}`))
-
-		Expect(client.IgnoreNotFound(
-			suite.Client.Delete(context.Background(), cluster),
-		)).To(Succeed())
-
-		// Remove finalizers, if any, so the namespace can terminate.
-		Expect(client.IgnoreNotFound(
-			suite.Client.Patch(context.Background(), cluster, client.RawPatch(
-				client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
-		)).To(Succeed())
-	})
-
 	Context("Cluster", func() {
 		var cluster *v1beta1.PostgresCluster
 

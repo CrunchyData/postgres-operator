@@ -27,7 +27,7 @@ hippo-primary     ClusterIP   None           <none>        5432/TCP   3h14m
 
 You do not need to worry about most of these Services, as they are used to help manage the overall health of your Postgres cluster. For the purposes of connecting to your database, the Service of interest is called `hippo-primary`. Thanks to PGO, you do not need to even worry about that, as that information is captured within a Secret!
 
-When your Postgres cluster is initialized, PGO will bootstrap a database and Postgres user that your application can access. This information is stored in a Secret suffixed with `pguser`, following the pattern `<clusterName>-pguser`. For our `hippo` cluster, this Secret is called `hippo-pguser`. This Secret contains the information you need to connect your application to your Postgres database:
+When your Postgres cluster is initialized, PGO will bootstrap a database and Postgres user that your application can access. This information is stored in a Secret named with the pattern `<clusterName>-pguser-<userName>`. For our `hippo` cluster, this Secret is called `hippo-pguser-hippo`. This Secret contains the information you need to connect your application to your Postgres database:
 
 - `user`: The name of the user account.
 - `password`: The password for the user account.
@@ -65,15 +65,15 @@ spec:
         name: keycloak
         env:
         - name: DB_ADDR
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: host } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: host } }
         - name: DB_PORT
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: port } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: port } }
         - name: DB_DATABASE
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: dbname } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: dbname } }
         - name: DB_USER
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: user } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: user } }
         - name: DB_PASSWORD
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: password } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: password } }
         - name: KEYCLOAK_USER
           value: "admin"
         - name: KEYCLOAK_PASSWORD
@@ -102,31 +102,31 @@ Notice this part of the manifest:
 - name: DB_ADDR
   valueFrom:
     secretKeyRef:
-      name: hippo-pguser
+      name: hippo-pguser-hippo
       key: host
 - name: DB_PORT
   valueFrom:
     secretKeyRef:
-      name: hippo-pguser
+      name: hippo-pguser-hippo
       key: port
 - name: DB_DATABASE
   valueFrom:
     secretKeyRef:
-      name: hippo-pguser
+      name: hippo-pguser-hippo
       key: dbname
 - name: DB_USER
   valueFrom:
     secretKeyRef:
-      name: hippo-pguser
+      name: hippo-pguser-hippo
       key: user
 - name: DB_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: hippo-pguser
+      name: hippo-pguser-hippo
       key: password
 ```
 
-The above manifest shows how all of these values are derived from the `hippo-pguser` Secret. This means that we do not need to know any of the connection credentials or have to insecurely pass them around -- they are made directly available to the application!
+The above manifest shows how all of these values are derived from the `hippo-pguser-hippo` Secret. This means that we do not need to know any of the connection credentials or have to insecurely pass them around -- they are made directly available to the application!
 
 Using this method, you can tie application directly into your GitOps pipeline that connect to Postgres without any prior knowledge of how PGO will deploy Postgres: all of the information your application needs is propagated into the Secret!
 

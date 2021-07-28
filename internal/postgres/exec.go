@@ -28,6 +28,30 @@ type Executor func(
 	ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 ) error
 
+// Exec uses "psql" to execute sql. The sql statement(s) are passed via stdin
+// and may contain psql variables that are assigned from the variables map.
+// - https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-VARIABLES
+func (exec Executor) Exec(
+	ctx context.Context, sql io.Reader, variables map[string]string,
+) (string, string, error) {
+	// Convert variables into `psql` arguments.
+	args := make([]string, 0, len(variables))
+	for k, v := range variables {
+		args = append(args, "--set="+k+"="+v)
+	}
+
+	// The map iteration above is nondeterministic. Sort the arguments so that
+	// calls to exec are deterministic.
+	// - https://golang.org/ref/spec#For_range
+	sort.Strings(args)
+
+	// Execute `psql` without reading config files nor prompting for a password.
+	var stdout, stderr bytes.Buffer
+	err := exec(ctx, sql, &stdout, &stderr,
+		append([]string{"psql", "-Xw", "--file=-"}, args...)...)
+	return stdout.String(), stderr.String(), err
+}
+
 // ExecInDatabasesFromQuery uses "bash" and "psql" to execute sql in every
 // database returned by the databases query. The sql statement(s) may contain
 // psql variables that are assigned from the variables map.

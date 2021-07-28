@@ -394,12 +394,22 @@ func PGBackRestSSHSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
-// PostgresUserSecret returns the ObjectMeta necessary to lookup the Secret
-// containing the default Postgres User and connection information
-func PostgresUserSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+// DeprecatedPostgresUserSecret returns the ObjectMeta necessary to lookup the
+// old Secret containing the default Postgres user and connection information.
+// Use PostgresUserSecret instead.
+func DeprecatedPostgresUserSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-pguser",
+	}
+}
+
+// PostgresUserSecret returns the ObjectMeta necessary to lookup a Secret
+// containing a PostgreSQL user and its connection information.
+func PostgresUserSecret(cluster *v1beta1.PostgresCluster, username string) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-pguser-" + username,
 	}
 }
 

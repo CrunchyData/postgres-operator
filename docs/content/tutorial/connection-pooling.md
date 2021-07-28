@@ -37,10 +37,10 @@ That was fairly easy to set up, so now let's look at how we can connect our appl
 
 ## Connecting to a Connection Pooler
 
-When a connection pooler is deployed to the cluster, PGO adds additional information to the user Secret to allow for applications to connect directly to the connection pooler. Recall that in this example, our user Secret is called `keycloakdb-pguser`. Describe the user Secret:
+When a connection pooler is deployed to the cluster, PGO adds additional information to the user Secrets to allow for applications to connect directly to the connection pooler. Recall that in this example, our user Secret is called `keycloakdb-pguser-keycloakdb`. Describe the user Secret:
 
 ```
-kubectl -n postgres-operator describe secrets keycloakdb-pguser
+kubectl -n postgres-operator describe secrets keycloakdb-pguser-keycloakdb
 ```
 
 You should see that there are several new attributes included in this Secret that allow for you to connect to your Postgres instance via the connection pooler:
@@ -53,9 +53,9 @@ Open up the file in `kustomize/keycloak/keycloak.yaml`. Update the `DB_ADDR` and
 
 ```
 - name: DB_ADDR
-  valueFrom: { secretKeyRef: { name: keycloakdb-pguser, key: pgbouncer-host } }
+  valueFrom: { secretKeyRef: { name: keycloakdb-pguser-keycloakdb, key: pgbouncer-host } }
 - name: DB_PORT
-  valueFrom: { secretKeyRef: { name: keycloakdb-pguser, key: pgbouncer-port } }
+  valueFrom: { secretKeyRef: { name: keycloakdb-pguser-keycloakdb, key: pgbouncer-port } }
 ```
 
 This changes Keycloak's configuration so that it will now connect through the connection pooler.

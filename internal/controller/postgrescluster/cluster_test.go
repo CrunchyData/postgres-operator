@@ -18,15 +18,12 @@ package postgrescluster
 */
 
 import (
-	"fmt"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -41,158 +38,11 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
-
-func TestReconcilePGUserSecret(t *testing.T) {
-
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
-
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
-
-	// test postgrescluster values
-	var (
-		postgresPort             = int32(5432)
-		clusterName              = "hippocluster"
-		namespace                = "postgres-operator-test-" + rand.String(6)
-		clusterUID               = types.UID("hippouid")
-		returnedConnectionString string
-	)
-
-	ns := &corev1.Namespace{}
-	ns.Name = namespace
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
-	// create a PostgresCluster to test with
-	postgresCluster := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName,
-			Namespace: namespace,
-			UID:       clusterUID,
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			Port: &postgresPort,
-		},
-	}
-
-	t.Run("create postgres user secret", func(t *testing.T) {
-
-		_, err := r.reconcilePGUserSecret(ctx, postgresCluster)
-		assert.NilError(t, err)
-	})
-
-	t.Run("validate postgres user secret", func(t *testing.T) {
-
-		pgUserSecret := &v1.Secret{ObjectMeta: naming.PostgresUserSecret(postgresCluster)}
-		pgUserSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
-		err := r.Client.Get(ctx, client.ObjectKeyFromObject(pgUserSecret), pgUserSecret)
-		assert.NilError(t, err)
-
-		databasename, ok := pgUserSecret.Data["dbname"]
-		assert.Assert(t, ok)
-		assert.Equal(t, string(databasename), postgresCluster.Name)
-
-		host, ok := pgUserSecret.Data["host"]
-		assert.Assert(t, ok)
-		assert.Equal(t, string(host), fmt.Sprintf("%s.%s.svc", "hippocluster-primary", namespace))
-
-		port, ok := pgUserSecret.Data["port"]
-		assert.Assert(t, ok)
-		assert.Equal(t, string(port), fmt.Sprintf("%d", *postgresCluster.Spec.Port))
-
-		username, ok := pgUserSecret.Data["user"]
-		assert.Assert(t, ok)
-		assert.Equal(t, string(username), postgresCluster.Name)
-
-		password, ok := pgUserSecret.Data["password"]
-		assert.Assert(t, ok)
-		assert.Equal(t, len(password), util.DefaultGeneratedPasswordLength)
-
-		secretConnectionString1, ok := pgUserSecret.Data["uri"]
-
-		assert.Assert(t, ok)
-
-		returnedConnectionString = string(secretConnectionString1)
-
-		testConnectionString := (&url.URL{
-			Scheme: "postgresql",
-			Host:   fmt.Sprintf("%s.%s.svc:%d", "hippocluster-primary", namespace, *postgresCluster.Spec.Port),
-			User:   url.UserPassword(string(pgUserSecret.Data["user"]), string(pgUserSecret.Data["password"])),
-			Path:   string(pgUserSecret.Data["dbname"]),
-		}).String()
-
-		assert.Equal(t, returnedConnectionString, testConnectionString)
-
-		// ensure none of the pgBouncer information is set
-		_, ok = pgUserSecret.Data["pgbouncer-host"]
-		assert.Assert(t, !ok)
-
-		_, ok = pgUserSecret.Data["pgbouncer-port"]
-		assert.Assert(t, !ok)
-
-		_, ok = pgUserSecret.Data["pgbouncer-uri"]
-		assert.Assert(t, !ok)
-	})
-
-	t.Run("validate postgres user password is not changed after another reconcile", func(t *testing.T) {
-
-		pgUserSecret2, err := r.reconcilePGUserSecret(ctx, postgresCluster)
-		assert.NilError(t, err)
-
-		returnedConnectionString2, ok := pgUserSecret2.Data["uri"]
-
-		assert.Assert(t, ok)
-		assert.Equal(t, string(returnedConnectionString2), returnedConnectionString)
-
-	})
-
-	t.Run("validate addition of pgbouncer", func(t *testing.T) {
-		postgresCluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
-		postgresCluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
-		postgresCluster.Spec.Proxy.PGBouncer.Port = new(int32)
-		*postgresCluster.Spec.Proxy.PGBouncer.Port = 6432
-
-		pgUserSecret2, err := r.reconcilePGUserSecret(ctx, postgresCluster)
-		assert.NilError(t, err)
-
-		host, ok := pgUserSecret2.Data["pgbouncer-host"]
-		assert.Assert(t, ok)
-		assert.Equal(t, string(host), fmt.Sprintf("%s-pgbouncer.%s.svc",
-			postgresCluster.Name, postgresCluster.Namespace))
-
-		port, ok := pgUserSecret2.Data["pgbouncer-port"]
-		assert.Assert(t, ok)
-		assert.Equal(t, string(port), fmt.Sprintf("%d", *postgresCluster.Spec.Proxy.PGBouncer.Port))
-
-		pgBouncerConnectionString := (&url.URL{
-			Scheme: "postgresql",
-			Host: fmt.Sprintf("%s-pgbouncer.%s.svc:%d",
-				postgresCluster.Name, postgresCluster.Namespace, *postgresCluster.Spec.Proxy.PGBouncer.Port),
-			User: url.UserPassword(string(pgUserSecret2.Data["user"]), string(pgUserSecret2.Data["password"])),
-			Path: string(pgUserSecret2.Data["dbname"]),
-		}).String()
-		uri, ok := pgUserSecret2.Data["pgbouncer-uri"]
-		assert.Assert(t, ok)
-		assert.Equal(t, string(uri), pgBouncerConnectionString)
-	})
-}
 
 var gvks = []schema.GroupVersionKind{{
 	Group:   v1.SchemeGroupVersion.Group,

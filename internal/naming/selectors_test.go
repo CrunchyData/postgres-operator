@@ -95,16 +95,15 @@ func TestClusterPatronis(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid")
 }
 
-func TestClusterReplicas(t *testing.T) {
-	s, err := AsSelector(ClusterReplicas("something"))
+func TestClusterPostgresUsers(t *testing.T) {
+	s, err := AsSelector(ClusterPostgresUsers("something"))
 	assert.NilError(t, err)
 	assert.DeepEqual(t, s.String(), strings.Join([]string{
 		"postgres-operator.crunchydata.com/cluster=something",
-		"postgres-operator.crunchydata.com/instance",
-		"postgres-operator.crunchydata.com/role=replica",
+		"postgres-operator.crunchydata.com/pguser",
 	}, ","))
 
-	_, err = AsSelector(ClusterInstances("--whoa/yikes"))
+	_, err = AsSelector(ClusterPostgresUsers("--nope--"))
 	assert.ErrorContains(t, err, "invalid")
 }
 

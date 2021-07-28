@@ -25,16 +25,156 @@ import (
 
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestGeneratePostgresUserSecret(t *testing.T) {
+	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+
+	reconciler := &Reconciler{Client: tClient}
+
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns1"
+	cluster.Name = "hippo2"
+	cluster.Spec.Port = initialize.Int32(9999)
+
+	spec := &v1beta1.PostgresUserSpec{Name: "some-user-name"}
+
+	t.Run("ObjectMeta", func(t *testing.T) {
+		secret, err := reconciler.generatePostgresUserSecret(cluster, spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, secret.Namespace, cluster.Namespace)
+			assert.Assert(t, metav1.IsControlledBy(secret, cluster))
+			assert.DeepEqual(t, secret.Labels, map[string]string{
+				"postgres-operator.crunchydata.com/cluster": "hippo2",
+				"postgres-operator.crunchydata.com/role":    "pguser",
+				"postgres-operator.crunchydata.com/pguser":  "some-user-name",
+			})
+		}
+	})
+
+	t.Run("Primary", func(t *testing.T) {
+		secret, err := reconciler.generatePostgresUserSecret(cluster, spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, string(secret.Data["host"]), "hippo2-primary.ns1.svc")
+			assert.Equal(t, string(secret.Data["port"]), "9999")
+			assert.Equal(t, string(secret.Data["user"]), "some-user-name")
+		}
+	})
+
+	t.Run("Password", func(t *testing.T) {
+		// Generated when no existing Secret.
+		secret, err := reconciler.generatePostgresUserSecret(cluster, spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Assert(t, len(secret.Data["password"]) > 16, "got %v", len(secret.Data["password"]))
+			assert.Assert(t, len(secret.Data["verifier"]) > 90, "got %v", len(secret.Data["verifier"]))
+		}
+
+		// Generated when existing Secret is lacking.
+		secret, err = reconciler.generatePostgresUserSecret(cluster, spec, new(corev1.Secret))
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Assert(t, len(secret.Data["password"]) > 16, "got %v", len(secret.Data["password"]))
+			assert.Assert(t, len(secret.Data["verifier"]) > 90, "got %v", len(secret.Data["verifier"]))
+		}
+
+		// Copied when existing Secret is full.
+		secret, err = reconciler.generatePostgresUserSecret(cluster, spec, &corev1.Secret{
+			Data: map[string][]byte{
+				"password": []byte(`asdf`),
+				"verifier": []byte(`some$thing`),
+			},
+		})
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, string(secret.Data["password"]), "asdf")
+			assert.Equal(t, string(secret.Data["verifier"]), "some$thing")
+		}
+	})
+
+	t.Run("Database", func(t *testing.T) {
+		spec := *spec
+
+		// Missing when none specified.
+		secret, err := reconciler.generatePostgresUserSecret(cluster, &spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Assert(t, secret.Data["dbname"] == nil)
+			assert.Assert(t, secret.Data["uri"] == nil)
+		}
+
+		// Present when specified.
+		spec.Databases = []v1beta1.PostgresIdentifier{"db1"}
+
+		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, string(secret.Data["dbname"]), "db1")
+			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/db1`,
+				string(secret.Data["uri"])))
+		}
+
+		// Only the first in the list.
+		spec.Databases = []v1beta1.PostgresIdentifier{"first", "asdf"}
+
+		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, string(secret.Data["dbname"]), "first")
+			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/first`,
+				string(secret.Data["uri"])))
+		}
+	})
+
+	t.Run("PgBouncer", func(t *testing.T) {
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			proxy: { pgBouncer: { port: 10220 } },
+		}`), &cluster.Spec))
+
+		secret, err := reconciler.generatePostgresUserSecret(cluster, spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, string(secret.Data["pgbouncer-host"]), "hippo2-pgbouncer.ns1.svc")
+			assert.Equal(t, string(secret.Data["pgbouncer-port"]), "10220")
+			assert.Assert(t, secret.Data["pgbouncer-uri"] == nil)
+		}
+
+		// Includes a URI when possible.
+		spec := *spec
+		spec.Databases = []v1beta1.PostgresIdentifier{"yes", "no"}
+
+		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-pgbouncer.ns1.svc:10220/yes`,
+				string(secret.Data["pgbouncer-uri"])))
+		}
+	})
+}
 
 func TestReconcilePostgresVolumes(t *testing.T) {
 	ctx := context.Background()
