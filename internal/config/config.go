@@ -34,27 +34,7 @@ import (
 // updates when the container image is changed (See
 //  https://docs.openshift.com/container-platform/4.7/openshift_images/images-understand.html#images-imagestream-use_images-understand)
 
-const (
-	// This is the base string for each version of Postgres.
-	// For standard PostgreSQL images, the format is
-	// RELATED_IMAGE_POSTGRES_<Version>
-	// where Version is the PostgreSQL version set in Spec.PostgresVersion.
-	// Example: RELATED_IMAGE_POSTGRES_13
-	// For PostGIS enabled PostgreSQL images, the format is
-	// RELATED_IMAGE_POSTGRES_<Version>_GIS_<GIS Version> where "Version" is the
-	// PostgreSQL version set in Spec.PostgresVersion and "GIS Version"
-	// is the PostGIS version set in Spec.PostGISVersion.
-	// Example: RELATED_IMAGE_POSTGRES_13_GIS_3.1
-	CrunchyPostgres = "RELATED_IMAGE_POSTGRES_"
-
-	// Remaining images
-	CrunchyPGBouncer  = "RELATED_IMAGE_PGBOUNCER"
-	CrunchyPGBackRest = "RELATED_IMAGE_PGBACKREST"
-	CrunchyPGExporter = "RELATED_IMAGE_PGEXPORTER"
-)
-
-// defaultFromEnv returns the value of the given environment
-// variable if the spec value given is empty
+// defaultFromEnv reads the environment variable key when value is empty.
 func defaultFromEnv(value, key string) string {
 	if value == "" {
 		return os.Getenv(key)
@@ -63,53 +43,44 @@ func defaultFromEnv(value, key string) string {
 }
 
 // PGBackRestContainerImage returns the container image to use for pgBackRest.
-// It takes the current image defined in the postgrescluster spec and the
-// associated related image override environment variable. If the image
-// defined on the spec is empty, the value stored in the environment variable
-// is returned.
 func PGBackRestContainerImage(cluster *v1beta1.PostgresCluster) string {
-	return defaultFromEnv(cluster.Spec.Backups.PGBackRest.Image,
-		CrunchyPGBackRest)
+	image := cluster.Spec.Backups.PGBackRest.Image
+
+	return defaultFromEnv(image, "RELATED_IMAGE_PGBACKREST")
 }
 
 // PGBouncerContainerImage returns the container image to use for pgBouncer.
-// It takes the current image defined in the postgrescluster spec and the
-// associated related image override environment variable. If the image
-// defined on the spec is empty, the value stored in the environment variable
-// is returned.
 func PGBouncerContainerImage(cluster *v1beta1.PostgresCluster) string {
-	return defaultFromEnv(cluster.Spec.Proxy.PGBouncer.Image,
-		CrunchyPGBouncer)
+	var image string
+	if cluster.Spec.Proxy != nil &&
+		cluster.Spec.Proxy.PGBouncer != nil {
+		image = cluster.Spec.Proxy.PGBouncer.Image
+	}
+
+	return defaultFromEnv(image, "RELATED_IMAGE_PGBOUNCER")
 }
 
 // PGExporterContainerImage returns the container image to use for the
-// PostgreSQL Exporter. It takes the current image defined in the
-// postgrescluster spec and the associated related image override environment
-// variable. If the image defined on the spec is empty, the value stored in the
-// environment variable is returned.
+// PostgreSQL Exporter.
 func PGExporterContainerImage(cluster *v1beta1.PostgresCluster) string {
-	return defaultFromEnv(cluster.Spec.Monitoring.PGMonitor.Exporter.Image,
-		CrunchyPGExporter)
-}
-
-// PostgresContainerImage returns the container image to use for PostgreSQL
-// based images. It takes in the postgrescluster CRD and first checks for the
-// image value on the spec. If empty, it attempts to retrieve the relevant
-// environment variable value for the required image. This is determined by
-// gathering the defined Postgres version and, if it exists, PostGIS version
-// from the spec. Depending on these configured items, the relevant value is
-// pulled from the environment variable.
-func PostgresContainerImage(cluster *v1beta1.PostgresCluster) string {
-
-	if cluster.Spec.Image != "" {
-		return cluster.Spec.Image
+	var image string
+	if cluster.Spec.Monitoring != nil &&
+		cluster.Spec.Monitoring.PGMonitor != nil &&
+		cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
+		image = cluster.Spec.Monitoring.PGMonitor.Exporter.Image
 	}
 
-	key := fmt.Sprintf("%s%v", CrunchyPostgres, cluster.Spec.PostgresVersion)
+	return defaultFromEnv(image, "RELATED_IMAGE_PGEXPORTER")
+}
+
+// PostgresContainerImage returns the container image to use for PostgreSQL.
+func PostgresContainerImage(cluster *v1beta1.PostgresCluster) string {
+	image := cluster.Spec.Image
+	key := "RELATED_IMAGE_POSTGRES_" + fmt.Sprint(cluster.Spec.PostgresVersion)
 
 	if version := cluster.Spec.PostGISVersion; version != "" {
 		key += "_GIS_" + version
 	}
 
-	return os.Getenv(key)
+	return defaultFromEnv(image, key)
 }
