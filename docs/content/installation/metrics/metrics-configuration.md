@@ -36,7 +36,7 @@ These variables affect the general configuration of PostgreSQL Operator Monitori
 | `grafana_volume_size` | 1Gi | **Required** | Set to the size of persistent volume to create for Grafana. |
 | `metrics_image_pull_secret` |  |  | Name of a Secret containing credentials for container image registries. |
 | `metrics_image_pull_secret_manifest` |  |  | Provide a path to the image Secret manifest to be installed in the metrics namespace. |
-| `metrics_namespace` | 1G | **Required** | The namespace that should be created (if it doesn't already exist) and utilized for installation of the Matrics infrastructure. |
+| `metrics_namespace` | 1G | **Required** | The namespace that should be created (if it doesn't already exist) and utilized for installation of the Metrics infrastructure. |
 | `pgbadgerport` | 10000 | **Required** | Set to configure the port used by pgbadger in any PostgreSQL clusters. |
 | `prometheus_install` | false | **Required** | Set to true to install Promotheus in order to capture metrics exported from PostgreSQL clusters. |
 | `prometheus_service_type` | true | **Required** | How to [expose][k8s-service-type] the Prometheus service. |
