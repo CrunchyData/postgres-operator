@@ -61,11 +61,6 @@ EXPOSE 9187
 # volume permissions are applied when building the image
 VOLUME ["/conf"]
 
-# Defines a unique directory name that will be utilized by the nss_wrapper in the UID script
-ENV NSS_WRAPPER_SUBDIR="exporter"
-
-ENTRYPOINT ["/opt/cpm/bin/uid_daemon.sh"]
-
 USER 2
 
 CMD ["/opt/cpm/bin/start.sh"]
