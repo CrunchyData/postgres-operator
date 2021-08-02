@@ -109,8 +109,14 @@ deploy:
 deploy-dev: build-postgres-operator
 	$(PGO_KUBE_CLIENT) apply -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
-	CRUNCHY_DEBUG=true \
+	env \
+		CRUNCHY_DEBUG=true \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
+		$(shell $(PGO_KUBE_CLIENT) kustomize ./config/dev | \
+			sed -ne '/^kind: Deployment/,/^---/ { \
+				/RELATED_IMAGE_/ { N; s,.*\(RELATED_[^[:space:]]*\).*value:[[:space:]]*\([^[:space:]]*\),\1="\2",; p; }; \
+			}') \
+		$(foreach v,$(filter RELATED_IMAGE_%,$(.VARIABLES)),$(v)="$($(v))") \
 		bin/postgres-operator
 
 # Undeploy the PostgreSQL Operator
