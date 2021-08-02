@@ -39,19 +39,21 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestore))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestoreConfig))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGMonitorDiscovery))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelPostgresUser))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelStartupInstance))
 }
 
 func TestLabelValuesValid(t *testing.T) {
-	assert.Assert(t, nil == validation.IsDNS1123Label(RolePatroniLeader))
-	assert.Assert(t, nil == validation.IsDNS1123Label(RolePatroniReplica))
-	assert.Assert(t, nil == validation.IsDNS1123Label(RolePGBouncer))
-	assert.Assert(t, nil == validation.IsDNS1123Label(RolePostgresData))
-	assert.Assert(t, nil == validation.IsDNS1123Label(RolePostgresWAL))
-	assert.Assert(t, nil == validation.IsDNS1123Label(RolePrimary))
-	assert.Assert(t, nil == validation.IsDNS1123Label(RoleReplica))
-	assert.Assert(t, nil == validation.IsDNS1123Label(string(BackupReplicaCreate)))
-	assert.Assert(t, nil == validation.IsDNS1123Label(RoleMonitoring))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePatroniLeader))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePatroniReplica))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePGBouncer))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePostgresData))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePostgresUser))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePostgresWAL))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePrimary))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RoleReplica))
+	assert.Assert(t, nil == validation.IsValidLabelValue(string(BackupReplicaCreate)))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RoleMonitoring))
 }
 
 func TestMerge(t *testing.T) {

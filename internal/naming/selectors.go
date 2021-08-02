@@ -88,17 +88,23 @@ func ClusterPatronis(cluster *v1beta1.PostgresCluster) metav1.LabelSelector {
 	}
 }
 
+// ClusterPostgresUsers selects things labeled for PostgreSQL users in cluster.
+func ClusterPostgresUsers(cluster string) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster: cluster,
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			// The now-deprecated default PostgreSQL user secret lacks a LabelRole.
+			// The existence of a LabelPostgresUser matches it and current secrets.
+			{Key: LabelPostgresUser, Operator: metav1.LabelSelectorOpExists},
+		},
+	}
+}
+
 // ClusterPrimary selects things for the Primary PostgreSQL instance.
 func ClusterPrimary(cluster string) metav1.LabelSelector {
 	s := ClusterInstances(cluster)
 	s.MatchLabels[LabelRole] = RolePatroniLeader
-	return s
-}
-
-// ClusterReplicas selects things for PostgreSQL replicas in cluster.
-// TODO(cbandy): Remove if this goes unused for much longer.
-func ClusterReplicas(cluster string) metav1.LabelSelector {
-	s := ClusterInstances(cluster)
-	s.MatchLabels[LabelRole] = RoleReplica
 	return s
 }

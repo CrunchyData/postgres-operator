@@ -140,15 +140,6 @@ func (r *Reconciler) Reconcile(
 		return *result, nil
 	}
 
-	// TODO(cbandy): An initial user and database are created matching cluster.Name.
-	// At this time, "postgres" is special and should not be allowed.
-	if cluster.Name == "postgres" {
-		log.Info("cluster name not allowed")
-		r.Recorder.Eventf(cluster,
-			corev1.EventTypeWarning, "InvalidName", "%q is not allowed", cluster.Name)
-		return result, nil
-	}
-
 	var (
 		clusterConfigMap         *corev1.ConfigMap
 		clusterReplicationSecret *corev1.Secret
@@ -158,7 +149,6 @@ func (r *Reconciler) Reconcile(
 		instances                *observedInstances
 		patroniLeaderService     *corev1.Service
 		primaryCertificate       *corev1.SecretProjection
-		pgUser                   *corev1.Secret
 		rootCA                   *pki.RootCertificateAuthority
 		monitoringSecret         *corev1.Secret
 		err                      error
@@ -223,10 +213,7 @@ func (r *Reconciler) Reconcile(
 		}
 	}
 	if err == nil {
-		pgUser, err = r.reconcilePGUserSecret(ctx, cluster)
-	}
-	if err == nil {
-		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser)
+		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters)
 	}
 	if err == nil {
 		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
@@ -260,6 +247,13 @@ func (r *Reconciler) Reconcile(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount, instances,
 			patroniLeaderService, primaryCertificate, clusterVolumes)
+	}
+
+	if err == nil {
+		err = r.reconcilePostgresDatabases(ctx, cluster, instances)
+	}
+	if err == nil {
+		err = r.reconcilePostgresUsers(ctx, cluster, instances)
 	}
 
 	if err == nil {

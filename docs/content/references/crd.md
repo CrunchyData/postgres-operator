@@ -155,6 +155,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>Run this cluster as a read-only copy of an existing cluster or archive.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecusersindex">users</a></b></td>
+        <td>[]object</td>
+        <td>Users to create inside PostgreSQL and the databases they should access. The default creates one user that can access one database matching the PostgresCluster name. An empty list creates no users. Removing a user from this list does NOT drop the user nor revoke their access.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecbackups">backups</a></b></td>
         <td>object</td>
         <td>PostgreSQL backup configuration</td>
@@ -3570,6 +3575,43 @@ Run this cluster as a read-only copy of an existing cluster or archive.
         <td><b>repoName</b></td>
         <td>string</td>
         <td>The name of the pgBackRest repository to follow for WAL files.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecusersindex">
+  PostgresCluster.spec.users[index]
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>databases</b></td>
+        <td>[]string</td>
+        <td>Databases to which this user can connect and create objects. Removing a database from this list does NOT revoke access. This field is ignored for the "postgres" user.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>options</b></td>
+        <td>string</td>
+        <td>ALTER ROLE options except for PASSWORD. This field is ignored for the "postgres" user. More info: https://www.postgresql.org/docs/current/role-attributes.html</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>The name of this PostgreSQL user. The value may contain only lowercase letters, numbers, and hyphen so that it fits into Kubernetes metadata.</td>
         <td>true</td>
       </tr></tbody>
 </table>
@@ -8237,6 +8279,11 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td>conditions represent the observations of postgrescluster's current state. Known .status.conditions.type are: "PersistentVolumeResizing", "ProxyAvailable"</td>
         <td>false</td>
       </tr><tr>
+        <td><b>databaseRevision</b></td>
+        <td>string</td>
+        <td>Identifies the databases that have been installed into PostgreSQL.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterstatusinstancesindex">instances</a></b></td>
         <td>[]object</td>
         <td>Current state of PostgreSQL instances.</td>
@@ -8275,6 +8322,11 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td><b>startupInstanceSet</b></td>
         <td>string</td>
         <td>The instance set associated with the startupInstance</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>usersRevision</b></td>
+        <td>string</td>
+        <td>Identifies the users that have been installed into PostgreSQL.</td>
         <td>false</td>
       </tr></tbody>
 </table>

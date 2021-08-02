@@ -17,22 +17,17 @@ package postgrescluster
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"net/url"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -42,7 +37,7 @@ import (
 // files (etc) that apply to the entire cluster.
 func (r *Reconciler) reconcileClusterConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters, pgUser *v1.Secret,
+	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) (*v1.ConfigMap, error) {
 	clusterConfigMap := &v1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
 	clusterConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -56,7 +51,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 		})
 
 	if err == nil {
-		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser,
+		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters,
 			clusterConfigMap)
 	}
 	if err == nil {
@@ -313,108 +308,4 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	}
 	// return early until the PG data directory is initialized
 	return true, nil
-}
-
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=create;patch
-
-// reconcilePGUserSecret creates the secret that contains the default
-// connection information to use with the postgrescluster
-// TODO(tjmoore4): add updated reconciliation logic
-func (r *Reconciler) reconcilePGUserSecret(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) (*v1.Secret, error) {
-	existing := &v1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster)}
-	err := errors.WithStack(client.IgnoreNotFound(r.Client.Get(ctx,
-		client.ObjectKeyFromObject(existing), existing)))
-	if err != nil {
-		return nil, err
-	}
-
-	intent := &v1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster)}
-	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
-
-	intent.Data = make(map[string][]byte)
-
-	// TODO(jkatz): user as cluster name? could there be a different default here?
-	intent.Data["user"] = []byte(cluster.Name)
-	intent.Data["dbname"] = []byte(cluster.Name)
-	intent.Data["port"] = []byte(fmt.Sprint(*cluster.Spec.Port))
-
-	hostname := naming.ClusterPrimaryService(cluster).Name + "." +
-		naming.ClusterPrimaryService(cluster).Namespace + ".svc"
-	intent.Data["host"] = []byte(hostname)
-
-	// if the password is not set, generate a new one
-	if _, ok := existing.Data["password"]; !ok {
-		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
-		if err != nil {
-			return nil, err
-		}
-		// Generate the SCRAM verifier now and store alongside the plaintext
-		// password so that later reconciles don't generate it repeatedly.
-		// NOTE(cbandy): We don't have a function to compare a plaintext password
-		// to a SCRAM verifier.
-		verifier, err := pgpassword.NewSCRAMPassword(password).Build()
-		if err != nil {
-			return nil, err
-		}
-		intent.Data["password"] = []byte(password)
-		intent.Data["verifier"] = []byte(verifier)
-	} else {
-		intent.Data["password"] = existing.Data["password"]
-		intent.Data["verifier"] = existing.Data["verifier"]
-	}
-
-	// The stored connection string follows the PostgreSQL format.
-	// The example followed is
-	// postgresql://user:secret@localhost:port/mydb
-	// where 'user' is the username, 'secret' is the password, 'localhost'
-	// is the hostname, 'port' is the port and 'mydb' is the database name
-	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
-	connectionString := (&url.URL{
-		Scheme: "postgresql",
-		Host:   fmt.Sprintf("%s:%d", hostname, *cluster.Spec.Port),
-		User:   url.UserPassword(string(intent.Data["user"]), string(intent.Data["password"])),
-		Path:   string(intent.Data["dbname"]),
-	}).String()
-	intent.Data["uri"] = []byte(connectionString)
-
-	// if there is a pgBouncer instance, apply the pgBouncer settings. Otherwise
-	// remove the pgBouncer settings
-	if cluster.Spec.Proxy != nil && cluster.Spec.Proxy.PGBouncer != nil {
-		pgBouncerHostname := naming.ClusterPGBouncer(cluster).Name + "." +
-			naming.ClusterPGBouncer(cluster).Namespace + ".svc"
-		intent.Data["pgbouncer-host"] = []byte(pgBouncerHostname)
-		intent.Data["pgbouncer-port"] = []byte(fmt.Sprint(*cluster.Spec.Proxy.PGBouncer.Port))
-
-		pgBouncerConnectionString := (&url.URL{
-			Scheme: "postgresql",
-			Host:   fmt.Sprintf("%s:%d", pgBouncerHostname, *cluster.Spec.Proxy.PGBouncer.Port),
-			User:   url.UserPassword(string(intent.Data["user"]), string(intent.Data["password"])),
-			Path:   string(intent.Data["dbname"]),
-		}).String()
-		intent.Data["pgbouncer-uri"] = []byte(pgBouncerConnectionString)
-	}
-
-	intent.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
-	intent.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelCluster:    cluster.Name,
-			naming.LabelUserSecret: cluster.Name,
-		})
-
-	err = errors.WithStack(r.setControllerReference(cluster, intent))
-
-	if err == nil {
-		err = errors.WithStack(r.apply(ctx, intent))
-	}
-
-	// if no error, return intent
-	if err == nil {
-		return intent, err
-	}
-
-	// do not return the intent if there was an error during apply
-	return nil, err
 }

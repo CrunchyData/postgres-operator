@@ -73,12 +73,11 @@ const (
 	// support discovery by Prometheus according to pgMonitor configuration
 	LabelPGMonitorDiscovery = labelPrefix + "crunchy-postgres-exporter"
 
+	// LabelPostgresUser identifies the PostgreSQL user an object is for or about.
+	LabelPostgresUser = labelPrefix + "pguser"
+
 	// LabelStartupInstance is used to indicate the startup instance associated with a resource
 	LabelStartupInstance = labelPrefix + "startup-instance"
-
-	// LabelUserSecret is used to identify the secret containing the Postgres
-	// user connection information
-	LabelUserSecret = labelPrefix + "pguser"
 
 	RolePrimary = "primary"
 	RoleReplica = "replica"
@@ -94,6 +93,9 @@ const (
 
 	// RolePostgresData is the LabelRole applied to PostgreSQL data volumes.
 	RolePostgresData = "pgdata"
+
+	// RolePostgresUser is the LabelRole applied to PostgreSQL user secrets.
+	RolePostgresUser = "pguser"
 
 	// RolePostgresWAL is the LabelRole applied to PostgreSQL WAL volumes.
 	RolePostgresWAL = "pgwal"

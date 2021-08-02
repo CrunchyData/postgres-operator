@@ -5639,6 +5639,46 @@ spec:
                 required:
                 - repoName
                 type: object
+              users:
+                description: Users to create inside PostgreSQL and the databases they
+                  should access. The default creates one user that can access one
+                  database matching the PostgresCluster name. An empty list creates
+                  no users. Removing a user from this list does NOT drop the user
+                  nor revoke their access.
+                items:
+                  properties:
+                    databases:
+                      description: Databases to which this user can connect and create
+                        objects. Removing a database from this list does NOT revoke
+                        access. This field is ignored for the "postgres" user.
+                      items:
+                        description: 'PostgreSQL identifiers are limited in length
+                          but may contain any character. More info: https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS'
+                        maxLength: 63
+                        minLength: 1
+                        type: string
+                      type: array
+                      x-kubernetes-list-type: set
+                    name:
+                      description: The name of this PostgreSQL user. The value may
+                        contain only lowercase letters, numbers, and hyphen so that
+                        it fits into Kubernetes metadata.
+                      maxLength: 63
+                      minLength: 1
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                      type: string
+                    options:
+                      description: 'ALTER ROLE options except for PASSWORD. This field
+                        is ignored for the "postgres" user. More info: https://www.postgresql.org/docs/current/role-attributes.html'
+                      pattern: ^[^;]*$
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
             required:
             - backups
             - instances
@@ -5722,6 +5762,10 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              databaseRevision:
+                description: Identifies the databases that have been installed into
+                  PostgreSQL.
+                type: string
               instances:
                 description: Current state of PostgreSQL instances.
                 items:
@@ -5989,6 +6033,9 @@ spec:
                 type: string
               startupInstanceSet:
                 description: The instance set associated with the startupInstance
+                type: string
+              usersRevision:
+                description: Identifies the users that have been installed into PostgreSQL.
                 type: string
             type: object
         type: object

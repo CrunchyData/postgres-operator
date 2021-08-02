@@ -142,6 +142,15 @@ type PostgresClusterSpec struct {
 	// Run this cluster as a read-only copy of an existing cluster or archive.
 	// +optional
 	Standby *PostgresStandbySpec `json:"standby,omitempty"`
+
+	// Users to create inside PostgreSQL and the databases they should access.
+	// The default creates one user that can access one database matching the
+	// PostgresCluster name. An empty list creates no users. Removing a user
+	// from this list does NOT drop the user nor revoke their access.
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	Users []PostgresUserSpec `json:"users,omitempty"`
 }
 
 // DataSource defines the source of the PostgreSQL data directory for a new PostgresCluster.
@@ -224,6 +233,9 @@ type Backups struct {
 // PostgresClusterStatus defines the observed state of PostgresCluster
 type PostgresClusterStatus struct {
 
+	// Identifies the databases that have been installed into PostgreSQL.
+	DatabaseRevision string `json:"databaseRevision,omitempty"`
+
 	// Current state of PostgreSQL instances.
 	// +listType=map
 	// +listMapKey=name
@@ -249,6 +261,9 @@ type PostgresClusterStatus struct {
 	// The instance set associated with the startupInstance
 	// +optional
 	StartupInstanceSet string `json:"startupInstanceSet,omitempty"`
+
+	// Identifies the users that have been installed into PostgreSQL.
+	UsersRevision string `json:"usersRevision,omitempty"`
 
 	// Current state of PostgreSQL cluster monitoring tool configuration
 	// +optional
@@ -377,6 +392,10 @@ type PostgresStandbySpec struct {
 
 // PostgresCluster is the Schema for the postgresclusters API
 type PostgresCluster struct {
+	// ObjectMeta.Name is a DNS subdomain.
+	// - https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
+	// - https://releases.k8s.io/v1.21.0/staging/src/k8s.io/apiextensions-apiserver/pkg/registry/customresource/validator.go#L60
+
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 

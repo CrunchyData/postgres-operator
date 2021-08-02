@@ -70,7 +70,7 @@ kubectl -n postgres-operator describe postgresclusters.postgres-operator.crunchy
 
 ## Connect to the Postgres cluster
 
-As part of creating a Postgres cluster, the Postgres Operator creates a PostgreSQL user account. The credentials for this account are stored in a Secret that has the name `<clusterName>-pguser`.
+As part of creating a Postgres cluster, the Postgres Operator creates a PostgreSQL user account. The credentials for this account are stored in a Secret that has the name `<clusterName>-pguser-<userName>`.
 
 Within this Secret are attributes that provide information to let you log into the PostgreSQL cluster. These include:
 
@@ -96,7 +96,7 @@ Note that **all connections use TLS**. PGO sets up a PKI for your Postgres clust
 If you are on the same network as your PostgreSQL cluster, you can connect directly to it using the following command:
 
 ```
-psql $(kubectl -n postgres-operator get secrets hippo-pguser -o jsonpath='{.data.uri}' | base64 -d)
+psql $(kubectl -n postgres-operator get secrets hippo-pguser-hippo -o go-template='{{.data.uri | base64decode}}')
 ```
 
 #### Connect Using a Port-Forward
@@ -112,11 +112,11 @@ kubectl -n postgres-operator port-forward "${PG_CLUSTER_PRIMARY_POD}" 5432:5432
 Establish a connection to the PostgreSQL cluster.
 
 ```
-PG_CLUSTER_USER_SECRET_NAME=hippo-pguser
+PG_CLUSTER_USER_SECRET_NAME=hippo-pguser-hippo
 
-PGPASSWORD=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.password}" | base64 -d) \
-PGUSER=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.user}" | base64 -d) \
-PGDBNAME=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.dbname}" | base64 -d) \
+PGPASSWORD=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o go-template='{{.data.password | base64decode}}') \
+PGUSER=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o go-template='{{.data.user | base64decode}}') \
+PGDBNAME=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o go-template='{{.data.dbname | base64decode}}') \
 psql -h localhost
 ```
 
@@ -151,15 +151,15 @@ spec:
         - name: DB_VENDOR
           value: "postgres"
         - name: DB_ADDR
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: host } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: host } }
         - name: DB_PORT
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: port } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: port } }
         - name: DB_DATABASE
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: dbname } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: dbname } }
         - name: DB_USER
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: user } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: user } }
         - name: DB_PASSWORD
-          valueFrom: { secretKeyRef: { name: hippo-pguser, key: password } }
+          valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: password } }
         - name: KEYCLOAK_USER
           value: "admin"
         - name: KEYCLOAK_PASSWORD

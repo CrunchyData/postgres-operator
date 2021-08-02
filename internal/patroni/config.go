@@ -51,7 +51,7 @@ func quoteShellWord(s string) string {
 
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
-	cluster *v1beta1.PostgresCluster, pgUser *v1.Secret,
+	cluster *v1beta1.PostgresCluster,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) (string, error) {
 	root := map[string]interface{}{
@@ -174,40 +174,10 @@ func clusterYAML(
 			)
 		}
 
-		// TODO(cbandy): This belongs somewhere else; postgres package?
-		// Create the role and then alter it to accommodate scenarios where the role already exists,
-		// but we still want to update the password, etc. (e.g. when restoring)
-		sql := `
-CREATE ROLE :"user";
-ALTER ROLE :"user" LOGIN PASSWORD :'password';
-CREATE DATABASE :"dbname";
-GRANT ALL PRIVILEGES ON DATABASE :"dbname" TO :"user";
-`
-
 		root["bootstrap"] = map[string]interface{}{
 			"dcs": DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters),
 
-			// Pass generated values as variables to psql and use --file to
-			// interpolate them safely in the initialization SQL.
-			// - https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
-			//
-			// TODO (andrewlecuyer): The SQL script will not fail on error to accommodate scenarios
-			// where the user, database, etc. might already exist (e.g. when restoring).  However,
-			// the script should be revisited to enable better error handling, and cleanly handle
-			// handle scenarios where these resources already exist. Additionally, consider moving
-			// this logic outside of the Patroni bootstrap process, e.g. as part the overall user
-			// management solution that will reconcile users, DB's, etc. throughout the lifetime of
-			// the PostgresCluster.  This will provide more granular control of the execution of
-			// this logic, which may differ at times, e.g. for standbys which are read-only.
-			"post_bootstrap": "bash -c " + quoteShellWord("psql"+
-				" --set=ON_ERROR_STOP=0"+
-				" --set=dbname="+quoteShellWord(string(pgUser.Data["dbname"]))+
-				" --set=password="+quoteShellWord(string(pgUser.Data["verifier"]))+
-				" --set=user="+quoteShellWord(string(pgUser.Data["user"]))+
-				" --file=- <<< "+quoteShellWord(sql),
-			),
-
-			// Missing here is "users" which runs *after* "post_boostrap". It is
+			// Missing here is "users" which runs *after* "post_bootstrap". It is
 			// not possible to use roles created by the former in the latter.
 			// - https://github.com/zalando/patroni/issues/667
 		}
