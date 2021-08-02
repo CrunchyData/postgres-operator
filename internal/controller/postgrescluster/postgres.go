@@ -453,6 +453,7 @@ func (r *Reconciler) reconcilePostgresUsersInPostgreSQL(
 func (r *Reconciler) reconcilePostgresDataVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
+	clusterVolumes []corev1.PersistentVolumeClaim,
 ) (*corev1.PersistentVolumeClaim, error) {
 
 	labelMap := map[string]string{
@@ -463,7 +464,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	}
 
 	var pvc *v1.PersistentVolumeClaim
-	existingPVCName, err := r.getPGPVCNames(ctx, cluster, labelMap)
+	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -508,7 +509,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 func (r *Reconciler) reconcilePostgresWALVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
-	observed *Instance,
+	observed *Instance, clusterVolumes []corev1.PersistentVolumeClaim,
 ) (*corev1.PersistentVolumeClaim, error) {
 
 	labelMap := map[string]string{
@@ -519,7 +520,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 	}
 
 	var pvc *v1.PersistentVolumeClaim
-	existingPVCName, err := r.getPGPVCNames(ctx, cluster, labelMap)
+	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
