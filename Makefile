@@ -243,7 +243,7 @@ generate-crd:
 		output:dir='config/crd/bases' # config/crd/bases/{group}_{plural}.yaml
 
 generate-crd-docs:
-	GOBIN='$(CURDIR)/hack/tools' go install github.com/mesh-for-data/crdoc@latest
+	GOBIN='$(CURDIR)/hack/tools' go install fybrik.io/crdoc@latest
 	$(CURDIR)/hack/tools/crdoc \
 		--resources $(CURDIR)/config/crd/bases \
 		--output $(CURDIR)/docs/content/references/crd.md \
