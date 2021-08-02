@@ -19,6 +19,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// ExporterEnabled returns true if the monitoring exporter is enabled
 func ExporterEnabled(cluster *v1beta1.PostgresCluster) bool {
 	if cluster.Spec.Monitoring == nil {
 		return false

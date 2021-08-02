@@ -5882,7 +5882,7 @@ spec:
                   repos:
                     description: Status information for pgBackRest repositories
                     items:
-                      description: RepoVolumeStatus the status of a pgBackRest repository
+                      description: RepoStatus the status of a pgBackRest repository
                       properties:
                         bound:
                           description: Whether or not the pgBackRest repository PersistentVolumeClaim

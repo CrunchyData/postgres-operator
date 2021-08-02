@@ -8629,7 +8629,7 @@ Status information for the pgBackRest dedicated repository host
 
 
 
-RepoVolumeStatus the status of a pgBackRest repository
+RepoStatus the status of a pgBackRest repository
 
 <table>
     <thead>

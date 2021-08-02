@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 )
 
+// API defines a general interface for interacting with the Patroni API.
 type API interface {
 	// ChangePrimaryAndWait tries to demote the current Patroni leader. It
 	// returns true when an election completes successfully. When Patroni is

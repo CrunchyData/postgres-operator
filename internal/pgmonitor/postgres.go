@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	// Monitoring user created by pgMonitor configuration
+	// MonitoringUser is a Postgres user created by pgMonitor configuration
 	MonitoringUser = "ccp_monitoring"
 
 	// TODO jmckulk: copied from pgbouncer; candidate for common package?
@@ -41,6 +41,8 @@ const (
 		` WHERE datallowconn AND datname NOT IN ('template0')`
 )
 
+// PostgreSQLHBAs provides the Postgres HBA rules for allowing the monitoring
+// exporter to be accessible
 func PostgreSQLHBAs(inCluster *v1beta1.PostgresCluster, outHBAs *postgres.HBAs) {
 	if ExporterEnabled(inCluster) {
 		// Kubernetes does guarantee localhost resolves to loopback:
@@ -53,6 +55,8 @@ func PostgreSQLHBAs(inCluster *v1beta1.PostgresCluster, outHBAs *postgres.HBAs) 
 	}
 }
 
+// PostgreSQLParameters provides additional required configuration parameters
+// that Postgres needs to support monitoring
 func PostgreSQLParameters(inCluster *v1beta1.PostgresCluster, outParameters *postgres.Parameters) {
 	if ExporterEnabled(inCluster) {
 		// Exporter expects that shared_preload_libraries are installed

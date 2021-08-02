@@ -18,6 +18,7 @@ package naming
 const (
 	annotationPrefix = labelPrefix
 
+	// Finalizer represents the annotaiton used to denote a finalizer.
 	Finalizer = annotationPrefix + "finalizer"
 
 	// PGBackRestBackup is the annotation that is added to a PostgresCluster to initiate a manual

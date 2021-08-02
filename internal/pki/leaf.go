@@ -80,11 +80,13 @@ func (c *LeafCertificate) Generate(rootCA *RootCertificateAuthority) error {
 	}
 
 	// generate a private key
-	if privateKey, err := c.generateKey(); err != nil {
+	privateKey, err := c.generateKey()
+
+	if err != nil {
 		return err
-	} else {
-		c.PrivateKey = NewPrivateKey(privateKey)
 	}
+
+	c.PrivateKey = NewPrivateKey(privateKey)
 
 	// generate a serial number
 	serialNumber, err := c.generateSerialNumber()
@@ -94,12 +96,14 @@ func (c *LeafCertificate) Generate(rootCA *RootCertificateAuthority) error {
 	}
 
 	// generate a certificate
-	if certificate, err := c.generateCertificate(c.PrivateKey.PrivateKey,
-		serialNumber, rootCA, c.CommonName, c.DNSNames, c.IPAddresses); err != nil {
+	certificate, err := c.generateCertificate(c.PrivateKey.PrivateKey,
+		serialNumber, rootCA, c.CommonName, c.DNSNames, c.IPAddresses)
+
+	if err != nil {
 		return err
-	} else {
-		c.Certificate = &Certificate{Certificate: certificate}
 	}
+
+	c.Certificate = &Certificate{Certificate: certificate}
 
 	return nil
 }

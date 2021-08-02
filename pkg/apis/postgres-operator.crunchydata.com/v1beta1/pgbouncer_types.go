@@ -113,6 +113,8 @@ type PGBouncerPodSpec struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
+// Default returns the default port for PgBouncer (5432) if a port is not
+// explicitly set
 func (s *PGBouncerPodSpec) Default() {
 	if s.Port == nil {
 		s.Port = new(int32)

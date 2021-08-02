@@ -202,6 +202,7 @@ type PostgresClusterDataSource struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
+// Default defines several key default values for a Postgres cluster.
 func (s *PostgresClusterSpec) Default() {
 	for i := range s.InstanceSets {
 		s.InstanceSets[i].Default(i)
@@ -329,6 +330,8 @@ type PostgresInstanceSetSpec struct {
 	WALVolumeClaimSpec *corev1.PersistentVolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
 }
 
+// Default sets the default values for an instance set spec, including the name
+// suffix and number of replicas.
 func (s *PostgresInstanceSetSpec) Default(i int) {
 	if s.Name == "" {
 		s.Name = fmt.Sprintf("%02d", i)
@@ -362,6 +365,7 @@ type PostgresProxySpec struct {
 	PGBouncer *PGBouncerPodSpec `json:"pgBouncer"`
 }
 
+// Default sets the defaults for any proxies that are set.
 func (s *PostgresProxySpec) Default() {
 	if s.PGBouncer != nil {
 		s.PGBouncer.Default()
@@ -465,7 +469,8 @@ type MonitoringSpec struct {
 	PGMonitor *PGMonitorSpec `json:"pgmonitor,omitempty"`
 }
 
-// Current state of PostgreSQL cluster monitoring tool configuration
+// MonitoringStatus is the current state of PostgreSQL cluster monitoring tool
+// configuration
 type MonitoringStatus struct {
 	// +optional
 	ExporterConfiguration string `json:"exporterConfiguration,omitempty"`
