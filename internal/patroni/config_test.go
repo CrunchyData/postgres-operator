@@ -419,7 +419,7 @@ func TestDynamicConfiguration(t *testing.T) {
 			name: "postgresql.pg_hba: no default when input",
 			input: map[string]interface{}{
 				"postgresql": map[string]interface{}{
-					"pg_hba": []string{"custom"},
+					"pg_hba": []interface{}{"custom"},
 				},
 			},
 			hbas: postgres.HBAs{
@@ -444,7 +444,33 @@ func TestDynamicConfiguration(t *testing.T) {
 			name: "postgresql.pg_hba: mandatory before others",
 			input: map[string]interface{}{
 				"postgresql": map[string]interface{}{
-					"pg_hba": []string{"custom"},
+					"pg_hba": []interface{}{"custom"},
+				},
+			},
+			hbas: postgres.HBAs{
+				Mandatory: []postgres.HostBasedAuthentication{
+					*postgres.NewHBA().Local().Method("peer"),
+				},
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{},
+					"pg_hba": []string{
+						"local all all peer",
+						"custom",
+					},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+			},
+		},
+		{
+			name: "postgresql.pg_hba: ignore non-string types",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"pg_hba": []interface{}{1, true, "custom", map[string]string{}, []string{}},
 				},
 			},
 			hbas: postgres.HBAs{
