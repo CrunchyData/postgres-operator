@@ -210,7 +210,7 @@ func (r *Reconciler) getPVCName(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	selector labels.Selector,
-) string {
+) (string, error) {
 
 	pvcs := &v1.PersistentVolumeClaimList{}
 	err := r.Client.List(ctx, pvcs,
@@ -218,7 +218,7 @@ func (r *Reconciler) getPVCName(
 		client.MatchingLabelsSelector{Selector: selector},
 	)
 	if err != nil {
-		return ""
+		return "", errors.WithStack(err)
 	}
 
 	if len(pvcs.Items) > 0 {
@@ -229,10 +229,10 @@ func (r *Reconciler) getPVCName(
 				&pvcs.Items[j].CreationTimestamp)
 		})
 
-		return pvcs.Items[0].Name
+		return pvcs.Items[0].Name, nil
 	}
 
-	return ""
+	return "", nil
 }
 
 // getRepoPVCNames returns a map containing the names of repo PVCs that have
@@ -240,7 +240,7 @@ func (r *Reconciler) getPVCName(
 func (r *Reconciler) getRepoPVCNames(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
-) map[string]string {
+) (map[string]string, error) {
 
 	repoPVCs := make(map[string]string)
 	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
@@ -260,29 +260,35 @@ func (r *Reconciler) getRepoPVCNames(
 			MatchLabels: labelMap,
 		})
 		if err != nil {
-			return nil
+			return nil, errors.WithStack(err)
 		}
 
-		repoPVCs[repo.Name] = r.getPVCName(ctx, cluster, selector)
+		repoPVCs[repo.Name], err = r.getPVCName(ctx, cluster, selector)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
 	}
 
-	return repoPVCs
+	return repoPVCs, nil
 }
 
 // getPGPVCName returns the name of a PVC that has the provided labels, if found.
 func (r *Reconciler) getPGPVCNames(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster, labelMap map[string]string,
-) string {
+) (string, error) {
 
 	selector, err := naming.AsSelector(metav1.LabelSelector{
 		MatchLabels: labelMap,
 	})
 	if err != nil {
-		return ""
+		return "", errors.WithStack(err)
 	}
 
-	name := r.getPVCName(ctx, cluster, selector)
+	name, err := r.getPVCName(ctx, cluster, selector)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
 
-	return name
+	return name, nil
 }

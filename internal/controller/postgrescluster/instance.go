@@ -1026,9 +1026,14 @@ func (r *Reconciler) reconcileInstance(
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
+	// Get the pgBackRest repo PVC names
+	var repoPVCNames map[string]string
+	if err == nil {
+		repoPVCNames, err = r.getRepoPVCNames(ctx, cluster)
+	}
 	// Add pgBackRest containers, volumes, etc. to the instance Pod spec
 	if err == nil {
-		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, instance, r.getRepoPVCNames(ctx, cluster))
+		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, instance, repoPVCNames)
 	}
 
 	// Add pgMonitor resources to the instance Pod spec

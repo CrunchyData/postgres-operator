@@ -574,35 +574,49 @@ func TestGetPVCNameMethods(t *testing.T) {
 		})
 
 		assert.NilError(t, err)
-		assert.Assert(t, reconciler.getPVCName(ctx, cluster, selector) == "testpgdatavol")
+
+		pvcName, err := reconciler.getPVCName(ctx, cluster, selector)
+		assert.NilError(t, err)
+
+		assert.Assert(t, pvcName == "testpgdatavol")
 
 	})
 
 	t.Run("get pgdata PVC", func(t *testing.T) {
 
-		assert.Assert(t, reconciler.getPGPVCNames(ctx, cluster, map[string]string{
+		pvcNames, err := reconciler.getPGPVCNames(ctx, cluster, map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: "testinstance1",
 			naming.LabelInstance:    "testinstance1-abcd",
 			naming.LabelRole:        naming.RolePostgresData,
-		}) == "testpgdatavol")
+		})
+		assert.NilError(t, err)
+
+		assert.Assert(t, pvcNames == "testpgdatavol")
 	})
 
 	t.Run("get wal PVC", func(t *testing.T) {
 
-		assert.Assert(t, reconciler.getPGPVCNames(ctx, cluster, map[string]string{
+		pvcNames, err := reconciler.getPGPVCNames(ctx, cluster, map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: "testinstance1",
 			naming.LabelInstance:    "testinstance1-abcd",
 			naming.LabelRole:        naming.RolePostgresWAL,
-		}) == "testwalvol")
+		})
+		assert.NilError(t, err)
+
+		assert.Assert(t, pvcNames == "testwalvol")
 	})
 
 	t.Run("get one repo PVC", func(t *testing.T) {
 		expectedMap := map[string]string{
 			"testrepo1": "testrepovol1",
 		}
-		assert.DeepEqual(t, reconciler.getRepoPVCNames(ctx, cluster), expectedMap)
+
+		repoPVCNames, err := reconciler.getRepoPVCNames(ctx, cluster)
+		assert.NilError(t, err)
+
+		assert.DeepEqual(t, repoPVCNames, expectedMap)
 	})
 
 	t.Run("get two repo PVCs", func(t *testing.T) {
@@ -620,6 +634,10 @@ func TestGetPVCNameMethods(t *testing.T) {
 			"testrepo1": "testrepovol1",
 			"testrepo2": "testrepovol2",
 		}
-		assert.DeepEqual(t, reconciler.getRepoPVCNames(ctx, cluster), expectedMap)
+
+		repoPVCNames, err := reconciler.getRepoPVCNames(ctx, cluster)
+		assert.NilError(t, err)
+
+		assert.DeepEqual(t, repoPVCNames, expectedMap)
 	})
 }
