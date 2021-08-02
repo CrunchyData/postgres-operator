@@ -518,7 +518,7 @@ func (r *Reconciler) reconcileInstanceSets(
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate,
 			findAvailableInstanceNames(set, instances, clusterVolumes),
-			numInstancePods)
+			numInstancePods, clusterVolumes)
 		if err != nil {
 			return err
 		}
@@ -910,6 +910,7 @@ func (r *Reconciler) scaleUpInstances(
 	primaryCertificate *v1.SecretProjection,
 	availableInstanceNames []string,
 	numInstancePods int,
+	clusterVolumes []corev1.PersistentVolumeClaim,
 ) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
@@ -953,7 +954,7 @@ func (r *Reconciler) scaleUpInstances(
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate, instances[i],
-			numInstancePods,
+			numInstancePods, clusterVolumes,
 		)
 	}
 	if err == nil {
@@ -981,6 +982,7 @@ func (r *Reconciler) reconcileInstance(
 	primaryCertificate *v1.SecretProjection,
 	instance *appsv1.StatefulSet,
 	numInstancePods int,
+	clusterVolumes []corev1.PersistentVolumeClaim,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
 	ctx = logging.NewContext(ctx, log)
@@ -1011,10 +1013,10 @@ func (r *Reconciler) reconcileInstance(
 			ctx, cluster, spec, instance, rootCA)
 	}
 	if err == nil {
-		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance)
+		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance, clusterVolumes)
 	}
 	if err == nil {
-		postgresWALVolume, err = r.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+		postgresWALVolume, err = r.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, clusterVolumes)
 	}
 	if err == nil {
 		postgres.InstancePod(
@@ -1026,10 +1028,22 @@ func (r *Reconciler) reconcileInstance(
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
-	// Get the pgBackRest repo PVC names
+	// Get the pgBackRest repo PVC names.
+	// TODO (andrewlecuyer): This separate List is only needed until dedicated repo hosts are
+	// used exclusively for mounting PVC-based repos.  At that point it won't be necessary to
+	// mount repos to instances, and this logic can therefore be removed.
 	var repoPVCNames map[string]string
+	repoPVCList := &corev1.PersistentVolumeClaimList{}
 	if err == nil {
-		repoPVCNames, err = r.getRepoPVCNames(ctx, cluster)
+		err = r.Client.List(ctx, repoPVCList, client.InNamespace(cluster.GetNamespace()),
+			client.MatchingLabelsSelector{Selector: naming.PGBackRestSelector(cluster.GetName())})
+	}
+	if err == nil {
+		repoPVCs := []*corev1.PersistentVolumeClaim{}
+		for i := range repoPVCList.Items {
+			repoPVCs = append(repoPVCs, &repoPVCList.Items[i])
+		}
+		repoPVCNames = getRepoPVCNames(cluster, repoPVCs)
 	}
 	// Add pgBackRest containers, volumes, etc. to the instance Pod spec
 	if err == nil {

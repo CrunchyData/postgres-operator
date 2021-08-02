@@ -210,7 +210,7 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 	instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 	t.Run("DataVolume", func(t *testing.T) {
-		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance)
+		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance, nil)
 		assert.NilError(t, err)
 
 		assert.Assert(t, metav1.IsControlledBy(pvc, cluster))
@@ -235,7 +235,7 @@ volumeMode: Filesystem
 		observed := &Instance{}
 
 		t.Run("None", func(t *testing.T) {
-			pvc, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+			pvc, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 			assert.NilError(t, err)
 			assert.Assert(t, pvc == nil)
 		})
@@ -250,7 +250,7 @@ volumeMode: Filesystem
 				},
 			}`), spec))
 
-			pvc, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+			pvc, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 			assert.NilError(t, err)
 
 			assert.Assert(t, metav1.IsControlledBy(pvc, cluster))
@@ -278,14 +278,14 @@ volumeMode: Filesystem
 
 				t.Run("FilesAreNotSafe", func(t *testing.T) {
 					// No pods; expect no changes to the PVC.
-					returned, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+					returned, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 					assert.NilError(t, err)
 					assert.DeepEqual(t, returned, pvc, ignoreTypeMeta)
 
 					// Not running; expect no changes to the PVC.
 					observed.Pods = []*corev1.Pod{{}}
 
-					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 					assert.NilError(t, err)
 					assert.DeepEqual(t, returned, pvc, ignoreTypeMeta)
 
@@ -310,7 +310,7 @@ volumeMode: Filesystem
 						return expected
 					}
 
-					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 					assert.Equal(t, expected, errors.Unwrap(err), "expected pod exec")
 					assert.DeepEqual(t, returned, pvc, ignoreTypeMeta)
 
@@ -324,7 +324,7 @@ volumeMode: Filesystem
 						return nil
 					}
 
-					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 					assert.NilError(t, err)
 					assert.DeepEqual(t, returned, pvc, ignoreTypeMeta)
 				})
@@ -347,7 +347,7 @@ volumeMode: Filesystem
 						return nil
 					}
 
-					returned, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+					returned, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 					assert.NilError(t, err)
 					assert.Assert(t, returned == nil)
 
@@ -357,7 +357,7 @@ volumeMode: Filesystem
 
 					// Pods will redeploy while the PVC is scheduled for deletion.
 					observed.Pods = nil
-					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed)
+					returned, err = reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 					assert.NilError(t, err)
 					assert.Assert(t, returned == nil)
 				})

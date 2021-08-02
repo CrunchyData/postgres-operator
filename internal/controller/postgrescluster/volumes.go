@@ -17,11 +17,9 @@ package postgrescluster
 
 import (
 	"context"
-	"sort"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -202,80 +200,29 @@ func (r *Reconciler) handlePersistentVolumeClaimError(
 	return err
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=list
-
-// getPVCName returns a single PVC name matching the label selector provided,
-// if found.
-func (r *Reconciler) getPVCName(
-	ctx context.Context,
-	cluster *v1beta1.PostgresCluster,
-	selector labels.Selector,
-) (string, error) {
-
-	pvcs := &v1.PersistentVolumeClaimList{}
-	err := r.Client.List(ctx, pvcs,
-		client.InNamespace(cluster.Namespace),
-		client.MatchingLabelsSelector{Selector: selector},
-	)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-
-	if len(pvcs.Items) > 0 {
-		// sort the PVCs before returning to mitigate cases where 2
-		// PVCs are returned, e.g. cache out of date.
-		sort.Slice(pvcs.Items, func(i, j int) bool {
-			return pvcs.Items[i].CreationTimestamp.Before(
-				&pvcs.Items[j].CreationTimestamp)
-		})
-
-		return pvcs.Items[0].Name, nil
-	}
-
-	return "", nil
-}
-
 // getRepoPVCNames returns a map containing the names of repo PVCs that have
 // the appropriate labels for each defined pgBackRest repo, if found.
-func (r *Reconciler) getRepoPVCNames(
-	ctx context.Context,
+func getRepoPVCNames(
 	cluster *v1beta1.PostgresCluster,
-) (map[string]string, error) {
+	currentRepoPVCs []*corev1.PersistentVolumeClaim,
+) map[string]string {
 
 	repoPVCs := make(map[string]string)
 	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
-		// we only care about repos created using PVCs
-		if repo.Volume == nil {
-			continue
-		}
-
-		labelMap := map[string]string{
-			naming.LabelCluster:              cluster.Name,
-			naming.LabelPGBackRest:           "",
-			naming.LabelPGBackRestRepo:       repo.Name,
-			naming.LabelPGBackRestRepoVolume: "",
-		}
-
-		selector, err := naming.AsSelector(metav1.LabelSelector{
-			MatchLabels: labelMap,
-		})
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-
-		repoPVCs[repo.Name], err = r.getPVCName(ctx, cluster, selector)
-		if err != nil {
-			return nil, errors.WithStack(err)
+		for _, pvc := range currentRepoPVCs {
+			if pvc.Labels[naming.LabelPGBackRestRepo] == repo.Name {
+				repoPVCs[repo.Name] = pvc.GetName()
+				break
+			}
 		}
 	}
 
-	return repoPVCs, nil
+	return repoPVCs
 }
 
 // getPGPVCName returns the name of a PVC that has the provided labels, if found.
-func (r *Reconciler) getPGPVCNames(
-	ctx context.Context,
-	cluster *v1beta1.PostgresCluster, labelMap map[string]string,
+func getPGPVCName(labelMap map[string]string,
+	clusterVolumes []corev1.PersistentVolumeClaim,
 ) (string, error) {
 
 	selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -285,10 +232,11 @@ func (r *Reconciler) getPGPVCNames(
 		return "", errors.WithStack(err)
 	}
 
-	name, err := r.getPVCName(ctx, cluster, selector)
-	if err != nil {
-		return "", errors.WithStack(err)
+	for _, pvc := range clusterVolumes {
+		if selector.Matches(labels.Set(pvc.GetLabels())) {
+			return pvc.GetName(), nil
+		}
 	}
 
-	return name, nil
+	return "", nil
 }

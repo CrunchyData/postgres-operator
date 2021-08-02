@@ -133,9 +133,9 @@ type RepoResources struct {
 // rollout of the pgBackRest repository host StatefulSet in accordance with its configured
 // strategy.
 func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
-	repoHostName string) (*appsv1.StatefulSet, error) {
+	repoHostName string, repoResources *RepoResources) (*appsv1.StatefulSet, error) {
 
-	repo, err := r.generateRepoHostIntent(ctx, postgresCluster, repoHostName)
+	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName, repoResources)
 	if err != nil {
 		return nil, err
 	}
@@ -155,9 +155,9 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 // representing a repository.
 func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster, spec *v1.PersistentVolumeClaimSpec,
-	repoName string) (*v1.PersistentVolumeClaim, error) {
+	repoName string, repoResources *RepoResources) (*v1.PersistentVolumeClaim, error) {
 
-	repo, err := r.generateRepoVolumeIntent(ctx, postgresCluster, spec, repoName)
+	repo, err := r.generateRepoVolumeIntent(postgresCluster, spec, repoName, repoResources)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -511,8 +511,8 @@ func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
 // generateRepoHostIntent creates and populates StatefulSet with the PostgresCluster's full intent
 // as needed to create and reconcile a pgBackRest dedicated repository host within the kubernetes
 // cluster.
-func (r *Reconciler) generateRepoHostIntent(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, repoHostName string,
+func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresCluster,
+	repoHostName string, repoResources *RepoResources,
 ) (*appsv1.StatefulSet, error) {
 
 	annotations := naming.Merge(
@@ -581,13 +581,10 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context,
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Resources); err != nil {
 		return nil, errors.WithStack(err)
 	}
-	// Get the pgBackRest repo PVC names
-	repoPVCNames, err := r.getRepoPVCNames(ctx, postgresCluster)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	// add pgBackRest repo volumes to pod
 	if err := pgbackrest.AddRepoVolumesToPod(postgresCluster, &repo.Spec.Template,
-		repoPVCNames, naming.PGBackRestRepoContainerName); err != nil {
+		getRepoPVCNames(postgresCluster, repoResources.pvcs),
+		naming.PGBackRestRepoContainerName); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	// add configs to pod
@@ -611,9 +608,9 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context,
 	return repo, nil
 }
 
-func (r *Reconciler) generateRepoVolumeIntent(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, spec *v1.PersistentVolumeClaimSpec,
-	repoName string) (*v1.PersistentVolumeClaim, error) {
+func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresCluster,
+	spec *v1.PersistentVolumeClaimSpec, repoName string,
+	repoResources *RepoResources) (*v1.PersistentVolumeClaim, error) {
 
 	annotations := naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
@@ -628,10 +625,7 @@ func (r *Reconciler) generateRepoVolumeIntent(ctx context.Context,
 	meta := naming.PGBackRestRepoVolume(postgresCluster, repoName)
 
 	// but if there is an existing volume for this PVC, use it
-	repoPVCNames, err := r.getRepoPVCNames(ctx, postgresCluster)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	repoPVCNames := getRepoPVCNames(postgresCluster, repoResources.pvcs)
 	if repoPVCNames[repoName] != "" {
 		meta = metav1.ObjectMeta{
 			Name:      repoPVCNames[repoName],
@@ -1232,7 +1226,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	}
 
 	// reconcile all pgbackrest repository repos
-	replicaCreateRepo, err := r.reconcileRepos(ctx, postgresCluster, configHashes)
+	replicaCreateRepo, err := r.reconcileRepos(ctx, postgresCluster, configHashes, repoResources)
 	if err != nil {
 		log.Error(err, "unable to reconcile pgBackRest repo host")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
@@ -1483,12 +1477,16 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		Name:      instanceName,
 		Namespace: cluster.GetNamespace(),
 	}}
-	// Reconcile the PGDATA and WAL volumes for the restore
-	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS)
+	clusterVolumes, err := r.observePersistentVolumeClaims(ctx, cluster)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	pgwal, err := r.reconcilePostgresWALVolume(ctx, cluster, instanceSet, fakeSTS, nil)
+	// Reconcile the PGDATA and WAL volumes for the restore
+	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS, clusterVolumes)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	pgwal, err := r.reconcilePostgresWALVolume(ctx, cluster, instanceSet, fakeSTS, nil, clusterVolumes)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -1766,7 +1764,7 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 		})
 	}
 	repoHostName := repoResources.hosts[0].Name
-	repoHost, err := r.applyRepoHostIntent(ctx, postgresCluster, repoHostName)
+	repoHost, err := r.applyRepoHostIntent(ctx, postgresCluster, repoHostName, repoResources)
 	if err != nil {
 		log.Error(err, "reconciling repository host")
 		return nil, err
@@ -2206,7 +2204,8 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 // reconcileRepos is responsible for reconciling any pgBackRest repositories configured
 // for the cluster
 func (r *Reconciler) reconcileRepos(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, extConfigHashes map[string]string) (string, error) {
+	postgresCluster *v1beta1.PostgresCluster, extConfigHashes map[string]string,
+	repoResources *RepoResources) (string, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoVolume")
 
@@ -2224,7 +2223,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 			continue
 		}
 		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, &repo.Volume.VolumeClaimSpec,
-			repo.Name)
+			repo.Name, repoResources)
 		if err != nil {
 			log.Error(err, errMsg)
 			errors = append(errors, err)

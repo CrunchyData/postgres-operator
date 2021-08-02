@@ -475,21 +475,13 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 
 func TestGetPVCNameMethods(t *testing.T) {
 
-	ctx := context.Background()
-	tEnv, cc, _ := setupTestEnv(t, t.Name())
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
-
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	namespace := "postgres-operator-test-get-pvc-name"
 
 	// Stub to see that handlePersistentVolumeClaimError returns nil.
 	cluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testcluster",
-			Namespace: ns.Name,
+			Namespace: namespace,
 		},
 	}
 	cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{{
@@ -497,15 +489,10 @@ func TestGetPVCNameMethods(t *testing.T) {
 		Volume: &v1beta1.RepoPVC{},
 	}}
 
-	reconciler := &Reconciler{
-		Recorder: new(record.FakeRecorder),
-		Client:   cc,
-	}
-
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testvolume",
-			Namespace: ns.Name,
+			Namespace: namespace,
 			Labels: map[string]string{
 				naming.LabelCluster: cluster.Name,
 			},
@@ -530,7 +517,6 @@ func TestGetPVCNameMethods(t *testing.T) {
 		naming.LabelInstance:    "testinstance1-abcd",
 		naming.LabelRole:        naming.RolePostgresData,
 	}
-	assert.NilError(t, cc.Create(ctx, pgDataPVC))
 
 	walPVC := pvc.DeepCopy()
 	walPVC.Name = "testwalvol"
@@ -540,7 +526,7 @@ func TestGetPVCNameMethods(t *testing.T) {
 		naming.LabelInstance:    "testinstance1-abcd",
 		naming.LabelRole:        naming.RolePostgresWAL,
 	}
-	assert.NilError(t, cc.Create(ctx, walPVC))
+	clusterVolumes := []v1.PersistentVolumeClaim{*pgDataPVC, *walPVC}
 
 	repoPVC1 := pvc.DeepCopy()
 	repoPVC1.Name = "testrepovol1"
@@ -550,7 +536,7 @@ func TestGetPVCNameMethods(t *testing.T) {
 		naming.LabelPGBackRestRepo:       "testrepo1",
 		naming.LabelPGBackRestRepoVolume: "",
 	}
-	assert.NilError(t, cc.Create(ctx, repoPVC1))
+	repoPVCs := []*v1.PersistentVolumeClaim{repoPVC1}
 
 	repoPVC2 := pvc.DeepCopy()
 	repoPVC2.Name = "testrepovol2"
@@ -562,34 +548,14 @@ func TestGetPVCNameMethods(t *testing.T) {
 	}
 	// don't create this one yet
 
-	t.Run("get first volume created", func(t *testing.T) {
-		// getPVCName should normally find 1 PVC, but in cases where multiples
-		// are found, the first sorted PVC name will be returned.
-		testMap := map[string]string{
-			naming.LabelCluster: cluster.Name,
-		}
-
-		selector, err := naming.AsSelector(metav1.LabelSelector{
-			MatchLabels: testMap,
-		})
-
-		assert.NilError(t, err)
-
-		pvcName, err := reconciler.getPVCName(ctx, cluster, selector)
-		assert.NilError(t, err)
-
-		assert.Assert(t, pvcName == "testpgdatavol")
-
-	})
-
 	t.Run("get pgdata PVC", func(t *testing.T) {
 
-		pvcNames, err := reconciler.getPGPVCNames(ctx, cluster, map[string]string{
+		pvcNames, err := getPGPVCName(map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: "testinstance1",
 			naming.LabelInstance:    "testinstance1-abcd",
 			naming.LabelRole:        naming.RolePostgresData,
-		})
+		}, clusterVolumes)
 		assert.NilError(t, err)
 
 		assert.Assert(t, pvcNames == "testpgdatavol")
@@ -597,12 +563,12 @@ func TestGetPVCNameMethods(t *testing.T) {
 
 	t.Run("get wal PVC", func(t *testing.T) {
 
-		pvcNames, err := reconciler.getPGPVCNames(ctx, cluster, map[string]string{
+		pvcNames, err := getPGPVCName(map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: "testinstance1",
 			naming.LabelInstance:    "testinstance1-abcd",
 			naming.LabelRole:        naming.RolePostgresWAL,
-		})
+		}, clusterVolumes)
 		assert.NilError(t, err)
 
 		assert.Assert(t, pvcNames == "testwalvol")
@@ -613,14 +579,11 @@ func TestGetPVCNameMethods(t *testing.T) {
 			"testrepo1": "testrepovol1",
 		}
 
-		repoPVCNames, err := reconciler.getRepoPVCNames(ctx, cluster)
-		assert.NilError(t, err)
-
-		assert.DeepEqual(t, repoPVCNames, expectedMap)
+		assert.DeepEqual(t, getRepoPVCNames(cluster, repoPVCs), expectedMap)
 	})
 
 	t.Run("get two repo PVCs", func(t *testing.T) {
-		assert.NilError(t, cc.Create(ctx, repoPVC2))
+		repoPVCs2 := append(repoPVCs, repoPVC2)
 
 		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{{
 			Name:   "testrepo1",
@@ -635,9 +598,6 @@ func TestGetPVCNameMethods(t *testing.T) {
 			"testrepo2": "testrepovol2",
 		}
 
-		repoPVCNames, err := reconciler.getRepoPVCNames(ctx, cluster)
-		assert.NilError(t, err)
-
-		assert.DeepEqual(t, repoPVCNames, expectedMap)
+		assert.DeepEqual(t, getRepoPVCNames(cluster, repoPVCs2), expectedMap)
 	})
 }
