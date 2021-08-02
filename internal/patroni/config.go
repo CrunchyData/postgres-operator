@@ -280,8 +280,13 @@ func DynamicConfiguration(
 	for i := range pgHBAs.Mandatory {
 		hba[i] = pgHBAs.Mandatory[i].String()
 	}
-	if section, ok := postgresql["pg_hba"].([]string); ok {
-		hba = append(hba, section...)
+	if section, ok := postgresql["pg_hba"].([]interface{}); ok {
+		for i := range section {
+			// any pg_hba values that are not strings will be skipped
+			if value, ok := section[i].(string); ok {
+				hba = append(hba, value)
+			}
+		}
 	}
 	// When the section is missing or empty, include the recommended defaults.
 	if len(hba) == len(pgHBAs.Mandatory) {
