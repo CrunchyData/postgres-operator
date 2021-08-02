@@ -581,8 +581,13 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context,
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Resources); err != nil {
 		return nil, errors.WithStack(err)
 	}
+	// Get the pgBackRest repo PVC names
+	repoPVCNames, err := r.getRepoPVCNames(ctx, postgresCluster)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 	if err := pgbackrest.AddRepoVolumesToPod(postgresCluster, &repo.Spec.Template,
-		r.getRepoPVCNames(ctx, postgresCluster), naming.PGBackRestRepoContainerName); err != nil {
+		repoPVCNames, naming.PGBackRestRepoContainerName); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	// add configs to pod
@@ -623,7 +628,10 @@ func (r *Reconciler) generateRepoVolumeIntent(ctx context.Context,
 	meta := naming.PGBackRestRepoVolume(postgresCluster, repoName)
 
 	// but if there is an existing volume for this PVC, use it
-	repoPVCNames := r.getRepoPVCNames(ctx, postgresCluster)
+	repoPVCNames, err := r.getRepoPVCNames(ctx, postgresCluster)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 	if repoPVCNames[repoName] != "" {
 		meta = metav1.ObjectMeta{
 			Name:      repoPVCNames[repoName],
