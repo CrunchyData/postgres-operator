@@ -14,15 +14,15 @@ spec:
         - name: CRUNCHY_DEBUG
           value: "true"
         - name: RELATED_IMAGE_POSTGRES_13
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-1"
         - name: RELATED_IMAGE_POSTGRES_13_GIS_3.1
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis-ha:centos8-13.3-3.1-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis-ha:centos8-13.3-3.1-1"
         - name: RELATED_IMAGE_PGBACKREST
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-1"
         - name: RELATED_IMAGE_PGBOUNCER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.15-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.15-1"
         - name: RELATED_IMAGE_PGEXPORTER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.0-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.1-0"
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
