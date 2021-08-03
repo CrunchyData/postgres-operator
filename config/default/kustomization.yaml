@@ -11,4 +11,4 @@ bases:
 images:
 - name: postgres-operator
   newName: registry.developers.crunchydata.com/crunchydata/postgres-operator
-  newTag: ubi8-5.0.0-0
+  newTag: ubi8-5.0.1-0

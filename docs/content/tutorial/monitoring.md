@@ -21,7 +21,7 @@ The only required attribute for adding the Exporter sidecar is to set `spec.moni
 monitoring:
   pgmonitor:
     exporter:
-     image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.0-0
+     image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.1-0
 ```
 
 Save your changes and run:
