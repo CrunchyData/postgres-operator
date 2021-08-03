@@ -194,7 +194,8 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 // prior to bootstrapping the cluster, specifically according to any data source configured in the
 // PostgresCluster spec.
 func (r *Reconciler) reconcileDataSource(ctx context.Context,
-	cluster *v1beta1.PostgresCluster, observed *observedInstances) (bool, error) {
+	cluster *v1beta1.PostgresCluster, observed *observedInstances,
+	clusterVolumes []v1.PersistentVolumeClaim) (bool, error) {
 
 	// a hash func to hash the pgBackRest restore options
 	hashFunc := func(jobConfigs []string) (string, error) {
@@ -303,7 +304,7 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 
 	// proceed with initializing the PG data directory if not already initialized
 	if err := r.reconcilePostgresClusterDataSource(ctx, cluster, dataSource,
-		configHash); err != nil {
+		configHash, clusterVolumes); err != nil {
 		return true, err
 	}
 	// return early until the PG data directory is initialized

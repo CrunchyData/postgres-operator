@@ -207,7 +207,7 @@ func (r *Reconciler) Reconcile(
 		// which it will indicate that an early return is no longer needed, and reconciliation
 		// can proceed normally.
 		var returnEarly bool
-		returnEarly, err = r.reconcileDataSource(ctx, cluster, instances)
+		returnEarly, err = r.reconcileDataSource(ctx, cluster, instances, clusterVolumes)
 		if err != nil || returnEarly {
 			return patchClusterStatus()
 		}

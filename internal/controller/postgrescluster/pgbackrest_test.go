@@ -2256,7 +2256,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 					pgclusterDataSource = tc.dataSource.PostgresCluster
 				}
 				err := r.reconcilePostgresClusterDataSource(ctx, cluster, pgclusterDataSource,
-					"testhash")
+					"testhash", nil)
 				assert.NilError(t, err)
 
 				restoreJobs := &batchv1.JobList{}
