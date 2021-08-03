@@ -1303,7 +1303,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 // for the PostgresCluster being reconciled using the backups of another PostgresCluster.
 func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, dataSource *v1beta1.PostgresClusterDataSource,
-	configHash string) error {
+	configHash string, clusterVolumes []corev1.PersistentVolumeClaim) error {
 
 	// grab cluster, namespaces and repo name information from the data source
 	sourceClusterName := dataSource.ClusterName
@@ -1464,10 +1464,6 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		Name:      instanceName,
 		Namespace: cluster.GetNamespace(),
 	}}
-	clusterVolumes, err := r.observePersistentVolumeClaims(ctx, cluster)
-	if err != nil {
-		return errors.WithStack(err)
-	}
 	// Reconcile the PGDATA and WAL volumes for the restore
 	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS, clusterVolumes)
 	if err != nil {
