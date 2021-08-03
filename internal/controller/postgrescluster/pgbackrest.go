@@ -219,20 +219,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 			continue
 		}
 
-		// store objects owned directly by the PostgreSQL cluster
-		owned := []unstructured.Unstructured{}
-		// store objects that are not directly owned by the postgrescluster,
-		// which will include the Jobs created by the scheduled backup CronJobs
-		other := []unstructured.Unstructured{}
-		for i, u := range uList.Items {
-			if metav1.IsControlledBy(&uList.Items[i], postgresCluster) {
-				owned = append(owned, u)
-			} else {
-				other = append(other, u)
-			}
-		}
-
-		owned, err := r.cleanupRepoResources(ctx, postgresCluster, owned)
+		owned, err := r.cleanupRepoResources(ctx, postgresCluster, uList.Items)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -245,7 +232,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 		// if the current objects are Jobs, update the status for the Jobs
 		// created by the pgBackRest scheduled backup CronJobs
 		if gvk.Kind == "JobList" {
-			r.setScheduledJobStatus(ctx, postgresCluster, other)
+			r.setScheduledJobStatus(ctx, postgresCluster, uList.Items)
 		}
 
 	}
