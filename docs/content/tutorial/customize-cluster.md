@@ -168,7 +168,7 @@ There are several ways to add your own custom Kubernetes [Annotations](https://k
 
 ## Separate WAL PVCs
 
-PostgreSQL commits transactions by storing changes in its [Write-Ahead Log (WAL)](https://www.postgresql.org/docs/current/wal-intro.html). Because the way WAL files are accessed and 
+PostgreSQL commits transactions by storing changes in its [Write-Ahead Log (WAL)](https://www.postgresql.org/docs/current/wal-intro.html). Because the way WAL files are accessed and
 utilized often differs from that of data files, and in high-performance situations, it can desirable to put WAL files on separate storage volume. With PGO, this can be done by adding
 the `walVolumeClaimSpec` block to your desired instance in your PostgresCluster spec, either when your cluster is created or anytime thereafter:
 
@@ -197,4 +197,4 @@ Some settings, such as `shared_buffers`, require for Postgres to restart. Patron
 
 ## Next Steps
 
-You've now seen how you can further customize your Postgres cluster, but how about [updating to the next Postgres version]({{< relref "./update-cluster.md" >}})? That's a great question that is answered in the [next section]({{< relref "./update-cluster.md" >}}).
+You've now seen how you can further customize your Postgres cluster, but what about [managing users and atabases]({{< relref "./user-management.md" >}})? That's a great question that is answered in the [next section]({{< relref "./user-management.md" >}}).
