@@ -20,6 +20,7 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -186,6 +187,59 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 		err = errors.WithStack(r.apply(ctx, endpoints))
 	}
 
+	return err
+}
+
+// generateClusterReplicaServiceIntent returns a v1.Service that exposes
+// PostgreSQL replica instances.
+func generateClusterReplicaServiceIntent(cluster *v1beta1.PostgresCluster) *corev1.Service {
+	service := &corev1.Service{ObjectMeta: naming.ClusterReplicaService(cluster)}
+	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
+
+	service.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil())
+	service.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RoleReplica,
+		})
+
+	// Allocate an IP address and let Kubernetes manage the Endpoints by selecting
+	// Pods with the replica role.
+	// - https://docs.k8s.io/concepts/services-networking/service/#defining-a-service
+	service.Spec.Type = corev1.ServiceTypeClusterIP
+	service.Spec.Selector = map[string]string{
+		naming.LabelCluster: cluster.Name,
+		naming.LabelRole:    naming.RoleReplica,
+	}
+
+	// The TargetPort must be the name (not the number) of the PostgreSQL
+	// ContainerPort. This name allows the port number to differ between Pods,
+	// which can happen during a rolling update.
+	service.Spec.Ports = []corev1.ServicePort{{
+		Name:       naming.PortPostgreSQL,
+		Port:       *cluster.Spec.Port,
+		Protocol:   corev1.ProtocolTCP,
+		TargetPort: intstr.FromString(naming.PortPostgreSQL),
+	}}
+
+	return service
+}
+
+// +kubebuilder:rbac:groups="",resources="services",verbs={create,patch}
+
+// reconcileClusterReplicaService writes the Service that exposes PostgreSQL
+// replica instances.
+func (r *Reconciler) reconcileClusterReplicaService(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) error {
+	service := generateClusterReplicaServiceIntent(cluster)
+
+	err := errors.WithStack(r.setControllerReference(cluster, service))
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, service))
+	}
 	return err
 }
 

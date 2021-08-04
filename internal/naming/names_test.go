@@ -166,6 +166,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"ClusterPodService", ClusterPodService(cluster)},
 			{"ClusterPrimaryService", ClusterPrimaryService(cluster)},
+			{"ClusterReplicaService", ClusterReplicaService(cluster)},
 			// Patroni can use Endpoints which relate directly to a Service.
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderEndpoints", PatroniLeaderEndpoints(cluster)},
