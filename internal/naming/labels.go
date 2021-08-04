@@ -83,7 +83,7 @@ const (
 	RolePrimary = "primary"
 	RoleReplica = "replica"
 
-	// RolePatroniLeader is a LabelRole value that Patroni on the Pod that is
+	// RolePatroniLeader is the LabelRole that Patroni sets on the Pod that is
 	// currently the leader.
 	RolePatroniLeader = "master"
 
