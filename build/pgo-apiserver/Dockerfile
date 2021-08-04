@@ -7,6 +7,7 @@ FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 ARG BASEOS
 ARG PACKAGER
+ARG PGVERSION
 
 LABEL name="pgo-apiserver" \
 	summary="Crunchy PostgreSQL Operator - Apiserver" \
