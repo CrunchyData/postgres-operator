@@ -143,6 +143,12 @@ type PostgresClusterSpec struct {
 	// +optional
 	Standby *PostgresStandbySpec `json:"standby,omitempty"`
 
+	// A list of group IDs applied to the process of a container. These can be
+	// useful when accessing shared file systems with constrained permissions.
+	// More info: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context
+	// +optional
+	SupplementalGroups []int64 `json:"supplementalGroups,omitempty"`
+
 	// Users to create inside PostgreSQL and the databases they should access.
 	// The default creates one user that can access one database matching the
 	// PostgresCluster name. An empty list creates no users. Removing a user

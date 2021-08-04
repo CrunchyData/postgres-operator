@@ -155,6 +155,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>Run this cluster as a read-only copy of an existing cluster or archive.</td>
         <td>false</td>
       </tr><tr>
+        <td><b>supplementalGroups</b></td>
+        <td>[]integer</td>
+        <td>A list of group IDs applied to the process of a container. These can be useful when accessing shared file systems with constrained permissions. More info: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecusersindex">users</a></b></td>
         <td>[]object</td>
         <td>Users to create inside PostgreSQL and the databases they should access. The default creates one user that can access one database matching the PostgresCluster name. An empty list creates no users. Removing a user from this list does NOT drop the user nor revoke their access.</td>

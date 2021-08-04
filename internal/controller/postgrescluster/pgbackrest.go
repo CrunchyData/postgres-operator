@@ -546,9 +546,6 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	// https://github.com/kubernetes/kubernetes/issues/88456
 	repo.Spec.Template.Spec.ImagePullSecrets = postgresCluster.Spec.ImagePullSecrets
 
-	podSecurityContext := initialize.RestrictedPodSecurityContext()
-	podSecurityContext.SupplementalGroups = []int64{65534}
-
 	// if the cluster is set to be shutdown, stop repohost pod
 	if postgresCluster.Spec.Shutdown != nil && *postgresCluster.Spec.Shutdown {
 		repo.Spec.Replicas = initialize.Int32(0)
@@ -557,11 +554,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		repo.Spec.Replicas = initialize.Int32(1)
 	}
 
-	// set fsGroups if not OpenShift
-	if postgresCluster.Spec.OpenShift == nil || !*postgresCluster.Spec.OpenShift {
-		podSecurityContext.FSGroup = initialize.Int64(26)
-	}
-	repo.Spec.Template.Spec.SecurityContext = podSecurityContext
+	repo.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 
 	// add ssh pod info
 	if err := pgbackrest.AddSSHToPod(postgresCluster, &repo.Spec.Template, true,
@@ -1138,14 +1131,7 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	// https://github.com/kubernetes/kubernetes/issues/88456
 	job.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 
-	podSecurityContext := initialize.RestrictedPodSecurityContext()
-	// TODO (andrewlecuyer): make supplemental groups configurable
-	podSecurityContext.SupplementalGroups = []int64{65534}
-	// set fsGroups if not OpenShift
-	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
-		podSecurityContext.FSGroup = initialize.Int64(26)
-	}
-	job.Spec.Template.Spec.SecurityContext = podSecurityContext
+	job.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 
 	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
 	if err := errors.WithStack(r.setControllerReference(cluster, job)); err != nil {

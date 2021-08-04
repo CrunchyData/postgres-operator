@@ -218,3 +218,31 @@ func InstancePod(ctx context.Context,
 	outInstancePod.Containers = []corev1.Container{container}
 	outInstancePod.InitContainers = []corev1.Container{startup}
 }
+
+// PodSecurityContext returns a v1.PodSecurityContext for cluster that can write
+// to PersistentVolumes.
+func PodSecurityContext(cluster *v1beta1.PostgresCluster) *corev1.PodSecurityContext {
+	podSecurityContext := initialize.RestrictedPodSecurityContext()
+
+	// Use the specified supplementary groups except for root. The CRD has
+	// similar validation, but we should never emit a PodSpec with that group.
+	// - https://docs.k8s.io/concepts/security/pod-security-standards/
+	for i := range cluster.Spec.SupplementalGroups {
+		if gid := cluster.Spec.SupplementalGroups[i]; gid > 0 {
+			podSecurityContext.SupplementalGroups =
+				append(podSecurityContext.SupplementalGroups, gid)
+		}
+	}
+
+	// OpenShift assigns a filesystem group based on a SecurityContextConstraint.
+	// Otherwise, set a filesystem group so PostgreSQL can write to files
+	// regardless of the UID or GID of a container.
+	// - https://cloud.redhat.com/blog/a-guide-to-openshift-and-uids
+	// - https://docs.k8s.io/tasks/configure-pod-container/security-context/
+	// - https://docs.openshift.com/container-platform/4.8/authentication/managing-security-context-constraints.html
+	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
+		podSecurityContext.FSGroup = initialize.Int64(26)
+	}
+
+	return podSecurityContext
+}

@@ -242,6 +242,7 @@ generate-crd:
 		paths='./pkg/apis/postgres-operator.crunchydata.com/...' \
 		output:dir='config/crd/bases' # config/crd/bases/{group}_{plural}.yaml
 
+# TODO(cbandy): Run config/crd through Kustomize to pickup any patches there.
 generate-crd-docs:
 	GOBIN='$(CURDIR)/hack/tools' go install fybrik.io/crdoc@v0.4.0
 	$(CURDIR)/hack/tools/crdoc \
