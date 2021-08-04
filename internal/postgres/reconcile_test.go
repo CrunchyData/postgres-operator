@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -359,5 +360,50 @@ volumes:
 		// Startup moves WAL files to WAL volume.
 		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
 			[]string{"startup", "11", "/pgwal/pg11_wal"})
+	})
+}
+
+func TestPodSecurityContext(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Default()
+
+	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+fsGroup: 26
+runAsNonRoot: true
+	`))
+
+	cluster.Spec.OpenShift = initialize.Bool(true)
+	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+runAsNonRoot: true
+	`))
+
+	cluster.Spec.SupplementalGroups = []int64{}
+	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+runAsNonRoot: true
+	`))
+
+	cluster.Spec.SupplementalGroups = []int64{999, 65000}
+	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+runAsNonRoot: true
+supplementalGroups:
+- 999
+- 65000
+	`))
+
+	*cluster.Spec.OpenShift = false
+	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+fsGroup: 26
+runAsNonRoot: true
+supplementalGroups:
+- 999
+- 65000
+	`))
+
+	t.Run("NoRootGID", func(t *testing.T) {
+		cluster.Spec.SupplementalGroups = []int64{999, 0, 100, 0}
+		assert.DeepEqual(t, []int64{999, 100}, PodSecurityContext(cluster).SupplementalGroups)
+
+		cluster.Spec.SupplementalGroups = []int64{0}
+		assert.Assert(t, PodSecurityContext(cluster).SupplementalGroups == nil)
 	})
 }

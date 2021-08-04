@@ -2384,18 +2384,14 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 	}
 
 	for _, openshift := range []bool{true, false} {
-		test := "job"
-		cluster.Spec.OpenShift = initialize.Bool(false)
-		if openshift {
-			cluster.Spec.OpenShift = initialize.Bool(true)
-			test = test + "-openshift"
-		}
+		cluster.Spec.OpenShift = initialize.Bool(openshift)
+
 		job := &batchv1.Job{}
 		err := r.generateRestoreJobIntent(cluster, configHash, instanceName,
 			cmd, volumeMounts, volumes, dataSource, job)
 		assert.NilError(t, err, job)
 
-		t.Run(test, func(t *testing.T) {
+		t.Run(fmt.Sprintf("openshift-%v", openshift), func(t *testing.T) {
 			t.Run("ObjectMeta", func(t *testing.T) {
 				t.Run("Name", func(t *testing.T) {
 					assert.Equal(t, job.ObjectMeta.Name,
@@ -2495,19 +2491,7 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 								}})
 						})
 						t.Run("PodSecurityContext", func(t *testing.T) {
-							// podSecurityContext will differ based on the environment where
-							// the cluster is installed. If installing in a non-Openshift
-							// environment, update the Context that is expected
-							var fsgroup *int64
-							if !openshift {
-								fsgroup = initialize.Int64(26)
-							}
-							assert.DeepEqual(t, job.Spec.Template.Spec.SecurityContext,
-								&corev1.PodSecurityContext{
-									SupplementalGroups: []int64{65534},
-									FSGroup:            fsgroup,
-									RunAsNonRoot:       initialize.Bool(true),
-								})
+							assert.Assert(t, job.Spec.Template.Spec.SecurityContext != nil)
 						})
 					})
 				})

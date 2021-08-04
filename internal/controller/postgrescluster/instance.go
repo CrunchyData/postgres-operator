@@ -1183,13 +1183,7 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 
 	sts.Spec.Template.Spec.ServiceAccountName = instanceServiceAccountName
 
-	podSecurityContext := initialize.RestrictedPodSecurityContext()
-	podSecurityContext.SupplementalGroups = []int64{65534}
-	// set fsGroups if not OpenShift
-	if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
-		podSecurityContext.FSGroup = initialize.Int64(26)
-	}
-	sts.Spec.Template.Spec.SecurityContext = podSecurityContext
+	sts.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 
 	// Set the image pull secrets, if any exist.
 	// This is set here rather than using the service account due to the lack

@@ -802,6 +802,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(PostgresStandbySpec)
 		**out = **in
 	}
+	if in.SupplementalGroups != nil {
+		in, out := &in.SupplementalGroups, &out.SupplementalGroups
+		*out = make([]int64, len(*in))
+		copy(*out, *in)
+	}
 	if in.Users != nil {
 		in, out := &in.Users, &out.Users
 		*out = make([]PostgresUserSpec, len(*in))

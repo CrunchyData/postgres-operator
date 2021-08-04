@@ -1,0 +1,14 @@
+# PostgresCluster "v1beta1" is in "/spec/versions/0"
+
+# Containers should not run with a root GID.
+# - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+- op: add
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/supplementalGroups/items/minimum
+  value: 1
+
+# Supplementary GIDs must fit within int32.
+# - https://releases.k8s.io/v1.18.0/pkg/apis/core/validation/validation.go#L3659-L3663
+# - https://releases.k8s.io/v1.22.0/pkg/apis/core/validation/validation.go#L3923-L3927
+- op: add
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/supplementalGroups/items/maximum
+  value: 2147483647 # math.MaxInt32
