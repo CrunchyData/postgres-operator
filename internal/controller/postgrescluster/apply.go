@@ -19,7 +19,9 @@ import (
 	"context"
 	"reflect"
 
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -49,10 +51,20 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 	// Some fields cannot be server-side applied correctly. When their outcome
 	// does not match the intent, send a json-patch to get really specific.
 	switch actual := object.(type) {
-	case *v1.Service:
+	case *appsv1.StatefulSet:
+		applyPodTemplateSpec(patch,
+			actual.Spec.Template, intent.(*appsv1.StatefulSet).Spec.Template,
+			"spec", "template")
+
+	case *batchv1.Job:
+		applyPodTemplateSpec(patch,
+			actual.Spec.Template, intent.(*batchv1.Job).Spec.Template,
+			"spec", "template")
+
+	case *corev1.Service:
 		// Service.Spec.Selector is not +mapType=atomic, though it should be.
 		// - https://issue.k8s.io/97970
-		selector := intent.(*v1.Service).Spec.Selector
+		selector := intent.(*corev1.Service).Spec.Selector
 		if !equality.Semantic.DeepEqual(actual.Spec.Selector, selector) {
 			patch.Replace("spec", "selector")(selector)
 		}
@@ -63,4 +75,31 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 		err = r.patch(ctx, object, patch)
 	}
 	return err
+}
+
+// applyPodSecurityContext is called by apply to work around issues with server-side apply.
+func applyPodSecurityContext(
+	patch *kubeapi.JSON6902, actual, intent *corev1.PodSecurityContext, path ...string,
+) {
+	if intent == nil {
+		// This won't happen because we populate all PodSecurityContext.
+		return
+	}
+	if actual == nil {
+		patch.Replace(path...)(intent)
+		return
+	}
+	if !equality.Semantic.DeepEqual(actual.SupplementalGroups, intent.SupplementalGroups) {
+		patch.Replace(append(path, "supplementalGroups")...)(intent.SupplementalGroups)
+	}
+}
+
+// applyPodTemplateSpec is called by apply to work around issues with server-side apply.
+func applyPodTemplateSpec(
+	patch *kubeapi.JSON6902, actual, intent corev1.PodTemplateSpec, path ...string,
+) {
+	applyPodSecurityContext(patch,
+		actual.Spec.SecurityContext,
+		intent.Spec.SecurityContext,
+		append(path, "spec", "securityContext")...)
 }

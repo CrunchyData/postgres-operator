@@ -27,10 +27,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -54,6 +57,12 @@ func TestServerSideApply(t *testing.T) {
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	dc, err := discovery.NewDiscoveryClientForConfig(config)
+	assert.NilError(t, err)
+
+	version, err := dc.ServerVersion()
+	assert.NilError(t, err)
 
 	t.Run("ObjectMeta", func(t *testing.T) {
 		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
@@ -120,10 +129,10 @@ func TestServerSideApply(t *testing.T) {
 		err1 := cc.Patch(ctx, applied, client.Apply, client.ForceOwnership, reconciler.Owner)
 
 		// Patch not accepted; the ownerReferences field is invalid.
-		assert.Assert(t, kerrors.IsInvalid(err1), "got %#v", err1)
+		assert.Assert(t, apierrors.IsInvalid(err1), "got %#v", err1)
 		assert.ErrorContains(t, err1, "one reference")
 
-		var status *kerrors.StatusError
+		var status *apierrors.StatusError
 		assert.Assert(t, errors.As(err1, &status))
 		assert.Assert(t, status.ErrStatus.Details != nil)
 		assert.Assert(t, len(status.ErrStatus.Details.Causes) != 0)
@@ -142,6 +151,63 @@ func TestServerSideApply(t *testing.T) {
 				return regexp.MustCompile(`\(0x[^)]+\)`).ReplaceAllString(s, "()")
 			})),
 		)
+	})
+
+	t.Run("StatefulSetPodTemplate", func(t *testing.T) {
+		constructor := func(name string) *appsv1.StatefulSet {
+			var sts appsv1.StatefulSet
+			sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
+			sts.Namespace, sts.Name = ns.Name, name
+			sts.Spec.Selector = &metav1.LabelSelector{
+				MatchLabels: map[string]string{"select": name},
+			}
+			sts.Spec.Template.Labels = map[string]string{"select": name}
+			return &sts
+		}
+
+		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+		// Start with fields filled out.
+		intent := constructor("change-to-zero")
+		intent.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{
+			SupplementalGroups: []int64{1, 2, 3},
+		}
+
+		// Create the StatefulSet.
+		before := intent.DeepCopy()
+		assert.NilError(t,
+			cc.Patch(ctx, before, client.Apply, client.ForceOwnership, reconciler.Owner))
+
+		// Change fields to zero.
+		intent.Spec.Template.Spec.SecurityContext.SupplementalGroups = nil
+
+		// client.Apply cannot correct it in old versions of Kubernetes.
+		after := intent.DeepCopy()
+		assert.NilError(t,
+			cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
+
+		switch {
+		case version.Major == "1" && version.Minor == "18":
+
+			assert.Assert(t, !equality.Semantic.DeepEqual(
+				after.Spec.Template.Spec.SecurityContext,
+				intent.Spec.Template.Spec.SecurityContext),
+				"expected https://issue.k8s.io/89273, got %v",
+				after.Spec.Template.Spec.SecurityContext)
+
+		default:
+
+			assert.DeepEqual(t,
+				after.Spec.Template.Spec.SecurityContext,
+				intent.Spec.Template.Spec.SecurityContext)
+		}
+
+		// Our apply method corrects it.
+		again := intent.DeepCopy()
+		assert.NilError(t, reconciler.apply(ctx, again))
+		assert.DeepEqual(t,
+			again.Spec.Template.Spec.SecurityContext,
+			intent.Spec.Template.Spec.SecurityContext)
 	})
 
 	t.Run("ServiceSelector", func(t *testing.T) {
