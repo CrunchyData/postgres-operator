@@ -24,7 +24,7 @@ When you create a Postgres cluster with PGO and do not specify any additional us
   - `port`: The port that the database is listening on.
   - `uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) that provides all the information for logging into the Postgres database.
 
-You can see this default behavior in the [connect to a cluster]({{< relref "./connect-cluster.md" >}}) portion of the tutorial.
+You can see this default behavior in the [connect to a cluster]({{< relref "tutorial/connect-cluster.md" >}}) portion of the tutorial.
 
 As an example, using our `hippo` Postgres cluster, we would see the following created:
 
