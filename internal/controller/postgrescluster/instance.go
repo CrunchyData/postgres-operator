@@ -60,6 +60,9 @@ type Instance struct {
 // update. It combines information from metadata and status similar to the
 // notion of "available" in corev1.Deployment and "healthy" in appsv1.StatefulSet.
 func (i Instance) IsAvailable() (available bool, known bool) {
+	// StatefulSet will have its own notion of Available in the future.
+	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#minimum-ready-seconds
+
 	terminating, knownTerminating := i.IsTerminating()
 	ready, knownReady := i.IsReady()
 
