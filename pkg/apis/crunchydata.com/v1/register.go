@@ -1,3 +1,6 @@
+// +kubebuilder:object:generate=true
+// +kubebuilder:validation:Optional
+// +groupName=crunchydata.com
 package v1
 
 /*

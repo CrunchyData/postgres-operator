@@ -47,7 +47,7 @@ type PgreplicaSpec struct {
 	UserLabels  map[string]string `json:"userlabels"`
 	// NodeAffinity is an optional structure that dictates how an instance should
 	// be deployed in an environment
-	NodeAffinity *v1.NodeAffinity `json:"nodeAffinity"`
+	NodeAffinity *v1.NodeAffinity `json:"nodeAffinity,omitempty"`
 	// Tolerations are an optional list of Pod toleration rules that are applied
 	// to the PostgreSQL instance.
 	Tolerations []v1.Toleration `json:"tolerations"`

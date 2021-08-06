@@ -60,11 +60,11 @@ type PgclusterSpec struct {
 	Exporter     bool   `json:"exporter"`
 	ExporterPort string `json:"exporterport"`
 
-	PrimaryStorage  PgStorageSpec
-	WALStorage      PgStorageSpec
-	ReplicaStorage  PgStorageSpec
-	BackrestStorage PgStorageSpec
-	PGAdminStorage  PgStorageSpec
+	PrimaryStorage  PgStorageSpec `json:"PrimaryStorage"`
+	WALStorage      PgStorageSpec `json:"WALStorage"`
+	ReplicaStorage  PgStorageSpec `json:"ReplicaStorage"`
+	BackrestStorage PgStorageSpec `json:"BackrestStorage"`
+	PGAdminStorage  PgStorageSpec `json:"PGAdminStorage"`
 
 	// Resources behaves just like the "Requests" section of a Kubernetes
 	// container definition. You can set individual items such as "cpu" and
@@ -120,8 +120,8 @@ type PgclusterSpec struct {
 	UserLabels          map[string]string     `json:"userlabels"`
 	NodeAffinity        NodeAffinitySpec      `json:"nodeAffinity"`
 	PodAntiAffinity     PodAntiAffinitySpec   `json:"podAntiAffinity"`
-	SyncReplication     *bool                 `json:"syncReplication"`
-	BackrestConfig      []v1.VolumeProjection `json:"backrestConfig"`
+	SyncReplication     *bool                 `json:"syncReplication,omitempty"`
+	BackrestConfig      []v1.VolumeProjection `json:"backrestConfig,omitempty"`
 	BackrestGCSBucket   string                `json:"backrestGCSBucket"`
 	BackrestGCSEndpoint string                `json:"backrestGCSEndpoint"`
 	BackrestGCSKeyType  string                `json:"backrestGCSKeyType"`
@@ -275,7 +275,7 @@ const NodeAffinityDefaultWeight int32 = 10
 //
 // All of these are optional, so one must ensure they check for nils.
 type NodeAffinitySpec struct {
-	Default *v1.NodeAffinity `json:"default"`
+	Default *v1.NodeAffinity `json:"default,omitempty"`
 }
 
 // NodeAffinityType indicates the type of node affinity that the request seeks
