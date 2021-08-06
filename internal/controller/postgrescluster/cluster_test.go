@@ -704,12 +704,18 @@ func TestContainerSecurityContext(t *testing.T) {
 }
 
 func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	reconciler := &Reconciler{Client: cc}
+
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns1"
 	cluster.Name = "pg2"
 	cluster.Spec.Port = initialize.Int32(9876)
 
-	service := generateClusterReplicaServiceIntent(cluster)
+	service, err := reconciler.generateClusterReplicaServiceIntent(cluster)
+	assert.NilError(t, err)
 
 	assert.Assert(t, marshalMatches(service.TypeMeta, `
 apiVersion: v1
@@ -722,6 +728,13 @@ labels:
   postgres-operator.crunchydata.com/role: replica
 name: pg2-replicas
 namespace: ns1
+ownerReferences:
+- apiVersion: postgres-operator.crunchydata.com/v1beta1
+  blockOwnerDeletion: true
+  controller: true
+  kind: PostgresCluster
+  name: pg2
+  uid: ""
 	`))
 	assert.Assert(t, marshalMatches(service.Spec, `
 ports:
@@ -742,7 +755,8 @@ type: ClusterIP
 			Labels:      map[string]string{"happy": "label"},
 		}
 
-		service := generateClusterReplicaServiceIntent(cluster)
+		service, err := reconciler.generateClusterReplicaServiceIntent(cluster)
+		assert.NilError(t, err)
 
 		// Annotations present in the metadata.
 		assert.Assert(t, marshalMatches(service.ObjectMeta.Annotations, `

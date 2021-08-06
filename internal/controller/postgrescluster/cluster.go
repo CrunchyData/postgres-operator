@@ -192,7 +192,9 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 
 // generateClusterReplicaServiceIntent returns a v1.Service that exposes
 // PostgreSQL replica instances.
-func generateClusterReplicaServiceIntent(cluster *v1beta1.PostgresCluster) *corev1.Service {
+func (r *Reconciler) generateClusterReplicaServiceIntent(
+	cluster *v1beta1.PostgresCluster) (*corev1.Service, error,
+) {
 	service := &corev1.Service{ObjectMeta: naming.ClusterReplicaService(cluster)}
 	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
@@ -224,7 +226,9 @@ func generateClusterReplicaServiceIntent(cluster *v1beta1.PostgresCluster) *core
 		TargetPort: intstr.FromString(naming.PortPostgreSQL),
 	}}
 
-	return service
+	err := errors.WithStack(r.setControllerReference(cluster, service))
+
+	return service, err
 }
 
 // +kubebuilder:rbac:groups="",resources="services",verbs={create,patch}
@@ -234,9 +238,8 @@ func generateClusterReplicaServiceIntent(cluster *v1beta1.PostgresCluster) *core
 func (r *Reconciler) reconcileClusterReplicaService(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
-	service := generateClusterReplicaServiceIntent(cluster)
+	service, err := r.generateClusterReplicaServiceIntent(cluster)
 
-	err := errors.WithStack(r.setControllerReference(cluster, service))
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, service))
 	}
