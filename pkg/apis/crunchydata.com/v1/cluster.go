@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PgclusterResourcePlural ..
+// PgclusterResourcePlural ...
 const PgclusterResourcePlural = "pgclusters"
 
 // Pgcluster is the CRD that defines a Crunchy PG Cluster
