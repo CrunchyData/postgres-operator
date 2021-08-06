@@ -180,11 +180,12 @@ func (s *SCRAMPassword) saslPrep() string {
 	// perform SASLprep on the password. if the SASLprep fails or returns an
 	// empty string, return the original password
 	// Otherwise return the clean pasword
-	if cleanedPassword, err := stringprep.SASLprep.Prepare(s.password); cleanedPassword == "" || err != nil {
+	cleanedPassword, err := stringprep.SASLprep.Prepare(s.password)
+	if cleanedPassword == "" || err != nil {
 		return s.password
-	} else {
-		return cleanedPassword
 	}
+
+	return cleanedPassword
 }
 
 // NewSCRAMPassword constructs a new SCRAMPassword struct with sane defaults

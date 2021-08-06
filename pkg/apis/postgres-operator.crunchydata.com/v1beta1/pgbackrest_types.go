@@ -20,6 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// PGBackRestJobStatus contains information about the state of a pgBackRest Job.
 type PGBackRestJobStatus struct {
 
 	// A unique identifier for the manual backup as provided using the "pgbackrest-backup"
@@ -138,6 +139,8 @@ type PGBackRestArchive struct {
 	Restore *PGBackRestRestore `json:"restore,omitempty"`
 }
 
+// PGBackRestManualBackup contains information that is used for creating a
+// pgBackRest backup that is invoked manually (i.e. it's unscheduled).
 type PGBackRestManualBackup struct {
 	// The name of the pgBackRest repo to run the backup command against.
 	// +kubebuilder:validation:Required
@@ -317,7 +320,7 @@ type RepoS3 struct {
 	Region string `json:"region"`
 }
 
-// RepoVolumeStatus the status of a pgBackRest repository
+// RepoStatus the status of a pgBackRest repository
 type RepoStatus struct {
 
 	// The name of the pgBackRest repository

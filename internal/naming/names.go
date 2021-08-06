@@ -57,8 +57,11 @@ const (
 )
 
 const (
-	PortExporter   = "exporter"
-	PortPGBouncer  = "pgbouncer"
+	// PortExporter is the named port for the "exporter" container
+	PortExporter = "exporter"
+	// PortPGBouncer is the name of a port that connects to PgBouncer.
+	PortPGBouncer = "pgbouncer"
+	// PortPostgreSQL is the name of a port that connects to PostgreSQL.
 	PortPostgreSQL = "postgres"
 )
 

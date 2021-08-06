@@ -22,6 +22,7 @@ import (
 const (
 	labelPrefix = "postgres-operator.crunchydata.com/"
 
+	// LabelCluster et al. provides the fundamental labels for Postgres instances
 	LabelCluster     = labelPrefix + "cluster"
 	LabelInstance    = labelPrefix + "instance"
 	LabelInstanceSet = labelPrefix + "instance-set"
@@ -65,8 +66,8 @@ const (
 	// LabelPGBackRestRestore is used to indicate that a Job or Pod is for a pgBackRest restore
 	LabelPGBackRestRestore = labelPrefix + "pgbackrest-restore"
 
-	// LabelPGBackRestRestore is used to indicate that a configuration resource (e.g. a ConfigMap
-	// or Secret) is for a pgBackRest restore
+	// LabelPGBackRestRestoreConfig is used to indicate that a configuration
+	// resource (e.g. a ConfigMap or Secret) is for a pgBackRest restore
 	LabelPGBackRestRestoreConfig = labelPrefix + "pgbackrest-restore-config"
 
 	// LabelPGMonitorDiscovery is the label added to Pods running the "exporter" container to
@@ -82,10 +83,12 @@ const (
 	RolePrimary = "primary"
 	RoleReplica = "replica"
 
-	// Patroni sets this LabelRole value on the Pod that is currently leader.
+	// RolePatroniLeader is the LabelRole that Patroni sets on the Pod that is
+	// currently the leader.
 	RolePatroniLeader = "master"
 
-	// Patroni sets this LabelRole value on Pods that are following the leader.
+	// RolePatroniReplica is a LabelRole value that Patroni sets on Pods that are
+	// following the leader.
 	RolePatroniReplica = "replica"
 
 	// RolePGBouncer is the LabelRole applied to PgBouncer objects.
@@ -146,7 +149,7 @@ func PGBackRestBackupJobLabels(clusterName, repoName string,
 	return labels.Merge(jobLabels, repoLabels)
 }
 
-// PGBackRestSelector provides a selector for querying all pgBackRest
+// PGBackRestBackupJobSelector provides a selector for querying all pgBackRest
 // resources
 func PGBackRestBackupJobSelector(clusterName, repoName string,
 	backupType BackupJobType) labels.Selector {

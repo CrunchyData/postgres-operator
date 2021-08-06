@@ -57,7 +57,7 @@ func ServiceDNSNames(ctx context.Context, service *corev1.Service) []string {
 	}
 }
 
-// kubernetesClusterDomain looks up the Kubernetes cluster domain name.
+// KubernetesClusterDomain looks up the Kubernetes cluster domain name.
 func KubernetesClusterDomain(ctx context.Context) string {
 	ctx, span := tracer.Start(ctx, "kubernetes-domain-lookup")
 	defer span.End()
@@ -66,12 +66,13 @@ func KubernetesClusterDomain(ctx context.Context) string {
 	// This is inexpensive because the "net" package uses OS-level DNS caching.
 	// - https://golang.org/issue/24796
 	api := "kubernetes.default.svc"
-	if cname, err := net.DefaultResolver.LookupCNAME(ctx, api); err == nil {
+	cname, err := net.DefaultResolver.LookupCNAME(ctx, api)
+
+	if err == nil {
 		return strings.TrimPrefix(cname, api+".")
-	} else {
-		span.RecordError(err)
 	}
 
+	span.RecordError(err)
 	// The kubeadm default is "cluster.local" and is adequate when not running
 	// in an actual Kubernetes cluster.
 	return "cluster.local."

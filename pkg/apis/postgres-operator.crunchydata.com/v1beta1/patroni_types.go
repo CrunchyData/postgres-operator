@@ -60,6 +60,11 @@ type PatroniSpec struct {
 	// - https://patroni.readthedocs.io/en/latest/kubernetes.html
 }
 
+// Default sets the default values for certain Patroni configuration attributes,
+// including:
+// - Lock Lease Duration
+// - Patroni's API port
+// - Frequency of syncing with Kube API
 func (s *PatroniSpec) Default() {
 	if s.LeaderLeaseDurationSeconds == nil {
 		s.LeaderLeaseDurationSeconds = new(int32)

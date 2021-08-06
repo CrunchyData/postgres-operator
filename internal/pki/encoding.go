@@ -32,6 +32,8 @@ const (
 	pemPrivateKeyType = "EC PRIVATE KEY"
 )
 
+// Certificate is a higher-level structure that encapsulates the x509 machinery
+// around a certificate.
 type Certificate struct {
 	// Certificate is the byte encoded value for the certificate
 	Certificate []byte
@@ -68,6 +70,7 @@ func (c *Certificate) UnmarshalText(data []byte) error {
 	return nil
 }
 
+// PrivateKey encapsulates functionality around marshalling a ECDSA private key.
 type PrivateKey struct {
 	// PrivateKey is the private key
 	PrivateKey *ecdsa.PrivateKey
