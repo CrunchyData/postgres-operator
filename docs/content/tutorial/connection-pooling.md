@@ -209,4 +209,4 @@ Note that setting a toleration does not necessarily mean that the PgBouncer inst
 
 ## Next Steps
 
-We've covered a lot in terms of building, maintaining, scaling, customizing, and expanding our Postgres cluster. However, there may come a time where we need to [delete our Postgres cluster]({{< relref "delete-cluster.md" >}}). How do we do that?
+Now that we can enable connection pooling in a cluster, let’s explore how to [manually restart PostgreSQL]({{< relref "manual-restart.md" >}}) using PGO. How do we do that?
