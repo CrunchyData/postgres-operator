@@ -12,6 +12,12 @@ version dependencies between the two projects. Below are the operator releases a
 
 | Operator Release   |      Container Release      | Postgres | PgBackrest Version
 |:----------|:-------------|:------------|:--------------
+| 4.7.2 | 4.7.2  | 13.4 | 2.33 |
+|||12.8|2.33|
+|||11.13|2.33|
+|||10.18|2.33|
+|||9.6.23|2.33|
+||||
 | 4.7.1 | 4.7.1  | 13.3 | 2.33 |
 |||12.7|2.33|
 |||11.12|2.33|
