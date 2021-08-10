@@ -2453,6 +2453,53 @@ spec:
                 description: Specifies a data source for bootstrapping the PostgreSQL
                   cluster.
                 properties:
+                  existingVolumes:
+                    description: Defines any existing volumes to reuse for this PostgresCluster.
+                    properties:
+                      existingPGBackRestVolume:
+                        description: Defines the existing pgBackRest repo volume and
+                          directory to use in the current PostgresCluster.
+                        properties:
+                          directory:
+                            description: The existing directory. When not set, a move
+                              Job is not created for the associated volume.
+                            type: string
+                          pvcName:
+                            description: The existing PVC name.
+                            type: string
+                        required:
+                        - pvcName
+                        type: object
+                      existingPGDataVolume:
+                        description: Defines the existing pgData volume and directory
+                          to use in the current PostgresCluster.
+                        properties:
+                          directory:
+                            description: The existing directory. When not set, a move
+                              Job is not created for the associated volume.
+                            type: string
+                          pvcName:
+                            description: The existing PVC name.
+                            type: string
+                        required:
+                        - pvcName
+                        type: object
+                      existingPGWALVolume:
+                        description: Defines the existing pg_wal volume and directory
+                          to use in the current PostgresCluster. Note that a defined
+                          pg_wal volume MUST be accompanied by a pgData volume.
+                        properties:
+                          directory:
+                            description: The existing directory. When not set, a move
+                              Job is not created for the associated volume.
+                            type: string
+                          pvcName:
+                            description: The existing PVC name.
+                            type: string
+                        required:
+                        - pvcName
+                        type: object
+                    type: object
                   postgresCluster:
                     description: Defines a pgBackRest data source that can be used
                       to pre-populate the PostgreSQL data directory for a new PostgreSQL

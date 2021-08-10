@@ -43,6 +43,9 @@ safelink() (
 	// walMountPath is where to mount the optional WAL volume.
 	walMountPath = "/pgwal"
 
+	// repoMountPath is where to mount the pgBackRest repo volume.
+	repoMountPath = "/pgbackrest"
+
 	// SocketDirectory is where to bind and connect to UNIX sockets.
 	SocketDirectory = "/tmp/postgres"
 

@@ -36,6 +36,18 @@ const (
 	// LabelClusterCertificate is used to identify a secret containing a cluster certificate
 	LabelClusterCertificate = labelPrefix + "cluster-certificate"
 
+	// LabelMoveJob is used to identify a directory move Job.
+	LabelMoveJob = labelPrefix + "move-job"
+
+	// LabelMovePGBackRestRepoDir is used to identify the Job that moves an existing pgBackRest repo directory.
+	LabelMovePGBackRestRepoDir = labelPrefix + "move-pgbackrest-repo-dir"
+
+	// LabelMovePGDataDir is used to identify the Job that moves an existing pgData directory.
+	LabelMovePGDataDir = labelPrefix + "move-pgdata-dir"
+
+	// LabelMovePGWalDir is used to identify the Job that moves an existing pg_wal directory.
+	LabelMovePGWalDir = labelPrefix + "move-pgwal-dir"
+
 	// LabelPGBackRest is used to indicate that a resource is for pgBackRest
 	LabelPGBackRest = labelPrefix + "pgbackrest"
 
@@ -124,6 +136,15 @@ func Merge(sets ...map[string]string) labels.Set {
 		merged = labels.Merge(merged, set)
 	}
 	return merged
+}
+
+// DirectoryMoveJobLabels provides labels for PVC move Jobs.
+func DirectoryMoveJobLabels(clusterName string) labels.Set {
+	jobLabels := map[string]string{
+		LabelCluster: clusterName,
+		LabelMoveJob: "",
+	}
+	return jobLabels
 }
 
 // PGBackRestLabels provides common labels for pgBackRest resources.

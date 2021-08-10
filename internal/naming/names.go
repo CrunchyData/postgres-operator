@@ -54,6 +54,16 @@ const (
 
 	// ContainerPGMonitorExporter is the name of a container running postgres_exporter
 	ContainerPGMonitorExporter = "exporter"
+
+	// JobMovePGDataDir is the name of the job utilized to copy v4 Operator
+	// pgData directories to the v5 default location
+	JobMovePGDataDir = "pgdata-move-job"
+	// JobMovePGWALDir is the name of the job utilized to copy v4 Operator
+	// pg_wal directories to the v5 default location
+	JobMovePGWALDir = "pgwal-move-job"
+	// JobMovePGBackRestRepoDir is the name of the job utilized to copy v4
+	// Operator pgBackRest repo directories to the v5 default location
+	JobMovePGBackRestRepoDir = "repo-move-job"
 )
 
 const (
@@ -431,5 +441,29 @@ func PostgresTLSSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-cluster-cert",
+	}
+}
+
+// MovePGDataDirJob returns the ObjectMeta for a pgData directory move Job
+func MovePGDataDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name:      cluster.Name + "-move-pgdata-dir",
+	}
+}
+
+// MovePGWALDirJob returns the ObjectMeta for a pg_wal directory move Job
+func MovePGWALDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name:      cluster.Name + "-move-pgwal-dir",
+	}
+}
+
+// MovePGBackRestRepoDirJob returns the ObjectMeta for a pgBackRest repo directory move Job
+func MovePGBackRestRepoDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name:      cluster.Name + "-move-pgbackrest-repo-dir",
 	}
 }

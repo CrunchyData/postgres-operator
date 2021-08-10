@@ -144,6 +144,11 @@ func WALVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "postgres-wal", MountPath: walMountPath}
 }
 
+// RepoVolumeMount returns the name and mount path of the pgBackRest repo volume.
+func RepoVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{Name: "pgbackrest-repo", MountPath: repoMountPath}
+}
+
 // InstancePod initializes outInstancePod with the database container and the
 // volumes needed by PostgreSQL.
 func InstancePod(ctx context.Context,
