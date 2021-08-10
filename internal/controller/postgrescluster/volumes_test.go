@@ -25,7 +25,9 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -37,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -599,5 +602,491 @@ func TestGetPVCNameMethods(t *testing.T) {
 		}
 
 		assert.DeepEqual(t, getRepoPVCNames(cluster, repoPVCs2), expectedMap)
+	})
+}
+
+func TestReconcileConfigureExistingPVCs(t *testing.T) {
+
+	// setup the test environment and ensure a clean teardown
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+
+	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testcluster",
+			Namespace: ns.GetName(),
+		},
+		Spec: v1beta1.PostgresClusterSpec{
+			PostgresVersion: 13,
+			Image:           "example.com/crunchy-postgres-ha:test",
+			DataSource: &v1beta1.DataSource{
+				ExistingVolumes: &v1beta1.ExistingVolumes{},
+			},
+			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+				Name: "instance1",
+				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+					AccessModes: []v1.PersistentVolumeAccessMode{
+						corev1.ReadWriteMany},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("1Gi"),
+						},
+					},
+				},
+			}},
+			Backups: v1beta1.Backups{
+				PGBackRest: v1beta1.PGBackRestArchive{
+					Image: "example.com/crunchy-pgbackrest:test",
+					Repos: []v1beta1.PGBackRestRepo{{
+						Name: "repo1",
+						Volume: &v1beta1.RepoPVC{
+							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+								AccessModes: []v1.PersistentVolumeAccessMode{
+									v1.ReadWriteMany},
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.
+										Quantity{
+										v1.ResourceStorage: resource.
+											MustParse("1Gi"),
+									},
+								},
+							},
+						},
+					},
+					},
+				},
+			},
+		},
+	}
+
+	// create base PostgresCluster
+	assert.NilError(t, tClient.Create(ctx, cluster))
+
+	t.Run("existing pgdata volume", func(t *testing.T) {
+		volume := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pgdatavolume",
+				Namespace: cluster.Namespace,
+				Labels: map[string]string{
+					"somelabel": "labelvalue-pgdata",
+				},
+			},
+			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+		}
+
+		assert.NilError(t, tClient.Create(ctx, volume))
+
+		// add the pgData PVC name to the CRD
+		cluster.Spec.DataSource.ExistingVolumes.
+			ExistingPGDataVolume = &v1beta1.ExistingVolume{
+			PVCName: "pgdatavolume",
+		}
+
+		clusterVolumes, err := r.observePersistentVolumeClaims(ctx, cluster)
+		assert.NilError(t, err)
+		// check that created volume does not show up in observed volumes since
+		// it does not have appropriate labels
+		assert.Assert(t, len(clusterVolumes) == 0)
+
+		clusterVolumes, err = r.configureExistingPVCs(ctx, cluster,
+			clusterVolumes)
+		assert.NilError(t, err)
+
+		// now, check that the label volume is returned
+		assert.Assert(t, len(clusterVolumes) == 1)
+
+		// observe again
+		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+		assert.NilError(t, err)
+		// check that created volume is now in the list
+		assert.Assert(t, len(clusterVolumes) == 1)
+
+		// validate the expected labels are in place
+		// expected volume labels, plus the original label
+		expected := map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: cluster.Spec.InstanceSets[0].Name,
+			naming.LabelInstance:    cluster.Status.StartupInstance,
+			naming.LabelRole:        naming.RolePostgresData,
+			"somelabel":             "labelvalue-pgdata",
+		}
+
+		// ensure volume is found and labeled correctly
+		var found bool
+		for i := range clusterVolumes {
+			if clusterVolumes[i].Name == cluster.Spec.DataSource.ExistingVolumes.
+				ExistingPGDataVolume.PVCName {
+				found = true
+				assert.DeepEqual(t, expected, clusterVolumes[i].Labels)
+			}
+		}
+		assert.Assert(t, found)
+	})
+
+	t.Run("existing pg_wal volume", func(t *testing.T) {
+		volume := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "pgwalvolume",
+				Namespace: cluster.Namespace,
+				Labels: map[string]string{
+					"somelabel": "labelvalue-pgwal",
+				},
+			},
+			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+		}
+
+		assert.NilError(t, tClient.Create(ctx, volume))
+
+		// add the pg_wal PVC name to the CRD
+		cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume =
+			&v1beta1.ExistingVolume{
+				PVCName: "pgwalvolume",
+			}
+
+		clusterVolumes, err := r.observePersistentVolumeClaims(ctx, cluster)
+		assert.NilError(t, err)
+		// check that created pgwal volume does not show up in observed volumes
+		// since it does not have appropriate labels, only the previously created
+		// pgdata volume should be in the observed list
+		assert.Assert(t, len(clusterVolumes) == 1)
+
+		clusterVolumes, err = r.configureExistingPVCs(ctx, cluster,
+			clusterVolumes)
+		assert.NilError(t, err)
+
+		// now, check that the label volume is returned
+		assert.Assert(t, len(clusterVolumes) == 2)
+
+		// observe again
+		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+		assert.NilError(t, err)
+		// check that created volume is now in the list
+		assert.Assert(t, len(clusterVolumes) == 2)
+
+		// validate the expected labels are in place
+		// expected volume labels, plus the original label
+		expected := map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: cluster.Spec.InstanceSets[0].Name,
+			naming.LabelInstance:    cluster.Status.StartupInstance,
+			naming.LabelRole:        naming.RolePostgresWAL,
+			"somelabel":             "labelvalue-pgwal",
+		}
+
+		// ensure volume is found and labeled correctly
+		var found bool
+		for i := range clusterVolumes {
+			if clusterVolumes[i].Name == cluster.Spec.DataSource.ExistingVolumes.
+				ExistingPGWALVolume.PVCName {
+				found = true
+				assert.DeepEqual(t, expected, clusterVolumes[i].Labels)
+			}
+		}
+		assert.Assert(t, found)
+	})
+
+	t.Run("existing repo volume", func(t *testing.T) {
+		volume := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "repovolume",
+				Namespace: cluster.Namespace,
+				Labels: map[string]string{
+					"somelabel": "labelvalue-repo",
+				},
+			},
+			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+		}
+
+		assert.NilError(t, tClient.Create(ctx, volume))
+
+		// add the pgBackRest repo PVC name to the CRD
+		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume =
+			&v1beta1.ExistingVolume{
+				PVCName: "repovolume",
+			}
+
+		clusterVolumes, err := r.observePersistentVolumeClaims(ctx, cluster)
+		assert.NilError(t, err)
+		// check that created volume does not show up in observed volumes since
+		// it does not have appropriate labels
+		// check that created pgBackRest repo volume does not show up in observed
+		// volumes since it does not have appropriate labels, only the previously
+		// created pgdata and pg_wal volumes should be in the observed list
+		assert.Assert(t, len(clusterVolumes) == 2)
+
+		clusterVolumes, err = r.configureExistingPVCs(ctx, cluster,
+			clusterVolumes)
+		assert.NilError(t, err)
+
+		// now, check that the label volume is returned
+		assert.Assert(t, len(clusterVolumes) == 3)
+
+		// observe again
+		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+		assert.NilError(t, err)
+		// check that created volume is now in the list
+		assert.Assert(t, len(clusterVolumes) == 3)
+
+		// validate the expected labels are in place
+		// expected volume labels, plus the original label
+		expected := map[string]string{
+			naming.LabelCluster:              cluster.Name,
+			naming.LabelPGBackRest:           "",
+			naming.LabelPGBackRestRepo:       "repo1",
+			naming.LabelPGBackRestRepoVolume: "",
+			"somelabel":                      "labelvalue-repo",
+		}
+
+		// ensure volume is found and labeled correctly
+		var found bool
+		for i := range clusterVolumes {
+			if clusterVolumes[i].Name == cluster.Spec.DataSource.ExistingVolumes.
+				ExistingPGBackRestVolume.PVCName {
+				found = true
+				assert.DeepEqual(t, expected, clusterVolumes[i].Labels)
+			}
+		}
+		assert.Assert(t, found)
+	})
+}
+
+func TestReconcileMoveDirectories(t *testing.T) {
+
+	// setup the test environment and ensure a clean teardown
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+
+	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testcluster",
+			Namespace: ns.GetName(),
+		},
+		Spec: v1beta1.PostgresClusterSpec{
+			PostgresVersion: 13,
+			Image:           "example.com/crunchy-postgres-ha:test",
+			DataSource: &v1beta1.DataSource{
+				ExistingVolumes: &v1beta1.ExistingVolumes{
+					ExistingPGDataVolume: &v1beta1.ExistingVolume{
+						PVCName:   "testpgdata",
+						Directory: "testpgdatadir",
+					},
+					ExistingPGWALVolume: &v1beta1.ExistingVolume{
+						PVCName:   "testwal",
+						Directory: "testwaldir",
+					},
+					ExistingPGBackRestVolume: &v1beta1.ExistingVolume{
+						PVCName:   "testrepo",
+						Directory: "testrepodir",
+					},
+				},
+			},
+			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+				Name: "instance1",
+				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+					AccessModes: []v1.PersistentVolumeAccessMode{
+						corev1.ReadWriteMany},
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceStorage: resource.MustParse("1Gi"),
+						},
+					},
+				},
+			}},
+			Backups: v1beta1.Backups{
+				PGBackRest: v1beta1.PGBackRestArchive{
+					Image: "example.com/crunchy-pgbackrest:test",
+					Repos: []v1beta1.PGBackRestRepo{{
+						Name: "repo1",
+						Volume: &v1beta1.RepoPVC{
+							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+								AccessModes: []v1.PersistentVolumeAccessMode{
+									v1.ReadWriteMany},
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.
+										Quantity{
+										v1.ResourceStorage: resource.
+											MustParse("1Gi"),
+									},
+								},
+							},
+						},
+					},
+					},
+				},
+			},
+		},
+	}
+
+	// create PostgresCluster
+	assert.NilError(t, tClient.Create(ctx, cluster))
+
+	returnEarly, err := r.reconcileDirMoveJobs(ctx, cluster)
+	assert.NilError(t, err)
+	// returnEarly should always be true because envtest is only simulating
+	// the kube API server, so the job will never show as completed.
+	assert.Assert(t, returnEarly)
+
+	moveJobs := &batchv1.JobList{}
+	err = r.Client.List(ctx, moveJobs, &client.ListOptions{
+		LabelSelector: naming.DirectoryMoveJobLabels(cluster.Name).AsSelector(),
+	})
+	assert.NilError(t, err)
+
+	t.Run("check pgdata move job pod spec", func(t *testing.T) {
+
+		for i := range moveJobs.Items {
+			if moveJobs.Items[i].Name == "testcluster-move-pgdata-dir" {
+				assert.Assert(t, marshalEquals(moveJobs.Items[i].Spec.Template.
+					Spec, strings.TrimSpace(`automountServiceAccountToken: false
+containers:
+- command:
+  - bash
+  - -ceu
+  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pgdata_pvc=testpgdata\"\n
+    \   echo \"Current PG data directory volume contents:\" \n    ls -lh \"/pgdata\"\n
+    \   echo \"Now updating PG data directory...\"\n    [ -d \"/pgdata/testpgdatadir\"
+    ] && mv \"/pgdata/testpgdatadir\" \"/pgdata/pg13_bootstrap\"\n    rm -f \"/pgdata/pg13/patroni.dynamic.json\"\n
+    \   echo \"Updated PG data directory contents:\" \n    ls -lh \"/pgdata\"\n    echo
+    \"PG Data directory preparation complete\"\n    "
+  image: example.com/crunchy-postgres-ha:test
+  imagePullPolicy: IfNotPresent
+  name: pgdata-move-job
+  resources: {}
+  terminationMessagePath: /dev/termination-log
+  terminationMessagePolicy: File
+  volumeMounts:
+  - mountPath: /pgdata
+    name: postgres-data
+dnsPolicy: ClusterFirst
+restartPolicy: Never
+schedulerName: default-scheduler
+securityContext:
+  fsGroup: 26
+  runAsNonRoot: true
+terminationGracePeriodSeconds: 30
+volumes:
+- name: postgres-data
+  persistentVolumeClaim:
+    claimName: testpgdata
+	`)+"\n"))
+			}
+		}
+
+	})
+
+	t.Run("check pgdata move job pod spec", func(t *testing.T) {
+
+		for i := range moveJobs.Items {
+			if moveJobs.Items[i].Name == "testcluster-move-pgwal-dir" {
+				assert.Assert(t, marshalEquals(moveJobs.Items[i].Spec.Template.
+					Spec, strings.TrimSpace(`automountServiceAccountToken: false
+containers:
+- command:
+  - bash
+  - -ceu
+  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pg_wal_pvc=testwal\"\n
+    \   echo \"Current PG WAL directory volume contents:\"\n    ls -lh \"/pgwal\"\n
+    \   echo \"Now updating PG WAL directory...\"\n    [ -d \"/pgwal/testwaldir\"
+    ] && mv \"/pgwal/testwaldir\" \"/pgwal/testcluster-wal\"\n    echo \"Updated PG
+    WAL directory contents:\"\n    ls -lh \"/pgwal\"\n    echo \"PG WAL directory
+    preparation complete\"\n    "
+  image: example.com/crunchy-postgres-ha:test
+  imagePullPolicy: IfNotPresent
+  name: pgwal-move-job
+  resources: {}
+  terminationMessagePath: /dev/termination-log
+  terminationMessagePolicy: File
+  volumeMounts:
+  - mountPath: /pgwal
+    name: postgres-wal
+dnsPolicy: ClusterFirst
+restartPolicy: Never
+schedulerName: default-scheduler
+securityContext:
+  fsGroup: 26
+  runAsNonRoot: true
+terminationGracePeriodSeconds: 30
+volumes:
+- name: postgres-wal
+  persistentVolumeClaim:
+    claimName: testwal
+	`)+"\n"))
+			}
+		}
+
+	})
+
+	t.Run("check pgdata move job pod spec", func(t *testing.T) {
+
+		for i := range moveJobs.Items {
+			if moveJobs.Items[i].Name == "testcluster-move-pgbackrest-repo-dir" {
+				assert.Assert(t, marshalEquals(moveJobs.Items[i].Spec.Template.
+					Spec, strings.TrimSpace(`automountServiceAccountToken: false
+containers:
+- command:
+  - bash
+  - -ceu
+  - "echo \"Preparing cluster testcluster pgBackRest repo volume for PGO v5.x\"\n
+    \   echo \"repo_pvc=testrepo\"\n    echo \"pgbackrest directory:\"\n    ls -lh
+    /pgbackrest\n    echo \"Current pgBackRest repo directory volume contents:\" \n
+    \   ls -lh \"/pgbackrest/testrepodir\"\n    echo \"Now updating repo directory...\"\n
+    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/archive\"\n
+    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/backup\"\n
+    \   echo \"Updated /pgbackrest directory contents:\"\n    ls -lh \"/pgbackrest\"\n
+    \   echo \"Repo directory preparation complete\"\n    "
+  image: example.com/crunchy-pgbackrest:test
+  imagePullPolicy: IfNotPresent
+  name: repo-move-job
+  resources: {}
+  terminationMessagePath: /dev/termination-log
+  terminationMessagePolicy: File
+  volumeMounts:
+  - mountPath: /pgbackrest
+    name: pgbackrest-repo
+dnsPolicy: ClusterFirst
+restartPolicy: Never
+schedulerName: default-scheduler
+securityContext:
+  fsGroup: 26
+  runAsNonRoot: true
+terminationGracePeriodSeconds: 30
+volumes:
+- name: pgbackrest-repo
+  persistentVolumeClaim:
+    claimName: testrepo
+	`)+"\n"))
+			}
+		}
+
 	})
 }

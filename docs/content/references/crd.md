@@ -355,10 +355,148 @@ Specifies a data source for bootstrapping the PostgreSQL cluster.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourceexistingvolumes">existingVolumes</a></b></td>
+        <td>object</td>
+        <td>Defines any existing volumes to reuse for this PostgresCluster.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepostgrescluster">postgresCluster</a></b></td>
         <td>object</td>
         <td>Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL data directory for a new PostgreSQL cluster using a pgBackRest restore.</td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourceexistingvolumes">
+  PostgresCluster.spec.dataSource.existingVolumes
+  <sup><sup><a href="#postgresclusterspecdatasource">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines any existing volumes to reuse for this PostgresCluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourceexistingvolumesexistingpgbackrestvolume">existingPGBackRestVolume</a></b></td>
+        <td>object</td>
+        <td>Defines the existing pgBackRest repo volume and directory to use in the current PostgresCluster.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourceexistingvolumesexistingpgdatavolume">existingPGDataVolume</a></b></td>
+        <td>object</td>
+        <td>Defines the existing pgData volume and directory to use in the current PostgresCluster.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourceexistingvolumesexistingpgwalvolume">existingPGWALVolume</a></b></td>
+        <td>object</td>
+        <td>Defines the existing pg_wal volume and directory to use in the current PostgresCluster. Note that a defined pg_wal volume MUST be accompanied by a pgData volume.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourceexistingvolumesexistingpgbackrestvolume">
+  PostgresCluster.spec.dataSource.existingVolumes.existingPGBackRestVolume
+  <sup><sup><a href="#postgresclusterspecdatasourceexistingvolumes">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the existing pgBackRest repo volume and directory to use in the current PostgresCluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>directory</b></td>
+        <td>string</td>
+        <td>The existing directory. When not set, a move Job is not created for the associated volume.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>pvcName</b></td>
+        <td>string</td>
+        <td>The existing PVC name.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourceexistingvolumesexistingpgdatavolume">
+  PostgresCluster.spec.dataSource.existingVolumes.existingPGDataVolume
+  <sup><sup><a href="#postgresclusterspecdatasourceexistingvolumes">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the existing pgData volume and directory to use in the current PostgresCluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>directory</b></td>
+        <td>string</td>
+        <td>The existing directory. When not set, a move Job is not created for the associated volume.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>pvcName</b></td>
+        <td>string</td>
+        <td>The existing PVC name.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourceexistingvolumesexistingpgwalvolume">
+  PostgresCluster.spec.dataSource.existingVolumes.existingPGWALVolume
+  <sup><sup><a href="#postgresclusterspecdatasourceexistingvolumes">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the existing pg_wal volume and directory to use in the current PostgresCluster. Note that a defined pg_wal volume MUST be accompanied by a pgData volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>directory</b></td>
+        <td>string</td>
+        <td>The existing directory. When not set, a move Job is not created for the associated volume.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>pvcName</b></td>
+        <td>string</td>
+        <td>The existing PVC name.</td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

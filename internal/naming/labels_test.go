@@ -27,6 +27,10 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelCluster))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelInstance))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelInstanceSet))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelMoveJob))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelMovePGBackRestRepoDir))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelMovePGDataDir))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelMovePGWalDir))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPatroni))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelRole))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRest))
@@ -213,4 +217,15 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 
 	pgBackRestRestoreConfigSelector := PGBackRestRestoreConfigSelector(clusterName)
 	assert.Check(t, pgBackRestRestoreConfigSelector.Matches(pgBackRestRestoreConfigLabels))
+}
+
+// validate the DirectoryMoveJobLabels function
+func TestMoveJobLabelFunc(t *testing.T) {
+
+	clusterName := "hippo"
+
+	// verify the labels that identify directory move jobs
+	dirMoveJobLabels := DirectoryMoveJobLabels(clusterName)
+	assert.Equal(t, dirMoveJobLabels.Get(LabelCluster), clusterName)
+	assert.Check(t, dirMoveJobLabels.Has(LabelMoveJob))
 }

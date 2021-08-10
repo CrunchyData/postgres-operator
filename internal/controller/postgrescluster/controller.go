@@ -181,7 +181,23 @@ func (r *Reconciler) Reconcile(
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
 	if err == nil {
+		// Since any existing data directories must be moved prior to bootstrapping the
+		// cluster, further reconciliation will not occur until the directory move Jobs
+		// (if configured) have completed. Func reconcileDirMoveJobs() will therefore
+		// return a bool indicating that the controller should return early while any
+		// required Jobs are running, after which it will indicate that an early
+		// return is no longer needed, and reconciliation can proceed normally.
+		var returnEarly bool
+		returnEarly, err = r.reconcileDirMoveJobs(ctx, cluster)
+		if err != nil || returnEarly {
+			return patchClusterStatus()
+		}
+	}
+	if err == nil {
 		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+	}
+	if err == nil {
+		clusterVolumes, err = r.configureExistingPVCs(ctx, cluster, clusterVolumes)
 	}
 	if err == nil {
 		instances, err = r.observeInstances(ctx, cluster)
