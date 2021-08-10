@@ -97,7 +97,8 @@ NAME              TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
 hippo-ha          ClusterIP   10.103.73.92   <none>        5432/TCP   4h8m
 hippo-ha-config   ClusterIP   None           <none>        <none>     4h8m
 hippo-pods        ClusterIP   None           <none>        <none>     4h8m
-hippo-primary     ClusterIP   None           <none>        5432/TCP   3h14m
+hippo-primary     ClusterIP   None           <none>        5432/TCP   4h8m
+hippo-replicas    ClusterIP   10.98.110.215  <none>        5432/TCP   4h8m
 ```
 
 We also mentioned that the application is connected to the `hippo-primary` Service. What happens if we were to delete this Service?
@@ -121,6 +122,7 @@ hippo-ha          ClusterIP   10.103.73.92   <none>        5432/TCP   4h8m
 hippo-ha-config   ClusterIP   None           <none>        <none>     4h8m
 hippo-pods        ClusterIP   None           <none>        <none>     4h8m
 hippo-primary     ClusterIP   None           <none>        5432/TCP   3s
+hippo-replicas    ClusterIP   10.98.110.215  <none>        5432/TCP   4h8m
 ```
 
 Wow -- PGO detected that the primary Service was deleted and it recreated it! Based on how your application connects to Postgres, it may not have even noticed that this event took place!

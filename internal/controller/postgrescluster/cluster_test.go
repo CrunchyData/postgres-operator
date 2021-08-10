@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/pkg/errors"
@@ -700,4 +701,79 @@ func TestContainerSecurityContext(t *testing.T) {
 			assert.Equal(t, *initContainer.SecurityContext.AllowPrivilegeEscalation, false)
 		}
 	}
+}
+
+func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	reconciler := &Reconciler{Client: cc}
+
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns1"
+	cluster.Name = "pg2"
+	cluster.Spec.Port = initialize.Int32(9876)
+
+	service, err := reconciler.generateClusterReplicaServiceIntent(cluster)
+	assert.NilError(t, err)
+
+	assert.Assert(t, marshalMatches(service.TypeMeta, `
+apiVersion: v1
+kind: Service
+	`))
+	assert.Assert(t, marshalMatches(service.ObjectMeta, `
+creationTimestamp: null
+labels:
+  postgres-operator.crunchydata.com/cluster: pg2
+  postgres-operator.crunchydata.com/role: replica
+name: pg2-replicas
+namespace: ns1
+ownerReferences:
+- apiVersion: postgres-operator.crunchydata.com/v1beta1
+  blockOwnerDeletion: true
+  controller: true
+  kind: PostgresCluster
+  name: pg2
+  uid: ""
+	`))
+	assert.Assert(t, marshalMatches(service.Spec, `
+ports:
+- name: postgres
+  port: 9876
+  protocol: TCP
+  targetPort: postgres
+selector:
+  postgres-operator.crunchydata.com/cluster: pg2
+  postgres-operator.crunchydata.com/role: replica
+type: ClusterIP
+	`))
+
+	t.Run("AnnotationsLabels", func(t *testing.T) {
+		cluster := cluster
+		cluster.Spec.Metadata = &v1beta1.Metadata{
+			Annotations: map[string]string{"some": "note"},
+			Labels:      map[string]string{"happy": "label"},
+		}
+
+		service, err := reconciler.generateClusterReplicaServiceIntent(cluster)
+		assert.NilError(t, err)
+
+		// Annotations present in the metadata.
+		assert.Assert(t, marshalMatches(service.ObjectMeta.Annotations, `
+some: note
+		`))
+
+		// Labels present in the metadata.
+		assert.Assert(t, marshalMatches(service.ObjectMeta.Labels, `
+happy: label
+postgres-operator.crunchydata.com/cluster: pg2
+postgres-operator.crunchydata.com/role: replica
+		`))
+
+		// Labels not in the selector.
+		assert.Assert(t, marshalMatches(service.Spec.Selector, `
+postgres-operator.crunchydata.com/cluster: pg2
+postgres-operator.crunchydata.com/role: replica
+		`))
+	})
 }

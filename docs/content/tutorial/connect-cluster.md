@@ -23,6 +23,7 @@ hippo-ha          ClusterIP   10.103.73.92   <none>        5432/TCP   3h14m
 hippo-ha-config   ClusterIP   None           <none>        <none>     3h14m
 hippo-pods        ClusterIP   None           <none>        <none>     3h14m
 hippo-primary     ClusterIP   None           <none>        5432/TCP   3h14m
+hippo-replicas    ClusterIP   10.98.110.215  <none>        5432/TCP   3h14m
 ```
 
 You do not need to worry about most of these Services, as they are used to help manage the overall health of your Postgres cluster. For the purposes of connecting to your database, the Service of interest is called `hippo-primary`. Thanks to PGO, you do not need to even worry about that, as that information is captured within a Secret!

@@ -228,6 +228,9 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
 	}
 	if err == nil {
+		err = r.reconcileClusterReplicaService(ctx, cluster)
+	}
+	if err == nil {
 		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster)
 	}
 	if err == nil {

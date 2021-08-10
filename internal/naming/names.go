@@ -203,6 +203,15 @@ func ClusterPrimaryService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// ClusterReplicaService returns the ObjectMeta necessary to lookup the Service
+// that exposes PostgreSQL replica instances.
+func ClusterReplicaService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-replicas",
+	}
+}
+
 // GenerateInstance returns a random name for a member of cluster and set.
 func GenerateInstance(
 	cluster *v1beta1.PostgresCluster, set *v1beta1.PostgresInstanceSetSpec,
