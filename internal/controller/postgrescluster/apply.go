@@ -62,7 +62,7 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 			"spec", "template")
 
 	case *corev1.Service:
-		// Service.Spec.Selector is not +mapType=atomic, though it should be.
+		// Service.Spec.Selector is not +mapType=atomic until Kubernetes 1.22.
 		// - https://issue.k8s.io/97970
 		selector := intent.(*corev1.Service).Spec.Selector
 		if !equality.Semantic.DeepEqual(actual.Spec.Selector, selector) {
