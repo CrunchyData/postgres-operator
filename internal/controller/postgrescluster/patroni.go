@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -148,53 +149,64 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 		patroni.Executor(exec).ReplaceConfiguration(ctx, configuration))
 }
 
-// +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
+// generatePatroniLeaderLeaseService returns a v1.Service that exposes the
+// Patroni leader when Patroni is using Endpoints for its leader elections.
+func (r *Reconciler) generatePatroniLeaderLeaseService(
+	cluster *v1beta1.PostgresCluster) (*corev1.Service, error,
+) {
+	service := &corev1.Service{ObjectMeta: naming.PatroniLeaderEndpoints(cluster)}
+	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
-// reconcilePatroniLeaderLease sets labels and ownership on the objects Patroni
-// creates for its leader elections. When Patroni is using Endpoints for this,
-// the returned Service resolves to the elected leader. Otherwise, it is nil.
-func (r *Reconciler) reconcilePatroniLeaderLease(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) (*v1.Service, error) {
-	// When using Endpoints for DCS, Patroni needs a Service to ensure that the
-	// Endpoints object is not removed by Kubernetes at startup.
-	// - https://releases.k8s.io/v1.16.0/pkg/controller/endpoint/endpoints_controller.go#L547
-	// - https://releases.k8s.io/v1.20.0/pkg/controller/endpoint/endpoints_controller.go#L580
-	leaderService := &v1.Service{ObjectMeta: naming.PatroniLeaderEndpoints(cluster)}
-	leaderService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
-
-	err := errors.WithStack(r.setControllerReference(cluster, leaderService))
-
-	leaderService.Annotations = naming.Merge(
+	service.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil())
-	leaderService.Labels = naming.Merge(
+	service.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelPatroni: naming.PatroniScope(cluster),
 		})
 
-	// Allocate an IP address and let Patroni manage the Endpoints. Patroni will
-	// ensure that they always route to the elected leader.
+	// Allocate an IP address and/or node port and let Patroni manage the Endpoints.
+	// Patroni will ensure that they always route to the elected leader.
 	// - https://docs.k8s.io/concepts/services-networking/service/#services-without-selectors
-	leaderService.Spec.Type = v1.ServiceTypeClusterIP
-	leaderService.Spec.Selector = nil
+	service.Spec.Selector = nil
+	if cluster.Spec.Service != nil {
+		service.Spec.Type = corev1.ServiceType(cluster.Spec.Service.Type)
+	} else {
+		service.Spec.Type = corev1.ServiceTypeClusterIP
+	}
 
 	// The TargetPort must be the name (not the number) of the PostgreSQL
 	// ContainerPort. This name allows the port number to differ between
 	// instances, which can happen during a rolling update.
-	leaderService.Spec.Ports = []v1.ServicePort{{
+	service.Spec.Ports = []corev1.ServicePort{{
 		Name:       naming.PortPostgreSQL,
 		Port:       *cluster.Spec.Port,
-		Protocol:   v1.ProtocolTCP,
+		Protocol:   corev1.ProtocolTCP,
 		TargetPort: intstr.FromString(naming.PortPostgreSQL),
 	}}
 
-	if err == nil {
-		err = errors.WithStack(r.apply(ctx, leaderService))
-	}
+	err := errors.WithStack(r.setControllerReference(cluster, service))
+	return service, err
+}
 
-	return leaderService, err
+// +kubebuilder:rbac:groups="",resources="services",verbs={create,patch}
+
+// reconcilePatroniLeaderLease sets labels and ownership on the objects Patroni
+// creates for its leader elections. When Patroni is using Endpoints for this,
+// the returned Service resolves to the elected leader. Otherwise, it is nil.
+func (r *Reconciler) reconcilePatroniLeaderLease(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) (*corev1.Service, error) {
+	// When using Endpoints for DCS, Patroni needs a Service to ensure that the
+	// Endpoints object is not removed by Kubernetes at startup.
+	// - https://releases.k8s.io/v1.16.0/pkg/controller/endpoint/endpoints_controller.go#L547
+	// - https://releases.k8s.io/v1.20.0/pkg/controller/endpoint/endpoints_controller.go#L580
+	service, err := r.generatePatroniLeaderLeaseService(cluster)
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, service))
+	}
+	return service, err
 }
 
 // +kubebuilder:rbac:groups="",resources=endpoints,verbs=get

@@ -98,101 +98,116 @@ func (r *Reconciler) reconcileClusterPodService(
 	return clusterPodService, err
 }
 
-// +kubebuilder:rbac:groups="",resources=endpoints,verbs=create;patch
-// +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
-
-// The OpenShift RestrictedEndpointsAdmission plugin requires special
-// authorization to create Endpoints that contain ClusterIPs.
-// - https://github.com/openshift/origin/pull/9383
-// +kubebuilder:rbac:groups="",resources=endpoints/restricted,verbs=create
-
-// reconcileClusterPrimaryService writes the Service and Endpoints that resolve
-// to the PostgreSQL primary instance.
-func (r *Reconciler) reconcileClusterPrimaryService(
-	ctx context.Context, cluster *v1beta1.PostgresCluster, leader *v1.Service,
-) error {
-	clusterPrimaryService := &v1.Service{ObjectMeta: naming.ClusterPrimaryService(cluster)}
-	clusterPrimaryService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
-
-	err := errors.WithStack(r.setControllerReference(cluster, clusterPrimaryService))
-
-	clusterPrimaryService.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
-	clusterPrimaryService.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelCluster: cluster.Name,
-			naming.LabelRole:    naming.RolePrimary,
-		})
-
-	if err == nil && leader == nil {
-		// TODO(cbandy): We need to build a different kind of Service here.
-		err = errors.New("Patroni DCS other than Kubernetes Endpoints is not implemented")
-	}
-
+// generateClusterPrimaryService returns a v1.Service and v1.Endpoints that
+// resolve to the PostgreSQL primary instance.
+func (r *Reconciler) generateClusterPrimaryService(
+	cluster *v1beta1.PostgresCluster, leader *corev1.Service,
+) (*corev1.Service, *corev1.Endpoints, error) {
 	// We want to name and label our primary Service consistently. When Patroni is
 	// using Endpoints for its DCS, however, they and any Service that uses them
 	// must use the same name as the Patroni "scope" which has its own constraints.
 	//
-	// To stay free from those constraints, our primary Service will resolve to
-	// the ClusterIP of the Service created in the reconcilePatroniLeaderLease
-	// method when Patroni is using Endpoints.
+	// To stay free from those constraints, our primary Service resolves to the
+	// ClusterIP of the Service created in Reconciler.reconcilePatroniLeaderLease
+	// when Patroni is using Endpoints.
 
-	// Allocate no IP address (headless) and manage the Endpoints ourselves.
-	// - https://docs.k8s.io/concepts/services-networking/service/#headless-services
-	// - https://docs.k8s.io/concepts/services-networking/service/#services-without-selectors
-	clusterPrimaryService.Spec.ClusterIP = v1.ClusterIPNone
-	clusterPrimaryService.Spec.Selector = nil
+	service := &corev1.Service{ObjectMeta: naming.ClusterPrimaryService(cluster)}
+	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
-	clusterPrimaryService.Spec.Ports = []v1.ServicePort{{
-		Name:       naming.PortPostgreSQL,
-		Port:       *cluster.Spec.Port,
-		Protocol:   v1.ProtocolTCP,
-		TargetPort: intstr.FromString(naming.PortPostgreSQL),
-	}}
-
-	if err == nil {
-		err = errors.WithStack(r.apply(ctx, clusterPrimaryService))
-	}
-
-	// Endpoints for a Service have the same name as the Service.
-	endpoints := &v1.Endpoints{ObjectMeta: naming.ClusterPrimaryService(cluster)}
-	endpoints.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Endpoints"))
-
-	if err == nil {
-		err = errors.WithStack(r.setControllerReference(cluster, endpoints))
-	}
-
-	endpoints.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
-	endpoints.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
+	service.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil())
+	service.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePrimary,
 		})
 
+	err := errors.WithStack(r.setControllerReference(cluster, service))
+
+	// Endpoints for a Service have the same name as the Service. Copy labels,
+	// annotations, and ownership, too.
+	endpoints := &corev1.Endpoints{}
+	service.ObjectMeta.DeepCopyInto(&endpoints.ObjectMeta)
+	endpoints.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Endpoints"))
+
+	if leader == nil {
+		// TODO(cbandy): We need to build a different kind of Service here.
+		return nil, nil, errors.New("Patroni DCS other than Kubernetes Endpoints is not implemented")
+	}
+
+	// Allocate no IP address (headless) and manage the Endpoints ourselves.
+	// - https://docs.k8s.io/concepts/services-networking/service/#headless-services
+	// - https://docs.k8s.io/concepts/services-networking/service/#services-without-selectors
+	service.Spec.ClusterIP = corev1.ClusterIPNone
+	service.Spec.Selector = nil
+
+	service.Spec.Ports = []corev1.ServicePort{{
+		Name:       naming.PortPostgreSQL,
+		Port:       *cluster.Spec.Port,
+		Protocol:   corev1.ProtocolTCP,
+		TargetPort: intstr.FromString(naming.PortPostgreSQL),
+	}}
+
+	// Copy the LoadBalancerStatus of the leader Service into external fields.
+	// These fields are presented in the "External-IP" field of `kubectl get`.
+	// - https://releases.k8s.io/v1.18.0/pkg/printers/internalversion/printers.go#L1046
+	// - https://releases.k8s.io/v1.22.0/pkg/printers/internalversion/printers.go#L1110
+	if leader.Spec.Type == corev1.ServiceTypeLoadBalancer {
+		for _, ingress := range leader.Status.LoadBalancer.Ingress {
+			service.Spec.ExternalIPs = append(service.Spec.ExternalIPs, ingress.IP)
+
+			if service.Spec.ExternalName == "" && ingress.Hostname != "" {
+				service.Spec.ExternalName = ingress.Hostname
+			}
+		}
+	}
+
 	// Resolve to the ClusterIP for which Patroni has configured the Endpoints.
-	endpoints.Subsets = []v1.EndpointSubset{{
-		Addresses: []v1.EndpointAddress{{IP: leader.Spec.ClusterIP}},
+	endpoints.Subsets = []corev1.EndpointSubset{{
+		Addresses: []corev1.EndpointAddress{{IP: leader.Spec.ClusterIP}},
 	}}
 
 	// Copy the EndpointPorts from the ServicePorts.
-	for _, sp := range clusterPrimaryService.Spec.Ports {
+	for _, sp := range service.Spec.Ports {
 		endpoints.Subsets[0].Ports = append(endpoints.Subsets[0].Ports,
-			v1.EndpointPort{
+			corev1.EndpointPort{
 				Name:     sp.Name,
 				Port:     sp.Port,
 				Protocol: sp.Protocol,
 			})
 	}
 
+	return service, endpoints, err
+}
+
+// +kubebuilder:rbac:groups="",resources="endpoints",verbs={create,patch}
+// +kubebuilder:rbac:groups="",resources="services",verbs={create,patch}
+
+// The OpenShift RestrictedEndpointsAdmission plugin requires special
+// authorization to create Endpoints that contain ClusterIPs.
+// - https://github.com/openshift/origin/pull/9383
+// +kubebuilder:rbac:groups="",resources="endpoints/restricted",verbs={create}
+
+// reconcileClusterPrimaryService writes the Service and Endpoints that resolve
+// to the PostgreSQL primary instance.
+func (r *Reconciler) reconcileClusterPrimaryService(
+	ctx context.Context, cluster *v1beta1.PostgresCluster, leader *corev1.Service,
+) error {
+	service, endpoints, err := r.generateClusterPrimaryService(cluster, leader)
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, service))
+	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, endpoints))
 	}
-
 	return err
 }
 
-// generateClusterReplicaServiceIntent returns a v1.Service that exposes
-// PostgreSQL replica instances.
-func (r *Reconciler) generateClusterReplicaServiceIntent(
+// generateClusterReplicaService returns a v1.Service that exposes PostgreSQL
+// replica instances.
+func (r *Reconciler) generateClusterReplicaService(
 	cluster *v1beta1.PostgresCluster) (*corev1.Service, error,
 ) {
 	service := &corev1.Service{ObjectMeta: naming.ClusterReplicaService(cluster)}
@@ -207,13 +222,13 @@ func (r *Reconciler) generateClusterReplicaServiceIntent(
 			naming.LabelRole:    naming.RoleReplica,
 		})
 
-	// Allocate an IP address and let Kubernetes manage the Endpoints by selecting
-	// Pods with the replica role.
+	// Allocate an IP address and let Kubernetes manage the Endpoints by
+	// selecting Pods with the Patroni replica role.
 	// - https://docs.k8s.io/concepts/services-networking/service/#defining-a-service
 	service.Spec.Type = corev1.ServiceTypeClusterIP
 	service.Spec.Selector = map[string]string{
 		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RoleReplica,
+		naming.LabelRole:    naming.RolePatroniReplica,
 	}
 
 	// The TargetPort must be the name (not the number) of the PostgreSQL
@@ -238,7 +253,7 @@ func (r *Reconciler) generateClusterReplicaServiceIntent(
 func (r *Reconciler) reconcileClusterReplicaService(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
-	service, err := r.generateClusterReplicaServiceIntent(cluster)
+	service, err := r.generateClusterReplicaService(cluster)
 
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, service))

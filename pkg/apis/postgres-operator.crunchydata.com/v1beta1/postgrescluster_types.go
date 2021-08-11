@@ -132,6 +132,10 @@ type PostgresClusterSpec struct {
 	// +optional
 	Monitoring *MonitoringSpec `json:"monitoring,omitempty"`
 
+	// Specification of the service that exposes the PostgreSQL primary instance.
+	// +optional
+	Service *ServiceSpec `json:"service,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should be stopped.
 	// When this is true, workloads are scaled to zero and CronJobs
 	// are suspended.

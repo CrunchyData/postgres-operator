@@ -26,8 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -39,7 +37,191 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestGeneratePatroniLeaderLeaseService(t *testing.T) {
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	reconciler := &Reconciler{Client: cc}
+
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns1"
+	cluster.Name = "pg2"
+	cluster.Spec.Port = initialize.Int32(9876)
+
+	alwaysExpect := func(t testing.TB, service *corev1.Service) {
+		assert.Assert(t, marshalMatches(service.TypeMeta, `
+apiVersion: v1
+kind: Service
+		`))
+		assert.Assert(t, marshalMatches(service.ObjectMeta, `
+creationTimestamp: null
+labels:
+  postgres-operator.crunchydata.com/cluster: pg2
+  postgres-operator.crunchydata.com/patroni: pg2-ha
+name: pg2-ha
+namespace: ns1
+ownerReferences:
+- apiVersion: postgres-operator.crunchydata.com/v1beta1
+  blockOwnerDeletion: true
+  controller: true
+  kind: PostgresCluster
+  name: pg2
+  uid: ""
+		`))
+		assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: postgres
+  port: 9876
+  protocol: TCP
+  targetPort: postgres
+		`))
+
+		// Always gets a ClusterIP (never None).
+		assert.Equal(t, service.Spec.ClusterIP, "")
+		assert.Assert(t, service.Spec.Selector == nil,
+			"got %v", service.Spec.Selector)
+	}
+
+	t.Run("NoServiceSpec", func(t *testing.T) {
+		service, err := reconciler.generatePatroniLeaderLeaseService(cluster)
+		assert.NilError(t, err)
+		alwaysExpect(t, service)
+
+		// Defaults to ClusterIP.
+		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
+	})
+
+	t.Run("AnnotationsLabels", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Metadata = &v1beta1.Metadata{
+			Annotations: map[string]string{"a": "v1"},
+			Labels:      map[string]string{"b": "v2"},
+		}
+
+		service, err := reconciler.generatePatroniLeaderLeaseService(cluster)
+		assert.NilError(t, err)
+
+		// Annotations present in the metadata.
+		assert.DeepEqual(t, service.ObjectMeta.Annotations, map[string]string{
+			"a": "v1",
+		})
+
+		// Labels present in the metadata.
+		assert.DeepEqual(t, service.ObjectMeta.Labels, map[string]string{
+			"b": "v2",
+			"postgres-operator.crunchydata.com/cluster": "pg2",
+			"postgres-operator.crunchydata.com/patroni": "pg2-ha",
+		})
+
+		// Labels not in the selector.
+		assert.Assert(t, service.Spec.Selector == nil,
+			"got %v", service.Spec.Selector)
+	})
+
+	types := []struct {
+		Type   string
+		Expect func(testing.TB, *corev1.Service)
+	}{
+		{Type: "ClusterIP", Expect: func(t testing.TB, service *corev1.Service) {
+			assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
+		}},
+		{Type: "NodePort", Expect: func(t testing.TB, service *corev1.Service) {
+			assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
+		}},
+		{Type: "LoadBalancer", Expect: func(t testing.TB, service *corev1.Service) {
+			assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
+		}},
+	}
+
+	for _, test := range types {
+		t.Run(test.Type, func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.Service = &v1beta1.ServiceSpec{Type: test.Type}
+
+			service, err := reconciler.generatePatroniLeaderLeaseService(cluster)
+			assert.NilError(t, err)
+			alwaysExpect(t, service)
+			test.Expect(t, service)
+		})
+	}
+}
+
+func TestReconcilePatroniLeaderLease(t *testing.T) {
+	ctx := context.Background()
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = ns.Name
+	cluster.Name = "pg2"
+	cluster.Spec.PostgresVersion = 12
+	cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{}}
+
+	assert.NilError(t, cc.Create(ctx, cluster))
+
+	t.Run("NoServiceSpec", func(t *testing.T) {
+		service, err := reconciler.reconcilePatroniLeaderLease(ctx, cluster)
+		assert.NilError(t, err)
+		assert.Assert(t, service != nil)
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, service)) })
+
+		assert.Assert(t, service.Spec.ClusterIP != "",
+			"expected to be assigned a ClusterIP")
+	})
+
+	serviceTypes := []string{"ClusterIP", "NodePort", "LoadBalancer"}
+
+	// Confirm that each ServiceType can be reconciled.
+	for _, serviceType := range serviceTypes {
+		t.Run(serviceType, func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.Service = &v1beta1.ServiceSpec{Type: serviceType}
+
+			service, err := reconciler.reconcilePatroniLeaderLease(ctx, cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, service != nil)
+			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, service)) })
+
+			assert.Assert(t, service.Spec.ClusterIP != "",
+				"expected to be assigned a ClusterIP")
+		})
+	}
+
+	// CRD validation looks only at the new/incoming value of fields. Confirm
+	// that each ServiceType can change to any other ServiceType. Forbidding
+	// certain transitions requires a validating webhook.
+	for _, beforeType := range serviceTypes {
+		for _, changeType := range serviceTypes {
+			t.Run(beforeType+"To"+changeType, func(t *testing.T) {
+				cluster := cluster.DeepCopy()
+				cluster.Spec.Service = &v1beta1.ServiceSpec{Type: beforeType}
+
+				before, err := reconciler.reconcilePatroniLeaderLease(ctx, cluster)
+				assert.NilError(t, err)
+				t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, before)) })
+
+				cluster.Spec.Service.Type = changeType
+
+				after, err := reconciler.reconcilePatroniLeaderLease(ctx, cluster)
+				assert.NilError(t, err)
+				assert.Equal(t, after.Spec.ClusterIP, before.Spec.ClusterIP,
+					"expected to keep the same ClusterIP")
+			})
+		}
+	}
+}
 
 func TestPatroniReplicationSecret(t *testing.T) {
 	// Garbage collector cleans up test resources before the test completes

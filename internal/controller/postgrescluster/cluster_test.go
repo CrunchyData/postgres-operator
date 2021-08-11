@@ -18,6 +18,7 @@ package postgrescluster
 */
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
@@ -703,6 +704,136 @@ func TestContainerSecurityContext(t *testing.T) {
 	}
 }
 
+func TestGenerateClusterPrimaryService(t *testing.T) {
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	reconciler := &Reconciler{Client: cc}
+
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns2"
+	cluster.Name = "pg5"
+	cluster.Spec.Port = initialize.Int32(2600)
+
+	leader := &corev1.Service{}
+	leader.Spec.ClusterIP = "1.9.8.3"
+
+	_, _, err := reconciler.generateClusterPrimaryService(cluster, nil)
+	assert.ErrorContains(t, err, "not implemented")
+
+	alwaysExpect := func(t testing.TB, service *corev1.Service, endpoints *corev1.Endpoints) {
+		assert.Assert(t, marshalMatches(service.TypeMeta, `
+apiVersion: v1
+kind: Service
+		`))
+		assert.Assert(t, marshalMatches(service.ObjectMeta, `
+creationTimestamp: null
+labels:
+  postgres-operator.crunchydata.com/cluster: pg5
+  postgres-operator.crunchydata.com/role: primary
+name: pg5-primary
+namespace: ns2
+ownerReferences:
+- apiVersion: postgres-operator.crunchydata.com/v1beta1
+  blockOwnerDeletion: true
+  controller: true
+  kind: PostgresCluster
+  name: pg5
+  uid: ""
+		`))
+		assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: postgres
+  port: 2600
+  protocol: TCP
+  targetPort: postgres
+		`))
+
+		assert.Equal(t, service.Spec.ClusterIP, "None")
+		assert.Assert(t, service.Spec.Selector == nil,
+			"got %v", service.Spec.Selector)
+
+		assert.Assert(t, marshalMatches(endpoints, `
+apiVersion: v1
+kind: Endpoints
+metadata:
+  creationTimestamp: null
+  labels:
+    postgres-operator.crunchydata.com/cluster: pg5
+    postgres-operator.crunchydata.com/role: primary
+  name: pg5-primary
+  namespace: ns2
+  ownerReferences:
+  - apiVersion: postgres-operator.crunchydata.com/v1beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: PostgresCluster
+    name: pg5
+    uid: ""
+subsets:
+- addresses:
+  - ip: 1.9.8.3
+  ports:
+  - name: postgres
+    port: 2600
+    protocol: TCP
+		`))
+	}
+
+	service, endpoints, err := reconciler.generateClusterPrimaryService(cluster, leader)
+	assert.NilError(t, err)
+	alwaysExpect(t, service, endpoints)
+
+	t.Run("LeaderLoadBalancer", func(t *testing.T) {
+		leader := leader.DeepCopy()
+		leader.Spec.Type = corev1.ServiceTypeLoadBalancer
+		leader.Status.LoadBalancer.Ingress = []corev1.LoadBalancerIngress{
+			{IP: "55.44.33.22"},
+			{IP: "99.88.77.66", Hostname: "some.host"},
+			{IP: "1.2.3.4", Hostname: "only.the.first"},
+		}
+
+		service, endpoints, err := reconciler.generateClusterPrimaryService(cluster, leader)
+		assert.NilError(t, err)
+		alwaysExpect(t, service, endpoints)
+
+		assert.DeepEqual(t, service.Spec.ExternalIPs, []string{
+			"55.44.33.22", "99.88.77.66", "1.2.3.4",
+		})
+		assert.Equal(t, service.Spec.ExternalName, "some.host")
+	})
+}
+
+func TestReconcileClusterPrimaryService(t *testing.T) {
+	ctx := context.Background()
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = ns.Name
+	cluster.Name = "pg8"
+	cluster.Spec.PostgresVersion = 12
+	cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{}}
+
+	assert.NilError(t, cc.Create(ctx, cluster))
+
+	assert.ErrorContains(t,
+		reconciler.reconcileClusterPrimaryService(ctx, cluster, nil),
+		"not implemented")
+
+	leader := &corev1.Service{}
+	leader.Spec.ClusterIP = "192.0.2.10"
+
+	assert.NilError(t,
+		reconciler.reconcileClusterPrimaryService(ctx, cluster, leader))
+}
+
 func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
@@ -714,7 +845,7 @@ func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
 	cluster.Name = "pg2"
 	cluster.Spec.Port = initialize.Int32(9876)
 
-	service, err := reconciler.generateClusterReplicaServiceIntent(cluster)
+	service, err := reconciler.generateClusterReplicaService(cluster)
 	assert.NilError(t, err)
 
 	assert.Assert(t, marshalMatches(service.TypeMeta, `
@@ -749,13 +880,13 @@ type: ClusterIP
 	`))
 
 	t.Run("AnnotationsLabels", func(t *testing.T) {
-		cluster := cluster
+		cluster := cluster.DeepCopy()
 		cluster.Spec.Metadata = &v1beta1.Metadata{
 			Annotations: map[string]string{"some": "note"},
 			Labels:      map[string]string{"happy": "label"},
 		}
 
-		service, err := reconciler.generateClusterReplicaServiceIntent(cluster)
+		service, err := reconciler.generateClusterReplicaService(cluster)
 		assert.NilError(t, err)
 
 		// Annotations present in the metadata.
