@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -61,7 +62,10 @@ func TestServerSideApply(t *testing.T) {
 	dc, err := discovery.NewDiscoveryClientForConfig(config)
 	assert.NilError(t, err)
 
-	version, err := dc.ServerVersion()
+	server, err := dc.ServerVersion()
+	assert.NilError(t, err)
+
+	serverVersion, err := version.ParseGeneric(server.GitVersion)
 	assert.NilError(t, err)
 
 	t.Run("ObjectMeta", func(t *testing.T) {
@@ -187,8 +191,9 @@ func TestServerSideApply(t *testing.T) {
 			cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
 
 		switch {
-		case version.Major == "1" && version.Minor == "18":
+		case serverVersion.LessThan(version.MustParseGeneric("1.18.19")):
 
+			// - https://pr.k8s.io/101179
 			assert.Assert(t, !equality.Semantic.DeepEqual(
 				after.Spec.Template.Spec.SecurityContext,
 				intent.Spec.Template.Spec.SecurityContext),
@@ -196,7 +201,6 @@ func TestServerSideApply(t *testing.T) {
 				after.Spec.Template.Spec.SecurityContext)
 
 		default:
-
 			assert.DeepEqual(t,
 				after.Spec.Template.Spec.SecurityContext,
 				intent.Spec.Template.Spec.SecurityContext)
@@ -238,13 +242,20 @@ func TestServerSideApply(t *testing.T) {
 					client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"selector":{"bad":"v2"}}}`)),
 					client.FieldOwner("wrong")))
 
-			// client.Apply cannot correct it.
+			// client.Apply cannot correct it in old versions of Kubernetes.
 			after := intent.DeepCopy()
 			assert.NilError(t,
 				cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
 
-			assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
-				"expected https://issue.k8s.io/97970, got %v", after.Spec.Selector)
+			switch {
+			case serverVersion.LessThan(version.MustParseGeneric("1.22")):
+
+				assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
+					"expected https://issue.k8s.io/97970, got %v", after.Spec.Selector)
+
+			default:
+				assert.DeepEqual(t, after.Spec.Selector, intent.Spec.Selector)
+			}
 
 			// Our apply method corrects it.
 			again := intent.DeepCopy()
