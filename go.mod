@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
+	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/go-logr/logr v0.4.0
 	github.com/google/go-cmp v0.5.4
 	github.com/onsi/ginkgo v1.14.1

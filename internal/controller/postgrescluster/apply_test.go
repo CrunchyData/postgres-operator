@@ -338,4 +338,55 @@ func TestServerSideApply(t *testing.T) {
 			})
 		}
 	})
+
+	t.Run("ServiceType", func(t *testing.T) {
+		constructor := func(name string) *corev1.Service {
+			var service corev1.Service
+			service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
+			service.Namespace, service.Name = ns.Name, name
+			service.Spec.Ports = []corev1.ServicePort{
+				{Name: "one", Port: 9999, Protocol: corev1.ProtocolTCP},
+				{Name: "two", Port: 1234, Protocol: corev1.ProtocolTCP},
+			}
+			return &service
+		}
+
+		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+		// Start as NodePort.
+		intent := constructor("node-port")
+		intent.Spec.Type = corev1.ServiceTypeNodePort
+
+		// Create the Service.
+		before := intent.DeepCopy()
+		assert.NilError(t,
+			cc.Patch(ctx, before, client.Apply, client.ForceOwnership, reconciler.Owner))
+
+		// Change to ClusterIP.
+		intent.Spec.Type = corev1.ServiceTypeClusterIP
+
+		// client.Apply cannot change it in old versions of Kubernetes.
+		after := intent.DeepCopy()
+		err := cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner)
+
+		switch {
+		case serverVersion.LessThan(version.MustParseGeneric("1.20")):
+
+			assert.ErrorContains(t, err, "nodePort: Forbidden",
+				"expected https://issue.k8s.io/33766")
+
+		default:
+			assert.NilError(t, err)
+			assert.Equal(t, after.Spec.Type, intent.Spec.Type)
+			assert.Equal(t, after.Spec.ClusterIP, before.Spec.ClusterIP,
+				"expected to keep the same ClusterIP")
+		}
+
+		// Our apply method changes it.
+		again := intent.DeepCopy()
+		assert.NilError(t, reconciler.apply(ctx, again))
+		assert.Equal(t, again.Spec.Type, intent.Spec.Type)
+		assert.Equal(t, again.Spec.ClusterIP, before.Spec.ClusterIP,
+			"expected to keep the same ClusterIP")
+	})
 }
