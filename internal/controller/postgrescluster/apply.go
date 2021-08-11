@@ -74,12 +74,7 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 			err = r.handleServiceError(ctx, object.(*corev1.Service), data, err)
 		}
 
-		// Service.Spec.Selector is not +mapType=atomic until Kubernetes 1.22.
-		// - https://issue.k8s.io/97970
-		selector := intent.(*corev1.Service).Spec.Selector
-		if !equality.Semantic.DeepEqual(actual.Spec.Selector, selector) {
-			patch.Replace("spec", "selector")(selector)
-		}
+		applyServiceSpec(patch, actual.Spec, intent.(*corev1.Service).Spec, "spec")
 	}
 
 	// Send the json-patch when necessary.
@@ -149,6 +144,8 @@ func applyPodSecurityContext(
 		patch.Replace(path...)(intent)
 		return
 	}
+	// Empty "omitempty" slices are ignored until Kubernetes 1.19.
+	// - https://issue.k8s.io/89273
 	if !equality.Semantic.DeepEqual(actual.SupplementalGroups, intent.SupplementalGroups) {
 		patch.Replace(append(path, "supplementalGroups")...)(intent.SupplementalGroups)
 	}
@@ -163,4 +160,22 @@ func applyPodTemplateSpec(
 		actual.Spec.SecurityContext,
 		intent.Spec.SecurityContext,
 		append(path, "spec", "securityContext")...)
+}
+
+// applyServiceSpec is called by Reconciler.apply to work around issues
+// with server-side apply.
+func applyServiceSpec(
+	patch *kubeapi.JSON6902, actual, intent corev1.ServiceSpec, path ...string,
+) {
+	// Empty "omitempty" slices are ignored until Kubernetes 1.19.
+	// - https://issue.k8s.io/89273
+	if !equality.Semantic.DeepEqual(actual.ExternalIPs, intent.ExternalIPs) {
+		patch.Replace(append(path, "externalIPs")...)(intent.ExternalIPs)
+	}
+
+	// Service.Spec.Selector is not +mapType=atomic until Kubernetes 1.22.
+	// - https://issue.k8s.io/97970
+	if !equality.Semantic.DeepEqual(actual.Selector, intent.Selector) {
+		patch.Replace(append(path, "selector")...)(intent.Selector)
+	}
 }

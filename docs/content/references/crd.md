@@ -145,6 +145,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>The specification of a proxy that connects to PostgreSQL.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecservice">service</a></b></td>
+        <td>object</td>
+        <td>Specification of the service that exposes the PostgreSQL primary instance.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>shutdown</b></td>
         <td>boolean</td>
         <td>Whether or not the PostgreSQL cluster should be stopped. When this is true, workloads are scaled to zero and CronJobs are suspended. Other resources, such as Services and Volumes, remain in place.</td>
@@ -3549,6 +3554,33 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
         <td>string</td>
         <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecservice">
+  PostgresCluster.spec.service
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Specification of the service that exposes the PostgreSQL primary instance.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

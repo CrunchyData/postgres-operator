@@ -174,7 +174,7 @@ hippo-instance1-6kbw   1/1     15m
 hippo-instance1-zj5s   0/1     1s
 ```
 
-PGO recreated the the StatefulSet that was deleted! After this "catastrophic" event, PGO proceeds to heal the Postgres instance so it can rejoin the cluster. We cover the high availability process in greater depth later in the documentation.
+PGO recreated the StatefulSet that was deleted! After this "catastrophic" event, PGO proceeds to heal the Postgres instance so it can rejoin the cluster. We cover the high availability process in greater depth later in the documentation.
 
 What about the other instance? We can see that it became the new primary though the following command:
 
