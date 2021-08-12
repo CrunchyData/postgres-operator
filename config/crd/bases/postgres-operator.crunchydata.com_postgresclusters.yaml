@@ -5568,6 +5568,19 @@ spec:
                               More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                             type: object
                         type: object
+                      service:
+                        description: Specification of the service that exposes PgBouncer.
+                        properties:
+                          type:
+                            description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types'
+                            enum:
+                            - ClusterIP
+                            - NodePort
+                            - LoadBalancer
+                            type: string
+                        required:
+                        - type
+                        type: object
                       tolerations:
                         description: 'Tolerations of a PgBouncer pod. Changing this
                           value causes PgBouncer to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration'

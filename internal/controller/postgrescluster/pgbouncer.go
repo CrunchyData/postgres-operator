@@ -242,28 +242,17 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 	return intent, err
 }
 
-// +kubebuilder:rbac:groups="",resources=services,verbs=get
-// +kubebuilder:rbac:groups="",resources=services,verbs=create;delete;patch
-
-// reconcilePGBouncerService writes the Service that resolves to PgBouncer.
-func (r *Reconciler) reconcilePGBouncerService(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) (*corev1.Service, error) {
+// generatePGBouncerService returns a v1.Service that exposes PgBouncer pods.
+// The ServiceType comes from the cluster proxy spec.
+func (r *Reconciler) generatePGBouncerService(
+	cluster *v1beta1.PostgresCluster) (*corev1.Service, bool, error,
+) {
 	service := &corev1.Service{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
 	if cluster.Spec.Proxy == nil || cluster.Spec.Proxy.PGBouncer == nil {
-		// PgBouncer is disabled; delete the Service if it exists. Check the client
-		// cache first using Get.
-		key := client.ObjectKeyFromObject(service)
-		err := errors.WithStack(r.Client.Get(ctx, key, service))
-		if err == nil {
-			err = errors.WithStack(r.deleteControlled(ctx, cluster, service))
-		}
-		return nil, client.IgnoreNotFound(err)
+		return service, false, nil
 	}
-
-	err := errors.WithStack(r.setControllerReference(cluster, service))
 
 	service.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
@@ -276,13 +265,17 @@ func (r *Reconciler) reconcilePGBouncerService(
 			naming.LabelRole:    naming.RolePGBouncer,
 		})
 
-	// Allocate an IP address and let Kubernetes manage the Endpoints by selecting
-	// Pods with the PgBouncer role.
+	// Allocate an IP address and/or node port and let Kubernetes manage the
+	// Endpoints by selecting Pods with the PgBouncer role.
 	// - https://docs.k8s.io/concepts/services-networking/service/#defining-a-service
-	service.Spec.Type = corev1.ServiceTypeClusterIP
 	service.Spec.Selector = map[string]string{
 		naming.LabelCluster: cluster.Name,
 		naming.LabelRole:    naming.RolePGBouncer,
+	}
+	if spec := cluster.Spec.Proxy.PGBouncer.Service; spec != nil {
+		service.Spec.Type = corev1.ServiceType(spec.Type)
+	} else {
+		service.Spec.Type = corev1.ServiceTypeClusterIP
 	}
 
 	// The TargetPort must be the name (not the number) of the PgBouncer
@@ -295,10 +288,34 @@ func (r *Reconciler) reconcilePGBouncerService(
 		TargetPort: intstr.FromString(naming.PortPGBouncer),
 	}}
 
+	err := errors.WithStack(r.setControllerReference(cluster, service))
+
+	return service, true, err
+}
+
+// +kubebuilder:rbac:groups="",resources="services",verbs={get}
+// +kubebuilder:rbac:groups="",resources="services",verbs={create,delete,patch}
+
+// reconcilePGBouncerService writes the Service that resolves to PgBouncer.
+func (r *Reconciler) reconcilePGBouncerService(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) (*corev1.Service, error) {
+	service, specified, err := r.generatePGBouncerService(cluster)
+
+	if err == nil && !specified {
+		// PgBouncer is disabled; delete the Service if it exists. Check the client
+		// cache first using Get.
+		key := client.ObjectKeyFromObject(service)
+		err := errors.WithStack(r.Client.Get(ctx, key, service))
+		if err == nil {
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, service))
+		}
+		return nil, client.IgnoreNotFound(err)
+	}
+
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, service))
 	}
-
 	return service, err
 }
 
