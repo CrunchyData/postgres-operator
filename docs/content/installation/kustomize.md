@@ -85,9 +85,17 @@ bases:
 - manager
 ```
 
-Note that `rbac/cluster` has been changed to `rbac/namespace`.  With this configuration change,
-PGO will create a Role and RoleBinding, and will therefore only manage PostgreSQL clusters created
-within the namespace defined using the `namespace` setting in the
+Note that `rbac/cluster` has been changed to `rbac/namespace`.  
+
+As well as the PGO_TARGET_NAMESPACE environment variable located in the env section of the `kustomize/install/bases/manager/manager.yaml` file as follows:
+
+```yaml
+        env:
+        - name: PGO_TARGET_NAMESPACE
+          valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.namespace } }
+```
+
+With these configuration changes, PGO will create a Role and RoleBinding, and will therefore only manage PostgreSQL clusters created within the namespace defined using the `namespace` setting in the
 `kustomize/install/bases/kustomization.yaml` file:
 
 ```yaml
