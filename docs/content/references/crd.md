@@ -2066,6 +2066,11 @@ Defines a PgBouncer proxy and connection pooler.
         <td>Compute resources of a PgBouncer container. Changing this value causes PgBouncer to restart. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbouncerservice">service</a></b></td>
+        <td>object</td>
+        <td>Specification of the service that exposes PgBouncer.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncertolerationsindex">tolerations</a></b></td>
         <td>[]object</td>
         <td>Tolerations of a PgBouncer pod. Changing this value causes PgBouncer to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
@@ -3507,6 +3512,33 @@ Compute resources of a PgBouncer container. Changing this value causes PgBouncer
         <td>map[string]int or string</td>
         <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbouncerservice">
+  PostgresCluster.spec.proxy.pgBouncer.service
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Specification of the service that exposes PgBouncer.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

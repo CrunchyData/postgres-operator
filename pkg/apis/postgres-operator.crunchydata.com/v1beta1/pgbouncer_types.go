@@ -106,6 +106,10 @@ type PGBouncerPodSpec struct {
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
+	// Specification of the service that exposes PgBouncer.
+	// +optional
+	Service *ServiceSpec `json:"service,omitempty"`
+
 	// Tolerations of a PgBouncer pod. Changing this value causes PgBouncer to
 	// restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
