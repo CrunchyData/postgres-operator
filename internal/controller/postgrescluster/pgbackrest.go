@@ -2412,16 +2412,28 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 			if rs.Name == repoName {
 				newRepoVolStatus = false
 
+				// clear any status not applicable to this repo type
+				rs.RepoOptionsHash = ""
+
 				// if we find a status with ReplicaCreateBackupComplete set to "true" but the repo name
 				// for that status does not match the current replica create repo name, then reset
 				// ReplicaCreateBackupComplete and StanzaCreate back to false
-				if rs.ReplicaCreateBackupComplete && (rs.Name != replicaCreateRepoName) {
+				if (rs.ReplicaCreateBackupComplete && (rs.Name != replicaCreateRepoName)) ||
+					rs.RepoOptionsHash != "" {
 					rs.ReplicaCreateBackupComplete = false
+					rs.RepoOptionsHash = ""
 				}
 
 				// update binding info if needed
 				if rs.Bound != (rv.Status.Phase == v1.ClaimBound) {
 					rs.Bound = (rv.Status.Phase == v1.ClaimBound)
+				}
+
+				// if a different volume is detected, reset the stanza and replica create backup status
+				// so that both are run again.
+				if rs.VolumeName != rv.GetName() {
+					rs.StanzaCreated = false
+					rs.ReplicaCreateBackupComplete = false
 				}
 
 				updatedRepoStatus = append(updatedRepoStatus, rs)
@@ -2446,6 +2458,10 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 		for _, rs := range repoStatus {
 			if rs.Name == repoName {
 				newExtRepoStatus = false
+
+				// clear any status not applicable to this repo type
+				rs.Bound = false
+				rs.VolumeName = ""
 
 				// if we find a status with ReplicaCreateBackupComplete set to "true" but the repo name
 				// for that status does not match the current replica create repo name, then reset
