@@ -325,13 +325,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		repoHost: &v1beta1.PGBackRestRepoHost{},
 		testMap:  map[string]string{},
 	}, {
-		repoHost: &v1beta1.PGBackRestRepoHost{
-			Dedicated: &v1beta1.DedicatedRepo{
-				Resources: v1.ResourceRequirements{},
-			},
-		},
-		testMap: map[string]string{},
-	}, {
 		repoHost: nil,
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
@@ -340,17 +333,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		testMap: map[string]string{},
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{},
-		sshConfig: &v1.ConfigMapProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-		sshSecret: &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-		testMap: map[string]string{},
-	}, {
-		repoHost: &v1beta1.PGBackRestRepoHost{
-			Dedicated: &v1beta1.DedicatedRepo{
-				Resources: v1.ResourceRequirements{},
-			},
-		},
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &v1.SecretProjection{
@@ -369,11 +351,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 				"repo1": "hippo-repo1",
 			},
 		}, {
-			repoHost: &v1beta1.PGBackRestRepoHost{
-				Dedicated: &v1beta1.DedicatedRepo{
-					Resources: v1.ResourceRequirements{},
-				},
-			},
+			repoHost: &v1beta1.PGBackRestRepoHost{},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
@@ -395,27 +373,13 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
-		}, {
-			repoHost: &v1beta1.PGBackRestRepoHost{
-				Dedicated: &v1beta1.DedicatedRepo{
-					Resources: v1.ResourceRequirements{},
-				},
-			},
-			sshConfig: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-			sshSecret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-			testMap: map[string]string{
-				"repo1": "hippo-repo1",
-			},
 		}}
 
 	for _, tc := range testCases {
-		repoHost := (tc.repoHost != nil)
-		dedicated := (tc.repoHost != nil && tc.repoHost.Dedicated != nil)
+		dedicated := tc.repoHost != nil
 		customConfig := (tc.sshConfig != nil)
 		customSecret := (tc.sshSecret != nil)
-		t.Run(fmt.Sprintf("repoHost:%t, dedicated:%t", repoHost, dedicated), func(t *testing.T) {
+		t.Run(fmt.Sprintf("dedicated:%t", dedicated), func(t *testing.T) {
 
 			postgresCluster.Spec.Backups.PGBackRest.RepoHost = tc.repoHost
 			template := &v1.PodTemplateSpec{
@@ -424,7 +388,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 				},
 			}
 
-			if repoHost {
+			if dedicated {
 				if customConfig {
 					postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
 				}
@@ -436,37 +400,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			err := addPGBackRestToInstancePodSpec(postgresCluster, template, instance, tc.testMap)
 			assert.NilError(t, err)
 
-			// if there is no dedicated repo host configured, verfiy pgBackRest repos are mounted to the
-			// instance Pod
-			if !dedicated {
-				for _, r := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-					var foundRepo bool
-					for _, v := range template.Spec.Volumes {
-						if r.Name == v.Name {
-							foundRepo = true
-							break
-						}
-					}
-					assert.Assert(t, foundRepo)
-
-					for _, c := range template.Spec.Containers {
-						if c.Name == naming.ContainerDatabase ||
-							c.Name == naming.PGBackRestRepoContainerName {
-							var foundRepoVolMount bool
-							for _, vm := range c.VolumeMounts {
-								if vm.Name == r.Name {
-									foundRepoVolMount = true
-									break
-								}
-							}
-							assert.Assert(t, foundRepoVolMount)
-						}
-					}
-				}
-			}
-
 			// if a repo host is configured, then verify SSH is enabled
-			if repoHost {
+			if dedicated {
 
 				// verify the ssh volume
 				var foundSSHVolume bool

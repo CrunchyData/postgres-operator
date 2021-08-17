@@ -29,17 +29,15 @@ import (
 // multi-repository solution implemented within pgBackRest
 const maxPGBackrestRepos = 4
 
-// RepoHostEnabled determines whether not a pgBackRest repository host is enabled according to the
-// provided PostgresCluster
-func RepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
-	return (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil)
-}
-
 // DedicatedRepoHostEnabled determines whether not a pgBackRest dedicated repository host is
 // enabled according to the provided PostgresCluster
 func DedicatedRepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
-	return (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil &&
-		postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
+	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+		if repo.Volume != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // CalculateConfigHashes calculates hashes for any external pgBackRest repository configuration

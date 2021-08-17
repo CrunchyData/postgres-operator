@@ -90,17 +90,17 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	// create an empty map for the config data
 	initialize.StringMap(&cm.Data)
 
-	addInstanceHosts := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil) &&
-		(postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated == nil)
-	addDedicatedHost := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil) &&
-		(postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
-
+	addDedicatedHost := DedicatedRepoHostEnabled(postgresCluster)
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	// Port will always be populated, since the API will set a default of 5432 if not provided
 	pgPort := *postgresCluster.Spec.Port
 	for i, name := range instanceNames {
 		otherInstances := make([]string, 0)
-		if addInstanceHosts {
+
+		// TODO (andrewlecuyer): Is backup from standby possible when using a dedicated repo host?
+		// Either way, do we care about this?  Removing per-instance configs means configuration
+		// is much simplified, something that I think are looking for.
+		if addDedicatedHost {
 			otherInstances = make([]string, len(instanceNames))
 			copy(otherInstances, instanceNames)
 			otherInstances = append(otherInstances[:i], otherInstances[i+1:]...)

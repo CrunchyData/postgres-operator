@@ -134,12 +134,10 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 
 	if includeDedicatedRepo {
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
-			Dedicated: &v1beta1.DedicatedRepo{
-				Resources: corev1.ResourceRequirements{},
-				Affinity:  &corev1.Affinity{},
-				Tolerations: []v1.Toleration{
-					{Key: "woot"},
-				},
+			Resources: corev1.ResourceRequirements{},
+			Affinity:  &corev1.Affinity{},
+			Tolerations: []v1.Toleration{
+				{Key: "woot"},
 			},
 		}
 	}
@@ -253,7 +251,6 @@ func TestReconcilePGBackRest(t *testing.T) {
 			client.MatchingLabels{
 				naming.LabelCluster:             clusterName,
 				naming.LabelPGBackRest:          "",
-				naming.LabelPGBackRestRepoHost:  "",
 				naming.LabelPGBackRestDedicated: "",
 			}); err != nil {
 			t.Fatal(err)
@@ -294,7 +291,6 @@ func TestReconcilePGBackRest(t *testing.T) {
 		expectedLabels := map[string]string{
 			naming.LabelCluster:             clusterName,
 			naming.LabelPGBackRest:          "",
-			naming.LabelPGBackRestRepoHost:  "",
 			naming.LabelPGBackRestDedicated: "",
 		}
 		expectedLabelsSelector, err := metav1.LabelSelectorAsSelector(
@@ -839,33 +835,15 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{
-							Dedicated: &v1beta1.DedicatedRepo{},
-						},
+						RepoHost: &v1beta1.PGBackRestRepoHost{},
+						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
 				},
 			},
 		},
 		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
 			"postgres-operator.crunchydata.com/pgbackrest=," +
-			"postgres-operator.crunchydata.com/pgbackrest-dedicated=," +
-			"postgres-operator.crunchydata.com/pgbackrest-host=",
-		expectedContainer: "pgbackrest",
-	}, {
-		desc: "repo host enabled",
-		cluster: &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{},
-					},
-				},
-			},
-		},
-		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
-			"postgres-operator.crunchydata.com/instance," +
-			"postgres-operator.crunchydata.com/role=master",
+			"postgres-operator.crunchydata.com/pgbackrest-dedicated=",
 		expectedContainer: "pgbackrest",
 	}, {
 		desc: "no repo host enabled",
@@ -1034,8 +1012,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		case "SELECTOR":
 			assert.Assert(t, env.Value == "postgres-operator.crunchydata.com/cluster=hippocluster,"+
 				"postgres-operator.crunchydata.com/pgbackrest=,"+
-				"postgres-operator.crunchydata.com/pgbackrest-dedicated=,"+
-				"postgres-operator.crunchydata.com/pgbackrest-host=")
+				"postgres-operator.crunchydata.com/pgbackrest-dedicated=")
 		}
 	}
 	// verify mounted configuration is present
@@ -1752,9 +1729,8 @@ func TestGetPGBackRestResources(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{
-							Dedicated: &v1beta1.DedicatedRepo{},
-						},
+						RepoHost: &v1beta1.PGBackRestRepoHost{},
+						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
 				},
 			},
@@ -1847,7 +1823,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 					// cleanup logic is sensitive the name of this resource
 					Name:      "keep-ssh-cm-ssh-config",
 					Namespace: namespace,
-					Labels:    naming.PGBackRestRepoHostLabels("keep-ssh-cm"),
+					Labels:    naming.PGBackRestDedicatedLabels("keep-ssh-cm"),
 				},
 				Data: map[string]string{},
 			},
@@ -1861,40 +1837,8 @@ func TestGetPGBackRestResources(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{
-							Dedicated: &v1beta1.DedicatedRepo{},
-						},
-					},
-				},
-			},
-		},
-		result: testResult{
-			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: true, sshSecretPresent: false,
-		},
-	}, {
-		desc: "repo host defined keep ssh configmap",
-		createResources: []client.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					// cleanup logic is sensitive the name of this resource
-					Name:      "keep-ssh-cm-repo-host-ssh-config",
-					Namespace: namespace,
-					Labels:    naming.PGBackRestRepoHostLabels("keep-ssh-cm-repo-host"),
-				},
-				Data: map[string]string{},
-			},
-		},
-		cluster: &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "keep-ssh-cm-repo-host",
-				Namespace: namespace,
-				UID:       types.UID(clusterUID),
-			},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{},
+						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
 				},
 			},
@@ -1911,7 +1855,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 					// cleanup logic is sensitive the name of this resource
 					Name:      "delete-ssh-cm-ssh-config",
 					Namespace: namespace,
-					Labels:    naming.PGBackRestRepoHostLabels("delete-ssh-cm"),
+					Labels:    naming.PGBackRestDedicatedLabels("delete-ssh-cm"),
 				},
 				Data: map[string]string{},
 			},
@@ -1940,7 +1884,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 					// cleanup logic is sensitive the name of this resource
 					Name:      "keep-ssh-secret-ssh",
 					Namespace: namespace,
-					Labels:    naming.PGBackRestRepoHostLabels("keep-ssh-secret"),
+					Labels:    naming.PGBackRestDedicatedLabels("keep-ssh-secret"),
 				},
 				Data: map[string][]byte{},
 			},
@@ -1954,40 +1898,8 @@ func TestGetPGBackRestResources(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{
-							Dedicated: &v1beta1.DedicatedRepo{},
-						},
-					},
-				},
-			},
-		},
-		result: testResult{
-			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: true,
-		},
-	}, {
-		desc: "repo host defined keep ssh secret",
-		createResources: []client.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					// cleanup logic is sensitive the name of this resource
-					Name:      "keep-ssh-secret-repo-host-ssh",
-					Namespace: namespace,
-					Labels:    naming.PGBackRestRepoHostLabels("keep-ssh-secret-repo-host"),
-				},
-				Data: map[string][]byte{},
-			},
-		},
-		cluster: &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "keep-ssh-secret-repo-host",
-				Namespace: namespace,
-				UID:       types.UID(clusterUID),
-			},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{},
+						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
 				},
 			},
@@ -2004,7 +1916,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 					// cleanup logic is sensitive the name of this resource
 					Name:      "delete-ssh-secret-ssh-secret",
 					Namespace: namespace,
-					Labels:    naming.PGBackRestRepoHostLabels("delete-ssh-secret"),
+					Labels:    naming.PGBackRestDedicatedLabels("delete-ssh-secret"),
 				},
 				Data: map[string][]byte{},
 			},

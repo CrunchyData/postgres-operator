@@ -22,25 +22,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// DedicatedRepo defines a pgBackRest dedicated repository host
-type DedicatedRepo struct {
-
-	// Resource requirements for the dedicated repository host
-	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
-
-	// Scheduling constraints of the Dedicated repo host pod.
-	// Changing this value causes repo host to restart.
-	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
-	// +optional
-	Affinity *corev1.Affinity `json:"affinity,omitempty"`
-
-	// Tolerations of a PgBackRest repo host pod. Changing this value causes a restart.
-	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
-	// +optional
-	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
-}
-
 // PostgresClusterSpec defines the desired state of PostgresCluster
 type PostgresClusterSpec struct {
 	// +optional

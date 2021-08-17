@@ -56,6 +56,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Global: map[string]string{"repo2-test": "config", "repo4-test": "config",
 						"repo3-test": "config"},
+					// By defining a "Volume" repo a dedicated repo host will be enabled
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name:   "repo1",
 						Volume: &v1beta1.RepoPVC{},
@@ -77,9 +78,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 							Region:   "region",
 						},
 					}},
-					RepoHost: &v1beta1.PGBackRestRepoHost{
-						Dedicated: &v1beta1.DedicatedRepo{},
-					},
+					RepoHost: &v1beta1.PGBackRestRepoHost{},
 				},
 			},
 		},

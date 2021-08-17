@@ -69,7 +69,7 @@ func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.Confi
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
-		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
+		naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
 	)
 
 	cm := v1.ConfigMap{
@@ -107,7 +107,7 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
 	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
-		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
+		naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
 	)
 
 	secret := v1.Secret{

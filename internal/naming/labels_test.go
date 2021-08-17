@@ -34,7 +34,6 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestConfig))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestDedicated))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepo))
-	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepoHost))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepoVolume))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestore))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestoreConfig))
@@ -187,18 +186,11 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 	pgBackRestDedicatedLabels := PGBackRestDedicatedLabels(clusterName)
 	assert.Equal(t, pgBackRestDedicatedLabels.Get(LabelCluster), clusterName)
 	assert.Check(t, pgBackRestDedicatedLabels.Has(LabelPGBackRest))
-	assert.Check(t, pgBackRestDedicatedLabels.Has(LabelPGBackRestRepoHost))
 	assert.Check(t, pgBackRestDedicatedLabels.Has(LabelPGBackRestDedicated))
 
 	// verify that the dedicated labels selector is created as expected
 	pgBackRestDedicatedSelector := PGBackRestDedicatedSelector(clusterName)
 	assert.Check(t, pgBackRestDedicatedSelector.Matches(pgBackRestDedicatedLabels))
-
-	// verify the labels that identify pgBackRest repository host resources
-	pgBackRestRepoHostLabels := PGBackRestRepoHostLabels(clusterName)
-	assert.Equal(t, pgBackRestRepoHostLabels.Get(LabelCluster), clusterName)
-	assert.Check(t, pgBackRestRepoHostLabels.Has(LabelPGBackRest))
-	assert.Check(t, pgBackRestRepoHostLabels.Has(LabelPGBackRestRepoHost))
 
 	// verify the labels that identify pgBackRest repository volume resources
 	pgBackRestRepoVolumeLabels := PGBackRestRepoVolumeLabels(clusterName, repoName)

@@ -1200,27 +1200,29 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 	template *v1.PodTemplateSpec, instance *appsv1.StatefulSet, repoPVCNames map[string]string) error {
 
-	addSSH := pgbackrest.RepoHostEnabled(cluster)
 	dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(cluster)
 	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
-	if addSSH {
+	if dedicatedRepoEnabled {
 		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
 			naming.PGBackRestRepoContainerName)
+		var resources v1.ResourceRequirements
+		if cluster.Spec.Backups.PGBackRest.RepoHost != nil {
+			resources = cluster.Spec.Backups.PGBackRest.RepoHost.Resources
+		}
 		if err := pgbackrest.AddSSHToPod(cluster, template, true,
-			cluster.Spec.Backups.PGBackRest.RepoHost.Resources,
-			naming.ContainerDatabase); err != nil {
-			return err
+			resources, naming.ContainerDatabase); err != nil {
+			return errors.WithStack(err)
 		}
 	}
 	if !dedicatedRepoEnabled {
 		if err := pgbackrest.AddRepoVolumesToPod(cluster, template, repoPVCNames,
 			pgBackRestConfigContainers...); err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 	if err := pgbackrest.AddConfigsToPod(cluster, template, instance.Name+".conf",
 		pgBackRestConfigContainers...); err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
