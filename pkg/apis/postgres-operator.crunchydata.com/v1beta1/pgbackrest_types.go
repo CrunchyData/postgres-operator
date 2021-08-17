@@ -126,7 +126,9 @@ type PGBackRestArchive struct {
 	// +listMapKey=name
 	Repos []PGBackRestRepo `json:"repos,omitempty"`
 
-	// Defines a pgBackRest repository host
+	// Defines configuration for a pgBackRest dedicated repository host.  This section is only
+	// applicable if at least one "volume" (i.e. PVC-based) repository is defined in the "repos"
+	// section, therefore enabling a dedicated repository host Deployment.
 	// +optional
 	RepoHost *PGBackRestRepoHost `json:"repoHost,omitempty"`
 
@@ -156,13 +158,20 @@ type PGBackRestManualBackup struct {
 // PGBackRestRepoHost represents a pgBackRest dedicated repository host
 type PGBackRestRepoHost struct {
 
-	// Defines a dedicated repository host configuration
+	// Scheduling constraints of the Dedicated repo host pod.
+	// Changing this value causes repo host to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 	// +optional
-	Dedicated *DedicatedRepo `json:"dedicated,omitempty"`
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
 	// Resource requirements for a pgBackRest repository host
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Tolerations of a PgBackRest repo host pod. Changing this value causes a restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// ConfigMap containing custom SSH configuration
 	// +optional

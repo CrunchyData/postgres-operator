@@ -53,10 +53,6 @@ const (
 	// repository
 	LabelPGBackRestRepo = labelPrefix + "pgbackrest-repo"
 
-	// LabelPGBackRestRepoHost is used to indicate that a resource is for a pgBackRest
-	// repository host
-	LabelPGBackRestRepoHost = labelPrefix + "pgbackrest-host"
-
 	// LabelPGBackRestRepoVolume is used to indicate that a resource for a pgBackRest
 	// repository
 	LabelPGBackRestRepoVolume = labelPrefix + "pgbackrest-volume"
@@ -224,26 +220,17 @@ func PGBackRestCronJobLabels(clusterName, repoName, backupType string) labels.Se
 
 // PGBackRestDedicatedLabels provides labels for a pgBackRest dedicated repository host
 func PGBackRestDedicatedLabels(clusterName string) labels.Set {
-	repoLabels := PGBackRestRepoHostLabels(clusterName)
+	commonLabels := PGBackRestLabels(clusterName)
 	operatorConfigLabels := map[string]string{
 		LabelPGBackRestDedicated: "",
 	}
-	return labels.Merge(repoLabels, operatorConfigLabels)
+	return labels.Merge(commonLabels, operatorConfigLabels)
 }
 
 // PGBackRestDedicatedSelector provides a selector for querying pgBackRest dedicated
 // repository host resources
 func PGBackRestDedicatedSelector(clusterName string) labels.Selector {
 	return PGBackRestDedicatedLabels(clusterName).AsSelector()
-}
-
-// PGBackRestRepoHostLabels the labels for a pgBackRest repository host.
-func PGBackRestRepoHostLabels(clusterName string) labels.Set {
-	commonLabels := PGBackRestLabels(clusterName)
-	repoHostLabels := map[string]string{
-		LabelPGBackRestRepoHost: "",
-	}
-	return labels.Merge(commonLabels, repoHostLabels)
 }
 
 // PGBackRestRepoVolumeLabels the labels for a pgBackRest repository volume.

@@ -144,7 +144,8 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 
 	sshConfigs := []v1.VolumeProjection{}
 	// stores all SSH configurations (ConfigMaps & Secrets)
-	if postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration == nil {
+	if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil ||
+		postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration == nil {
 		sshConfigs = append(sshConfigs, v1.VolumeProjection{
 			ConfigMap: &v1.ConfigMapProjection{
 				LocalObjectReference: v1.LocalObjectReference{
@@ -157,7 +158,8 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 			ConfigMap: postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration,
 		})
 	}
-	if postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret == nil {
+	if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil ||
+		postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret == nil {
 		sshConfigs = append(sshConfigs, v1.VolumeProjection{
 			Secret: &v1.SecretProjection{
 				LocalObjectReference: v1.LocalObjectReference{

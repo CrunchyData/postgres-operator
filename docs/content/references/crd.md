@@ -4223,9 +4223,9 @@ Defines a pgBackRest repository host
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicated">dedicated</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinity">affinity</a></b></td>
         <td>object</td>
-        <td>Defines a dedicated repository host configuration</td>
+        <td>Scheduling constraints of the Dedicated repo host pod. Changing this value causes repo host to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostresources">resources</a></b></td>
@@ -4242,40 +4242,8 @@ Defines a pgBackRest repository host
         <td>object</td>
         <td>Secret containing custom SSH keys</td>
         <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicated">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohost">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Defines a dedicated repository host configuration
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinity">affinity</a></b></td>
-        <td>object</td>
-        <td>Scheduling constraints of the Dedicated repo host pod. Changing this value causes repo host to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
-        <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedresources">resources</a></b></td>
-        <td>object</td>
-        <td>Resource requirements for the dedicated repository host</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedtolerationsindex">tolerations</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohosttolerationsindex">tolerations</a></b></td>
         <td>[]object</td>
         <td>Tolerations of a PgBackRest repo host pod. Changing this value causes a restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
         <td>false</td>
@@ -4283,9 +4251,9 @@ Defines a dedicated repository host configuration
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinity">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicated">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinity">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohost">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4302,17 +4270,17 @@ Scheduling constraints of the Dedicated repo host pod. Changing this value cause
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinity">nodeAffinity</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinity">nodeAffinity</a></b></td>
         <td>object</td>
         <td>Describes node affinity scheduling rules for the pod.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinity">podAffinity</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinity">podAffinity</a></b></td>
         <td>object</td>
         <td>Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinity">podAntiAffinity</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinity">podAntiAffinity</a></b></td>
         <td>object</td>
         <td>Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).</td>
         <td>false</td>
@@ -4320,9 +4288,9 @@ Scheduling constraints of the Dedicated repo host pod. Changing this value cause
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinity">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinity">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4339,12 +4307,12 @@ Describes node affinity scheduling rules for the pod.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
         <td>[]object</td>
         <td>The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node matches the corresponding matchExpressions; the node(s) with the highest sum are the most preferred.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
         <td>object</td>
         <td>If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to an update), the system may or may not try to eventually evict the pod from its node.</td>
         <td>false</td>
@@ -4352,9 +4320,9 @@ Describes node affinity scheduling rules for the pod.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4371,7 +4339,7 @@ An empty preferred scheduling term matches all objects with implicit weight 0 (i
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">preference</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">preference</a></b></td>
         <td>object</td>
         <td>A node selector term, associated with the corresponding weight.</td>
         <td>true</td>
@@ -4384,9 +4352,9 @@ An empty preferred scheduling term matches all objects with implicit weight 0 (i
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4403,12 +4371,12 @@ A node selector term, associated with the corresponding weight.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">matchExpressions</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">matchExpressions</a></b></td>
         <td>[]object</td>
         <td>A list of node selector requirements by node's labels.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">matchFields</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">matchFields</a></b></td>
         <td>[]object</td>
         <td>A list of node selector requirements by node's fields.</td>
         <td>false</td>
@@ -4416,9 +4384,9 @@ A node selector term, associated with the corresponding weight.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4453,9 +4421,9 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4490,9 +4458,9 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4509,7 +4477,7 @@ If the affinity requirements specified by this field are not met at scheduling t
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">nodeSelectorTerms</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">nodeSelectorTerms</a></b></td>
         <td>[]object</td>
         <td>Required. A list of node selector terms. The terms are ORed.</td>
         <td>true</td>
@@ -4517,9 +4485,9 @@ If the affinity requirements specified by this field are not met at scheduling t
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4536,12 +4504,12 @@ A null or empty node selector term matches no objects. The requirements of them 
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">matchExpressions</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">matchExpressions</a></b></td>
         <td>[]object</td>
         <td>A list of node selector requirements by node's labels.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">matchFields</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">matchFields</a></b></td>
         <td>[]object</td>
         <td>A list of node selector requirements by node's fields.</td>
         <td>false</td>
@@ -4549,9 +4517,9 @@ A null or empty node selector term matches no objects. The requirements of them 
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4586,9 +4554,9 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4623,9 +4591,9 @@ A node selector requirement is a selector that contains values, a key, and an op
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinity">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinity">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4642,12 +4610,12 @@ Describes pod affinity scheduling rules (e.g. co-locate this pod in the same nod
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
         <td>[]object</td>
         <td>The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the node(s) with the highest sum are the most preferred.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
         <td>[]object</td>
         <td>If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to a pod label update), the system may or may not try to eventually evict the pod from its node. When there are multiple elements, the lists of nodes corresponding to each podAffinityTerm are intersected, i.e. all terms must be satisfied.</td>
         <td>false</td>
@@ -4655,9 +4623,9 @@ Describes pod affinity scheduling rules (e.g. co-locate this pod in the same nod
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4674,7 +4642,7 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">podAffinityTerm</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">podAffinityTerm</a></b></td>
         <td>object</td>
         <td>Required. A pod affinity term, associated with the corresponding weight.</td>
         <td>true</td>
@@ -4687,9 +4655,9 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4706,7 +4674,7 @@ Required. A pod affinity term, associated with the corresponding weight.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
@@ -4724,9 +4692,9 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4743,7 +4711,7 @@ A label query over a set of resources, in this case pods.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
         <td>[]object</td>
         <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
         <td>false</td>
@@ -4756,9 +4724,9 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4793,9 +4761,9 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4812,7 +4780,7 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
@@ -4830,9 +4798,9 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4849,7 +4817,7 @@ A label query over a set of resources, in this case pods.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
         <td>[]object</td>
         <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
         <td>false</td>
@@ -4862,9 +4830,9 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4899,9 +4867,9 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinity">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinity">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4918,12 +4886,12 @@ Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
         <td>[]object</td>
         <td>The scheduler will prefer to schedule pods to nodes that satisfy the anti-affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling anti-affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the node(s) with the highest sum are the most preferred.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
         <td>[]object</td>
         <td>If the anti-affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the anti-affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to a pod label update), the system may or may not try to eventually evict the pod from its node. When there are multiple elements, the lists of nodes corresponding to each podAffinityTerm are intersected, i.e. all terms must be satisfied.</td>
         <td>false</td>
@@ -4931,9 +4899,9 @@ Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4950,7 +4918,7 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">podAffinityTerm</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">podAffinityTerm</a></b></td>
         <td>object</td>
         <td>Required. A pod affinity term, associated with the corresponding weight.</td>
         <td>true</td>
@@ -4963,9 +4931,9 @@ The weights of all of the matched WeightedPodAffinityTerm fields are added per-n
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4982,7 +4950,7 @@ Required. A pod affinity term, associated with the corresponding weight.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
@@ -5000,9 +4968,9 @@ Required. A pod affinity term, associated with the corresponding weight.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -5019,7 +4987,7 @@ A label query over a set of resources, in this case pods.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
         <td>[]object</td>
         <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
         <td>false</td>
@@ -5032,9 +5000,9 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -5069,9 +5037,9 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinity">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -5088,7 +5056,7 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
@@ -5106,9 +5074,9 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -5125,7 +5093,7 @@ A label query over a set of resources, in this case pods.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
         <td>[]object</td>
         <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
         <td>false</td>
@@ -5138,9 +5106,9 @@ A label query over a set of resources, in this case pods.
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicatedaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -5171,85 +5139,6 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td>string</td>
         <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
         <td>true</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedresources">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.resources
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicated">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Resource requirements for the dedicated repository host
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestrepohostdedicatedtolerationsindex">
-  PostgresCluster.spec.backups.pgbackrest.repoHost.dedicated.tolerations[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostdedicated">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>effect</b></td>
-        <td>string</td>
-        <td>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>operator</b></td>
-        <td>string</td>
-        <td>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>tolerationSeconds</b></td>
-        <td>integer</td>
-        <td>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>value</b></td>
-        <td>string</td>
-        <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
-        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -5430,6 +5319,53 @@ Maps a string key to a path within a volume.
         <td>string</td>
         <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrepohosttolerationsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.tolerations[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohost">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>effect</b></td>
+        <td>string</td>
+        <td>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tolerationSeconds</b></td>
+        <td>integer</td>
+        <td>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

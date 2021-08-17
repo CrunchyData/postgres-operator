@@ -271,19 +271,8 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			delete = false
 		case hasLabel(naming.LabelPGBackRestDedicated):
 			// If a dedicated repo host resource and a dedicated repo host is enabled, then
-			// add to the slice and do not delete.  Note that dedicated repo host resources are
-			// checked before repo host resources since both share the same "repo-host" label, and
-			// we need to distinguish (and separately handle) dedicated repo host resources.
+			// add to the slice and do not delete.
 			if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
-				ownedNoDelete = append(ownedNoDelete, owned)
-				delete = false
-			}
-		case hasLabel(naming.LabelPGBackRestRepoHost):
-			// If a repo host is enabled and this is a repo host resource, then add to the
-			// slice and do not delete.  Note that dedicated repo host resources are checked
-			// before repo host resources since both share the same "repo-host" label, and
-			// we need to distinguish (and separately handle) dedicated repo host resources.
-			if pgbackrest.RepoHostEnabled(postgresCluster) {
 				ownedNoDelete = append(ownedNoDelete, owned)
 				delete = false
 			}
@@ -532,12 +521,15 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 					Labels:      labels,
 					Annotations: annotations,
 				},
-				Spec: v1.PodSpec{
-					Affinity:    postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Affinity,
-					Tolerations: postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Tolerations,
-				},
 			},
 		},
+	}
+
+	if postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil {
+		repo.Spec.Template.Spec.Affinity = postgresCluster.Spec.Backups.PGBackRest.RepoHost.Affinity
+	}
+	if postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil {
+		repo.Spec.Template.Spec.Tolerations = postgresCluster.Spec.Backups.PGBackRest.RepoHost.Tolerations
 	}
 
 	// Set the image pull secrets, if any exist.
@@ -556,9 +548,13 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	repo.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 
+	var resources v1.ResourceRequirements
+	if postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil {
+		resources = postgresCluster.Spec.Backups.PGBackRest.RepoHost.Resources
+	}
 	// add ssh pod info
 	if err := pgbackrest.AddSSHToPod(postgresCluster, &repo.Spec.Template, true,
-		postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated.Resources); err != nil {
+		resources); err != nil {
 		return nil, errors.WithStack(err)
 	}
 	// add pgBackRest repo volumes to pod
@@ -1056,7 +1052,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		return errors.WithStack(err)
 	}
 
-	if pgbackrest.RepoHostEnabled(sourceCluster) {
+	if pgbackrest.DedicatedRepoHostEnabled(sourceCluster) {
 		// add ssh configs to template
 		if err := pgbackrest.AddSSHToPod(sourceCluster, &restoreJob.Spec.Template, false,
 			dataSource.Resources,
@@ -1173,8 +1169,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 
 	var repoHost *appsv1.StatefulSet
 	var repoHostName string
-	dedicatedEnabled := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil) &&
-		(postgresCluster.Spec.Backups.PGBackRest.RepoHost.Dedicated != nil)
+	dedicatedEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
 	if dedicatedEnabled {
 		// reconcile the pgbackrest repository host
 		repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources)
@@ -1496,7 +1491,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 		repoHostName = repoHosts.Items[0].GetName()
 	}
 	sourceSSHConfig := &v1.Secret{}
-	if pgbackrest.RepoHostEnabled(origSourceCluster) {
+	if pgbackrest.DedicatedRepoHostEnabled(origSourceCluster) {
 		if err := r.Client.Get(ctx,
 			naming.AsObjectKey(naming.PGBackRestSSHSecret(origSourceCluster)),
 			sourceSSHConfig); err != nil {
@@ -1581,8 +1576,7 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 		return errors.WithStack(err)
 	}
 
-	repoHostConfigured := (postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil)
-
+	repoHostConfigured := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
 	if !repoHostConfigured {
 		log.V(1).Info("skipping SSH reconciliation, no repo hosts configured")
 		return nil
@@ -2363,7 +2357,6 @@ func getPGBackRestExecSelector(
 	// enabled.  If a dedicated repo host is enabled, then the pgBackRest command will be
 	// run there.  Otherwise it will be run on the current primary.
 	dedicatedEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
-	repoHostEnabled := pgbackrest.RepoHostEnabled(postgresCluster)
 	var err error
 	var podSelector labels.Selector
 	var containerName string
@@ -2376,13 +2369,7 @@ func getPGBackRestExecSelector(
 		if err != nil {
 			return nil, "", err
 		}
-		// There will only be a pgBackRest container if using a repo host.  Otherwise
-		// the pgBackRest command will be run in the database container.
-		if repoHostEnabled {
-			containerName = naming.PGBackRestRepoContainerName
-		} else {
-			containerName = naming.ContainerDatabase
-		}
+		containerName = naming.ContainerDatabase
 	}
 
 	return podSelector, containerName, nil
