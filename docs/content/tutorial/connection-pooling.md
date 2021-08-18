@@ -209,4 +209,4 @@ Note that setting a toleration does not necessarily mean that the PgBouncer inst
 
 ## Next Steps
 
-Now that we can enable connection pooling in a cluster, let’s explore how to [manually restart PostgreSQL]({{< relref "manual-restart.md" >}}) using PGO. How do we do that?
+Now that we can enable connection pooling in a cluster, let’s explore some [administrative tasks]({{< relref "administrative-tasks.md" >}}) such as manually restarting PostgreSQL using PGO. How do we do that?
