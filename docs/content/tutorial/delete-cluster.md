@@ -30,7 +30,7 @@ This keeps the pgBackRest PVC which follows the pattern `<clusterName>-hippo-pgb
 
 ## Keep the PostgreSQL Data Directory
 
-You may also want to delete your PostgreSQL cluster data directory, which is the core of your database, but remove any actively running Pods. This can be accomplished with the `--keep-data` flag. For example, to keep the data directory of the `hippo` cluster:
+You may also want to keep your PostgreSQL cluster data directory, which is the core of your database, but remove any actively running Pods. This can be accomplished with the `--keep-data` flag. For example, to keep the data directory of the `hippo` cluster:
 
 ```
 pgo delete cluster hippo --keep-data
