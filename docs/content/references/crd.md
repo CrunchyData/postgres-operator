@@ -3759,7 +3759,7 @@ pgBackRest archive configuration
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohost">repoHost</a></b></td>
         <td>object</td>
-        <td>Defines a pgBackRest repository host</td>
+        <td>Defines configuration for a pgBackRest dedicated repository host.  This section is only applicable if at least one "volume" (i.e. PVC-based) repository is defined in the "repos" section, therefore enabling a dedicated repository host Deployment.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestreposindex">repos</a></b></td>
@@ -4211,7 +4211,7 @@ Metadata contains metadata for PostgresCluster resources
 
 
 
-Defines a pgBackRest repository host
+Defines configuration for a pgBackRest dedicated repository host.  This section is only applicable if at least one "volume" (i.e. PVC-based) repository is defined in the "repos" section, therefore enabling a dedicated repository host Deployment.
 
 <table>
     <thead>
