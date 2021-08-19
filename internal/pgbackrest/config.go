@@ -43,7 +43,12 @@ const (
 	// configmap key references
 	cmJobKey     = "pgbackrest_job.conf"
 	cmPrimaryKey = "pgbackrest_primary.conf"
-	// CMRepoKey is the name of the configuration file for a pgBackRest dedicated repository host
+
+	// CMInstanceKey is the name of the pgBackRest configuration file for a PostgreSQL instance
+	CMInstanceKey = "pgbackrest_instance.conf"
+
+	// CMRepoKey is the name of the pgBackRest configuration file for a pgBackRest dedicated
+	// repository host
 	CMRepoKey = "pgbackrest_repo.conf"
 
 	// ConfigDir is the pgBackRest configuration directory
@@ -94,23 +99,10 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	// Port will always be populated, since the API will set a default of 5432 if not provided
 	pgPort := *postgresCluster.Spec.Port
-	for i, name := range instanceNames {
-		otherInstances := make([]string, 0)
-
-		// TODO (andrewlecuyer): Is backup from standby possible when using a dedicated repo host?
-		// Either way, do we care about this?  Removing per-instance configs means configuration
-		// is much simplified, something that I think are looking for.
-		if addDedicatedHost {
-			otherInstances = make([]string, len(instanceNames))
-			copy(otherInstances, instanceNames)
-			otherInstances = append(otherInstances[:i], otherInstances[i+1:]...)
-		}
-		cm.Data[name+".conf"] = getConfigString(
-			populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName,
-				pgdataDir, pgPort, otherInstances,
-				postgresCluster.Spec.Backups.PGBackRest.Repos,
-				postgresCluster.Spec.Backups.PGBackRest.Global))
-	}
+	cm.Data[CMInstanceKey] = getConfigString(
+		populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName,
+			pgdataDir, pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
+			postgresCluster.Spec.Backups.PGBackRest.Global))
 
 	if addDedicatedHost && repoHostName != "" {
 		cm.Data[CMRepoKey] = getConfigString(
@@ -217,7 +209,7 @@ mv "${pgdata}" "${pgdata}_bootstrap"`
 // populatePGInstanceConfigurationMap returns a map representing the pgBackRest configuration for
 // a PostgreSQL instance
 func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName, pgdataDir string,
-	pgPort int32, otherPGHostNames []string, repos []v1beta1.PGBackRestRepo,
+	pgPort int32, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
@@ -244,7 +236,9 @@ func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostN
 			repoConfigs = getExternalRepoConfigs(repo)
 		}
 
-		if repoHostName != "" {
+		// Only "volume" (i.e. PVC-based) repos should ever have a repo host configured.  This
+		// means cloud-based repos (S3, GCS or Azure) should not have a repo host configured.
+		if repoHostName != "" && repo.Volume != nil {
 			pgBackRestConfig["global"][repo.Name+"-host"] = repoHostName + "-0." + serviceName +
 				"." + serviceNamespace + ".svc." +
 				naming.KubernetesClusterDomain(context.Background())
@@ -261,25 +255,11 @@ func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostN
 		pgBackRestConfig["global"][option] = val
 	}
 
-	i := 1
-	// Now add all PG instances to the stanza section. Make sure the local PG host is always
+	// Now add the local PG instance to the stanza section. The local PG host must always be
 	// index 1: https://github.com/pgbackrest/pgbackrest/issues/1197#issuecomment-708381800
-	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
-	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = fmt.Sprint(pgPort)
-	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = postgres.SocketDirectory
-	i++
-
-	if len(otherPGHostNames) == 0 {
-		return pgBackRestConfig
-	}
-
-	for _, name := range otherPGHostNames {
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i)] = name + "-0." + serviceName
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = fmt.Sprint(pgPort)
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = postgres.SocketDirectory
-		i++
-	}
+	pgBackRestConfig["stanza"]["pg1-path"] = pgdataDir
+	pgBackRestConfig["stanza"]["pg1-port"] = fmt.Sprint(pgPort)
+	pgBackRestConfig["stanza"]["pg1-socket-path"] = postgres.SocketDirectory
 
 	return pgBackRestConfig
 }
