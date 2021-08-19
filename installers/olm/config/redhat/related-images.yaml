@@ -13,20 +13,20 @@ spec:
       containers:
         - name: operator
           env:
-            - { name: RELATED_IMAGE_PGBACKREST, value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbackrest:ubi8-2.33-1' }
-            - { name: RELATED_IMAGE_PGBOUNCER,  value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbouncer:ubi8-1.15-1' }
-            - { name: RELATED_IMAGE_PGEXPORTER, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.1-0' }
+            - { name: RELATED_IMAGE_PGBACKREST, value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbackrest:ubi8-2.33-2' }
+            - { name: RELATED_IMAGE_PGBOUNCER,  value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbouncer:ubi8-1.15-2' }
+            - { name: RELATED_IMAGE_PGEXPORTER, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.2-0' }
 
-            - { name: RELATED_IMAGE_POSTGRES_10, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-10.17-1' }
-            - { name: RELATED_IMAGE_POSTGRES_11, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-11.12-1' }
-            - { name: RELATED_IMAGE_POSTGRES_12, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-12.7-1' }
-            - { name: RELATED_IMAGE_POSTGRES_13, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-13.3-1' }
+            - { name: RELATED_IMAGE_POSTGRES_10, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-10.18-0' }
+            - { name: RELATED_IMAGE_POSTGRES_11, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-11.13-0' }
+            - { name: RELATED_IMAGE_POSTGRES_12, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-12.8-0' }
+            - { name: RELATED_IMAGE_POSTGRES_13, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-ha:ubi8-13.4-0' }
 
-            - { name: RELATED_IMAGE_POSTGRES_10_GIS_2.3, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-10.17-2.3-1' }
-            - { name: RELATED_IMAGE_POSTGRES_10_GIS_2.4, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-10.17-2.4-1' }
-            - { name: RELATED_IMAGE_POSTGRES_11_GIS_2.4, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-11.12-2.4-1' }
-            - { name: RELATED_IMAGE_POSTGRES_11_GIS_2.5, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-11.12-2.5-1' }
-            - { name: RELATED_IMAGE_POSTGRES_12_GIS_2.5, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-12.7-2.5-1' }
-            - { name: RELATED_IMAGE_POSTGRES_12_GIS_3.0, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-12.7-3.0-1' }
-            - { name: RELATED_IMAGE_POSTGRES_13_GIS_3.0, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-13.3-3.0-1' }
-            - { name: RELATED_IMAGE_POSTGRES_13_GIS_3.1, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-13.3-3.1-1' }
+            - { name: RELATED_IMAGE_POSTGRES_10_GIS_2.3, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-10.18-2.3-0' }
+            - { name: RELATED_IMAGE_POSTGRES_10_GIS_2.4, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-10.18-2.4-0' }
+            - { name: RELATED_IMAGE_POSTGRES_11_GIS_2.4, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-11.13-2.4-0' }
+            - { name: RELATED_IMAGE_POSTGRES_11_GIS_2.5, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-11.13-2.5-0' }
+            - { name: RELATED_IMAGE_POSTGRES_12_GIS_2.5, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-12.8-2.5-0' }
+            - { name: RELATED_IMAGE_POSTGRES_12_GIS_3.0, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-12.8-3.0-0' }
+            - { name: RELATED_IMAGE_POSTGRES_13_GIS_3.0, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-13.4-3.0-0' }
+            - { name: RELATED_IMAGE_POSTGRES_13_GIS_3.1, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis-ha:ubi8-13.4-3.1-0' }

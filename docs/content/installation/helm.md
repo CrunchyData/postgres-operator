@@ -39,7 +39,7 @@ For instance, it might be necessary to customize the image tags that are utilize
 ```yaml
 image:
   repository: registry.developers.crunchydata.com/crunchydata
-  tag: "ubi8-5.0.1-0"
+  tag: "ubi8-5.0.2-0"
 ```
 
 Please note that the `values.yaml` file is located in `helm/install`.

@@ -25,7 +25,7 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
   postgresVersion: 13
   instances:
     - name: instance1
@@ -42,7 +42,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
       repoHost:
         dedicated: {}
       repos:
@@ -106,7 +106,7 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
   postgresVersion: 13
   instances:
     - name: instance1
@@ -123,7 +123,7 @@ spec:
             storage: 10Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
       repoHost:
         dedicated: {}
       repos:
