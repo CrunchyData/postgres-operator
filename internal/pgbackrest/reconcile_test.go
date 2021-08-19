@@ -138,7 +138,6 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 func TestAddConfigsToPod(t *testing.T) {
 
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
-	confFile := "test.conf"
 
 	testCases := []struct {
 		configs    []v1.VolumeProjection
@@ -174,7 +173,8 @@ func TestAddConfigsToPod(t *testing.T) {
 				},
 			}
 
-			err := AddConfigsToPod(postgresCluster, template, confFile, getContainerNames(tc.containers)...)
+			err := AddConfigsToPod(postgresCluster, template, CMInstanceKey,
+				getContainerNames(tc.containers)...)
 			assert.NilError(t, err)
 
 			// check that the backrest config volume exists

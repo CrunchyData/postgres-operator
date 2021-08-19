@@ -1050,7 +1050,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 	// Add pgBackRest containers, volumes, etc. to the instance Pod spec
 	if err == nil {
-		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, instance, repoPVCNames)
+		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, repoPVCNames)
 	}
 
 	// Add pgMonitor resources to the instance Pod spec
@@ -1198,7 +1198,7 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 // configured, and then mounting the proper pgBackRest configuration resources (ConfigMaps
 // and Secrets)
 func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
-	template *v1.PodTemplateSpec, instance *appsv1.StatefulSet, repoPVCNames map[string]string) error {
+	template *v1.PodTemplateSpec, repoPVCNames map[string]string) error {
 
 	dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(cluster)
 	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
@@ -1220,7 +1220,7 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 			return errors.WithStack(err)
 		}
 	}
-	if err := pgbackrest.AddConfigsToPod(cluster, template, instance.Name+".conf",
+	if err := pgbackrest.AddConfigsToPod(cluster, template, pgbackrest.CMInstanceKey,
 		pgBackRestConfigContainers...); err != nil {
 		return errors.WithStack(err)
 	}

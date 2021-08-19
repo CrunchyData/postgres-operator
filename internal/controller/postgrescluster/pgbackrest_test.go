@@ -94,20 +94,10 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 						"repo3-test": "config", "repo4-test": "config"},
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
-						BackupSchedules: &v1beta1.PGBackRestBackupSchedules{
-							Full:         &testCronSchedule,
-							Differential: &testCronSchedule,
-							Incremental:  &testCronSchedule,
-						},
-						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-								AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-								Resources: v1.ResourceRequirements{
-									Requests: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceStorage: resource.MustParse("1Gi"),
-									},
-								},
-							},
+						S3: &v1beta1.RepoS3{
+							Bucket:   "bucket",
+							Endpoint: "endpoint",
+							Region:   "region",
 						},
 					}, {
 						Name: "repo2",
@@ -133,6 +123,19 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 	}
 
 	if includeDedicatedRepo {
+		postgresCluster.Spec.Backups.PGBackRest.Repos[0] = v1beta1.PGBackRestRepo{
+			Name: "repo1",
+			Volume: &v1beta1.RepoPVC{
+				VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+					AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+					Resources: v1.ResourceRequirements{
+						Requests: map[v1.ResourceName]resource.Quantity{
+							v1.ResourceStorage: resource.MustParse("1Gi"),
+						},
+					},
+				},
+			},
+		}
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
 			Resources: corev1.ResourceRequirements{},
 			Affinity:  &corev1.Affinity{},
@@ -140,6 +143,12 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 				{Key: "woot"},
 			},
 		}
+	}
+	// always add schedule info to the first repo
+	postgresCluster.Spec.Backups.PGBackRest.Repos[0].BackupSchedules = &v1beta1.PGBackRestBackupSchedules{
+		Full:         &testCronSchedule,
+		Differential: &testCronSchedule,
+		Incremental:  &testCronSchedule,
 	}
 
 	return postgresCluster
@@ -419,20 +428,18 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 		assert.Assert(t, len(config.Data) > 0)
 
-		for _, instance := range instances.forCluster {
-			var instanceConfFound, dedicatedRepoConfFound bool
-			for k, v := range config.Data {
-				if v != "" {
-					if k == instance.Name+".conf" {
-						instanceConfFound = true
-					} else if k == pgbackrest.CMRepoKey {
-						dedicatedRepoConfFound = true
-					}
+		var instanceConfFound, dedicatedRepoConfFound bool
+		for k, v := range config.Data {
+			if v != "" {
+				if k == pgbackrest.CMInstanceKey {
+					instanceConfFound = true
+				} else if k == pgbackrest.CMRepoKey {
+					dedicatedRepoConfFound = true
 				}
 			}
-			assert.Check(t, instanceConfFound)
-			assert.Check(t, dedicatedRepoConfFound)
 		}
+		assert.Check(t, instanceConfFound)
+		assert.Check(t, dedicatedRepoConfFound)
 
 		sshConfig := &v1.ConfigMap{}
 		if err := tClient.Get(ctx, types.NamespacedName{
@@ -503,7 +510,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 
 		requeue := r.reconcileScheduledBackups(context.Background(),
-			postgresCluster, instances, serviceAccount)
+			postgresCluster, serviceAccount)
 		assert.Assert(t, !requeue)
 
 		returnedCronJob := &batchv1beta1.CronJob{}
@@ -569,7 +576,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 			postgresCluster.Spec.Standby = nil
 
 			requeue := r.reconcileScheduledBackups(ctx,
-				postgresCluster, instances, serviceAccount)
+				postgresCluster, serviceAccount)
 			assert.Assert(t, !requeue)
 
 			assert.NilError(t, tClient.Get(ctx, types.NamespacedName{
@@ -587,7 +594,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 			}
 
 			requeue := r.reconcileScheduledBackups(ctx,
-				postgresCluster, instances, serviceAccount)
+				postgresCluster, serviceAccount)
 			assert.Assert(t, !requeue)
 
 			assert.NilError(t, tClient.Get(ctx, types.NamespacedName{
@@ -701,9 +708,15 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
+
 	instances := newObservedInstances(postgresCluster, nil, []corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{"status": `"role":"master"`},
+			Labels: map[string]string{
+				naming.LabelCluster:  postgresCluster.GetName(),
+				naming.LabelInstance: "",
+				naming.LabelRole:     naming.RolePatroniLeader,
+			},
 		},
 	}})
 
@@ -717,27 +730,26 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		return nil
 	}
 
-	// first add a fake dedicated repo pod to the env
-	repoHost := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-repo-host",
-			Namespace: namespace,
-			Labels:    naming.PGBackRestDedicatedLabels(clusterName),
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{{Name: "test", Image: "test"}},
-		},
-	}
-	assert.NilError(t, r.Client.Create(ctx, repoHost))
+	// primaryMeta := naming.GenerateInstance(postgresCluster,
+	// 	&v1beta1.PostgresInstanceSetSpec{Name: "instance1"})
+	// // first add a fake primary to the env since the primary is where stanzas are always
+	// // created for all configured repos
+	// repoHost := &corev1.Pod{
+	// 	ObjectMeta: primaryMeta,
+	// 	Spec: v1.PodSpec{
+	// 		Containers: []v1.Container{{Name: "test", Image: "test"}},
+	// 	},
+	// }
+	// assert.NilError(t, r.Client.Create(ctx, repoHost))
 
-	err := wait.Poll(time.Second/2, Scale(time.Second*3), func() (bool, error) {
-		if err := r.Client.Get(ctx,
-			client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
-			return false, nil
-		}
-		return true, nil
-	})
-	assert.NilError(t, err)
+	// err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
+	// 	if err := r.Client.Get(ctx,
+	// 		client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
+	// 		return false, nil
+	// 	}
+	// 	return true, nil
+	// })
+	// assert.NilError(t, err)
 
 	// now verify a stanza create success
 	r.PodExec = stanzaCreateSuccess
@@ -825,36 +837,48 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 
 	testCases := []struct {
 		cluster           *v1beta1.PostgresCluster
+		repoName          string
 		desc              string
 		expectedSelector  string
 		expectedContainer string
 	}{{
-		desc: "dedicated repo host enabled",
+		desc: "volume repo defined dedicated repo host enabled",
 		cluster: &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						RepoHost: &v1beta1.PGBackRestRepoHost{},
-						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
+						Repos: []v1beta1.PGBackRestRepo{{
+							Name:   "repo1",
+							Volume: &v1beta1.RepoPVC{},
+						}},
 					},
 				},
 			},
 		},
+		repoName: "repo1",
 		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
 			"postgres-operator.crunchydata.com/pgbackrest=," +
 			"postgres-operator.crunchydata.com/pgbackrest-dedicated=",
 		expectedContainer: "pgbackrest",
 	}, {
-		desc: "no repo host enabled",
+		desc: "cloud repo defined no repo host enabled",
 		cluster: &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{},
+					PGBackRest: v1beta1.PGBackRestArchive{
+						RepoHost: &v1beta1.PGBackRestRepoHost{},
+						Repos: []v1beta1.PGBackRestRepo{{
+							Name: "repo1",
+							S3:   &v1beta1.RepoS3{},
+						}},
+					},
 				},
 			},
 		},
+		repoName: "repo1",
 		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
 			"postgres-operator.crunchydata.com/instance," +
 			"postgres-operator.crunchydata.com/role=master",
@@ -863,7 +887,7 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			selector, container, err := getPGBackRestExecSelector(tc.cluster)
+			selector, container, err := getPGBackRestExecSelector(tc.cluster, tc.repoName)
 			assert.NilError(t, err)
 			assert.Assert(t, selector.String() == tc.expectedSelector)
 			assert.Assert(t, container == tc.expectedContainer)
@@ -905,30 +929,13 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	instances := newObservedInstances(postgresCluster, nil, []corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{"status": `"role":"master"`},
+			Labels: map[string]string{
+				naming.LabelCluster:  postgresCluster.GetName(),
+				naming.LabelInstance: "",
+				naming.LabelRole:     naming.RolePatroniLeader,
+			},
 		},
 	}})
-
-	// first add a fake dedicated repo pod to the env
-	repoHost := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-repo-host",
-			Namespace: namespace,
-			Labels:    naming.PGBackRestDedicatedLabels(clusterName),
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{{Name: "test", Image: "test"}},
-		},
-	}
-	assert.NilError(t, r.Client.Create(ctx, repoHost))
-
-	err := wait.Poll(time.Second/2, Scale(time.Second*3), func() (bool, error) {
-		if err := r.Client.Get(ctx,
-			client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
-			return false, nil
-		}
-		return true, nil
-	})
-	assert.NilError(t, err)
 
 	meta.SetStatusCondition(&postgresCluster.Status.Conditions, metav1.Condition{
 		ObservedGeneration: postgresCluster.GetGeneration(),
@@ -955,7 +962,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "hippo-sa"},
 	}
 
-	err = r.reconcileReplicaCreateBackup(ctx, postgresCluster, instances,
+	err := r.reconcileReplicaCreateBackup(ctx, postgresCluster, instances,
 		[]*batchv1.Job{}, sa, configHash, replicaCreateRepo)
 	assert.NilError(t, err)
 
@@ -2920,17 +2927,6 @@ func TestReconcileScheduledBackups(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "hippo-sa"},
 	}
 
-	instances := &observedInstances{
-		forCluster: []*Instance{{
-			Name: "instance1",
-			Pods: []*v1.Pod{{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
-				},
-			}},
-		}},
-	}
-
 	testCases := []struct {
 		// a description of the test
 		testDesc string
@@ -3023,20 +3019,6 @@ func TestReconcileScheduledBackups(t *testing.T) {
 			expectReconcile:     false,
 			expectRequeue:       false,
 			expectedEventReason: "InvalidBackupRepo",
-		}, {
-			testDesc: "no primary defined, should not reconcile, requeue true",
-			clusterConditions: map[string]metav1.ConditionStatus{
-				ConditionRepoHostReady: metav1.ConditionTrue,
-				ConditionReplicaCreate: metav1.ConditionTrue,
-			},
-			status: &v1beta1.PostgresClusterStatus{
-				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
-				PGBackRest: &v1beta1.PGBackRestStatus{
-					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
-			},
-			instances:       &observedInstances{},
-			expectReconcile: false,
-			expectRequeue:   true,
 		}}
 
 	for _, dedicated := range []bool{true, false} {
@@ -3069,9 +3051,9 @@ func TestReconcileScheduledBackups(t *testing.T) {
 
 				var requeue bool
 				if tc.instances != nil {
-					requeue = r.reconcileScheduledBackups(ctx, postgresCluster, tc.instances, sa)
+					requeue = r.reconcileScheduledBackups(ctx, postgresCluster, sa)
 				} else {
-					requeue = r.reconcileScheduledBackups(ctx, postgresCluster, instances, sa)
+					requeue = r.reconcileScheduledBackups(ctx, postgresCluster, sa)
 				}
 
 				if !tc.expectReconcile && !tc.expectRequeue {

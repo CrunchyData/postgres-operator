@@ -306,13 +306,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		},
 	}
 
-	instance := &appsv1.StatefulSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "hippo-instance-abc",
-			Namespace: namespace,
-		},
-	}
-
 	testCases := []struct {
 		repoHost  *v1beta1.PGBackRestRepoHost
 		sshConfig *v1.ConfigMapProjection
@@ -397,7 +390,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 				}
 			}
 
-			err := addPGBackRestToInstancePodSpec(postgresCluster, template, instance, tc.testMap)
+			err := addPGBackRestToInstancePodSpec(postgresCluster, template, tc.testMap)
 			assert.NilError(t, err)
 
 			// if a repo host is configured, then verify SSH is enabled
