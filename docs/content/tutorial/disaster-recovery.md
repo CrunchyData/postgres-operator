@@ -43,7 +43,7 @@ spec:
     postgresCluster:
       clusterName: hippo
       repoName: repo1
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
   postgresVersion: 13
   instances:
     - dataVolumeClaimSpec:
@@ -54,7 +54,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
       repoHost:
         dedicated: {}
       repos:
@@ -114,7 +114,7 @@ spec:
       options:
       - --type=time
       - --target="2021-06-09 14:15:11 EDT"
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
   postgresVersion: 13
   instances:
     - dataVolumeClaimSpec:
@@ -125,7 +125,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
       repoHost:
         dedicated: {}
       repos:
@@ -239,7 +239,7 @@ kind: PostgresCluster
 metadata:
   name: hippo-standby
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
   postgresVersion: 13
   instances:
     - dataVolumeClaimSpec:
@@ -250,7 +250,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-0
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
       repos:
       - name: repo1
         s3:
