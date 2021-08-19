@@ -7,7 +7,7 @@ weight: 105
 
 ## Manually Restarting PostgreSQL
 
-There are times when you might need to manually restart PostgreSQL. This can be done, with minimal downtime, by using PGO's rolling update functionality. By simply adding or updating a custom annotation to the cluster instance-set's `spec.metadata.annotations` section, the Pod template will change for all instances and trigger a rolling update for the cluster. 
+There are times when you might need to manually restart PostgreSQL. This can be done by adding or updating a custom annotation to the cluster's `spec.metadata.annotations` section. PGO will notice the change and perform a [rolling restart]({{< relref "/architecture/high-availability.md" >}}#rolling-update).
 
 For example, if I have a cluster named `hippo` in the namespace `postgres-operator`, all you need to do is patch the hippo postgrescluster with the following:
 
