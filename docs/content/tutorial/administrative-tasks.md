@@ -9,7 +9,7 @@ weight: 105
 
 There are times when you might need to manually restart PostgreSQL. This can be done by adding or updating a custom annotation to the cluster's `spec.metadata.annotations` section. PGO will notice the change and perform a [rolling restart]({{< relref "/architecture/high-availability.md" >}}#rolling-update).
 
-For example, if I have a cluster named `hippo` in the namespace `postgres-operator`, all you need to do is patch the hippo postgrescluster with the following:
+For example, if you have a cluster named `hippo` in the namespace `postgres-operator`, all you need to do is patch the hippo postgrescluster with the following:
 
 ```
 kubectl patch postgrescluster/hippo --type=merge --patch='{"spec":{"metadata":{"annotations":{"restart":"'"$(date)"'"}}}}' -n postgres-operator
