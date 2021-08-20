@@ -26,8 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/onsi/gomega"
-	"github.com/onsi/gomega/gstruct"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -36,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
@@ -168,8 +167,6 @@ func TestReconcilerHandleDelete(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			g := gomega.NewWithT(t)
-
 			cluster := &v1beta1.PostgresCluster{}
 			assert.NilError(t, yaml.Unmarshal([]byte(`{
 				spec: {
@@ -208,12 +205,14 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 			assert.NilError(t,
 				cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster))
-			g.Expect(cluster.Finalizers).To(
-				gomega.ContainElement("postgres-operator.crunchydata.com/finalizer"),
+			assert.Assert(t,
+				sets.NewString(cluster.Finalizers...).
+					Has("postgres-operator.crunchydata.com/finalizer"),
 				"cluster should immediately have a finalizer")
 
 			// Continue until instances are healthy.
-			g.Eventually(func() (instances []appsv1.StatefulSet) {
+			var instances []appsv1.StatefulSet
+			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
 				mustReconcile(t, cluster)
 
 				list := appsv1.StatefulSetList{}
@@ -225,17 +224,15 @@ func TestReconcilerHandleDelete(t *testing.T) {
 				assert.NilError(t, cc.List(ctx, &list,
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
-				return list.Items
-			},
-				"60s", // timeout
-				"1s",  // interval
-			).Should(gomega.WithTransform(func(instances []appsv1.StatefulSet) int {
-				ready := 0
-				for _, sts := range instances {
-					ready += int(sts.Status.ReadyReplicas)
+
+				instances = list.Items
+
+				ready := int32(0)
+				for i := range instances {
+					ready += instances[i].Status.ReadyReplicas
 				}
-				return ready
-			}, gomega.BeNumerically(">=", test.waitForRunningInstances)))
+				return ready >= test.waitForRunningInstances, nil
+			}), "expected %v instances to be ready, got:\n%+v", test.waitForRunningInstances, instances)
 
 			if test.beforeDelete != nil {
 				test.beforeDelete(t, cluster)
@@ -258,7 +255,8 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			if test.waitForRunningInstances > 0 {
 
 				// Replicas should stop first, leaving just the one primary.
-				g.Eventually(func() (instances []v1.Pod) {
+				var instances []v1.Pod
+				assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
 					if result.Requeue {
 						result = mustReconcile(t, cluster)
 					}
@@ -272,20 +270,13 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					assert.NilError(t, cc.List(ctx, &list,
 						client.InNamespace(cluster.Namespace),
 						client.MatchingLabelsSelector{Selector: selector}))
-					return list.Items
-				},
-					"60s", // timeout
-					"1s",  // interval
-				).Should(gomega.ConsistOf(
-					gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-						"ObjectMeta": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-							"Labels": gstruct.MatchKeys(gstruct.IgnoreExtras, gstruct.Keys{
-								// Patroni doesn't use "primary" to identify the primary.
-								"postgres-operator.crunchydata.com/role": gomega.Equal("master"),
-							}),
-						}),
-					}),
-				), "expected one instance")
+
+					instances = list.Items
+
+					// Patroni doesn't use "primary" to identify the primary.
+					return len(instances) == 1 &&
+						instances[0].Labels["postgres-operator.crunchydata.com/role"] == "master", nil
+				}), "expected one instance, got:\n%+v", instances)
 
 				// Patroni DCS objects should not be deleted yet.
 				{
@@ -309,35 +300,25 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					// - https://issue.k8s.io/99407
 					assert.NilError(t,
 						cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster))
-					g.Expect(list.Items).To(gstruct.MatchElements(
-						func(interface{}) string { return "each" },
-						gstruct.AllowDuplicates,
-						gstruct.Elements{
-							"each": gomega.WithTransform(
-								func(ep v1.Endpoints) time.Time {
-									return ep.CreationTimestamp.Time
-								},
-								gomega.BeTemporally("<", cluster.DeletionTimestamp.Time),
-							),
-						},
-					))
+
+					for _, endpoints := range list.Items {
+						assert.Assert(t,
+							endpoints.CreationTimestamp.Time.Before(cluster.DeletionTimestamp.Time),
+							`expected %q to be after %+v`, cluster.DeletionTimestamp, endpoints)
+					}
 				}
 			}
 
 			// Continue until cluster is gone.
-			g.Eventually(func() error {
+			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
 				mustReconcile(t, cluster)
 
-				return cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)
-			},
-				"60s", // timeout
-				"1s",  // interval
-			).Should(gomega.SatisfyAll(
-				gomega.HaveOccurred(),
-				gomega.WithTransform(apierrors.IsNotFound, gomega.BeTrue()),
-			))
+				err := cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)
+				return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
+			}), "expected cluster to be deleted, got:\n%+v", *cluster)
 
-			g.Eventually(func() []v1.Endpoints {
+			var endpoints []v1.Endpoints
+			assert.NilError(t, wait.Poll(time.Second, time.Minute/3, func() (bool, error) {
 				list := v1.EndpointsList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
@@ -347,11 +328,11 @@ func TestReconcilerHandleDelete(t *testing.T) {
 				assert.NilError(t, cc.List(ctx, &list,
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
-				return list.Items
-			},
-				"20s", // timeout
-				"1s",  // interval
-			).Should(gomega.BeEmpty(), "Patroni DCS objects should be gone")
+
+				endpoints = list.Items
+
+				return len(endpoints) == 0, nil
+			}), "Patroni DCS objects should be gone, got:\n%+v", endpoints)
 		})
 	}
 }
