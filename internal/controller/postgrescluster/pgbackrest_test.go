@@ -197,7 +197,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	}
 	assert.NilError(t, r.Client.Create(ctx, repoHost))
 
-	err = wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
+	err = wait.Poll(time.Second/2, Scale(time.Second*3), func() (bool, error) {
 		if err := r.Client.Get(ctx,
 			client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
 			return false, nil
@@ -363,7 +363,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 
 		events := &corev1.EventList{}
-		if err := wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+		if err := wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
 			if err := tClient.List(ctx, events, &client.MatchingFields{
 				"involvedObject.kind":      "PostgresCluster",
 				"involvedObject.name":      clusterName,
@@ -734,7 +734,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	}
 	assert.NilError(t, r.Client.Create(ctx, repoHost))
 
-	err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
+	err := wait.Poll(time.Second/2, Scale(time.Second*3), func() (bool, error) {
 		if err := r.Client.Get(ctx,
 			client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
 			return false, nil
@@ -758,7 +758,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	assert.Assert(t, !configHashMistmatch)
 
 	events := &corev1.EventList{}
-	err = wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+	err = wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
 		if err := tClient.List(ctx, events, &client.MatchingFields{
 			"involvedObject.kind":      "PostgresCluster",
 			"involvedObject.name":      clusterName,
@@ -802,7 +802,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	assert.Assert(t, !configHashMismatch)
 
 	events = &corev1.EventList{}
-	err = wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+	err = wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
 		if err := tClient.List(ctx, events, &client.MatchingFields{
 			"involvedObject.kind":      "PostgresCluster",
 			"involvedObject.name":      clusterName,
@@ -943,7 +943,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	}
 	assert.NilError(t, r.Client.Create(ctx, repoHost))
 
-	err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
+	err := wait.Poll(time.Second/2, Scale(time.Second*3), func() (bool, error) {
 		if err := r.Client.Get(ctx,
 			client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
 			return false, nil
@@ -1503,7 +1503,7 @@ func TestReconcileManualBackup(t *testing.T) {
 					// if an event is expected, the check for it
 					if tc.expectedEventReason != "" {
 						events := &corev1.EventList{}
-						err = wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+						err = wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
 							if err := tClient.List(ctx, events, &client.MatchingFields{
 								"involvedObject.kind":      "PostgresCluster",
 								"involvedObject.name":      clusterName,
@@ -2295,7 +2295,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				if tc.result.invalidSourceCluster || tc.result.invalidSourceRepo ||
 					tc.result.invalidOptions {
 					events := &corev1.EventList{}
-					if err := wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+					if err := wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
 						if err := tClient.List(ctx, events, &client.MatchingFields{
 							"involvedObject.kind":      "PostgresCluster",
 							"involvedObject.name":      clusterName,
@@ -3169,7 +3169,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 					// if an event is expected, the check for it
 					if tc.expectedEventReason != "" {
 						events := &corev1.EventList{}
-						err := wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+						err := wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
 							if err := tClient.List(ctx, events, &client.MatchingFields{
 								"involvedObject.kind":      "PostgresCluster",
 								"involvedObject.name":      clusterName,

@@ -212,7 +212,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 			// Continue until instances are healthy.
 			var instances []appsv1.StatefulSet
-			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
+			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 				mustReconcile(t, cluster)
 
 				list := appsv1.StatefulSetList{}
@@ -256,7 +256,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 				// Replicas should stop first, leaving just the one primary.
 				var instances []v1.Pod
-				assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
+				assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 					if result.Requeue {
 						result = mustReconcile(t, cluster)
 					}
@@ -310,7 +310,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			}
 
 			// Continue until cluster is gone.
-			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
+			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 				mustReconcile(t, cluster)
 
 				err := cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)
@@ -318,7 +318,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			}), "expected cluster to be deleted, got:\n%+v", *cluster)
 
 			var endpoints []v1.Endpoints
-			assert.NilError(t, wait.Poll(time.Second, time.Minute/3, func() (bool, error) {
+			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute/3), func() (bool, error) {
 				list := v1.EndpointsList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
@@ -430,7 +430,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	})
 
 	var instances []appsv1.StatefulSet
-	assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
+	assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 		list := appsv1.StatefulSetList{}
 		selector, err := labels.Parse(strings.Join([]string{
 			"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
@@ -453,12 +453,12 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	// Delete the namespace.
 	assert.NilError(t, cc.Delete(ctx, ns))
 
-	assert.NilError(t, wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
+	assert.NilError(t, wait.PollImmediate(time.Second, Scale(time.Minute), func() (bool, error) {
 		err := cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)
 		return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
 	}), "expected cluster to be deleted, got:\n%+v", *cluster)
 
-	assert.NilError(t, wait.PollImmediate(time.Second, time.Minute/4, func() (bool, error) {
+	assert.NilError(t, wait.PollImmediate(time.Second, Scale(time.Minute/4), func() (bool, error) {
 		err := cc.Get(ctx, client.ObjectKeyFromObject(ns), &v1.Namespace{})
 		return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
 	}), "expected namespace to be deleted")
