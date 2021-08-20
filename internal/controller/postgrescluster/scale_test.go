@@ -21,21 +21,24 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-	"github.com/onsi/gomega"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func Int32(v int32) *int32 { return &v }
@@ -113,9 +116,9 @@ func TestScaleDown(t *testing.T) {
 	for _, test := range []struct {
 		name                   string
 		createSet              []v1beta1.PostgresInstanceSetSpec
-		createRunningInstances int
+		createRunningInstances int32
 		updateSet              []v1beta1.PostgresInstanceSetSpec
-		updateRunningInstances int
+		updateRunningInstances int32
 		primaryTest            func(*testing.T, string, string)
 	}{
 		{
@@ -185,8 +188,6 @@ func TestScaleDown(t *testing.T) {
 			var oldPrimaryInstanceName string
 			var newPrimaryInstanceName string
 
-			g := gomega.NewWithT(t)
-
 			cluster := baseCluster.DeepCopy()
 			cluster.ObjectMeta.Name = strings.ToLower(test.name)
 			cluster.ObjectMeta.Namespace = ns.Name
@@ -204,7 +205,8 @@ func TestScaleDown(t *testing.T) {
 			})
 
 			// Continue until instances are healthy.
-			g.Eventually(func() (instances []appsv1.StatefulSet) {
+			var instances []appsv1.StatefulSet
+			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
 				mustReconcile(t, cluster)
 
 				list := appsv1.StatefulSetList{}
@@ -216,38 +218,37 @@ func TestScaleDown(t *testing.T) {
 				assert.NilError(t, cc.List(ctx, &list,
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
-				return list.Items
-			},
-				"60s", // timeout
-				"1s",  // interval
-			).Should(gomega.WithTransform(func(instances []appsv1.StatefulSet) int {
-				ready := 0
-				for _, sts := range instances {
-					ready += int(sts.Status.ReadyReplicas)
+
+				instances = list.Items
+
+				ready := int32(0)
+				for i := range instances {
+					ready += instances[i].Status.ReadyReplicas
 				}
-				return ready
-			}, gomega.BeNumerically("==", test.createRunningInstances)))
+				return ready == test.createRunningInstances, nil
+			}), "expected %v instances to be ready, got:\n%+v", test.createRunningInstances, instances)
 
 			if test.primaryTest != nil {
 				// Grab the old primary name to use later
 				primaryPod := v1.PodList{}
-				g.Eventually(func() (podLen int) {
+				assert.NilError(t, wait.Poll(time.Second, 15*time.Second, func() (bool, error) {
 					primarySelector, err := naming.AsSelector(metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							naming.LabelCluster: cluster.Name,
-							naming.LabelRole:    "master",
+							naming.LabelRole:    naming.RolePatroniLeader,
 						},
 					})
 					assert.NilError(t, err)
 					assert.NilError(t, cc.List(ctx, &primaryPod,
 						client.InNamespace(cluster.Namespace),
 						client.MatchingLabelsSelector{Selector: primarySelector}))
-					return len(primaryPod.Items)
-				},
-					"10s", // timeout
-					"1s",  // interval
-				).Should(gomega.BeNumerically("==", 1))
-				oldPrimaryInstanceName = primaryPod.Items[0].Labels[naming.LabelInstance]
+
+					if len(primaryPod.Items) == 1 {
+						oldPrimaryInstanceName = primaryPod.Items[0].Labels[naming.LabelInstance]
+						return true, nil
+					}
+					return false, nil
+				}), "could not find primary, got:\n%+v", primaryPod.Items)
 			}
 
 			// The cluster is running with the correct number of Ready Replicas
@@ -260,7 +261,7 @@ func TestScaleDown(t *testing.T) {
 
 			// Run the reconcile loop until we have the expected number of
 			// Ready Replicas
-			g.Eventually(func() (instances []appsv1.StatefulSet) {
+			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
 				mustReconcile(t, cluster)
 
 				list := appsv1.StatefulSetList{}
@@ -272,20 +273,19 @@ func TestScaleDown(t *testing.T) {
 				assert.NilError(t, cc.List(ctx, &list,
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
-				return list.Items
-			},
-				"60s", // timeout
-				"1s",  // interval
-			).Should(gomega.WithTransform(func(instances []appsv1.StatefulSet) int {
-				ready := 0
-				for _, sts := range instances {
-					ready += int(sts.Status.ReadyReplicas)
+
+				instances = list.Items
+
+				ready := int32(0)
+				for i := range instances {
+					ready += instances[i].Status.ReadyReplicas
 				}
-				return ready
-			}, gomega.BeNumerically("==", test.updateRunningInstances)))
+				return ready == test.updateRunningInstances, nil
+			}), "expected %v instances to be ready, got:\n%+v", test.updateRunningInstances, instances)
 
 			// In the update case we need to ensure that the pods have deleted
-			g.Eventually(func() (podLen int) {
+			var pods []corev1.Pod
+			assert.NilError(t, wait.Poll(time.Second, time.Minute/2, func() (bool, error) {
 				list := v1.PodList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
@@ -295,31 +295,25 @@ func TestScaleDown(t *testing.T) {
 				assert.NilError(t, cc.List(ctx, &list,
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
-				return len(list.Items)
-			},
-				"30s", // timeout
-				"1s",  // interval
-			).Should(gomega.BeNumerically("==", test.updateRunningInstances))
+
+				pods = list.Items
+
+				return len(pods) == int(test.updateRunningInstances), nil
+			}), "expected %v pods, got:\n%+v", test.updateRunningInstances, pods)
 
 			if test.primaryTest != nil {
 				// If this is a primary test grab the updated primary
 				primaryPod := v1.PodList{}
-				g.Eventually(func() (podLen int) {
-					primarySelector, err := naming.AsSelector(metav1.LabelSelector{
-						MatchLabels: map[string]string{
-							naming.LabelCluster: cluster.Name,
-							naming.LabelRole:    "master",
-						},
-					})
-					assert.NilError(t, err)
-					assert.NilError(t, cc.List(ctx, &primaryPod,
-						client.InNamespace(cluster.Namespace),
-						client.MatchingLabelsSelector{Selector: primarySelector}))
-					return len(primaryPod.Items)
-				},
-					"10s", // timeout
-					"1s",  // interval
-				).Should(gomega.BeNumerically("<=", 1)) // Can have 1 or 0 primaries
+				primarySelector, err := naming.AsSelector(metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						naming.LabelCluster: cluster.Name,
+						naming.LabelRole:    "master",
+					},
+				})
+				assert.NilError(t, err)
+				assert.NilError(t, cc.List(ctx, &primaryPod,
+					client.InNamespace(cluster.Namespace),
+					client.MatchingLabelsSelector{Selector: primarySelector}))
 
 				if len(primaryPod.Items) == 1 {
 					newPrimaryInstanceName = primaryPod.Items[0].Labels[naming.LabelInstance]
@@ -332,22 +326,22 @@ func TestScaleDown(t *testing.T) {
 
 			// The cluster has the correct number of total instances.
 			// Does each instance set have the correct number of replicas?
-			instances := &appsv1.StatefulSetList{}
+			var podList corev1.PodList
 			selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 			assert.NilError(t, err)
-			assert.NilError(t, reconciler.Client.List(ctx, instances,
+			assert.NilError(t, reconciler.Client.List(ctx, &podList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
 
 			// Once again we make sure that the number of instances in the
 			// environment reflect the number we expect
-			assert.Equal(t, len(instances.Items), test.updateRunningInstances)
+			assert.Equal(t, len(podList.Items), int(test.updateRunningInstances))
 
 			// Group the instances by the instance set label and count the
 			// replicas for each set
 			replicas := map[string]int32{}
-			for _, instance := range instances.Items {
+			for _, instance := range podList.Items {
 				replicas[instance.Labels[naming.LabelInstanceSet]]++
 			}
 
