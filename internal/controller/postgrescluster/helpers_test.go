@@ -19,9 +19,12 @@ package postgrescluster
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert/cmp"
 	v1 "k8s.io/api/core/v1"
@@ -44,6 +47,24 @@ var (
 	CrunchyPGBackRestImage = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0"
 	CrunchyPGBouncerImage  = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0"
 )
+
+// Scale extends d according to PGO_TEST_TIMEOUT_SCALE.
+var Scale = func(d time.Duration) time.Duration { return d }
+
+func init() {
+	setting := os.Getenv("PGO_TEST_TIMEOUT_SCALE")
+	factor, _ := strconv.ParseFloat(setting, 64)
+
+	if setting != "" {
+		if factor <= 0 {
+			panic("PGO_TEST_TIMEOUT_SCALE must be a fractional number greater than zero")
+		}
+
+		Scale = func(d time.Duration) time.Duration {
+			return time.Duration(factor * float64(d))
+		}
+	}
+}
 
 // marshalMatches converts actual to YAML and compares that to expected.
 func marshalMatches(actual interface{}, expected string) cmp.Comparison {

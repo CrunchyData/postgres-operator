@@ -658,7 +658,7 @@ func TestContainerSecurityContext(t *testing.T) {
 	})
 
 	pods := &corev1.PodList{}
-	assert.NilError(t, wait.Poll(time.Second, time.Second*120, func() (done bool, err error) {
+	assert.NilError(t, wait.Poll(time.Second, Scale(2*time.Minute), func() (bool, error) {
 		// Reconcile the cluster
 		result, err := reconciler.Reconcile(ctx, reconcile.Request{
 			NamespacedName: client.ObjectKeyFromObject(cluster),

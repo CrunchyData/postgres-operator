@@ -196,6 +196,7 @@ check:
 check-envtest: hack/tools/envtest
 	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" $(GO) test -count=1 -cover -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
 
+# - PGO_TEST_TIMEOUT_SCALE=1
 .PHONY: check-envtest-existing
 check-envtest-existing:
 	${PGO_KUBE_CLIENT} apply -k ./config/dev

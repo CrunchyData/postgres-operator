@@ -149,7 +149,7 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.NilError(t, cc.Create(ctx, pv))
 			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pv)) })
 
-			assert.NilError(t, wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
+			assert.NilError(t, wait.PollImmediate(time.Second, Scale(10*time.Second), func() (bool, error) {
 				err := cc.Get(ctx, client.ObjectKeyFromObject(pv), pv)
 				return pv.Status.Phase != corev1.VolumePending, err
 			}), "expected Available, got %#v", pv.Status)
@@ -159,7 +159,7 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.NilError(t, cc.Create(ctx, pvc))
 			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pvc)) })
 
-			assert.NilError(t, wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
+			assert.NilError(t, wait.PollImmediate(time.Second, Scale(10*time.Second), func() (bool, error) {
 				err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
 				return pvc.Status.Phase != corev1.ClaimPending, err
 			}), "expected Bound, got %#v", pvc.Status)
@@ -342,7 +342,7 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 				assert.NilError(t, cc.Create(ctx, pod))
 				t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pod)) })
 
-				assert.NilError(t, wait.PollImmediate(time.Second, 30*time.Second, func() (bool, error) {
+				assert.NilError(t, wait.PollImmediate(time.Second, Scale(30*time.Second), func() (bool, error) {
 					err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
 					return pvc.Status.Phase != corev1.ClaimPending, err
 				}), "expected Bound, got %#v", pvc.Status)
@@ -421,7 +421,7 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 				// that changed to "Resizing" during the merge to Kubernetes v1.8.
 				// - https://git.k8s.io/enhancements/keps/sig-storage/284-enable-volume-expansion
 				// - https://pr.k8s.io/49727#discussion_r136678508
-				assert.NilError(t, wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
+				assert.NilError(t, wait.PollImmediate(time.Second, Scale(10*time.Second), func() (bool, error) {
 					err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
 					for i := range pvc.Status.Conditions {
 						if pvc.Status.Conditions[i].Type == corev1.PersistentVolumeClaimResizing {
@@ -443,7 +443,7 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 				// *entire* resize, this condition does not appear.
 				// - https://pr.k8s.io/58415
 				// - https://git.k8s.io/enhancements/keps/sig-storage/556-csi-volume-resizing
-				assert.NilError(t, wait.PollImmediate(time.Second, 30*time.Second, func() (bool, error) {
+				assert.NilError(t, wait.PollImmediate(time.Second, Scale(30*time.Second), func() (bool, error) {
 					err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
 					for i := range pvc.Status.Conditions {
 						if pvc.Status.Conditions[i].Type == corev1.PersistentVolumeClaimFileSystemResizePending {

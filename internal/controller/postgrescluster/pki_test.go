@@ -172,7 +172,7 @@ func TestReconcileCerts(t *testing.T) {
 			err = tClient.Delete(ctx, cluster1)
 			assert.NilError(t, err)
 
-			err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+			err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
 				err := tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
 				return len(rootSecret.ObjectMeta.OwnerReferences) == 1, err
 			})
@@ -237,7 +237,7 @@ func TestReconcileCerts(t *testing.T) {
 			err = tClient.Delete(ctx, cluster2)
 			assert.NilError(t, err)
 
-			err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+			err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
 				if err := tClient.Get(ctx,
 					client.ObjectKeyFromObject(rootSecret), rootSecret); apierrors.ReasonForError(err) == metav1.StatusReasonNotFound {
 					return true, err

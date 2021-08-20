@@ -964,7 +964,7 @@ func TestDeleteInstance(t *testing.T) {
 	for _, gvk := range gvks {
 		t.Run(gvk.Kind, func(t *testing.T) {
 			uList := &unstructured.UnstructuredList{}
-			err := wait.Poll(time.Second*3, time.Second*30, func() (done bool, err error) {
+			err := wait.Poll(time.Second*3, Scale(time.Second*30), func() (bool, error) {
 				uList.SetGroupVersionKind(gvk)
 				assert.NilError(t, errors.WithStack(reconciler.Client.List(ctx, uList,
 					client.InNamespace(cluster.Namespace),

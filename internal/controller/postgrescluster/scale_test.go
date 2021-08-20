@@ -206,7 +206,7 @@ func TestScaleDown(t *testing.T) {
 
 			// Continue until instances are healthy.
 			var instances []appsv1.StatefulSet
-			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
+			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 				mustReconcile(t, cluster)
 
 				list := appsv1.StatefulSetList{}
@@ -231,7 +231,7 @@ func TestScaleDown(t *testing.T) {
 			if test.primaryTest != nil {
 				// Grab the old primary name to use later
 				primaryPod := v1.PodList{}
-				assert.NilError(t, wait.Poll(time.Second, 15*time.Second, func() (bool, error) {
+				assert.NilError(t, wait.Poll(time.Second, Scale(15*time.Second), func() (bool, error) {
 					primarySelector, err := naming.AsSelector(metav1.LabelSelector{
 						MatchLabels: map[string]string{
 							naming.LabelCluster: cluster.Name,
@@ -261,7 +261,7 @@ func TestScaleDown(t *testing.T) {
 
 			// Run the reconcile loop until we have the expected number of
 			// Ready Replicas
-			assert.NilError(t, wait.Poll(time.Second, time.Minute, func() (bool, error) {
+			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 				mustReconcile(t, cluster)
 
 				list := appsv1.StatefulSetList{}
@@ -285,7 +285,7 @@ func TestScaleDown(t *testing.T) {
 
 			// In the update case we need to ensure that the pods have deleted
 			var pods []corev1.Pod
-			assert.NilError(t, wait.Poll(time.Second, time.Minute/2, func() (bool, error) {
+			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute/2), func() (bool, error) {
 				list := v1.PodList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
