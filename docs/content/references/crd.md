@@ -115,6 +115,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>Specifies a data source for bootstrapping the PostgreSQL cluster.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatabaseinitsql">databaseInitSQL</a></b></td>
+        <td>object</td>
+        <td>DatabaseInitSQL defines a ConfigMap containing custom SQL that will be run after the cluster is initialized. This ConfigMap must be in the same namespace as the cluster.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>image</b></td>
         <td>string</td>
         <td>The image name to use for PostgreSQL containers. When omitted, the value comes from an operator environment variable. For standard PostgreSQL images, the format is RELATED_IMAGE_POSTGRES_{postgresVersion}, e.g. RELATED_IMAGE_POSTGRES_13. For PostGIS enabled PostgreSQL images, the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion}, e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.</td>
@@ -6611,6 +6616,38 @@ Defines the existing pg_wal volume and directory to use in the current PostgresC
 </table>
 
 
+<h3 id="postgresclusterspecdatabaseinitsql">
+  PostgresCluster.spec.databaseInitSQL
+  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+DatabaseInitSQL defines a ConfigMap containing custom SQL that will be run after the cluster is initialized. This ConfigMap must be in the same namespace as the cluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>Key is the ConfigMap data key that points to a SQL string</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of a ConfigMap</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecimagepullsecretsindex">
   PostgresCluster.spec.imagePullSecrets[index]
   <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
@@ -9140,6 +9177,11 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td><b><a href="#postgresclusterstatusconditionsindex">conditions</a></b></td>
         <td>[]object</td>
         <td>conditions represent the observations of postgrescluster's current state. Known .status.conditions.type are: "PersistentVolumeResizing", "ProxyAvailable"</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>databaseInitSQL</b></td>
+        <td>string</td>
+        <td>DatabaseInitSQL state of custom database initialization in the cluster</td>
         <td>false</td>
       </tr><tr>
         <td><b>databaseRevision</b></td>

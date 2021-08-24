@@ -3342,6 +3342,22 @@ spec:
                         type: object
                     type: object
                 type: object
+              databaseInitSQL:
+                description: DatabaseInitSQL defines a ConfigMap containing custom
+                  SQL that will be run after the cluster is initialized. This ConfigMap
+                  must be in the same namespace as the cluster.
+                properties:
+                  key:
+                    description: Key is the ConfigMap data key that points to a SQL
+                      string
+                    type: string
+                  name:
+                    description: Name is the name of a ConfigMap
+                    type: string
+                required:
+                - key
+                - name
+                type: object
               image:
                 description: The image name to use for PostgreSQL containers. When
                   omitted, the value comes from an operator environment variable.
@@ -6298,6 +6314,10 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              databaseInitSQL:
+                description: DatabaseInitSQL state of custom database initialization
+                  in the cluster
+                type: string
               databaseRevision:
                 description: Identifies the databases that have been installed into
                   PostgreSQL.
