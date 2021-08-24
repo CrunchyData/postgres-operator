@@ -56,6 +56,12 @@ type PostgresClusterSpec struct {
 	// +optional
 	CustomReplicationClientTLSSecret *corev1.SecretProjection `json:"customReplicationTLSSecret,omitempty"`
 
+	// DatabaseInitSQL defines a ConfigMap containing custom SQL that will
+	// be run after the cluster is initialized. This ConfigMap must be in the same
+	// namespace as the cluster.
+	// +optional
+	DatabaseInitSQL *DatabaseInitSQL `json:"databaseInitSQL,omitempty"`
+
 	// The image name to use for PostgreSQL containers. When omitted, the value
 	// comes from an operator environment variable. For standard PostgreSQL images,
 	// the format is RELATED_IMAGE_POSTGRES_{postgresVersion},
@@ -193,6 +199,19 @@ type DataSourceVolume struct {
 	Directory string `json:"directory,omitempty"`
 }
 
+// DatabaseInitSQL defines a ConfigMap containing custom SQL that will
+// be run after the cluster is initialized. This ConfigMap must be in the same
+// namespace as the cluster.
+type DatabaseInitSQL struct {
+	// Name is the name of a ConfigMap
+	// +required
+	Name string `json:"name"`
+
+	// Key is the ConfigMap data key that points to a SQL string
+	// +required
+	Key string `json:"key"`
+}
+
 // PostgresClusterDataSource defines a data source for bootstrapping PostgreSQL clusters using a
 // an existing PostgresCluster.
 type PostgresClusterDataSource struct {
@@ -307,6 +326,10 @@ type PostgresClusterStatus struct {
 	// Current state of PostgreSQL cluster monitoring tool configuration
 	// +optional
 	Monitoring MonitoringStatus `json:"monitoring,omitempty"`
+
+	// DatabaseInitSQL state of custom database initialization in the cluster
+	// +optional
+	DatabaseInitSQL *string `json:"databaseInitSQL,omitempty"`
 
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional
