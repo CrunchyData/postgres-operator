@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 CCP_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
-CCP_PG_FULLVERSION ?= 13.3
+CCP_PG_FULLVERSION ?= 13.4
 CCP_POSTGIS_VERSION ?= 3.0
 CONTAINER ?= docker
 KUBECONFIG ?= $(HOME)/.kube/config
@@ -11,7 +11,7 @@ OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_SDK_VERSI
 OLM_VERSION ?= 0.15.1
 PGO_BASEOS ?= centos8
 PGO_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
-PGO_VERSION ?= 4.6.3
+PGO_VERSION ?= 4.6.4
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
 CCP_POSTGIS_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(CCP_POSTGIS_VERSION)-$(PGO_VERSION)
