@@ -2355,11 +2355,9 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 		newRepoVolStatus := true
 		repoName := rv.Labels[naming.LabelPGBackRestRepo]
 		for _, rs := range repoStatus {
-			if rs.Name == repoName {
+			// treat as new status if contains properties of a cloud (s3, gcr or azure) repo
+			if rs.Name == repoName && rs.RepoOptionsHash == "" {
 				newRepoVolStatus = false
-
-				// clear any status not applicable to this repo type
-				rs.RepoOptionsHash = ""
 
 				// if we find a status with ReplicaCreateBackupComplete set to "true" but the repo name
 				// for that status does not match the current replica create repo name, then reset
@@ -2403,12 +2401,9 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 	for repoName, hash := range configHashes {
 		newExtRepoStatus := true
 		for _, rs := range repoStatus {
-			if rs.Name == repoName {
+			// treat as new status if contains properties of a "volume" repo
+			if rs.Name == repoName && !rs.Bound && rs.VolumeName == "" {
 				newExtRepoStatus = false
-
-				// clear any status not applicable to this repo type
-				rs.Bound = false
-				rs.VolumeName = ""
 
 				// if we find a status with ReplicaCreateBackupComplete set to "true" but the repo name
 				// for that status does not match the current replica create repo name, then reset
