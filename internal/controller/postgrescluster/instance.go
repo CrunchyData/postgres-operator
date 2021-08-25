@@ -1031,26 +1031,9 @@ func (r *Reconciler) reconcileInstance(
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
-	// Get the pgBackRest repo PVC names.
-	// TODO (andrewlecuyer): This separate List is only needed until dedicated repo hosts are
-	// used exclusively for mounting PVC-based repos.  At that point it won't be necessary to
-	// mount repos to instances, and this logic can therefore be removed.
-	var repoPVCNames map[string]string
-	repoPVCList := &corev1.PersistentVolumeClaimList{}
-	if err == nil {
-		err = r.Client.List(ctx, repoPVCList, client.InNamespace(cluster.GetNamespace()),
-			client.MatchingLabelsSelector{Selector: naming.PGBackRestSelector(cluster.GetName())})
-	}
-	if err == nil {
-		repoPVCs := []*corev1.PersistentVolumeClaim{}
-		for i := range repoPVCList.Items {
-			repoPVCs = append(repoPVCs, &repoPVCList.Items[i])
-		}
-		repoPVCNames = getRepoPVCNames(cluster, repoPVCs)
-	}
 	// Add pgBackRest containers, volumes, etc. to the instance Pod spec
 	if err == nil {
-		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, repoPVCNames)
+		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template)
 	}
 
 	// Add pgMonitor resources to the instance Pod spec
@@ -1198,7 +1181,7 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 // configured, and then mounting the proper pgBackRest configuration resources (ConfigMaps
 // and Secrets)
 func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
-	template *v1.PodTemplateSpec, repoPVCNames map[string]string) error {
+	template *v1.PodTemplateSpec) error {
 
 	dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(cluster)
 	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
@@ -1211,12 +1194,6 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 		}
 		if err := pgbackrest.AddSSHToPod(cluster, template, true,
 			resources, naming.ContainerDatabase); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	if !dedicatedRepoEnabled {
-		if err := pgbackrest.AddRepoVolumesToPod(cluster, template, repoPVCNames,
-			pgBackRestConfigContainers...); err != nil {
 			return errors.WithStack(err)
 		}
 	}
