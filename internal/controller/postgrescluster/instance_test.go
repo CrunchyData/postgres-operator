@@ -41,6 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -307,90 +308,51 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}
 
 	testCases := []struct {
-		repoHost  *v1beta1.PGBackRestRepoHost
-		sshConfig *v1.ConfigMapProjection
-		sshSecret *v1.SecretProjection
-		testMap   map[string]string
+		dedicatedRepoHostEnabled bool
+		sshConfig                *v1.ConfigMapProjection
+		sshSecret                *v1.SecretProjection
 	}{{
-		repoHost: nil,
-		testMap:  map[string]string{},
+		dedicatedRepoHostEnabled: false,
 	}, {
-		repoHost: &v1beta1.PGBackRestRepoHost{},
-		testMap:  map[string]string{},
-	}, {
-		repoHost: nil,
+		dedicatedRepoHostEnabled: true,
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-		testMap: map[string]string{},
 	}, {
-		repoHost: &v1beta1.PGBackRestRepoHost{},
+		dedicatedRepoHostEnabled: true,
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-		testMap: map[string]string{},
-	},
-		// rerun the same tests, but this time simulate an existing PVC
-		{
-			repoHost: nil,
-			testMap: map[string]string{
-				"repo1": "hippo-repo1",
-			},
-		}, {
-			repoHost: &v1beta1.PGBackRestRepoHost{},
-			testMap: map[string]string{
-				"repo1": "hippo-repo1",
-			},
-		}, {
-			repoHost: &v1beta1.PGBackRestRepoHost{},
-			testMap: map[string]string{
-				"repo1": "hippo-repo1",
-			},
-		}, {
-			repoHost: nil,
-			sshConfig: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-			sshSecret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-			testMap: map[string]string{
-				"repo1": "hippo-repo1",
-			},
-		}, {
-			repoHost: &v1beta1.PGBackRestRepoHost{},
-			sshConfig: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-			sshSecret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-			testMap: map[string]string{
-				"repo1": "hippo-repo1",
-			},
-		}}
+	}}
 
 	for _, tc := range testCases {
-		dedicated := tc.repoHost != nil
+		dedicated := tc.dedicatedRepoHostEnabled
 		customConfig := (tc.sshConfig != nil)
 		customSecret := (tc.sshSecret != nil)
 		t.Run(fmt.Sprintf("dedicated:%t", dedicated), func(t *testing.T) {
 
-			postgresCluster.Spec.Backups.PGBackRest.RepoHost = tc.repoHost
 			template := &v1.PodTemplateSpec{
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{Name: naming.ContainerDatabase}},
 				},
 			}
 
+			pgBackRestConfigContainers := []string{naming.ContainerDatabase}
 			if dedicated {
-				if customConfig {
+				pgBackRestConfigContainers = append(pgBackRestConfigContainers,
+					naming.PGBackRestRepoContainerName)
+				if customConfig || customSecret {
+					if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil {
+						postgresCluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{}
+					}
 					postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
-				}
-				if customSecret {
 					postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret = tc.sshSecret
 				}
 			}
 
-			err := addPGBackRestToInstancePodSpec(postgresCluster, template, tc.testMap)
+			err := addPGBackRestToInstancePodSpec(postgresCluster, template)
 			assert.NilError(t, err)
 
 			// if a repo host is configured, then verify SSH is enabled
@@ -446,6 +408,46 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 					assert.Assert(t, foundVolumeMount)
 				}
 				assert.Assert(t, foundSSHContainer)
+			}
+
+			var foundConfigVolume bool
+			var configVolume v1.Volume
+			for _, v := range template.Spec.Volumes {
+				if v.Name == pgbackrest.ConfigVol {
+					foundConfigVolume = true
+					configVolume = v
+					break
+				}
+			}
+			assert.Assert(t, foundConfigVolume)
+
+			var foundConfigProjection bool
+			defaultConfigName := naming.PGBackRestConfig(postgresCluster).Name
+			for _, s := range configVolume.Projected.Sources {
+				if s.ConfigMap != nil {
+					if s.ConfigMap.Name == defaultConfigName {
+						foundConfigProjection = true
+					}
+				}
+			}
+			assert.Assert(t, foundConfigProjection)
+
+			for _, container := range pgBackRestConfigContainers {
+				var foundContainer bool
+				for _, c := range template.Spec.Containers {
+					if c.Name == container {
+						foundContainer = true
+					}
+					var foundVolumeMount bool
+					for _, vm := range c.VolumeMounts {
+						if vm.Name == pgbackrest.ConfigVol && vm.MountPath == pgbackrest.ConfigDir {
+							foundVolumeMount = true
+							break
+						}
+					}
+					assert.Assert(t, foundVolumeMount)
+				}
+				assert.Assert(t, foundContainer)
 			}
 		})
 	}
