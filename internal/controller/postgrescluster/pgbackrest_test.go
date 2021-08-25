@@ -191,28 +191,6 @@ func TestReconcilePGBackRest(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, serviceAccount != nil)
 
-	// add a fake dedicated repo pod to the env
-	repoHost := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "fake-repo-host",
-			Namespace: namespace,
-			Labels:    naming.PGBackRestDedicatedLabels(clusterName),
-		},
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{{Name: "test", Image: "test"}},
-		},
-	}
-	assert.NilError(t, r.Client.Create(ctx, repoHost))
-
-	err = wait.Poll(time.Second/2, Scale(time.Second*3), func() (bool, error) {
-		if err := r.Client.Get(ctx,
-			client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
-			return false, nil
-		}
-		return true, nil
-	})
-	assert.NilError(t, err)
-
 	// create the 'observed' instances and set the leader
 	instances := &observedInstances{
 		forCluster: []*Instance{{Name: "instance1",
@@ -729,27 +707,6 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		stderr io.Writer, command ...string) error {
 		return nil
 	}
-
-	// primaryMeta := naming.GenerateInstance(postgresCluster,
-	// 	&v1beta1.PostgresInstanceSetSpec{Name: "instance1"})
-	// // first add a fake primary to the env since the primary is where stanzas are always
-	// // created for all configured repos
-	// repoHost := &corev1.Pod{
-	// 	ObjectMeta: primaryMeta,
-	// 	Spec: v1.PodSpec{
-	// 		Containers: []v1.Container{{Name: "test", Image: "test"}},
-	// 	},
-	// }
-	// assert.NilError(t, r.Client.Create(ctx, repoHost))
-
-	// err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
-	// 	if err := r.Client.Get(ctx,
-	// 		client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
-	// 		return false, nil
-	// 	}
-	// 	return true, nil
-	// })
-	// assert.NilError(t, err)
 
 	// now verify a stanza create success
 	r.PodExec = stanzaCreateSuccess
