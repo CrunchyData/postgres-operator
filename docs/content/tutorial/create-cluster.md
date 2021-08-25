@@ -51,7 +51,6 @@ spec:
   backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
-      repoHost: {}
       repos:
       - name: repo1
         volume:

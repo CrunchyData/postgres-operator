@@ -239,9 +239,7 @@ func TestAddSSHToPod(t *testing.T) {
 		},
 		Spec: v1beta1.PostgresClusterSpec{
 			Backups: v1beta1.Backups{
-				PGBackRest: v1beta1.PGBackRestArchive{
-					RepoHost: &v1beta1.PGBackRestRepoHost{},
-				},
+				PGBackRest: v1beta1.PGBackRestArchive{},
 			},
 		},
 	}
@@ -276,10 +274,11 @@ func TestAddSSHToPod(t *testing.T) {
 
 		postgresCluster := postgresClusterBase.DeepCopy()
 
-		if customConfig {
+		if customConfig || customSecret {
+			if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil {
+				postgresCluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{}
+			}
 			postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
-		}
-		if customSecret {
 			postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret = tc.sshSecret
 		}
 
