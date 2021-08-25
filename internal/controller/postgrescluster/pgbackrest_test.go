@@ -805,7 +805,6 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{},
 						Repos: []v1beta1.PGBackRestRepo{{
 							Name:   "repo1",
 							Volume: &v1beta1.RepoPVC{},
@@ -826,7 +825,6 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{},
 						Repos: []v1beta1.PGBackRestRepo{{
 							Name: "repo1",
 							S3:   &v1beta1.RepoS3{},
@@ -1693,8 +1691,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{},
-						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
+						Repos: []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
 				},
 			},
@@ -1732,9 +1729,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 			},
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{},
-					},
+					PGBackRest: v1beta1.PGBackRestArchive{},
 				},
 			},
 		},
@@ -1801,8 +1796,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{},
-						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
+						Repos: []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
 				},
 			},
@@ -1862,8 +1856,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						RepoHost: &v1beta1.PGBackRestRepoHost{},
-						Repos:    []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
+						Repos: []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
 				},
 			},

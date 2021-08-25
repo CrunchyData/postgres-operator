@@ -78,7 +78,6 @@ func TestPGBackRestConfiguration(t *testing.T) {
 							Region:   "region",
 						},
 					}},
-					RepoHost: &v1beta1.PGBackRestRepoHost{},
 				},
 			},
 		},
