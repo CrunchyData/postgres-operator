@@ -676,6 +676,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 
 	// create base PostgresCluster
 	assert.NilError(t, tClient.Create(ctx, cluster))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 	t.Run("existing pgdata volume", func(t *testing.T) {
 		volume := &corev1.PersistentVolumeClaim{
@@ -710,8 +711,11 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		// now, check that the label volume is returned
 		assert.Assert(t, len(clusterVolumes) == 1)
 
-		// observe again
-		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+		// observe again, but allow time for the change to be observed
+		err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+			return len(clusterVolumes) == 1, err
+		})
 		assert.NilError(t, err)
 		// check that created volume is now in the list
 		assert.Assert(t, len(clusterVolumes) == 1)
@@ -739,7 +743,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 	})
 
 	t.Run("existing pg_wal volume", func(t *testing.T) {
-		volume := &corev1.PersistentVolumeClaim{
+		pgWALVolume := &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "pgwalvolume",
 				Namespace: cluster.Namespace,
@@ -750,7 +754,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
 		}
 
-		assert.NilError(t, tClient.Create(ctx, volume))
+		assert.NilError(t, tClient.Create(ctx, pgWALVolume))
 
 		// add the pg_wal PVC name to the CRD
 		cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume =
@@ -772,8 +776,11 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		// now, check that the label volume is returned
 		assert.Assert(t, len(clusterVolumes) == 2)
 
-		// observe again
-		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+		// observe again, but allow time for the change to be observed
+		err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+			return len(clusterVolumes) == 2, err
+		})
 		assert.NilError(t, err)
 		// check that created volume is now in the list
 		assert.Assert(t, len(clusterVolumes) == 2)
@@ -836,8 +843,11 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		// now, check that the label volume is returned
 		assert.Assert(t, len(clusterVolumes) == 3)
 
-		// observe again
-		clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+		// observe again, but allow time for the change to be observed
+		err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
+			return len(clusterVolumes) == 3, err
+		})
 		assert.NilError(t, err)
 		// check that created volume is now in the list
 		assert.Assert(t, len(clusterVolumes) == 3)
@@ -949,6 +959,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 
 	// create PostgresCluster
 	assert.NilError(t, tClient.Create(ctx, cluster))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 	returnEarly, err := r.reconcileDirMoveJobs(ctx, cluster)
 	assert.NilError(t, err)
