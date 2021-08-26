@@ -1888,7 +1888,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 
 	// set the name of the pgbackrest config file that will be mounted to the backup Job
 	configName := pgbackrest.CMInstanceKey
-	if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
+	if containerName == naming.PGBackRestRepoContainerName {
 		configName = pgbackrest.CMRepoKey
 	}
 
@@ -2012,7 +2012,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 
 	// set the name of the pgbackrest config file that will be mounted to the backup Job
 	configName := pgbackrest.CMInstanceKey
-	if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
+	if containerName == naming.PGBackRestRepoContainerName {
 		configName = pgbackrest.CMRepoKey
 	}
 
@@ -2552,7 +2552,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 
 	// set the name of the pgbackrest config file that will be mounted to the backup Job
 	configName := pgbackrest.CMInstanceKey
-	if pgbackrest.DedicatedRepoHostEnabled(cluster) {
+	if containerName == naming.PGBackRestRepoContainerName {
 		configName = pgbackrest.CMRepoKey
 	}
 
