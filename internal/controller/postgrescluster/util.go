@@ -33,12 +33,44 @@ import (
 var tmpDirSizeLimit = resource.MustParse("16Mi")
 
 const (
+	// devSHMDir is the directory used for allocating shared memory segments,
+	// which are needed by Postgres
+	devSHMDir = "/dev/shm"
 	// nssWrapperDir is the directory in a container for the nss_wrapper passwd and group files
 	nssWrapperDir = "/tmp/nss_wrapper/%s/%s"
 	// uidCommand is the command for setting up nss_wrapper in the container
 	nssWrapperCmd = `NSS_WRAPPER_SUBDIR=postgres CRUNCHY_NSS_USERNAME=postgres ` +
 		`CRUNCHY_NSS_USER_DESC="postgres" /opt/crunchy/bin/nss_wrapper.sh`
 )
+
+// addDevSHM adds the shared memory "directory" to a Pod, which is needed by
+// Postgres to allocate shared memory segments. This is a special directory
+// called "/dev/shm", and is mounted as an emptyDir over a "memory" medium. This
+// is mounted only to the database container.
+func addDevSHM(template *v1.PodTemplateSpec) {
+
+	// do not set a size limit on shared memory. This will be handled by the OS
+	// layer
+	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
+		Name: "dshm",
+		VolumeSource: v1.VolumeSource{
+			EmptyDir: &v1.EmptyDirVolumeSource{
+				Medium: v1.StorageMediumMemory,
+			},
+		},
+	})
+
+	// only give the database container access to shared memory
+	for i := range template.Spec.Containers {
+		if template.Spec.Containers[i].Name == naming.ContainerDatabase {
+			template.Spec.Containers[i].VolumeMounts = append(template.Spec.Containers[i].VolumeMounts,
+				v1.VolumeMount{
+					Name:      "dshm",
+					MountPath: devSHMDir,
+				})
+		}
+	}
+}
 
 // addTMPEmptyDir adds a "tmp" EmptyDir volume to the provided Pod template, while then also adding a
 // volume mount at /tmp for all containers defined within the Pod template
