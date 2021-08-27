@@ -207,7 +207,7 @@ REVOKE ALL PRIVILEGES
 		map[string]string{
 			"username":  postgresqlUser,
 			"namespace": postgresqlSchema,
-			"verifier":  string(clusterSecret.Data[credentialSecretKey]),
+			"verifier":  string(clusterSecret.Data[verifierSecretKey]),
 
 			"ON_ERROR_STOP": "on", // Abort when any one statement fails.
 			"QUIET":         "on", // Do not print successful statements to stdout.
@@ -218,21 +218,29 @@ REVOKE ALL PRIVILEGES
 	return err
 }
 
-func generateVerifier() ([]byte, error) {
-	v, err := util.GeneratePassword(32)
+func generatePassword() (plaintext, verifier string, err error) {
+	// PgBouncer can login to PostgreSQL using either MD5 or SCRAM-SHA-256.
+	// When using MD5, the (hashed) verifier can be stored in PgBouncer's
+	// authentication file. When using SCRAM, the plaintext password must be
+	// stored.
+	// - https://www.pgbouncer.org/config.html#authentication-file-format
+	// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
+
+	plaintext, err = util.GeneratePassword(32)
 	if err == nil {
-		// NOTE(cbandy): It is not possible to use a SCRAM password for the
-		// "auth_user" account.
-		// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
-		v, err = password.NewMD5Password(postgresqlUser, v).Build()
+		verifier, err = password.NewSCRAMPassword(plaintext).Build()
 	}
-	return []byte(v), err
+	return
 }
 
-func postgresqlHBA() postgres.HostBasedAuthentication {
-	// PgBouncer connects over TLS using an MD5 password.
-	// NOTE(cbandy): It is not possible to use a SCRAM password for the
-	// "auth_user" account.
-	// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
-	return *postgres.NewHBA().User(postgresqlUser).TLS().Method("md5")
+func postgresqlHBAs() []postgres.HostBasedAuthentication {
+	// PgBouncer must connect over TLS using a SCRAM password. Other network
+	// connections are forbidden.
+	// - https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
+	// - https://www.postgresql.org/docs/current/auth-password.html
+
+	return []postgres.HostBasedAuthentication{
+		*postgres.NewHBA().User(postgresqlUser).TLS().Method("scram-sha-256"),
+		*postgres.NewHBA().User(postgresqlUser).TCP().Method("reject"),
+	}
 }

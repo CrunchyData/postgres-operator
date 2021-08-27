@@ -87,6 +87,7 @@ func TestSecret(t *testing.T) {
 	assert.DeepEqual(t, constant, existing)
 
 	// A password should be generated.
+	assert.Assert(t, len(intent.Data["pgbouncer-password"]) != 0)
 	assert.Assert(t, len(intent.Data["pgbouncer-verifier"]) != 0)
 
 	// The output of authFileContents should go into intent.
@@ -350,7 +351,7 @@ func TestPostgreSQL(t *testing.T) {
 
 		assert.DeepEqual(t, hbas,
 			&postgres.HBAs{
-				Mandatory: []postgres.HostBasedAuthentication{postgresqlHBA()},
+				Mandatory: postgresqlHBAs(),
 			},
 			// postgres.HostBasedAuthentication has unexported fields. Call String() to compare.
 			cmp.Transformer("", postgres.HostBasedAuthentication.String))

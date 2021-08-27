@@ -193,6 +193,9 @@ COMMIT;`))
 	assert.Equal(t, expected, EnableInPostgreSQL(ctx, exec, secret))
 }
 
-func TestPostgreSQLHBA(t *testing.T) {
-	assert.Equal(t, postgresqlHBA().String(), `hostssl all "_crunchypgbouncer" all md5`)
+func TestPostgreSQLHBAs(t *testing.T) {
+	rules := postgresqlHBAs()
+	assert.Equal(t, len(rules), 2)
+	assert.Equal(t, rules[0].String(), `hostssl all "_crunchypgbouncer" all scram-sha-256`)
+	assert.Equal(t, rules[1].String(), `host all "_crunchypgbouncer" all reject`)
 }
