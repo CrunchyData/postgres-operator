@@ -10,5 +10,5 @@ password: W4tch0ut4hippo$
 # ha: true
 # imagePrefix: registry.developers.crunchydata.com/crunchydata
 # image: crunchy-postgres-ha
-# imageTag: centos8-13.3-4.7.2
+# imageTag: centos8-13.4-4.7.2
 # memory: 1Gi

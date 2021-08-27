@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 CCP_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
-CCP_PG_FULLVERSION ?= 13.3
+CCP_PG_FULLVERSION ?= 13.4
 CCP_POSTGIS_VERSION ?= 3.0
 CONTAINER ?= docker
 KUBECONFIG ?= $(HOME)/.kube/config

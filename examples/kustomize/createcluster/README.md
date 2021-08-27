@@ -44,7 +44,7 @@ pgo show cluster hippo -n pgo
 ```
 You will see something like this if successful:
 ```
-cluster : hippo (crunchy-postgres-ha:centos8-13.3-4.7.2)
+cluster : hippo (crunchy-postgres-ha:centos8-13.4-4.7.2)
 	pod : hippo-8fb6bd96-j87wq (Running) on gke-xxxx-default-pool-38e946bd-257w (1/1) (primary)
 		pvc: hippo (1Gi)
 	deployment : hippo
@@ -79,7 +79,7 @@ pgo show cluster dev-hippo -n pgo
 ```
 You will see something like this if successful:
 ```
-cluster : dev-hippo (crunchy-postgres-ha:centos8-13.3-4.7.2)
+cluster : dev-hippo (crunchy-postgres-ha:centos8-13.4-4.7.2)
 	pod : dev-hippo-588d4cb746-bwrxb (Running) on gke-xxxx-default-pool-95cba91c-0ppp (1/1) (primary)
 		pvc: dev-hippo (1Gi)
 	deployment : dev-hippo
@@ -113,7 +113,7 @@ pgo show cluster staging-hippo -n pgo
 ```
 You will see something like this if successful, (Notice one of the replicas is a different size):
 ```
-cluster : staging-hippo (crunchy-postgres-ha:centos8-13.3-4.7.2)
+cluster : staging-hippo (crunchy-postgres-ha:centos8-13.4-4.7.2)
 	pod : staging-hippo-85cf6dcb65-9h748 (Running) on gke-xxxx-default-pool-95cba91c-0ppp (1/1) (primary)
 		pvc: staging-hippo (1Gi)
 	pod : staging-hippo-lnxw-cf47d8c8b-6r4wn (Running) on gke-xxxx-default-pool-21b7282d-rqkj (1/1) (replica)
@@ -154,7 +154,7 @@ pgo show cluster prod-hippo -n pgo
 ```
 You will see something like this if successful, (Notice one of the replicas is a different size):
 ```
-cluster : prod-hippo (crunchy-postgres-ha:centos8-13.3-4.7.2)
+cluster : prod-hippo (crunchy-postgres-ha:centos8-13.4-4.7.2)
 	pod : prod-hippo-5d6dd46497-rr67c (Running) on gke-xxxx-default-pool-21b7282d-rqkj (1/1) (primary)
 		pvc: prod-hippo (1Gi)
 	pod : prod-hippo-flty-84d97c8769-2pzbh (Running) on gke-xxxx-default-pool-95cba91c-0ppp (1/1) (replica)
