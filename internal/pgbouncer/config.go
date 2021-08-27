@@ -38,7 +38,8 @@ const (
 	iniFileProjectionPath   = "~postgres-operator.ini"
 
 	authFileSecretKey   = "pgbouncer-users.txt" // #nosec G101 this is a name, not a credential
-	credentialSecretKey = "pgbouncer-verifier"  // #nosec G101 this is a name, not a credential
+	passwordSecretKey   = "pgbouncer-password"  // #nosec G101 this is a name, not a credential
+	verifierSecretKey   = "pgbouncer-verifier"  // #nosec G101 this is a name, not a credential
 	emptyConfigMapKey   = "pgbouncer-empty"
 	iniFileConfigMapKey = "pgbouncer.ini"
 )
@@ -71,7 +72,7 @@ func (vs iniValueSet) String() string {
 }
 
 // authFileContents returns a PgBouncer user database.
-func authFileContents(password []byte) []byte {
+func authFileContents(password string) []byte {
 	// > There should be at least 2 fields, surrounded by double quotes.
 	// > Double quotes in a field value can be escaped by writing two double quotes.
 	// - https://www.pgbouncer.org/config.html#authentication-file-format
@@ -79,7 +80,7 @@ func authFileContents(password []byte) []byte {
 		return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 	}
 
-	user1 := quote(postgresqlUser) + " " + quote(string(password)) + "\n"
+	user1 := quote(postgresqlUser) + " " + quote(password) + "\n"
 
 	return []byte(user1)
 }

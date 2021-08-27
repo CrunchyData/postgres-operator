@@ -44,7 +44,7 @@ func TestAuthFileContents(t *testing.T) {
 	t.Parallel()
 
 	password := `very"random`
-	data := authFileContents([]byte(password))
+	data := authFileContents(password)
 	assert.Equal(t, string(data), `"_crunchypgbouncer" "very""random"`+"\n")
 }
 

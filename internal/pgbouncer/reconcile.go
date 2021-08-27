@@ -62,14 +62,23 @@ func Secret(ctx context.Context,
 	var err error
 	initialize.ByteMap(&outSecret.Data)
 
-	verifier := inSecret.Data[credentialSecretKey]
+	// Use the existing password and verifier. Generate both when either is missing.
+	// NOTE(cbandy): We don't have a function to compare a plaintext password
+	// to a SCRAM verifier.
+	password := string(inSecret.Data[passwordSecretKey])
+	verifier := string(inSecret.Data[verifierSecretKey])
 
-	if err == nil && len(verifier) == 0 {
-		verifier, err = generateVerifier()
+	if err == nil && (len(password) == 0 || len(verifier) == 0) {
+		password, verifier, err = generatePassword()
+		err = errors.WithStack(err)
 	}
+
 	if err == nil {
-		outSecret.Data[authFileSecretKey] = authFileContents(verifier)
-		outSecret.Data[credentialSecretKey] = verifier
+		// Store the SCRAM verifier alongside the plaintext password so that
+		// later reconciles don't generate it repeatedly.
+		outSecret.Data[authFileSecretKey] = authFileContents(password)
+		outSecret.Data[passwordSecretKey] = []byte(password)
+		outSecret.Data[verifierSecretKey] = []byte(verifier)
 	}
 
 	if inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret == nil {
@@ -216,5 +225,5 @@ func PostgreSQL(
 		return
 	}
 
-	outHBAs.Mandatory = append(outHBAs.Mandatory, postgresqlHBA())
+	outHBAs.Mandatory = append(outHBAs.Mandatory, postgresqlHBAs()...)
 }
