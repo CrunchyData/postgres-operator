@@ -13,7 +13,7 @@ metadata:
     pg-cluster: {{ .Values.pgclustername }}
     pg-pod-anti-affinity: ""
     pgo-backrest: "true"
-    pgo-version: 4.5.3
+    pgo-version: 4.5.4-rc.1
     pgouser: admin
   name: {{ .Values.pgclustername }}
   namespace: {{ .Values.namespace }}
