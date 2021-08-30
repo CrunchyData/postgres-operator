@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -320,4 +321,11 @@ func TestRestoreCommand(t *testing.T) {
 	cmd := exec.Command(shellcheck, "--enable=all", file)
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+}
+
+func TestRestoreCommandPrettyYAML(t *testing.T) {
+	b, err := yaml.Marshal(RestoreCommand("/dir", "--options"))
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(string(b), "\n- |"),
+		"expected literal block scalar, got:\n%s", b)
 }

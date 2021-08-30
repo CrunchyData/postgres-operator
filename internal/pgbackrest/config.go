@@ -191,16 +191,49 @@ func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec,
 //   Patroni config when bootstrapping a cluster using an existing data directory.
 func RestoreCommand(pgdata string, args ...string) []string {
 
+	// After pgBackRest restores files, PostgreSQL starts in recovery to finish
+	// replaying WAL files. "hot_standby" is "on" (by default) so we can detect
+	// when recovery has finished. In that mode, some parameters cannot be
+	// smaller than they were when PostgreSQL was backed up. Configure them to
+	// match the values reported by "pg_controldata". Those parameters are also
+	// written to WAL files and may change during recovery. When they increase,
+	// PostgreSQL exits and we reconfigure and restart it.
+	// - https://www.postgresql.org/docs/current/hot-standby.html
+	// - https://www.postgresql.org/docs/current/app-pgcontroldata.html
+
 	const restoreScript = `declare -r pgdata="$1" opts="$2"
 install --directory --mode=0700 "${pgdata}"
 eval "pgbackrest restore ${opts}"
 rm -f "${pgdata}/patroni.dynamic.json"
-echo "unix_socket_directories = '/tmp'" > /tmp/postgres.restore.conf
-echo "archive_command = 'false'" >> /tmp/postgres.restore.conf
-echo "archive_mode = 'on'" >> /tmp/postgres.restore.conf
-pg_ctl start -D "${pgdata}" -o "--config-file=/tmp/postgres.restore.conf"
-until [[ $(psql -At -c "SELECT pg_catalog.pg_is_in_recovery()") == "f" ]]; do sleep 1; done
-pg_ctl stop -D "${pgdata}"
+export PGDATA="${pgdata}" PGHOST='/tmp'
+
+until [ "${recovery=}" = 'f' ]; do
+if [ -z "${recovery}" ]; then
+control=$(pg_controldata)
+read -r max_conn <<< "${control##*max_connections setting:}"
+read -r max_lock <<< "${control##*max_locks_per_xact setting:}"
+read -r max_ptxn <<< "${control##*max_prepared_xacts setting:}"
+read -r max_work <<< "${control##*max_worker_processes setting:}"
+cat > /tmp/postgres.restore.conf <<EOF
+archive_command = 'false'
+archive_mode = 'on'
+max_connections = '${max_conn}'
+max_locks_per_transaction = '${max_lock}'
+max_prepared_transactions = '${max_ptxn}'
+max_worker_processes = '${max_work}'
+unix_socket_directories = '/tmp'
+EOF
+if [ "$(< "${pgdata}/PG_VERSION")" -ge 12 ]; then
+read -r max_wals <<< "${control##*max_wal_senders setting:}"
+echo >> /tmp/postgres.restore.conf "max_wal_senders = '${max_wals}'"
+fi
+
+pg_ctl start --silent --wait --options='--config-file=/tmp/postgres.restore.conf'
+fi
+recovery=$(psql -Atc 'SELECT pg_catalog.pg_is_in_recovery()' && sleep 1) || true
+done
+
+pg_ctl stop --silent --wait
 mv "${pgdata}" "${pgdata}_bootstrap"`
 
 	return append([]string{"bash", "-ceu", "--", restoreScript, "-", pgdata}, args...)
