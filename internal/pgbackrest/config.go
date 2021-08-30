@@ -214,9 +214,11 @@ read -r max_conn <<< "${control##*max_connections setting:}"
 read -r max_lock <<< "${control##*max_locks_per_xact setting:}"
 read -r max_ptxn <<< "${control##*max_prepared_xacts setting:}"
 read -r max_work <<< "${control##*max_worker_processes setting:}"
+echo > /tmp/pg_hba.restore.conf 'local all "postgres" peer'
 cat > /tmp/postgres.restore.conf <<EOF
 archive_command = 'false'
 archive_mode = 'on'
+hba_file = '/tmp/pg_hba.restore.conf'
 max_connections = '${max_conn}'
 max_locks_per_transaction = '${max_lock}'
 max_prepared_transactions = '${max_ptxn}'
