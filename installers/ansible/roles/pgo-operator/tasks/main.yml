@@ -273,7 +273,7 @@
 
         - name: Label PGO BackRest Repo Secret
           command: |
-            {{ kubectl_or_oc }} label secret generic -n {{ pgo_operator_namespace }} \
+            {{ kubectl_or_oc }} label secret -n {{ pgo_operator_namespace }} \
               pgo-backrest-repo-config vendor=crunchydata
           when:
             - pgo_backrest_repo_config_result.rc == 1
