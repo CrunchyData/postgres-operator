@@ -49,7 +49,6 @@ The pgBouncer user **is not meant to be used to log into PostgreSQL directly**: 
 Connecting to a PostgreSQL cluster through pgBouncer is similar to how you [connect to PostgreSQL directly]({{< relref "tutorial/connect-cluster.md">}}), but you are connecting through a different service. First, note the types of users that can connect to PostgreSQL through `pgBouncer`:
 
 - Any regular user that's created through [`pgo create user`]({{< relref "pgo-client/reference/pgo_create_user.md" >}}) or a user that is not a system account.
-- The `postgres` superuser
 
 The following example will follow similar steps for how you would connect to a [Postgres Cluster via `psql`]({{< relref "tutorial/connect-cluster.md">}}#connection-via-psql), but applies to all other connection methods.
 
