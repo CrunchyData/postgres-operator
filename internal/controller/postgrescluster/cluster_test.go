@@ -35,6 +35,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -820,6 +821,19 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 	cluster.Name = "pg8"
 	cluster.Spec.PostgresVersion = 12
 	cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{}}
+	cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{{
+		Name: "repo1",
+		Volume: &v1beta1.RepoPVC{
+			VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+				AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+				Resources: v1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+			},
+		},
+	}}
 
 	assert.NilError(t, cc.Create(ctx, cluster))
 

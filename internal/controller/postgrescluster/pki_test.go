@@ -28,6 +28,7 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"gotest.tools/v3/assert"
@@ -80,6 +81,21 @@ func TestReconcileCerts(t *testing.T) {
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance",
 			}},
+			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
+				Repos: []v1beta1.PGBackRestRepo{{
+					Name: "repo1",
+					Volume: &v1beta1.RepoPVC{
+						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+							Resources: v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceStorage: resource.MustParse("1Gi"),
+								},
+							},
+						},
+					},
+				}},
+			}},
 		},
 	}
 	cluster1.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
@@ -99,6 +115,21 @@ func TestReconcileCerts(t *testing.T) {
 			PostgresVersion: 12,
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance",
+			}},
+			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
+				Repos: []v1beta1.PGBackRestRepo{{
+					Name: "repo1",
+					Volume: &v1beta1.RepoPVC{
+						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+							Resources: v1.ResourceRequirements{
+								Requests: v1.ResourceList{
+									v1.ResourceStorage: resource.MustParse("1Gi"),
+								},
+							},
+						},
+					},
+				}},
 			}},
 		},
 	}

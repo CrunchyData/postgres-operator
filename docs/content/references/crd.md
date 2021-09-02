@@ -3762,15 +3762,15 @@ pgBackRest archive configuration
         <td>Defines configuration for a pgBackRest dedicated repository host.  This section is only applicable if at least one "volume" (i.e. PVC-based) repository is defined in the "repos" section, therefore enabling a dedicated repository host Deployment.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindex">repos</a></b></td>
-        <td>[]object</td>
-        <td>Defines a pgBackRest repository</td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrestore">restore</a></b></td>
         <td>object</td>
         <td>Defines details for performing an in-place restore using pgBackRest</td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindex">repos</a></b></td>
+        <td>[]object</td>
+        <td>Defines a pgBackRest repository</td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
@@ -5370,408 +5370,6 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 </table>
 
 
-<h3 id="postgresclusterspecbackupspgbackrestreposindex">
-  PostgresCluster.spec.backups.pgbackrest.repos[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrest">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-PGBackRestRepo represents a pgBackRest repository.  Only one of its members may be specified.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexazure">azure</a></b></td>
-        <td>object</td>
-        <td>Represents a pgBackRest repository that is created using Azure storage</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexgcs">gcs</a></b></td>
-        <td>object</td>
-        <td>Represents a pgBackRest repository that is created using Google Cloud Storage</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexs3">s3</a></b></td>
-        <td>object</td>
-        <td>RepoS3 represents a pgBackRest repository that is created using AWS S3 (or S3-compatible) storage</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexschedules">schedules</a></b></td>
-        <td>object</td>
-        <td>Defines the schedules for the pgBackRest backups Full, Differential and Incremental backup types are supported: https://pgbackrest.org/user-guide.html#concept/backup</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolume">volume</a></b></td>
-        <td>object</td>
-        <td>Represents a pgBackRest repository that is created using a PersistentVolumeClaim</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>The name of the the repository</td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexazure">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].azure
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Represents a pgBackRest repository that is created using Azure storage
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>container</b></td>
-        <td>string</td>
-        <td>The Azure container utilized for the repository</td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexgcs">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].gcs
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Represents a pgBackRest repository that is created using Google Cloud Storage
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>bucket</b></td>
-        <td>string</td>
-        <td>The GCS bucket utilized for the repository</td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexs3">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].s3
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-RepoS3 represents a pgBackRest repository that is created using AWS S3 (or S3-compatible) storage
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>bucket</b></td>
-        <td>string</td>
-        <td>The S3 bucket utilized for the repository</td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>endpoint</b></td>
-        <td>string</td>
-        <td>A valid endpoint corresponding to the specified region</td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>region</b></td>
-        <td>string</td>
-        <td>The region corresponding to the S3 bucket</td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexschedules">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].schedules
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Defines the schedules for the pgBackRest backups Full, Differential and Incremental backup types are supported: https://pgbackrest.org/user-guide.html#concept/backup
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>differential</b></td>
-        <td>string</td>
-        <td>Defines the Cron schedule for a differential pgBackRest backup. Follows the standard Cron schedule syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>full</b></td>
-        <td>string</td>
-        <td>Defines the Cron schedule for a full pgBackRest backup. Follows the standard Cron schedule syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>incremental</b></td>
-        <td>string</td>
-        <td>Defines the Cron schedule for an incremental pgBackRest backup. Follows the standard Cron schedule syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexvolume">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].volume
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Represents a pgBackRest repository that is created using a PersistentVolumeClaim
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">volumeClaimSpec</a></b></td>
-        <td>object</td>
-        <td>Defines a PersistentVolumeClaim spec used to create and/or bind a volume</td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolume">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Defines a PersistentVolumeClaim spec used to create and/or bind a volume
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>accessModes</b></td>
-        <td>[]string</td>
-        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasource">dataSource</a></b></td>
-        <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">resources</a></b></td>
-        <td>object</td>
-        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">selector</a></b></td>
-        <td>object</td>
-        <td>A label query over volumes to consider for binding.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>storageClassName</b></td>
-        <td>string</td>
-        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>volumeMode</b></td>
-        <td>string</td>
-        <td>volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>volumeName</b></td>
-        <td>string</td>
-        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasource">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.dataSource
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>apiGroup</b></td>
-        <td>string</td>
-        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>kind</b></td>
-        <td>string</td>
-        <td>Kind is the type of resource being referenced</td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>name</b></td>
-        <td>string</td>
-        <td>Name is the name of resource being referenced</td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.resources
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.selector
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-A label query over volumes to consider for binding.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselectormatchexpressionsindex">matchExpressions</a></b></td>
-        <td>[]object</td>
-        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>matchLabels</b></td>
-        <td>map[string]string</td>
-        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselectormatchexpressionsindex">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.selector.matchExpressions[index]
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>values</b></td>
-        <td>[]string</td>
-        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>key</b></td>
-        <td>string</td>
-        <td>key is the label key that the selector applies to.</td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>operator</b></td>
-        <td>string</td>
-        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
-        <td>true</td>
-      </tr></tbody>
-</table>
-
-
 <h3 id="postgresclusterspecbackupspgbackrestrestore">
   PostgresCluster.spec.backups.pgbackrest.restore
   <sup><sup><a href="#postgresclusterspecbackupspgbackrest">↩ Parent</a></sup></sup>
@@ -6801,6 +6399,408 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
         <td>string</td>
         <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
         <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindex">
+  PostgresCluster.spec.backups.pgbackrest.repos[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+PGBackRestRepo represents a pgBackRest repository.  Only one of its members may be specified.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexazure">azure</a></b></td>
+        <td>object</td>
+        <td>Represents a pgBackRest repository that is created using Azure storage</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexgcs">gcs</a></b></td>
+        <td>object</td>
+        <td>Represents a pgBackRest repository that is created using Google Cloud Storage</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexs3">s3</a></b></td>
+        <td>object</td>
+        <td>RepoS3 represents a pgBackRest repository that is created using AWS S3 (or S3-compatible) storage</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexschedules">schedules</a></b></td>
+        <td>object</td>
+        <td>Defines the schedules for the pgBackRest backups Full, Differential and Incremental backup types are supported: https://pgbackrest.org/user-guide.html#concept/backup</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolume">volume</a></b></td>
+        <td>object</td>
+        <td>Represents a pgBackRest repository that is created using a PersistentVolumeClaim</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>The name of the the repository</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexazure">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].azure
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Represents a pgBackRest repository that is created using Azure storage
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>container</b></td>
+        <td>string</td>
+        <td>The Azure container utilized for the repository</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexgcs">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].gcs
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Represents a pgBackRest repository that is created using Google Cloud Storage
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>bucket</b></td>
+        <td>string</td>
+        <td>The GCS bucket utilized for the repository</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexs3">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].s3
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+RepoS3 represents a pgBackRest repository that is created using AWS S3 (or S3-compatible) storage
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>bucket</b></td>
+        <td>string</td>
+        <td>The S3 bucket utilized for the repository</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>endpoint</b></td>
+        <td>string</td>
+        <td>A valid endpoint corresponding to the specified region</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>region</b></td>
+        <td>string</td>
+        <td>The region corresponding to the S3 bucket</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexschedules">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].schedules
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the schedules for the pgBackRest backups Full, Differential and Incremental backup types are supported: https://pgbackrest.org/user-guide.html#concept/backup
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>differential</b></td>
+        <td>string</td>
+        <td>Defines the Cron schedule for a differential pgBackRest backup. Follows the standard Cron schedule syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>full</b></td>
+        <td>string</td>
+        <td>Defines the Cron schedule for a full pgBackRest backup. Follows the standard Cron schedule syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>incremental</b></td>
+        <td>string</td>
+        <td>Defines the Cron schedule for an incremental pgBackRest backup. Follows the standard Cron schedule syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolume">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Represents a pgBackRest repository that is created using a PersistentVolumeClaim
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">volumeClaimSpec</a></b></td>
+        <td>object</td>
+        <td>Defines a PersistentVolumeClaim spec used to create and/or bind a volume</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolume">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines a PersistentVolumeClaim spec used to create and/or bind a volume
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>accessModes</b></td>
+        <td>[]string</td>
+        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasource">dataSource</a></b></td>
+        <td>object</td>
+        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">selector</a></b></td>
+        <td>object</td>
+        <td>A label query over volumes to consider for binding.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClassName</b></td>
+        <td>string</td>
+        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeMode</b></td>
+        <td>string</td>
+        <td>volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasource">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.dataSource
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.resources
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.selector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over volumes to consider for binding.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.selector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
       </tr></tbody>
 </table>
 

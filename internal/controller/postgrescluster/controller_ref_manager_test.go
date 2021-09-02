@@ -25,6 +25,7 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -69,6 +70,21 @@ func TestManageControllerRefs(t *testing.T) {
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
 			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
+				Repos: []v1beta1.PGBackRestRepo{{
+					Name: "repo1",
+					Volume: &v1beta1.RepoPVC{
+						VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								},
+							},
+						},
+					},
+				}},
+			}},
 		},
 	}
 

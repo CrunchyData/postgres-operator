@@ -63,6 +63,13 @@ func TestDeleteControlled(t *testing.T) {
 			instances: [{
 				name: instance,
 			}],
+			backups: { 
+			    pgbackrest: {
+					repos: [{
+						name: repo1,
+					}],
+				},
+			},
 		},
 	}`), cluster))
 
@@ -190,6 +197,17 @@ spec:
       resources:
         requests:
           storage: 1Gi
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
 `)
 			Expect(reconcile(cluster)).To(BeZero())
 		})
@@ -348,6 +366,17 @@ spec:
       resources:
         requests:
           storage: 1Gi
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
 `)
 			Expect(reconcile(cluster)).To(BeZero())
 

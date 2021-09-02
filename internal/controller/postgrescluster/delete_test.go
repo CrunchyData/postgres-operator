@@ -180,12 +180,26 @@ func TestReconcilerHandleDelete(t *testing.T) {
 							},
 						},
 					],
+					backups: { 
+						pgbackrest: {
+							repos: [{
+								name: repo1,
+								volume: {
+									volumeClaimSpec: {
+										accessModes: [ReadWriteOnce],
+										resources: { requests: { storage: 1Gi } },
+									},
+								},
+							}],
+						},
+					},
 				},
 			}`), cluster))
 
 			cluster.Namespace = ns.Name
 			cluster.Name = strings.ToLower(test.name)
 			cluster.Spec.Image = CrunchyPostgresHAImage
+			cluster.Spec.Backups.PGBackRest.Image = CrunchyPGBackRestImage
 
 			if test.beforeCreate != nil {
 				test.beforeCreate(t, cluster)
@@ -413,12 +427,26 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 					},
 				},
 			],
+			backups: { 
+				pgbackrest: {
+					repos: [{
+						name: repo1,
+						volume: {
+							volumeClaimSpec: {
+								accessModes: [ReadWriteOnce],
+								resources: { requests: { storage: 1Gi } },
+							},
+						},
+					}],
+				},
+			},
 		},
 	}`), cluster))
 
 	cluster.Namespace = ns.Name
 	cluster.Name = strings.ToLower("DeleteNamespace")
 	cluster.Spec.Image = CrunchyPostgresHAImage
+	cluster.Spec.Backups.PGBackRest.Image = CrunchyPGBackRestImage
 
 	assert.NilError(t, cc.Create(ctx, cluster))
 
