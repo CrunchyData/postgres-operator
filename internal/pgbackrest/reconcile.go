@@ -277,3 +277,8 @@ func ReplicaCreateCommand(
 
 	return nil
 }
+
+// RepoVolumeMount returns the name and mount path of the pgBackRest repo volume.
+func RepoVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{Name: "pgbackrest-repo", MountPath: repoMountPath}
+}

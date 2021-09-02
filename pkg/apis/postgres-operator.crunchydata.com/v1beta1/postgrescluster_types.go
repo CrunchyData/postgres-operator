@@ -153,30 +153,30 @@ type DataSource struct {
 
 	// Defines any existing volumes to reuse for this PostgresCluster.
 	// +optional
-	ExistingVolumes *ExistingVolumes `json:"existingVolumes,omitempty"`
+	Volumes *DataSourceVolumes `json:"volumes,omitempty"`
 }
 
-// ExistingVolumes defines any existing volumes to reuse for this PostgresCluster.
-type ExistingVolumes struct {
+// DataSourceVolumes defines any existing volumes to reuse for this PostgresCluster.
+type DataSourceVolumes struct {
 	// Defines the existing pgData volume and directory to use in the current
 	// PostgresCluster.
 	// +optional
-	ExistingPGDataVolume *ExistingVolume `json:"existingPGDataVolume,omitempty"`
+	PGDataVolume *DataSourceVolume `json:"pgDataVolume,omitempty"`
 
 	// Defines the existing pg_wal volume and directory to use in the current
 	// PostgresCluster. Note that a defined pg_wal volume MUST be accompanied by
 	// a pgData volume.
 	// +optional
-	ExistingPGWALVolume *ExistingVolume `json:"existingPGWALVolume,omitempty"`
+	PGWALVolume *DataSourceVolume `json:"pgWALVolume,omitempty"`
 
 	// Defines the existing pgBackRest repo volume and directory to use in the
 	// current PostgresCluster.
 	// +optional
-	ExistingPGBackRestVolume *ExistingVolume `json:"existingPGBackRestVolume,omitempty"`
+	PGBackRestVolume *DataSourceVolume `json:"pgBackRestVolume,omitempty"`
 }
 
-// ExistingVolume defines the PVC name and data diretory path for an existing cluster volume.
-type ExistingVolume struct {
+// DataSourceVolume defines the PVC name and data diretory path for an existing cluster volume.
+type DataSourceVolume struct {
 	// The existing PVC name.
 	PVCName string `json:"pvcName"`
 
