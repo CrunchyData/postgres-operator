@@ -1422,6 +1422,7 @@ spec:
                           required:
                           - name
                           type: object
+                        minItems: 1
                         type: array
                         x-kubernetes-list-map-keys:
                         - name
@@ -2219,6 +2220,8 @@ spec:
                         - enabled
                         - repoName
                         type: object
+                    required:
+                    - repos
                     type: object
                 required:
                 - pgbackrest

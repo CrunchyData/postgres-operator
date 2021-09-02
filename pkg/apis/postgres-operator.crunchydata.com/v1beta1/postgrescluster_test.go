@@ -51,7 +51,8 @@ metadata:
   creationTimestamp: null
 spec:
   backups:
-    pgbackrest: {}
+    pgbackrest:
+      repos: null
   instances: null
   patroni:
     dynamicConfiguration: null
@@ -81,7 +82,8 @@ metadata:
   creationTimestamp: null
 spec:
   backups:
-    pgbackrest: {}
+    pgbackrest:
+      repos: null
   instances:
   - dataVolumeClaimSpec:
       resources: {}
