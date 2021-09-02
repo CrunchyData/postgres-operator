@@ -159,6 +159,8 @@ func Delete(request Request) {
 		removeBackupSecrets(request)
 		removeAllBackupPVCs(request)
 	}
+	// remove the bootstrap secret if present
+	removeBootstrapSecret(request)
 }
 
 // removeBackRestRepo removes the pgBackRest repo that is associated with the
@@ -215,6 +217,20 @@ func removeBackupSecrets(request Request) {
 	// we'll also check to see if there was an error, but if there is we'll only
 	// log the fact there was an error; this function is just a pass through
 	if err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(ctx, secretName, metav1.DeleteOptions{}); err != nil {
+		log.Error(err)
+	}
+}
+
+// removeBootstrapSecret removes the pgbackrest bootstrap secret.  Specifically, if a
+// cluster is being deleted after a failed bootstrap attempt using a "pgDataSource", a
+// "bootstrap" pgBackRest secret might still be present.  Therefore, attempt to remove
+// it here, but ignore any "does not exist" errors since it typically will not be present.
+func removeBootstrapSecret(request Request) {
+	ctx := context.TODO()
+	if err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(ctx,
+		fmt.Sprintf(util.BootstrapConfigPrefix, request.ClusterName,
+			config.LABEL_BACKREST_REPO_SECRET),
+		metav1.DeleteOptions{}); err != nil && !kerror.IsNotFound(err) {
 		log.Error(err)
 	}
 }
