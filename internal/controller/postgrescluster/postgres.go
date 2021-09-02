@@ -148,26 +148,15 @@ func (r *Reconciler) reconcilePostgresDatabases(
 
 	// Find the PostgreSQL instance that can execute SQL that writes system
 	// catalogs. When there is none, return early.
+	pod, _ := instances.writablePod(container)
+	if pod == nil {
+		return nil
+	}
 
-	for _, instance := range instances.forCluster {
-		if terminating, known := instance.IsTerminating(); terminating || !known {
-			continue
-		}
-		if writable, known := instance.IsWritable(); !writable || !known {
-			continue
-		}
-		running, known := instance.IsRunning(container)
-		if running && known && len(instance.Pods) > 0 {
-			pod := instance.Pods[0]
-			ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
-
-			podExecutor = func(
-				_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
-			) error {
-				return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
-			}
-			break
-		}
+	podExecutor = func(
+		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error {
+		return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
 	}
 	if podExecutor == nil {
 		return nil

@@ -262,6 +262,154 @@ func TestNewObservedInstances(t *testing.T) {
 	})
 }
 
+func TestWritablePod(t *testing.T) {
+	container := "container"
+
+	t.Run("empty observed", func(t *testing.T) {
+		observed := &observedInstances{}
+
+		pod, instance := observed.writablePod("container")
+		assert.Assert(t, pod == nil)
+		assert.Assert(t, instance == nil)
+	})
+	t.Run("terminating", func(t *testing.T) {
+		instances := []*Instance{
+			{
+				Name: "instance",
+				Pods: []*corev1.Pod{{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace",
+						Name:      "pod",
+						Annotations: map[string]string{
+							"status": `{"role":"master"}`,
+						},
+						DeletionTimestamp: &metav1.Time{},
+					},
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{{
+							Name: container,
+							State: corev1.ContainerState{
+								Running: new(corev1.ContainerStateRunning),
+							},
+						}},
+					},
+				}},
+				Runner: &appsv1.StatefulSet{},
+			},
+		}
+		observed := &observedInstances{forCluster: instances}
+
+		terminating, known := observed.forCluster[0].IsTerminating()
+		assert.Assert(t, terminating && known)
+
+		pod, instance := observed.writablePod("container")
+		assert.Assert(t, pod == nil)
+		assert.Assert(t, instance == nil)
+	})
+	t.Run("not running", func(t *testing.T) {
+		instances := []*Instance{
+			{
+				Name: "instance",
+				Pods: []*corev1.Pod{{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace",
+						Name:      "pod",
+						Annotations: map[string]string{
+							"status": `{"role":"master"}`,
+						},
+					},
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{{
+							Name: container,
+							State: corev1.ContainerState{
+								Waiting: new(corev1.ContainerStateWaiting)},
+						}},
+					},
+				}},
+				Runner: &appsv1.StatefulSet{},
+			},
+		}
+		observed := &observedInstances{forCluster: instances}
+
+		running, known := observed.forCluster[0].IsRunning(container)
+		assert.Check(t, !running && known)
+
+		pod, instance := observed.writablePod("container")
+		assert.Assert(t, pod == nil)
+		assert.Assert(t, instance == nil)
+	})
+	t.Run("not writable", func(t *testing.T) {
+		instances := []*Instance{
+			{
+				Name: "instance",
+				Pods: []*corev1.Pod{{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace",
+						Name:      "pod",
+						Annotations: map[string]string{
+							"status": `{"role":"replica"}`,
+						},
+					},
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{{
+							Name: container,
+							State: corev1.ContainerState{
+								Running: new(corev1.ContainerStateRunning),
+							},
+						}},
+					},
+				}},
+				Runner: &appsv1.StatefulSet{},
+			},
+		}
+		observed := &observedInstances{forCluster: instances}
+
+		writable, known := observed.forCluster[0].IsWritable()
+		assert.Check(t, !writable && known)
+
+		pod, instance := observed.writablePod("container")
+		assert.Assert(t, pod == nil)
+		assert.Assert(t, instance == nil)
+	})
+	t.Run("writable instance exists", func(t *testing.T) {
+		instances := []*Instance{
+			{
+				Name: "instance",
+				Pods: []*corev1.Pod{{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: "namespace",
+						Name:      "pod",
+						Annotations: map[string]string{
+							"status": `{"role":"master"}`,
+						},
+					},
+					Status: corev1.PodStatus{
+						ContainerStatuses: []corev1.ContainerStatus{{
+							Name: container,
+							State: corev1.ContainerState{
+								Running: new(corev1.ContainerStateRunning),
+							},
+						}},
+					},
+				}},
+				Runner: &appsv1.StatefulSet{},
+			},
+		}
+		observed := &observedInstances{forCluster: instances}
+
+		terminating, known := observed.forCluster[0].IsTerminating()
+		assert.Check(t, !terminating && known)
+		writable, known := observed.forCluster[0].IsWritable()
+		assert.Check(t, writable && known)
+		running, known := observed.forCluster[0].IsRunning(container)
+		assert.Check(t, running && known)
+
+		pod, instance := observed.writablePod("container")
+		assert.Assert(t, pod != nil)
+		assert.Assert(t, instance != nil)
+	})
+}
+
 func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 	clusterName := "hippo"

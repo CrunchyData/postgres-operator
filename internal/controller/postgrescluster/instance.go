@@ -266,6 +266,27 @@ func newObservedInstances(
 	return &observed
 }
 
+func (observed *observedInstances) writablePod(container string) (*corev1.Pod, *Instance) {
+	if observed == nil {
+		return nil, nil
+	}
+
+	for _, instance := range observed.forCluster {
+		if terminating, known := instance.IsTerminating(); terminating || !known {
+			continue
+		}
+		if writable, known := instance.IsWritable(); !writable || !known {
+			continue
+		}
+		running, known := instance.IsRunning(container)
+		if running && known && len(instance.Pods) > 0 {
+			return instance.Pods[0], instance
+		}
+	}
+
+	return nil, nil
+}
+
 // +kubebuilder:rbac:groups="",resources=pods,verbs=list
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
 
