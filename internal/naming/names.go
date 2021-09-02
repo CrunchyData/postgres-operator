@@ -55,15 +55,15 @@ const (
 	// ContainerPGMonitorExporter is the name of a container running postgres_exporter
 	ContainerPGMonitorExporter = "exporter"
 
-	// JobMovePGDataDir is the name of the job utilized to copy v4 Operator
+	// ContainerJobMovePGDataDir is the name of the job container utilized to copy v4 Operator
 	// pgData directories to the v5 default location
-	JobMovePGDataDir = "pgdata-move-job"
-	// JobMovePGWALDir is the name of the job utilized to copy v4 Operator
+	ContainerJobMovePGDataDir = "pgdata-move-job"
+	// ContainerJobMovePGWALDir is the name of the job container utilized to copy v4 Operator
 	// pg_wal directories to the v5 default location
-	JobMovePGWALDir = "pgwal-move-job"
-	// JobMovePGBackRestRepoDir is the name of the job utilized to copy v4
+	ContainerJobMovePGWALDir = "pgwal-move-job"
+	// ContainerJobMovePGBackRestRepoDir is the name of the job container utilized to copy v4
 	// Operator pgBackRest repo directories to the v5 default location
-	JobMovePGBackRestRepoDir = "repo-move-job"
+	ContainerJobMovePGBackRestRepoDir = "repo-move-job"
 )
 
 const (

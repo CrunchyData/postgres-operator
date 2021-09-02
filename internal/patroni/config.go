@@ -553,9 +553,9 @@ func instanceYAML(
 	if !ClusterBootstrapped(cluster) {
 		// if restore status exists, then a restore occurred an the "existing" method is used
 		if (cluster.Status.PGBackRest != nil && cluster.Status.PGBackRest.Restore != nil) ||
-			(cluster.Spec.DataSource != nil && cluster.Spec.DataSource.ExistingVolumes != nil &&
-				cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume != nil &&
-				cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume.Directory != "") {
+			(cluster.Spec.DataSource != nil && cluster.Spec.DataSource.Volumes != nil &&
+				cluster.Spec.DataSource.Volumes.PGDataVolume != nil &&
+				cluster.Spec.DataSource.Volumes.PGDataVolume.Directory != "") {
 			data_dir := postgres.DataDirectory(cluster)
 			root["bootstrap"] = map[string]interface{}{
 				"method": "existing",

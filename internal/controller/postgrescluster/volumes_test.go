@@ -635,7 +635,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			PostgresVersion: 13,
 			Image:           "example.com/crunchy-postgres-ha:test",
 			DataSource: &v1beta1.DataSource{
-				ExistingVolumes: &v1beta1.ExistingVolumes{},
+				Volumes: &v1beta1.DataSourceVolumes{},
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
@@ -693,8 +693,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.NilError(t, tClient.Create(ctx, volume))
 
 		// add the pgData PVC name to the CRD
-		cluster.Spec.DataSource.ExistingVolumes.
-			ExistingPGDataVolume = &v1beta1.ExistingVolume{
+		cluster.Spec.DataSource.Volumes.
+			PGDataVolume = &v1beta1.DataSourceVolume{
 			PVCName: "pgdatavolume",
 		}
 
@@ -712,7 +712,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.Assert(t, len(clusterVolumes) == 1)
 
 		// observe again, but allow time for the change to be observed
-		err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+		err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
 			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
 			return len(clusterVolumes) == 1, err
 		})
@@ -733,8 +733,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		// ensure volume is found and labeled correctly
 		var found bool
 		for i := range clusterVolumes {
-			if clusterVolumes[i].Name == cluster.Spec.DataSource.ExistingVolumes.
-				ExistingPGDataVolume.PVCName {
+			if clusterVolumes[i].Name == cluster.Spec.DataSource.Volumes.
+				PGDataVolume.PVCName {
 				found = true
 				assert.DeepEqual(t, expected, clusterVolumes[i].Labels)
 			}
@@ -757,8 +757,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.NilError(t, tClient.Create(ctx, pgWALVolume))
 
 		// add the pg_wal PVC name to the CRD
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume =
-			&v1beta1.ExistingVolume{
+		cluster.Spec.DataSource.Volumes.PGWALVolume =
+			&v1beta1.DataSourceVolume{
 				PVCName: "pgwalvolume",
 			}
 
@@ -777,7 +777,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.Assert(t, len(clusterVolumes) == 2)
 
 		// observe again, but allow time for the change to be observed
-		err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+		err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
 			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
 			return len(clusterVolumes) == 2, err
 		})
@@ -798,8 +798,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		// ensure volume is found and labeled correctly
 		var found bool
 		for i := range clusterVolumes {
-			if clusterVolumes[i].Name == cluster.Spec.DataSource.ExistingVolumes.
-				ExistingPGWALVolume.PVCName {
+			if clusterVolumes[i].Name == cluster.Spec.DataSource.Volumes.
+				PGWALVolume.PVCName {
 				found = true
 				assert.DeepEqual(t, expected, clusterVolumes[i].Labels)
 			}
@@ -822,8 +822,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.NilError(t, tClient.Create(ctx, volume))
 
 		// add the pgBackRest repo PVC name to the CRD
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume =
-			&v1beta1.ExistingVolume{
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume =
+			&v1beta1.DataSourceVolume{
 				PVCName: "repovolume",
 			}
 
@@ -844,7 +844,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.Assert(t, len(clusterVolumes) == 3)
 
 		// observe again, but allow time for the change to be observed
-		err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+		err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
 			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
 			return len(clusterVolumes) == 3, err
 		})
@@ -865,8 +865,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		// ensure volume is found and labeled correctly
 		var found bool
 		for i := range clusterVolumes {
-			if clusterVolumes[i].Name == cluster.Spec.DataSource.ExistingVolumes.
-				ExistingPGBackRestVolume.PVCName {
+			if clusterVolumes[i].Name == cluster.Spec.DataSource.Volumes.
+				PGBackRestVolume.PVCName {
 				found = true
 				assert.DeepEqual(t, expected, clusterVolumes[i].Labels)
 			}
@@ -905,16 +905,16 @@ func TestReconcileMoveDirectories(t *testing.T) {
 			PostgresVersion: 13,
 			Image:           "example.com/crunchy-postgres-ha:test",
 			DataSource: &v1beta1.DataSource{
-				ExistingVolumes: &v1beta1.ExistingVolumes{
-					ExistingPGDataVolume: &v1beta1.ExistingVolume{
+				Volumes: &v1beta1.DataSourceVolumes{
+					PGDataVolume: &v1beta1.DataSourceVolume{
 						PVCName:   "testpgdata",
 						Directory: "testpgdatadir",
 					},
-					ExistingPGWALVolume: &v1beta1.ExistingVolume{
+					PGWALVolume: &v1beta1.DataSourceVolume{
 						PVCName:   "testwal",
 						Directory: "testwaldir",
 					},
-					ExistingPGBackRestVolume: &v1beta1.ExistingVolume{
+					PGBackRestVolume: &v1beta1.DataSourceVolume{
 						PVCName:   "testrepo",
 						Directory: "testrepodir",
 					},
@@ -963,8 +963,8 @@ func TestReconcileMoveDirectories(t *testing.T) {
 
 	returnEarly, err := r.reconcileDirMoveJobs(ctx, cluster)
 	assert.NilError(t, err)
-	// returnEarly should always be true because envtest is only simulating
-	// the kube API server, so the job will never show as completed.
+	// returnEarly will initially be true because the Jobs will not have
+	// completed yet
 	assert.Assert(t, returnEarly)
 
 	moveJobs := &batchv1.JobList{}
@@ -977,8 +977,8 @@ func TestReconcileMoveDirectories(t *testing.T) {
 
 		for i := range moveJobs.Items {
 			if moveJobs.Items[i].Name == "testcluster-move-pgdata-dir" {
-				assert.Assert(t, marshalEquals(moveJobs.Items[i].Spec.Template.
-					Spec, strings.TrimSpace(`automountServiceAccountToken: false
+				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, `
+automountServiceAccountToken: false
 containers:
 - command:
   - bash
@@ -1009,18 +1009,18 @@ volumes:
 - name: postgres-data
   persistentVolumeClaim:
     claimName: testpgdata
-	`)+"\n"))
+	`+"\n"))
 			}
 		}
 
 	})
 
-	t.Run("check pgdata move job pod spec", func(t *testing.T) {
+	t.Run("check pgwal move job pod spec", func(t *testing.T) {
 
 		for i := range moveJobs.Items {
 			if moveJobs.Items[i].Name == "testcluster-move-pgwal-dir" {
-				assert.Assert(t, marshalEquals(moveJobs.Items[i].Spec.Template.
-					Spec, strings.TrimSpace(`automountServiceAccountToken: false
+				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, `
+automountServiceAccountToken: false
 containers:
 - command:
   - bash
@@ -1051,18 +1051,18 @@ volumes:
 - name: postgres-wal
   persistentVolumeClaim:
     claimName: testwal
-	`)+"\n"))
+	`+"\n"))
 			}
 		}
 
 	})
 
-	t.Run("check pgdata move job pod spec", func(t *testing.T) {
+	t.Run("check repo move job pod spec", func(t *testing.T) {
 
 		for i := range moveJobs.Items {
 			if moveJobs.Items[i].Name == "testcluster-move-pgbackrest-repo-dir" {
-				assert.Assert(t, marshalEquals(moveJobs.Items[i].Spec.Template.
-					Spec, strings.TrimSpace(`automountServiceAccountToken: false
+				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, `
+automountServiceAccountToken: false
 containers:
 - command:
   - bash
@@ -1095,7 +1095,7 @@ volumes:
 - name: pgbackrest-repo
   persistentVolumeClaim:
     claimName: testrepo
-	`)+"\n"))
+	`+"\n"))
 			}
 		}
 

@@ -28,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -36,6 +35,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -145,26 +145,21 @@ func (r *Reconciler) configureExistingPVCs(
 	var err error
 
 	if cluster.Spec.DataSource != nil &&
-		cluster.Spec.DataSource.ExistingVolumes != nil &&
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume != nil {
-		// if the startup instance name isn't set,
+		cluster.Spec.DataSource.Volumes != nil &&
+		cluster.Spec.DataSource.Volumes.PGDataVolume != nil {
+		// If the startup instance name isn't set, use the instance set defined at position zero.
 		if cluster.Status.StartupInstance == "" {
-			// To make sure the existing pgData volume is used as the primary, a
-			// new instance name is created to use with the existing volume and
-			// set as the startup instance
-			cluster.Status.StartupInstance = cluster.Name + "-" +
-				cluster.Spec.InstanceSets[0].Name + "-" + rand.String(4)
+			set := &cluster.Spec.InstanceSets[0]
+			cluster.Status.StartupInstanceSet = set.Name
+			cluster.Status.StartupInstance = naming.GenerateStartupInstance(cluster, set).Name
 		}
-		// the instance set defined at position zero will use the existing volume
-		cluster.Status.StartupInstanceSet = cluster.Spec.InstanceSets[0].Name
-
 		volumes, err = r.configureExistingPGVolumes(ctx, cluster, volumes,
 			cluster.Status.StartupInstance)
 
 		// existing WAL volume must be paired with an existing pgData volume
 		if cluster.Spec.DataSource != nil &&
-			cluster.Spec.DataSource.ExistingVolumes != nil &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume != nil &&
+			cluster.Spec.DataSource.Volumes != nil &&
+			cluster.Spec.DataSource.Volumes.PGWALVolume != nil &&
 			err == nil {
 			volumes, err = r.configureExistingPGWALVolume(ctx, cluster, volumes,
 				cluster.Status.StartupInstance)
@@ -172,8 +167,8 @@ func (r *Reconciler) configureExistingPVCs(
 	}
 
 	if cluster.Spec.DataSource != nil &&
-		cluster.Spec.DataSource.ExistingVolumes != nil &&
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume != nil &&
+		cluster.Spec.DataSource.Volumes != nil &&
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume != nil &&
 		err == nil {
 
 		volumes, err = r.configureExistingRepoVolumes(ctx, cluster, volumes)
@@ -196,15 +191,15 @@ func (r *Reconciler) configureExistingPGVolumes(
 
 	// if the volume is already in the list, move on
 	for i := range volumes {
-		if cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume.
+		if cluster.Spec.DataSource.Volumes.PGDataVolume.
 			PVCName == volumes[i].Name {
 			return volumes, nil
 		}
 	}
 
 	if len(cluster.Spec.InstanceSets) > 0 {
-		if volName := cluster.Spec.DataSource.ExistingVolumes.
-			ExistingPGDataVolume.PVCName; volName != "" {
+		if volName := cluster.Spec.DataSource.Volumes.
+			PGDataVolume.PVCName; volName != "" {
 			volume := &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      volName,
@@ -248,13 +243,13 @@ func (r *Reconciler) configureExistingPGWALVolume(
 
 	// if the volume is already in the list, move on
 	for i := range volumes {
-		if cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume.
+		if cluster.Spec.DataSource.Volumes.PGWALVolume.
 			PVCName == volumes[i].Name {
 			return volumes, nil
 		}
 	}
 
-	if volName := cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume.
+	if volName := cluster.Spec.DataSource.Volumes.PGWALVolume.
 		PVCName; volName != "" {
 
 		volume := &corev1.PersistentVolumeClaim{
@@ -298,7 +293,7 @@ func (r *Reconciler) configureExistingRepoVolumes(
 
 	// if the volume is already in the list, move on
 	for i := range volumes {
-		if cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.
+		if cluster.Spec.DataSource.Volumes.PGBackRestVolume.
 			PVCName == volumes[i].Name {
 			return volumes, nil
 		}
@@ -306,8 +301,8 @@ func (r *Reconciler) configureExistingRepoVolumes(
 
 	if len(cluster.Spec.Backups.PGBackRest.Repos) > 0 {
 		// there must be at least on pgBackrest repo defined
-		if volName := cluster.Spec.DataSource.ExistingVolumes.
-			ExistingPGBackRestVolume.PVCName; volName != "" {
+		if volName := cluster.Spec.DataSource.Volumes.
+			PGBackRestVolume.PVCName; volName != "" {
 			volume := &corev1.PersistentVolumeClaim{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      volName,
@@ -343,7 +338,7 @@ func (r *Reconciler) reconcileDirMoveJobs(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) (bool, error) {
 
 	if cluster.Spec.DataSource != nil &&
-		cluster.Spec.DataSource.ExistingVolumes != nil {
+		cluster.Spec.DataSource.Volumes != nil {
 
 		moveJobs := &batchv1.JobList{}
 		if err := r.Client.List(ctx, moveJobs, &client.ListOptions{
@@ -355,28 +350,28 @@ func (r *Reconciler) reconcileDirMoveJobs(ctx context.Context,
 		var err error
 		var pgDataReturn, pgWALReturn, repoReturn bool
 
-		if cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume != nil &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume.
+		if cluster.Spec.DataSource.Volumes.PGDataVolume != nil &&
+			cluster.Spec.DataSource.Volumes.PGDataVolume.
 				Directory != "" &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume.
+			cluster.Spec.DataSource.Volumes.PGDataVolume.
 				PVCName != "" {
 			pgDataReturn, err = r.reconcileMovePGDataDir(ctx, cluster, moveJobs)
 		}
 
 		if err == nil &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume != nil &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume.
+			cluster.Spec.DataSource.Volumes.PGWALVolume != nil &&
+			cluster.Spec.DataSource.Volumes.PGWALVolume.
 				Directory != "" &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume.
+			cluster.Spec.DataSource.Volumes.PGWALVolume.
 				PVCName != "" {
 			pgWALReturn, err = r.reconcileMoveWALDir(ctx, cluster, moveJobs)
 		}
 
 		if err == nil &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume != nil &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.
+			cluster.Spec.DataSource.Volumes.PGBackRestVolume != nil &&
+			cluster.Spec.DataSource.Volumes.PGBackRestVolume.
 				Directory != "" &&
-			cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.
+			cluster.Spec.DataSource.Volumes.PGBackRestVolume.
 				PVCName != "" {
 			repoReturn, err = r.reconcileMoveRepoDir(ctx, cluster, moveJobs)
 		}
@@ -426,6 +421,8 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 		})
 	moveDirJob.ObjectMeta.Labels = labels
 
+	// `patroni.dynamic.json` holds the previous state of the DCS. Since we are
+	// migrating the volumes, we want to clear out any obsolete configuration info.
 	script := fmt.Sprintf(`echo "Preparing cluster %s volumes for PGO v5.x"
     echo "pgdata_pvc=%s"
     echo "Current PG data directory volume contents:" 
@@ -437,9 +434,9 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
     ls -lh "/pgdata"
     echo "PG Data directory preparation complete"
     `, cluster.Name,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume.PVCName,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume.Directory,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGDataVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGDataVolume.PVCName,
+		cluster.Spec.DataSource.Volumes.PGDataVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGDataVolume.Directory,
 		strconv.Itoa(cluster.Spec.PostgresVersion),
 		strconv.Itoa(cluster.Spec.PostgresVersion))
 
@@ -450,21 +447,23 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 				Containers: []v1.Container{{
 					Command:      []string{"bash", "-ceu", script},
 					Image:        config.PostgresContainerImage(cluster),
-					Name:         naming.JobMovePGDataDir,
+					Name:         naming.ContainerJobMovePGDataDir,
 					VolumeMounts: []corev1.VolumeMount{postgres.DataVolumeMount()},
 				}},
 				SecurityContext: postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
-				RestartPolicy:                v1.RestartPolicyNever,
+				RestartPolicy: v1.RestartPolicyNever,
+				// Since these Jobs don't make Kubernetes API calls, we can just
+				// use the default ServiceAccount and mount the credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
 				Volumes: []v1.Volume{{
 					Name: "postgres-data",
 					VolumeSource: v1.VolumeSource{
 						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-							ClaimName: cluster.Spec.DataSource.ExistingVolumes.
-								ExistingPGDataVolume.PVCName,
+							ClaimName: cluster.Spec.DataSource.Volumes.
+								PGDataVolume.PVCName,
 						},
 					}},
 				},
@@ -535,9 +534,9 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
     ls -lh "/pgwal"
     echo "PG WAL directory preparation complete"
     `, cluster.Name,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume.PVCName,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume.Directory,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGWALVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGWALVolume.PVCName,
+		cluster.Spec.DataSource.Volumes.PGWALVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGWALVolume.Directory,
 		cluster.ObjectMeta.Name)
 
 	jobSpec := &batchv1.JobSpec{
@@ -547,21 +546,23 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 				Containers: []v1.Container{{
 					Command:      []string{"bash", "-ceu", script},
 					Image:        config.PostgresContainerImage(cluster),
-					Name:         naming.JobMovePGWALDir,
+					Name:         naming.ContainerJobMovePGWALDir,
 					VolumeMounts: []corev1.VolumeMount{postgres.WALVolumeMount()},
 				}},
 				SecurityContext: postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
-				RestartPolicy:                v1.RestartPolicyNever,
+				RestartPolicy: v1.RestartPolicyNever,
+				// Since these Jobs don't make Kubernetes API calls, we can just
+				// use the default ServiceAccount and mount the credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
 				Volumes: []v1.Volume{{
 					Name: "postgres-wal",
 					VolumeSource: v1.VolumeSource{
 						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-							ClaimName: cluster.Spec.DataSource.ExistingVolumes.
-								ExistingPGWALVolume.PVCName,
+							ClaimName: cluster.Spec.DataSource.Volumes.
+								PGWALVolume.PVCName,
 						},
 					}},
 				},
@@ -635,12 +636,12 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
     ls -lh "/pgbackrest"
     echo "Repo directory preparation complete"
     `, cluster.Name,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.PVCName,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.Directory,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.Directory,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.Directory,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.Directory,
-		cluster.Spec.DataSource.ExistingVolumes.ExistingPGBackRestVolume.Directory)
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume.PVCName,
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory,
+		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory)
 
 	jobSpec := &batchv1.JobSpec{
 		Template: v1.PodTemplateSpec{
@@ -649,20 +650,22 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 				Containers: []v1.Container{{
 					Command:      []string{"bash", "-ceu", script},
 					Image:        config.PGBackRestContainerImage(cluster),
-					Name:         naming.JobMovePGBackRestRepoDir,
-					VolumeMounts: []corev1.VolumeMount{postgres.RepoVolumeMount()},
+					Name:         naming.ContainerJobMovePGBackRestRepoDir,
+					VolumeMounts: []corev1.VolumeMount{pgbackrest.RepoVolumeMount()},
 				}},
 				SecurityContext: postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
 				// controller when there is a failure (instead of the container simply restarting).
-				RestartPolicy:                v1.RestartPolicyNever,
+				RestartPolicy: v1.RestartPolicyNever,
+				// Since these Jobs don't make Kubernetes API calls, we can just
+				// use the default ServiceAccount and mount the credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
 				Volumes: []v1.Volume{{
 					Name: "pgbackrest-repo",
 					VolumeSource: v1.VolumeSource{
 						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-							ClaimName: cluster.Spec.DataSource.ExistingVolumes.
-								ExistingPGBackRestVolume.PVCName,
+							ClaimName: cluster.Spec.DataSource.Volumes.
+								PGBackRestVolume.PVCName,
 						},
 					}},
 				},

@@ -64,6 +64,9 @@ const (
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
 	CMNameSuffix = "%s-pgbackrest-config"
+
+	// repoMountPath is where to mount the pgBackRest repo volume.
+	repoMountPath = "/pgbackrest"
 )
 
 // CreatePGBackRestConfigMapIntent creates a configmap struct with pgBackRest pgbackrest.conf settings in the data field.

@@ -9,7 +9,7 @@ There are certain cases where you may want to migrate existing volumes to a new 
 
 ## Configure your PostgresCluster CRD
 
-In order to use existing pgData, pg_wal or pgBackRest repo volumes in a new PostgresCluster, you will need to configure the `spec.dataSource.existingVolumes` section of your PostgresCluster CRD. As shown below, there are three possible volumes you may configure, `existingPGDataVolume`, `existingPGWALVolume` and `existingPGBackRestVolume`. Under each, you must define the PVC name to use in the new cluster. A directory may also be defined, as needed, for cases where the existing directory name does not match the v5 directory.
+In order to use existing pgData, pg_wal or pgBackRest repo volumes in a new PostgresCluster, you will need to configure the `spec.dataSource.volumes` section of your PostgresCluster CRD. As shown below, there are three possible volumes you may configure, `pgDataVolume`, `pgWALVolume` and `pgBackRestVolume`. Under each, you must define the PVC name to use in the new cluster. A directory may also be defined, as needed, for cases where the existing directory name does not match the v5 directory.
 
 To help explain how these fields are used, we will consider a `pgcluster` from PGO v4, `oldhippo`. We will assume that the `pgcluster` has been deleted and only the PVCs have been left in place. 
 
@@ -17,20 +17,20 @@ To help explain how these fields are used, we will consider a `pgcluster` from P
 
 In a standard PGO v4.7 cluster, a primary database pod with a separate pg_wal PVC will mount its pgData PVC, named "oldhippo", at `/pgdata` and its pg_wal PVC, named "oldhippo-wal", at `/pgwal` within the pod's file system. In this pod, the standard pgData directory will be `/pgdata/oldhippo` and the standard pg_wal directory will be `/pgwal/oldhippo-wal`. The pgBackRest repo pod will mount its PVC at `/backrestrepo` and the repo directory will be `/backrestrepo/oldhippo-backrest-shared-repo`.
 
-With the above in mind, we need to reference the three PVCs we wish to migrate in the `dataSource.existingVolumes` portion of the PostgresCluster spec. Additionally, to accommodate the PGO v5 file structure, we must also reference the pgData and pgBackRest repo directories. Note that the pg_wal directory does not need to be moved when migrating from v4 to v5!
+With the above in mind, we need to reference the three PVCs we wish to migrate in the `dataSource.volumes` portion of the PostgresCluster spec. Additionally, to accommodate the PGO v5 file structure, we must also reference the pgData and pgBackRest repo directories. Note that the pg_wal directory does not need to be moved when migrating from v4 to v5!
 
 Now, we just need to populate our CRD with the information described above:
 
 ```
 spec:
   dataSource:
-    existingVolumes:
-      existingPGDataVolume:
+    volumes:
+      pgDataVolume:
         pvcName: oldhippo
         directory: oldhippo
-      existingPGWALVolume:
+      pgWALVolume:
         pvcName: oldhippo-wal
-      existingPGBackRestVolume:
+      pgBackRestVolume:
         pvcName: oldhippo-pgbr-repo
         directory: oldhippo-backrest-shared-repo
 ```
@@ -91,14 +91,14 @@ spec:
         parameters:
           shared_preload_libraries: pgaudit.so
   dataSource:
-    existingVolumes:
-      existingPGDataVolume:
+    volumes:
+      pgDataVolume:
         pvcName: oldhippo
         directory: oldhippo
-      existingPGWALVolume:
+      pgWALVolume:
         pvcName: oldhippo-wal
         #directory: "oldhippo-wal"
-      existingPGBackRestVolume:
+      pgBackRestVolume:
         pvcName: oldhippo-pgbr-repo
         directory: oldhippo-backrest-shared-repo
   instances:
