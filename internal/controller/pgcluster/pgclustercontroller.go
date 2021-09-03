@@ -121,7 +121,11 @@ func (c *Controller) processNextItem() bool {
 	// If bootstrapping from an existing data source then attempt to create the pgBackRest repository.
 	// If a repo already exists (e.g. because it is associated with a currently running cluster) then
 	// proceed with bootstrapping.
-	if cluster.Spec.PGDataSource.RestoreFrom != "" {
+	// Also, if the "upgrading" annotation is present on the pgcluster, assume the cluster has
+	// already been bootstrapped and is being recreated as part of the upgrade process.  More
+	// specifically, ignore the data source and proceed with adding cluster deployments.
+	_, upgrading := cluster.Annotations[config.ANNOTATION_UPGRADE_IN_PROGRESS]
+	if cluster.Spec.PGDataSource.RestoreFrom != "" && !upgrading {
 		repoCreated, err := clusteroperator.AddBootstrapRepo(c.Client, cluster)
 		if err != nil {
 			log.Error(err)
