@@ -115,6 +115,12 @@ type PGBouncerPodSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Topology spread constraints of a PgBouncer pod. Changing this value causes
+	// PgBouncer to restart.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+	// +optional
+	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 }
 
 // Default returns the default port for PgBouncer (5432) if a port is not

@@ -976,6 +976,16 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			assert.Assert(t, ss.Spec.Template.Spec.Tolerations != nil)
 		},
 	}, {
+		name: "custom topology spread constraints",
+		ip: intentParams{
+			spec: &v1beta1.PostgresInstanceSetSpec{
+				TopologySpreadConstraints: []v1.TopologySpreadConstraint{},
+			},
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Assert(t, ss.Spec.Template.Spec.TopologySpreadConstraints != nil)
+		},
+	}, {
 		name: "shutdown replica",
 		ip: intentParams{
 			shutdown:        true,

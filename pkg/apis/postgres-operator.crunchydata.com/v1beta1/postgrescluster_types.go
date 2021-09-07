@@ -315,6 +315,12 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
+	// Topology spread constraints of a PostgreSQL pod. Changing this value causes
+	// PostgreSQL to restart.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+	// +optional
+	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+
 	// Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log.
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// +optional
