@@ -1372,6 +1372,12 @@ func TestReconcileManualBackup(t *testing.T) {
 						Type: condition, Reason: "testing", Status: status})
 				}
 				assert.NilError(t, tClient.Create(ctx, postgresCluster))
+				t.Cleanup(func() {
+					// Remove finalizers, if any, so the namespace can terminate.
+					assert.Check(t, client.IgnoreNotFound(
+						tClient.Patch(ctx, postgresCluster, client.RawPatch(
+							client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
+				})
 				assert.NilError(t, tClient.Status().Update(ctx, postgresCluster))
 
 				currentJobs := []*batchv1.Job{}
