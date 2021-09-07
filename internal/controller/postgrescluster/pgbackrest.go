@@ -528,6 +528,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	if repoHost := postgresCluster.Spec.Backups.PGBackRest.RepoHost; repoHost != nil {
 		repo.Spec.Template.Spec.Affinity = repoHost.Affinity
 		repo.Spec.Template.Spec.Tolerations = repoHost.Tolerations
+		repo.Spec.Template.Spec.TopologySpreadConstraints = repoHost.TopologySpreadConstraints
 	}
 
 	// Set the image pull secrets, if any exist.

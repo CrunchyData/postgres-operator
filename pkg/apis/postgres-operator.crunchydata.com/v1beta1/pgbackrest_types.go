@@ -173,6 +173,12 @@ type PGBackRestRepoHost struct {
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
+	// Topology spread constraints of a Dedicated repo host pod. Changing this
+	// value causes the repo host to restart.
+	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+	// +optional
+	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+
 	// ConfigMap containing custom SSH configuration
 	// +optional
 	SSHConfiguration *corev1.ConfigMapProjection `json:"sshConfigMap,omitempty"`

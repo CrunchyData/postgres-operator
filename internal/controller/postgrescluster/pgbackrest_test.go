@@ -142,6 +142,9 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Tolerations: []v1.Toleration{
 				{Key: "woot"},
 			},
+			TopologySpreadConstraints: []v1.TopologySpreadConstraint{
+				{MaxSkew: int32(1)},
+			},
 		}
 	}
 	// always add schedule info to the first repo
@@ -298,6 +301,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 		// Ensure Tolerations have been added to dedicated repo
 		if repo.Spec.Template.Spec.Tolerations == nil {
 			t.Error("dedicated repo host is missing tolerations")
+		}
+
+		// Ensure TopologySpreadConstraints have been added to dedicated repo
+		if repo.Spec.Template.Spec.TopologySpreadConstraints == nil {
+			t.Error("dedicated repo host is missing topology spread constraints")
 		}
 
 		// Ensure imagePullSecret has been added to the dedicated repo

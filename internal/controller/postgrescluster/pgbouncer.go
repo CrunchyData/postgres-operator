@@ -426,6 +426,8 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	// Use scheduling constraints from the cluster spec.
 	deploy.Spec.Template.Spec.Affinity = cluster.Spec.Proxy.PGBouncer.Affinity
 	deploy.Spec.Template.Spec.Tolerations = cluster.Spec.Proxy.PGBouncer.Tolerations
+	deploy.Spec.Template.Spec.TopologySpreadConstraints =
+		cluster.Spec.Proxy.PGBouncer.TopologySpreadConstraints
 
 	// Restart containers any time they stop, die, are killed, etc.
 	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
