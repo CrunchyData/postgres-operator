@@ -391,6 +391,120 @@ spec:
                 storage: 1Gi
 ```
 
+## Pod Topology Spread Constraints
+
+In addition to affinity and anti-affinity settings, [Kubernetes Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) can also help you to define where you want your workloads to reside. However, while PodAffinity allows any number of Pods to be added to a qualifying topology domain, and PodAntiAffinity allows only one Pod to be scheduled into a single topology domain, topology spread constraints allow you to distribute Pods across different topology domains with a finer level of control. 
+
+### API Field Configuration
+
+The spread constraint [API fields](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods) can be configured for instance, pgBouncer and pgBackRest repo host pods. The basic configuration is as follows:
+
+```
+      topologySpreadConstraints:
+      - maxSkew: <integer>
+        topologyKey: <string>
+        whenUnsatisfiable: <string>
+        labelSelector: <object>
+```
+
+where "maxSkew" describes the maximum degree to which Pods can be unevenly distributed, "topologyKey" is the key that defines a topology in the Nodes' Labels, "whenUnsatisfiable" specifies what action should be taken when "maxSkew" can't be satisfied, and "labelSelector" is used to find matching Pods. 
+    
+### Example Spread Contraints
+
+To help illustrate how you might use this with your cluster, we can review examples for configuring spread constraints on our Instance and pgBackRest repo host Pods. For this example, assume we have a three node Kubernetes cluster where the first node is labeled with `my-node-label=one`, the second node is labeled with `my-node-label=two` and the final node is labeled `my-node-label=three`. The label key `my-node-label` will function as our `topologyKey`. Note all three nodes in our examples will be schedulable, so a Pod could live on any of the three Nodes.
+
+#### Instance Pod Spread Constraints
+
+To begin, we can set our topology spread contraints on our cluster Instance Pods. Given this configuration
+
+```
+  instances:
+    - name: instance1
+      replicas: 5
+      topologySpreadConstraints: 
+        - maxSkew: 1
+          topologyKey: my-node-label
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector: 
+            matchLabels:
+              postgres-operator.crunchydata.com/instance-set: instance1
+```
+
+we will expect 5 Instance pods to be created. Each of these Pods will have the standard `postgres-operator.crunchydata.com/instance-set: instance1` Label set, so each Pod will be properly counted when determining the `maxSkew`. Since we have 3 nodes with a `maxSkew` of 1 and we've set `whenUnsatisfiable` to `DoNotSchedule`, we should see 2 Pods on 2 of the nodes and 1 Pod on the remaining Node, thus ensuring our Pods are distributed as evenly as possible.
+
+#### pgBackRest Repo Pod Spread Constraints
+
+We can also set topology spread constraints on our cluster's pgBackRest repo host pod. While we normally will only have a single pod per cluster, we could use a more generic label to add a preference that repo host Pods from different clusters are distributed among our Nodes. For example, by setting our `matchLabel` value to `postgres-operator.crunchydata.com/pgbackrest: ""` and our `whenUnsatisfiable` value to `ScheduleAnyway`, we will allow our repo host Pods to be scheduled no matter what Nodes may be available, but attempt to minimize skew as much as possible.
+
+```
+      repoHost:
+        topologySpreadConstraints: 
+        - maxSkew: 1
+          topologyKey: my-node-label
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: 
+            matchLabels:
+              postgres-operator.crunchydata.com/pgbackrest: ""
+```
+
+#### Putting it All Together
+
+Now that each of our Pods has our desired Topology Spread Constraints defined, let's put together a complete cluster definition:
+
+```
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
+  postgresVersion: 13
+  instances:
+    - name: instance1
+      replicas: 5
+      topologySpreadConstraints: 
+        - maxSkew: 1
+          topologyKey: my-node-label
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector: 
+            matchLabels:
+              postgres-operator.crunchydata.com/instance-set: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1G
+  backups:
+    pgbackrest:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
+      repoHost:
+        topologySpreadConstraints: 
+        - maxSkew: 1
+          topologyKey: my-node-label
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: 
+            matchLabels:
+              postgres-operator.crunchydata.com/pgbackrest: ""
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1G
+```
+
+You can then apply those changes in your Kubernetes cluster.
+
+Once your cluster finishes deploying, you can check that your Pods are assigned to the correct Nodes:
+
+```
+kubectl get pods -n postgres-operator -o wide --selector=postgres-operator.crunchydata.com/cluster=hippo
+```
+
 ## Next Steps
 
 We've now seen how PGO helps your application stay "always on" with your Postgres database. Now let's explore how PGO can minimize or eliminate downtime for operations that would normally cause that, such as [resizing your Postgres cluster]({{< relref "./resize-cluster.md" >}}).
