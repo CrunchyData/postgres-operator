@@ -28,7 +28,7 @@ The main custom resource definition is [`postgresclusters.postgres-operator.crun
 - Resource allocation
 - High availability
 - Backup management
-- Where and how it is deployed (affinity, tolerations)
+- Where and how it is deployed (affinity, tolerations, topology spread constraints)
 - Disaster Recovery / standby clusters
 - Monitoring
 
