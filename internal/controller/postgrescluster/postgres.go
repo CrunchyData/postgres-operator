@@ -153,13 +153,11 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		return nil
 	}
 
+	ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
 	podExecutor = func(
 		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
 		return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
-	}
-	if podExecutor == nil {
-		return nil
 	}
 
 	// Gather the list of database that should exist in PostgreSQL.
@@ -603,4 +601,103 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 	}
 
 	return pvc, err
+}
+
+// reconcileDatabaseInitSQL runs custom SQL files in the database. When
+// DatabaseInitSQL is defined, the function will find the primary pod and run
+// SQL from the defined ConfigMap
+func (r *Reconciler) reconcileDatabaseInitSQL(ctx context.Context,
+	cluster *v1beta1.PostgresCluster, instances *observedInstances) error {
+	log := logging.FromContext(ctx)
+
+	// Spec is not defined, unset status and return
+	if cluster.Spec.DatabaseInitSQL == nil {
+		// If database init sql is not requested, we will always expect the
+		// status to be nil
+		cluster.Status.DatabaseInitSQL = nil
+		return nil
+	}
+
+	// Spec is defined but status is already set, return
+	if cluster.Status.DatabaseInitSQL != nil {
+		return nil
+	}
+
+	// Based on the previous checks, the user wants to run sql in the database.
+	// Check the provided ConfigMap name and key to ensure the a string
+	// exists in the ConfigMap data
+	var (
+		err  error
+		data string
+	)
+
+	getDataFromConfigMap := func() (error, string) {
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Spec.DatabaseInitSQL.Name,
+				Namespace: cluster.Namespace,
+			},
+		}
+		err := r.Client.Get(ctx, client.ObjectKeyFromObject(cm), cm)
+		if err != nil {
+			return err, ""
+		}
+
+		key := cluster.Spec.DatabaseInitSQL.Key
+		if _, ok := cm.Data[key]; !ok {
+			err := errors.Errorf("ConfigMap did not contain expected key: %s", key)
+			return err, ""
+		}
+
+		return nil, cm.Data[key]
+	}
+
+	if err, data = getDataFromConfigMap(); err != nil {
+		log.Error(err, "Could not get data from ConfigMap",
+			"ConfigMap", cluster.Spec.DatabaseInitSQL.Name,
+			"Key", cluster.Spec.DatabaseInitSQL.Key)
+		return err
+	}
+
+	// Now that we have the data provided by the user. We can check for a
+	// writable pod and get the podExecutor for the pod's database container
+	var podExecutor postgres.Executor
+	pod, _ := instances.writablePod(naming.ContainerDatabase)
+	if pod == nil {
+		log.V(1).Info("Could not find a pod with a writable database container.")
+		return nil
+	}
+
+	podExecutor = func(
+		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error {
+		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+	}
+
+	// A writable pod executor has been found and we have the sql provided by
+	// the user. Setup a write function to execute the sql using the podExecutor
+	write := func(ctx context.Context, exec postgres.Executor) error {
+		_, _, err := exec.Exec(ctx, strings.NewReader(data), map[string]string{})
+		return err
+	}
+
+	// Update the logger to include fields from the user provided ResourceRef
+	log = log.WithValues(
+		"name", cluster.Spec.DatabaseInitSQL.Name,
+		"key", cluster.Spec.DatabaseInitSQL.Key,
+	)
+
+	// Write SQL to database using the podExecutor
+	err = errors.WithStack(write(logging.NewContext(ctx, log), podExecutor))
+
+	// If the podExec returns with exit code 0 the write is considered a
+	// success, keep track of the ConfigMap using a status. This helps to
+	// ensure SQL doesn't get run again. SQL can be run again if the
+	// status is lost and the DatabaseInitSQL field exists in the spec.
+	if err == nil {
+		status := cluster.Spec.DatabaseInitSQL.Name
+		cluster.Status.DatabaseInitSQL = &status
+	}
+
+	return err
 }

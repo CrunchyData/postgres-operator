@@ -196,6 +196,105 @@ spec:
 This volume can be removed later by removing the `walVolumeClaimSpec` section from the instance. Note that when changing the WAL directory, care is taken so as not to lose any WAL files. PGO only
 deletes the PVC once there are no longer any WAL files on the previously configured volume.
 
+## Database Initialization SQL
+
+PGO can run SQL for you as part of the cluster creation and initialization process. PGO runs the SQL using the psql client so you can use meta-commands to connect to different databases, change error handling, or set and use variables. Its capabilities are described in the [psql documentation](https://www.postgresql.org/docs/current/app-psql.html).
+
+### Initialization SQL ConfigMap
+
+The Postgres cluster spec accepts a reference to a ConfigMap containing your init SQL file. Update your cluster spec to include the ConfigMap name, `spec.databaseInitSQL.name`, and the data key, `spec.databaseInitSQL.key`, for your SQL file. For example, if you create your ConfigMap with the following command:
+
+```
+kubectl -n postgres-operator create configmap hippo-init-sql --from-file=init.sql=/path/to/init.sql
+```
+
+You would add the following section to your Postgrescluster spec:
+
+```
+spec:
+  databaseInitSQL:
+    key: init.sql
+    name: hippo-init-sql
+```
+
+{{% notice note %}}
+The ConfigMap must exist in the same namespace as your Postgres cluster.
+{{% /notice %}}
+
+After you add the ConfigMap reference to your spec, apply the change with `kubectl apply -k kustomize/postgres`. PGO will create your `hippo` cluster and run your initialization SQL once the cluster has started. You can verify that your SQL has been run by checking the `databaseInitSQL` status on your Postgres cluster. While the status is set, your init SQL will not be run again. You can check cluster status with the `kubectl describe` command:
+
+```
+kubectl -n postgres-operator describe postgresclusters.postgres-operator.crunchydata.com hippo
+```
+
+{{% notice warning %}}
+
+In some cases, due to how Kubernetes treats PostgresCluster status, PGO may run your SQL commands more than once. Please ensure that the commands defined in your init SQL are idempotent.
+
+{{% /notice %}}
+
+Now that `databaseInitSQL` is defined in your cluster status, verify database objects have been created as expected. After verifying, we recommend removing the `spec.databaseInitSQL` field from your spec. Removing the field from the spec will also remove `databaseInitSQL` from the cluster status.
+
+### PSQL Usage
+PGO uses the psql interactive terminal to execute SQL statements in your database. Statements are passed in using standard input and the filename flag (e.g. `psql -f -`). 
+
+SQL statements are executed as superuser in the default maintenance database. This means you have full control to create database objects, extensions, or run any SQL statements that you might need. 
+
+#### Integration with User and Database Management 
+
+If you are creating users or databases, please see the [User/Database Management]({{< relref "tutorial/user-management.md" >}}) documentation. Databases created through the user management section of the spec can be referenced in your initialization sql. For example, if a database `zoo` is defined:
+
+```
+spec:
+  users:
+    - name: hippo
+      databases:
+       - "zoo"
+```
+
+You can connect to `zoo` by adding the following `psql` meta-command to your SQL:
+
+```
+\c zoo
+create table t_zoo as select s, md5(random()::text) from generate_Series(1,5) s;
+```
+
+#### Transaction support
+
+By default, `psql` commits each SQL command as it completes. To combine multiple commands into a single [transaction](https://www.postgresql.org/docs/current/tutorial-transactions.html), use the [`BEGIN`](https://www.postgresql.org/docs/current/sql-begin.html) and [`COMMIT`](https://www.postgresql.org/docs/current/sql-commit.html) commands. 
+
+```
+BEGIN;
+create table t_random as select s, md5(random()::text) from generate_Series(1,5) s;
+COMMIT;
+```
+
+#### PSQL Exit Code and Database Init SQL Status
+
+The exit code from `psql` will determine when the `databaseInitSQL` status is set. When `psql` returns `0` the status will be set and SQL will not be run again. When `psql` returns with an error exit code the status will not be set. PGO will continue attempting to execute the SQL as part of its reconcile loop until `psql` returns normally. If `psql` exits with a failure, you will need to edit the file in your ConfigMap to ensure your SQL statements will lead to a successful `psql` return. The easiest way to make live changes to your ConfigMap is to use the following `kubectl edit` command:
+
+```
+kubectl -n <cluster-namespace> edit configmap hippo-init-sql
+```
+
+Be sure to transfer any changes back over to your local file. Another option is to make changes in your local file and use `kubectl --dry-run` to create a template and pipe the output into `kubectl apply`:
+
+```
+kubectl create configmap hippo-init-sql --from-file=init.sql=/path/to/init.sql --dry-run=client -o yaml | kubectl apply -f -
+```
+
+{{% notice tip %}}
+If you edit your ConfigMap and your changes aren't showing up, you may be waiting for PGO to reconcile your cluster. After some time, PGO will automatically reconcile the cluster or you can trigger reconciliation by applying any change to your cluster (e.g. with `kubectl apply -k kustomize/postgres`).
+{{% /notice %}}
+
+To ensure that `psql` returns a failure exit code when your SQL commands fail, set the `ON_ERROR_STOP` [variable](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-VARIABLES) as part of your SQL file:
+
+```
+\set ON_ERROR_STOP
+\echo Any error will lead to exit code 3
+create table t_random as select s, md5(random()::text) from generate_Series(1,5) s;
+```
+
 ## Troubleshooting
 
 ### Changes Not Applied
