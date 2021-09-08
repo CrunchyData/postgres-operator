@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"gotest.tools/v3/assert/cmp"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -75,13 +75,13 @@ func marshalMatches(actual interface{}, expected string) cmp.Comparison {
 	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
 }
 
-func testVolumeClaimSpec() v1.PersistentVolumeClaimSpec {
+func testVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {
 	// Defines a volume claim spec that can be used to create instances
-	return v1.PersistentVolumeClaimSpec{
-		AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-		Resources: v1.ResourceRequirements{
-			Requests: map[v1.ResourceName]resource.Quantity{
-				v1.ResourceStorage: resource.MustParse("1Gi"),
+	return corev1.PersistentVolumeClaimSpec{
+		AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+		Resources: corev1.ResourceRequirements{
+			Requests: map[corev1.ResourceName]resource.Quantity{
+				corev1.ResourceStorage: resource.MustParse("1Gi"),
 			},
 		},
 	}
@@ -96,7 +96,7 @@ func testCluster() *v1beta1.PostgresCluster {
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 13,
 			Image:           CrunchyPostgresHAImage,
-			ImagePullSecrets: []v1.LocalObjectReference{{
+			ImagePullSecrets: []corev1.LocalObjectReference{{
 				Name: "myImagePullSecret"},
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
@@ -182,7 +182,7 @@ func teardownTestEnv(t *testing.T, testEnv *envtest.Environment) {
 	t.Log("Test environment stopped")
 }
 
-// teardownManager stops the runtimem manager when the tests
+// teardownManager stops the runtime manager when the tests
 // have completed
 func teardownManager(cancel context.CancelFunc, t *testing.T) {
 	cancel()
