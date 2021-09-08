@@ -266,6 +266,10 @@ func newObservedInstances(
 	return &observed
 }
 
+// writablePod looks at observedInstances and finds an instance that matches
+// a few conditions. The instance should be non-terminating, running, and
+// writable i.e. the instance with the primary. If such an instance exists, it
+// is returned along with the instance pod.
 func (observed *observedInstances) writablePod(container string) (*corev1.Pod, *Instance) {
 	if observed == nil {
 		return nil, nil

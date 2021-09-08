@@ -285,6 +285,9 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		err = r.reconcilePGMonitor(ctx, cluster, instances, monitoringSecret)
 	}
+	if err == nil {
+		err = r.reconcileDatabaseInitSQL(ctx, cluster, instances)
+	}
 
 	// TODO reconcile pgadmin4
 

@@ -19,16 +19,18 @@ package postgrescluster
 
 import (
 	"context"
-	"errors"
 	"io"
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -363,5 +365,250 @@ volumeMode: Filesystem
 				})
 			})
 		})
+	})
+}
+
+func TestReconcileDatabaseInitSQL(t *testing.T) {
+	ctx := context.Background()
+	var called bool
+
+	// Test Environment Setup
+	env, client, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	r := &Reconciler{
+		Client: client,
+
+		// Overwrite the PodExec function with a check to ensure the exec
+		// call would have been made
+		PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
+			stderr io.Writer, command ...string) error {
+			called = true
+			return nil
+		},
+	}
+
+	// Test Resources Setup
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": ""}
+	assert.NilError(t, client.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, client.Delete(ctx, ns)) })
+
+	// Define a status to be set if sql has already been run
+	status := "set"
+
+	// reconcileDatabaseInitSQL expects to find a pod that is running with a
+	// writable database container. Define this pod in an observed instance so
+	// we can simulate a podExec call into the database
+	instances := []*Instance{
+		{
+			Name: "instance",
+			Pods: []*corev1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: ns.Name,
+					Name:      "pod",
+					Annotations: map[string]string{
+						"status": `{"role":"master"}`,
+					},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						Name: naming.ContainerDatabase,
+						State: corev1.ContainerState{
+							Running: new(corev1.ContainerStateRunning),
+						},
+					}},
+				},
+			}},
+			Runner: &appsv1.StatefulSet{},
+		},
+	}
+	observed := &observedInstances{forCluster: instances}
+
+	// Create a ConfigMap containing SQL to be defined in the spec
+	path := "test-path"
+	cm := corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cm",
+			Namespace: ns.Name,
+		},
+		Data: map[string]string{
+			path: "stuff",
+		},
+	}
+	assert.NilError(t, client.Create(ctx, cm.DeepCopy()))
+
+	// Define a fully configured cluster that would lead to SQL being run in
+	// the database. This test cluster will be modified as needed for testing
+	testCluster := testCluster()
+	testCluster.Namespace = ns.Name
+	testCluster.Spec.DatabaseInitSQL = &v1beta1.DatabaseInitSQL{
+		Name: cm.Name,
+		Key:  path,
+	}
+
+	// Start Tests
+	t.Run("not defined", func(t *testing.T) {
+		// Custom SQL is not defined in the spec and status is unset
+		cluster := testCluster.DeepCopy()
+		cluster.Spec.DatabaseInitSQL = nil
+
+		assert.NilError(t, r.reconcileDatabaseInitSQL(ctx, cluster, observed))
+		assert.Assert(t, !called, "PodExec should not have been called")
+		assert.Assert(t, cluster.Status.DatabaseInitSQL == nil, "Status should not be set")
+	})
+	t.Run("not defined with status", func(t *testing.T) {
+		// Custom SQL is not defined in the spec and status is set
+		cluster := testCluster.DeepCopy()
+		cluster.Spec.DatabaseInitSQL = nil
+		cluster.Status.DatabaseInitSQL = &status
+
+		assert.NilError(t, r.reconcileDatabaseInitSQL(ctx, cluster, observed))
+		assert.Assert(t, !called, "PodExec should not have been called")
+		assert.Assert(t, cluster.Status.DatabaseInitSQL == nil, "Status was set and should have been removed")
+	})
+	t.Run("status set", func(t *testing.T) {
+		// Custom SQL is defined and status is set
+		cluster := testCluster.DeepCopy()
+		cluster.Status.DatabaseInitSQL = &status
+
+		assert.NilError(t, r.reconcileDatabaseInitSQL(ctx, cluster, observed))
+		assert.Assert(t, !called, "PodExec should  not have been called")
+		assert.Equal(t, cluster.Status.DatabaseInitSQL, &status, "Status should not have changed")
+	})
+	t.Run("No writable pod", func(t *testing.T) {
+		cluster := testCluster.DeepCopy()
+
+		assert.NilError(t, r.reconcileDatabaseInitSQL(ctx, cluster, nil))
+		assert.Assert(t, !called, "PodExec should not have been called")
+		assert.Assert(t, cluster.Status.DatabaseInitSQL == nil, "SQL couldn't be executed so status should be unset")
+	})
+	t.Run("Fully Configured", func(t *testing.T) {
+		cluster := testCluster.DeepCopy()
+
+		assert.NilError(t, r.reconcileDatabaseInitSQL(ctx, cluster, observed))
+		assert.Assert(t, called, "PodExec should be called")
+		assert.Equal(t,
+			*cluster.Status.DatabaseInitSQL,
+			cluster.Spec.DatabaseInitSQL.Name,
+			"Status should be set to the custom configmap name")
+	})
+}
+
+func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
+	ctx := context.Background()
+	var called bool
+
+	// Test Environment Setup
+	env, client, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	r := &Reconciler{
+		Client: client,
+
+		// Overwrite the PodExec function with a check to ensure the exec
+		// call would have been made
+		PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
+			stderr io.Writer, command ...string) error {
+			called = true
+			return nil
+		},
+	}
+
+	// Test Resources Setup
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": ""}
+	assert.NilError(t, client.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, client.Delete(ctx, ns)) })
+
+	// reconcileDatabaseInitSQL expects to find a pod that is running with a writable
+	// database container. Define this pod in an observed instance so that
+	// we can simulate a podExec call into the database
+	instances := []*Instance{
+		{
+			Name: "instance",
+			Pods: []*corev1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: ns.Name,
+					Name:      "pod",
+					Annotations: map[string]string{
+						"status": `{"role":"master"}`,
+					},
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						Name: naming.ContainerDatabase,
+						State: corev1.ContainerState{
+							Running: new(corev1.ContainerStateRunning),
+						},
+					}},
+				},
+			}},
+			Runner: &appsv1.StatefulSet{},
+		},
+	}
+	observed := &observedInstances{forCluster: instances}
+
+	// Define fully configured cluster that would lead to sql being run in the
+	// database. This cluster will be modified for testing
+	testCluster := testCluster()
+	testCluster.Namespace = ns.Name
+	testCluster.Spec.DatabaseInitSQL = new(v1beta1.DatabaseInitSQL)
+
+	t.Run("not found", func(t *testing.T) {
+		cluster := testCluster.DeepCopy()
+		cluster.Spec.DatabaseInitSQL = &v1beta1.DatabaseInitSQL{
+			Name: "not-found",
+		}
+
+		err := r.reconcileDatabaseInitSQL(ctx, cluster, observed)
+		assert.Assert(t, apierrors.IsNotFound(err), err)
+		assert.Assert(t, !called)
+	})
+
+	t.Run("found no data", func(t *testing.T) {
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "found-no-data",
+				Namespace: ns.Name,
+			},
+		}
+		assert.NilError(t, client.Create(ctx, cm))
+
+		cluster := testCluster.DeepCopy()
+		cluster.Spec.DatabaseInitSQL = &v1beta1.DatabaseInitSQL{
+			Name: cm.Name,
+			Key:  "bad-path",
+		}
+
+		err := r.reconcileDatabaseInitSQL(ctx, cluster, observed)
+		assert.Equal(t, err.Error(), "ConfigMap did not contain expected key: bad-path")
+		assert.Assert(t, !called)
+	})
+
+	t.Run("found with data", func(t *testing.T) {
+		path := "test-path"
+
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "found-with-data",
+				Namespace: ns.Name,
+			},
+			Data: map[string]string{
+				path: "string",
+			},
+		}
+		assert.NilError(t, client.Create(ctx, cm))
+
+		cluster := testCluster.DeepCopy()
+		cluster.Spec.DatabaseInitSQL = &v1beta1.DatabaseInitSQL{
+			Name: cm.Name,
+			Key:  path,
+		}
+
+		assert.NilError(t, r.reconcileDatabaseInitSQL(ctx, cluster, observed))
+		assert.Assert(t, called)
 	})
 }
