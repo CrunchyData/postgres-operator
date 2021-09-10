@@ -158,13 +158,12 @@ containers:
   - --
   - |-
     monitor() {
-    declare -r directory="${directory:-$1}"
-    while sleep 5s; do
-      mounted=$(stat --format=%y "${directory}")
-      if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
+    exec {fd}<> <(:)
+    while read -r -t 5 -u "${fd}" || true; do
+      if [ "${directory}" -nt "/proc/self/fd/${fd}" ] && pkill -HUP --exact pgbouncer
       then
-        loaded="${mounted}"
-        echo Loaded configuration dated "${loaded}"
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded configuration dated %y' "${directory}"
       fi
     done
     }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
@@ -272,13 +271,12 @@ containers:
   - --
   - |-
     monitor() {
-    declare -r directory="${directory:-$1}"
-    while sleep 5s; do
-      mounted=$(stat --format=%y "${directory}")
-      if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
+    exec {fd}<> <(:)
+    while read -r -t 5 -u "${fd}" || true; do
+      if [ "${directory}" -nt "/proc/self/fd/${fd}" ] && pkill -HUP --exact pgbouncer
       then
-        loaded="${mounted}"
-        echo Loaded configuration dated "${loaded}"
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded configuration dated %y' "${directory}"
       fi
     done
     }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
@@ -381,13 +379,12 @@ containers:
   - --
   - |-
     monitor() {
-    declare -r directory="${directory:-$1}"
-    while sleep 5s; do
-      mounted=$(stat --format=%y "${directory}")
-      if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
+    exec {fd}<> <(:)
+    while read -r -t 5 -u "${fd}" || true; do
+      if [ "${directory}" -nt "/proc/self/fd/${fd}" ] && pkill -HUP --exact pgbouncer
       then
-        loaded="${mounted}"
-        echo Loaded configuration dated "${loaded}"
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded configuration dated %y' "${directory}"
       fi
     done
     }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
