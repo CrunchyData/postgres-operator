@@ -59,7 +59,7 @@ Google Cloud Marketplace.
       ```shell
       IMAGE_REPOSITORY=gcr.io/crunchydata-public/postgres-operator
 
-      export PGO_VERSION=4.7.2
+      export PGO_VERSION=4.7.3-rc.1
       export INSTALLER_IMAGE=${IMAGE_REPOSITORY}/deployer:${PGO_VERSION}
       export OPERATOR_IMAGE=${IMAGE_REPOSITORY}:${PGO_VERSION}
       export OPERATOR_IMAGE_API=${IMAGE_REPOSITORY}/pgo-apiserver:${PGO_VERSION}
