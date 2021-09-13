@@ -28,7 +28,7 @@ fi
 
 RUN if [ "$BASEOS" = "rhel7" ] ; then \
         rm /etc/yum.repos.d/kubernetes.repo \
-        && ${PACKAGER} install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+        && ${PACKAGER} install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
         && ${PACKAGER} -y install \
                 --setopt=skip_missing_names_on_install=False \
                 --enablerepo='rhel-7-server-ose-4.4-rpms' \
@@ -42,7 +42,7 @@ fi
 
 RUN if [ "$BASEOS" = "ubi7" ] ; then \
 	rm /etc/yum.repos.d/kubernetes.repo \
-        && ${PACKAGER} install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+        && ${PACKAGER} install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
         && ${PACKAGER} -y install \
                 --setopt=skip_missing_names_on_install=False \
                 --enablerepo='rhel-7-server-ose-4.4-rpms' \
