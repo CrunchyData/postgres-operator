@@ -1,17 +1,16 @@
 ---
-title: "Data Migration"
+title: "Migrate Data Volumes to New Clusters"
 date:
 draft: false
-weight: 20
 ---
 
-There are certain cases where you may want to migrate existing volumes to a new cluster. If so, read on for an in depth look at the steps required. If you want to start a new cluster from scratch, you can move on to [create a Postgres cluster]({{< relref "./create-cluster.md" >}}).
+There are certain cases where you may want to migrate existing volumes to a new cluster. If so, read on for an in depth look at the steps required.
 
 ## Configure your PostgresCluster CRD
 
 In order to use existing pgData, pg_wal or pgBackRest repo volumes in a new PostgresCluster, you will need to configure the `spec.dataSource.volumes` section of your PostgresCluster CRD. As shown below, there are three possible volumes you may configure, `pgDataVolume`, `pgWALVolume` and `pgBackRestVolume`. Under each, you must define the PVC name to use in the new cluster. A directory may also be defined, as needed, for cases where the existing directory name does not match the v5 directory.
 
-To help explain how these fields are used, we will consider a `pgcluster` from PGO v4, `oldhippo`. We will assume that the `pgcluster` has been deleted and only the PVCs have been left in place. 
+To help explain how these fields are used, we will consider a `pgcluster` from PGO v4, `oldhippo`. We will assume that the `pgcluster` has been deleted and only the PVCs have been left in place.
 
 **Please note that any differences in configuration or other datasources will alter this procedure significantly and that certain storage options require additional steps (see *Considerations* below)!**
 
@@ -46,7 +45,7 @@ spec:
           shared_preload_libraries: pgaudit.so
 ```
 
-Lastly, it is very important that the PostgreSQL version and storage configuration in your PostgresCluster match *exactly* the existing volumes being used. 
+Lastly, it is very important that the PostgreSQL version and storage configuration in your PostgresCluster match *exactly* the existing volumes being used.
 
 If the volumes were used with PostgreSQL 13, the `spec.postgresVersion` value should be `13` and the associated `spec.image` value should refer to a PostgreSQL 13 image.
 
@@ -130,10 +129,3 @@ spec:
               requests:
                 storage: 1G
 ```
-
-## Next Steps
-
-A CRD similar to this can be used to create your new PostgresCluster using `kubectl apply`, once it is updated to match your unique requirements. For more information on creating clusters, please see our general guide for [creating a Postgres cluster]({{< relref "./create-cluster.md" >}}).
-
-
-
