@@ -15,9 +15,19 @@ Let's dive in.
 
 Memory and CPU resources are an important component for vertically scaling your Postgres cluster. Couple with [tweaks to your Postgres configuration file]({{< relref "./customize-cluster.md" >}}), allowing your cluster to have more memory and CPU allotted to it can help it to perform better under load.
 
-It's important for instances in the same high availability set to have the same resources. PGO  lets you adjust CPU and memory within the `spec.instances.resources` section of the `postgresclusters.postgres-operator.crunchydata.com` custom resource. The layout of `spec.instances.resources` should be familiar: it follows the same pattern as the standard Kubernetes structure for setting [container resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
+It's important for instances in the same high availability set to have the same resources. PGO lets you adjust CPU and memory within the `resources` sections of the `postgresclusters.postgres-operator.crunchydata.com` custom resource. These include:
 
-For example, let's say we want to update our `hippo` Postgres cluster so that each instance has a limit of `2.0` CPUs and `4Gi` of memory. We can make the following changes to the manifest:
+- `spec.instances.resources` section, which sets the resource values for the PostgreSQL container, as well as any init containers in the associated pod.
+- `spec.instances.sidecars.replicacertcopy.resources` section, which sets the resources for the `replica-cert-copy` sidecar container.
+- `spec.monitoring.pgmonitor.exporter.resources` section, which sets the resources for the `exporter` sidecar container.
+- `spec.backups.pgbackrest.repoHost.resources` section, which sets the resources for the pgBackRest repo host container, as well as any init containers in the associated pod.
+- `spec.backups.pgbackrest.sidecars.pgbackrest.resources` section, which sets the resources for the `pgbackrest` sidecar container.
+- `spec.proxy.pgBouncer.resources` section, which sets the resources for the `pgbouncer` container.
+- `spec.proxy.pgBouncer.sidecars.pgbouncerconfig.resources` section, which sets the resources for the `pgbouncer-config` sidecar container.
+
+The layout of these `resources` sections should be familiar: they follow the same pattern as the standard Kubernetes structure for setting [container resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/). Note that these settings also allow for the configuration of [QoS classes](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/).
+
+For example, using the `spec.instances.resources` section, let's say we want to update our `hippo` Postgres cluster so that each instance has a limit of `2.0` CPUs and `4Gi` of memory. We can make the following changes to the manifest:
 
 ```
 apiVersion: postgres-operator.crunchydata.com/v1beta1

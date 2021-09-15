@@ -2209,6 +2209,11 @@ Defines a PgBouncer proxy and connection pooler.
         <td>Specification of the service that exposes PgBouncer.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbouncersidecars">sidecars</a></b></td>
+        <td>object</td>
+        <td>Configuration for pgBouncer sidecar containers</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncertolerationsindex">tolerations</a></b></td>
         <td>[]object</td>
         <td>Tolerations of a PgBouncer pod. Changing this value causes PgBouncer to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
@@ -3686,6 +3691,92 @@ Specification of the service that exposes PgBouncer.
 </table>
 
 
+<h3 id="postgresclusterspecproxypgbouncersidecars">
+  PostgresCluster.spec.proxy.pgBouncer.sidecars
+  <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Configuration for pgBouncer sidecar containers
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecproxypgbouncersidecarspgbouncerconfig">pgbouncerConfig</a></b></td>
+        <td>object</td>
+        <td>Defines the configuration for the pgBouncer config sidecar container</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbouncersidecarspgbouncerconfig">
+  PostgresCluster.spec.proxy.pgBouncer.sidecars.pgbouncerConfig
+  <sup><sup><a href="#postgresclusterspecproxypgbouncersidecars">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the configuration for the pgBouncer config sidecar container
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecproxypgbouncersidecarspgbouncerconfigresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource requirements for a sidecar container</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbouncersidecarspgbouncerconfigresources">
+  PostgresCluster.spec.proxy.pgBouncer.sidecars.pgbouncerConfig.resources
+  <sup><sup><a href="#postgresclusterspecproxypgbouncersidecarspgbouncerconfig">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource requirements for a sidecar container
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecproxypgbouncertolerationsindex">
   PostgresCluster.spec.proxy.pgBouncer.tolerations[index]
   <sup><sup><a href="#postgresclusterspecproxypgbouncer">↩ Parent</a></sup></sup>
@@ -4019,6 +4110,11 @@ pgBackRest archive configuration
         <td><b><a href="#postgresclusterspecbackupspgbackrestrestore">restore</a></b></td>
         <td>object</td>
         <td>Defines details for performing an in-place restore using pgBackRest</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestsidecars">sidecars</a></b></td>
+        <td>object</td>
+        <td>Configuration for pgBackRest sidecar containers</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestreposindex">repos</a></b></td>
@@ -6773,6 +6869,92 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestsidecars">
+  PostgresCluster.spec.backups.pgbackrest.sidecars
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Configuration for pgBackRest sidecar containers
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestsidecarspgbackrest">pgbackrest</a></b></td>
+        <td>object</td>
+        <td>Defines the configuration for the pgBackRest sidecar container</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestsidecarspgbackrest">
+  PostgresCluster.spec.backups.pgbackrest.sidecars.pgbackrest
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestsidecars">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the configuration for the pgBackRest sidecar container
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestsidecarspgbackrestresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource requirements for a sidecar container</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestsidecarspgbackrestresources">
+  PostgresCluster.spec.backups.pgbackrest.sidecars.pgbackrest.resources
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestsidecarspgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource requirements for a sidecar container
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestreposindex">
   PostgresCluster.spec.backups.pgbackrest.repos[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrest">↩ Parent</a></sup></sup>
@@ -7217,6 +7399,11 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td><b><a href="#postgresclusterspecinstancesindexresources">resources</a></b></td>
         <td>object</td>
         <td>Compute resources of a PostgreSQL container.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexsidecars">sidecars</a></b></td>
+        <td>object</td>
+        <td>Configuration for instance sidecar containers</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindextolerationsindex">tolerations</a></b></td>
@@ -8174,6 +8361,92 @@ Metadata contains metadata for PostgresCluster resources
 
 
 Compute resources of a PostgreSQL container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexsidecars">
+  PostgresCluster.spec.instances[index].sidecars
+  <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Configuration for instance sidecar containers
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexsidecarsreplicacertcopy">replicaCertCopy</a></b></td>
+        <td>object</td>
+        <td>Defines the configuration for the replica cert copy sidecar container</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexsidecarsreplicacertcopy">
+  PostgresCluster.spec.instances[index].sidecars.replicaCertCopy
+  <sup><sup><a href="#postgresclusterspecinstancesindexsidecars">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the configuration for the replica cert copy sidecar container
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexsidecarsreplicacertcopyresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource requirements for a sidecar container</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexsidecarsreplicacertcopyresources">
+  PostgresCluster.spec.instances[index].sidecars.replicaCertCopy.resources
+  <sup><sup><a href="#postgresclusterspecinstancesindexsidecarsreplicacertcopy">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource requirements for a sidecar container
 
 <table>
     <thead>
