@@ -1064,6 +1064,11 @@ func (r *Reconciler) reconcileInstance(
 		addTMPEmptyDir(&instance.Spec.Template)
 	}
 
+	// mount shared memory to the Postgres instance
+	if err == nil {
+		addDevSHM(&instance.Spec.Template)
+	}
+
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, instance))
 	}

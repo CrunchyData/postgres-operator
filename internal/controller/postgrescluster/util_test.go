@@ -25,6 +25,7 @@ import (
 	"gotest.tools/v3/assert"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -183,6 +184,74 @@ func TestUpdateReconcileResult(t *testing.T) {
 			result := updateReconcileResult(tc.currResult, tc.newResult)
 			assert.Assert(t, result.Requeue == tc.requeueExpected)
 			assert.Assert(t, result.RequeueAfter == tc.expectedRequeueAfter)
+		})
+	}
+}
+
+func TestAddDevSHM(t *testing.T) {
+
+	testCases := []struct {
+		tcName      string
+		podTemplate *corev1.PodTemplateSpec
+		expected    bool
+	}{{
+		tcName: "database and pgbackrest containers",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "database"}, {Name: "pgbackrest"}, {Name: "dontmodify"},
+			}}},
+		expected: true,
+	}, {
+		tcName: "database container only",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{Name: "database"}, {Name: "dontmodify"}}}},
+		expected: true,
+	}, {
+		tcName: "pgbackest container only",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{Name: "dontmodify"}, {Name: "pgbackrest"}}}},
+	}, {
+		tcName: "other containers",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "dontmodify1"}, {Name: "dontmodify2"}}}},
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.tcName, func(t *testing.T) {
+
+			template := tc.podTemplate
+
+			addDevSHM(template)
+
+			found := false
+
+			// check there is an empty dir mounted under the dshm volume
+			for _, v := range template.Spec.Volumes {
+				if v.Name == "dshm" && v.VolumeSource.EmptyDir != nil && v.VolumeSource.EmptyDir.Medium == v1.StorageMediumMemory {
+					found = true
+					break
+				}
+			}
+			assert.Assert(t, found)
+
+			// check that the database container contains a mount to the shared volume
+			// directory
+			found = false
+
+		loop:
+			for _, c := range template.Spec.Containers {
+				if c.Name == naming.ContainerDatabase {
+					for _, vm := range c.VolumeMounts {
+						if vm.Name == "dshm" && vm.MountPath == "/dev/shm" {
+							found = true
+							break loop
+						}
+					}
+				}
+			}
+
+			assert.Equal(t, tc.expected, found)
 		})
 	}
 }
