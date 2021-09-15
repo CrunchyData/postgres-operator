@@ -50,9 +50,8 @@
     "database": "userdb",
     "exporterport": "9187",
     "name": "fromcrd",
-    "namespace": "pgouser1",
     "pgbadgerport": "10000",
-    "podPodAntiAffinity": {
+    "podAntiAffinity": {
       "default": "preferred",
       "pgBackRest": "preferred",
       "pgBouncer": "preferred"
