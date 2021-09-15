@@ -91,7 +91,7 @@ do so at the bottom of the commit message, and make it clearly labeled like so:
 
 ```
 Issue: #123
-Issue: [ch1234]
+Issue: [sc-1234]
 ```
 
 # Submitting Pull Requests
