@@ -44,13 +44,21 @@ func InitCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 		naming.ReplicationTmp, naming.CertMountPath+naming.ReplicationDirectory,
 		naming.ReplicationCert, naming.ReplicationPrivateKey,
 		naming.ReplicationCACert, naming.ReplicationTmp)
-	template.Spec.InitContainers = append(template.Spec.InitContainers,
-		v1.Container{
-			Command:         []string{"bash", "-c", cmd},
-			Image:           config.PostgresContainerImage(postgresCluster),
-			Name:            naming.ContainerClientCertInit,
-			SecurityContext: initialize.RestrictedSecurityContext(),
-		})
+
+	container := v1.Container{
+		Command:         []string{"bash", "-c", cmd},
+		Image:           config.PostgresContainerImage(postgresCluster),
+		Name:            naming.ContainerClientCertInit,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+	}
+
+	// set the NSS wrapper container resources to match those of the 'database' container
+	for i, c := range template.Spec.Containers {
+		if c.Name == naming.ContainerDatabase {
+			container.Resources = template.Spec.Containers[i].Resources
+		}
+	}
+	template.Spec.InitContainers = append(template.Spec.InitContainers, container)
 }
 
 // AddCertVolumeToPod adds the secret containing the TLS certificate, key and the CA certificate

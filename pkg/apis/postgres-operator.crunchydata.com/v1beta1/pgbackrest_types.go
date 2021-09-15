@@ -139,6 +139,17 @@ type PGBackRestArchive struct {
 	// Defines details for performing an in-place restore using pgBackRest
 	// +optional
 	Restore *PGBackRestRestore `json:"restore,omitempty"`
+
+	// Configuration for pgBackRest sidecar containers
+	// +optional
+	Sidecars *PGBackRestSidecars `json:"sidecars,omitempty"`
+}
+
+// PGBackRestSidecars defines the configuration for pgBackRest sidecar containers
+type PGBackRestSidecars struct {
+	// Defines the configuration for the pgBackRest sidecar container
+	// +optional
+	PGBackRest *Sidecar `json:"pgbackrest,omitempty"`
 }
 
 // PGBackRestManualBackup contains information that is used for creating a

@@ -210,6 +210,13 @@ func Pod(
 		}
 	}
 
+	// When resources are explicitly set, overwrite the above.
+	if inCluster.Spec.Proxy.PGBouncer.Sidecars != nil &&
+		inCluster.Spec.Proxy.PGBouncer.Sidecars.PGBouncerConfig != nil &&
+		inCluster.Spec.Proxy.PGBouncer.Sidecars.PGBouncerConfig.Resources != nil {
+		reloader.Resources = *inCluster.Spec.Proxy.PGBouncer.Sidecars.PGBouncerConfig.Resources
+	}
+
 	outPod.Containers = []corev1.Container{container, reloader}
 
 	outPod.Volumes = []corev1.Volume{backend, configVol, frontend}

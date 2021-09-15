@@ -26,6 +26,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -304,6 +305,15 @@ func TestAddNSSWrapper(t *testing.T) {
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{Name: "dontmodify1"}, {Name: "dontmodify2"}}}},
+	}, {
+		tcName: "custom container resources",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "database",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("200m"),
+						}}}}}},
 	}}
 
 	for _, tc := range testCases {
@@ -337,6 +347,13 @@ func TestAddNSSWrapper(t *testing.T) {
 					assert.Equal(t, expectedCmd, c.Command[2]) // ignore "bash -c"
 					assert.Assert(t, c.Image == image)
 					assert.Assert(t, c.SecurityContext != &corev1.SecurityContext{})
+
+					for i, c := range template.Spec.Containers {
+						if c.Name == "database" || c.Name == "pgbackrest" {
+							assert.DeepEqual(t, c.Resources.Requests,
+								template.Spec.Containers[i].Resources.Requests)
+						}
+					}
 					foundInitContainer = true
 					break
 				}

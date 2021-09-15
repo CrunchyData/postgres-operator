@@ -146,7 +146,8 @@ func InstancePod(ctx context.Context,
 	// Create the sidecar container that handles certificate copying and permission
 	// setting and the patronictl reload. Use the existing cluster, pod, volume name
 	// and container env as these are needed for the functions listed.
-	diffCopyReplicationTLS(inCluster, outInstancePod, volume.Name, container.Env)
+	diffCopyReplicationTLS(inCluster, outInstancePod, volume.Name, container.Env,
+		*inInstanceSpec)
 
 	return nil
 }
@@ -164,7 +165,8 @@ func InstancePod(ctx context.Context,
 // TODO(tjmoore4): remove this implementation when/if defaultMode permissions are set as
 // expected for the mounted volume.
 func diffCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
-	template *v1.PodTemplateSpec, volumeName string, envVar []v1.EnvVar) {
+	template *v1.PodTemplateSpec, volumeName string, envVar []v1.EnvVar,
+	instance v1beta1.PostgresInstanceSetSpec) {
 	container := findOrAppendContainer(&template.Spec.Containers,
 		naming.ContainerClientCertCopy)
 
@@ -178,6 +180,12 @@ func diffCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 	})
 
 	container.SecurityContext = initialize.RestrictedSecurityContext()
+
+	// set sidecar container resources
+	if instance.Sidecars != nil && instance.Sidecars.ReplicaCertCopy != nil &&
+		instance.Sidecars.ReplicaCertCopy.Resources != nil {
+		container.Resources = *instance.Sidecars.ReplicaCertCopy.Resources
+	}
 
 	container.Env = envVar
 }

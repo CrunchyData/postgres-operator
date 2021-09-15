@@ -327,6 +327,111 @@ volumes:
         name: tls-name
 			`, "\t\n")+"\n"))
 	})
+
+	t.Run("Sidecar customization", func(t *testing.T) {
+		cluster.Spec.Proxy.PGBouncer.Sidecars = &v1beta1.PGBouncerSidecars{
+			PGBouncerConfig: &v1beta1.Sidecar{
+				Resources: &corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("200m"),
+					},
+				},
+			},
+		}
+
+		call()
+
+		assert.Assert(t, marshalEquals(pod,
+			strings.Trim(`
+containers:
+- command:
+  - pgbouncer
+  - /etc/pgbouncer/~postgres-operator.ini
+  image: image-town
+  name: pgbouncer
+  ports:
+  - containerPort: 5432
+    name: pgbouncer
+    protocol: TCP
+  resources:
+    requests:
+      cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+  - mountPath: /etc/pgbouncer/~postgres-operator-backend
+    name: pgbouncer-backend-tls
+    readOnly: true
+  - mountPath: /etc/pgbouncer/~postgres-operator-frontend
+    name: pgbouncer-frontend-tls
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    declare -r directory="${directory:-$1}"
+    while sleep 5s; do
+      mounted=$(stat --format=%y "${directory}")
+      if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
+      then
+        loaded="${mounted}"
+        echo Loaded configuration dated "${loaded}"
+      fi
+    done
+    }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbouncer-config
+  - /etc/pgbouncer
+  image: image-town
+  name: pgbouncer-config
+  resources:
+    requests:
+      cpu: 200m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+volumes:
+- name: pgbouncer-backend-tls
+  projected:
+    sources:
+    - secret: {}
+- name: pgbouncer-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbouncer-empty
+          path: pgbouncer.ini
+    - configMap:
+        items:
+        - key: pgbouncer.ini
+          path: ~postgres-operator.ini
+    - secret:
+        items:
+        - key: pgbouncer-users.txt
+          path: ~postgres-operator/users.txt
+- name: pgbouncer-frontend-tls
+  projected:
+    sources:
+    - secret:
+        items:
+        - key: k1
+          path: p1
+        name: tls-name`, "\t\n")+"\n"))
+	})
 }
 
 func TestPostgreSQL(t *testing.T) {
