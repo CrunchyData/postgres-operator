@@ -34,6 +34,7 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,7 +47,11 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 	cluster.Spec.Port = initialize.Int32(5432)
 
 	image := "test/image:tag"
-	resources := corev1.ResourceRequirements{}
+	resources := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU: resource.MustParse("100m"),
+		},
+	}
 
 	getContainerWithName := func(containers []corev1.Container, name string) corev1.Container {
 		for _, container := range containers {
@@ -90,6 +95,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		assert.Equal(t, *container.SecurityContext.Privileged, false)
 		assert.Equal(t, *container.SecurityContext.ReadOnlyRootFilesystem, true)
 		assert.Equal(t, *container.SecurityContext.AllowPrivilegeEscalation, false)
+		assert.Equal(t, *container.Resources.Requests.Cpu(), resource.MustParse("100m"))
 
 		expectedENV := []corev1.EnvVar{
 			{Name: "CONFIG_DIR", Value: "/opt/cpm/conf"},

@@ -33,13 +33,29 @@ import (
 func TestCopyClientTLS(t *testing.T) {
 
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
-	template := &v1.PodTemplateSpec{}
+	template := &v1.PodTemplateSpec{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{{
+				Resources: v1.ResourceRequirements{
+					Requests: v1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("200m"),
+					},
+				},
+			}},
+		},
+	}
 
 	InitCopyReplicationTLS(postgresCluster, template)
 
 	var foundPGDATAInitContainer bool
 	for _, c := range template.Spec.InitContainers {
 		if c.Name == naming.ContainerClientCertInit {
+			for i, c := range template.Spec.Containers {
+				if c.Name == "database" {
+					assert.DeepEqual(t, c.Resources.Requests,
+						template.Spec.Containers[i].Resources.Requests)
+				}
+			}
 			foundPGDATAInitContainer = true
 			break
 		}

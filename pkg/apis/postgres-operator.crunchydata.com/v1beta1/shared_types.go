@@ -15,10 +15,19 @@
 
 package v1beta1
 
+import corev1 "k8s.io/api/core/v1"
+
 type ServiceSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
 	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
 	Type string `json:"type"`
+}
+
+// Sidecar defines the configuration of a sidecar container
+type Sidecar struct {
+	// Resource requirements for a sidecar container
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }

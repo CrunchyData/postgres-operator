@@ -128,13 +128,37 @@ func addNSSWrapper(image string, template *v1.PodTemplateSpec) {
 		}
 	}
 
-	template.Spec.InitContainers = append(template.Spec.InitContainers,
-		v1.Container{
-			Command:         []string{"bash", "-c", nssWrapperCmd},
-			Image:           image,
-			Name:            naming.ContainerNSSWrapperInit,
-			SecurityContext: initialize.RestrictedSecurityContext(),
-		})
+	container := v1.Container{
+		Command:         []string{"bash", "-c", nssWrapperCmd},
+		Image:           image,
+		Name:            naming.ContainerNSSWrapperInit,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+	}
+
+	// Here we set the NSS wrapper container resources to the 'database' or
+	// 'pgbackrest' container configuration, as appropriate.
+	// Because the instance Pod has both a 'database' and 'pgbackrest' container,
+	// we'll first check for the 'database' container and use those resource
+	// settings for any instance pods.
+	containsDatabase := false
+	for i, c := range template.Spec.Containers {
+		if c.Name == naming.ContainerDatabase {
+			containsDatabase = true
+			container.Resources = template.Spec.Containers[i].Resources
+			break
+		}
+	}
+	// If 'database' is not found, we need to use the 'pgbackrest' resource
+	// configuration settings instead
+	if !containsDatabase {
+		for i, c := range template.Spec.Containers {
+			if c.Name == naming.PGBackRestRepoContainerName {
+				container.Resources = template.Spec.Containers[i].Resources
+				break
+			}
+		}
+	}
+	template.Spec.InitContainers = append(template.Spec.InitContainers, container)
 }
 
 // jobFailed returns "true" if the Job provided has failed.  Otherwise it returns "false".

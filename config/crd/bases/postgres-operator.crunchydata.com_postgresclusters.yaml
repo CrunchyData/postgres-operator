@@ -2335,6 +2335,43 @@ spec:
                         - enabled
                         - repoName
                         type: object
+                      sidecars:
+                        description: Configuration for pgBackRest sidecar containers
+                        properties:
+                          pgbackrest:
+                            description: Defines the configuration for the pgBackRest
+                              sidecar container
+                            properties:
+                              resources:
+                                description: Resource requirements for a sidecar container
+                                properties:
+                                  limits:
+                                    additionalProperties:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    description: 'Limits describes the maximum amount
+                                      of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                    type: object
+                                  requests:
+                                    additionalProperties:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    description: 'Requests describes the minimum amount
+                                      of compute resources required. If Requests is
+                                      omitted for a container, it defaults to Limits
+                                      if that is explicitly specified, otherwise to
+                                      an implementation-defined value. More info:
+                                      https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                    type: object
+                                type: object
+                            type: object
+                        type: object
                     required:
                     - repos
                     type: object
@@ -4071,6 +4108,42 @@ spec:
                             https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                           type: object
                       type: object
+                    sidecars:
+                      description: Configuration for instance sidecar containers
+                      properties:
+                        replicaCertCopy:
+                          description: Defines the configuration for the replica cert
+                            copy sidecar container
+                          properties:
+                            resources:
+                              description: Resource requirements for a sidecar container
+                              properties:
+                                limits:
+                                  additionalProperties:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                    x-kubernetes-int-or-string: true
+                                  description: 'Limits describes the maximum amount
+                                    of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                  type: object
+                                requests:
+                                  additionalProperties:
+                                    anyOf:
+                                    - type: integer
+                                    - type: string
+                                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                    x-kubernetes-int-or-string: true
+                                  description: 'Requests describes the minimum amount
+                                    of compute resources required. If Requests is
+                                    omitted for a container, it defaults to Limits
+                                    if that is explicitly specified, otherwise to
+                                    an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                  type: object
+                              type: object
+                          type: object
+                      type: object
                     tolerations:
                       description: 'Tolerations of a PostgreSQL pod. Changing this
                         value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration'
@@ -5769,6 +5842,43 @@ spec:
                             type: string
                         required:
                         - type
+                        type: object
+                      sidecars:
+                        description: Configuration for pgBouncer sidecar containers
+                        properties:
+                          pgbouncerConfig:
+                            description: Defines the configuration for the pgBouncer
+                              config sidecar container
+                            properties:
+                              resources:
+                                description: Resource requirements for a sidecar container
+                                properties:
+                                  limits:
+                                    additionalProperties:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    description: 'Limits describes the maximum amount
+                                      of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                    type: object
+                                  requests:
+                                    additionalProperties:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                      x-kubernetes-int-or-string: true
+                                    description: 'Requests describes the minimum amount
+                                      of compute resources required. If Requests is
+                                      omitted for a container, it defaults to Limits
+                                      if that is explicitly specified, otherwise to
+                                      an implementation-defined value. More info:
+                                      https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                    type: object
+                                type: object
+                            type: object
                         type: object
                       tolerations:
                         description: 'Tolerations of a PgBouncer pod. Changing this

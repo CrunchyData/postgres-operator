@@ -344,6 +344,10 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
+	// Configuration for instance sidecar containers
+	// +optional
+	Sidecars *InstanceSidecars `json:"sidecars,omitempty"`
+
 	// Tolerations of a PostgreSQL pod. Changing this value causes PostgreSQL to restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
@@ -359,6 +363,13 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// +optional
 	WALVolumeClaimSpec *corev1.PersistentVolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
+}
+
+// InstanceSidecars defines the configuration for instance sidecar containers
+type InstanceSidecars struct {
+	// Defines the configuration for the replica cert copy sidecar container
+	// +optional
+	ReplicaCertCopy *Sidecar `json:"replicaCertCopy,omitempty"`
 }
 
 // Default sets the default values for an instance set spec, including the name

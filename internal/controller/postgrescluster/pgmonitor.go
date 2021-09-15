@@ -326,6 +326,7 @@ func addPGMonitorExporterToInstancePodSpec(
 			MountPath: "/conf",
 		}},
 	}
+
 	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
 
 	// add custom exporter config volume

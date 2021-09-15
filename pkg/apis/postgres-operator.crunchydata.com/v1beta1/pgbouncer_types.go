@@ -110,6 +110,10 @@ type PGBouncerPodSpec struct {
 	// +optional
 	Service *ServiceSpec `json:"service,omitempty"`
 
+	// Configuration for pgBouncer sidecar containers
+	// +optional
+	Sidecars *PGBouncerSidecars `json:"sidecars,omitempty"`
+
 	// Tolerations of a PgBouncer pod. Changing this value causes PgBouncer to
 	// restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
@@ -121,6 +125,13 @@ type PGBouncerPodSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
 	// +optional
 	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+}
+
+// PGBouncerSidecars defines the configuration for pgBouncer sidecar containers
+type PGBouncerSidecars struct {
+	// Defines the configuration for the pgBouncer config sidecar container
+	// +optional
+	PGBouncerConfig *Sidecar `json:"pgbouncerConfig,omitempty"`
 }
 
 // Default returns the default port for PgBouncer (5432) if a port is not
