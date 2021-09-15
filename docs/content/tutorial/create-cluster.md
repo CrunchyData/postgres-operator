@@ -5,7 +5,7 @@ draft: false
 weight: 20
 ---
 
-If you came here through the [quickstart]({{< relref "quickstart/_index.md" >}}), you may have already created a cluster. If you created a cluster by using the example in the `kustomize/postgres` directory, feel free to skip to connecting to a cluster, or read onward for a more in depth look into cluster creation! If you need to migrate existing volumes to PGO v5, please see the [data migration section]({{< relref "./data-migration.md" >}}).
+If you came here through the [quickstart]({{< relref "quickstart/_index.md" >}}), you may have already created a cluster. If you created a cluster by using the example in the `kustomize/postgres` directory, feel free to skip to connecting to a cluster, or read onward for a more in depth look into cluster creation!
 
 ## Create a Postgres Cluster
 
