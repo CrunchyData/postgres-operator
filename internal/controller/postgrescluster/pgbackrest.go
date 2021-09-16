@@ -641,24 +641,30 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 	}
 	cmdOpts = append(cmdOpts, opts...)
 
+	container := corev1.Container{
+		Command: []string{"/opt/crunchy/bin/pgbackrest"},
+		Env: []v1.EnvVar{
+			{Name: "COMMAND", Value: "backup"},
+			{Name: "COMMAND_OPTS", Value: strings.Join(cmdOpts, " ")},
+			{Name: "COMPARE_HASH", Value: "true"},
+			{Name: "CONTAINER", Value: containerName},
+			{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
+			{Name: "SELECTOR", Value: selector},
+		},
+		Image:           config.PGBackRestContainerImage(postgresCluster),
+		Name:            naming.PGBackRestRepoContainerName,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+	}
+
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
+		container.Resources = postgresCluster.Spec.Backups.PGBackRest.Jobs.Resources
+	}
+
 	jobSpec := &batchv1.JobSpec{
 		Template: v1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: labels, Annotations: annotations},
 			Spec: v1.PodSpec{
-				Containers: []v1.Container{{
-					Command: []string{"/opt/crunchy/bin/pgbackrest"},
-					Env: []v1.EnvVar{
-						{Name: "COMMAND", Value: "backup"},
-						{Name: "COMMAND_OPTS", Value: strings.Join(cmdOpts, " ")},
-						{Name: "COMPARE_HASH", Value: "true"},
-						{Name: "CONTAINER", Value: containerName},
-						{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
-						{Name: "SELECTOR", Value: selector},
-					},
-					Image:           config.PGBackRestContainerImage(postgresCluster),
-					Name:            naming.PGBackRestRepoContainerName,
-					SecurityContext: initialize.RestrictedSecurityContext(),
-				}},
+				Containers: []v1.Container{container},
 				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
 				// controller when there is a failure (instead of the container simply restarting).
 				// This will ensure the Job always has the latest configs mounted following a
