@@ -34,17 +34,6 @@ spec:
         directory: oldhippo-backrest-shared-repo
 ```
 
-Specifically for those migrating from PGO v4 to v5, at this time, a custom “pg_hba” configuration section to preload the “pg_audit” extension is required, as this extension was enabled by default in PGO v4.x. It can be added as follows:
-
-```
-spec:
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          shared_preload_libraries: pgaudit.so
-```
-
 Lastly, it is very important that the PostgreSQL version and storage configuration in your PostgresCluster match *exactly* the existing volumes being used.
 
 If the volumes were used with PostgreSQL 13, the `spec.postgresVersion` value should be `13` and the associated `spec.image` value should refer to a PostgreSQL 13 image.
@@ -84,11 +73,6 @@ metadata:
 spec:
   image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
   postgresVersion: 13
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          shared_preload_libraries: pgaudit.so
   dataSource:
     volumes:
       pgDataVolume:

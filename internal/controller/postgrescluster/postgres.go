@@ -37,6 +37,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgaudit"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -201,7 +202,19 @@ func (r *Reconciler) reconcilePostgresDatabases(
 
 	// Calculate a hash of the SQL that should be executed in PostgreSQL.
 
+	var pgAuditOK bool
 	create := func(ctx context.Context, exec postgres.Executor) error {
+		if pgAuditOK = pgaudit.EnableInPostgreSQL(ctx, exec) == nil; !pgAuditOK {
+			// pgAudit can only be enabled after its shared library is loaded,
+			// but early versions of PGO do not load it automatically. Assume
+			// that an error here is because the cluster started during one of
+			// those versions and has not been restarted.
+			// TODO(cbandy): After we have a more general way of handling or
+			// reporting pending restarts, consider returning this error instead.
+			r.Recorder.Event(cluster, corev1.EventTypeWarning, "pgAuditDisabled",
+				"Unable to install pgAudit; try restarting PostgreSQL")
+		}
+
 		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, databases.List())
 	}
 
@@ -233,7 +246,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		log := logging.FromContext(ctx).WithValues("revision", revision)
 		err = errors.WithStack(create(logging.NewContext(ctx, log), podExecutor))
 	}
-	if err == nil {
+	if err == nil && pgAuditOK {
 		cluster.Status.DatabaseRevision = revision
 	}
 
