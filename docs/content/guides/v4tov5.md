@@ -118,17 +118,7 @@ spec:
 
 Please see the [Data Migration]({{< relref "guides/data-migration.md" >}}) section of the [tutorial]({{< relref "tutorial/_index.md" >}}) for more details on how to properly populate this section of the spec when migrating from a PGO v4 cluster.
 
-2\. If you are using the default setup in your PGO v4 cluster, you will need to provide custom setup parameters to include the [`pgAudit`](https://github.com/pgaudit/pgaudit) extension extension. This looks similar to the following:
-
-```
-patroni:
-  dynamicConfiguration:
-    postgresql:
-      parameters:
-        shared_preload_libraries: pgaudit.so
-```
-
-If you customized other Postgres parameters, you will need to ensure they match in the PGO v5 cluster. For more information, please review the tutorial on [customizing a Postgres cluster]({{< relref "tutorial/customize-cluster.md" >}}).
+2\. If you customized Postgres parameters, you will need to ensure they match in the PGO v5 cluster. For more information, please review the tutorial on [customizing a Postgres cluster]({{< relref "tutorial/customize-cluster.md" >}}).
 
 3\. Once the `PostgresCluster` spec is populated according to these guidelines, you can create the `PostgresCluster` custom resource.  For example, if the `PostgresCluster` you're creating is a modified version of the [`postgres` example](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/postgres) in the [PGO examples repo](https://github.com/CrunchyData/postgres-operator-examples), you can run the following command:
 
@@ -297,18 +287,7 @@ spec:
 ```
 
 
-4\. If you are using the default setup in your PGO v4 cluster, you will need to provide custom setup parameters to include the pgAudit extension. This looks similar to the following: v4):
-
-```
-spec:
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          shared_preload_libraries: pgaudit.so
-```
-
-If you customized other Postgres parameters, you will need to ensure they match in the PGO v5 cluster. For more information, please review the tutorial on [customizing a Postgres cluster]({{< relref "tutorial/customize-cluster.md" >}}).
+4\. If you customized other Postgres parameters, you will need to ensure they match in the PGO v5 cluster. For more information, please review the tutorial on [customizing a Postgres cluster]({{< relref "tutorial/customize-cluster.md" >}}).
 
 5\. Once the `PostgresCluster` spec is populated according to these guidelines, you can create the `PostgresCluster` custom resource.  For example, if the `PostgresCluster` you're creating is a modified version of the [`postgres` example](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/postgres) in the [PGO examples repo](https://github.com/CrunchyData/postgres-operator-examples), you can run the following command:
 
@@ -404,18 +383,7 @@ spec:
     repoName: repo1
 ```
 
-3\. If you are using the default setup in your PGO v4 cluster, you will need to provide custom setup parameters to include the pgAudit extension. This looks similar to the following: v4):
-
-```
-spec:
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          shared_preload_libraries: pgaudit.so
-```
-
-If you customized other Postgres parameters, you will need to ensure they match in the PGO v5 cluster. For more information, please review the tutorial on [customizing a Postgres cluster]({{< relref "tutorial/customize-cluster.md" >}}).
+3\. If you customized other Postgres parameters, you will need to ensure they match in the PGO v5 cluster. For more information, please review the tutorial on [customizing a Postgres cluster]({{< relref "tutorial/customize-cluster.md" >}}).
 
 4\. Once the `PostgresCluster` spec is populated according to these guidelines, you can create the `PostgresCluster` custom resource.  For example, if the `PostgresCluster` you're creating is a modified version of the [`postgres` example](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/postgres) in the [PGO examples repo](https://github.com/CrunchyData/postgres-operator-examples), you can run the following command:
 

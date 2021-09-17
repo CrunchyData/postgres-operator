@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/pgaudit"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
@@ -176,8 +177,8 @@ func (r *Reconciler) Reconcile(
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
 	pgParameters := postgres.NewParameters()
+	pgaudit.PostgreSQLParameters(&pgParameters)
 	pgbackrest.PostgreSQL(cluster, &pgParameters)
-
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
 	if err == nil {
