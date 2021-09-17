@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -1048,6 +1049,17 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			assert.Assert(t, ss.Spec.Template.Spec.ImagePullSecrets != nil)
 			assert.Equal(t, ss.Spec.Template.Spec.ImagePullSecrets[0].Name,
 				"myImagePullSecret")
+		},
+	}, {
+		name: "check pod priority",
+		ip: intentParams{
+			spec: &v1beta1.PostgresInstanceSetSpec{
+				PriorityClassName: initialize.String("some-priority-class"),
+			},
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, ss.Spec.Template.Spec.PriorityClassName,
+				"some-priority-class")
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {

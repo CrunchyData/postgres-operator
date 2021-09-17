@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -927,6 +928,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 						corev1.ResourceCPU: resource.MustParse("1m"),
 					},
 				},
+				PriorityClassName: initialize.String("some-priority-class"),
 				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						corev1.ReadWriteMany},
@@ -946,6 +948,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 								corev1.ResourceCPU: resource.MustParse("1m"),
 							},
 						},
+						PriorityClassName: initialize.String("some-priority-class"),
 					},
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
@@ -1013,6 +1016,7 @@ containers:
   - mountPath: /pgdata
     name: postgres-data
 dnsPolicy: ClusterFirst
+priorityClassName: some-priority-class
 restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
@@ -1057,6 +1061,7 @@ containers:
   - mountPath: /pgwal
     name: postgres-wal
 dnsPolicy: ClusterFirst
+priorityClassName: some-priority-class
 restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
@@ -1103,6 +1108,7 @@ containers:
   - mountPath: /pgbackrest
     name: pgbackrest-repo
 dnsPolicy: ClusterFirst
+priorityClassName: some-priority-class
 restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:

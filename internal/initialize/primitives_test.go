@@ -90,6 +90,18 @@ func TestInt64(t *testing.T) {
 	}
 }
 
+func TestString(t *testing.T) {
+	z := initialize.String("")
+	if assert.Check(t, z != nil) {
+		assert.Equal(t, *z, "")
+	}
+
+	n := initialize.String("sup")
+	if assert.Check(t, n != nil) {
+		assert.Equal(t, *n, "sup")
+	}
+}
+
 func TestStringMap(t *testing.T) {
 	// Ignores nil pointer.
 	initialize.StringMap(nil)

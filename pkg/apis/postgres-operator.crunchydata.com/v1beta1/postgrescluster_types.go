@@ -221,6 +221,12 @@ type PostgresClusterDataSource struct {
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
+	// Priority class name for the pgBackRest restore Job pod. Changing this
+	// value causes PostgreSQL to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
+
 	// Tolerations of the pgBackRest restore Job.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
@@ -334,6 +340,12 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// +kubebuilder:validation:Required
 	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
+
+	// Priority class name for the PostgreSQL pod. Changing this value causes
+	// PostgreSQL to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 
 	// +optional
 	// +kubebuilder:default=1

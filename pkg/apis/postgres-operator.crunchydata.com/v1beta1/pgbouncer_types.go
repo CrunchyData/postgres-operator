@@ -94,6 +94,12 @@ type PGBouncerPodSpec struct {
 	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
+	// Priority class name for the pgBouncer pod. Changing this value causes
+	// PostgreSQL to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
+
 	// Number of desired PgBouncer pods.
 	// +optional
 	// +kubebuilder:default=1

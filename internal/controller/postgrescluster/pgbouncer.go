@@ -429,6 +429,10 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	deploy.Spec.Template.Spec.TopologySpreadConstraints =
 		cluster.Spec.Proxy.PGBouncer.TopologySpreadConstraints
 
+	if cluster.Spec.Proxy.PGBouncer.PriorityClassName != nil {
+		deploy.Spec.Template.Spec.PriorityClassName = *cluster.Spec.Proxy.PGBouncer.PriorityClassName
+	}
+
 	// Restart containers any time they stop, die, are killed, etc.
 	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
 	deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyAlways

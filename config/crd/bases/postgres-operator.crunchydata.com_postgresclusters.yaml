@@ -294,6 +294,11 @@ spec:
                         description: Jobs field allows configuration for all backup
                           jobs
                         properties:
+                          priorityClassName:
+                            description: 'Priority class name for the pgBackRest backup
+                              Job pods. Changing this value causes PostgreSQL to restart.
+                              More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
+                            type: string
                           resources:
                             description: Resource limits for backup jobs. Includes
                               manual, scheduled and replica create backups
@@ -322,6 +327,11 @@ spec:
                                   value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                             type: object
+                          priorityClassName:
+                            description: 'Priority class name for the pgBackRest backup
+                              Job pods. Changing this value causes PostgreSQL to restart.
+                              More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
+                            type: string
                         type: object
                       manual:
                         description: Defines details for manual pgBackRest backup
@@ -1044,6 +1054,11 @@ spec:
                                     type: array
                                 type: object
                             type: object
+                          priorityClassName:
+                            description: 'Priority class name for the pgBackRest repo
+                              host pod. Changing this value causes PostgreSQL to restart.
+                              More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
+                            type: string
                           resources:
                             description: Resource requirements for a pgBackRest repository
                               host
@@ -2284,6 +2299,11 @@ spec:
                             items:
                               type: string
                             type: array
+                          priorityClassName:
+                            description: 'Priority class name for the pgBackRest restore
+                              Job pod. Changing this value causes PostgreSQL to restart.
+                              More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
+                            type: string
                           repoName:
                             description: The name of the pgBackRest repo within the
                               source PostgresCluster that contains the backups that
@@ -3187,6 +3207,11 @@ spec:
                         items:
                           type: string
                         type: array
+                      priorityClassName:
+                        description: 'Priority class name for the pgBackRest restore
+                          Job pod. Changing this value causes PostgreSQL to restart.
+                          More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
+                        type: string
                       repoName:
                         description: The name of the pgBackRest repo within the source
                           PostgresCluster that contains the backups that should be
@@ -4108,6 +4133,10 @@ spec:
                       type: object
                     name:
                       default: ""
+                      type: string
+                    priorityClassName:
+                      description: 'Priority class name for the PostgreSQL pod. Changing
+                        this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
                       type: string
                     replicas:
                       default: 1
@@ -5828,6 +5857,10 @@ spec:
                         format: int32
                         minimum: 1024
                         type: integer
+                      priorityClassName:
+                        description: 'Priority class name for the pgBouncer pod. Changing
+                          this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
+                        type: string
                       replicas:
                         default: 1
                         description: Number of desired PgBouncer pods.
