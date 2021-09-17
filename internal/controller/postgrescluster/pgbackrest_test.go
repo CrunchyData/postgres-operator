@@ -90,6 +90,9 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: "example.com/crunchy-pgbackrest:test",
+					Jobs: &v1beta1.BackupJobs{
+						PriorityClassName: initialize.String("some-priority-class"),
+					},
 					Global: map[string]string{"repo2-test": "config",
 						"repo3-test": "config", "repo4-test": "config"},
 					Repos: []v1beta1.PGBackRestRepo{{
@@ -137,8 +140,9 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			},
 		}
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
-			Resources: corev1.ResourceRequirements{},
-			Affinity:  &corev1.Affinity{},
+			PriorityClassName: initialize.String("some-priority-class"),
+			Resources:         corev1.ResourceRequirements{},
+			Affinity:          &corev1.Affinity{},
 			Tolerations: []v1.Toleration{
 				{Key: "woot"},
 			},
@@ -306,6 +310,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 		// Ensure TopologySpreadConstraints have been added to dedicated repo
 		if repo.Spec.Template.Spec.TopologySpreadConstraints == nil {
 			t.Error("dedicated repo host is missing topology spread constraints")
+		}
+
+		// Ensure pod priority class has been added to dedicated repo
+		if repo.Spec.Template.Spec.PriorityClassName != "some-priority-class" {
+			t.Error("dedicated repo host priority class not set correctly")
 		}
 
 		// Ensure imagePullSecret has been added to the dedicated repo
@@ -996,6 +1005,9 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	assert.Equal(t, backupJob.Spec.Template.Spec.ImagePullSecrets[0].Name,
 		"myImagePullSecret")
 
+	// verify the priority class
+	assert.Equal(t, backupJob.Spec.Template.Spec.PriorityClassName, "some-priority-class")
+
 	// now set the job to complete
 	backupJob.Status.Conditions = append(backupJob.Status.Conditions,
 		batchv1.JobCondition{Type: batchv1.JobComplete, Status: corev1.ConditionTrue})
@@ -1408,16 +1420,11 @@ func TestReconcileManualBackup(t *testing.T) {
 					assert.Assert(t, foundOwnershipRef)
 
 					// verify image pull secret
-					var foundImagePullSecret bool
-					for _, job := range jobs.Items {
-						if job.Spec.Template.Spec.ImagePullSecrets != nil &&
-							job.Spec.Template.Spec.ImagePullSecrets[0].Name ==
-								"myImagePullSecret" {
-							foundImagePullSecret = true
-							break
-						}
-					}
-					assert.Assert(t, foundImagePullSecret)
+					assert.Assert(t, len(jobs.Items[0].Spec.Template.Spec.ImagePullSecrets) > 0)
+					assert.Equal(t, jobs.Items[0].Spec.Template.Spec.ImagePullSecrets[0].Name, "myImagePullSecret")
+
+					// verify the priority class
+					assert.Equal(t, jobs.Items[0].Spec.Template.Spec.PriorityClassName, "some-priority-class")
 
 					// verify status is populated with the proper ID
 					assert.Assert(t, postgresCluster.Status.PGBackRest.ManualBackup != nil)
@@ -2292,6 +2299,7 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 			Key:      "key",
 			Operator: "Exist",
 		}},
+		PriorityClassName: initialize.String("some-priority-class"),
 	}
 	cluster := &v1beta1.PostgresCluster{
 		Spec: v1beta1.PostgresClusterSpec{
@@ -2410,6 +2418,10 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 						t.Run("Tolerations", func(t *testing.T) {
 							assert.DeepEqual(t, job.Spec.Template.Spec.Tolerations,
 								dataSource.Tolerations)
+						})
+						t.Run("Pod Priority Class", func(t *testing.T) {
+							assert.DeepEqual(t, job.Spec.Template.Spec.PriorityClassName,
+								"some-priority-class")
 						})
 						t.Run("ImagePullSecret", func(t *testing.T) {
 							assert.DeepEqual(t, job.Spec.Template.Spec.ImagePullSecrets,
@@ -3112,6 +3124,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 						// check returned cronjob matches set spec
 						assert.Equal(t, returnedCronJob.Name, clusterName+"-pgbackrest-repo1-"+backupType)
 						assert.Equal(t, returnedCronJob.Spec.Schedule, testCronSchedule)
+						assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.PriorityClassName, "some-priority-class")
 						assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Name,
 							"pgbackrest")
 						assert.Assert(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].SecurityContext != &corev1.SecurityContext{})

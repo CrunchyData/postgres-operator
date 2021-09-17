@@ -120,6 +120,10 @@ type PGBackRestArchive struct {
 	// +optional
 	Image string `json:"image,omitempty"`
 
+	// Jobs field allows configuration for all backup jobs
+	// +optional
+	Jobs *BackupJobs `json:"jobs,omitempty"`
+
 	// Defines a pgBackRest repository
 	// +kubebuilder:validation:MinItems=1
 	// +listType=map
@@ -143,10 +147,6 @@ type PGBackRestArchive struct {
 	// Configuration for pgBackRest sidecar containers
 	// +optional
 	Sidecars *PGBackRestSidecars `json:"sidecars,omitempty"`
-
-	// Jobs field allows configuration for all backup jobs
-	// +optional
-	Jobs *BackupJobs `json:"jobs,omitempty"`
 }
 
 // PGBackRestSidecars defines the configuration for pgBackRest sidecar containers
@@ -161,6 +161,12 @@ type BackupJobs struct {
 	// create backups
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Priority class name for the pgBackRest backup Job pods. Changing this
+	// value causes PostgreSQL to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 }
 
 // PGBackRestManualBackup contains information that is used for creating a
@@ -185,6 +191,12 @@ type PGBackRestRepoHost struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Priority class name for the pgBackRest repo host pod. Changing this value
+	// causes PostgreSQL to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+	// +optional
+	PriorityClassName *string `json:"priorityClassName,omitempty"`
 
 	// Resource requirements for a pgBackRest repository host
 	// +optional

@@ -529,6 +529,9 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		repo.Spec.Template.Spec.Affinity = repoHost.Affinity
 		repo.Spec.Template.Spec.Tolerations = repoHost.Tolerations
 		repo.Spec.Template.Spec.TopologySpreadConstraints = repoHost.TopologySpreadConstraints
+		if repoHost.PriorityClassName != nil {
+			repo.Spec.Template.Spec.PriorityClassName = *repoHost.PriorityClassName
+		}
 	}
 
 	// Set the image pull secrets, if any exist.
@@ -673,6 +676,13 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 				ServiceAccountName: serviceAccountName,
 			},
 		},
+	}
+
+	// set the priority class name, if it exists
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil &&
+		postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName != nil {
+		jobSpec.Template.Spec.PriorityClassName =
+			*postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName
 	}
 
 	// Set the image pull secrets, if any exist.
@@ -1133,6 +1143,11 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	job.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 
 	job.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
+
+	// set the priority class name, if it exists
+	if dataSource.PriorityClassName != nil {
+		job.Spec.Template.Spec.PriorityClassName = *dataSource.PriorityClassName
+	}
 
 	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
 	if err := errors.WithStack(r.setControllerReference(cluster, job)); err != nil {

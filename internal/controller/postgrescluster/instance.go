@@ -1137,6 +1137,9 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	sts.Spec.Template.Spec.Affinity = spec.Affinity
 	sts.Spec.Template.Spec.Tolerations = spec.Tolerations
 	sts.Spec.Template.Spec.TopologySpreadConstraints = spec.TopologySpreadConstraints
+	if spec.PriorityClassName != nil {
+		sts.Spec.Template.Spec.PriorityClassName = *spec.PriorityClassName
+	}
 
 	// Though we use a StatefulSet to keep an instance running, we only ever
 	// want one Pod from it. This means that Replicas should only ever be

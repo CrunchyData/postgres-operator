@@ -31,6 +31,9 @@ func Int32(v int32) *int32 { return &v }
 // Int64 returns a pointer to v.
 func Int64(v int64) *int64 { return &v }
 
+// String returns a pointer to v.
+func String(v string) *string { return &v }
+
 // StringMap initializes m when it points to nil.
 func StringMap(m *map[string]string) {
 	if m != nil && *m == nil {
