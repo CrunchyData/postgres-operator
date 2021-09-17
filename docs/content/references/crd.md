@@ -407,6 +407,11 @@ Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL
         <td>Command line options to include when running the pgBackRest restore command. https://pgbackrest.org/command.html#command-restore</td>
         <td>false</td>
       </tr><tr>
+        <td><b>priorityClassName</b></td>
+        <td>string</td>
+        <td>Priority class name for the pgBackRest restore Job pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepostgresclusterresources">resources</a></b></td>
         <td>object</td>
         <td>Resource requirements for the pgBackRest restore Job.</td>
@@ -2192,6 +2197,11 @@ Defines a PgBouncer proxy and connection pooler.
         <td><b>port</b></td>
         <td>integer</td>
         <td>Port on which PgBouncer should listen for client connections. Changing this value causes PgBouncer to restart.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>priorityClassName</b></td>
+        <td>string</td>
+        <td>Priority class name for the pgBouncer pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
         <td>false</td>
       </tr><tr>
         <td><b>replicas</b></td>
@@ -4514,6 +4524,11 @@ Jobs field allows configuration for all backup jobs
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>priorityClassName</b></td>
+        <td>string</td>
+        <td>Priority class name for the pgBackRest backup Job pods. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestjobsresources">resources</a></b></td>
         <td>object</td>
         <td>Resource limits for backup jobs. Includes manual, scheduled and replica create backups</td>
@@ -4640,6 +4655,11 @@ Defines configuration for a pgBackRest dedicated repository host.  This section 
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinity">affinity</a></b></td>
         <td>object</td>
         <td>Scheduling constraints of the Dedicated repo host pod. Changing this value causes repo host to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>priorityClassName</b></td>
+        <td>string</td>
+        <td>Priority class name for the pgBackRest repo host pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostresources">resources</a></b></td>
@@ -5937,6 +5957,11 @@ Defines details for performing an in-place restore using pgBackRest
         <td><b>options</b></td>
         <td>[]string</td>
         <td>Command line options to include when running the pgBackRest restore command. https://pgbackrest.org/command.html#command-restore</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>priorityClassName</b></td>
+        <td>string</td>
+        <td>Priority class name for the pgBackRest restore Job pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreresources">resources</a></b></td>
@@ -7453,6 +7478,11 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td><b>name</b></td>
         <td>string</td>
         <td></td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>priorityClassName</b></td>
+        <td>string</td>
+        <td>Priority class name for the PostgreSQL pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
         <td>false</td>
       </tr><tr>
         <td><b>replicas</b></td>

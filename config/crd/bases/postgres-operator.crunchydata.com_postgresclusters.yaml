@@ -327,11 +327,6 @@ spec:
                                   value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                                 type: object
                             type: object
-                          priorityClassName:
-                            description: 'Priority class name for the pgBackRest backup
-                              Job pods. Changing this value causes PostgreSQL to restart.
-                              More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
-                            type: string
                         type: object
                       manual:
                         description: Defines details for manual pgBackRest backup
