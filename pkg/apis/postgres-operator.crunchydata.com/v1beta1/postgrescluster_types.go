@@ -66,6 +66,13 @@ type PostgresClusterSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
 	Image string `json:"image,omitempty"`
 
+	// ImagePullPolicy is used to determine when Kubernetes will attempt to
+	// pull (download) container images.
+	// More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+	// +kubebuilder:validation:Enum={Always,Never,IfNotPresent}
+	// +optional
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+
 	// The image pull secrets used to pull from a private registry
 	// Changing this value causes all running pods to restart.
 	// https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/

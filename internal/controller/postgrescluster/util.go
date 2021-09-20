@@ -112,7 +112,7 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 // containers in the Pod template.  Additionally, an init container is added to the Pod template
 // as needed to setup the nss_wrapper. Please note that the nss_wrapper is required for
 // compatibility with OpenShift: https://access.redhat.com/articles/4859371.
-func addNSSWrapper(image string, template *v1.PodTemplateSpec) {
+func addNSSWrapper(image string, imagePullPolicy v1.PullPolicy, template *v1.PodTemplateSpec) {
 
 	for i, c := range template.Spec.Containers {
 		switch c.Name {
@@ -131,6 +131,7 @@ func addNSSWrapper(image string, template *v1.PodTemplateSpec) {
 	container := v1.Container{
 		Command:         []string{"bash", "-c", nssWrapperCmd},
 		Image:           image,
+		ImagePullPolicy: imagePullPolicy,
 		Name:            naming.ContainerNSSWrapperInit,
 		SecurityContext: initialize.RestrictedSecurityContext(),
 	}

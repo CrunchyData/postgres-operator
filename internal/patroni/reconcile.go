@@ -172,6 +172,7 @@ func diffCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 
 	container.Command = copyReplicationCerts(naming.PatroniScope(postgresCluster))
 	container.Image = config.PostgresContainerImage(postgresCluster)
+	container.ImagePullPolicy = postgresCluster.Spec.ImagePullPolicy
 
 	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, v1.VolumeMount{
 		Name:      volumeName,

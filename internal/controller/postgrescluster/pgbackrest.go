@@ -571,7 +571,10 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest
 	// container
 	addNSSWrapper(
-		config.PGBackRestContainerImage(postgresCluster), &repo.Spec.Template)
+		config.PGBackRestContainerImage(postgresCluster),
+		postgresCluster.Spec.ImagePullPolicy,
+		&repo.Spec.Template)
+
 	addTMPEmptyDir(&repo.Spec.Template)
 
 	// set ownership references
@@ -652,6 +655,7 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 			{Name: "SELECTOR", Value: selector},
 		},
 		Image:           config.PGBackRestContainerImage(postgresCluster),
+		ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
 		Name:            naming.PGBackRestRepoContainerName,
 		SecurityContext: initialize.RestrictedSecurityContext(),
 	}
@@ -1074,7 +1078,10 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest restore
 	// container
-	addNSSWrapper(config.PGBackRestContainerImage(cluster), &restoreJob.Spec.Template)
+	addNSSWrapper(
+		config.PGBackRestContainerImage(cluster),
+		cluster.Spec.ImagePullPolicy,
+		&restoreJob.Spec.Template)
 
 	addTMPEmptyDir(&restoreJob.Spec.Template)
 
@@ -1112,6 +1119,7 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 				Containers: []corev1.Container{{
 					Command:         cmd,
 					Image:           config.PostgresContainerImage(cluster),
+					ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 					Name:            naming.PGBackRestRestoreContainerName,
 					VolumeMounts:    volumeMounts,
 					Env:             []corev1.EnvVar{{Name: "PGHOST", Value: "/tmp"}},

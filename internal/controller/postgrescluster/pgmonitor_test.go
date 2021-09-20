@@ -43,10 +43,13 @@ import (
 )
 
 func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
+	image := "test/image:tag"
+
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Spec.Port = initialize.Int32(5432)
+	cluster.Spec.Image = image
+	cluster.Spec.ImagePullPolicy = corev1.PullAlways
 
-	image := "test/image:tag"
 	resources := corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
@@ -90,6 +93,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template))
 		container := getContainerWithName(template.Spec.Containers, naming.ContainerPGMonitorExporter)
 		assert.Equal(t, container.Image, image)
+		assert.Equal(t, container.ImagePullPolicy, corev1.PullAlways)
 		assert.DeepEqual(t, container.Resources, resources)
 		assert.DeepEqual(t, container.Command, []string{"/opt/cpm/bin/start.sh"})
 		assert.Equal(t, *container.SecurityContext.Privileged, false)

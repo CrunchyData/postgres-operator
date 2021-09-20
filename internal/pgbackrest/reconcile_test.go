@@ -238,6 +238,7 @@ func TestAddSSHToPod(t *testing.T) {
 			Name: "hippo",
 		},
 		Spec: v1beta1.PostgresClusterSpec{
+			ImagePullPolicy: v1.PullAlways,
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{},
 			},
@@ -334,6 +335,7 @@ func TestAddSSHToPod(t *testing.T) {
 					foundSSHContainer = true
 					// verify proper resources are present and correct
 					assert.DeepEqual(t, c.Resources, resources)
+					assert.Equal(t, c.ImagePullPolicy, v1.PullAlways)
 				}
 				var foundVolumeMount bool
 				for _, vm := range c.VolumeMounts {

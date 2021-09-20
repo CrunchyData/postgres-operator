@@ -273,6 +273,7 @@ func TestAddNSSWrapper(t *testing.T) {
 	}
 
 	image := "test-image"
+	imagePullPolicy := corev1.PullAlways
 
 	expectedEnv := []corev1.EnvVar{
 		{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
@@ -323,7 +324,7 @@ func TestAddNSSWrapper(t *testing.T) {
 
 			beforeAddNSS := template.Spec.Containers
 
-			addNSSWrapper(image, template)
+			addNSSWrapper(image, imagePullPolicy, template)
 
 			// verify proper nss_wrapper env vars
 			var expectedContainerUpdateCount int
@@ -346,6 +347,7 @@ func TestAddNSSWrapper(t *testing.T) {
 				if c.Name == naming.ContainerNSSWrapperInit {
 					assert.Equal(t, expectedCmd, c.Command[2]) // ignore "bash -c"
 					assert.Assert(t, c.Image == image)
+					assert.Assert(t, c.ImagePullPolicy == imagePullPolicy)
 					assert.Assert(t, c.SecurityContext != &corev1.SecurityContext{})
 
 					for i, c := range template.Spec.Containers {

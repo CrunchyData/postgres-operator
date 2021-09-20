@@ -3324,6 +3324,14 @@ spec:
                   the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion},
                   e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.
                 type: string
+              imagePullPolicy:
+                description: 'ImagePullPolicy is used to determine when Kubernetes
+                  will attempt to pull (download) container images. More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy'
+                enum:
+                - Always
+                - Never
+                - IfNotPresent
+                type: string
               imagePullSecrets:
                 description: The image pull secrets used to pull from a private registry
                   Changing this value causes all running pods to restart. https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/

@@ -48,6 +48,7 @@ func InitCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 	container := v1.Container{
 		Command:         []string{"bash", "-c", cmd},
 		Image:           config.PostgresContainerImage(postgresCluster),
+		ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerClientCertInit,
 		SecurityContext: initialize.RestrictedSecurityContext(),
 	}
@@ -176,9 +177,10 @@ func InstancePod(ctx context.Context,
 
 		// Patroni will set the command and probes.
 
-		Env:       Environment(inCluster),
-		Image:     config.PostgresContainerImage(inCluster),
-		Resources: inInstanceSpec.Resources,
+		Env:             Environment(inCluster),
+		Image:           config.PostgresContainerImage(inCluster),
+		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
+		Resources:       inInstanceSpec.Resources,
 
 		Ports: []corev1.ContainerPort{{
 			Name:          naming.PortPostgreSQL,
@@ -193,10 +195,11 @@ func InstancePod(ctx context.Context,
 	startup := corev1.Container{
 		Name: naming.ContainerPostgresStartup,
 
-		Command:   startupCommand(inCluster, inInstanceSpec),
-		Env:       Environment(inCluster),
-		Image:     config.PostgresContainerImage(inCluster),
-		Resources: inInstanceSpec.Resources,
+		Command:         startupCommand(inCluster, inInstanceSpec),
+		Env:             Environment(inCluster),
+		Image:           config.PostgresContainerImage(inCluster),
+		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
+		Resources:       inInstanceSpec.Resources,
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
 		VolumeMounts:    []corev1.VolumeMount{dataVolumeMount},

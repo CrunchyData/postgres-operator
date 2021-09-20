@@ -221,6 +221,7 @@ volumes:
 	})
 
 	t.Run("Customizations", func(t *testing.T) {
+		cluster.Spec.ImagePullPolicy = corev1.PullAlways
 		cluster.Spec.Proxy.PGBouncer.Image = "image-town"
 		cluster.Spec.Proxy.PGBouncer.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
@@ -241,6 +242,7 @@ containers:
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   image: image-town
+  imagePullPolicy: Always
   name: pgbouncer
   ports:
   - containerPort: 5432
@@ -283,6 +285,7 @@ containers:
   - pgbouncer-config
   - /etc/pgbouncer
   image: image-town
+  imagePullPolicy: Always
   name: pgbouncer-config
   resources:
     limits:
@@ -348,6 +351,7 @@ containers:
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   image: image-town
+  imagePullPolicy: Always
   name: pgbouncer
   ports:
   - containerPort: 5432
@@ -390,6 +394,7 @@ containers:
   - pgbouncer-config
   - /etc/pgbouncer
   image: image-town
+  imagePullPolicy: Always
   name: pgbouncer-config
   resources:
     requests:
