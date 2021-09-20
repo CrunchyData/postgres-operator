@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -39,7 +39,7 @@ func TestClusterConfigMap(t *testing.T) {
 	pgParameters := postgres.Parameters{}
 
 	cluster.Default()
-	config := new(v1.ConfigMap)
+	config := new(corev1.ConfigMap)
 	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, config))
 
 	// The output of clusterYAML should go into config.
@@ -62,7 +62,7 @@ func TestReconcileInstanceCertificates(t *testing.T) {
 	assert.NilError(t, leaf.Generate(root), "bug in test")
 
 	ctx := context.Background()
-	secret := new(v1.Secret)
+	secret := new(corev1.Secret)
 	cert := leaf.Certificate
 	key := leaf.PrivateKey
 
@@ -86,7 +86,7 @@ func TestInstanceConfigMap(t *testing.T) {
 	ctx := context.Background()
 	cluster := new(v1beta1.PostgresCluster)
 	instance := new(v1beta1.PostgresInstanceSetSpec)
-	config := new(v1.ConfigMap)
+	config := new(corev1.ConfigMap)
 	data, _ := instanceYAML(cluster, instance, nil)
 
 	assert.NilError(t, InstanceConfigMap(ctx, cluster, instance, config))
@@ -107,14 +107,14 @@ func TestInstancePod(t *testing.T) {
 	cluster.Name = "some-such"
 	cluster.Spec.PostgresVersion = 11
 	cluster.Spec.Image = "image"
-	cluster.Spec.ImagePullPolicy = v1.PullAlways
-	clusterConfigMap := new(v1.ConfigMap)
-	clusterPodService := new(v1.Service)
-	instanceCertficates := new(v1.Secret)
-	instanceConfigMap := new(v1.ConfigMap)
+	cluster.Spec.ImagePullPolicy = corev1.PullAlways
+	clusterConfigMap := new(corev1.ConfigMap)
+	clusterPodService := new(corev1.Service)
+	instanceCertficates := new(corev1.Secret)
+	instanceConfigMap := new(corev1.ConfigMap)
 	instanceSpec := new(v1beta1.PostgresInstanceSetSpec)
-	patroniLeaderService := new(v1.Service)
-	template := new(v1.PodTemplateSpec)
+	patroniLeaderService := new(corev1.Service)
+	template := new(corev1.PodTemplateSpec)
 
 	call := func() error {
 		return InstancePod(context.Background(),
@@ -276,7 +276,7 @@ volumes:
 		// and sidecar container as the sidecar env vars will be
 		// updated to match
 		for i := range template.Spec.Containers {
-			template.Spec.Containers[i].Env = []v1.EnvVar{
+			template.Spec.Containers[i].Env = []corev1.EnvVar{
 				{Name: "existed"},
 				{Name: "PATRONI_KUBERNETES_POD_IP"},
 				{Name: "also", Value: "kept"},
@@ -310,7 +310,7 @@ volumes:
 			// Correct values can be in the middle somewhere.
 			// Use a merge so a duplicate is not added.
 			template.Spec.Containers[i].Env = mergeEnvVars(template.Spec.Containers[i].Env,
-				v1.EnvVar{Name: "at", Value: "end"})
+				corev1.EnvVar{Name: "at", Value: "end"})
 		}
 		// No change when already correct.
 		before := template.DeepCopy()
@@ -319,10 +319,10 @@ volumes:
 	})
 
 	t.Run("ExistingVolumes", func(t *testing.T) {
-		template.Spec.Volumes = []v1.Volume{
+		template.Spec.Volumes = []corev1.Volume{
 			{Name: "existing"},
-			{Name: "patroni-config", VolumeSource: v1.VolumeSource{
-				EmptyDir: &v1.EmptyDirVolumeSource{Medium: "Memory"},
+			{Name: "patroni-config", VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "Memory"},
 			}},
 		}
 
@@ -347,7 +347,7 @@ volumes:
 
 		// Correct values can be in the middle somewhere.
 		template.Spec.Volumes = append(template.Spec.Volumes,
-			v1.Volume{Name: "later"})
+			corev1.Volume{Name: "later"})
 
 		// No change when already correct.
 		before := template.DeepCopy()
@@ -358,7 +358,7 @@ volumes:
 	t.Run("ExistingVolumeMounts", func(t *testing.T) {
 		// run the volume mount tests for all containers in pod
 		for i := range template.Spec.Containers {
-			template.Spec.Containers[i].VolumeMounts = []v1.VolumeMount{
+			template.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{
 				{Name: "existing", MountPath: "mount"},
 				{Name: "patroni-config", MountPath: "wrong"},
 			}
@@ -382,7 +382,7 @@ volumes:
 
 			// Correct values can be in the middle somewhere.
 			template.Spec.Containers[i].VolumeMounts = append(
-				template.Spec.Containers[i].VolumeMounts, v1.VolumeMount{Name: "later"})
+				template.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{Name: "later"})
 		}
 
 		// No change when already correct.
@@ -397,7 +397,7 @@ func TestPodIsStandbyLeader(t *testing.T) {
 	assert.Assert(t, !PodIsStandbyLeader(nil))
 
 	// No annotations
-	pod := &v1.Pod{}
+	pod := &corev1.Pod{}
 	assert.Assert(t, !PodIsStandbyLeader(pod))
 
 	// No role

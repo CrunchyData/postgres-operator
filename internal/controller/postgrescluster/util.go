@@ -21,7 +21,7 @@ import (
 	"io"
 
 	batchv1 "k8s.io/api/batch/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -47,15 +47,15 @@ const (
 // Postgres to allocate shared memory segments. This is a special directory
 // called "/dev/shm", and is mounted as an emptyDir over a "memory" medium. This
 // is mounted only to the database container.
-func addDevSHM(template *v1.PodTemplateSpec) {
+func addDevSHM(template *corev1.PodTemplateSpec) {
 
 	// do not set a size limit on shared memory. This will be handled by the OS
 	// layer
-	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
+	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
 		Name: "dshm",
-		VolumeSource: v1.VolumeSource{
-			EmptyDir: &v1.EmptyDirVolumeSource{
-				Medium: v1.StorageMediumMemory,
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{
+				Medium: corev1.StorageMediumMemory,
 			},
 		},
 	})
@@ -64,7 +64,7 @@ func addDevSHM(template *v1.PodTemplateSpec) {
 	for i := range template.Spec.Containers {
 		if template.Spec.Containers[i].Name == naming.ContainerDatabase {
 			template.Spec.Containers[i].VolumeMounts = append(template.Spec.Containers[i].VolumeMounts,
-				v1.VolumeMount{
+				corev1.VolumeMount{
 					Name:      "dshm",
 					MountPath: devSHMDir,
 				})
@@ -80,12 +80,12 @@ func addDevSHM(template *v1.PodTemplateSpec) {
 //  * As the pgBackRest lock directory (this is the default lock location for pgBackRest)
 //  * The location where the replication client certificates can be loaded with the proper
 //    permissions set
-func addTMPEmptyDir(template *v1.PodTemplateSpec) {
+func addTMPEmptyDir(template *corev1.PodTemplateSpec) {
 
-	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
+	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
 		Name: "tmp",
-		VolumeSource: v1.VolumeSource{
-			EmptyDir: &v1.EmptyDirVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			EmptyDir: &corev1.EmptyDirVolumeSource{
 				SizeLimit: &tmpDirSizeLimit,
 			},
 		},
@@ -93,7 +93,7 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 
 	for i := range template.Spec.Containers {
 		template.Spec.Containers[i].VolumeMounts = append(template.Spec.Containers[i].VolumeMounts,
-			v1.VolumeMount{
+			corev1.VolumeMount{
 				Name:      "tmp",
 				MountPath: "/tmp",
 			})
@@ -101,7 +101,7 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 
 	for i := range template.Spec.InitContainers {
 		template.Spec.InitContainers[i].VolumeMounts = append(template.Spec.InitContainers[i].VolumeMounts,
-			v1.VolumeMount{
+			corev1.VolumeMount{
 				Name:      "tmp",
 				MountPath: "/tmp",
 			})
@@ -112,7 +112,7 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 // containers in the Pod template.  Additionally, an init container is added to the Pod template
 // as needed to setup the nss_wrapper. Please note that the nss_wrapper is required for
 // compatibility with OpenShift: https://access.redhat.com/articles/4859371.
-func addNSSWrapper(image string, imagePullPolicy v1.PullPolicy, template *v1.PodTemplateSpec) {
+func addNSSWrapper(image string, imagePullPolicy corev1.PullPolicy, template *corev1.PodTemplateSpec) {
 
 	for i, c := range template.Spec.Containers {
 		switch c.Name {
@@ -120,7 +120,7 @@ func addNSSWrapper(image string, imagePullPolicy v1.PullPolicy, template *v1.Pod
 			naming.PGBackRestRestoreContainerName:
 			passwd := fmt.Sprintf(nssWrapperDir, "postgres", "passwd")
 			group := fmt.Sprintf(nssWrapperDir, "postgres", "group")
-			template.Spec.Containers[i].Env = append(template.Spec.Containers[i].Env, []v1.EnvVar{
+			template.Spec.Containers[i].Env = append(template.Spec.Containers[i].Env, []corev1.EnvVar{
 				{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
 				{Name: "NSS_WRAPPER_PASSWD", Value: passwd},
 				{Name: "NSS_WRAPPER_GROUP", Value: group},
@@ -128,7 +128,7 @@ func addNSSWrapper(image string, imagePullPolicy v1.PullPolicy, template *v1.Pod
 		}
 	}
 
-	container := v1.Container{
+	container := corev1.Container{
 		Command:         []string{"bash", "-c", nssWrapperCmd},
 		Image:           image,
 		ImagePullPolicy: imagePullPolicy,
@@ -167,7 +167,7 @@ func jobFailed(job *batchv1.Job) bool {
 	conditions := job.Status.Conditions
 	for i := range conditions {
 		if conditions[i].Type == batchv1.JobFailed {
-			return (conditions[i].Status == v1.ConditionTrue)
+			return (conditions[i].Status == corev1.ConditionTrue)
 		}
 	}
 	return false
@@ -179,7 +179,7 @@ func jobCompleted(job *batchv1.Job) bool {
 	conditions := job.Status.Conditions
 	for i := range conditions {
 		if conditions[i].Type == batchv1.JobComplete {
-			return (conditions[i].Status == v1.ConditionTrue)
+			return (conditions[i].Status == corev1.ConditionTrue)
 		}
 	}
 	return false
