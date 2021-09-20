@@ -2211,44 +2211,62 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 		assert.NilError(t, err)
 	})
 
-	cluster := &v1beta1.PostgresCluster{
-		Spec: v1beta1.PostgresClusterSpec{
-			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{}},
-		},
-	}
-
-	t.Run("Resources not defined in jobs", func(t *testing.T) {
-		job, err := generateBackupJobSpecIntent(
-			cluster,
-			"", "", "", "", "",
-			nil, nil,
-		)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources, corev1.ResourceRequirements{})
-	})
-
-	cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
-		Resources: corev1.ResourceRequirements{
-			Requests: corev1.ResourceList{
-				corev1.ResourceCPU: resource.MustParse("1m"),
+	t.Run("ImagePullPolicy", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				ImagePullPolicy: corev1.PullAlways,
 			},
-		},
-	}
-
-	t.Run("Resources defined", func(t *testing.T) {
+		}
 		job, err := generateBackupJobSpecIntent(
 			cluster,
 			"", "", "", "", "",
 			nil, nil,
 		)
 		assert.NilError(t, err)
-		assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources,
-			corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceCPU: resource.MustParse("1m"),
-				}},
-		)
+		assert.Equal(t, job.Template.Spec.Containers[0].ImagePullPolicy, corev1.PullAlways)
 	})
+
+	t.Run("Resources", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{},
+		}
+		t.Run("Resources not defined in jobs", func(t *testing.T) {
+			cluster.Spec.Backups = v1beta1.Backups{
+				PGBackRest: v1beta1.PGBackRestArchive{},
+			}
+			job, err := generateBackupJobSpecIntent(
+				cluster,
+				"", "", "", "", "",
+				nil, nil,
+			)
+			assert.NilError(t, err)
+			assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources,
+				corev1.ResourceRequirements{})
+		})
+
+		t.Run("Resources defined", func(t *testing.T) {
+			cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("1m"),
+					},
+				},
+			}
+			job, err := generateBackupJobSpecIntent(
+				cluster,
+				"", "", "", "", "",
+				nil, nil,
+			)
+			assert.NilError(t, err)
+			assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources,
+				corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("1m"),
+					}},
+			)
+		})
+	})
+
 }
 
 func TestGenerateRestoreJobIntent(t *testing.T) {
@@ -2315,6 +2333,7 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 			}},
 			Image:            "image",
 			ImagePullSecrets: []corev1.LocalObjectReference{{Name: "Secret"}},
+			ImagePullPolicy:  corev1.PullAlways,
 		},
 	}
 
@@ -2377,6 +2396,8 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 							t.Run("Image", func(t *testing.T) {
 								assert.Equal(t, job.Spec.Template.Spec.Containers[0].Image,
 									"image")
+								assert.Equal(t, job.Spec.Template.Spec.Containers[0].ImagePullPolicy,
+									corev1.PullAlways)
 							})
 							t.Run("Name", func(t *testing.T) {
 								assert.Equal(t, job.Spec.Template.Spec.Containers[0].Name,

@@ -1054,7 +1054,9 @@ func (r *Reconciler) reconcileInstance(
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
 	// containers
 	if err == nil {
-		addNSSWrapper(config.PostgresContainerImage(cluster),
+		addNSSWrapper(
+			config.PostgresContainerImage(cluster),
+			cluster.Spec.ImagePullPolicy,
 			&instance.Spec.Template)
 
 	}

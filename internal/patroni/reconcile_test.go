@@ -106,6 +106,8 @@ func TestInstancePod(t *testing.T) {
 	cluster.Default()
 	cluster.Name = "some-such"
 	cluster.Spec.PostgresVersion = 11
+	cluster.Spec.Image = "image"
+	cluster.Spec.ImagePullPolicy = v1.PullAlways
 	clusterConfigMap := new(v1.ConfigMap)
 	clusterPodService := new(v1.Service)
 	instanceCertficates := new(v1.Secret)
@@ -231,6 +233,8 @@ containers:
     value: '*:8008'
   - name: PATRONICTL_CONFIG_FILE
     value: /etc/patroni
+  image: image
+  imagePullPolicy: Always
   name: replication-cert-copy
   resources: {}
   securityContext:

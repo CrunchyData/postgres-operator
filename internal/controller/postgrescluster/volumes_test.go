@@ -905,6 +905,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 13,
 			Image:           "example.com/crunchy-postgres-ha:test",
+			ImagePullPolicy: corev1.PullAlways,
 			DataSource: &v1beta1.DataSource{
 				Volumes: &v1beta1.DataSourceVolumes{
 					PGDataVolume: &v1beta1.DataSourceVolume{
@@ -1005,7 +1006,7 @@ containers:
     \   echo \"Updated PG data directory contents:\" \n    ls -lh \"/pgdata\"\n    echo
     \"PG Data directory preparation complete\"\n    "
   image: example.com/crunchy-postgres-ha:test
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   name: pgdata-move-job
   resources:
     requests:
@@ -1050,7 +1051,7 @@ containers:
     WAL directory contents:\"\n    ls -lh \"/pgwal\"\n    echo \"PG WAL directory
     preparation complete\"\n    "
   image: example.com/crunchy-postgres-ha:test
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   name: pgwal-move-job
   resources:
     requests:
@@ -1097,7 +1098,7 @@ containers:
     \   echo \"Updated /pgbackrest directory contents:\"\n    ls -lh \"/pgbackrest\"\n
     \   echo \"Repo directory preparation complete\"\n    "
   image: example.com/crunchy-pgbackrest:test
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   name: repo-move-job
   resources:
     requests:

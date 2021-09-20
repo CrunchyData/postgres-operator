@@ -31,8 +31,15 @@ import (
 )
 
 func TestCopyClientTLS(t *testing.T) {
-
-	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	postgresCluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "hippo",
+		},
+		Spec: v1beta1.PostgresClusterSpec{
+			Image:           "image",
+			ImagePullPolicy: corev1.PullAlways,
+		},
+	}
 	template := &v1.PodTemplateSpec{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{{
@@ -57,6 +64,10 @@ func TestCopyClientTLS(t *testing.T) {
 				}
 			}
 			foundPGDATAInitContainer = true
+			assert.Equal(t, c.Image, "image")
+			assert.Equal(t, c.ImagePullPolicy, corev1.PullAlways)
+			assert.DeepEqual(t, c.SecurityContext,
+				initialize.RestrictedSecurityContext())
 			break
 		}
 	}

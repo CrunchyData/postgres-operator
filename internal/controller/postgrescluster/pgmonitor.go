@@ -282,9 +282,10 @@ func addPGMonitorExporterToInstancePodSpec(
 
 	securityContext := initialize.RestrictedSecurityContext()
 	exporterContainer := corev1.Container{
-		Name:      naming.ContainerPGMonitorExporter,
-		Image:     config.PGExporterContainerImage(cluster),
-		Resources: cluster.Spec.Monitoring.PGMonitor.Exporter.Resources,
+		Name:            naming.ContainerPGMonitorExporter,
+		Image:           config.PGExporterContainerImage(cluster),
+		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
+		Resources:       cluster.Spec.Monitoring.PGMonitor.Exporter.Resources,
 		Command: []string{
 			"/opt/cpm/bin/start.sh",
 		},

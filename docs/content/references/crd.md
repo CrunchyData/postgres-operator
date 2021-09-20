@@ -105,6 +105,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>The image name to use for PostgreSQL containers. When omitted, the value comes from an operator environment variable. For standard PostgreSQL images, the format is RELATED_IMAGE_POSTGRES_{postgresVersion}, e.g. RELATED_IMAGE_POSTGRES_13. For PostGIS enabled PostgreSQL images, the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion}, e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.</td>
         <td>false</td>
       </tr><tr>
+        <td><b>imagePullPolicy</b></td>
+        <td>enum</td>
+        <td>ImagePullPolicy is used to determine when Kubernetes will attempt to pull (download) container images. More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecimagepullsecretsindex">imagePullSecrets</a></b></td>
         <td>[]object</td>
         <td>The image pull secrets used to pull from a private registry Changing this value causes all running pods to restart. https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/</td>

@@ -441,11 +441,12 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 		strconv.Itoa(cluster.Spec.PostgresVersion))
 
 	container := corev1.Container{
-		Command:      []string{"bash", "-ceu", script},
-		Image:        config.PostgresContainerImage(cluster),
-		Name:         naming.ContainerJobMovePGDataDir,
-		VolumeMounts: []corev1.VolumeMount{postgres.DataVolumeMount()},
-		Resources:    cluster.Spec.InstanceSets[0].Resources,
+		Command:         []string{"bash", "-ceu", script},
+		Image:           config.PostgresContainerImage(cluster),
+		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
+		Name:            naming.ContainerJobMovePGDataDir,
+		VolumeMounts:    []corev1.VolumeMount{postgres.DataVolumeMount()},
+		Resources:       cluster.Spec.InstanceSets[0].Resources,
 	}
 	if len(cluster.Spec.InstanceSets) > 0 {
 		container.Resources = cluster.Spec.InstanceSets[0].Resources
@@ -552,10 +553,11 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 		cluster.ObjectMeta.Name)
 
 	container := corev1.Container{
-		Command:      []string{"bash", "-ceu", script},
-		Image:        config.PostgresContainerImage(cluster),
-		Name:         naming.ContainerJobMovePGWALDir,
-		VolumeMounts: []corev1.VolumeMount{postgres.WALVolumeMount()},
+		Command:         []string{"bash", "-ceu", script},
+		Image:           config.PostgresContainerImage(cluster),
+		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
+		Name:            naming.ContainerJobMovePGWALDir,
+		VolumeMounts:    []corev1.VolumeMount{postgres.WALVolumeMount()},
 	}
 	if len(cluster.Spec.InstanceSets) > 0 {
 		container.Resources = cluster.Spec.InstanceSets[0].Resources
@@ -667,10 +669,11 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory)
 
 	container := corev1.Container{
-		Command:      []string{"bash", "-ceu", script},
-		Image:        config.PGBackRestContainerImage(cluster),
-		Name:         naming.ContainerJobMovePGBackRestRepoDir,
-		VolumeMounts: []corev1.VolumeMount{pgbackrest.RepoVolumeMount()},
+		Command:         []string{"bash", "-ceu", script},
+		Image:           config.PGBackRestContainerImage(cluster),
+		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
+		Name:            naming.ContainerJobMovePGBackRestRepoDir,
+		VolumeMounts:    []corev1.VolumeMount{pgbackrest.RepoVolumeMount()},
 	}
 	if cluster.Spec.Backups.PGBackRest.RepoHost != nil {
 		container.Resources = cluster.Spec.Backups.PGBackRest.RepoHost.Resources

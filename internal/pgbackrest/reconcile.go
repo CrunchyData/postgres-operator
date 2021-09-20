@@ -192,8 +192,9 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	// not necessary to run a full SSHD server, but the various SSH configs are still needed.
 	if enableSSHD {
 		container := v1.Container{
-			Command: []string{"/usr/sbin/sshd", "-D", "-e"},
-			Image:   config.PGBackRestContainerImage(postgresCluster),
+			Command:         []string{"/usr/sbin/sshd", "-D", "-e"},
+			Image:           config.PGBackRestContainerImage(postgresCluster),
+			ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
 			LivenessProbe: &v1.Probe{
 				Handler: v1.Handler{
 					TCPSocket: &v1.TCPSocketAction{

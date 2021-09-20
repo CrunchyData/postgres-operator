@@ -150,9 +150,10 @@ func Pod(
 	container := corev1.Container{
 		Name: naming.ContainerPGBouncer,
 
-		Command:   []string{"pgbouncer", iniFileAbsolutePath},
-		Image:     config.PGBouncerContainerImage(inCluster),
-		Resources: inCluster.Spec.Proxy.PGBouncer.Resources,
+		Command:         []string{"pgbouncer", iniFileAbsolutePath},
+		Image:           config.PGBouncerContainerImage(inCluster),
+		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
+		Resources:       inCluster.Spec.Proxy.PGBouncer.Resources,
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
 
@@ -187,8 +188,9 @@ func Pod(
 	reloader := corev1.Container{
 		Name: naming.ContainerPGBouncerConfig,
 
-		Command: reloadCommand(naming.ContainerPGBouncerConfig),
-		Image:   config.PGBouncerContainerImage(inCluster),
+		Command:         reloadCommand(naming.ContainerPGBouncerConfig),
+		Image:           config.PGBouncerContainerImage(inCluster),
+		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
 
