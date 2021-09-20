@@ -23,12 +23,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 )
 
-const (
-	sqlCurrentAndFutureDatabases = "" +
-		`SELECT datname FROM pg_catalog.pg_database` +
-		` WHERE datallowconn AND datname NOT IN ('template0')`
-)
-
 // When the pgAudit shared library is not loaded, the extension cannot be
 // installed. The "CREATE EXTENSION" command fails with an error, "pgaudit must
 // be loaded…".
@@ -51,8 +45,7 @@ const (
 func EnableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 	log := logging.FromContext(ctx)
 
-	stdout, stderr, err := exec.ExecInDatabasesFromQuery(ctx,
-		sqlCurrentAndFutureDatabases,
+	stdout, stderr, err := exec.ExecInAllDatabases(ctx,
 		// Quiet the NOTICE from IF EXISTS, and install the pgAudit event triggers.
 		// - https://www.postgresql.org/docs/current/runtime-config-client.html
 		// - https://github.com/pgaudit/pgaudit#settings

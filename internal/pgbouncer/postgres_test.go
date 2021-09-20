@@ -53,8 +53,8 @@ func TestDisableInPostgreSQL(t *testing.T) {
 		) error {
 			assert.Assert(t, stdout != nil, "should capture stdout")
 			assert.Assert(t, stderr != nil, "should capture stderr")
-			gomega.NewWithT(t).Expect(command).To(gomega.ContainElement(
-				`SELECT datname FROM pg_catalog.pg_database WHERE datallowconn AND datname NOT IN ('template0')`,
+			assert.Assert(t, strings.Contains(strings.Join(command, "\n"),
+				`SELECT datname FROM pg_catalog.pg_database`,
 			), "expected all databases and templates")
 
 			b, err := ioutil.ReadAll(stdin)
@@ -139,8 +139,8 @@ func TestEnableInPostgreSQL(t *testing.T) {
 	) error {
 		assert.Assert(t, stdout != nil, "should capture stdout")
 		assert.Assert(t, stderr != nil, "should capture stderr")
-		gomega.NewWithT(t).Expect(command).To(gomega.ContainElement(
-			`SELECT datname FROM pg_catalog.pg_database WHERE datallowconn AND datname NOT IN ('template0')`,
+		assert.Assert(t, strings.Contains(strings.Join(command, "\n"),
+			`SELECT datname FROM pg_catalog.pg_database`,
 		), "expected all databases and templates")
 
 		b, err := ioutil.ReadAll(stdin)

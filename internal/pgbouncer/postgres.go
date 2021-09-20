@@ -35,16 +35,6 @@ const (
 	// - https://github.com/pgbouncer/pgbouncer/issues/568
 	// - https://github.com/pgbouncer/pgbouncer/issues/302#issuecomment-815097248
 	postgresqlUser = "_crunchypgbouncer"
-
-	// sqlCurrentAndFutureDatabases returns all the database names where
-	// PgBouncer should be enabled or disabled. It includes the "template1"
-	// database so that PgBouncer is automatically enabled in future databases.
-	// The "template0" database is explicitly excluded to ensure it is never
-	// manipulated.
-	// - https://www.postgresql.org/docs/current/managing-databases.html
-	sqlCurrentAndFutureDatabases = "" +
-		`SELECT datname FROM pg_catalog.pg_database` +
-		` WHERE datallowconn AND datname NOT IN ('template0')`
 )
 
 // sqlAuthenticationQuery returns the SECURITY DEFINER function that allows
@@ -83,8 +73,7 @@ func DisableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 
 	// First, remove PgBouncer objects from all databases and database templates.
 	// The PgBouncer user is removed later.
-	stdout, stderr, err := exec.ExecInDatabasesFromQuery(ctx,
-		sqlCurrentAndFutureDatabases,
+	stdout, stderr, err := exec.ExecInAllDatabases(ctx,
 		strings.Join([]string{
 			// Quiet NOTICE messages from IF EXISTS statements.
 			// - https://www.postgresql.org/docs/current/runtime-config-client.html
@@ -146,8 +135,7 @@ func EnableInPostgreSQL(
 ) error {
 	log := logging.FromContext(ctx)
 
-	stdout, stderr, err := exec.ExecInDatabasesFromQuery(ctx,
-		sqlCurrentAndFutureDatabases,
+	stdout, stderr, err := exec.ExecInAllDatabases(ctx,
 		strings.Join([]string{
 			// Quiet NOTICE messages from IF NOT EXISTS statements.
 			// - https://www.postgresql.org/docs/current/runtime-config-client.html

@@ -19,26 +19,16 @@ import (
 	"context"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
 	// MonitoringUser is a Postgres user created by pgMonitor configuration
 	MonitoringUser = "ccp_monitoring"
-
-	// TODO jmckulk: copied from pgbouncer; candidate for common package?
-	// sqlCurrentAndFutureDatabases returns all the database names where pgMonitor
-	// functions should be enabled or disabled. It includes the "template1"
-	// database so that exporter is automatically enabled in future databases.
-	// The "template0" database is explicitly excluded to ensure it is never
-	// manipulated.
-	// - https://www.postgresql.org/docs/current/managing-databases.html
-	sqlCurrentAndFutureDatabases = "" +
-		`SELECT datname FROM pg_catalog.pg_database` +
-		` WHERE datallowconn AND datname NOT IN ('template0')`
 )
 
 // PostgreSQLHBAs provides the Postgres HBA rules for allowing the monitoring
@@ -80,9 +70,7 @@ func PostgreSQLParameters(inCluster *v1beta1.PostgresCluster, outParameters *pos
 func DisableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 	log := logging.FromContext(ctx)
 
-	stdout, stderr, err := postgres.Executor(exec).ExecInDatabasesFromQuery(ctx,
-		`SELECT pg_catalog.current_database();`,
-		strings.TrimSpace(`
+	stdout, stderr, err := exec.Exec(ctx, strings.NewReader(`
 		SELECT pg_catalog.format('ALTER ROLE %I NOLOGIN', :'username')
 		 WHERE EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = :'username')
 		\gexec`),
@@ -103,8 +91,7 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 	monitoringSecret *corev1.Secret, database, setup string) error {
 	log := logging.FromContext(ctx)
 
-	stdout, stderr, err := postgres.Executor(exec).ExecInDatabasesFromQuery(ctx,
-		sqlCurrentAndFutureDatabases,
+	stdout, stderr, err := exec.ExecInAllDatabases(ctx,
 		strings.Join([]string{
 			// Exporter expects that extension(s) to be installed in all databases
 			// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
