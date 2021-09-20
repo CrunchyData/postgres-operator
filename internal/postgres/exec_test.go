@@ -75,6 +75,52 @@ func TestExecutorExec(t *testing.T) {
 	assert.Equal(t, stderr, "and stderr")
 }
 
+func TestExecutorExecInAllDatabases(t *testing.T) {
+	expected := errors.New("exact")
+	fn := func(
+		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error {
+		b, err := ioutil.ReadAll(stdin)
+		assert.NilError(t, err)
+		assert.Equal(t, string(b), `the; stuff;`)
+
+		assert.DeepEqual(t, command, []string{
+			"bash", "-ceu", "--", `
+sql_target=$(< /dev/stdin)
+sql_databases="$1"
+shift 1
+
+databases=$(psql "$@" -Xw -Aqt --file=- <<< "${sql_databases}")
+while IFS= read -r database; do
+	PGDATABASE="${database}" psql "$@" -Xw --file=- <<< "${sql_target}"
+done <<< "${databases}"
+`,
+			"-",
+			`SET search_path = '';SELECT datname FROM pg_catalog.pg_database WHERE datallowconn AND datname NOT IN ('template0')`,
+			"--set=CASE=sEnSiTiVe",
+			"--set=different=vars",
+			"--set=lots=of",
+		})
+
+		_, _ = io.WriteString(stdout, "some stdout")
+		_, _ = io.WriteString(stderr, "and stderr")
+		return expected
+	}
+
+	stdout, stderr, err := Executor(fn).ExecInAllDatabases(
+		context.Background(),
+		`the; stuff;`,
+		map[string]string{
+			"lots":      "of",
+			"different": "vars",
+			"CASE":      "sEnSiTiVe",
+		})
+
+	assert.Equal(t, expected, err, "expected function to be called")
+	assert.Equal(t, stdout, "some stdout")
+	assert.Equal(t, stderr, "and stderr")
+}
+
 func TestExecutorExecInDatabasesFromQuery(t *testing.T) {
 	expected := errors.New("splat")
 	fn := func(

@@ -52,6 +52,28 @@ func (exec Executor) Exec(
 	return stdout.String(), stderr.String(), err
 }
 
+// ExecInAllDatabases uses "bash" and "psql" to execute sql in every database
+// that allows connections, including templates. The sql command(s) may contain
+// psql variables that are assigned from the variables map.
+// - https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-VARIABLES
+func (exec Executor) ExecInAllDatabases(
+	ctx context.Context, sql string, variables map[string]string,
+) (string, string, error) {
+	const databases = "" +
+		// Prevent unexpected dereferences by emptying "search_path".
+		// The "pg_catalog" schema is still searched.
+		// - https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-SEARCH-PATH
+		`SET search_path = '';` +
+
+		// Return the names of databases that allow connections, including
+		// "template1". Exclude "template0" to ensure it is never manipulated.
+		// - https://www.postgresql.org/docs/current/managing-databases.html
+		`SELECT datname FROM pg_catalog.pg_database` +
+		` WHERE datallowconn AND datname NOT IN ('template0')`
+
+	return exec.ExecInDatabasesFromQuery(ctx, databases, sql, variables)
+}
+
 // ExecInDatabasesFromQuery uses "bash" and "psql" to execute sql in every
 // database returned by the databases query. The sql statement(s) may contain
 // psql variables that are assigned from the variables map.
