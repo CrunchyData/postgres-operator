@@ -214,6 +214,7 @@ check-generate: generate-crd generate-deepcopy generate-rbac
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f config/rbac/role.yaml
+	[ ! -d build/crd/generated ] || rm -r build/crd/generated
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
 	[ ! -d hack/.kube ] || rm -r hack/.kube
@@ -247,10 +248,13 @@ generate: generate-crd generate-crd-docs generate-deepcopy generate-rbac
 generate-crd:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
 		crd:crdVersions='v1',preserveUnknownFields='false' \
-		paths='./pkg/apis/postgres-operator.crunchydata.com/...' \
-		output:dir='config/crd/bases' # config/crd/bases/{group}_{plural}.yaml
+		paths='./pkg/apis/...' \
+		output:dir='build/crd/generated' # build/crd/generated/{group}_{plural}.yaml
+	@
+	@# Kustomize returns lots of objects. The following only makes sense when there is one CRD.
+	[ "$$(ls -1 ./build/crd/generated)" = 'postgres-operator.crunchydata.com_postgresclusters.yaml' ]
+	$(PGO_KUBE_CLIENT) kustomize ./build/crd > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 
-# TODO(cbandy): Run config/crd through Kustomize to pickup any patches there.
 generate-crd-docs:
 	GOBIN='$(CURDIR)/hack/tools' go install fybrik.io/crdoc@v0.5.2
 	./hack/tools/crdoc \
