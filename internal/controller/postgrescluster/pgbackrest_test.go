@@ -2223,7 +2223,7 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 	cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
-				corev1.ResourceStorage: resource.MustParse("1Gi"),
+				corev1.ResourceCPU: resource.MustParse("1m"),
 			},
 		},
 	}
@@ -2238,7 +2238,7 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 		assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources,
 			corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
-					corev1.ResourceStorage: resource.MustParse("1Gi"),
+					corev1.ResourceCPU: resource.MustParse("1m"),
 				}},
 		)
 	})
