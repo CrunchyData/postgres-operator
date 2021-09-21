@@ -21,6 +21,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -146,6 +147,19 @@ func startupCommand(
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_13_0#l319
 		// - https://issue.k8s.io/93802#issuecomment-717646167
 		`install --directory --mode=0700 "${postgres_data_directory}"`,
+
+		// Copy replication client certificate files
+		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order
+		// to set proper file permissions. This is required because the group permission settings
+		// applied via the defaultMode option are not honored as expected, resulting in incorrect
+		// group read permissions.
+		// See https://github.com/kubernetes/kubernetes/issues/57923
+		// TODO(tjmoore4): remove this implementation when/if defaultMode permissions are set as
+		// expected for the mounted volume.
+		fmt.Sprintf(`mkdir -p %s && install -m 0600 %s/{%s,%s,%s} %s`,
+			naming.ReplicationTmp, naming.CertMountPath+naming.ReplicationDirectory,
+			naming.ReplicationCert, naming.ReplicationPrivateKey,
+			naming.ReplicationCACert, naming.ReplicationTmp),
 
 		// When the data directory is empty, there's nothing more to do.
 		`[ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0`,

@@ -30,169 +30,21 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-func TestCopyClientTLS(t *testing.T) {
-	postgresCluster := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "hippo",
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			Image:           "image",
-			ImagePullPolicy: corev1.PullAlways,
-		},
-	}
-	template := &v1.PodTemplateSpec{
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{{
-				Resources: v1.ResourceRequirements{
-					Requests: v1.ResourceList{
-						corev1.ResourceCPU: resource.MustParse("200m"),
-					},
-				},
-			}},
-		},
-	}
-
-	InitCopyReplicationTLS(postgresCluster, template)
-
-	var foundPGDATAInitContainer bool
-	for _, c := range template.Spec.InitContainers {
-		if c.Name == naming.ContainerClientCertInit {
-			for i, c := range template.Spec.Containers {
-				if c.Name == "database" {
-					assert.DeepEqual(t, c.Resources.Requests,
-						template.Spec.Containers[i].Resources.Requests)
-				}
-			}
-			foundPGDATAInitContainer = true
-			assert.Equal(t, c.Image, "image")
-			assert.Equal(t, c.ImagePullPolicy, corev1.PullAlways)
-			assert.DeepEqual(t, c.SecurityContext,
-				initialize.RestrictedSecurityContext())
-			break
-		}
-	}
-
-	assert.Assert(t, foundPGDATAInitContainer)
-}
-
 func TestAddCertVolumeToPod(t *testing.T) {
 
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 	template := &v1.PodTemplateSpec{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{{
-				Name: "database",
-			}, {
 				Name: "replication-cert-copy",
 			}},
-			InitContainers: []v1.Container{{
-				Name: "database-client-cert-init",
-			},
-			},
-		},
-	}
-	mode := int32(0o600)
-	// example auto-generated secret projection
-	testServerSecretProjection := &v1.SecretProjection{
-		LocalObjectReference: v1.LocalObjectReference{
-			Name: naming.PostgresTLSSecret(postgresCluster).Name,
-		},
-		Items: []v1.KeyToPath{
-			{
-				Key:  naming.ReplicationCert,
-				Path: naming.ReplicationCert,
-				Mode: &mode,
-			},
-			{
-				Key:  naming.ReplicationPrivateKey,
-				Path: naming.ReplicationPrivateKey,
-				Mode: &mode,
-			},
-			{
-				Key:  naming.ReplicationCACert,
-				Path: naming.ReplicationCACert,
-				Mode: &mode,
-			},
-		},
-	}
-
-	testClientSecretProjection := &v1.SecretProjection{
-		LocalObjectReference: v1.LocalObjectReference{
-			Name: naming.ReplicationClientCertSecret(postgresCluster).Name,
-		},
-		Items: []v1.KeyToPath{
-			{
-				Key:  naming.ReplicationCert,
-				Path: naming.ReplicationCertPath,
-				Mode: &mode,
-			},
-			{
-				Key:  naming.ReplicationPrivateKey,
-				Path: naming.ReplicationPrivateKeyPath,
-				Mode: &mode,
-			},
 		},
 	}
 
 	err := AddCertVolumeToPod(postgresCluster, template,
-		naming.ContainerClientCertInit, naming.ContainerDatabase,
-		naming.ContainerClientCertCopy, testServerSecretProjection,
-		testClientSecretProjection)
+		naming.ContainerClientCertCopy)
 	assert.NilError(t, err)
 
-	var foundCertVol bool
-	var certVol *v1.Volume
-	for i, v := range template.Spec.Volumes {
-		if v.Name == naming.CertVolume {
-			foundCertVol = true
-			certVol = &template.Spec.Volumes[i]
-			break
-		}
-	}
-
-	assert.Assert(t, foundCertVol)
-	assert.Assert(t, len(certVol.Projected.Sources) > 1)
-
-	var serverSecret *v1.SecretProjection
-	var clientSecret *v1.SecretProjection
-
-	for _, source := range certVol.Projected.Sources {
-
-		if source.Secret.Name == naming.PostgresTLSSecret(postgresCluster).Name {
-			serverSecret = source.Secret
-		}
-		if source.Secret.Name == naming.ReplicationClientCertSecret(postgresCluster).Name {
-			clientSecret = source.Secret
-		}
-	}
-
-	if assert.Check(t, serverSecret != nil) {
-		assert.Assert(t, len(serverSecret.Items) == 3)
-
-		assert.Equal(t, serverSecret.Items[0].Key, naming.ReplicationCert)
-		assert.Equal(t, serverSecret.Items[0].Path, naming.ReplicationCert)
-		assert.Equal(t, serverSecret.Items[0].Mode, &mode)
-
-		assert.Equal(t, serverSecret.Items[1].Key, naming.ReplicationPrivateKey)
-		assert.Equal(t, serverSecret.Items[1].Path, naming.ReplicationPrivateKey)
-		assert.Equal(t, serverSecret.Items[1].Mode, &mode)
-
-		assert.Equal(t, serverSecret.Items[2].Key, naming.ReplicationCACert)
-		assert.Equal(t, serverSecret.Items[2].Path, naming.ReplicationCACert)
-		assert.Equal(t, serverSecret.Items[2].Mode, &mode)
-	}
-
-	if assert.Check(t, clientSecret != nil) {
-		assert.Assert(t, len(clientSecret.Items) == 2)
-
-		assert.Equal(t, clientSecret.Items[0].Key, naming.ReplicationCert)
-		assert.Equal(t, clientSecret.Items[0].Path, naming.ReplicationCertPath)
-		assert.Equal(t, clientSecret.Items[0].Mode, &mode)
-
-		assert.Equal(t, clientSecret.Items[1].Key, naming.ReplicationPrivateKey)
-		assert.Equal(t, clientSecret.Items[1].Path, naming.ReplicationPrivateKeyPath)
-		assert.Equal(t, clientSecret.Items[1].Mode, &mode)
-	}
 }
 
 func TestDataVolumeMount(t *testing.T) {
@@ -220,6 +72,7 @@ func TestInstancePod(t *testing.T) {
 
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
+	cluster.Spec.ImagePullPolicy = corev1.PullAlways
 	cluster.Spec.PostgresVersion = 11
 
 	dataVolume := new(corev1.PersistentVolumeClaim)
@@ -228,9 +81,42 @@ func TestInstancePod(t *testing.T) {
 	instance := new(v1beta1.PostgresInstanceSetSpec)
 	instance.Resources.Requests = corev1.ResourceList{"cpu": resource.MustParse("9m")}
 
+	serverSecretProjection := &corev1.SecretProjection{
+		LocalObjectReference: corev1.LocalObjectReference{Name: "srv-secret"},
+		Items: []corev1.KeyToPath{
+			{
+				Key:  naming.ReplicationCert,
+				Path: naming.ReplicationCert,
+			},
+			{
+				Key:  naming.ReplicationPrivateKey,
+				Path: naming.ReplicationPrivateKey,
+			},
+			{
+				Key:  naming.ReplicationCACert,
+				Path: naming.ReplicationCACert,
+			},
+		},
+	}
+
+	clientSecretProjection := &corev1.SecretProjection{
+		LocalObjectReference: corev1.LocalObjectReference{Name: "repl-secret"},
+		Items: []corev1.KeyToPath{
+			{
+				Key:  naming.ReplicationCert,
+				Path: naming.ReplicationCertPath,
+			},
+			{
+				Key:  naming.ReplicationPrivateKey,
+				Path: naming.ReplicationPrivateKeyPath,
+			},
+		},
+	}
+
 	// without WAL volume nor WAL volume spec
 	pod := new(corev1.PodSpec)
-	InstancePod(ctx, cluster, instance, dataVolume, nil, pod)
+	InstancePod(ctx, cluster, instance,
+		serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
 
 	assert.Assert(t, marshalMatches(pod, `
 containers:
@@ -241,6 +127,7 @@ containers:
     value: /tmp/postgres
   - name: PGPORT
     value: "5432"
+  imagePullPolicy: Always
   name: database
   ports:
   - containerPort: 5432
@@ -255,6 +142,9 @@ containers:
     readOnlyRootFilesystem: true
     runAsNonRoot: true
   volumeMounts:
+  - mountPath: /pgconf/tls
+    name: cert-volume
+    readOnly: true
   - mountPath: /pgdata
     name: postgres-data
 initContainers:
@@ -285,6 +175,7 @@ initContainers:
     [ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"
     [ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"
     install --directory --mode=0700 "${postgres_data_directory}"
+    mkdir -p /tmp/replication && install -m 0600 /pgconf/tls/replication/{tls.crt,tls.key,ca.crt} /tmp/replication
     [ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
     [ "${postgres_data_version}" = "${expected_major_version}" ]
@@ -300,6 +191,7 @@ initContainers:
     value: /tmp/postgres
   - name: PGPORT
     value: "5432"
+  imagePullPolicy: Always
   name: postgres-startup
   resources:
     requests:
@@ -310,9 +202,32 @@ initContainers:
     readOnlyRootFilesystem: true
     runAsNonRoot: true
   volumeMounts:
+  - mountPath: /pgconf/tls
+    name: cert-volume
+    readOnly: true
   - mountPath: /pgdata
     name: postgres-data
 volumes:
+- name: cert-volume
+  projected:
+    defaultMode: 384
+    sources:
+    - secret:
+        items:
+        - key: tls.crt
+          path: tls.crt
+        - key: tls.key
+          path: tls.key
+        - key: ca.crt
+          path: ca.crt
+        name: srv-secret
+    - secret:
+        items:
+        - key: tls.crt
+          path: replication/tls.crt
+        - key: tls.key
+          path: replication/tls.key
+        name: repl-secret
 - name: postgres-data
   persistentVolumeClaim:
     claimName: datavol
@@ -323,7 +238,8 @@ volumes:
 		walVolume.Name = "walvol"
 
 		pod := new(corev1.PodSpec)
-		InstancePod(ctx, cluster, instance, dataVolume, walVolume, pod)
+		InstancePod(ctx, cluster, instance,
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, pod)
 
 		containers := pod.Containers[:0:0]
 		containers = append(containers, pod.Containers...)
@@ -331,6 +247,9 @@ volumes:
 
 		for _, container := range containers {
 			assert.Assert(t, marshalMatches(container.VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
 - mountPath: /pgdata
   name: postgres-data
 - mountPath: /pgwal
@@ -339,6 +258,26 @@ volumes:
 		}
 
 		assert.Assert(t, marshalMatches(pod.Volumes, `
+- name: cert-volume
+  projected:
+    defaultMode: 384
+    sources:
+    - secret:
+        items:
+        - key: tls.crt
+          path: tls.crt
+        - key: tls.key
+          path: tls.key
+        - key: ca.crt
+          path: ca.crt
+        name: srv-secret
+    - secret:
+        items:
+        - key: tls.crt
+          path: replication/tls.crt
+        - key: tls.key
+          path: replication/tls.key
+        name: repl-secret
 - name: postgres-data
   persistentVolumeClaim:
     claimName: datavol
@@ -360,7 +299,8 @@ volumes:
 		instance.WALVolumeClaimSpec = new(corev1.PersistentVolumeClaimSpec)
 
 		pod := new(corev1.PodSpec)
-		InstancePod(ctx, cluster, instance, dataVolume, walVolume, pod)
+		InstancePod(ctx, cluster, instance,
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, pod)
 
 		containers := pod.Containers[:0:0]
 		containers = append(containers, pod.Containers...)
@@ -368,6 +308,9 @@ volumes:
 
 		for _, container := range containers {
 			assert.Assert(t, marshalMatches(container.VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
 - mountPath: /pgdata
   name: postgres-data
 - mountPath: /pgwal
@@ -376,6 +319,26 @@ volumes:
 		}
 
 		assert.Assert(t, marshalMatches(pod.Volumes, `
+- name: cert-volume
+  projected:
+    defaultMode: 384
+    sources:
+    - secret:
+        items:
+        - key: tls.crt
+          path: tls.crt
+        - key: tls.key
+          path: tls.key
+        - key: ca.crt
+          path: ca.crt
+        name: srv-secret
+    - secret:
+        items:
+        - key: tls.crt
+          path: replication/tls.crt
+        - key: tls.key
+          path: replication/tls.key
+        name: repl-secret
 - name: postgres-data
   persistentVolumeClaim:
     claimName: datavol
