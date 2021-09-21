@@ -62,6 +62,7 @@ GO ?= go
 GO_BUILD = $(GO_CMD) build -trimpath
 GO_CMD = $(GO_ENV) $(GO)
 GO_TEST ?= $(GO) test
+KUTTL_TEST ?= kuttl test
 
 # Disable optimizations if creating a debug build
 ifeq ("$(DEBUG_BUILD)", "true")
@@ -202,6 +203,11 @@ check-envtest-existing:
 	USE_EXISTING_CLUSTER=true $(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
 	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
+# Expects operator to be running
+.PHONY: check-kuttl
+check-kuttl:
+	${PGO_KUBE_CLIENT} ${KUTTL_TEST} \
+		--config testing/kuttl/kuttl-test.yaml
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy generate-rbac

@@ -1,0 +1,15 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestSuite
+testDirs:
+- testing/kuttl/e2e/
+timeout: 60
+parallel: 2
+
+# There is an issue where kuttl kills the controller process before finalizers
+# can be removed from clusters. The fix is set for kuttl 0.12 to wait for
+# namespaces to be deleted before killing the controller:
+# https://github.com/kudobuilder/kuttl/issues/314
+# commands:
+# - command: ./bin/postgres-operator
+#   background: true
+#   skipLogOutput: true
