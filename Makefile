@@ -201,7 +201,7 @@ check-envtest: hack/tools/envtest
 .PHONY: check-envtest-existing
 check-envtest-existing:
 	${PGO_KUBE_CLIENT} apply -k ./config/dev
-	USE_EXISTING_CLUSTER=true $(GO_TEST) -count=1 -cover -tags=envtest ./...
+	USE_EXISTING_CLUSTER=true $(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
 	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
 
