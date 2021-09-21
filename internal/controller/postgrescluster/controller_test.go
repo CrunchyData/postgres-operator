@@ -56,27 +56,9 @@ func TestDeleteControlled(t *testing.T) {
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
 
-	cluster := &v1beta1.PostgresCluster{}
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
-		spec: {
-			postgresVersion: 13,
-			instances: [{
-				name: instance,
-			}],
-			backups: { 
-			    pgbackrest: {
-					repos: [{
-						name: repo1,
-					}],
-				},
-			},
-		},
-	}`), cluster))
-
+	cluster := testCluster()
 	cluster.Namespace = ns.Name
 	cluster.Name = strings.ToLower(t.Name())
-	cluster.Spec.Image = CrunchyPostgresHAImage
-
 	assert.NilError(t, cc.Create(ctx, cluster))
 
 	t.Run("NoOwnership", func(t *testing.T) {

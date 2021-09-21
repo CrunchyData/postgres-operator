@@ -28,7 +28,6 @@ import (
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"gotest.tools/v3/assert"
@@ -71,34 +70,9 @@ func TestReconcileCerts(t *testing.T) {
 	clusterName1 := "hippocluster1"
 
 	// set up test cluster1
-	cluster1 := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName1,
-			Namespace: namespace,
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: 12,
-			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				Name: "instance",
-			}},
-			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
-				Repos: []v1beta1.PGBackRestRepo{{
-					Name: "repo1",
-					Volume: &v1beta1.RepoPVC{
-						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-							Resources: v1.ResourceRequirements{
-								Requests: v1.ResourceList{
-									v1.ResourceStorage: resource.MustParse("1Gi"),
-								},
-							},
-						},
-					},
-				}},
-			}},
-		},
-	}
-	cluster1.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
+	cluster1 := testCluster()
+	cluster1.Name = clusterName1
+	cluster1.Namespace = namespace
 	if err := tClient.Create(ctx, cluster1); err != nil {
 		t.Error(err)
 	}
@@ -106,34 +80,9 @@ func TestReconcileCerts(t *testing.T) {
 	// set up test cluster2
 	cluster2Name := "hippocluster2"
 
-	cluster2 := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cluster2Name,
-			Namespace: namespace,
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: 12,
-			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				Name: "instance",
-			}},
-			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
-				Repos: []v1beta1.PGBackRestRepo{{
-					Name: "repo1",
-					Volume: &v1beta1.RepoPVC{
-						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-							Resources: v1.ResourceRequirements{
-								Requests: v1.ResourceList{
-									v1.ResourceStorage: resource.MustParse("1Gi"),
-								},
-							},
-						},
-					},
-				}},
-			}},
-		},
-	}
-	cluster2.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
+	cluster2 := testCluster()
+	cluster2.Name = cluster2Name
+	cluster2.Namespace = namespace
 	if err := tClient.Create(ctx, cluster2); err != nil {
 		t.Error(err)
 	}

@@ -25,14 +25,12 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestManageControllerRefs(t *testing.T) {
@@ -61,35 +59,11 @@ func TestManageControllerRefs(t *testing.T) {
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
-	// create a PostgresCluster to test with
-	postgresCluster := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName,
-			Namespace: namespace,
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: 12,
-			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
-			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
-				Repos: []v1beta1.PGBackRestRepo{{
-					Name: "repo1",
-					Volume: &v1beta1.RepoPVC{
-						VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
-							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-							Resources: corev1.ResourceRequirements{
-								Requests: corev1.ResourceList{
-									corev1.ResourceStorage: resource.MustParse("1Gi"),
-								},
-							},
-						},
-					},
-				}},
-			}},
-		},
-	}
+	cluster := testCluster()
+	cluster.Namespace = ns.Name
 
 	// create the test PostgresCluster
-	if err := tClient.Create(ctx, postgresCluster); err != nil {
+	if err := tClient.Create(ctx, cluster); err != nil {
 		t.Fatal(err)
 	}
 
@@ -131,7 +105,7 @@ func TestManageControllerRefs(t *testing.T) {
 		var foundControllerOwnerRef bool
 		for _, ref := range obj.GetOwnerReferences() {
 			if *ref.Controller && *ref.BlockOwnerDeletion &&
-				ref.UID == postgresCluster.GetUID() &&
+				ref.UID == cluster.GetUID() &&
 				ref.Name == clusterName && ref.Kind == "PostgresCluster" {
 				foundControllerOwnerRef = true
 				break
@@ -152,7 +126,7 @@ func TestManageControllerRefs(t *testing.T) {
 			APIVersion:         "group/version",
 			Kind:               "PostgresCluster",
 			Name:               clusterName,
-			UID:                postgresCluster.GetUID(),
+			UID:                cluster.GetUID(),
 			Controller:         &isTrue,
 			BlockOwnerDeletion: &isTrue,
 		})
