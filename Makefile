@@ -252,11 +252,11 @@ generate-crd:
 
 # TODO(cbandy): Run config/crd through Kustomize to pickup any patches there.
 generate-crd-docs:
-	GOBIN='$(CURDIR)/hack/tools' go install fybrik.io/crdoc@v0.4.0
-	$(CURDIR)/hack/tools/crdoc \
-		--resources $(CURDIR)/config/crd/bases \
-		--output $(CURDIR)/docs/content/references/crd.md \
-		--template $(CURDIR)/hack/api-template.tmpl
+	GOBIN='$(CURDIR)/hack/tools' go install fybrik.io/crdoc@v0.5.2
+	./hack/tools/crdoc \
+		--resources ./config/crd/bases \
+		--template ./hack/api-template.tmpl \
+		--output ./docs/content/references/crd.md
 
 generate-deepcopy:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
