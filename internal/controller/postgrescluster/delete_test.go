@@ -486,7 +486,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 		return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
 	}), "expected cluster to be deleted, got:\n%+v", *cluster)
 
-	assert.NilError(t, wait.PollImmediate(time.Second, Scale(time.Minute/4), func() (bool, error) {
+	assert.NilError(t, wait.PollImmediate(time.Second, Scale(time.Minute/2), func() (bool, error) {
 		err := cc.Get(ctx, client.ObjectKeyFromObject(ns), &v1.Namespace{})
 		return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
 	}), "expected namespace to be deleted")

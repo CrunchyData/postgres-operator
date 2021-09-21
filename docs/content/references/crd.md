@@ -516,16 +516,16 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
         <td><b>accessModes</b></td>
         <td>[]string</td>
         <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasource">dataSource</a></b></td>
-        <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
         <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasource">dataSource</a></b></td>
+        <td>object</td>
+        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">selector</a></b></td>
@@ -546,6 +546,38 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
         <td><b>volumeName</b></td>
         <td>string</td>
         <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.resources
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -583,38 +615,6 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
         <td><b>apiGroup</b></td>
         <td>string</td>
         <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">
-  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.resources
-  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3692,16 +3692,16 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
         <td><b>accessModes</b></td>
         <td>[]string</td>
         <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecdatasource">dataSource</a></b></td>
-        <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
         <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecdatasource">dataSource</a></b></td>
+        <td>object</td>
+        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecselector">selector</a></b></td>
@@ -3722,6 +3722,38 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
         <td><b>volumeName</b></td>
         <td>string</td>
         <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspecresources">
+  PostgresCluster.spec.instances[index].dataVolumeClaimSpec.resources
+  <sup><sup><a href="#postgresclusterspecinstancesindexdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3759,38 +3791,6 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
         <td><b>apiGroup</b></td>
         <td>string</td>
         <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspecresources">
-  PostgresCluster.spec.instances[index].dataVolumeClaimSpec.resources
-  <sup><sup><a href="#postgresclusterspecinstancesindexdatavolumeclaimspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -5087,16 +5087,16 @@ Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More 
         <td><b>accessModes</b></td>
         <td>[]string</td>
         <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecdatasource">dataSource</a></b></td>
-        <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
-        <td>false</td>
+        <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
         <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecdatasource">dataSource</a></b></td>
+        <td>object</td>
+        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecselector">selector</a></b></td>
@@ -5117,6 +5117,38 @@ Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More 
         <td><b>volumeName</b></td>
         <td>string</td>
         <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspecresources">
+  PostgresCluster.spec.instances[index].walVolumeClaimSpec.resources
+  <sup><sup><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -5154,38 +5186,6 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
         <td><b>apiGroup</b></td>
         <td>string</td>
         <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspecresources">
-  PostgresCluster.spec.instances[index].walVolumeClaimSpec.resources
-  <sup><sup><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>limits</b></td>
-        <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>requests</b></td>
-        <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
         <td>false</td>
       </tr></tbody>
 </table>

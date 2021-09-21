@@ -1440,6 +1440,7 @@ spec:
                                         info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
                                       items:
                                         type: string
+                                      minItems: 1
                                       type: array
                                     dataSource:
                                       description: 'This field can be used to specify
@@ -1503,7 +1504,11 @@ spec:
                                             it defaults to Limits if that is explicitly
                                             specified, otherwise to an implementation-defined
                                             value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                                          required:
+                                          - storage
                                           type: object
+                                      required:
+                                      - requests
                                       type: object
                                     selector:
                                       description: A label query over volumes to consider
@@ -1571,6 +1576,9 @@ spec:
                                       description: VolumeName is the binding reference
                                         to the PersistentVolume backing this claim.
                                       type: string
+                                  required:
+                                  - accessModes
+                                  - resources
                                   type: object
                               required:
                               - volumeClaimSpec
@@ -3994,6 +4002,7 @@ spec:
                             the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
                           items:
                             type: string
+                          minItems: 1
                           type: array
                         dataSource:
                           description: 'This field can be used to specify either:
@@ -4049,7 +4058,11 @@ spec:
                                 for a container, it defaults to Limits if that is
                                 explicitly specified, otherwise to an implementation-defined
                                 value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              required:
+                              - storage
                               type: object
+                          required:
+                          - requests
                           type: object
                         selector:
                           description: A label query over volumes to consider for
@@ -4110,6 +4123,9 @@ spec:
                           description: VolumeName is the binding reference to the
                             PersistentVolume backing this claim.
                           type: string
+                      required:
+                      - accessModes
+                      - resources
                       type: object
                     metadata:
                       description: Metadata contains metadata for PostgresCluster
@@ -4357,6 +4373,7 @@ spec:
                             the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1'
                           items:
                             type: string
+                          minItems: 1
                           type: array
                         dataSource:
                           description: 'This field can be used to specify either:
@@ -4412,7 +4429,11 @@ spec:
                                 for a container, it defaults to Limits if that is
                                 explicitly specified, otherwise to an implementation-defined
                                 value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
+                              required:
+                              - storage
                               type: object
+                          required:
+                          - requests
                           type: object
                         selector:
                           description: A label query over volumes to consider for
@@ -4473,6 +4494,9 @@ spec:
                           description: VolumeName is the binding reference to the
                             PersistentVolume backing this claim.
                           type: string
+                      required:
+                      - accessModes
+                      - resources
                       type: object
                   required:
                   - dataVolumeClaimSpec
