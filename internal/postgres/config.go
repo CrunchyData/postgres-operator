@@ -100,6 +100,35 @@ func Environment(cluster *v1beta1.PostgresCluster) []corev1.EnvVar {
 	}
 }
 
+// reloadCommand returns an entrypoint that sets the appropriate permissions on
+// PostgreSQL client certificates. Kubernetes sets g+r when fsGroup is enabled.
+// The process will appear as name in `ps` and `top`.
+// - https://issue.k8s.io/57923
+func reloadCommand(name string) []string {
+	script := fmt.Sprintf(`
+declare -r mountDir=%s
+declare -r tmpDir=%s
+while sleep 5s; do
+  mkdir -p %s
+  DIFF=$(diff ${mountDir} ${tmpDir})
+  if [ "$DIFF" != "" ]
+  then
+    date
+    echo Copying replication certificates and key and setting permissions
+    install -m 0600 ${mountDir}/{%s,%s,%s} ${tmpDir}
+  fi
+done
+`, naming.CertMountPath+naming.ReplicationDirectory, naming.ReplicationTmp,
+		naming.ReplicationTmp, naming.ReplicationCert,
+		naming.ReplicationPrivateKey, naming.ReplicationCACert)
+
+	// Elide the above script from `ps` and `top` by wrapping it in a function
+	// and calling that.
+	wrapper := `monitor() {` + script + `}; export -f monitor; exec -a "$0" bash -c monitor`
+
+	return []string{"bash", "-ceu", "--", wrapper, name}
+}
+
 // startupCommand returns an entrypoint that prepares the filesystem for
 // PostgreSQL.
 func startupCommand(

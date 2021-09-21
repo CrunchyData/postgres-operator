@@ -17,14 +17,12 @@ package patroni
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
@@ -143,80 +141,7 @@ func InstancePod(ctx context.Context,
 
 	instanceProbes(inCluster, container)
 
-	// Create the sidecar container that handles certificate copying and permission
-	// setting and the patronictl reload. Use the existing cluster, pod, volume name
-	// and container env as these are needed for the functions listed.
-	diffCopyReplicationTLS(inCluster, outInstancePod, volume.Name, container.Env,
-		*inInstanceSpec)
-
 	return nil
-}
-
-// diffCopyReplicationTLS, similar to InitCopyReplicationTLS, creates a sidecar
-// container that copies the mounted client certificate, key and CA certificate
-// files from the /pgconf/tls/replication directory to the /tmp/replication
-// directory in order to set proper file permissions. However, this function
-// involves a continual loop that checks for changes to the relevant directory
-// rather than acting during initialization. As during initialization, this is
-// required because the group permission settings applied via the defaultMode
-// option are not honored as expected, resulting in incorrect group read
-// permissions.
-// See https://github.com/kubernetes/kubernetes/issues/57923
-// TODO(tjmoore4): remove this implementation when/if defaultMode permissions are set as
-// expected for the mounted volume.
-func diffCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
-	template *v1.PodTemplateSpec, volumeName string, envVar []v1.EnvVar,
-	instance v1beta1.PostgresInstanceSetSpec) {
-	container := findOrAppendContainer(&template.Spec.Containers,
-		naming.ContainerClientCertCopy)
-
-	container.Command = copyReplicationCerts(naming.PatroniScope(postgresCluster))
-	container.Image = config.PostgresContainerImage(postgresCluster)
-	container.ImagePullPolicy = postgresCluster.Spec.ImagePullPolicy
-
-	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, v1.VolumeMount{
-		Name:      volumeName,
-		MountPath: configDirectory,
-		ReadOnly:  true,
-	})
-
-	container.SecurityContext = initialize.RestrictedSecurityContext()
-
-	// set sidecar container resources
-	if instance.Sidecars != nil && instance.Sidecars.ReplicaCertCopy != nil &&
-		instance.Sidecars.ReplicaCertCopy.Resources != nil {
-		container.Resources = *instance.Sidecars.ReplicaCertCopy.Resources
-	}
-
-	container.Env = envVar
-}
-
-// copyReplicationCerts copies the replication certificates and key from the
-// mounted directory to 'tmp', sets the proper permissions, and performs a
-// Patroni reload whenever a change in the directory is detected
-// TODO(tjmoore4): The use of 'patronictl reload' can likely be replaced
-// with a signal. This may allow for removing the loaded Patroni config
-// from the sidecar.
-func copyReplicationCerts(patroniScope string) []string {
-	script := fmt.Sprintf(`
-declare -r mountDir=%s
-declare -r tmpDir=%s
-while sleep 5s; do
-  mkdir -p %s
-  DIFF=$(diff ${mountDir} ${tmpDir})
-  if [ "$DIFF" != "" ]
-  then
-    date
-    echo Copying replication certificates and key and setting permissions
-    install -m 0600 ${mountDir}/{%s,%s,%s} ${tmpDir}
-    patronictl reload %s --force
-  fi
-done
-`, naming.CertMountPath+naming.ReplicationDirectory, naming.ReplicationTmp,
-		naming.ReplicationTmp, naming.ReplicationCert,
-		naming.ReplicationPrivateKey, naming.ReplicationCACert, patroniScope)
-
-	return []string{"bash", "-c", script}
 }
 
 // instanceProbes adds Patroni liveness and readiness probes to container.

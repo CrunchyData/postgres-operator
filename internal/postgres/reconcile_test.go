@@ -21,31 +21,12 @@ import (
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
-
-func TestAddCertVolumeToPod(t *testing.T) {
-
-	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
-	template := &v1.PodTemplateSpec{
-		Spec: v1.PodSpec{
-			Containers: []v1.Container{{
-				Name: "replication-cert-copy",
-			}},
-		},
-	}
-
-	err := AddCertVolumeToPod(postgresCluster, template,
-		naming.ContainerClientCertCopy)
-	assert.NilError(t, err)
-
-}
 
 func TestDataVolumeMount(t *testing.T) {
 	mount := DataVolumeMount()
@@ -80,6 +61,13 @@ func TestInstancePod(t *testing.T) {
 
 	instance := new(v1beta1.PostgresInstanceSetSpec)
 	instance.Resources.Requests = corev1.ResourceList{"cpu": resource.MustParse("9m")}
+	instance.Sidecars = &v1beta1.InstanceSidecars{
+		ReplicaCertCopy: &v1beta1.Sidecar{
+			Resources: &corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{"cpu": resource.MustParse("21m")},
+			},
+		},
+	}
 
 	serverSecretProjection := &corev1.SecretProjection{
 		LocalObjectReference: corev1.LocalObjectReference{Name: "srv-secret"},
@@ -147,6 +135,40 @@ containers:
     readOnly: true
   - mountPath: /pgdata
     name: postgres-data
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    declare -r mountDir=/pgconf/tls/replication
+    declare -r tmpDir=/tmp/replication
+    while sleep 5s; do
+      mkdir -p /tmp/replication
+      DIFF=$(diff ${mountDir} ${tmpDir})
+      if [ "$DIFF" != "" ]
+      then
+        date
+        echo Copying replication certificates and key and setting permissions
+        install -m 0600 ${mountDir}/{tls.crt,tls.key,ca.crt} ${tmpDir}
+      fi
+    done
+    }; export -f monitor; exec -a "$0" bash -c monitor
+  - replication-cert-copy
+  imagePullPolicy: Always
+  name: replication-cert-copy
+  resources:
+    requests:
+      cpu: 21m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /pgconf/tls
+    name: cert-volume
+    readOnly: true
 initContainers:
 - command:
   - bash
@@ -241,11 +263,13 @@ volumes:
 		InstancePod(ctx, cluster, instance,
 			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, pod)
 
-		containers := pod.Containers[:0:0]
-		containers = append(containers, pod.Containers...)
-		containers = append(containers, pod.InitContainers...)
+		assert.Assert(t, len(pod.Containers) > 0)
+		assert.Assert(t, len(pod.InitContainers) > 0)
 
-		for _, container := range containers {
+		for _, container := range []corev1.Container{
+			pod.Containers[0],
+			pod.InitContainers[0],
+		} {
 			assert.Assert(t, marshalMatches(container.VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
@@ -302,11 +326,13 @@ volumes:
 		InstancePod(ctx, cluster, instance,
 			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, pod)
 
-		containers := pod.Containers[:0:0]
-		containers = append(containers, pod.Containers...)
-		containers = append(containers, pod.InitContainers...)
+		assert.Assert(t, len(pod.Containers) > 0)
+		assert.Assert(t, len(pod.InitContainers) > 0)
 
-		for _, container := range containers {
+		for _, container := range []corev1.Container{
+			pod.Containers[0],
+			pod.InitContainers[0],
+		} {
 			assert.Assert(t, marshalMatches(container.VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume

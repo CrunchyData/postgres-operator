@@ -1043,11 +1043,6 @@ func (r *Reconciler) reconcileInstance(
 		err = addPGMonitorToInstancePodSpec(cluster, &instance.Spec.Template)
 	}
 
-	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
-	if err == nil {
-		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template,
-			naming.ContainerClientCertCopy))
-	}
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
 	// containers
 	if err == nil {
