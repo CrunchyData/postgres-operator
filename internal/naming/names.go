@@ -41,9 +41,6 @@ const (
 	// that prepares the filesystem for PostgreSQL.
 	ContainerPostgresStartup = "postgres-startup"
 
-	// ContainerClientCertInit is the name of the initialization container that is responsible
-	// for copying and setting proper permissions on the client certificate and key
-	ContainerClientCertInit = ContainerDatabase + "-client-cert-init"
 	// ContainerClientCertCopy is the name of the container that is responsible for copying and
 	// setting proper permissions on the client certificate and key after initialization whenever
 	// there is a change in the certificates or key

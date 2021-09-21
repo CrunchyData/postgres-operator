@@ -1023,7 +1023,9 @@ func (r *Reconciler) reconcileInstance(
 	}
 	if err == nil {
 		postgres.InstancePod(
-			ctx, cluster, spec, postgresDataVolume, postgresWALVolume,
+			ctx, cluster, spec,
+			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret),
+			postgresDataVolume, postgresWALVolume,
 			&instance.Spec.Template.Spec)
 
 		err = patroni.InstancePod(
@@ -1041,15 +1043,10 @@ func (r *Reconciler) reconcileInstance(
 		err = addPGMonitorToInstancePodSpec(cluster, &instance.Spec.Template)
 	}
 
-	// add the container for the initial copy of the mounted replication client
-	// certificate files to the /tmp directory and set the proper file permissions
-	postgres.InitCopyReplicationTLS(cluster, &instance.Spec.Template)
-
 	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
 	if err == nil {
 		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template,
-			naming.ContainerClientCertInit, naming.ContainerDatabase, naming.ContainerClientCertCopy,
-			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret)))
+			naming.ContainerClientCertCopy))
 	}
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
 	// containers

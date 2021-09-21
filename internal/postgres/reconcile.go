@@ -17,7 +17,6 @@ package postgres
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -29,74 +28,15 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// InitCopyReplicationTLS copies the mounted client certificate, key and CA certificate files
-// from the /pgconf/tls/replication directory to the /tmp/replication directory in order
-// to set proper file permissions. This is required because the group permission settings
-// applied via the defaultMode option are not honored as expected, resulting in incorrect
-// group read permissions.
-// See https://github.com/kubernetes/kubernetes/issues/57923
-// TODO(tjmoore4): remove this implementation when/if defaultMode permissions are set as
-// expected for the mounted volume.
-func InitCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
-	template *v1.PodTemplateSpec) {
-
-	cmd := fmt.Sprintf(`mkdir -p %s && install -m 0600 %s/{%s,%s,%s} %s`,
-		naming.ReplicationTmp, naming.CertMountPath+naming.ReplicationDirectory,
-		naming.ReplicationCert, naming.ReplicationPrivateKey,
-		naming.ReplicationCACert, naming.ReplicationTmp)
-
-	container := v1.Container{
-		Command:         []string{"bash", "-c", cmd},
-		Image:           config.PostgresContainerImage(postgresCluster),
-		ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
-		Name:            naming.ContainerClientCertInit,
-		SecurityContext: initialize.RestrictedSecurityContext(),
-	}
-
-	// set the NSS wrapper container resources to match those of the 'database' container
-	for i, c := range template.Spec.Containers {
-		if c.Name == naming.ContainerDatabase {
-			container.Resources = template.Spec.Containers[i].Resources
-		}
-	}
-	template.Spec.InitContainers = append(template.Spec.InitContainers, container)
-}
-
 // AddCertVolumeToPod adds the secret containing the TLS certificate, key and the CA certificate
 // as a volume to the provided Pod template spec, while also adding associated volume mounts to
 // the database container specified.
 func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	initContainerName, dbContainerName, sidecarContainerName string, inClusterCertificates,
-	inClientCertificates *v1.SecretProjection) error {
+	sidecarContainerName string) error {
 
-	certVolume := v1.Volume{Name: naming.CertVolume}
-	certVolume.Projected = &v1.ProjectedVolumeSource{
-		DefaultMode: initialize.Int32(0o600),
-	}
-
-	// Add the certificate volume projection
-	certVolume.Projected.Sources = append(append(
-		certVolume.Projected.Sources, []v1.VolumeProjection(nil)...),
-		[]v1.VolumeProjection{
-			{Secret: inClusterCertificates},
-			{Secret: inClientCertificates}}...)
-
-	template.Spec.Volumes = append(template.Spec.Volumes, certVolume)
-
-	var dbContainerFound bool
 	var sidecarContainerFound bool
 	var index int
 	for index = range template.Spec.Containers {
-		if template.Spec.Containers[index].Name == dbContainerName {
-			dbContainerFound = true
-
-			template.Spec.Containers[index].VolumeMounts =
-				append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
-					Name:      naming.CertVolume,
-					MountPath: naming.CertMountPath,
-					ReadOnly:  true,
-				})
-		}
 		if template.Spec.Containers[index].Name == sidecarContainerName {
 			sidecarContainerFound = true
 
@@ -107,38 +47,14 @@ func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.P
 					ReadOnly:  true,
 				})
 		}
-		if dbContainerFound && sidecarContainerFound {
+		if sidecarContainerFound {
 			break
 		}
-	}
-	if !dbContainerFound {
-		return errors.Errorf("Unable to find container %q when adding certificate volumes",
-			dbContainerName)
 	}
 	if !sidecarContainerFound {
 		return errors.Errorf("Unable to find container %q when adding certificate volumes",
 			sidecarContainerName)
 	}
-
-	var initContainerFound bool
-	var initIndex int
-	for initIndex = range template.Spec.InitContainers {
-		if template.Spec.InitContainers[initIndex].Name == initContainerName {
-			initContainerFound = true
-			break
-		}
-	}
-	if !initContainerFound {
-		return fmt.Errorf("Unable to find init container %q when adding certificate volumes",
-			initContainerName)
-	}
-
-	template.Spec.InitContainers[initIndex].VolumeMounts =
-		append(template.Spec.InitContainers[initIndex].VolumeMounts, v1.VolumeMount{
-			Name:      naming.CertVolume,
-			MountPath: naming.CertMountPath,
-			ReadOnly:  true,
-		})
 
 	return nil
 }
@@ -158,9 +74,31 @@ func WALVolumeMount() corev1.VolumeMount {
 func InstancePod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	inInstanceSpec *v1beta1.PostgresInstanceSetSpec,
+	inClusterCertificates, inClientCertificates *corev1.SecretProjection,
 	inDataVolume, inWALVolume *corev1.PersistentVolumeClaim,
 	outInstancePod *corev1.PodSpec,
 ) {
+	certVolumeMount := corev1.VolumeMount{
+		Name:      naming.CertVolume,
+		MountPath: naming.CertMountPath,
+		ReadOnly:  true,
+	}
+	certVolume := corev1.Volume{
+		Name: certVolumeMount.Name,
+		VolumeSource: corev1.VolumeSource{
+			Projected: &corev1.ProjectedVolumeSource{
+				// PostgreSQL expects client certificate keys to not be readable
+				// by any other user.
+				// - https://www.postgresql.org/docs/current/libpq-ssl.html
+				DefaultMode: initialize.Int32(0o600),
+				Sources: []corev1.VolumeProjection{
+					{Secret: inClusterCertificates},
+					{Secret: inClientCertificates},
+				},
+			},
+		},
+	}
+
 	dataVolumeMount := DataVolumeMount()
 	dataVolume := corev1.Volume{
 		Name: dataVolumeMount.Name,
@@ -188,24 +126,25 @@ func InstancePod(ctx context.Context,
 			Protocol:      corev1.ProtocolTCP,
 		}},
 
-		VolumeMounts:    []corev1.VolumeMount{dataVolumeMount},
 		SecurityContext: initialize.RestrictedSecurityContext(),
+		VolumeMounts:    []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
 	}
 
 	startup := corev1.Container{
 		Name: naming.ContainerPostgresStartup,
 
-		Command:         startupCommand(inCluster, inInstanceSpec),
-		Env:             Environment(inCluster),
-		Image:           config.PostgresContainerImage(inCluster),
-		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
-		Resources:       inInstanceSpec.Resources,
+		Command: startupCommand(inCluster, inInstanceSpec),
+		Env:     Environment(inCluster),
 
+		Image:           container.Image,
+		ImagePullPolicy: container.ImagePullPolicy,
+		Resources:       container.Resources,
 		SecurityContext: initialize.RestrictedSecurityContext(),
-		VolumeMounts:    []corev1.VolumeMount{dataVolumeMount},
+
+		VolumeMounts: []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
 	}
 
-	outInstancePod.Volumes = []corev1.Volume{dataVolume}
+	outInstancePod.Volumes = []corev1.Volume{certVolume, dataVolume}
 
 	// Mount the WAL PVC whenever it exists. The startup command will move WAL
 	// files to or from this volume according to inInstanceSpec.
