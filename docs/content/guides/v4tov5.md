@@ -104,16 +104,16 @@ For example, using the `hippo` cluster:
 ```
 spec:
   dataSource:
-    existingVolumes:
-      existingPGDataVolume:
+    volumes:
+      pgDataVolume:
         pvcName: hippo-jgut
         directory: "hippo-jgut"
-      existingPGBackRestVolume:
+      pgBackRestVolume:
         pvcName: hippo-pgbr-repo
         directory: "hippo-backrest-shared-repo"
-      # only specify external WAL PVC if enabled in v4 cluster
-      # existingPGWALVolume:
-      #  pvcName: hippo-wal
+      # only specify external WAL PVC if enabled in PGO v4 cluster
+      # pgWALVolume:
+      #  pvcName: hippo-jgut-wal
 ```
 
 Please see the [Data Migration]({{< relref "guides/data-migration.md" >}}) section of the [tutorial]({{< relref "tutorial/_index.md" >}}) for more details on how to properly populate this section of the spec when migrating from a PGO v4 cluster.
@@ -162,13 +162,14 @@ pgo backup hippo
 
 Please ensure that the backup completes. You will see the latest backup appear using the `pgo show backup` command.
 
-2. If are using a pgBackRest repository that is using S3 (or a S3-like storage system) or GCS, you can delete the cluster while keeping the backups (using the `--keep-backups` flag) and skip ahead to the [Migrate to PGO v5](#step-2-migrate-to-pgo-v5-1) section:
+2. If you are using a pgBackRest repository that is using S3 (or a S3-like storage system) or GCS, or if you are using a PVC-based pgBackRest repository
+that supports `fsGroup` (please see the [Kubernetes Security Context documentation](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for additional details), you can delete the cluster while keeping the backups (using the `--keep-backups` flag) and skip ahead to the [Migrate to PGO v5](#step-2-migrate-to-pgo-v5-1) section:
 
 ```
 pgo delete cluster hippo --keep-backups
 ```
 
-Otherwise, if you are using a PVC-based pgBackRest repository for your PGO v4 cluster to create the PGO v5 cluster, shut down and continue following the directions in this section:
+Otherwise, if you are using a PVC-based pgBackRest repository that does not support `fsGroup` (for instance, if using hostPath or NFS, as described [here](https://github.com/kubernetes/examples/issues/260)), shut down and continue following the directions in this section:
 
 ```
 pgo update cluster hippo --shutdown
@@ -193,7 +194,7 @@ kubectl get pod --selector=pg-cluster=hippo,pgo-backrest-repo=true -o name
 For convenience, you can store this value to an environmental variable:
 
 ```
-BACKREST_POD_NAME=($kubectl get pod --selector=pg-cluster=hippo,pgo-backrest-repo=true -o name)
+export BACKREST_POD_NAME=$(kubectl get pod --selector=pg-cluster=hippo,pgo-backrest-repo=true -o name)
 ```
 
 5\. The PGO v5 Postgres cluster will need to be able to access the pgBackRest repository data. Exec into the pgBackRest repository host and grant group ownership for the pgBackRest repository to the `postgres` group and group read/write access to the repository:
@@ -211,35 +212,6 @@ Note that the directory name should match the Deployment name.
 
 ```
 pgo delete cluster hippo --keep-backups
-```
-
-7\. At this point, only the PVC for the pgBackRest repository should remain. You can verify this with the following command, e.g.:
-
-```
-kubectl get pvc --selector=pg-cluster=hippo
-```
-
-which should yield something similar to:
-
-```
-NAME              STATUS   VOLUME ...
-	hippo-pgbr-repo   Bound    pvc-25501671- ...
-```
-
-You will need to relabel this PVC to match the expected labels in PGO v5. First, remove the PGO v4 labels:
-
-```
-kubectl label pvc --selector=pg-cluster=hippo vendor- pg-cluster-
-```
-
-Add the PGO v5 labels. Substitute "hippo" with the name of your cluster:
-
-```
-kubectl label pvc hippo-pgbr-repo \
-  postgres-operator.crunchydata.com/cluster=hippo \
-  postgres-operator.crunchydata.com/pgbackrest-repo=repo1 \
-  postgres-operator.crunchydata.com/pgbackrest-volume= \
-  postgres-operator.crunchydata.com/pgbackrest=
 ```
 
 ### Step 2: Migrate to PGO v5
@@ -269,20 +241,6 @@ spec:
                 requests:
                   storage: 1Gi
 ```
-
-Please ensure that the `pgbackrest-repo-path` configured for this repository includes the name of the repository used by the PGO v4 cluster. The default name for a PGO v4 repository follows the pattern `<clusterName>-backrest-shared-repo`. This is then is mounted to a path that follows the format `/pgbackrest/repo1/<clusterName>-backrest-shared-repo`.
-
-Using the `hippo` Postgres cluster as an example, you would set the following in the `spec.backups.pgbackrest.global` section:
-
-```
-spec:
-  backups:
-    pgbackrest:
-      global:
-        repo1-path: /pgbackrest/repo1/hippo-backrest-shared-repo
-```
-
-(This can also be set via ConfigMaps or Secrets as well. Please see the [Backup Configuration]({{< relref "tutorial/backups.md" >}}) for more information).
 
 #### S3 / GCS Backup Repository
 
@@ -325,26 +283,25 @@ spec:
 
 You can also provide other pgBackRest restore options, e.g. if you wish to restore to a specific point-in-time (PITR).
 
-3\.  If you are using the default setup in your PGO v4 cluster, you will need to provide custom setup parameters to include the [`pgAudit`](https://github.com/pgaudit/pgaudit) extension extension. This looks similar to the following:
-```
-patroni:
-  dynamicConfiguration:
-    postgresql:
-      parameters:
-        shared_preload_libraries: pgaudit.so
-```
-
-Once the `PostgresCluster` spec is populated according to these guidelines, you can create the `PostgresCluster` custom resource.  For example, if the `PostgresCluster` you're creating is a modified version of the [`postgres` example](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/postgres) in the [PGO examples repo](https://github.com/CrunchyData/postgres-operator-examples), you can run the following command:
-
-```
-kubectl apply -k examples/postgrescluster
-```
-
-3\. If you are using the default setup in your PGO v4 cluster, you will need to provide custom setup parameters to include the pgAudit extension. This looks similar to the following: v4):
+3\. If you are using a PVC-based pgBackRest repository, then you will also need to specify a pgBackRestVolume data source that references the PGO v4 pgBackRest repository PVC:
 
 ```
 spec:
-	patroni:
+  dataSource:
+    volumes:
+      pgBackRestVolume:
+        pvcName: hippo-pgbr-repo
+        directory: "hippo-backrest-shared-repo"
+    postgresCluster:
+      repoName: repo1
+```
+
+
+4\. If you are using the default setup in your PGO v4 cluster, you will need to provide custom setup parameters to include the pgAudit extension. This looks similar to the following: v4):
+
+```
+spec:
+  patroni:
     dynamicConfiguration:
       postgresql:
         parameters:
@@ -353,7 +310,7 @@ spec:
 
 If you customized other Postgres parameters, you will need to ensure they match in the PGO v5 cluster. For more information, please review the tutorial on [customizing a Postgres cluster]({{< relref "tutorial/customize-cluster.md" >}}).
 
-4\. Once the `PostgresCluster` spec is populated according to these guidelines, you can create the `PostgresCluster` custom resource.  For example, if the `PostgresCluster` you're creating is a modified version of the [`postgres` example](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/postgres) in the [PGO examples repo](https://github.com/CrunchyData/postgres-operator-examples), you can run the following command:
+5\. Once the `PostgresCluster` spec is populated according to these guidelines, you can create the `PostgresCluster` custom resource.  For example, if the `PostgresCluster` you're creating is a modified version of the [`postgres` example](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/postgres) in the [PGO examples repo](https://github.com/CrunchyData/postgres-operator-examples), you can run the following command:
 
 ```
 kubectl apply -k examples/postgrescluster
@@ -361,7 +318,14 @@ kubectl apply -k examples/postgrescluster
 
 **WARNING**: Once the PostgresCluster custom resource is created, it will become the owner of the PVC.  *This means that if the PostgresCluster is then deleted (e.g. if attempting to revert back to a PGO v4 cluster), then the PVC will be deleted as well.*
 
-If you wish to protect against this, relabel the PVC prior to deleting the PostgresCluster custom resource. Below uses the `hippo` Postgres cluster as an example:
+If you wish to protect against this, first remove the reference to the pgBackRest PVC in the PostgresCluster spec:
+
+
+```
+kubectl patch postgrescluster hippo-pgbr-repo --type='json' -p='[{"op": "remove", "path": "/spec/dataSource/volumes"}]'
+```
+
+Then relabel the PVC prior to deleting the PostgresCluster custom resource. Below uses the `hippo` Postgres cluster as an example:
 
 ```
 kubectl label pvc hippo-pgbr-repo \
@@ -444,7 +408,7 @@ spec:
 
 ```
 spec:
-	patroni:
+  patroni:
     dynamicConfiguration:
       postgresql:
         parameters:
