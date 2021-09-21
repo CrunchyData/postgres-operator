@@ -2194,6 +2194,56 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	}
 }
 
+func TestGenerateBackupJobIntent(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		_, err := generateBackupJobSpecIntent(
+			&v1beta1.PostgresCluster{},
+			"", "", "", "", "",
+			nil, nil,
+		)
+		assert.NilError(t, err)
+	})
+
+	cluster := &v1beta1.PostgresCluster{
+		Spec: v1beta1.PostgresClusterSpec{
+			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{}},
+		},
+	}
+
+	t.Run("Resources not defined in jobs", func(t *testing.T) {
+		job, err := generateBackupJobSpecIntent(
+			cluster,
+			"", "", "", "", "",
+			nil, nil,
+		)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources, corev1.ResourceRequirements{})
+	})
+
+	cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU: resource.MustParse("1m"),
+			},
+		},
+	}
+
+	t.Run("Resources defined", func(t *testing.T) {
+		job, err := generateBackupJobSpecIntent(
+			cluster,
+			"", "", "", "", "",
+			nil, nil,
+		)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources,
+			corev1.ResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceCPU: resource.MustParse("1m"),
+				}},
+		)
+	})
+}
+
 func TestGenerateRestoreJobIntent(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })

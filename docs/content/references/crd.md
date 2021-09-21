@@ -4092,6 +4092,11 @@ pgBackRest archive configuration
         <td>The image name to use for pgBackRest containers.  Utilized to run pgBackRest repository hosts and backups. The image may also be set using the RELATED_IMAGE_PGBACKREST environment variable</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobs">jobs</a></b></td>
+        <td>object</td>
+        <td>Jobs field allows configuration for all backup jobs</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestmanual">manual</a></b></td>
         <td>object</td>
         <td>Defines details for manual pgBackRest backup Jobs</td>
@@ -4486,6 +4491,65 @@ information about the serviceAccountToken data to project
         <td>string</td>
         <td>Path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobs">
+  PostgresCluster.spec.backups.pgbackrest.jobs
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Jobs field allows configuration for all backup jobs
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource limits for backup jobs. Includes manual, scheduled and replica create backups</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsresources">
+  PostgresCluster.spec.backups.pgbackrest.jobs.resources
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobs">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource limits for backup jobs. Includes manual, scheduled and replica create backups
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

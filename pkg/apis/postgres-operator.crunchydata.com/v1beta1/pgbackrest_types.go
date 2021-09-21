@@ -143,6 +143,10 @@ type PGBackRestArchive struct {
 	// Configuration for pgBackRest sidecar containers
 	// +optional
 	Sidecars *PGBackRestSidecars `json:"sidecars,omitempty"`
+
+	// Jobs field allows configuration for all backup jobs
+	// +optional
+	Jobs *BackupJobs `json:"jobs,omitempty"`
 }
 
 // PGBackRestSidecars defines the configuration for pgBackRest sidecar containers
@@ -150,6 +154,13 @@ type PGBackRestSidecars struct {
 	// Defines the configuration for the pgBackRest sidecar container
 	// +optional
 	PGBackRest *Sidecar `json:"pgbackrest,omitempty"`
+}
+
+type BackupJobs struct {
+	// Resource limits for backup jobs. Includes manual, scheduled and replica
+	// create backups
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // PGBackRestManualBackup contains information that is used for creating a

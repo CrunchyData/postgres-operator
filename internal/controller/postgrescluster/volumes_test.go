@@ -922,6 +922,11 @@ func TestReconcileMoveDirectories(t *testing.T) {
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("1m"),
+					},
+				},
 				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
 					AccessModes: []v1.PersistentVolumeAccessMode{
 						corev1.ReadWriteMany},
@@ -935,6 +940,13 @@ func TestReconcileMoveDirectories(t *testing.T) {
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: "example.com/crunchy-pgbackrest:test",
+					RepoHost: &v1beta1.PGBackRestRepoHost{
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("1m"),
+							},
+						},
+					},
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
@@ -992,7 +1004,9 @@ containers:
   image: example.com/crunchy-postgres-ha:test
   imagePullPolicy: IfNotPresent
   name: pgdata-move-job
-  resources: {}
+  resources:
+    requests:
+      cpu: 1m
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
@@ -1034,7 +1048,9 @@ containers:
   image: example.com/crunchy-postgres-ha:test
   imagePullPolicy: IfNotPresent
   name: pgwal-move-job
-  resources: {}
+  resources:
+    requests:
+      cpu: 1m
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
@@ -1078,7 +1094,9 @@ containers:
   image: example.com/crunchy-pgbackrest:test
   imagePullPolicy: IfNotPresent
   name: repo-move-job
-  resources: {}
+  resources:
+    requests:
+      cpu: 1m
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
