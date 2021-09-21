@@ -18,46 +18,13 @@ package postgres
 import (
 	"context"
 
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
-
-// AddCertVolumeToPod adds the secret containing the TLS certificate, key and the CA certificate
-// as a volume to the provided Pod template spec, while also adding associated volume mounts to
-// the database container specified.
-func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	sidecarContainerName string) error {
-
-	var sidecarContainerFound bool
-	var index int
-	for index = range template.Spec.Containers {
-		if template.Spec.Containers[index].Name == sidecarContainerName {
-			sidecarContainerFound = true
-
-			template.Spec.Containers[index].VolumeMounts =
-				append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
-					Name:      naming.CertVolume,
-					MountPath: naming.CertMountPath,
-					ReadOnly:  true,
-				})
-		}
-		if sidecarContainerFound {
-			break
-		}
-	}
-	if !sidecarContainerFound {
-		return errors.Errorf("Unable to find container %q when adding certificate volumes",
-			sidecarContainerName)
-	}
-
-	return nil
-}
 
 // DataVolumeMount returns the name and mount path of the PostgreSQL data volume.
 func DataVolumeMount() corev1.VolumeMount {
@@ -130,6 +97,24 @@ func InstancePod(ctx context.Context,
 		VolumeMounts:    []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
 	}
 
+	reloader := corev1.Container{
+		Name: naming.ContainerClientCertCopy,
+
+		Command: reloadCommand(naming.ContainerClientCertCopy),
+
+		Image:           container.Image,
+		ImagePullPolicy: container.ImagePullPolicy,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+
+		VolumeMounts: []corev1.VolumeMount{certVolumeMount},
+	}
+
+	if inInstanceSpec.Sidecars != nil &&
+		inInstanceSpec.Sidecars.ReplicaCertCopy != nil &&
+		inInstanceSpec.Sidecars.ReplicaCertCopy.Resources != nil {
+		reloader.Resources = *inInstanceSpec.Sidecars.ReplicaCertCopy.Resources
+	}
+
 	startup := corev1.Container{
 		Name: naming.ContainerPostgresStartup,
 
@@ -165,7 +150,7 @@ func InstancePod(ctx context.Context,
 		outInstancePod.Volumes = append(outInstancePod.Volumes, walVolume)
 	}
 
-	outInstancePod.Containers = []corev1.Container{container}
+	outInstancePod.Containers = []corev1.Container{container, reloader}
 	outInstancePod.InitContainers = []corev1.Container{startup}
 }
 
