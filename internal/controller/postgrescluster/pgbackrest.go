@@ -1181,6 +1181,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		if err != nil {
 			log.Error(err, "unable to reconcile pgBackRest repo host")
 			result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+			return result, nil
 		}
 		repoHostName = repoHost.GetName()
 	} else if len(postgresCluster.Status.Conditions) > 0 {
@@ -1196,6 +1197,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	if err != nil {
 		log.Error(err, "unable to calculate config hashes")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		return result, nil
 	}
 
 	// reconcile all pgbackrest repository repos
@@ -1203,6 +1205,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	if err != nil {
 		log.Error(err, "unable to reconcile pgBackRest repo host")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		return result, nil
 	}
 
 	// gather instance names and reconcile all pgbackrest configuration and secrets
@@ -1224,6 +1227,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	if err != nil {
 		log.Error(err, "unable to create replica creation backup")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		return result, nil
 	}
 
 	// reconcile the pgBackRest stanza for all configuration pgBackRest repos
