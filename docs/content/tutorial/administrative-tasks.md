@@ -28,23 +28,12 @@ certificates with PGO, you are responsible for replacing them appropriately.
 Here's how.
 
 
-PostgreSQL needs to be restarted after its server certificates change.
-There are a few ways to do it:
+PGO automatically detects and loads changes to the contents of PostgreSQL server
+and replication Secrets without downtime. You or your certificate manager need
+only replace the values in the Secret referenced by `spec.customTLSSecret`.
 
-1. Store the new certificates in a new Secret. Edit the PostgresCluster object
-   to refer to the new Secret, and PGO will perform a
-   [rolling restart]({{< relref "/architecture/high-availability.md" >}}#rolling-update).
-   ```yaml
-   spec:
-     customTLSSecret:
-       name: hippo.new.tls
-   ```
-
-   _or_
-
-2. Replace the old certificates in the current Secret. PGO doesn't notice when
-   the contents of your Secret change, so you need to
-   [trigger a rolling restart]({{< relref "/tutorial/administrative-tasks.md" >}}#manually-restarting-postgresql).
+If instead you change `spec.customTLSSecret` to refer to a new Secret or new fields,
+PGO will perform a [rolling restart]({{< relref "/architecture/high-availability.md" >}}#rolling-update).
 
 {{% notice info %}}
 When changing the PostgreSQL certificate authority, make sure to update

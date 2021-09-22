@@ -100,31 +100,54 @@ func Environment(cluster *v1beta1.PostgresCluster) []corev1.EnvVar {
 	}
 }
 
-// reloadCommand returns an entrypoint that sets the appropriate permissions on
-// PostgreSQL client certificates. Kubernetes sets g+r when fsGroup is enabled.
-// The process will appear as name in `ps` and `top`.
-// - https://issue.k8s.io/57923
+// reloadCommand returns an entrypoint that convinces PostgreSQL to reload
+// certificate files when they change. The process will appear as name in `ps`
+// and `top`.
 func reloadCommand(name string) []string {
+	// Use a Bash loop to periodically check the mtime of the mounted
+	// certificate volume. When it changes, copy the replication certificate,
+	// signal PostgreSQL, and print the observed timestamp.
+	//
+	// PostgreSQL v10 reads its server certificate files during reload (SIGHUP).
+	// - https://www.postgresql.org/docs/current/ssl-tcp.html#SSL-SERVER-FILES
+	// - https://www.postgresql.org/docs/current/app-postgres.html
+	//
+	// PostgreSQL reads its replication credentials every time it opens a
+	// replication connection. It does not need to be signaled when the
+	// certificate contents change.
+	//
+	// The copy is necessary because Kubernetes sets g+r when fsGroup is enabled,
+	// but PostgreSQL requires client keys to not be readable by other users.
+	// - https://www.postgresql.org/docs/current/libpq-ssl.html
+	// - https://issue.k8s.io/57923
+	//
+	// Coreutils `sleep` uses a lot of memory, so the following opens a file
+	// descriptor and uses the timeout of the builtin `read` to wait. That same
+	// descriptor gets closed and reopened to use the builtin `[ -nt` to check
+	// mtimes.
 	script := fmt.Sprintf(`
-declare -r mountDir=%s
-declare -r tmpDir=%s
-while sleep 5s; do
-  mkdir -p %s
-  DIFF=$(diff ${mountDir} ${tmpDir})
-  if [ "$DIFF" != "" ]
+declare -r directory=%q
+exec {fd}<> <(:)
+while read -r -t 5 -u "${fd}" || true; do
+  if [ "${directory}" -nt "/proc/self/fd/${fd}" ] &&
+    install -D --mode=0600 -t %q "${directory}"/{%s,%s,%s} &&
+    pkill -HUP --exact --parent=1 postgres
   then
-    date
-    echo Copying replication certificates and key and setting permissions
-    install -m 0600 ${mountDir}/{%s,%s,%s} ${tmpDir}
+    exec {fd}>&- && exec {fd}<> <(:)
+    stat --format='Loaded certificates dated %%y' "${directory}"
   fi
 done
-`, naming.CertMountPath+naming.ReplicationDirectory, naming.ReplicationTmp,
-		naming.ReplicationTmp, naming.ReplicationCert,
-		naming.ReplicationPrivateKey, naming.ReplicationCACert)
+`,
+		naming.CertMountPath,
+		naming.ReplicationTmp,
+		naming.ReplicationCertPath,
+		naming.ReplicationPrivateKeyPath,
+		naming.ReplicationCACertPath,
+	)
 
 	// Elide the above script from `ps` and `top` by wrapping it in a function
 	// and calling that.
-	wrapper := `monitor() {` + script + `}; export -f monitor; exec -a "$0" bash -c monitor`
+	wrapper := `monitor() {` + script + `}; export -f monitor; exec -a "$0" bash -ceu monitor`
 
 	return []string{"bash", "-ceu", "--", wrapper, name}
 }
@@ -185,10 +208,10 @@ func startupCommand(
 		// See https://github.com/kubernetes/kubernetes/issues/57923
 		// TODO(tjmoore4): remove this implementation when/if defaultMode permissions are set as
 		// expected for the mounted volume.
-		fmt.Sprintf(`mkdir -p %s && install -m 0600 %s/{%s,%s,%s} %s`,
+		fmt.Sprintf(`install -D --mode=0600 -t %q %q/{%s,%s,%s}`,
 			naming.ReplicationTmp, naming.CertMountPath+naming.ReplicationDirectory,
 			naming.ReplicationCert, naming.ReplicationPrivateKey,
-			naming.ReplicationCACert, naming.ReplicationTmp),
+			naming.ReplicationCACert),
 
 		// When the data directory is empty, there's nothing more to do.
 		`[ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0`,

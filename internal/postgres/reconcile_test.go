@@ -141,19 +141,18 @@ containers:
   - --
   - |-
     monitor() {
-    declare -r mountDir=/pgconf/tls/replication
-    declare -r tmpDir=/tmp/replication
-    while sleep 5s; do
-      mkdir -p /tmp/replication
-      DIFF=$(diff ${mountDir} ${tmpDir})
-      if [ "$DIFF" != "" ]
+    declare -r directory="/pgconf/tls"
+    exec {fd}<> <(:)
+    while read -r -t 5 -u "${fd}" || true; do
+      if [ "${directory}" -nt "/proc/self/fd/${fd}" ] &&
+        install -D --mode=0600 -t "/tmp/replication" "${directory}"/{replication/tls.crt,replication/tls.key,replication/ca.crt} &&
+        pkill -HUP --exact --parent=1 postgres
       then
-        date
-        echo Copying replication certificates and key and setting permissions
-        install -m 0600 ${mountDir}/{tls.crt,tls.key,ca.crt} ${tmpDir}
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded certificates dated %y' "${directory}"
       fi
     done
-    }; export -f monitor; exec -a "$0" bash -c monitor
+    }; export -f monitor; exec -a "$0" bash -ceu monitor
   - replication-cert-copy
   imagePullPolicy: Always
   name: replication-cert-copy
@@ -197,7 +196,7 @@ initContainers:
     [ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"
     [ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"
     install --directory --mode=0700 "${postgres_data_directory}"
-    mkdir -p /tmp/replication && install -m 0600 /pgconf/tls/replication/{tls.crt,tls.key,ca.crt} /tmp/replication
+    install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
     [ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
     [ "${postgres_data_version}" = "${expected_major_version}" ]
