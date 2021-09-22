@@ -246,9 +246,9 @@ func DynamicConfiguration(
 	postgresql["parameters"] = parameters
 
 	// Copy the "postgresql.pg_hba" section after any mandatory values.
-	hba := make([]string, len(pgHBAs.Mandatory))
+	hba := make([]string, 0, len(pgHBAs.Mandatory))
 	for i := range pgHBAs.Mandatory {
-		hba[i] = pgHBAs.Mandatory[i].String()
+		hba = append(hba, pgHBAs.Mandatory[i].String())
 	}
 	if section, ok := postgresql["pg_hba"].([]interface{}); ok {
 		for i := range section {
