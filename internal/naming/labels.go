@@ -36,6 +36,9 @@ const (
 	// LabelClusterCertificate is used to identify a secret containing a cluster certificate
 	LabelClusterCertificate = labelPrefix + "cluster-certificate"
 
+	// LabelData is used to identify Pods and Volumes store Postgres data.
+	LabelData = labelPrefix + "data"
+
 	// LabelMoveJob is used to identify a directory move Job.
 	LabelMoveJob = labelPrefix + "move-job"
 
@@ -113,6 +116,14 @@ const (
 
 	// RoleMonitoring is the LabelRole applied to Monitoring resources
 	RoleMonitoring = "monitoring"
+)
+
+const (
+	// DataPostgres is a LabelData value that indicates the object has PostgreSQL data.
+	DataPostgres = "postgres"
+
+	// DataPGBackRest is a LabelData value that indicates the object has pgBackRest data.
+	DataPGBackRest = "pgbackrest"
 )
 
 // BackupJobType represents different types of backups (e.g. ad-hoc backups, scheduled backups,
@@ -259,6 +270,7 @@ func PGBackRestRepoVolumeLabels(clusterName, repoName string) labels.Set {
 	repoLabels := PGBackRestRepoLabels(clusterName, repoName)
 	repoVolLabels := map[string]string{
 		LabelPGBackRestRepoVolume: "",
+		LabelData:                 DataPGBackRest,
 	}
 	return labels.Merge(repoLabels, repoVolLabels)
 }

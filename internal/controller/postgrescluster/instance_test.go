@@ -1209,6 +1209,162 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			assert.Equal(t, ss.Spec.Template.Spec.PriorityClassName,
 				"some-priority-class")
 		},
+	}, {
+		name: "check default scheduling constraints are added",
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 2)
+			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints,
+				`- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - hippo
+    - key: postgres-operator.crunchydata.com/data
+      operator: In
+      values:
+      - postgres
+      - pgbackrest
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - hippo
+    - key: postgres-operator.crunchydata.com/data
+      operator: In
+      values:
+      - postgres
+      - pgbackrest
+  maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+`))
+		},
+	}, {
+		name: "check default scheduling constraints are appended to existing",
+		ip: intentParams{
+			spec: &v1beta1.PostgresInstanceSetSpec{
+				Name: "instance1",
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
+					MaxSkew:           int32(1),
+					TopologyKey:       "kubernetes.io/hostname",
+					WhenUnsatisfiable: corev1.ScheduleAnyway,
+					LabelSelector: &metav1.LabelSelector{
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							{Key: naming.LabelCluster, Operator: "In", Values: []string{"somename"}},
+							{Key: naming.LabelData, Operator: "Exists"},
+						},
+					},
+				}},
+			},
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 3)
+			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints,
+				`- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - somename
+    - key: postgres-operator.crunchydata.com/data
+      operator: Exists
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - hippo
+    - key: postgres-operator.crunchydata.com/data
+      operator: In
+      values:
+      - postgres
+      - pgbackrest
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - hippo
+    - key: postgres-operator.crunchydata.com/data
+      operator: In
+      values:
+      - postgres
+      - pgbackrest
+  maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+`))
+		},
+	}, {
+		name: "check defined constraint when defaults disabled",
+		ip: intentParams{
+			cluster: &v1beta1.PostgresCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "hippo",
+				},
+				Spec: v1beta1.PostgresClusterSpec{
+					PostgresVersion:             13,
+					DisableDefaultPodScheduling: initialize.Bool(true),
+					InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+						Name:                "instance1",
+						Replicas:            Int32(1),
+						DataVolumeClaimSpec: testVolumeClaimSpec(),
+						TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
+							MaxSkew:           int32(1),
+							TopologyKey:       "kubernetes.io/hostname",
+							WhenUnsatisfiable: corev1.ScheduleAnyway,
+							LabelSelector: &metav1.LabelSelector{
+								MatchExpressions: []metav1.LabelSelectorRequirement{
+									{Key: naming.LabelCluster, Operator: "In", Values: []string{"somename"}},
+									{Key: naming.LabelData, Operator: "Exists"},
+								},
+							},
+						}},
+					}},
+				},
+			},
+			spec: &v1beta1.PostgresInstanceSetSpec{
+				Name: "instance1",
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
+					MaxSkew:           int32(1),
+					TopologyKey:       "kubernetes.io/hostname",
+					WhenUnsatisfiable: corev1.ScheduleAnyway,
+					LabelSelector: &metav1.LabelSelector{
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							{Key: naming.LabelCluster, Operator: "In", Values: []string{"somename"}},
+							{Key: naming.LabelData, Operator: "Exists"},
+						},
+					},
+				}},
+			},
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 1)
+			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints,
+				`- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - somename
+    - key: postgres-operator.crunchydata.com/data
+      operator: Exists
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+`))
+		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {
 

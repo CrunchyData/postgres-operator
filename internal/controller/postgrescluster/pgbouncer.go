@@ -426,11 +426,42 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	// Use scheduling constraints from the cluster spec.
 	deploy.Spec.Template.Spec.Affinity = cluster.Spec.Proxy.PGBouncer.Affinity
 	deploy.Spec.Template.Spec.Tolerations = cluster.Spec.Proxy.PGBouncer.Tolerations
-	deploy.Spec.Template.Spec.TopologySpreadConstraints =
-		cluster.Spec.Proxy.PGBouncer.TopologySpreadConstraints
 
 	if cluster.Spec.Proxy.PGBouncer.PriorityClassName != nil {
 		deploy.Spec.Template.Spec.PriorityClassName = *cluster.Spec.Proxy.PGBouncer.PriorityClassName
+	}
+
+	deploy.Spec.Template.Spec.TopologySpreadConstraints =
+		cluster.Spec.Proxy.PGBouncer.TopologySpreadConstraints
+
+	// if default pod scheduling is not explicitly disabled, add the default
+	// pod topology spread constraints
+	if cluster.Spec.DisableDefaultPodScheduling == nil ||
+		(cluster.Spec.DisableDefaultPodScheduling != nil &&
+			!*cluster.Spec.DisableDefaultPodScheduling) {
+		deploy.Spec.Template.Spec.TopologySpreadConstraints = append(deploy.Spec.Template.Spec.TopologySpreadConstraints,
+			corev1.TopologySpreadConstraint{
+				MaxSkew:           int32(1),
+				TopologyKey:       "kubernetes.io/hostname",
+				WhenUnsatisfiable: corev1.ScheduleAnyway,
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{Key: naming.LabelCluster, Operator: "In", Values: []string{cluster.Name}},
+						{Key: naming.LabelRole, Operator: "In", Values: []string{naming.RolePGBouncer}},
+					},
+				},
+			},
+			corev1.TopologySpreadConstraint{
+				MaxSkew:           int32(1),
+				TopologyKey:       "topology.kubernetes.io/zone",
+				WhenUnsatisfiable: corev1.ScheduleAnyway,
+				LabelSelector: &metav1.LabelSelector{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{Key: naming.LabelCluster, Operator: "In", Values: []string{cluster.Name}},
+						{Key: naming.LabelRole, Operator: "In", Values: []string{naming.RolePGBouncer}},
+					},
+				},
+			})
 	}
 
 	// Restart containers any time they stop, die, are killed, etc.

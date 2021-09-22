@@ -857,6 +857,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		// expected volume labels, plus the original label
 		expected := map[string]string{
 			naming.LabelCluster:              cluster.Name,
+			naming.LabelData:                 naming.DataPGBackRest,
 			naming.LabelPGBackRest:           "",
 			naming.LabelPGBackRestRepo:       "repo1",
 			naming.LabelPGBackRestRepoVolume: "",
