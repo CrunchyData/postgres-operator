@@ -146,8 +146,18 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Tolerations: []v1.Toleration{
 				{Key: "woot"},
 			},
-			TopologySpreadConstraints: []v1.TopologySpreadConstraint{
-				{MaxSkew: int32(1)},
+			TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
+				{
+					MaxSkew:           int32(1),
+					TopologyKey:       "fakekey",
+					WhenUnsatisfiable: corev1.ScheduleAnyway,
+					LabelSelector: &metav1.LabelSelector{
+						MatchExpressions: []metav1.LabelSelectorRequirement{
+							{Key: naming.LabelCluster, Operator: "In", Values: []string{"somename"}},
+							{Key: naming.LabelData, Operator: "Exists"},
+						},
+					},
+				},
 			},
 		}
 	}
@@ -306,11 +316,55 @@ func TestReconcilePGBackRest(t *testing.T) {
 		if repo.Spec.Template.Spec.Tolerations == nil {
 			t.Error("dedicated repo host is missing tolerations")
 		}
-
 		// Ensure TopologySpreadConstraints have been added to dedicated repo
 		if repo.Spec.Template.Spec.TopologySpreadConstraints == nil {
 			t.Error("dedicated repo host is missing topology spread constraints")
 		}
+
+		// TODO(tjmoore4): Add additional tests to test appending existing
+		// topology spread constraints and spec.disableDefaultPodScheduling being
+		// set to true (as done in instance StatefulSet tests).
+		assert.Assert(t, marshalMatches(repo.Spec.Template.Spec.TopologySpreadConstraints,
+			`- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - somename
+    - key: postgres-operator.crunchydata.com/data
+      operator: Exists
+  maxSkew: 1
+  topologyKey: fakekey
+  whenUnsatisfiable: ScheduleAnyway
+- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - hippocluster
+    - key: postgres-operator.crunchydata.com/data
+      operator: In
+      values:
+      - postgres
+      - pgbackrest
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - hippocluster
+    - key: postgres-operator.crunchydata.com/data
+      operator: In
+      values:
+      - postgres
+      - pgbackrest
+  maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+`))
 
 		// Ensure pod priority class has been added to dedicated repo
 		if repo.Spec.Template.Spec.PriorityClassName != "some-priority-class" {

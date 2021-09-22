@@ -934,6 +934,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(DatabaseInitSQL)
 		**out = **in
 	}
+	if in.DisableDefaultPodScheduling != nil {
+		in, out := &in.DisableDefaultPodScheduling, &out.DisableDefaultPodScheduling
+		*out = new(bool)
+		**out = **in
+	}
 	if in.ImagePullSecrets != nil {
 		in, out := &in.ImagePullSecrets, &out.ImagePullSecrets
 		*out = make([]v1.LocalObjectReference, len(*in))

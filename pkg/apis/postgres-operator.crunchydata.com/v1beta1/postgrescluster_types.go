@@ -61,6 +61,12 @@ type PostgresClusterSpec struct {
 	// namespace as the cluster.
 	// +optional
 	DatabaseInitSQL *DatabaseInitSQL `json:"databaseInitSQL,omitempty"`
+	// Whether or not the PostgreSQL cluster should use the defined default
+	// scheduling constraints. If the field is unset or false, the default
+	// scheduling constraints will be used in addition to any custom constraints
+	// provided.
+	// +optional
+	DisableDefaultPodScheduling *bool `json:"disableDefaultPodScheduling,omitempty"`
 
 	// The image name to use for PostgreSQL containers. When omitted, the value
 	// comes from an operator environment variable. For standard PostgreSQL images,

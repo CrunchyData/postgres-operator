@@ -22,7 +22,10 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -249,4 +252,112 @@ func TestReconcilePGBouncerService(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestReconcilePGBouncerDeployment(t *testing.T) {
+	ctx := context.Background()
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-cluster",
+			Namespace: ns.Name,
+		},
+		Spec: v1beta1.PostgresClusterSpec{
+			PostgresVersion: 13,
+			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+				DataVolumeClaimSpec: testVolumeClaimSpec(),
+			}},
+			Backups: v1beta1.Backups{
+				PGBackRest: v1beta1.PGBackRestArchive{
+					Repos: []v1beta1.PGBackRestRepo{{
+						Name: "repo1",
+						Volume: &v1beta1.RepoPVC{
+							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+								Resources: corev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceStorage: resource.MustParse("1Gi"),
+									},
+								},
+							},
+						},
+					}},
+				},
+			},
+			Proxy: &v1beta1.PostgresProxySpec{
+				PGBouncer: &v1beta1.PGBouncerPodSpec{
+					Port:  initialize.Int32(19041),
+					Image: "test-image",
+				},
+			},
+		},
+	}
+	assert.NilError(t, cc.Create(ctx, cluster))
+
+	t.Run("verify default scheduling constraints", func(t *testing.T) {
+		sp := &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: "test-secret-projection",
+			},
+		}
+		cm := &corev1.ConfigMap{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "test-configmap",
+			},
+		}
+		s := &corev1.Secret{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "test-secret",
+			},
+		}
+
+		err := reconciler.reconcilePGBouncerDeployment(ctx, cluster, sp, cm, s)
+		assert.NilError(t, err)
+
+		list := appsv1.DeploymentList{}
+		assert.NilError(t, cc.List(ctx, &list, client.InNamespace(cluster.Namespace)))
+		assert.Assert(t, len(list.Items) > 0)
+		assert.Equal(t, len(list.Items[0].Spec.Template.Spec.TopologySpreadConstraints), 2)
+		// TODO(tjmoore4): Add additional tests to test appending existing
+		// topology spread constraints and spec.disableDefaultPodScheduling being
+		// set to true (as done in instance StatefulSet tests).
+		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.Spec.TopologySpreadConstraints,
+			`- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - test-cluster
+    - key: postgres-operator.crunchydata.com/role
+      operator: In
+      values:
+      - pgbouncer
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - test-cluster
+    - key: postgres-operator.crunchydata.com/role
+      operator: In
+      values:
+      - pgbouncer
+  maxSkew: 1
+  topologyKey: topology.kubernetes.io/zone
+  whenUnsatisfiable: ScheduleAnyway
+`))
+	})
+
 }

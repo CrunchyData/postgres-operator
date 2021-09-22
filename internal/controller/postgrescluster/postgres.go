@@ -461,6 +461,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 		naming.LabelInstanceSet: instanceSpec.Name,
 		naming.LabelInstance:    instance.Name,
 		naming.LabelRole:        naming.RolePostgresData,
+		naming.LabelData:        naming.DataPostgres,
 	}
 
 	var pvc *v1.PersistentVolumeClaim
@@ -517,6 +518,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 		naming.LabelInstanceSet: instanceSpec.Name,
 		naming.LabelInstance:    instance.Name,
 		naming.LabelRole:        naming.RolePostgresWAL,
+		naming.LabelData:        naming.DataPostgres,
 	}
 
 	var pvc *v1.PersistentVolumeClaim
