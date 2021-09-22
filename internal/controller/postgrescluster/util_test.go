@@ -25,7 +25,6 @@ import (
 	"gotest.tools/v3/assert"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -229,7 +228,7 @@ func TestAddDevSHM(t *testing.T) {
 
 			// check there is an empty dir mounted under the dshm volume
 			for _, v := range template.Spec.Volumes {
-				if v.Name == "dshm" && v.VolumeSource.EmptyDir != nil && v.VolumeSource.EmptyDir.Medium == v1.StorageMediumMemory {
+				if v.Name == "dshm" && v.VolumeSource.EmptyDir != nil && v.VolumeSource.EmptyDir.Medium == corev1.StorageMediumMemory {
 					found = true
 					break
 				}

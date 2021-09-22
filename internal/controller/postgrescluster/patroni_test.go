@@ -30,7 +30,6 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -307,11 +306,11 @@ func TestPatroniReplicationSecret(t *testing.T) {
 
 	t.Run("check replication certificate secret projection", func(t *testing.T) {
 		// example auto-generated secret projection
-		testSecretProjection := &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{
+		testSecretProjection := &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
 				Name: naming.ReplicationClientCertSecret(postgresCluster).Name,
 			},
-			Items: []v1.KeyToPath{
+			Items: []corev1.KeyToPath{
 				{
 					Key:  naming.ReplicationCert,
 					Path: naming.ReplicationCertPath,
@@ -412,9 +411,9 @@ func TestReconcilePatroniStatus(t *testing.T) {
 			Name: instanceName, Runner: runner,
 		}
 		for i := 0; i < readyReplicas; i++ {
-			instance.Pods = append(instance.Pods, &v1.Pod{
-				Status: v1.PodStatus{
-					Conditions: []v1.PodCondition{{
+			instance.Pods = append(instance.Pods, &corev1.Pod{
+				Status: corev1.PodStatus{
+					Conditions: []corev1.PodCondition{{
 						Type:    corev1.PodReady,
 						Status:  corev1.ConditionTrue,
 						Reason:  "test",

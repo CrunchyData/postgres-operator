@@ -27,7 +27,6 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -67,7 +66,7 @@ func TestScaleDown(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
@@ -83,11 +82,11 @@ func TestScaleDown(t *testing.T) {
 	}
 
 	// Defines a volume claim spec that can be used to create instances
-	volumeClaimSpec := v1.PersistentVolumeClaimSpec{
-		AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-		Resources: v1.ResourceRequirements{
-			Requests: map[v1.ResourceName]resource.Quantity{
-				v1.ResourceStorage: resource.MustParse("1Gi"),
+	volumeClaimSpec := corev1.PersistentVolumeClaimSpec{
+		AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+		Resources: corev1.ResourceRequirements{
+			Requests: map[corev1.ResourceName]resource.Quantity{
+				corev1.ResourceStorage: resource.MustParse("1Gi"),
 			},
 		},
 	}
@@ -227,7 +226,7 @@ func TestScaleDown(t *testing.T) {
 
 			if test.primaryTest != nil {
 				// Grab the old primary name to use later
-				primaryPod := v1.PodList{}
+				primaryPod := corev1.PodList{}
 				assert.NilError(t, wait.Poll(time.Second, Scale(15*time.Second), func() (bool, error) {
 					primarySelector, err := naming.AsSelector(metav1.LabelSelector{
 						MatchLabels: map[string]string{
@@ -283,7 +282,7 @@ func TestScaleDown(t *testing.T) {
 			// In the update case we need to ensure that the pods have deleted
 			var pods []corev1.Pod
 			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute/2), func() (bool, error) {
-				list := v1.PodList{}
+				list := corev1.PodList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
 					"postgres-operator.crunchydata.com/instance",
@@ -300,7 +299,7 @@ func TestScaleDown(t *testing.T) {
 
 			if test.primaryTest != nil {
 				// If this is a primary test grab the updated primary
-				primaryPod := v1.PodList{}
+				primaryPod := corev1.PodList{}
 				primarySelector, err := naming.AsSelector(metav1.LabelSelector{
 					MatchLabels: map[string]string{
 						naming.LabelCluster: cluster.Name,

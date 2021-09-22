@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -299,7 +298,7 @@ func (observed *observedInstances) writablePod(container string) (*corev1.Pod, *
 func (r *Reconciler) observeInstances(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*observedInstances, error) {
-	pods := &v1.PodList{}
+	pods := &corev1.PodList{}
 	runners := &appsv1.StatefulSetList{}
 
 	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
@@ -378,7 +377,7 @@ func (r *Reconciler) deleteInstances(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*reconcile.Result, error) {
 	// Find all instance pods to determine which to shutdown and in what order.
-	pods := &v1.PodList{}
+	pods := &corev1.PodList{}
 	instances, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
@@ -402,7 +401,7 @@ func (r *Reconciler) deleteInstances(
 	result := reconcile.Result{}
 
 	// stop schedules pod for deletion by scaling its controller to zero.
-	stop := func(pod *v1.Pod) error {
+	stop := func(pod *corev1.Pod) error {
 		instance := &unstructured.Unstructured{}
 		instance.SetNamespace(cluster.Namespace)
 
@@ -474,20 +473,20 @@ func (r *Reconciler) deleteInstance(
 	instanceName string,
 ) error {
 	gvks := []schema.GroupVersionKind{{
-		Group:   v1.SchemeGroupVersion.Group,
-		Version: v1.SchemeGroupVersion.Version,
+		Group:   corev1.SchemeGroupVersion.Group,
+		Version: corev1.SchemeGroupVersion.Version,
 		Kind:    "ConfigMapList",
 	}, {
-		Group:   v1.SchemeGroupVersion.Group,
-		Version: v1.SchemeGroupVersion.Version,
+		Group:   corev1.SchemeGroupVersion.Group,
+		Version: corev1.SchemeGroupVersion.Version,
 		Kind:    "SecretList",
 	}, {
 		Group:   appsv1.SchemeGroupVersion.Group,
 		Version: appsv1.SchemeGroupVersion.Version,
 		Kind:    "StatefulSetList",
 	}, {
-		Group:   v1.SchemeGroupVersion.Group,
-		Version: v1.SchemeGroupVersion.Version,
+		Group:   corev1.SchemeGroupVersion.Group,
+		Version: corev1.SchemeGroupVersion.Version,
 		Kind:    "PersistentVolumeClaimList",
 	}}
 
@@ -520,15 +519,15 @@ func (r *Reconciler) deleteInstance(
 func (r *Reconciler) reconcileInstanceSets(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
-	clusterConfigMap *v1.ConfigMap,
-	clusterReplicationSecret *v1.Secret,
+	clusterConfigMap *corev1.ConfigMap,
+	clusterReplicationSecret *corev1.Secret,
 	rootCA *pki.RootCertificateAuthority,
-	clusterPodService *v1.Service,
-	instanceServiceAccount *v1.ServiceAccount,
+	clusterPodService *corev1.Service,
+	instanceServiceAccount *corev1.ServiceAccount,
 	instances *observedInstances,
-	patroniLeaderService *v1.Service,
-	primaryCertificate *v1.SecretProjection,
-	clusterVolumes []v1.PersistentVolumeClaim,
+	patroniLeaderService *corev1.Service,
+	primaryCertificate *corev1.SecretProjection,
+	clusterVolumes []corev1.PersistentVolumeClaim,
 ) error {
 	// get the number of instance pods from the observedInstance information
 	var numInstancePods int
@@ -579,12 +578,12 @@ func (r *Reconciler) reconcileInstanceSets(
 // for the instance set specified that are not currently associated with an instance, and then
 // returning the instance names associated with those PVC's.
 func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
-	observedInstances *observedInstances, clusterVolumes []v1.PersistentVolumeClaim) []string {
+	observedInstances *observedInstances, clusterVolumes []corev1.PersistentVolumeClaim) []string {
 
 	availableInstanceNames := []string{}
 
 	// first identify any PGDATA volumes for the instance set specified
-	setVolumes := []v1.PersistentVolumeClaim{}
+	setVolumes := []corev1.PersistentVolumeClaim{}
 	for _, pvc := range clusterVolumes {
 		// ignore PGDATA PVCs that are terminating
 		if pvc.GetDeletionTimestamp() != nil {
@@ -602,7 +601,7 @@ func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
 	// any available PGDATA volumes for the instance set that have no corresponding WAL
 	// volumes (which means new PVCs will simply be reconciled instead).
 	if set.WALVolumeClaimSpec != nil {
-		setVolumesWithWAL := []v1.PersistentVolumeClaim{}
+		setVolumesWithWAL := []corev1.PersistentVolumeClaim{}
 		for _, setVol := range setVolumes {
 			setVolInstance := setVol.GetLabels()[naming.LabelInstance]
 			for _, pvc := range clusterVolumes {
@@ -731,10 +730,10 @@ func (r *Reconciler) rolloutInstance(
 
 		// Communicate the lack or slowness of CHECKPOINT and shutdown anyway.
 		if err != nil {
-			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "NoCheckpoint",
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "NoCheckpoint",
 				"Unable to checkpoint primary before shutdown: %v", err)
 		} else if duration > threshold {
-			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "SlowCheckpoint",
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SlowCheckpoint",
 				"Shutting down primary despite checkpoint taking over %v", duration)
 		}
 	}
@@ -853,7 +852,7 @@ func (r *Reconciler) scaleDownInstances(
 	}
 
 	// grab all pods for the cluster using the observed instances
-	pods := []v1.Pod{}
+	pods := []corev1.Pod{}
 	for instanceIndex := range observedInstances.forCluster {
 		for podIndex := range observedInstances.forCluster[instanceIndex].Pods {
 			pods = append(pods, *observedInstances.forCluster[instanceIndex].Pods[podIndex])
@@ -883,10 +882,10 @@ func (r *Reconciler) scaleDownInstances(
 // podsToKeep takes a list of pods and a map containing
 // the number of replicas we want for each instance set
 // then returns a list of the pods that we want to keep
-func podsToKeep(instances []v1.Pod, want map[string]int) []v1.Pod {
+func podsToKeep(instances []corev1.Pod, want map[string]int) []corev1.Pod {
 
-	f := func(instances []v1.Pod, want int) []v1.Pod {
-		keep := []v1.Pod{}
+	f := func(instances []corev1.Pod, want int) []corev1.Pod {
+		keep := []corev1.Pod{}
 
 		if want > 0 {
 			for _, instance := range instances {
@@ -905,9 +904,9 @@ func podsToKeep(instances []v1.Pod, want map[string]int) []v1.Pod {
 		return keep
 	}
 
-	keepPodList := []v1.Pod{}
+	keepPodList := []corev1.Pod{}
 	for name, num := range want {
-		list := []v1.Pod{}
+		list := []corev1.Pod{}
 		for _, instance := range instances {
 			if instance.Labels[naming.LabelInstanceSet] == name {
 				list = append(list, instance)
@@ -929,13 +928,13 @@ func (r *Reconciler) scaleUpInstances(
 	cluster *v1beta1.PostgresCluster,
 	observed *observedInstances,
 	set *v1beta1.PostgresInstanceSetSpec,
-	clusterConfigMap *v1.ConfigMap,
-	clusterReplicationSecret *v1.Secret,
+	clusterConfigMap *corev1.ConfigMap,
+	clusterReplicationSecret *corev1.Secret,
 	rootCA *pki.RootCertificateAuthority,
-	clusterPodService *v1.Service,
-	instanceServiceAccount *v1.ServiceAccount,
-	patroniLeaderService *v1.Service,
-	primaryCertificate *v1.SecretProjection,
+	clusterPodService *corev1.Service,
+	instanceServiceAccount *corev1.ServiceAccount,
+	patroniLeaderService *corev1.Service,
+	primaryCertificate *corev1.SecretProjection,
 	availableInstanceNames []string,
 	numInstancePods int,
 	clusterVolumes []corev1.PersistentVolumeClaim,
@@ -1001,13 +1000,13 @@ func (r *Reconciler) reconcileInstance(
 	cluster *v1beta1.PostgresCluster,
 	observed *Instance,
 	spec *v1beta1.PostgresInstanceSetSpec,
-	clusterConfigMap *v1.ConfigMap,
-	clusterReplicationSecret *v1.Secret,
+	clusterConfigMap *corev1.ConfigMap,
+	clusterReplicationSecret *corev1.Secret,
 	rootCA *pki.RootCertificateAuthority,
-	clusterPodService *v1.Service,
-	instanceServiceAccount *v1.ServiceAccount,
-	patroniLeaderService *v1.Service,
-	primaryCertificate *v1.SecretProjection,
+	clusterPodService *corev1.Service,
+	instanceServiceAccount *corev1.ServiceAccount,
+	patroniLeaderService *corev1.Service,
+	primaryCertificate *corev1.SecretProjection,
 	instance *appsv1.StatefulSet,
 	numInstancePods int,
 	clusterVolumes []corev1.PersistentVolumeClaim,
@@ -1027,8 +1026,8 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	var (
-		instanceConfigMap    *v1.ConfigMap
-		instanceCertificates *v1.Secret
+		instanceConfigMap    *corev1.ConfigMap
+		instanceCertificates *corev1.Secret
 		postgresDataVolume   *corev1.PersistentVolumeClaim
 		postgresWALVolume    *corev1.PersistentVolumeClaim
 	)
@@ -1216,7 +1215,7 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 
 	// Restart containers any time they stop, die, are killed, etc.
 	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
-	sts.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyAlways
+	sts.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyAlways
 
 	// ShareProcessNamespace makes Kubernetes' pause process PID 1 and lets
 	// containers see each other's processes.
@@ -1240,14 +1239,14 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 // configured, and then mounting the proper pgBackRest configuration resources (ConfigMaps
 // and Secrets)
 func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
-	template *v1.PodTemplateSpec) error {
+	template *corev1.PodTemplateSpec) error {
 
 	dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(cluster)
 	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
 	if dedicatedRepoEnabled {
 		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
 			naming.PGBackRestRepoContainerName)
-		var resources v1.ResourceRequirements
+		var resources corev1.ResourceRequirements
 		if cluster.Spec.Backups.PGBackRest.Sidecars != nil &&
 			cluster.Spec.Backups.PGBackRest.Sidecars.PGBackRest != nil &&
 			cluster.Spec.Backups.PGBackRest.Sidecars.PGBackRest.Resources != nil {
@@ -1273,9 +1272,9 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 func (r *Reconciler) reconcileInstanceConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, spec *v1beta1.PostgresInstanceSetSpec,
 	instance *appsv1.StatefulSet,
-) (*v1.ConfigMap, error) {
-	instanceConfigMap := &v1.ConfigMap{ObjectMeta: naming.InstanceConfigMap(instance)}
-	instanceConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
+) (*corev1.ConfigMap, error) {
+	instanceConfigMap := &corev1.ConfigMap{ObjectMeta: naming.InstanceConfigMap(instance)}
+	instanceConfigMap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
 
 	// TODO(cbandy): Instance StatefulSet as owner?
 	err := errors.WithStack(r.setControllerReference(cluster, instanceConfigMap))
@@ -1311,13 +1310,13 @@ func (r *Reconciler) reconcileInstanceCertificates(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	spec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
 	root *pki.RootCertificateAuthority,
-) (*v1.Secret, error) {
-	existing := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
+) (*corev1.Secret, error) {
+	existing := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
-	instanceCerts := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
-	instanceCerts.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	instanceCerts := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
+	instanceCerts.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 
 	// TODO(cbandy): Instance StatefulSet as owner?
 	if err == nil {
@@ -1340,7 +1339,7 @@ func (r *Reconciler) reconcileInstanceCertificates(
 	// expects an *unencrypted* private key. We're also adding other values and
 	// other formats, so indicate that with the "Opaque" type.
 	// - https://docs.k8s.io/concepts/configuration/secret/#secret-types
-	instanceCerts.Type = v1.SecretTypeOpaque
+	instanceCerts.Type = corev1.SecretTypeOpaque
 	instanceCerts.Data = make(map[string][]byte)
 
 	var leafCert *pki.LeafCertificate

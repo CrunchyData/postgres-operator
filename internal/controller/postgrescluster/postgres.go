@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -464,7 +463,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 		naming.LabelData:        naming.DataPostgres,
 	}
 
-	var pvc *v1.PersistentVolumeClaim
+	var pvc *corev1.PersistentVolumeClaim
 	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -521,7 +520,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 		naming.LabelData:        naming.DataPostgres,
 	}
 
-	var pvc *v1.PersistentVolumeClaim
+	var pvc *corev1.PersistentVolumeClaim
 	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
 	if err != nil {
 		return nil, errors.WithStack(err)

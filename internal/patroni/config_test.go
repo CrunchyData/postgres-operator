@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -553,8 +553,8 @@ func TestDynamicConfiguration(t *testing.T) {
 func TestInstanceConfigFiles(t *testing.T) {
 	t.Parallel()
 
-	cm1 := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cm1"}}
-	cm2 := &v1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cm2"}}
+	cm1 := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cm1"}}
+	cm2 := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "cm2"}}
 
 	projections := instanceConfigFiles(cm1, cm2)
 
@@ -578,8 +578,8 @@ func TestInstanceEnvironment(t *testing.T) {
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	cluster.Spec.PostgresVersion = 12
-	leaderService := new(v1.Service)
-	podService := new(v1.Service)
+	leaderService := new(corev1.Service)
+	podService := new(corev1.Service)
 	podService.Name = "pod-dns"
 
 	vars := instanceEnvironment(cluster, podService, leaderService, nil)
@@ -615,11 +615,11 @@ func TestInstanceEnvironment(t *testing.T) {
 	`)+"\n"))
 
 	t.Run("MatchingPorts", func(t *testing.T) {
-		leaderService.Spec.Ports = []v1.ServicePort{{Name: "postgres"}}
+		leaderService.Spec.Ports = []corev1.ServicePort{{Name: "postgres"}}
 		leaderService.Spec.Ports[0].TargetPort.StrVal = "postgres"
-		containers := []v1.Container{{Name: "okay"}}
-		containers[0].Ports = []v1.ContainerPort{{
-			Name: "postgres", ContainerPort: 9999, Protocol: v1.ProtocolTCP,
+		containers := []corev1.Container{{Name: "okay"}}
+		containers[0].Ports = []corev1.ContainerPort{{
+			Name: "postgres", ContainerPort: 9999, Protocol: corev1.ProtocolTCP,
 		}}
 
 		vars := instanceEnvironment(cluster, podService, leaderService, containers)
@@ -789,7 +789,7 @@ func TestProbeTiming(t *testing.T) {
 
 	// Defaults should match the suggested/documented timing.
 	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst
-	assert.DeepEqual(t, probeTiming(defaults), &v1.Probe{
+	assert.DeepEqual(t, probeTiming(defaults), &corev1.Probe{
 		TimeoutSeconds:   5,
 		PeriodSeconds:    10,
 		SuccessThreshold: 1,
@@ -798,12 +798,12 @@ func TestProbeTiming(t *testing.T) {
 
 	for _, tt := range []struct {
 		lease, sync int32
-		expected    v1.Probe
+		expected    corev1.Probe
 	}{
 		// The smallest possible values for "loop_wait" and "retry_timeout" are
 		// both 1 sec which makes 3 sec the smallest appropriate value for "ttl".
 		// These are the validation minimums in v1beta1.PatroniSpec.
-		{lease: 3, sync: 1, expected: v1.Probe{
+		{lease: 3, sync: 1, expected: corev1.Probe{
 			TimeoutSeconds:   1,
 			PeriodSeconds:    1,
 			SuccessThreshold: 1,
@@ -811,13 +811,13 @@ func TestProbeTiming(t *testing.T) {
 		}},
 
 		// These are plausible values for "ttl" and "loop_wait".
-		{lease: 60, sync: 15, expected: v1.Probe{
+		{lease: 60, sync: 15, expected: corev1.Probe{
 			TimeoutSeconds:   7,
 			PeriodSeconds:    15,
 			SuccessThreshold: 1,
 			FailureThreshold: 4,
 		}},
-		{lease: 10, sync: 5, expected: v1.Probe{
+		{lease: 10, sync: 5, expected: corev1.Probe{
 			TimeoutSeconds:   2,
 			PeriodSeconds:    5,
 			SuccessThreshold: 1,
@@ -827,13 +827,13 @@ func TestProbeTiming(t *testing.T) {
 		// These are plausible values that aren't multiples of each other.
 		// Failure triggers sooner than "ttl", which seems to agree with docs:
 		// - https://github.com/zalando/patroni/blob/v2.0.1/docs/watchdog.rst
-		{lease: 19, sync: 7, expected: v1.Probe{
+		{lease: 19, sync: 7, expected: corev1.Probe{
 			TimeoutSeconds:   3,
 			PeriodSeconds:    7,
 			SuccessThreshold: 1,
 			FailureThreshold: 2,
 		}},
-		{lease: 13, sync: 7, expected: v1.Probe{
+		{lease: 13, sync: 7, expected: corev1.Probe{
 			TimeoutSeconds:   3,
 			PeriodSeconds:    7,
 			SuccessThreshold: 1,
@@ -841,13 +841,13 @@ func TestProbeTiming(t *testing.T) {
 		}},
 
 		// These values are infeasible for Patroni but produce valid v1.Probes.
-		{lease: 60, sync: 60, expected: v1.Probe{
+		{lease: 60, sync: 60, expected: corev1.Probe{
 			TimeoutSeconds:   30,
 			PeriodSeconds:    60,
 			SuccessThreshold: 1,
 			FailureThreshold: 1,
 		}},
-		{lease: 10, sync: 20, expected: v1.Probe{
+		{lease: 10, sync: 20, expected: corev1.Probe{
 			TimeoutSeconds:   10,
 			PeriodSeconds:    20,
 			SuccessThreshold: 1,

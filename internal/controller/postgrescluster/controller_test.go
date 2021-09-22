@@ -30,7 +30,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -51,7 +51,7 @@ func TestDeleteControlled(t *testing.T) {
 
 	reconciler := Reconciler{Client: cc}
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
@@ -63,7 +63,7 @@ func TestDeleteControlled(t *testing.T) {
 	assert.NilError(t, cc.Create(ctx, cluster))
 
 	t.Run("NoOwnership", func(t *testing.T) {
-		secret := &v1.Secret{}
+		secret := &corev1.Secret{}
 		secret.Namespace = ns.Name
 		secret.Name = "solo"
 
@@ -75,7 +75,7 @@ func TestDeleteControlled(t *testing.T) {
 	})
 
 	t.Run("Owned", func(t *testing.T) {
-		secret := &v1.Secret{}
+		secret := &corev1.Secret{}
 		secret.Namespace = ns.Name
 		secret.Name = "owned"
 
@@ -88,7 +88,7 @@ func TestDeleteControlled(t *testing.T) {
 	})
 
 	t.Run("Controlled", func(t *testing.T) {
-		secret := &v1.Secret{}
+		secret := &corev1.Secret{}
 		secret.Namespace = ns.Name
 		secret.Name = "controlled"
 
@@ -105,7 +105,7 @@ func TestDeleteControlled(t *testing.T) {
 
 var _ = Describe("PostgresCluster Reconciler", func() {
 	var test struct {
-		Namespace  *v1.Namespace
+		Namespace  *corev1.Namespace
 		Reconciler Reconciler
 		Recorder   *record.FakeRecorder
 	}
@@ -113,7 +113,7 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 	BeforeEach(func() {
 		ctx := context.Background()
 
-		test.Namespace = &v1.Namespace{}
+		test.Namespace = &corev1.Namespace{}
 		test.Namespace.Name = "postgres-operator-test-" + rand.String(6)
 		Expect(suite.Client.Create(ctx, test.Namespace)).To(Succeed())
 
@@ -212,7 +212,7 @@ spec:
 		})
 
 		Specify("Cluster ConfigMap", func() {
-			ccm := &v1.ConfigMap{}
+			ccm := &corev1.ConfigMap{}
 			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
 				Namespace: test.Namespace.Name, Name: "carlos-config",
 			}, ccm)).To(Succeed())
@@ -236,7 +236,7 @@ spec:
 		})
 
 		Specify("Cluster Pod Service", func() {
-			cps := &v1.Service{}
+			cps := &corev1.Service{}
 			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
 				Namespace: test.Namespace.Name, Name: "carlos-pods",
 			}, cps)).To(Succeed())
@@ -336,7 +336,7 @@ spec:
 		})
 
 		Specify("Patroni Distributed Configuration", func() {
-			ds := &v1.Service{}
+			ds := &corev1.Service{}
 			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
 				Namespace: test.Namespace.Name, Name: "carlos-ha-config",
 			}, ds)).To(Succeed())
@@ -426,7 +426,7 @@ spec:
 		})
 
 		Specify("Instance ConfigMap", func() {
-			icm := &v1.ConfigMap{}
+			icm := &corev1.ConfigMap{}
 			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
 				Namespace: test.Namespace.Name, Name: instance.Name + "-config",
 			}, icm)).To(Succeed())

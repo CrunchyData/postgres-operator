@@ -20,7 +20,6 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -32,7 +31,7 @@ import (
 
 // AddRepoVolumesToPod adds pgBackRest repository volumes to the provided Pod template spec, while
 // also adding associated volume mounts to the containers specified.
-func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
+func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *corev1.PodTemplateSpec,
 	repoPVCNames map[string]string, containerNames ...string) error {
 
 	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
@@ -52,8 +51,8 @@ func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.
 		}
 		template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
 			Name: repo.Name,
-			VolumeSource: v1.VolumeSource{
-				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 					ClaimName: repoVolName},
 			},
 		})
@@ -72,7 +71,7 @@ func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.
 					name)
 			}
 			template.Spec.Containers[index].VolumeMounts =
-				append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
+				append(template.Spec.Containers[index].VolumeMounts, corev1.VolumeMount{
 					Name:      repo.Name,
 					MountPath: "/pgbackrest/" + repo.Name,
 				})
@@ -84,18 +83,18 @@ func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.
 
 // AddConfigsToPod populates a Pod template Spec with with pgBackRest configuration volumes while
 // then mounting that configuration to the specified containers.
-func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
+func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *corev1.PodTemplateSpec,
 	configName string, containerNames ...string) error {
 
 	// grab user provided configs
 	pgBackRestConfigs := postgresCluster.Spec.Backups.PGBackRest.Configuration
 	// add default pgbackrest configs
-	defaultConfig := v1.VolumeProjection{
-		ConfigMap: &v1.ConfigMapProjection{
-			LocalObjectReference: v1.LocalObjectReference{
+	defaultConfig := corev1.VolumeProjection{
+		ConfigMap: &corev1.ConfigMapProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
 				Name: naming.PGBackRestConfig(postgresCluster).Name,
 			},
-			Items: []v1.KeyToPath{
+			Items: []corev1.KeyToPath{
 				{Key: configName, Path: configName},
 				{Key: ConfigHashKey, Path: ConfigHashKey},
 			},
@@ -103,10 +102,10 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 	}
 	pgBackRestConfigs = append(pgBackRestConfigs, defaultConfig)
 
-	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
+	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
 		Name: ConfigVol,
-		VolumeSource: v1.VolumeSource{
-			Projected: &v1.ProjectedVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			Projected: &corev1.ProjectedVolumeSource{
 				Sources: pgBackRestConfigs,
 			},
 		},
@@ -127,7 +126,7 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 		}
 		template.Spec.Containers[index].VolumeMounts =
 			append(template.Spec.Containers[index].VolumeMounts,
-				v1.VolumeMount{
+				corev1.VolumeMount{
 					Name:      ConfigVol,
 					MountPath: ConfigDir,
 				})
@@ -138,51 +137,51 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 
 // AddSSHToPod populates a Pod template Spec with with the container and volumes needed to enable
 // SSH within a Pod.  It will also mount the SSH configuration to any additional containers specified.
-func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	enableSSHD bool, resources v1.ResourceRequirements,
+func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *corev1.PodTemplateSpec,
+	enableSSHD bool, resources corev1.ResourceRequirements,
 	additionalVolumeMountContainers ...string) error {
 
-	sshConfigs := []v1.VolumeProjection{}
+	sshConfigs := []corev1.VolumeProjection{}
 	// stores all SSH configurations (ConfigMaps & Secrets)
 	if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil ||
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration == nil {
-		sshConfigs = append(sshConfigs, v1.VolumeProjection{
-			ConfigMap: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: naming.PGBackRestSSHConfig(postgresCluster).Name,
 				},
 			},
 		})
 	} else {
-		sshConfigs = append(sshConfigs, v1.VolumeProjection{
+		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
 			ConfigMap: postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration,
 		})
 	}
 	if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil ||
 		postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret == nil {
-		sshConfigs = append(sshConfigs, v1.VolumeProjection{
-			Secret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
+			Secret: &corev1.SecretProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: naming.PGBackRestSSHSecret(postgresCluster).Name,
 				},
 			},
 		})
 	} else {
-		sshConfigs = append(sshConfigs, v1.VolumeProjection{
+		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
 			Secret: postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret,
 		})
 	}
-	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
+	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
 		Name: naming.PGBackRestSSHVolume,
-		VolumeSource: v1.VolumeSource{
-			Projected: &v1.ProjectedVolumeSource{
+		VolumeSource: corev1.VolumeSource{
+			Projected: &corev1.ProjectedVolumeSource{
 				Sources:     sshConfigs,
 				DefaultMode: initialize.Int32(0o040),
 			},
 		},
 	})
 
-	sshVolumeMount := v1.VolumeMount{
+	sshVolumeMount := corev1.VolumeMount{
 		Name:      naming.PGBackRestSSHVolume,
 		MountPath: sshConfigPath,
 		ReadOnly:  true,
@@ -191,19 +190,19 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	// Only add the SSHD container if requested.  Sometimes (e.g. when running a restore Job) it is
 	// not necessary to run a full SSHD server, but the various SSH configs are still needed.
 	if enableSSHD {
-		container := v1.Container{
+		container := corev1.Container{
 			Command:         []string{"/usr/sbin/sshd", "-D", "-e"},
 			Image:           config.PGBackRestContainerImage(postgresCluster),
 			ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
-			LivenessProbe: &v1.Probe{
-				Handler: v1.Handler{
-					TCPSocket: &v1.TCPSocketAction{
+			LivenessProbe: &corev1.Probe{
+				Handler: corev1.Handler{
+					TCPSocket: &corev1.TCPSocketAction{
 						Port: intstr.FromInt(2022),
 					},
 				},
 			},
 			Name:            naming.PGBackRestRepoContainerName,
-			VolumeMounts:    []v1.VolumeMount{sshVolumeMount},
+			VolumeMounts:    []corev1.VolumeMount{sshVolumeMount},
 			SecurityContext: initialize.RestrictedSecurityContext(),
 			Resources:       resources,
 		}

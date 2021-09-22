@@ -29,7 +29,7 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	"gotest.tools/v3/assert"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -83,15 +83,15 @@ func TestSSHDConfiguration(t *testing.T) {
 	}
 
 	// the initially created configmap
-	var sshCMInitial v1.ConfigMap
+	var sshCMInitial corev1.ConfigMap
 	// the returned configmap
-	var sshCMReturned v1.ConfigMap
+	var sshCMReturned corev1.ConfigMap
 	// pod spec for testing projected volumes and volume mounts
-	pod := &v1.PodSpec{}
+	pod := &corev1.PodSpec{}
 	// initially created secret
-	var secretInitial v1.Secret
+	var secretInitial corev1.Secret
 	// returned secret
-	var secretReturned v1.Secret
+	var secretReturned corev1.Secret
 
 	t.Run("ssh configmap and secret checks", func(t *testing.T) {
 
@@ -103,7 +103,7 @@ func TestSSHDConfiguration(t *testing.T) {
 			teardownTestEnv(t, testEnv)
 		})
 
-		ns := &v1.Namespace{}
+		ns := &corev1.Namespace{}
 		ns.Name = naming.PGBackRestConfig(postgresCluster).Namespace
 		assert.NilError(t, testClient.Create(context.Background(), ns))
 		t.Cleanup(func() { assert.Check(t, testClient.Delete(context.Background(), ns)) })

@@ -16,35 +16,35 @@
 package pgbackrest
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 // findOrAppendContainer goes through a pod's container list and returns
 // the container, if found, or appends the named container to the list
-func findOrAppendContainer(containers *[]v1.Container, name string) *v1.Container {
+func findOrAppendContainer(containers *[]corev1.Container, name string) *corev1.Container {
 	for i := range *containers {
 		if (*containers)[i].Name == name {
 			return &(*containers)[i]
 		}
 	}
 
-	*containers = append(*containers, v1.Container{Name: name})
+	*containers = append(*containers, corev1.Container{Name: name})
 	return &(*containers)[len(*containers)-1]
 }
 
 // mergeVolumes adds the given volumes to a pod's existing volume
 // list. If a volume with the same name already exists, the new
 // volume replaces it.
-func mergeVolumes(from []v1.Volume, vols ...v1.Volume) []v1.Volume {
+func mergeVolumes(from []corev1.Volume, vols ...corev1.Volume) []corev1.Volume {
 	names := sets.NewString()
 	for i := range vols {
 		names.Insert(vols[i].Name)
 	}
 
 	// Partition original slice by whether or not the name was passed in.
-	var existing, others []v1.Volume
+	var existing, others []corev1.Volume
 	for i := range from {
 		if names.Has(from[i].Name) {
 			existing = append(existing, from[i])
@@ -64,14 +64,14 @@ func mergeVolumes(from []v1.Volume, vols ...v1.Volume) []v1.Volume {
 // mergeVolumeMounts adds the given volumes to a pod's existing volume mount
 // list. If a volume mount with the same name already exists, the new
 // volume mount replaces it.
-func mergeVolumeMounts(from []v1.VolumeMount, mounts ...v1.VolumeMount) []v1.VolumeMount {
+func mergeVolumeMounts(from []corev1.VolumeMount, mounts ...corev1.VolumeMount) []corev1.VolumeMount {
 	names := sets.NewString()
 	for i := range mounts {
 		names.Insert(mounts[i].Name)
 	}
 
 	// Partition original slice by whether or not the name was passed in.
-	var existing, others []v1.VolumeMount
+	var existing, others []corev1.VolumeMount
 	for i := range from {
 		if names.Has(from[i].Name) {
 			existing = append(existing, from[i])

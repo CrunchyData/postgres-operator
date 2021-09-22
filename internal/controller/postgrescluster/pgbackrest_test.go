@@ -34,7 +34,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -72,14 +71,14 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Port:            initialize.Int32(5432),
 			Shutdown:        initialize.Bool(false),
 			PostgresVersion: 13,
-			ImagePullSecrets: []v1.LocalObjectReference{{
+			ImagePullSecrets: []corev1.LocalObjectReference{{
 				Name: "myImagePullSecret"},
 			},
 			Image: "example.com/crunchy-postgres-ha:test",
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-					AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
 							corev1.ResourceStorage: resource.MustParse("1Gi"),
@@ -129,11 +128,11 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 		postgresCluster.Spec.Backups.PGBackRest.Repos[0] = v1beta1.PGBackRestRepo{
 			Name: "repo1",
 			Volume: &v1beta1.RepoPVC{
-				VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-					AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-					Resources: v1.ResourceRequirements{
-						Requests: map[v1.ResourceName]resource.Quantity{
-							v1.ResourceStorage: resource.MustParse("1Gi"),
+				VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+					Resources: corev1.ResourceRequirements{
+						Requests: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceStorage: resource.MustParse("1Gi"),
 						},
 					},
 				},
@@ -143,7 +142,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			PriorityClassName: initialize.String("some-priority-class"),
 			Resources:         corev1.ResourceRequirements{},
 			Affinity:          &corev1.Affinity{},
-			Tolerations: []v1.Toleration{
+			Tolerations: []corev1.Toleration{
 				{Key: "woot"},
 			},
 			TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
@@ -194,7 +193,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -211,11 +210,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 	// create the 'observed' instances and set the leader
 	instances := &observedInstances{
 		forCluster: []*Instance{{Name: "instance1",
-			Pods: []*v1.Pod{{
+			Pods: []*corev1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
 				},
-				Spec: v1.PodSpec{},
+				Spec: corev1.PodSpec{},
 			}},
 		}, {Name: "instance2"}, {Name: "instance3"}},
 	}
@@ -439,7 +438,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	t.Run("verify pgbackrest repo volumes", func(t *testing.T) {
 
 		// get the pgBackRest repo sts using the labels we expect it to have
-		repoVols := &v1.PersistentVolumeClaimList{}
+		repoVols := &corev1.PersistentVolumeClaimList{}
 		if err := tClient.List(ctx, repoVols, client.InNamespace(namespace),
 			client.MatchingLabels{
 				naming.LabelCluster:              clusterName,
@@ -468,7 +467,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 
 	t.Run("verify pgbackrest configuration", func(t *testing.T) {
 
-		config := &v1.ConfigMap{}
+		config := &corev1.ConfigMap{}
 		if err := tClient.Get(ctx, types.NamespacedName{
 			Name:      naming.PGBackRestConfig(postgresCluster).Name,
 			Namespace: postgresCluster.GetNamespace(),
@@ -490,7 +489,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		assert.Check(t, instanceConfFound)
 		assert.Check(t, dedicatedRepoConfFound)
 
-		sshConfig := &v1.ConfigMap{}
+		sshConfig := &corev1.ConfigMap{}
 		if err := tClient.Get(ctx, types.NamespacedName{
 			Name:      naming.PGBackRestSSHConfig(postgresCluster).Name,
 			Namespace: postgresCluster.GetNamespace(),
@@ -512,7 +511,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		assert.Check(t, foundSSHConfig)
 		assert.Check(t, foundSSHDConfig)
 
-		sshSecret := &v1.Secret{}
+		sshSecret := &corev1.Secret{}
 		if err := tClient.Get(ctx, types.NamespacedName{
 			Name:      naming.PGBackRestSSHSecret(postgresCluster).Name,
 			Namespace: postgresCluster.GetNamespace(),
@@ -679,7 +678,7 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -746,7 +745,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -940,7 +939,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -1108,7 +1107,7 @@ func TestReconcileManualBackup(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -1135,7 +1134,7 @@ func TestReconcileManualBackup(t *testing.T) {
 	instances := &observedInstances{
 		forCluster: []*Instance{{
 			Name: "instance1",
-			Pods: []*v1.Pod{{
+			Pods: []*corev1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
 				},
@@ -1564,7 +1563,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -1591,10 +1590,10 @@ func TestGetPGBackRestResources(t *testing.T) {
 						naming.BackupReplicaCreate),
 				},
 				Spec: batchv1.JobSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers:    []v1.Container{{Name: "test", Image: "test"}},
-							RestartPolicy: v1.RestartPolicyNever,
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers:    []corev1.Container{{Name: "test", Image: "test"}},
+							RestartPolicy: corev1.RestartPolicyNever,
 						},
 					},
 				},
@@ -1629,10 +1628,10 @@ func TestGetPGBackRestResources(t *testing.T) {
 						naming.BackupReplicaCreate),
 				},
 				Spec: batchv1.JobSpec{
-					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{
-							Containers:    []v1.Container{{Name: "test", Image: "test"}},
-							RestartPolicy: v1.RestartPolicyNever,
+					Template: corev1.PodTemplateSpec{
+						Spec: corev1.PodSpec{
+							Containers:    []corev1.Container{{Name: "test", Image: "test"}},
+							RestartPolicy: corev1.RestartPolicyNever,
 						},
 					},
 				},
@@ -1665,7 +1664,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 					Namespace: namespace,
 					Labels:    naming.PGBackRestRepoVolumeLabels(clusterName, "repo1"),
 				},
-				Spec: v1.PersistentVolumeClaimSpec{
+				Spec: corev1.PersistentVolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -1705,7 +1704,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 					Namespace: namespace,
 					Labels:    naming.PGBackRestRepoVolumeLabels(clusterName, "repo1"),
 				},
-				Spec: v1.PersistentVolumeClaimSpec{
+				Spec: corev1.PersistentVolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -1748,11 +1747,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 				Spec: appsv1.StatefulSetSpec{
 					Selector: metav1.SetAsLabelSelector(
 						naming.PGBackRestDedicatedLabels(clusterName)),
-					Template: v1.PodTemplateSpec{
+					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: v1.PodSpec{},
+						Spec: corev1.PodSpec{},
 					},
 				},
 			},
@@ -1787,11 +1786,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 				Spec: appsv1.StatefulSetSpec{
 					Selector: metav1.SetAsLabelSelector(
 						naming.PGBackRestDedicatedLabels(clusterName)),
-					Template: v1.PodTemplateSpec{
+					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: v1.PodSpec{},
+						Spec: corev1.PodSpec{},
 					},
 				},
 			},
@@ -1824,11 +1823,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 				Spec: appsv1.StatefulSetSpec{
 					Selector: metav1.SetAsLabelSelector(
 						naming.PGBackRestDedicatedLabels(clusterName)),
-					Template: v1.PodTemplateSpec{
+					Template: corev1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: v1.PodSpec{},
+						Spec: corev1.PodSpec{},
 					},
 				},
 			},
@@ -2009,7 +2008,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -2174,7 +2173,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				sourceCluster.Spec.Backups.PGBackRest.Repos = tc.sourceClusterRepos
 				assert.NilError(t, tClient.Create(ctx, sourceCluster))
 
-				sourceClusterPrimary := &v1.Pod{
+				sourceClusterPrimary := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "primary-" + tc.sourceClusterName,
 						Namespace: namespace,
@@ -2185,8 +2184,8 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 							naming.LabelRole:        naming.RolePatroniLeader,
 						},
 					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
 							Name:    "test",
 							Image:   "test",
 							Command: []string{"test"},
@@ -2213,7 +2212,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 					assert.Assert(t, restoreJobs.Items[0].Annotations[naming.PGBackRestConfigHash] != "")
 				}
 
-				dataPVCs := &v1.PersistentVolumeClaimList{}
+				dataPVCs := &corev1.PersistentVolumeClaimList{}
 				selector, err := naming.AsSelector(naming.Cluster(cluster.Name))
 				assert.NilError(t, err)
 				dataRoleReq, err := labels.NewRequirement(naming.LabelRole, selection.Equals,
@@ -2536,7 +2535,7 @@ func TestObserveRestoreEnv(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -2558,14 +2557,14 @@ func TestObserveRestoreEnv(t *testing.T) {
 		restoreJob := &batchv1.Job{
 			ObjectMeta: meta,
 			Spec: batchv1.JobSpec{
-				Template: v1.PodTemplateSpec{
+				Template: corev1.PodTemplateSpec{
 					ObjectMeta: meta,
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
 							Image: "test",
 							Name:  naming.PGBackRestRestoreContainerName,
 						}},
-						RestartPolicy: v1.RestartPolicyNever,
+						RestartPolicy: corev1.RestartPolicyNever,
 					},
 				},
 			},
@@ -2622,15 +2621,15 @@ func TestObserveRestoreEnv(t *testing.T) {
 		}{{
 			desc: "restore job and all patroni endpoints exist",
 			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
-				fakeLeaderEP := &v1.Endpoints{}
+				fakeLeaderEP := &corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
-				fakeDCSEP := &v1.Endpoints{}
+				fakeDCSEP := &corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
-				fakeFailoverEP := &v1.Endpoints{}
+				fakeFailoverEP := &corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
@@ -2646,15 +2645,15 @@ func TestObserveRestoreEnv(t *testing.T) {
 		}, {
 			desc: "patroni endpoints only exist",
 			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
-				fakeLeaderEP := &v1.Endpoints{}
+				fakeLeaderEP := &corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
-				fakeDCSEP := &v1.Endpoints{}
+				fakeDCSEP := &corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
-				fakeFailoverEP := &v1.Endpoints{}
+				fakeFailoverEP := &corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
@@ -2764,7 +2763,7 @@ func TestPrepareForRestore(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -2786,14 +2785,14 @@ func TestPrepareForRestore(t *testing.T) {
 		restoreJob := &batchv1.Job{
 			ObjectMeta: meta,
 			Spec: batchv1.JobSpec{
-				Template: v1.PodTemplateSpec{
+				Template: corev1.PodTemplateSpec{
 					ObjectMeta: meta,
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
 							Image: "test",
 							Name:  naming.PGBackRestRestoreContainerName,
 						}},
-						RestartPolicy: v1.RestartPolicyNever,
+						RestartPolicy: corev1.RestartPolicyNever,
 					},
 				},
 			},
@@ -2838,15 +2837,15 @@ func TestPrepareForRestore(t *testing.T) {
 			desc: "remove patroni endpoints",
 			createResources: func(t *testing.T,
 				cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
-				fakeLeaderEP := v1.Endpoints{}
+				fakeLeaderEP := corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, &fakeLeaderEP))
-				fakeDCSEP := v1.Endpoints{}
+				fakeDCSEP := corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, &fakeDCSEP))
-				fakeFailoverEP := v1.Endpoints{}
+				fakeFailoverEP := corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.ObjectMeta.Namespace = namespace
 				assert.NilError(t, r.Client.Create(ctx, &fakeFailoverEP))
@@ -2883,7 +2882,7 @@ func TestPrepareForRestore(t *testing.T) {
 			fakeObserved: &observedInstances{forCluster: []*Instance{{
 				Name: primaryInstanceName,
 				Spec: &v1beta1.PostgresInstanceSetSpec{Name: primaryInstanceSetName},
-				Pods: []*v1.Pod{{
+				Pods: []*corev1.Pod{{
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
 					},
@@ -2954,8 +2953,8 @@ func TestPrepareForRestore(t *testing.T) {
 						naming.GenerateStartupInstance(cluster, &cluster.Spec.InstanceSets[0]).Name)
 				}
 
-				leaderEP, dcsEP, failoverEP := v1.Endpoints{}, v1.Endpoints{}, v1.Endpoints{}
-				currentEndpoints := []v1.Endpoints{}
+				leaderEP, dcsEP, failoverEP := corev1.Endpoints{}, corev1.Endpoints{}, corev1.Endpoints{}
+				currentEndpoints := []corev1.Endpoints{}
 				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
 					&leaderEP); err != nil {
 					assert.NilError(t, client.IgnoreNotFound(err))
@@ -3019,7 +3018,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -3248,7 +3247,7 @@ func TestSetScheduledJobStatus(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })

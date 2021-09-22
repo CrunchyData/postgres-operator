@@ -33,7 +33,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -47,12 +46,12 @@ import (
 )
 
 var gvks = []schema.GroupVersionKind{{
-	Group:   v1.SchemeGroupVersion.Group,
-	Version: v1.SchemeGroupVersion.Version,
+	Group:   corev1.SchemeGroupVersion.Group,
+	Version: corev1.SchemeGroupVersion.Version,
 	Kind:    "ConfigMapList",
 }, {
-	Group:   v1.SchemeGroupVersion.Group,
-	Version: v1.SchemeGroupVersion.Version,
+	Group:   corev1.SchemeGroupVersion.Group,
+	Version: corev1.SchemeGroupVersion.Version,
 	Kind:    "SecretList",
 }, {
 	Group:   appsv1.SchemeGroupVersion.Group,
@@ -67,20 +66,20 @@ var gvks = []schema.GroupVersionKind{{
 	Version: batchv1beta1.SchemeGroupVersion.Version,
 	Kind:    "CronJobList",
 }, {
-	Group:   v1.SchemeGroupVersion.Group,
-	Version: v1.SchemeGroupVersion.Version,
+	Group:   corev1.SchemeGroupVersion.Group,
+	Version: corev1.SchemeGroupVersion.Version,
 	Kind:    "PersistentVolumeClaimList",
 }, {
-	Group:   v1.SchemeGroupVersion.Group,
-	Version: v1.SchemeGroupVersion.Version,
+	Group:   corev1.SchemeGroupVersion.Group,
+	Version: corev1.SchemeGroupVersion.Version,
 	Kind:    "ServiceList",
 }, {
-	Group:   v1.SchemeGroupVersion.Group,
-	Version: v1.SchemeGroupVersion.Version,
+	Group:   corev1.SchemeGroupVersion.Group,
+	Version: corev1.SchemeGroupVersion.Version,
 	Kind:    "EndpointsList",
 }, {
-	Group:   v1.SchemeGroupVersion.Group,
-	Version: v1.SchemeGroupVersion.Version,
+	Group:   corev1.SchemeGroupVersion.Group,
+	Version: corev1.SchemeGroupVersion.Version,
 	Kind:    "ServiceAccountList",
 }, {
 	Group:   rbacv1.SchemeGroupVersion.Group,
@@ -109,7 +108,7 @@ func TestCustomLabels(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
@@ -371,7 +370,7 @@ func TestCustomAnnotations(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = labels.Set{"postgres-operator-test": ""}
 	assert.NilError(t, cc.Create(ctx, ns))
@@ -641,7 +640,7 @@ func TestContainerSecurityContext(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = labels.Set{"postgres-operator-test": ""}
 	assert.NilError(t, cc.Create(ctx, ns))

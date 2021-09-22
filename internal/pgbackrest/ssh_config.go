@@ -27,7 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"golang.org/x/crypto/ssh"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -61,7 +61,7 @@ type sshKey struct {
 
 // CreateSSHConfigMapIntent creates a configmap struct with SSHD service and SSH client
 // configuration settings in the data field.
-func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.ConfigMap {
+func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) corev1.ConfigMap {
 
 	meta := naming.PGBackRestSSHConfig(postgresCluster)
 	meta.Annotations = naming.Merge(
@@ -72,7 +72,7 @@ func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.Confi
 		naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
 	)
 
-	cm := v1.ConfigMap{
+	cm := corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
@@ -99,7 +99,7 @@ func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.Confi
 // CreateSSHSecretIntent creates the secret containing the new public private key pair to use
 // when connecting to and from the pgBackRest repo pod.
 func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
-	currentSSHSecret *v1.Secret, serviceName, serviceNamespace string) (v1.Secret, error) {
+	currentSSHSecret *corev1.Secret, serviceName, serviceNamespace string) (corev1.Secret, error) {
 
 	meta := naming.PGBackRestSSHSecret(postgresCluster)
 	meta.Annotations = naming.Merge(
@@ -110,7 +110,7 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 		naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
 	)
 
-	secret := v1.Secret{
+	secret := corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
 			APIVersion: "v1",
@@ -164,15 +164,15 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 
 // SSHConfigVolumeAndMount creates a volume and mount configuration from the SSHD configuration configmap
 // and secret that will be used by the postgrescluster when connecting to the pgBackRest repo pod
-func SSHConfigVolumeAndMount(sshConfigMap *v1.ConfigMap, sshSecret *v1.Secret, pod *v1.PodSpec, containerName string) {
+func SSHConfigVolumeAndMount(sshConfigMap *corev1.ConfigMap, sshSecret *corev1.Secret, pod *corev1.PodSpec, containerName string) {
 	// Note: the 'container' string will be 'database' for the PostgreSQL database container,
 	// otherwise it will be 'backrest'
 	var (
-		sshConfigVP []v1.VolumeProjection
+		sshConfigVP []corev1.VolumeProjection
 	)
 
-	volume := v1.Volume{Name: sshConfigVol}
-	volume.Projected = &v1.ProjectedVolumeSource{}
+	volume := corev1.Volume{Name: sshConfigVol}
+	volume.Projected = &corev1.ProjectedVolumeSource{}
 
 	// Add our projections after those specified in the CR. Items later in the
 	// list take precedence over earlier items (that is, last write wins).
@@ -180,12 +180,12 @@ func SSHConfigVolumeAndMount(sshConfigMap *v1.ConfigMap, sshSecret *v1.Secret, p
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
 	volume.Projected.Sources = append(
 		sshConfigVP,
-		v1.VolumeProjection{
-			ConfigMap: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+		corev1.VolumeProjection{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: sshConfigMap.Name,
 				},
-				Items: []v1.KeyToPath{{
+				Items: []corev1.KeyToPath{{
 					Key:  sshConfig,
 					Path: "./" + sshConfig,
 				}, {
@@ -193,11 +193,11 @@ func SSHConfigVolumeAndMount(sshConfigMap *v1.ConfigMap, sshSecret *v1.Secret, p
 					Path: "./" + sshdConfig,
 				}},
 			},
-			Secret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+			Secret: &corev1.SecretProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: sshConfigMap.Name,
 				},
-				Items: []v1.KeyToPath{{
+				Items: []corev1.KeyToPath{{
 					Key:  privateKey,
 					Path: "./" + privateKey,
 				}, {
@@ -208,7 +208,7 @@ func SSHConfigVolumeAndMount(sshConfigMap *v1.ConfigMap, sshSecret *v1.Secret, p
 		},
 	)
 
-	mount := v1.VolumeMount{
+	mount := corev1.VolumeMount{
 		Name:      volume.Name,
 		MountPath: sshConfigPath,
 		ReadOnly:  true,

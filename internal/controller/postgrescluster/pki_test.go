@@ -32,7 +32,7 @@ import (
 
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,7 +52,7 @@ func TestReconcileCerts(t *testing.T) {
 	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
 	ctx := context.Background()
 	// set namespace name
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() {
@@ -92,9 +92,9 @@ func TestReconcileCerts(t *testing.T) {
 		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1)
 		assert.NilError(t, err)
 
-		rootSecret := &v1.Secret{}
+		rootSecret := &corev1.Secret{}
 		rootSecret.Namespace, rootSecret.Name = namespace, naming.RootCertSecret
-		rootSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+		rootSecret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 
 		t.Run("check root CA secret first owner reference", func(t *testing.T) {
 
@@ -184,8 +184,8 @@ func TestReconcileCerts(t *testing.T) {
 		t.Run("root certificate changes", func(t *testing.T) {
 			// force the generation of a new root cert
 			// create an empty secret and apply the change
-			emptyRootSecret := &v1.Secret{}
-			emptyRootSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+			emptyRootSecret := &corev1.Secret{}
+			emptyRootSecret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 			emptyRootSecret.Namespace, emptyRootSecret.Name = namespace, naming.RootCertSecret
 			emptyRootSecret.Data = make(map[string][]byte)
 			err = errors.WithStack(r.apply(ctx, emptyRootSecret))
@@ -271,8 +271,8 @@ func TestReconcileCerts(t *testing.T) {
 
 			// force the generation of a new root cert
 			// create an empty secret and apply the change
-			emptyRootSecret := &v1.Secret{}
-			emptyRootSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+			emptyRootSecret := &corev1.Secret{}
+			emptyRootSecret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 			emptyRootSecret.Namespace, emptyRootSecret.Name = namespace, naming.RootCertSecret
 			emptyRootSecret.Data = make(map[string][]byte)
 			err = errors.WithStack(r.apply(ctx, emptyRootSecret))
@@ -282,16 +282,16 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// get the existing leaf/instance secret which will receive a new certificate during reconciliation
-			existingInstanceSecret := &v1.Secret{}
+			existingInstanceSecret := &corev1.Secret{}
 			assert.NilError(t, tClient.Get(ctx, types.NamespacedName{
 				Name:      instance.GetName() + "-certs",
 				Namespace: namespace,
 			}, existingInstanceSecret))
 
 			// create an empty 'intent' secret for the reconcile function
-			instanceIntentSecret := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
-			instanceIntentSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
-			instanceIntentSecret.Type = v1.SecretTypeOpaque
+			instanceIntentSecret := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
+			instanceIntentSecret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
+			instanceIntentSecret.Type = corev1.SecretTypeOpaque
 			instanceIntentSecret.Data = make(map[string][]byte)
 
 			// save a copy of the 'pre-reconciled' certificate
@@ -318,11 +318,11 @@ func TestReconcileCerts(t *testing.T) {
 
 	t.Run("check cluster certificate secret reconciliation", func(t *testing.T) {
 		// example auto-generated secret projection
-		testSecretProjection := &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{
+		testSecretProjection := &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
 				Name: fmt.Sprintf(naming.ClusterCertSecret, cluster1.Name),
 			},
-			Items: []v1.KeyToPath{
+			Items: []corev1.KeyToPath{
 				{
 					Key:  clusterCertFile,
 					Path: clusterCertFile,
@@ -339,11 +339,11 @@ func TestReconcileCerts(t *testing.T) {
 		}
 
 		// example custom secret projection
-		customSecretProjection := &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{
+		customSecretProjection := &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
 				Name: "customsecret",
 			},
-			Items: []v1.KeyToPath{
+			Items: []corev1.KeyToPath{
 				{
 					Key:  clusterCertFile,
 					Path: clusterCertFile,
@@ -380,7 +380,7 @@ func TestReconcileCerts(t *testing.T) {
 
 		t.Run("check switch to a custom secret projection", func(t *testing.T) {
 			// simulate a new custom secret
-			testSecret := &v1.Secret{}
+			testSecret := &corev1.Secret{}
 			testSecret.Namespace, testSecret.Name = namespace, "newcustomsecret"
 			// simulate cluster spec update
 			cluster2.Spec.CustomTLSSecret.LocalObjectReference.Name = "newcustomsecret"
@@ -398,7 +398,7 @@ func TestReconcileCerts(t *testing.T) {
 
 		t.Run("check cluster certificate secret", func(t *testing.T) {
 			// get the cluster cert secret
-			initialClusterCertSecret := &v1.Secret{}
+			initialClusterCertSecret := &corev1.Secret{}
 			err := tClient.Get(ctx, types.NamespacedName{
 				Name:      fmt.Sprintf(naming.ClusterCertSecret, cluster1.Name),
 				Namespace: namespace,
@@ -407,8 +407,8 @@ func TestReconcileCerts(t *testing.T) {
 
 			// force the generation of a new root cert
 			// create an empty secret and apply the change
-			emptyRootSecret := &v1.Secret{}
-			emptyRootSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+			emptyRootSecret := &corev1.Secret{}
+			emptyRootSecret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 			emptyRootSecret.Namespace, emptyRootSecret.Name = namespace, naming.RootCertSecret
 			emptyRootSecret.Data = make(map[string][]byte)
 			err = errors.WithStack(r.apply(ctx, emptyRootSecret))
@@ -423,7 +423,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// get the new cluster cert secret
-			newClusterCertSecret := &v1.Secret{}
+			newClusterCertSecret := &corev1.Secret{}
 			err = tClient.Get(ctx, types.NamespacedName{
 				Name:      fmt.Sprintf(naming.ClusterCertSecret, cluster1.Name),
 				Namespace: namespace,
@@ -440,7 +440,7 @@ func getCertFromSecret(
 	ctx context.Context, tClient client.Client, name, namespace, dataKey string,
 ) (*pki.Certificate, error) {
 	// get cert secret
-	secret := &v1.Secret{}
+	secret := &corev1.Secret{}
 	if err := tClient.Get(ctx, types.NamespacedName{
 		Name:      name,
 		Namespace: namespace,
@@ -467,10 +467,10 @@ func getCertFromSecret(
 func createInstanceSecrets(
 	ctx context.Context, tClient client.Client, instance *appsv1.StatefulSet,
 	rootCA *pki.RootCertificateAuthority,
-) (*v1.Secret, *v1.Secret, error) {
+) (*corev1.Secret, *corev1.Secret, error) {
 	// create two secret structs for reconciliation
-	intent := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
-	existing := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
+	intent := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
+	existing := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 
 	// populate the 'intent' secret
 	err := errors.WithStack(client.IgnoreNotFound(
@@ -490,7 +490,7 @@ func createInstanceSecrets(
 	}
 
 	// populate the 'existing' secret
-	existing.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	existing.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	existing.Data = make(map[string][]byte)
 
 	if err == nil {

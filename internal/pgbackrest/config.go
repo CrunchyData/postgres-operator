@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sort"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -76,7 +76,7 @@ const (
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
 func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
-	instanceNames []string) *v1.ConfigMap {
+	instanceNames []string) *corev1.ConfigMap {
 
 	meta := naming.PGBackRestConfig(postgresCluster)
 	meta.Annotations = naming.Merge(
@@ -87,7 +87,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 		naming.PGBackRestConfigLabels(postgresCluster.GetName()),
 	)
 
-	cm := &v1.ConfigMap{
+	cm := &corev1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
@@ -121,15 +121,15 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 }
 
 // configVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the postgrescluster
-func configVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, containerName, configKey string) {
+func configVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName, configKey string) {
 	// Note: the 'container' string will be 'database' for the PostgreSQL database container,
 	// otherwise it will be 'backrest'
 	var (
-		pgBackRestConfig []v1.VolumeProjection
+		pgBackRestConfig []corev1.VolumeProjection
 	)
 
-	volume := v1.Volume{Name: ConfigVol}
-	volume.Projected = &v1.ProjectedVolumeSource{}
+	volume := corev1.Volume{Name: ConfigVol}
+	volume.Projected = &corev1.ProjectedVolumeSource{}
 
 	// Add our projections after those specified in the CR. Items later in the
 	// list take precedence over earlier items (that is, last write wins).
@@ -137,12 +137,12 @@ func configVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, co
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
 	volume.Projected.Sources = append(
 		pgBackRestConfig,
-		v1.VolumeProjection{
-			ConfigMap: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+		corev1.VolumeProjection{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: pgBackRestConfigMap.Name,
 				},
-				Items: []v1.KeyToPath{{
+				Items: []corev1.KeyToPath{{
 					Key:  configKey,
 					Path: configPath,
 				}},
@@ -150,7 +150,7 @@ func configVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, co
 		},
 	)
 
-	mount := v1.VolumeMount{
+	mount := corev1.VolumeMount{
 		Name:      volume.Name,
 		MountPath: ConfigDir,
 		ReadOnly:  true,
@@ -165,19 +165,19 @@ func configVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, co
 
 // PostgreSQLConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
 // postgrescluster's PostgreSQL pod
-func PostgreSQLConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, containerName string) {
+func PostgreSQLConfigVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName string) {
 	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmPrimaryKey)
 }
 
 // RepositoryConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
 // postgrescluster's pgBackRest repo pod
-func RepositoryConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, containerName string) {
+func RepositoryConfigVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName string) {
 	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, CMRepoKey)
 }
 
 // JobConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
 // postgrescluster's job pods
-func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, containerName string) {
+func JobConfigVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName string) {
 	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmJobKey)
 }
 

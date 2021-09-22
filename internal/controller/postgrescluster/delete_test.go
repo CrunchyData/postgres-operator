@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -75,7 +75,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	cc, err := client.New(config, options)
 	assert.NilError(t, err)
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
@@ -121,7 +121,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			waitForRunningInstances: 2,
 
 			beforeDelete: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
-				list := v1.PodList{}
+				list := corev1.PodList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
 					"postgres-operator.crunchydata.com/instance",
@@ -131,8 +131,8 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
 
-				var primary *v1.Pod
-				var replica *v1.Pod
+				var primary *corev1.Pod
+				var replica *corev1.Pod
 				for i := range list.Items {
 					if list.Items[i].Labels["postgres-operator.crunchydata.com/role"] == "replica" {
 						replica = &list.Items[i]
@@ -269,13 +269,13 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			if test.waitForRunningInstances > 0 {
 
 				// Replicas should stop first, leaving just the one primary.
-				var instances []v1.Pod
+				var instances []corev1.Pod
 				assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 					if result.Requeue {
 						result = mustReconcile(t, cluster)
 					}
 
-					list := v1.PodList{}
+					list := corev1.PodList{}
 					selector, err := labels.Parse(strings.Join([]string{
 						"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
 						"postgres-operator.crunchydata.com/instance",
@@ -294,7 +294,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 				// Patroni DCS objects should not be deleted yet.
 				{
-					list := v1.EndpointsList{}
+					list := corev1.EndpointsList{}
 					selector, err := labels.Parse(strings.Join([]string{
 						"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
 						"postgres-operator.crunchydata.com/patroni",
@@ -331,9 +331,9 @@ func TestReconcilerHandleDelete(t *testing.T) {
 				return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
 			}), "expected cluster to be deleted, got:\n%+v", *cluster)
 
-			var endpoints []v1.Endpoints
+			var endpoints []corev1.Endpoints
 			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute/3), func() (bool, error) {
-				list := v1.EndpointsList{}
+				list := corev1.EndpointsList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
 					"postgres-operator.crunchydata.com/patroni",
@@ -379,7 +379,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	cc, err := client.New(config, options)
 	assert.NilError(t, err)
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
@@ -487,7 +487,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	}), "expected cluster to be deleted, got:\n%+v", *cluster)
 
 	assert.NilError(t, wait.PollImmediate(time.Second, Scale(time.Minute/2), func() (bool, error) {
-		err := cc.Get(ctx, client.ObjectKeyFromObject(ns), &v1.Namespace{})
+		err := cc.Get(ctx, client.ObjectKeyFromObject(ns), &corev1.Namespace{})
 		return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
 	}), "expected namespace to be deleted")
 }
