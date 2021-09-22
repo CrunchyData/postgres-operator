@@ -342,8 +342,6 @@ func TestPatroniReplicationSecret(t *testing.T) {
 }
 
 func TestReconcilePatroniStatus(t *testing.T) {
-	ctx := context.Background()
-
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}

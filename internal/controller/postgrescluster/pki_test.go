@@ -250,6 +250,7 @@ func TestReconcileCerts(t *testing.T) {
 		}
 
 		intent, existing, err := createInstanceSecrets(ctx, tClient, instance, initialRoot)
+		assert.NilError(t, err)
 
 		// apply the secret changes
 		err = errors.WithStack(r.apply(ctx, existing))
