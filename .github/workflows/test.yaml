@@ -48,5 +48,30 @@ jobs:
         with:
           version: "${{ matrix.kubernetes }}"
           k3d-args: --no-lb
+      - name: Prefetch container images
+        run: >
+          {
+            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0"'
+            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0"'
+            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0"'
+          } |
+          jq --slurp --arg name 'image-prefetch' --argjson labels '{"name":"image-prefetch"}' '{
+            apiVersion: "apps/v1", kind: "DaemonSet",
+            metadata: { name: $name, labels: $labels },
+            spec: {
+              selector: { matchLabels: $labels },
+              template: {
+                metadata: { labels: $labels },
+                spec: {
+                  initContainers: to_entries | map({ name: "c\(.key)", command: ["true"], image: .value }),
+                  containers: [{ name: "pause", image: "k8s.gcr.io/pause:3.5" }]
+                }
+              }
+            }
+          }' |
+          kubectl create --filename=- && {
+            kubectl rollout status daemonset.apps/image-prefetch --timeout=90s ||
+            kubectl describe daemonset.apps/image-prefetch
+          }
       - env: { PGO_TEST_TIMEOUT_SCALE: 1.2 }
         run: make createnamespaces check-envtest-existing
