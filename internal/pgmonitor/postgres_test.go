@@ -19,9 +19,10 @@ import (
 	"strings"
 	"testing"
 
+	"gotest.tools/v3/assert"
+
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-	"gotest.tools/v3/assert"
 )
 
 func TestPostgreSQLHBA(t *testing.T) {

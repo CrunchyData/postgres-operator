@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-
 	"reflect"
 	"strings"
 	"testing"

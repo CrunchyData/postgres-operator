@@ -20,9 +20,10 @@ import (
 	"hash/fnv"
 	"io"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/rand"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // maxPGBackrestRepos is the maximum number of repositories that can be configured according to the

@@ -16,6 +16,8 @@ linters:
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
+  goimports:
+    local-prefixes: github.com/crunchydata/postgres-operator
   gomodguard:
     blocked:
       modules:

@@ -28,15 +28,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	// Google Kubernetes Engine / Google Cloud Platform authentication provider
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	// Google Kubernetes Engine / Google Cloud Platform authentication provider
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"

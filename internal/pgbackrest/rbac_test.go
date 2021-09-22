@@ -19,8 +19,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"gotest.tools/v3/assert"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func isUniqueAndSorted(slice []string) bool {
