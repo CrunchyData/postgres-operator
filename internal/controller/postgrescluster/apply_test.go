@@ -29,7 +29,6 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +53,7 @@ func TestServerSideApply(t *testing.T) {
 	cc, err := client.New(config, client.Options{})
 	assert.NilError(t, err)
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
@@ -70,9 +69,9 @@ func TestServerSideApply(t *testing.T) {
 
 	t.Run("ObjectMeta", func(t *testing.T) {
 		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
-		constructor := func() *v1.ConfigMap {
-			var cm v1.ConfigMap
-			cm.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
+		constructor := func() *corev1.ConfigMap {
+			var cm corev1.ConfigMap
+			cm.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
 			cm.Namespace, cm.Name = ns.Name, "object-meta"
 			cm.Data = map[string]string{"key": "value"}
 			return &cm
@@ -105,16 +104,16 @@ func TestServerSideApply(t *testing.T) {
 		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
 		// Setup two possible controllers.
-		controller1 := new(v1.ConfigMap)
+		controller1 := new(corev1.ConfigMap)
 		controller1.Namespace, controller1.Name = ns.Name, "controller1"
 		assert.NilError(t, cc.Create(ctx, controller1))
 
-		controller2 := new(v1.ConfigMap)
+		controller2 := new(corev1.ConfigMap)
 		controller2.Namespace, controller2.Name = ns.Name, "controller2"
 		assert.NilError(t, cc.Create(ctx, controller2))
 
 		// Create an object that is controlled.
-		controlled := new(v1.ConfigMap)
+		controlled := new(corev1.ConfigMap)
 		controlled.Namespace, controlled.Name = ns.Name, "controlled"
 		assert.NilError(t,
 			controllerutil.SetControllerReference(controller1, controlled, cc.Scheme()))
@@ -124,8 +123,8 @@ func TestServerSideApply(t *testing.T) {
 		assert.Assert(t, original != nil)
 
 		// Try to change the controller using client.Apply.
-		applied := new(v1.ConfigMap)
-		applied.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
+		applied := new(corev1.ConfigMap)
+		applied.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
 		applied.Namespace, applied.Name = controlled.Namespace, controlled.Name
 		assert.NilError(t,
 			controllerutil.SetControllerReference(controller2, applied, cc.Scheme()))
@@ -215,12 +214,12 @@ func TestServerSideApply(t *testing.T) {
 	})
 
 	t.Run("ServiceSelector", func(t *testing.T) {
-		constructor := func(name string) *v1.Service {
-			var service v1.Service
-			service.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
+		constructor := func(name string) *corev1.Service {
+			var service corev1.Service
+			service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 			service.Namespace, service.Name = ns.Name, name
-			service.Spec.Ports = []v1.ServicePort{{
-				Port: 9999, Protocol: v1.ProtocolTCP,
+			service.Spec.Ports = []corev1.ServicePort{{
+				Port: 9999, Protocol: corev1.ProtocolTCP,
 			}}
 			return &service
 		}

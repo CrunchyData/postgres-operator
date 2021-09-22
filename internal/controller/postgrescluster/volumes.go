@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -453,22 +452,22 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 	}
 
 	jobSpec := &batchv1.JobSpec{
-		Template: v1.PodTemplateSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: labels},
-			Spec: v1.PodSpec{
-				Containers:      []v1.Container{container},
+			Spec: corev1.PodSpec{
+				Containers:      []corev1.Container{container},
 				SecurityContext: postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
-				RestartPolicy: v1.RestartPolicyNever,
+				RestartPolicy: corev1.RestartPolicyNever,
 				// Since these Jobs don't make Kubernetes API calls, we can just
 				// use the default ServiceAccount and mount the credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
-				Volumes: []v1.Volume{{
+				Volumes: []corev1.Volume{{
 					Name: "postgres-data",
-					VolumeSource: v1.VolumeSource{
-						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 							ClaimName: cluster.Spec.DataSource.Volumes.
 								PGDataVolume.PVCName,
 						},
@@ -564,22 +563,22 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 	}
 
 	jobSpec := &batchv1.JobSpec{
-		Template: v1.PodTemplateSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: labels},
-			Spec: v1.PodSpec{
-				Containers:      []v1.Container{container},
+			Spec: corev1.PodSpec{
+				Containers:      []corev1.Container{container},
 				SecurityContext: postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
-				RestartPolicy: v1.RestartPolicyNever,
+				RestartPolicy: corev1.RestartPolicyNever,
 				// Since these Jobs don't make Kubernetes API calls, we can just
 				// use the default ServiceAccount and mount the credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
-				Volumes: []v1.Volume{{
+				Volumes: []corev1.Volume{{
 					Name: "postgres-wal",
-					VolumeSource: v1.VolumeSource{
-						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 							ClaimName: cluster.Spec.DataSource.Volumes.
 								PGWALVolume.PVCName,
 						},
@@ -680,21 +679,21 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 	}
 
 	jobSpec := &batchv1.JobSpec{
-		Template: v1.PodTemplateSpec{
+		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: labels},
-			Spec: v1.PodSpec{
-				Containers:      []v1.Container{container},
+			Spec: corev1.PodSpec{
+				Containers:      []corev1.Container{container},
 				SecurityContext: postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
 				// controller when there is a failure (instead of the container simply restarting).
-				RestartPolicy: v1.RestartPolicyNever,
+				RestartPolicy: corev1.RestartPolicyNever,
 				// Since these Jobs don't make Kubernetes API calls, we can just
 				// use the default ServiceAccount and mount the credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
-				Volumes: []v1.Volume{{
+				Volumes: []corev1.Volume{{
 					Name: "pgbackrest-repo",
-					VolumeSource: v1.VolumeSource{
-						PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					VolumeSource: corev1.VolumeSource{
+						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 							ClaimName: cluster.Spec.DataSource.Volumes.
 								PGBackRestVolume.PVCName,
 						},

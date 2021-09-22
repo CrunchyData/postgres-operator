@@ -29,7 +29,6 @@ import (
 	"gotest.tools/v3/assert"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -501,8 +500,8 @@ func TestGetPVCNameMethods(t *testing.T) {
 				naming.LabelCluster: cluster.Name,
 			},
 		},
-		Spec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{
+		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{
 				"ReadWriteMany",
 			},
 			Resources: corev1.ResourceRequirements{
@@ -530,7 +529,7 @@ func TestGetPVCNameMethods(t *testing.T) {
 		naming.LabelInstance:    "testinstance1-abcd",
 		naming.LabelRole:        naming.RolePostgresWAL,
 	}
-	clusterVolumes := []v1.PersistentVolumeClaim{*pgDataPVC, *walPVC}
+	clusterVolumes := []corev1.PersistentVolumeClaim{*pgDataPVC, *walPVC}
 
 	repoPVC1 := pvc.DeepCopy()
 	repoPVC1.Name = "testrepovol1"
@@ -540,7 +539,7 @@ func TestGetPVCNameMethods(t *testing.T) {
 		naming.LabelPGBackRestRepo:       "testrepo1",
 		naming.LabelPGBackRestRepoVolume: "",
 	}
-	repoPVCs := []*v1.PersistentVolumeClaim{repoPVC1}
+	repoPVCs := []*corev1.PersistentVolumeClaim{repoPVC1}
 
 	repoPVC2 := pvc.DeepCopy()
 	repoPVC2.Name = "testrepovol2"
@@ -622,7 +621,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -640,8 +639,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-					AccessModes: []v1.PersistentVolumeAccessMode{
+				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{
 						corev1.ReadWriteMany},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -656,13 +655,13 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-								AccessModes: []v1.PersistentVolumeAccessMode{
-									v1.ReadWriteMany},
-								Resources: v1.ResourceRequirements{
-									Requests: map[v1.ResourceName]resource.
+							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{
+									corev1.ReadWriteMany},
+								Resources: corev1.ResourceRequirements{
+									Requests: map[corev1.ResourceName]resource.
 										Quantity{
-										v1.ResourceStorage: resource.
+										corev1.ResourceStorage: resource.
 											MustParse("1Gi"),
 									},
 								},
@@ -893,7 +892,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
@@ -931,8 +930,8 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					},
 				},
 				PriorityClassName: initialize.String("some-priority-class"),
-				DataVolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-					AccessModes: []v1.PersistentVolumeAccessMode{
+				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{
 						corev1.ReadWriteMany},
 					Resources: corev1.ResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -955,13 +954,13 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-								AccessModes: []v1.PersistentVolumeAccessMode{
-									v1.ReadWriteMany},
-								Resources: v1.ResourceRequirements{
-									Requests: map[v1.ResourceName]resource.
+							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{
+									corev1.ReadWriteMany},
+								Resources: corev1.ResourceRequirements{
+									Requests: map[corev1.ResourceName]resource.
 										Quantity{
-										v1.ResourceStorage: resource.
+										corev1.ResourceStorage: resource.
 											MustParse("1Gi"),
 									},
 								},

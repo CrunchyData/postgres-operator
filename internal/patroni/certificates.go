@@ -16,7 +16,7 @@
 package patroni
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/pki"
 )
@@ -66,13 +66,13 @@ func certFile(key *pki.PrivateKey, cert *pki.Certificate) ([]byte, error) {
 
 // instanceCertificates returns projections of Patroni's CAs, keys, and
 // certificates to include in the instance configuration volume.
-func instanceCertificates(certificates *v1.Secret) []v1.VolumeProjection {
-	return []v1.VolumeProjection{{
-		Secret: &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{
+func instanceCertificates(certificates *corev1.Secret) []corev1.VolumeProjection {
+	return []corev1.VolumeProjection{{
+		Secret: &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
 				Name: certificates.Name,
 			},
-			Items: []v1.KeyToPath{
+			Items: []corev1.KeyToPath{
 				{
 					Key:  certAuthorityFileKey,
 					Path: certAuthorityConfigPath,

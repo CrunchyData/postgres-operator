@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -85,11 +85,11 @@ func TestPGBackRestConfiguration(t *testing.T) {
 	}
 
 	// the initially created configmap
-	var cmInitial *v1.ConfigMap
+	var cmInitial *corev1.ConfigMap
 	// the returned configmap
-	var cmReturned v1.ConfigMap
+	var cmReturned corev1.ConfigMap
 	// pod spec for testing projected volumes and volume mounts
-	pod := &v1.PodSpec{}
+	pod := &corev1.PodSpec{}
 
 	testInstanceName := "test-instance-abc"
 	testRepoName := "repo-host"
@@ -120,7 +120,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 
 		t.Run("create pgbackrest configmap", func(t *testing.T) {
 
-			ns := &v1.Namespace{}
+			ns := &corev1.Namespace{}
 			ns.Name = naming.PGBackRestConfig(postgresCluster).Namespace
 			assert.NilError(t, testClient.Create(context.Background(), ns))
 			t.Cleanup(func() { assert.Check(t, testClient.Delete(context.Background(), ns)) })

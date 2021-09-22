@@ -20,7 +20,7 @@ import (
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -50,7 +50,7 @@ func (r *Reconciler) reconcileRootCertificate(
 ) {
 	const keyCertificate, keyPrivateKey = "root.crt", "root.key"
 
-	existing := &v1.Secret{}
+	existing := &corev1.Secret{}
 	existing.Namespace, existing.Name = cluster.Namespace, naming.RootCertSecret
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
@@ -71,8 +71,8 @@ func (r *Reconciler) reconcileRootCertificate(
 		err = errors.WithStack(root.Generate())
 	}
 
-	intent := &v1.Secret{}
-	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	intent := &corev1.Secret{}
+	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Namespace, intent.Name = cluster.Namespace, naming.RootCertSecret
 	intent.Data = make(map[string][]byte)
 	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
@@ -120,7 +120,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 	ctx context.Context, rootCACert *pki.RootCertificateAuthority,
 	cluster *v1beta1.PostgresCluster,
 ) (
-	*v1.SecretProjection, error,
+	*corev1.SecretProjection, error,
 ) {
 	// if a custom postgrescluster secret is provided, just return it
 	if cluster.Spec.CustomTLSSecret != nil {
@@ -129,7 +129,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 
 	const keyCertificate, keyPrivateKey, rootCA = "tls.crt", "tls.key", "ca.crt"
 
-	existing := &v1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
+	existing := &corev1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
@@ -154,8 +154,8 @@ func (r *Reconciler) reconcileClusterCertificate(
 		err = errors.WithStack(leaf.Generate(rootCACert))
 	}
 
-	intent := &v1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
-	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	intent := &corev1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
+	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Data = make(map[string][]byte)
 	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
 
@@ -208,7 +208,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 // using the current root certificate
 func (*Reconciler) instanceCertificate(
 	ctx context.Context, instance *appsv1.StatefulSet,
-	existing, intent *v1.Secret, rootCACert *pki.RootCertificateAuthority,
+	existing, intent *corev1.Secret, rootCACert *pki.RootCertificateAuthority,
 ) (
 	*pki.LeafCertificate, error,
 ) {
@@ -249,12 +249,12 @@ func (*Reconciler) instanceCertificate(
 
 // clusterCertSecretProjection returns a secret projection of the postgrescluster's
 // CA, key, and certificate to include in the instance configuration volume.
-func clusterCertSecretProjection(certificate *v1.Secret) *v1.SecretProjection {
-	return &v1.SecretProjection{
-		LocalObjectReference: v1.LocalObjectReference{
+func clusterCertSecretProjection(certificate *corev1.Secret) *corev1.SecretProjection {
+	return &corev1.SecretProjection{
+		LocalObjectReference: corev1.LocalObjectReference{
 			Name: certificate.Name,
 		},
-		Items: []v1.KeyToPath{
+		Items: []corev1.KeyToPath{
 			{
 				Key:  clusterCertFile,
 				Path: clusterCertFile,

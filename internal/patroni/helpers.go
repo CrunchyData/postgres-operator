@@ -16,30 +16,30 @@
 package patroni
 
 import (
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/sets"
 )
 
-func findOrAppendContainer(containers *[]v1.Container, name string) *v1.Container {
+func findOrAppendContainer(containers *[]corev1.Container, name string) *corev1.Container {
 	for i := range *containers {
 		if (*containers)[i].Name == name {
 			return &(*containers)[i]
 		}
 	}
 
-	*containers = append(*containers, v1.Container{Name: name})
+	*containers = append(*containers, corev1.Container{Name: name})
 	return &(*containers)[len(*containers)-1]
 }
 
-func mergeEnvVars(from []v1.EnvVar, vars ...v1.EnvVar) []v1.EnvVar {
+func mergeEnvVars(from []corev1.EnvVar, vars ...corev1.EnvVar) []corev1.EnvVar {
 	names := sets.NewString()
 	for i := range vars {
 		names.Insert(vars[i].Name)
 	}
 
 	// Partition original slice by whether or not the name was passed in.
-	var existing, others []v1.EnvVar
+	var existing, others []corev1.EnvVar
 	for i := range from {
 		if names.Has(from[i].Name) {
 			existing = append(existing, from[i])
@@ -56,14 +56,14 @@ func mergeEnvVars(from []v1.EnvVar, vars ...v1.EnvVar) []v1.EnvVar {
 	return from
 }
 
-func mergeVolumes(from []v1.Volume, vols ...v1.Volume) []v1.Volume {
+func mergeVolumes(from []corev1.Volume, vols ...corev1.Volume) []corev1.Volume {
 	names := sets.NewString()
 	for i := range vols {
 		names.Insert(vols[i].Name)
 	}
 
 	// Partition original slice by whether or not the name was passed in.
-	var existing, others []v1.Volume
+	var existing, others []corev1.Volume
 	for i := range from {
 		if names.Has(from[i].Name) {
 			existing = append(existing, from[i])
@@ -80,14 +80,14 @@ func mergeVolumes(from []v1.Volume, vols ...v1.Volume) []v1.Volume {
 	return from
 }
 
-func mergeVolumeMounts(from []v1.VolumeMount, mounts ...v1.VolumeMount) []v1.VolumeMount {
+func mergeVolumeMounts(from []corev1.VolumeMount, mounts ...corev1.VolumeMount) []corev1.VolumeMount {
 	names := sets.NewString()
 	for i := range mounts {
 		names.Insert(mounts[i].Name)
 	}
 
 	// Partition original slice by whether or not the name was passed in.
-	var existing, others []v1.VolumeMount
+	var existing, others []corev1.VolumeMount
 	for i := range from {
 		if names.Has(from[i].Name) {
 			existing = append(existing, from[i])

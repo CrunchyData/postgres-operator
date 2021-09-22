@@ -29,7 +29,6 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -429,11 +428,11 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-								AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-								Resources: v1.ResourceRequirements{
-									Requests: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceStorage: resource.MustParse("1Gi"),
+							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+								Resources: corev1.ResourceRequirements{
+									Requests: map[corev1.ResourceName]resource.Quantity{
+										corev1.ResourceStorage: resource.MustParse("1Gi"),
 									},
 								},
 							},
@@ -441,11 +440,11 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 					}, {
 						Name: "repo2",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-								AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-								Resources: v1.ResourceRequirements{
-									Requests: map[v1.ResourceName]resource.Quantity{
-										v1.ResourceStorage: resource.MustParse("2Gi"),
+							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+								Resources: corev1.ResourceRequirements{
+									Requests: map[corev1.ResourceName]resource.Quantity{
+										corev1.ResourceStorage: resource.MustParse("2Gi"),
 									},
 								},
 							},
@@ -458,22 +457,22 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 	testCases := []struct {
 		dedicatedRepoHostEnabled bool
-		sshConfig                *v1.ConfigMapProjection
-		sshSecret                *v1.SecretProjection
+		sshConfig                *corev1.ConfigMapProjection
+		sshSecret                *corev1.SecretProjection
 	}{{
 		dedicatedRepoHostEnabled: false,
 	}, {
 		dedicatedRepoHostEnabled: true,
-		sshConfig: &v1.ConfigMapProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-		sshSecret: &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+		sshConfig: &corev1.ConfigMapProjection{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
+		sshSecret: &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}, {
 		dedicatedRepoHostEnabled: true,
-		sshConfig: &v1.ConfigMapProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-		sshSecret: &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+		sshConfig: &corev1.ConfigMapProjection{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
+		sshSecret: &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}}
 
 	for _, tc := range testCases {
@@ -482,9 +481,9 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		customSecret := (tc.sshSecret != nil)
 		t.Run(fmt.Sprintf("dedicated:%t", dedicated), func(t *testing.T) {
 
-			template := &v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					Containers: []v1.Container{{Name: naming.ContainerDatabase}},
+			template := &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: naming.ContainerDatabase}},
 				},
 			}
 
@@ -509,7 +508,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 				// verify the ssh volume
 				var foundSSHVolume bool
-				var sshVolume v1.Volume
+				var sshVolume corev1.Volume
 				for _, v := range template.Spec.Volumes {
 					if v.Name == naming.PGBackRestSSHVolume {
 						foundSSHVolume = true
@@ -560,7 +559,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			}
 
 			var foundConfigVolume bool
-			var configVolume v1.Volume
+			var configVolume corev1.Volume
 			for _, v := range template.Spec.Volumes {
 				if v.Name == pgbackrest.ConfigVol {
 					foundConfigVolume = true
@@ -605,13 +604,13 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 func TestPodsToKeep(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		instances []v1.Pod
+		instances []corev1.Pod
 		want      map[string]int
-		checks    func(*testing.T, []v1.Pod)
+		checks    func(*testing.T, []corev1.Pod)
 	}{
 		{
 			name: "RemoveSetWithMasterOnly",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -623,12 +622,12 @@ func TestPodsToKeep(t *testing.T) {
 				},
 			},
 			want: map[string]int{},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 0)
 			},
 		}, {
 			name: "RemoveSetWithReplicaOnly",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -640,12 +639,12 @@ func TestPodsToKeep(t *testing.T) {
 				},
 			},
 			want: map[string]int{},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 0)
 			},
 		}, {
 			name: "KeepMasterOnly",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -659,12 +658,12 @@ func TestPodsToKeep(t *testing.T) {
 			want: map[string]int{
 				"daisy": 1,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 1)
 			},
 		}, {
 			name: "KeepNoRoleLabels",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -677,12 +676,12 @@ func TestPodsToKeep(t *testing.T) {
 			want: map[string]int{
 				"daisy": 1,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 1)
 			},
 		}, {
 			name: "RemoveSetWithNoRoleLabels",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -693,12 +692,12 @@ func TestPodsToKeep(t *testing.T) {
 				},
 			},
 			want: map[string]int{},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 0)
 			},
 		}, {
 			name: "KeepUnknownRoleLabel",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -712,12 +711,12 @@ func TestPodsToKeep(t *testing.T) {
 			want: map[string]int{
 				"daisy": 1,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 1)
 			},
 		}, {
 			name: "RemoveSetWithUnknownRoleLabel",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -729,12 +728,12 @@ func TestPodsToKeep(t *testing.T) {
 				},
 			},
 			want: map[string]int{},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 0)
 			},
 		}, {
 			name: "MasterLastInSet",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
@@ -757,13 +756,13 @@ func TestPodsToKeep(t *testing.T) {
 			want: map[string]int{
 				"daisy": 1,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 1)
 				assert.Equal(t, p[0].Labels[naming.LabelRole], "master")
 			},
 		}, {
 			name: "ScaleDownSetWithMaster",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
@@ -805,7 +804,7 @@ func TestPodsToKeep(t *testing.T) {
 				"max":   1,
 				"daisy": 1,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 2)
 				assert.Equal(t, p[0].Labels[naming.LabelRole], "master")
 				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "daisy")
@@ -814,7 +813,7 @@ func TestPodsToKeep(t *testing.T) {
 			},
 		}, {
 			name: "ScaleDownSetWithoutMaster",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
@@ -856,7 +855,7 @@ func TestPodsToKeep(t *testing.T) {
 				"max":   1,
 				"daisy": 2,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 3)
 				assert.Equal(t, p[0].Labels[naming.LabelRole], "master")
 				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "max")
@@ -867,7 +866,7 @@ func TestPodsToKeep(t *testing.T) {
 			},
 		}, {
 			name: "ScaleMasterSetToZero",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
@@ -900,7 +899,7 @@ func TestPodsToKeep(t *testing.T) {
 				"max":   0,
 				"daisy": 2,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 2)
 				assert.Equal(t, p[0].Labels[naming.LabelRole], "replica")
 				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "daisy")
@@ -909,7 +908,7 @@ func TestPodsToKeep(t *testing.T) {
 			},
 		}, {
 			name: "RemoveMasterInstanceSet",
-			instances: []v1.Pod{
+			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
@@ -950,7 +949,7 @@ func TestPodsToKeep(t *testing.T) {
 			want: map[string]int{
 				"daisy": 3,
 			},
-			checks: func(t *testing.T, p []v1.Pod) {
+			checks: func(t *testing.T, p []corev1.Pod) {
 				assert.Equal(t, len(p), 3)
 				assert.Equal(t, p[0].Labels[naming.LabelRole], "replica")
 				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "daisy")
@@ -986,7 +985,7 @@ func TestDeleteInstance(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &v1.Namespace{}
+	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
 	assert.NilError(t, reconciler.Client.Create(ctx, ns))
@@ -1118,7 +1117,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		name: "custom tolerations",
 		ip: intentParams{
 			spec: &v1beta1.PostgresInstanceSetSpec{
-				Tolerations: []v1.Toleration{},
+				Tolerations: []corev1.Toleration{},
 			},
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
@@ -1128,7 +1127,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		name: "custom topology spread constraints",
 		ip: intentParams{
 			spec: &v1beta1.PostgresInstanceSetSpec{
-				TopologySpreadConstraints: []v1.TopologySpreadConstraint{},
+				TopologySpreadConstraints: []corev1.TopologySpreadConstraint{},
 			},
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
@@ -1410,7 +1409,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 	testCases := []struct {
 		set                   v1beta1.PostgresInstanceSetSpec
 		fakeObservedInstances *observedInstances
-		fakeClusterVolumes    []v1.PersistentVolumeClaim
+		fakeClusterVolumes    []corev1.PersistentVolumeClaim
 		expectedInstanceNames []string
 	}{{
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1419,9 +1418,9 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{}},
 			}},
 			[]appsv1.StatefulSet{{}},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes:    []v1.PersistentVolumeClaim{{}},
+		fakeClusterVolumes:    []corev1.PersistentVolumeClaim{{}},
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1433,9 +1432,9 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 				Name: "instance1-abc",
 				Labels: map[string]string{
 					naming.LabelInstanceSet: "instance1"}}}},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-abc-def",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,
@@ -1452,9 +1451,9 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 				Name: "instance1-abc",
 				Labels: map[string]string{
 					naming.LabelInstanceSet: "instance1"}}}},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes:    []v1.PersistentVolumeClaim{},
+		fakeClusterVolumes:    []corev1.PersistentVolumeClaim{},
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1466,9 +1465,9 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 				Name: "instance1-abc",
 				Labels: map[string]string{
 					naming.LabelInstanceSet: "instance1"}}}},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []v1.PersistentVolumeClaim{
+		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-abc-def",
 				Labels: map[string]string{
@@ -1493,9 +1492,9 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 				Name: "instance1-abc",
 				Labels: map[string]string{
 					naming.LabelInstanceSet: "instance1"}}}},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-abc-def",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,
@@ -1504,7 +1503,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1.PersistentVolumeClaimSpec{}},
+			WALVolumeClaimSpec: &corev1.PersistentVolumeClaimSpec{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1513,9 +1512,9 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 				Name: "instance1-abc",
 				Labels: map[string]string{
 					naming.LabelInstanceSet: "instance1"}}}},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []v1.PersistentVolumeClaim{
+		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-abc-def",
 				Labels: map[string]string{
@@ -1531,15 +1530,15 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1.PersistentVolumeClaimSpec{}},
+			WALVolumeClaimSpec: &corev1.PersistentVolumeClaimSpec{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
 			}},
 			[]appsv1.StatefulSet{},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []v1.PersistentVolumeClaim{
+		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-def-ghi",
 				Labels: map[string]string{
@@ -1555,15 +1554,15 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1.PersistentVolumeClaimSpec{}},
+			WALVolumeClaimSpec: &corev1.PersistentVolumeClaimSpec{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
 			}},
 			[]appsv1.StatefulSet{},
-			[]v1.Pod{},
+			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []v1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-def-ghi",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,

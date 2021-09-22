@@ -18,7 +18,7 @@ package postgrescluster
 import (
 	"io"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -35,7 +35,7 @@ type podExecutor func(
 
 func newPodClient(config *rest.Config) (rest.Interface, error) {
 	codecs := serializer.NewCodecFactory(scheme.Scheme)
-	gvk, _ := apiutil.GVKForObject(&v1.Pod{}, scheme.Scheme)
+	gvk, _ := apiutil.GVKForObject(&corev1.Pod{}, scheme.Scheme)
 	return apiutil.RESTClientForGVK(gvk, false, config, codecs)
 }
 
@@ -51,7 +51,7 @@ func newPodExecutor(config *rest.Config) (podExecutor, error) {
 		request := client.Post().
 			Resource("pods").SubResource("exec").
 			Namespace(namespace).Name(pod).
-			VersionedParams(&v1.PodExecOptions{
+			VersionedParams(&corev1.PodExecOptions{
 				Container: container,
 				Command:   command,
 				Stdin:     stdin != nil,

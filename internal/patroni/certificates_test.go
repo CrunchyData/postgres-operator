@@ -21,7 +21,7 @@ import (
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/pki"
 )
@@ -76,7 +76,7 @@ func TestCertFile(t *testing.T) {
 }
 
 func TestInstanceCertificates(t *testing.T) {
-	certs := new(v1.Secret)
+	certs := new(corev1.Secret)
 	certs.Name = "some-name"
 
 	projections := instanceCertificates(certs)

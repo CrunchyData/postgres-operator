@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	// Google Kubernetes Engine / Google Cloud Platform authentication provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -40,7 +40,7 @@ const (
 )
 
 // getCMData returns the 'Data' content from the specified configmap
-func getCMData(cm v1.ConfigMap, key string) string {
+func getCMData(cm corev1.ConfigMap, key string) string {
 
 	return cm.Data[key]
 }

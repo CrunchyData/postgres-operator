@@ -20,7 +20,7 @@ import (
 	"path"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -298,10 +298,10 @@ func DynamicConfiguration(
 // instance container.
 func instanceEnvironment(
 	cluster *v1beta1.PostgresCluster,
-	clusterPodService *v1.Service,
-	leaderService *v1.Service,
-	podContainers []v1.Container,
-) []v1.EnvVar {
+	clusterPodService *corev1.Service,
+	leaderService *corev1.Service,
+	podContainers []corev1.Container,
+) []corev1.EnvVar {
 	var (
 		patroniPort  = *cluster.Spec.Patroni.Port
 		postgresPort = *cluster.Spec.Port
@@ -310,12 +310,12 @@ func instanceEnvironment(
 
 	// Gather Endpoint ports for any Container ports that match the leader
 	// Service definition.
-	ports := []v1.EndpointPort{}
+	ports := []corev1.EndpointPort{}
 	for _, sp := range leaderService.Spec.Ports {
 		for i := range podContainers {
 			for _, cp := range podContainers[i].Ports {
 				if sp.TargetPort.StrVal == cp.Name {
-					ports = append(ports, v1.EndpointPort{
+					ports = append(ports, corev1.EndpointPort{
 						Name:     sp.Name,
 						Port:     cp.ContainerPort,
 						Protocol: cp.Protocol,
@@ -331,12 +331,12 @@ func instanceEnvironment(
 	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/config.py#L247
 	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/postmaster.py#L215-L216
 
-	variables := []v1.EnvVar{
+	variables := []corev1.EnvVar{
 		// Set "name" to the v1.Pod's name. Required when using Kubernetes for DCS.
 		// Patroni must be restarted when changing this value.
 		{
 			Name: "PATRONI_NAME",
-			ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{
 				APIVersion: "v1",
 				FieldPath:  "metadata.name",
 			}},
@@ -346,7 +346,7 @@ func instanceEnvironment(
 		// Patroni must be restarted when changing this value.
 		{
 			Name: "PATRONI_KUBERNETES_POD_IP",
-			ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{
+			ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{
 				APIVersion: "v1",
 				FieldPath:  "status.podIP",
 			}},
@@ -421,25 +421,25 @@ func instanceEnvironment(
 
 // instanceConfigFiles returns projections of Patroni's configuration files
 // to include in the instance configuration volume.
-func instanceConfigFiles(cluster, instance *v1.ConfigMap) []v1.VolumeProjection {
-	return []v1.VolumeProjection{
+func instanceConfigFiles(cluster, instance *corev1.ConfigMap) []corev1.VolumeProjection {
+	return []corev1.VolumeProjection{
 		{
-			ConfigMap: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: cluster.Name,
 				},
-				Items: []v1.KeyToPath{{
+				Items: []corev1.KeyToPath{{
 					Key:  configMapFileKey,
 					Path: "~postgres-operator_cluster.yaml",
 				}},
 			},
 		},
 		{
-			ConfigMap: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
 					Name: instance.Name,
 				},
-				Items: []v1.KeyToPath{{
+				Items: []corev1.KeyToPath{{
 					Key:  configMapFileKey,
 					Path: "~postgres-operator_instance.yaml",
 				}},
@@ -604,7 +604,7 @@ func instanceYAML(
 }
 
 // probeTiming returns a Probe with thresholds and timeouts set according to spec.
-func probeTiming(spec *v1beta1.PatroniSpec) *v1.Probe {
+func probeTiming(spec *v1beta1.PatroniSpec) *corev1.Probe {
 	// "Probes should be configured in such a way that they start failing about
 	// time when the leader key is expiring."
 	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst
@@ -612,7 +612,7 @@ func probeTiming(spec *v1beta1.PatroniSpec) *v1.Probe {
 
 	// TODO(cbandy): When the probe times out, failure triggers at
 	// (FailureThreshold × PeriodSeconds + TimeoutSeconds)
-	probe := v1.Probe{
+	probe := corev1.Probe{
 		TimeoutSeconds:   *spec.SyncPeriodSeconds / 2,
 		PeriodSeconds:    *spec.SyncPeriodSeconds,
 		SuccessThreshold: 1,

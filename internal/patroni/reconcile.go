@@ -19,7 +19,7 @@ import (
 	"context"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -43,7 +43,7 @@ func ClusterConfigMap(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	inHBAs postgres.HBAs,
 	inParameters postgres.Parameters,
-	outClusterConfigMap *v1.ConfigMap,
+	outClusterConfigMap *corev1.ConfigMap,
 ) error {
 	var err error
 
@@ -59,7 +59,7 @@ func ClusterConfigMap(ctx context.Context,
 func InstanceConfigMap(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	inInstanceSpec *v1beta1.PostgresInstanceSetSpec,
-	outInstanceConfigMap *v1.ConfigMap,
+	outInstanceConfigMap *corev1.ConfigMap,
 ) error {
 	var err error
 
@@ -76,7 +76,7 @@ func InstanceConfigMap(ctx context.Context,
 // InstanceCertificates populates the shared Secret with certificates needed to run Patroni.
 func InstanceCertificates(ctx context.Context,
 	inRoot *pki.Certificate, inDNS *pki.Certificate,
-	inDNSKey *pki.PrivateKey, outInstanceCertificates *v1.Secret,
+	inDNSKey *pki.PrivateKey, outInstanceCertificates *corev1.Secret,
 ) error {
 	initialize.ByteMap(&outInstanceCertificates.Data)
 
@@ -95,13 +95,13 @@ func InstanceCertificates(ctx context.Context,
 // InstancePod populates a PodTemplateSpec with the fields needed to run Patroni.
 func InstancePod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
-	inClusterConfigMap *v1.ConfigMap,
-	inClusterPodService *v1.Service,
-	inPatroniLeaderService *v1.Service,
+	inClusterConfigMap *corev1.ConfigMap,
+	inClusterPodService *corev1.Service,
+	inPatroniLeaderService *corev1.Service,
 	inInstanceSpec *v1beta1.PostgresInstanceSetSpec,
-	inInstanceCertificates *v1.Secret,
-	inInstanceConfigMap *v1.ConfigMap,
-	outInstancePod *v1.PodTemplateSpec,
+	inInstanceCertificates *corev1.Secret,
+	inInstanceConfigMap *corev1.ConfigMap,
+	outInstancePod *corev1.PodTemplateSpec,
 ) error {
 	initialize.Labels(outInstancePod)
 
@@ -119,21 +119,21 @@ func InstancePod(ctx context.Context,
 		instanceEnvironment(inCluster, inClusterPodService, inPatroniLeaderService,
 			outInstancePod.Spec.Containers)...)
 
-	volume := v1.Volume{Name: "patroni-config"}
-	volume.Projected = new(v1.ProjectedVolumeSource)
+	volume := corev1.Volume{Name: "patroni-config"}
+	volume.Projected = new(corev1.ProjectedVolumeSource)
 
 	// Add our projections after those specified in the CR. Items later in the
 	// list take precedence over earlier items (that is, last write wins).
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
 	volume.Projected.Sources = append(append(append(
 		// TODO(cbandy): User config will come from the spec.
-		volume.Projected.Sources, []v1.VolumeProjection(nil)...),
+		volume.Projected.Sources, []corev1.VolumeProjection(nil)...),
 		instanceConfigFiles(inClusterConfigMap, inInstanceConfigMap)...),
 		instanceCertificates(inInstanceCertificates)...)
 
 	outInstancePod.Spec.Volumes = mergeVolumes(outInstancePod.Spec.Volumes, volume)
 
-	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, v1.VolumeMount{
+	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, corev1.VolumeMount{
 		Name:      volume.Name,
 		MountPath: configDirectory,
 		ReadOnly:  true,
@@ -145,7 +145,7 @@ func InstancePod(ctx context.Context,
 }
 
 // instanceProbes adds Patroni liveness and readiness probes to container.
-func instanceProbes(cluster *v1beta1.PostgresCluster, container *v1.Container) {
+func instanceProbes(cluster *v1beta1.PostgresCluster, container *corev1.Container) {
 
 	// Patroni uses a watchdog to ensure that PostgreSQL does not accept commits
 	// after the leader lock expires, even if Patroni becomes unresponsive.
@@ -161,10 +161,10 @@ func instanceProbes(cluster *v1beta1.PostgresCluster, container *v1.Container) {
 	// TODO(cbandy): Consider if a PreStop hook is necessary.
 	container.LivenessProbe = probeTiming(cluster.Spec.Patroni)
 	container.LivenessProbe.InitialDelaySeconds = 3
-	container.LivenessProbe.HTTPGet = &v1.HTTPGetAction{
+	container.LivenessProbe.HTTPGet = &corev1.HTTPGetAction{
 		Path:   "/liveness",
 		Port:   intstr.FromInt(int(*cluster.Spec.Patroni.Port)),
-		Scheme: v1.URISchemeHTTPS,
+		Scheme: corev1.URISchemeHTTPS,
 	}
 
 	// Readiness is reflected in the controlling object's status (e.g. ReadyReplicas)
@@ -174,10 +174,10 @@ func instanceProbes(cluster *v1beta1.PostgresCluster, container *v1.Container) {
 	// of the leader Pod in the leader Service.
 	container.ReadinessProbe = probeTiming(cluster.Spec.Patroni)
 	container.ReadinessProbe.InitialDelaySeconds = 3
-	container.ReadinessProbe.HTTPGet = &v1.HTTPGetAction{
+	container.ReadinessProbe.HTTPGet = &corev1.HTTPGetAction{
 		Path:   "/readiness",
 		Port:   intstr.FromInt(int(*cluster.Spec.Patroni.Port)),
-		Scheme: v1.URISchemeHTTPS,
+		Scheme: corev1.URISchemeHTTPS,
 	}
 }
 

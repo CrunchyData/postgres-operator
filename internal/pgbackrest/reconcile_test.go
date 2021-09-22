@@ -22,7 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"gotest.tools/v3/assert"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,29 +34,29 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 
 	testsCases := []struct {
 		repos      []v1beta1.PGBackRestRepo
-		containers []v1.Container
+		containers []corev1.Container
 		testMap    map[string]string
 	}{{
 		repos: []v1beta1.PGBackRestRepo{
 			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 		},
-		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 		testMap:    map[string]string{},
 	}, {
 		repos: []v1beta1.PGBackRestRepo{
 			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 		},
-		containers: []v1.Container{{Name: "database"}},
+		containers: []corev1.Container{{Name: "database"}},
 		testMap:    map[string]string{},
 	}, {
 		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 		testMap:    map[string]string{},
 	}, {
 		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-		containers: []v1.Container{{Name: "database"}},
+		containers: []corev1.Container{{Name: "database"}},
 		testMap:    map[string]string{},
 	},
 		// rerun the same tests, but this time simulate an existing PVC
@@ -65,7 +65,7 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 				{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 				{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 			},
-			containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+			containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
@@ -74,19 +74,19 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 				{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 				{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 			},
-			containers: []v1.Container{{Name: "database"}},
+			containers: []corev1.Container{{Name: "database"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
 		}, {
 			repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-			containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+			containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
 		}, {
 			repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-			containers: []v1.Container{{Name: "database"}},
+			containers: []corev1.Container{{Name: "database"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
@@ -95,8 +95,8 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 	for _, tc := range testsCases {
 		t.Run(fmt.Sprintf("repos=%d, containers=%d", len(tc.repos), len(tc.containers)), func(t *testing.T) {
 			postgresCluster.Spec.Backups.PGBackRest.Repos = tc.repos
-			template := &v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
+			template := &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
 					Containers: tc.containers,
 				},
 			}
@@ -140,35 +140,35 @@ func TestAddConfigsToPod(t *testing.T) {
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 
 	testCases := []struct {
-		configs    []v1.VolumeProjection
-		containers []v1.Container
+		configs    []corev1.VolumeProjection
+		containers []corev1.Container
 	}{{
-		configs: []v1.VolumeProjection{
-			{ConfigMap: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-config.conf"}}},
-			{Secret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-secret.conf"}}}},
-		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		configs: []corev1.VolumeProjection{
+			{ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "cust-config.conf"}}},
+			{Secret: &corev1.SecretProjection{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "cust-secret.conf"}}}},
+		containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 	}, {
-		configs: []v1.VolumeProjection{
-			{ConfigMap: &v1.ConfigMapProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-config.conf"}}},
-			{Secret: &v1.SecretProjection{
-				LocalObjectReference: v1.LocalObjectReference{Name: "cust-secret.conf"}}}},
-		containers: []v1.Container{{Name: "pgbackrest"}},
+		configs: []corev1.VolumeProjection{
+			{ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "cust-config.conf"}}},
+			{Secret: &corev1.SecretProjection{
+				LocalObjectReference: corev1.LocalObjectReference{Name: "cust-secret.conf"}}}},
+		containers: []corev1.Container{{Name: "pgbackrest"}},
 	}, {
-		configs:    []v1.VolumeProjection{},
-		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		configs:    []corev1.VolumeProjection{},
+		containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 	}, {
-		configs:    []v1.VolumeProjection{},
-		containers: []v1.Container{{Name: "pgbackrest"}},
+		configs:    []corev1.VolumeProjection{},
+		containers: []corev1.Container{{Name: "pgbackrest"}},
 	}}
 
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("configs=%d, containers=%d", len(tc.configs), len(tc.containers)), func(t *testing.T) {
 			postgresCluster.Spec.Backups.PGBackRest.Configuration = tc.configs
-			template := &v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
+			template := &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
 					Containers: tc.containers,
 				},
 			}
@@ -178,7 +178,7 @@ func TestAddConfigsToPod(t *testing.T) {
 			assert.NilError(t, err)
 
 			// check that the backrest config volume exists
-			var configVol *v1.Volume
+			var configVol *corev1.Volume
 			var foundConfigVol bool
 			for i, v := range template.Spec.Volumes {
 				if v.Name == ConfigVol {
@@ -238,32 +238,32 @@ func TestAddSSHToPod(t *testing.T) {
 			Name: "hippo",
 		},
 		Spec: v1beta1.PostgresClusterSpec{
-			ImagePullPolicy: v1.PullAlways,
+			ImagePullPolicy: corev1.PullAlways,
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{},
 			},
 		},
 	}
 
-	resources := v1.ResourceRequirements{
-		Requests: v1.ResourceList{
-			v1.ResourceCPU:    resource.MustParse("250m"),
-			v1.ResourceMemory: resource.MustParse("128Mi"),
+	resources := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("250m"),
+			corev1.ResourceMemory: resource.MustParse("128Mi"),
 		},
 	}
 
 	testCases := []struct {
-		sshConfig               *v1.ConfigMapProjection
-		sshSecret               *v1.SecretProjection
-		additionalSSHContainers []v1.Container
+		sshConfig               *corev1.ConfigMapProjection
+		sshSecret               *corev1.SecretProjection
+		additionalSSHContainers []corev1.Container
 	}{{
-		sshConfig: &v1.ConfigMapProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-		sshSecret: &v1.SecretProjection{
-			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-		additionalSSHContainers: []v1.Container{{Name: "database"}},
+		sshConfig: &corev1.ConfigMapProjection{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
+		sshSecret: &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
+		additionalSSHContainers: []corev1.Container{{Name: "database"}},
 	}, {
-		additionalSSHContainers: []v1.Container{{Name: "database"}},
+		additionalSSHContainers: []corev1.Container{{Name: "database"}},
 	}}
 
 	for _, tc := range testCases {
@@ -285,8 +285,8 @@ func TestAddSSHToPod(t *testing.T) {
 
 		t.Run(testRunStr, func(t *testing.T) {
 
-			template := &v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
+			template := &corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
 					Containers: tc.additionalSSHContainers,
 				},
 			}
@@ -297,7 +297,7 @@ func TestAddSSHToPod(t *testing.T) {
 
 			// verify the ssh volume
 			var foundSSHVolume bool
-			var sshVolume v1.Volume
+			var sshVolume corev1.Volume
 			for _, v := range template.Spec.Volumes {
 				if v.Name == naming.PGBackRestSSHVolume {
 					foundSSHVolume = true
@@ -335,7 +335,7 @@ func TestAddSSHToPod(t *testing.T) {
 					foundSSHContainer = true
 					// verify proper resources are present and correct
 					assert.DeepEqual(t, c.Resources, resources)
-					assert.Equal(t, c.ImagePullPolicy, v1.PullAlways)
+					assert.Equal(t, c.ImagePullPolicy, corev1.PullAlways)
 				}
 				var foundVolumeMount bool
 				for _, vm := range c.VolumeMounts {
@@ -352,7 +352,7 @@ func TestAddSSHToPod(t *testing.T) {
 	}
 }
 
-func getContainerNames(containers []v1.Container) []string {
+func getContainerNames(containers []corev1.Container) []string {
 	names := make([]string, len(containers))
 	for i, c := range containers {
 		names[i] = c.Name

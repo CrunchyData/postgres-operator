@@ -22,7 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,7 +48,7 @@ func (r *Reconciler) deletePatroniArtifacts(
 	selector, err := naming.AsSelector(naming.ClusterPatronis(cluster))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.DeleteAllOf(ctx, &v1.Endpoints{},
+			r.Client.DeleteAllOf(ctx, &corev1.Endpoints{},
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
@@ -72,8 +71,8 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 	// - https://releases.k8s.io/v1.16.0/pkg/controller/endpoint/endpoints_controller.go#L547
 	// - https://releases.k8s.io/v1.20.0/pkg/controller/endpoint/endpoints_controller.go#L580
 	// - https://github.com/zalando/patroni/blob/v2.0.1/patroni/dcs/kubernetes.py#L865-L881
-	dcsService := &v1.Service{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
-	dcsService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
+	dcsService := &corev1.Service{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
+	dcsService.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
 	err := errors.WithStack(r.setControllerReference(cluster, dcsService))
 
@@ -88,7 +87,7 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 
 	// Allocate no IP address (headless) and create no Endpoints.
 	// - https://docs.k8s.io/concepts/services-networking/service/#headless-services
-	dcsService.Spec.ClusterIP = v1.ClusterIPNone
+	dcsService.Spec.ClusterIP = corev1.ClusterIPNone
 	dcsService.Spec.Selector = nil
 
 	if err == nil {
@@ -113,7 +112,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 		return nil
 	}
 
-	var pod *v1.Pod
+	var pod *corev1.Pod
 	for _, instance := range instances.forCluster {
 		if terminating, known := instance.IsTerminating(); !terminating && known {
 			running, known := instance.IsRunning(naming.ContainerDatabase)
@@ -226,7 +225,7 @@ func (r *Reconciler) reconcilePatroniStatus(
 		}
 	}
 
-	dcs := &v1.Endpoints{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
+	dcs := &corev1.Endpoints{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(dcs), dcs)))
 
@@ -261,11 +260,11 @@ func (r *Reconciler) reconcilePatroniStatus(
 func (r *Reconciler) reconcileReplicationSecret(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	rootCACert *pki.RootCertificateAuthority,
-) (*v1.Secret, error) {
+) (*corev1.Secret, error) {
 
 	// if a custom postgrescluster secret is provided, just return it
 	if cluster.Spec.CustomReplicationClientTLSSecret != nil {
-		custom := &v1.Secret{ObjectMeta: metav1.ObjectMeta{
+		custom := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
 			Name:      cluster.Spec.CustomReplicationClientTLSSecret.Name,
 			Namespace: cluster.Namespace,
 		}}
@@ -277,7 +276,7 @@ func (r *Reconciler) reconcileReplicationSecret(
 		return nil, err
 	}
 
-	existing := &v1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
+	existing := &corev1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
@@ -299,8 +298,8 @@ func (r *Reconciler) reconcileReplicationSecret(
 		err = errors.WithStack(clientLeaf.Generate(rootCACert))
 	}
 
-	intent := &v1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
-	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	intent := &corev1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
+	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Data = make(map[string][]byte)
 
 	// set labels and annotations
@@ -339,12 +338,12 @@ func (r *Reconciler) reconcileReplicationSecret(
 
 // replicationCertSecretProjection returns a secret projection of the postgrescluster's
 // client certificate and key to include in the instance configuration volume.
-func replicationCertSecretProjection(certificate *v1.Secret) *v1.SecretProjection {
-	return &v1.SecretProjection{
-		LocalObjectReference: v1.LocalObjectReference{
+func replicationCertSecretProjection(certificate *corev1.Secret) *corev1.SecretProjection {
+	return &corev1.SecretProjection{
+		LocalObjectReference: corev1.LocalObjectReference{
 			Name: certificate.Name,
 		},
-		Items: []v1.KeyToPath{
+		Items: []corev1.KeyToPath{
 			{
 				Key:  naming.ReplicationCert,
 				Path: naming.ReplicationCertPath,

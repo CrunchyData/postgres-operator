@@ -21,7 +21,6 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -39,9 +38,9 @@ import (
 func (r *Reconciler) reconcileClusterConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
-) (*v1.ConfigMap, error) {
-	clusterConfigMap := &v1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
-	clusterConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
+) (*corev1.ConfigMap, error) {
+	clusterConfigMap := &corev1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
+	clusterConfigMap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterConfigMap))
 
@@ -68,9 +67,9 @@ func (r *Reconciler) reconcileClusterConfigMap(
 // names to Pods related to cluster.
 func (r *Reconciler) reconcileClusterPodService(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) (*v1.Service, error) {
-	clusterPodService := &v1.Service{ObjectMeta: naming.ClusterPodService(cluster)}
-	clusterPodService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
+) (*corev1.Service, error) {
+	clusterPodService := &corev1.Service{ObjectMeta: naming.ClusterPodService(cluster)}
+	clusterPodService.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterPodService))
 
@@ -85,7 +84,7 @@ func (r *Reconciler) reconcileClusterPodService(
 	// this allows a properly configured Pod to get a DNS record based on its name.
 	// - https://docs.k8s.io/concepts/services-networking/service/#headless-services
 	// - https://docs.k8s.io/concepts/services-networking/dns-pod-service/#pods
-	clusterPodService.Spec.ClusterIP = v1.ClusterIPNone
+	clusterPodService.Spec.ClusterIP = corev1.ClusterIPNone
 	clusterPodService.Spec.PublishNotReadyAddresses = true
 	clusterPodService.Spec.Selector = map[string]string{
 		naming.LabelCluster: cluster.Name,
@@ -267,7 +266,7 @@ func (r *Reconciler) reconcileClusterReplicaService(
 // PostgresCluster spec.
 func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, observed *observedInstances,
-	clusterVolumes []v1.PersistentVolumeClaim) (bool, error) {
+	clusterVolumes []corev1.PersistentVolumeClaim) (bool, error) {
 
 	// a hash func to hash the pgBackRest restore options
 	hashFunc := func(jobConfigs []string) (string, error) {
