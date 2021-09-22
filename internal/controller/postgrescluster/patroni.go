@@ -270,10 +270,7 @@ func (r *Reconciler) reconcileReplicationSecret(
 		}}
 		err := errors.WithStack(r.Client.Get(ctx,
 			client.ObjectKeyFromObject(custom), custom))
-		if err == nil {
-			return custom, err
-		}
-		return nil, err
+		return custom, err
 	}
 
 	existing := &corev1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
@@ -330,10 +327,7 @@ func (r *Reconciler) reconcileReplicationSecret(
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, intent))
 	}
-	if err == nil {
-		return intent, err
-	}
-	return nil, err
+	return intent, err
 }
 
 // replicationCertSecretProjection returns a secret projection of the postgrescluster's
