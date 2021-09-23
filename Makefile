@@ -1,6 +1,5 @@
 
 # Default values if not already set
-ANSIBLE_VERSION ?= 2.9.*
 PGOROOT ?= $(CURDIR)
 PGO_BASEOS ?= centos8
 BASE_IMAGE_OS ?= $(PGO_BASEOS)
@@ -9,7 +8,6 @@ PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= $(shell git describe --tags)
 PGO_PG_VERSION ?= 13
 PGO_PG_FULLVERSION ?= 13.4
-PGO_BACKREST_VERSION ?= 2.33
 PGO_KUBE_CLIENT ?= kubectl
 PACKAGER ?= yum
 

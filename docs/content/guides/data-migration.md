@@ -71,7 +71,7 @@ kind: PostgresCluster
 metadata:
   name: oldhippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
   postgresVersion: 13
   dataSource:
     volumes:
@@ -100,7 +100,7 @@ spec:
             storage: 1G
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.33-2
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
       repoHost:
         dedicated: {}
       repos:

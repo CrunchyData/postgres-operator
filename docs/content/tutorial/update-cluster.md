@@ -17,7 +17,7 @@ The Postgres image is referenced using the `spec.image` and looks similar to the
 
 ```
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
 ```
 
 Diving into the tag a bit further, you will notice the `13.4-0` portion. This represents the Postgres minor version (`13.4`) and the patch number of the release `0`. If the patch number is incremented (e.g. `13.4-1`), this means that the container is rebuilt, but there are no changes to the Postgres version. If the minor version is incremented (e.g. `13.4-0`), this means that the is a newer bug fix release of Postgres within the container.
@@ -26,7 +26,7 @@ To update the image, you just need to modify the `spec.image` field with the new
 
 ```
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.4-0
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
 ```
 
 You can apply the changes using `kubectl apply`. Similar to the rolling update example when we [resized the cluster]({{< relref "./resize-cluster.md" >}}), the update is first applied to the Postgres replicas, then a controlled switchover occurs, and the final instance is updated.
