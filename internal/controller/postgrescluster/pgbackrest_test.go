@@ -323,8 +323,8 @@ func TestReconcilePGBackRest(t *testing.T) {
 		// TODO(tjmoore4): Add additional tests to test appending existing
 		// topology spread constraints and spec.disableDefaultPodScheduling being
 		// set to true (as done in instance StatefulSet tests).
-		assert.Assert(t, marshalMatches(repo.Spec.Template.Spec.TopologySpreadConstraints,
-			`- labelSelector:
+		assert.Assert(t, marshalMatches(repo.Spec.Template.Spec.TopologySpreadConstraints, `
+- labelSelector:
     matchExpressions:
     - key: postgres-operator.crunchydata.com/cluster
       operator: In
@@ -337,33 +337,29 @@ func TestReconcilePGBackRest(t *testing.T) {
   whenUnsatisfiable: ScheduleAnyway
 - labelSelector:
     matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - hippocluster
     - key: postgres-operator.crunchydata.com/data
       operator: In
       values:
       - postgres
       - pgbackrest
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: hippocluster
   maxSkew: 1
   topologyKey: kubernetes.io/hostname
   whenUnsatisfiable: ScheduleAnyway
 - labelSelector:
     matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - hippocluster
     - key: postgres-operator.crunchydata.com/data
       operator: In
       values:
       - postgres
       - pgbackrest
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: hippocluster
   maxSkew: 1
   topologyKey: topology.kubernetes.io/zone
   whenUnsatisfiable: ScheduleAnyway
-`))
+		`))
 
 		// Ensure pod priority class has been added to dedicated repo
 		if repo.Spec.Template.Spec.PriorityClassName != "some-priority-class" {
