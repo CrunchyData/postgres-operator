@@ -42,35 +42,31 @@ named 'hippo', the default Pod Topology Spread Constraints applied on Postgres
 Instance and pgBackRest Repo Host Pods are as follows:
 
 ```
-    topologySpreadConstraints:
-    - maxSkew: 1
-      topologyKey: kubernetes.io/hostname
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchExpressions:
-        - key: postgres-operator.crunchydata.com/cluster
-          operator: In
-          values:
-          - hippo
-        - key: postgres-operator.crunchydata.com/data
-          operator: In
-          values:
-          - postgres
-          - pgbackrest
-    - maxSkew: 1
-      topologyKey: topology.kubernetes.io/zone
-      whenUnsatisfiable: ScheduleAnyway
-      labelSelector:
-        matchExpressions:
-        - key: postgres-operator.crunchydata.com/cluster
-          operator: In
-          values:
-          - hippo
-        - key: postgres-operator.crunchydata.com/data
-          operator: In
-          values:
-          - postgres
-          - pgbackrest
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        postgres-operator.crunchydata.com/cluster: hippo
+      matchExpressions:
+      - key: postgres-operator.crunchydata.com/data
+        operator: In
+        values:
+        - postgres
+        - pgbackrest
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        postgres-operator.crunchydata.com/cluster: hippo
+      matchExpressions:
+      - key: postgres-operator.crunchydata.com/data
+        operator: In
+        values:
+        - postgres
+        - pgbackrest
 ```
 
 Similarly, for pgBouncer Pods they will be:
@@ -81,28 +77,16 @@ topologySpreadConstraints:
     topologyKey: kubernetes.io/hostname
     whenUnsatisfiable: ScheduleAnyway
     labelSelector:
-      matchExpressions:
-      - key: postgres-operator.crunchydata.com/cluster
-        operator: In
-        values:
-        - hippo
-      - key: postgres-operator.crunchydata.com/role
-        operator: In
-        values:
-        - pgbouncer
+      matchLabels:
+        postgres-operator.crunchydata.com/cluster: hippo
+        postgres-operator.crunchydata.com/role: pgbouncer
   - maxSkew: 1
     topologyKey: topology.kubernetes.io/zone
     whenUnsatisfiable: ScheduleAnyway
     labelSelector:
-      matchExpressions:
-      - key: postgres-operator.crunchydata.com/cluster
-        operator: In
-        values:
-        - hippo
-      - key: postgres-operator.crunchydata.com/role
-        operator: In
-        values:
-        - pgbouncer
+      matchLabels:
+        postgres-operator.crunchydata.com/cluster: hippo
+        postgres-operator.crunchydata.com/role: pgbouncer
 ```
 
 Which, as described in the [API documentation](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/#spread-constraints-for-pods),

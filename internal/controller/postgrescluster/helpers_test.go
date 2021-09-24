@@ -1,5 +1,3 @@
-// +build envtest
-
 /*
  Copyright 2021 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,6 +35,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -101,7 +100,7 @@ func testCluster() *v1beta1.PostgresCluster {
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name:                "instance1",
-				Replicas:            Int32(1),
+				Replicas:            initialize.Int32(1),
 				DataVolumeClaimSpec: testVolumeClaimSpec(),
 			}},
 			Backups: v1beta1.Backups{

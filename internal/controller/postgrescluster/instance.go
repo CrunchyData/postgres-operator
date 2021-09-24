@@ -1165,29 +1165,11 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	if cluster.Spec.DisableDefaultPodScheduling == nil ||
 		(cluster.Spec.DisableDefaultPodScheduling != nil &&
 			!*cluster.Spec.DisableDefaultPodScheduling) {
-		sts.Spec.Template.Spec.TopologySpreadConstraints = append(sts.Spec.Template.Spec.TopologySpreadConstraints,
-			corev1.TopologySpreadConstraint{
-				MaxSkew:           int32(1),
-				TopologyKey:       "kubernetes.io/hostname",
-				WhenUnsatisfiable: corev1.ScheduleAnyway,
-				LabelSelector: &metav1.LabelSelector{
-					MatchExpressions: []metav1.LabelSelectorRequirement{
-						{Key: naming.LabelCluster, Operator: "In", Values: []string{cluster.Name}},
-						{Key: naming.LabelData, Operator: "In", Values: []string{naming.DataPostgres, naming.DataPGBackRest}},
-					},
-				},
-			},
-			corev1.TopologySpreadConstraint{
-				MaxSkew:           int32(1),
-				TopologyKey:       "topology.kubernetes.io/zone",
-				WhenUnsatisfiable: corev1.ScheduleAnyway,
-				LabelSelector: &metav1.LabelSelector{
-					MatchExpressions: []metav1.LabelSelectorRequirement{
-						{Key: naming.LabelCluster, Operator: "In", Values: []string{cluster.Name}},
-						{Key: naming.LabelData, Operator: "In", Values: []string{naming.DataPostgres, naming.DataPGBackRest}},
-					},
-				},
-			})
+		sts.Spec.Template.Spec.TopologySpreadConstraints = append(
+			sts.Spec.Template.Spec.TopologySpreadConstraints,
+			defaultTopologySpreadConstraints(
+				naming.ClusterDataForPostgresAndPGBackRest(cluster.Name),
+			)...)
 	}
 
 	// Though we use a StatefulSet to keep an instance running, we only ever

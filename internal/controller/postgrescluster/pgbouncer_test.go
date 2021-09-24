@@ -330,34 +330,22 @@ func TestReconcilePGBouncerDeployment(t *testing.T) {
 		// TODO(tjmoore4): Add additional tests to test appending existing
 		// topology spread constraints and spec.disableDefaultPodScheduling being
 		// set to true (as done in instance StatefulSet tests).
-		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.Spec.TopologySpreadConstraints,
-			`- labelSelector:
-    matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - test-cluster
-    - key: postgres-operator.crunchydata.com/role
-      operator: In
-      values:
-      - pgbouncer
+		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.Spec.TopologySpreadConstraints, `
+- labelSelector:
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: test-cluster
+      postgres-operator.crunchydata.com/role: pgbouncer
   maxSkew: 1
   topologyKey: kubernetes.io/hostname
   whenUnsatisfiable: ScheduleAnyway
 - labelSelector:
-    matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - test-cluster
-    - key: postgres-operator.crunchydata.com/role
-      operator: In
-      values:
-      - pgbouncer
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: test-cluster
+      postgres-operator.crunchydata.com/role: pgbouncer
   maxSkew: 1
   topologyKey: topology.kubernetes.io/zone
   whenUnsatisfiable: ScheduleAnyway
-`))
+		`))
 	})
 
 }

@@ -46,6 +46,21 @@ func Cluster(cluster string) metav1.LabelSelector {
 	}
 }
 
+// ClusterDataForPostgresAndPGBackRest selects things for PostgreSQL data and
+// things for pgBackRest data.
+func ClusterDataForPostgresAndPGBackRest(cluster string) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster: cluster,
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{{
+			Key:      LabelData,
+			Operator: metav1.LabelSelectorOpIn,
+			Values:   []string{DataPostgres, DataPGBackRest},
+		}},
+	}
+}
+
 // ClusterInstance selects things for a single instance in a cluster.
 func ClusterInstance(cluster, instance string) metav1.LabelSelector {
 	return metav1.LabelSelector{

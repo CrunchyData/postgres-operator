@@ -540,29 +540,11 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	if postgresCluster.Spec.DisableDefaultPodScheduling == nil ||
 		(postgresCluster.Spec.DisableDefaultPodScheduling != nil &&
 			!*postgresCluster.Spec.DisableDefaultPodScheduling) {
-		repo.Spec.Template.Spec.TopologySpreadConstraints = append(repo.Spec.Template.Spec.TopologySpreadConstraints,
-			corev1.TopologySpreadConstraint{
-				MaxSkew:           int32(1),
-				TopologyKey:       "kubernetes.io/hostname",
-				WhenUnsatisfiable: corev1.ScheduleAnyway,
-				LabelSelector: &metav1.LabelSelector{
-					MatchExpressions: []metav1.LabelSelectorRequirement{
-						{Key: naming.LabelCluster, Operator: "In", Values: []string{postgresCluster.Name}},
-						{Key: naming.LabelData, Operator: "In", Values: []string{naming.DataPostgres, naming.DataPGBackRest}},
-					},
-				},
-			},
-			corev1.TopologySpreadConstraint{
-				MaxSkew:           int32(1),
-				TopologyKey:       "topology.kubernetes.io/zone",
-				WhenUnsatisfiable: corev1.ScheduleAnyway,
-				LabelSelector: &metav1.LabelSelector{
-					MatchExpressions: []metav1.LabelSelectorRequirement{
-						{Key: naming.LabelCluster, Operator: "In", Values: []string{postgresCluster.Name}},
-						{Key: naming.LabelData, Operator: "In", Values: []string{naming.DataPostgres, naming.DataPGBackRest}},
-					},
-				},
-			})
+		repo.Spec.Template.Spec.TopologySpreadConstraints = append(
+			repo.Spec.Template.Spec.TopologySpreadConstraints,
+			defaultTopologySpreadConstraints(
+				naming.ClusterDataForPostgresAndPGBackRest(postgresCluster.Name),
+			)...)
 	}
 
 	// Set the image pull secrets, if any exist.

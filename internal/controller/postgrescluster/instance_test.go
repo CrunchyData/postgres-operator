@@ -1212,36 +1212,32 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		name: "check default scheduling constraints are added",
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 2)
-			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints,
-				`- labelSelector:
+			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints, `
+- labelSelector:
     matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - hippo
     - key: postgres-operator.crunchydata.com/data
       operator: In
       values:
       - postgres
       - pgbackrest
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: hippo
   maxSkew: 1
   topologyKey: kubernetes.io/hostname
   whenUnsatisfiable: ScheduleAnyway
 - labelSelector:
     matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - hippo
     - key: postgres-operator.crunchydata.com/data
       operator: In
       values:
       - postgres
       - pgbackrest
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: hippo
   maxSkew: 1
   topologyKey: topology.kubernetes.io/zone
   whenUnsatisfiable: ScheduleAnyway
-`))
+			`))
 		},
 	}, {
 		name: "check default scheduling constraints are appended to existing",
@@ -1263,8 +1259,8 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 3)
-			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints,
-				`- labelSelector:
+			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints, `
+- labelSelector:
     matchExpressions:
     - key: postgres-operator.crunchydata.com/cluster
       operator: In
@@ -1277,33 +1273,29 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
   whenUnsatisfiable: ScheduleAnyway
 - labelSelector:
     matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - hippo
     - key: postgres-operator.crunchydata.com/data
       operator: In
       values:
       - postgres
       - pgbackrest
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: hippo
   maxSkew: 1
   topologyKey: kubernetes.io/hostname
   whenUnsatisfiable: ScheduleAnyway
 - labelSelector:
     matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - hippo
     - key: postgres-operator.crunchydata.com/data
       operator: In
       values:
       - postgres
       - pgbackrest
+    matchLabels:
+      postgres-operator.crunchydata.com/cluster: hippo
   maxSkew: 1
   topologyKey: topology.kubernetes.io/zone
   whenUnsatisfiable: ScheduleAnyway
-`))
+			`))
 		},
 	}, {
 		name: "check defined constraint when defaults disabled",

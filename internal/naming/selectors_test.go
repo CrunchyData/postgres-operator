@@ -43,6 +43,18 @@ func TestCluster(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid")
 }
 
+func TestClusterDataForPostgresAndPGBackRest(t *testing.T) {
+	s, err := AsSelector(ClusterDataForPostgresAndPGBackRest("something"))
+	assert.NilError(t, err)
+	assert.DeepEqual(t, s.String(), strings.Join([]string{
+		"postgres-operator.crunchydata.com/cluster=something",
+		"postgres-operator.crunchydata.com/data in (pgbackrest,postgres)",
+	}, ","))
+
+	_, err = AsSelector(ClusterDataForPostgresAndPGBackRest("--whoa/yikes"))
+	assert.ErrorContains(t, err, "invalid")
+}
+
 func TestClusterInstance(t *testing.T) {
 	s, err := AsSelector(ClusterInstance("daisy", "dog"))
 	assert.NilError(t, err)
