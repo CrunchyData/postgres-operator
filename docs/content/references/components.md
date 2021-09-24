@@ -79,6 +79,7 @@ The table also lists the initial PGO version that the version of the extension i
 | `set_user` | 3.0.0 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `set_user` | 2.0.1 | 13, 12, 11, 10  | 5.0.2 |
 | `set_user` | 2.0.0 | 13, 12, 11, 10  | 5.0.0 |
+| `TimescaleDB` | 2.4.2 | 13, 12  | 5.0.3 |
 | `TimescaleDB` | 2.4.0 | 13, 12  | 5.0.2 |
 | `TimescaleDB` | 2.3.1 | 11  | 5.0.1 |
 | `TimescaleDB` | 2.2.0 | 13, 12, 11  | 5.0.0 |
@@ -87,11 +88,11 @@ The table also lists the initial PGO version that the version of the extension i
 
 ### Geospatial Extensions
 
-The following extensions are available in the geospatially aware containers (`crunchy-postgres-gis-ha`):
+The following extensions are available in the geospatially aware containers (`crunchy-postgres-gis`):
 
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
-| `PostGIS` | 3.1 | 13  | 5.0.0 |
+| `PostGIS` | 3.1 | 14, 13  | 5.0.0 |
 | `PostGIS` | 3.0 | 13, 12  | 5.0.0 |
 | `PostGIS` | 2.5 | 12, 11  | 5.0.0 |
 | `PostGIS` | 2.4 | 11, 10  | 5.0.0 |
