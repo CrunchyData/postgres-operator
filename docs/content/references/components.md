@@ -55,7 +55,7 @@ The listed versions of Postgres show the latest minor release (e.g. 13.4) of eac
 | `crunchy-postgres-gis-ha` | 10.18-2.4 | 5.0.0 | 5.0.2 |
 | `crunchy-postgres-gis-ha` | 10.18-2.3 | 5.0.0 | 5.0.2 |
 
-The Crunchy Postgres components include Patroni 2.1.0.
+The Crunchy Postgres components include Patroni 2.1.1.
 
 ## Extensions Compatibility
 
