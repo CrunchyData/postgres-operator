@@ -25,6 +25,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,8 +47,10 @@ var suite struct {
 	Config *rest.Config
 	Scheme *runtime.Scheme
 
-	Environment *envtest.Environment
-	Manager     manager.Manager
+	Environment   *envtest.Environment
+	ServerVersion *version.Version
+
+	Manager manager.Manager
 }
 
 func TestAPIs(t *testing.T) {
@@ -75,6 +79,15 @@ var _ = BeforeSuite(func() {
 
 	suite.Config = suite.Environment.Config
 	suite.Client, err = client.New(suite.Config, client.Options{Scheme: suite.Scheme})
+	Expect(err).ToNot(HaveOccurred())
+
+	dc, err := discovery.NewDiscoveryClientForConfig(suite.Config)
+	Expect(err).ToNot(HaveOccurred())
+
+	server, err := dc.ServerVersion()
+	Expect(err).ToNot(HaveOccurred())
+
+	suite.ServerVersion, err = version.ParseGeneric(server.GitVersion)
 	Expect(err).ToNot(HaveOccurred())
 }, 60)
 
