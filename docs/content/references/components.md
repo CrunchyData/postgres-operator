@@ -25,8 +25,23 @@ The listed versions of Postgres show the latest minor release (e.g. 13.4) of eac
 
 | Component | Version | PGO Version Min. | PGO Version Max. |
 |-----------|---------|------------------|------------------|
+| `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
 | `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
 | `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.2 |
+| `crunchy-postgres` | 14.0 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres` | 13.4 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres` | 12.8 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres` | 11.13 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres` | 10.18 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 14.0-3.1 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 13.4-3.1 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 13.4-3.0 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 12.8-3.0 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 12.8-2.5 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 11.13-2.5 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 11.13-2.4 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 10.18-2.4 | 5.0.3 | 5.0.3 |
+| `crunchy-postgres-gis` | 10.18-2.3 | 5.0.3 | 5.0.3 |
 | `crunchy-postgres-ha` | 13.4 | 5.0.0 | 5.0.2 |
 | `crunchy-postgres-ha` | 12.8 | 5.0.0 | 5.0.2 |
 | `crunchy-postgres-ha` | 11.13 | 5.0.0 | 5.0.2 |
@@ -50,19 +65,24 @@ The table also lists the initial PGO version that the version of the extension i
 
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
+| `pgAudit` | 1.6.0 | 14  | 5.0.3 |
 | `pgAudit` | 1.5.0 | 13  | 5.0.0 |
 | `pgAudit` | 1.4.1 | 12  | 5.0.0 |
 | `pgAudit` | 1.3.2 | 11  | 5.0.0 |
 | `pgAudit` | 1.2.2 | 10  | 5.0.0 |
+| `pgAudit Analyze` | 1.0.8 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgAudit Analyze` | 1.0.7 | 13, 12, 11, 10  | 5.0.0 |
-| `pg_cron` | 1.3.1 | 13, 12, 11, 10  | 5.0.0 |
-| `pg_partman` | 4.5.1 | 13, 12, 11, 10  | 5.0.0 |
+| `pg_cron` | 1.3.1 | 14, 13, 12, 11, 10  | 5.0.0 |
+| `pg_partman` | 4.5.1 | 14, 13, 12, 11, 10  | 5.0.0 |
+| `pgnodemx` | 1.0.5 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgnodemx` | 1.0.4 | 13, 12, 11, 10  | 5.0.0 |
+| `set_user` | 3.0.0 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `set_user` | 2.0.1 | 13, 12, 11, 10  | 5.0.2 |
 | `set_user` | 2.0.0 | 13, 12, 11, 10  | 5.0.0 |
 | `TimescaleDB` | 2.4.0 | 13, 12  | 5.0.2 |
 | `TimescaleDB` | 2.3.1 | 11  | 5.0.1 |
 | `TimescaleDB` | 2.2.0 | 13, 12, 11  | 5.0.0 |
+| `wal2json` | 2.4 | 14, 13, 12, 11, 10 | 5.0.3 |
 | `wal2json` | 2.3 | 13, 12, 11, 10 | 5.0.0 |
 
 ### Geospatial Extensions
