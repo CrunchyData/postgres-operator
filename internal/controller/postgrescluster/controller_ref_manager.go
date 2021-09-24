@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"context"
 
-	kerr "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -109,7 +109,7 @@ func (r *Reconciler) claimObject(ctx context.Context, postgresCluster *v1beta1.P
 	if err := r.adoptObject(ctx, postgresCluster, obj); err != nil {
 		// If adopt attempt failed because the resource no longer exists, then simply
 		// ignore.  Otherwise return the error.
-		if kerr.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return nil
 		}
 		return err
@@ -143,7 +143,7 @@ func (r *Reconciler) getPostgresClusterForObject(ctx context.Context,
 		Name:      clusterName,
 		Namespace: obj.GetNamespace(),
 	}, postgresCluster); err != nil {
-		if kerr.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return false, nil, nil
 		}
 		return false, nil, err
