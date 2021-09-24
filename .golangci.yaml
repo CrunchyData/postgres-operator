@@ -7,6 +7,7 @@ linters:
   enable:
     - gomodguard
     - gosimple
+    - importas
     - misspell
   presets:
     - bugs
@@ -28,6 +29,15 @@ linters-settings:
             reason: >
               k8s.io/kubernetes is for managing dependencies of the Kubernetes
               project, i.e. building kubelet and kubeadm.
+  importas:
+    alias:
+      - pkg: k8s.io/api/(\w+)/(v[\w\w]+)
+        alias: $1$2
+      - pkg: k8s.io/apimachinery/pkg/apis/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      - pkg: k8s.io/apimachinery/pkg/api/errors
+        alias: apierrors
+    no-unaliased: true
 
 run:
   build-tags:

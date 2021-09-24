@@ -25,7 +25,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -267,7 +267,7 @@ func TestReconcilePGBouncerDeployment(t *testing.T) {
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
 	cluster := &v1beta1.PostgresCluster{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-cluster",
 			Namespace: ns.Name,
 		},
@@ -310,12 +310,12 @@ func TestReconcilePGBouncerDeployment(t *testing.T) {
 			},
 		}
 		cm := &corev1.ConfigMap{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-configmap",
 			},
 		}
 		s := &corev1.Secret{
-			ObjectMeta: v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-secret",
 			},
 		}

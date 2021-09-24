@@ -35,7 +35,7 @@ import (
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	kerr "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1497,7 +1497,7 @@ func TestReconcileManualBackup(t *testing.T) {
 					// if a deletion is expected, then an error is expected.  otherwise an error is
 					// not expected.
 					if tc.expectCurrentJobDeletion {
-						assert.Assert(t, kerr.IsNotFound(err))
+						assert.Assert(t, apierrors.IsNotFound(err))
 						assert.ErrorContains(t, err,
 							fmt.Sprintf(`"%s" not found`, currentJobs[0].GetName()))
 					} else {
