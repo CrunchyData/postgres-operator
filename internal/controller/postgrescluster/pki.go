@@ -118,7 +118,7 @@ func (r *Reconciler) reconcileRootCertificate(
 // and CA certificate, respectively.
 func (r *Reconciler) reconcileClusterCertificate(
 	ctx context.Context, rootCACert *pki.RootCertificateAuthority,
-	cluster *v1beta1.PostgresCluster,
+	cluster *v1beta1.PostgresCluster, primaryService *corev1.Service,
 ) (
 	*corev1.SecretProjection, error,
 ) {
@@ -134,11 +134,8 @@ func (r *Reconciler) reconcileClusterCertificate(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	leaf := pki.NewLeafCertificate("", nil, nil)
-	// TODO(tjmoore4): currently set to the primary service, but this will likely
-	// need to be adjusted when server verification and/or client certificate
-	// authentication is added
-	leaf.DNSNames = []string{naming.ClusterPrimaryService(cluster).Name}
-	leaf.CommonName = leaf.DNSNames[0]
+	leaf.DNSNames = naming.ServiceDNSNames(ctx, primaryService)
+	leaf.CommonName = leaf.DNSNames[0] // FQDN
 
 	if data, ok := existing.Data[keyCertificate]; err == nil && ok {
 		leaf.Certificate, err = pki.ParseCertificate(data)

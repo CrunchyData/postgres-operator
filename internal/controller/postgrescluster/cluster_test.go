@@ -819,15 +819,15 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 	cluster.Namespace = ns.Name
 	assert.NilError(t, cc.Create(ctx, cluster))
 
-	assert.ErrorContains(t,
-		reconciler.reconcileClusterPrimaryService(ctx, cluster, nil),
-		"not implemented")
+	_, err := reconciler.reconcileClusterPrimaryService(ctx, cluster, nil)
+	assert.ErrorContains(t, err, "not implemented")
 
 	leader := &corev1.Service{}
 	leader.Spec.ClusterIP = "192.0.2.10"
 
-	assert.NilError(t,
-		reconciler.reconcileClusterPrimaryService(ctx, cluster, leader))
+	service, err := reconciler.reconcileClusterPrimaryService(ctx, cluster, leader)
+	assert.NilError(t, err)
+	assert.Assert(t, service != nil && service.UID != "", "expected created service")
 }
 
 func TestGenerateClusterReplicaServiceIntent(t *testing.T) {

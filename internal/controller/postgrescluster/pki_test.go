@@ -19,6 +19,7 @@ package postgrescluster
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"fmt"
 	"os"
 	"reflect"
@@ -85,6 +86,10 @@ func TestReconcileCerts(t *testing.T) {
 	if err := tClient.Create(ctx, cluster2); err != nil {
 		t.Error(err)
 	}
+
+	primaryService := new(corev1.Service)
+	primaryService.Namespace = namespace
+	primaryService.Name = "the-primary"
 
 	t.Run("check root certificate reconciliation", func(t *testing.T) {
 
@@ -365,14 +370,14 @@ func TestReconcileCerts(t *testing.T) {
 		assert.NilError(t, err)
 
 		t.Run("check standard secret projection", func(t *testing.T) {
-			secretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster1)
+			secretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster1, primaryService)
 			assert.NilError(t, err)
 
 			assert.DeepEqual(t, testSecretProjection, secretCertProj)
 		})
 
 		t.Run("check custom secret projection", func(t *testing.T) {
-			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2)
+			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2, primaryService)
 			assert.NilError(t, err)
 
 			assert.DeepEqual(t, customSecretProjection, customSecretCertProj)
@@ -389,7 +394,7 @@ func TestReconcileCerts(t *testing.T) {
 			testSecretProjection := clusterCertSecretProjection(testSecret)
 
 			// reconcile the secret project using the normal process
-			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2)
+			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2, primaryService)
 			assert.NilError(t, err)
 
 			// results should be the same
@@ -419,7 +424,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// pass in the new root, which should result in a new cluster cert
-			_, err = r.reconcileClusterCertificate(ctx, returnedRoot, cluster1)
+			_, err = r.reconcileClusterCertificate(ctx, returnedRoot, cluster1, primaryService)
 			assert.NilError(t, err)
 
 			// get the new cluster cert secret
@@ -431,6 +436,23 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			assert.Assert(t, !reflect.DeepEqual(initialClusterCertSecret, newClusterCertSecret))
+
+			pkiCert, err := pki.ParseCertificate(newClusterCertSecret.Data["tls.crt"])
+			assert.NilError(t, err)
+
+			x509Cert, err := x509.ParseCertificate(pkiCert.Certificate)
+			assert.NilError(t, err)
+			assert.Assert(t,
+				strings.HasPrefix(x509Cert.Subject.CommonName, "the-primary."+namespace+".svc."),
+				"got %q", x509Cert.Subject.CommonName)
+
+			if assert.Check(t, len(x509Cert.DNSNames) > 1) {
+				assert.DeepEqual(t, x509Cert.DNSNames[1:], []string{
+					"the-primary." + namespace + ".svc",
+					"the-primary." + namespace,
+					"the-primary",
+				})
+			}
 		})
 	})
 }

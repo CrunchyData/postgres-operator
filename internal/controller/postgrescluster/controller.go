@@ -150,6 +150,7 @@ func (r *Reconciler) Reconcile(
 		instances                *observedInstances
 		patroniLeaderService     *corev1.Service
 		primaryCertificate       *corev1.SecretProjection
+		primaryService           *corev1.Service
 		rootCA                   *pki.RootCertificateAuthority
 		monitoringSecret         *corev1.Secret
 		err                      error
@@ -242,13 +243,13 @@ func (r *Reconciler) Reconcile(
 		patroniLeaderService, err = r.reconcilePatroniLeaderLease(ctx, cluster)
 	}
 	if err == nil {
-		err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
+		primaryService, err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
 	}
 	if err == nil {
 		err = r.reconcileClusterReplicaService(ctx, cluster)
 	}
 	if err == nil {
-		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster)
+		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster, primaryService)
 	}
 	if err == nil {
 		instanceServiceAccount, err = r.reconcileRBACResources(ctx, cluster)
