@@ -23,11 +23,13 @@ needed to deploy PostgreSQL clusters using PGO.
 
 The listed versions of Postgres show the latest minor release (e.g. 13.4) of each major version (e.g. 13). Older minor releases may still be compatible with PGO. We generally recommend to run the latest minor release for the [same reasons that the PostgreSQL community provides](https://www.postgresql.org/support/versioning/).
 
+Note that for the 5.0.3 release and beyond, the Postgres containers were renamed to `crunchy-postgres` and `crunchy-postgres-gis`.
+
 | Component | Version | PGO Version Min. | PGO Version Max. |
 |-----------|---------|------------------|------------------|
 | `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
 | `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
-| `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.2 |
+| `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.3 |
 | `crunchy-postgres` | 14.0 | 5.0.3 | 5.0.3 |
 | `crunchy-postgres` | 13.4 | 5.0.3 | 5.0.3 |
 | `crunchy-postgres` | 12.8 | 5.0.3 | 5.0.3 |
@@ -42,6 +44,13 @@ The listed versions of Postgres show the latest minor release (e.g. 13.4) of eac
 | `crunchy-postgres-gis` | 11.13-2.4 | 5.0.3 | 5.0.3 |
 | `crunchy-postgres-gis` | 10.18-2.4 | 5.0.3 | 5.0.3 |
 | `crunchy-postgres-gis` | 10.18-2.3 | 5.0.3 | 5.0.3 |
+
+The latest Postgres containers include Patroni 2.1.1.
+
+The following are the Postgres containers available for version 5.0.2 of PGO and older:
+
+| Component | Version | PGO Version Min. | PGO Version Max. |
+|-----------|---------|------------------|------------------|
 | `crunchy-postgres-ha` | 13.4 | 5.0.0 | 5.0.2 |
 | `crunchy-postgres-ha` | 12.8 | 5.0.0 | 5.0.2 |
 | `crunchy-postgres-ha` | 11.13 | 5.0.0 | 5.0.2 |
@@ -55,7 +64,30 @@ The listed versions of Postgres show the latest minor release (e.g. 13.4) of eac
 | `crunchy-postgres-gis-ha` | 10.18-2.4 | 5.0.0 | 5.0.2 |
 | `crunchy-postgres-gis-ha` | 10.18-2.3 | 5.0.0 | 5.0.2 |
 
-The Crunchy Postgres components include Patroni 2.1.1.
+### Container Tags
+
+The container tags follow one of two patterns:
+
+- `<baseImage>-<softwareVersion>-<buildVersion>`
+- `<baseImage>-<softwareVersion>-<pgoVersion>-<buildVersion>` (Customer Portal only)
+
+For example, if pulling from the [customer portal](https://access.crunchydata.com/), the following would both be valid tags to reference the pgBouncer container:
+
+- `ubi8-1.15-3`
+- `ubi8-1.15-5.0.3-0`
+- `centos8-1.15-3`
+- `centos8-1.15-5.0.3-0`
+
+The [developer portal](https://www.crunchydata.com/developers/download-postgres/containers) provides CentOS based images. For example, pgBouncer would use this tag:
+
+- `centos8-1.15-3`
+
+PostGIS enabled containers have both the Postgres and PostGIS software versions included. For example, Postgres 14 with Postgis 3.1 would use the following tags:
+
+- `ubi8-14.0-3.1-0`
+- `ubi8-14.0-3.1-5.0.3-0`
+- `centos8-14.0-3.1-0`
+- `centos8-14.0-3.1-5.0.3-0`
 
 ## Extensions Compatibility
 
