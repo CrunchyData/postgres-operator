@@ -192,7 +192,7 @@ func (r *Reconciler) generateClusterPrimaryService(
 // to the PostgreSQL primary instance.
 func (r *Reconciler) reconcileClusterPrimaryService(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, leader *corev1.Service,
-) error {
+) (*corev1.Service, error) {
 	service, endpoints, err := r.generateClusterPrimaryService(cluster, leader)
 
 	if err == nil {
@@ -201,7 +201,7 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, endpoints))
 	}
-	return err
+	return service, err
 }
 
 // generateClusterReplicaService returns a v1.Service that exposes PostgreSQL
