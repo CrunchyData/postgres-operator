@@ -486,8 +486,12 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 		return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
 	}), "expected cluster to be deleted, got:\n%+v", *cluster)
 
-	assert.NilError(t, wait.PollImmediate(time.Second, Scale(time.Minute/2), func() (bool, error) {
-		err := cc.Get(ctx, client.ObjectKeyFromObject(ns), &corev1.Namespace{})
+	// Kubernetes will continue to remove things after the PostgresCluster is gone.
+	// In some cases, a Pod might get stuck in a deleted-and-creating state.
+	// Conditions in the Namespace status indicate what is going on.
+	var namespace corev1.Namespace
+	assert.NilError(t, wait.PollImmediate(time.Second, Scale(3*time.Minute), func() (bool, error) {
+		err := cc.Get(ctx, client.ObjectKeyFromObject(ns), &namespace)
 		return apierrors.IsNotFound(err), client.IgnoreNotFound(err)
-	}), "expected namespace to be deleted")
+	}), "expected namespace to be deleted, got status:\n%+v", namespace.Status)
 }
