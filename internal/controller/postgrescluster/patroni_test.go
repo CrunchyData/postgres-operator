@@ -26,10 +26,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -210,7 +212,17 @@ func TestReconcilePatroniLeaderLease(t *testing.T) {
 				cluster.Spec.Service.Type = changeType
 
 				after, err := reconciler.reconcilePatroniLeaderLease(ctx, cluster)
-				assert.NilError(t, err)
+
+				// LoadBalancers are provisioned by a separate controller that
+				// updates the Service soon after creation. The API may return
+				// a conflict error when we race to update it, even though we
+				// don't send a resourceVersion in our payload. Retry.
+				if apierrors.IsConflict(err) {
+					t.Log("conflict:", err)
+					after, err = reconciler.reconcilePatroniLeaderLease(ctx, cluster)
+				}
+
+				assert.NilError(t, err, "\n%#v", errors.Unwrap(err))
 				assert.Equal(t, after.Spec.ClusterIP, before.Spec.ClusterIP,
 					"expected to keep the same ClusterIP")
 			})

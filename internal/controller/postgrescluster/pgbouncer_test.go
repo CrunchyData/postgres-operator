@@ -21,9 +21,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -246,7 +248,17 @@ func TestReconcilePGBouncerService(t *testing.T) {
 				cluster.Spec.Proxy.PGBouncer.Service.Type = changeType
 
 				after, err := reconciler.reconcilePGBouncerService(ctx, cluster)
-				assert.NilError(t, err)
+
+				// LoadBalancers are provisioned by a separate controller that
+				// updates the Service soon after creation. The API may return
+				// a conflict error when we race to update it, even though we
+				// don't send a resourceVersion in our payload. Retry.
+				if apierrors.IsConflict(err) {
+					t.Log("conflict:", err)
+					after, err = reconciler.reconcilePGBouncerService(ctx, cluster)
+				}
+
+				assert.NilError(t, err, "\n%#v", errors.Unwrap(err))
 				assert.Equal(t, after.Spec.ClusterIP, before.Spec.ClusterIP,
 					"expected to keep the same ClusterIP")
 			})
