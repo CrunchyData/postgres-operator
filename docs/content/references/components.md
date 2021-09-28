@@ -105,7 +105,7 @@ The table also lists the initial PGO version that the version of the extension i
 | `pgAudit Analyze` | 1.0.8 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgAudit Analyze` | 1.0.7 | 13, 12, 11, 10  | 5.0.0 |
 | `pg_cron` | 1.3.1 | 14, 13, 12, 11, 10  | 5.0.0 |
-| `pg_partman` | 4.5.1 | 14, 13, 12, 11, 10  | 5.0.0 |
+| `pg_partman` | 4.5.1 | 13, 12, 11, 10  | 5.0.0 |
 | `pgnodemx` | 1.0.5 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgnodemx` | 1.0.4 | 13, 12, 11, 10  | 5.0.0 |
 | `set_user` | 3.0.0 | 14, 13, 12, 11, 10  | 5.0.3 |
