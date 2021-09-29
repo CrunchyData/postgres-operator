@@ -33,6 +33,23 @@ For additional information regarding commercial support and Crunchy PostgreSQL f
 
 The PGO source code is available under the [Apache License 2.0](https://github.com/CrunchyData/postgres-operator/blob/master/LICENSE.md).
 
+### Where are the release tags for PGO v5?
+
+With PGO v5, we've made some changes to our overall process. Instead of providing quarterly release
+tags as we did with PGO v4, we're focused on ongoing active development in the v5 primary
+development branch (`master`, which will become `main`).  Consistent with our practices in v4,
+previews of stable releases with the release tags are made available in the
+[Crunchy Data Developer Portal](https://www.crunchydata.com/developers).
+
+These changes allow for more rapid feature development and releases in the upstream PGO project,
+while providing
+[Crunchy Postgres for Kubernetes](https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes/)
+users with stable releases for production use.
+
+To the extent you have constraints specific to your use, please feel free to reach out on
+[info@crunchydata.com](mailto:info@crunchydata.com) to discuss how we can address those
+specifically.
+
 ### How can I get involved with the PGO Project?
 
 PGO is developed by the PGO Project. The PGO Project that welcomes community engagement and contribution.

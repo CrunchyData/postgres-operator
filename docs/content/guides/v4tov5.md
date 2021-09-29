@@ -152,57 +152,21 @@ pgo backup hippo
 
 Please ensure that the backup completes. You will see the latest backup appear using the `pgo show backup` command.
 
-2. If you are using a pgBackRest repository that is using S3 (or a S3-like storage system) or GCS, or if you are using a PVC-based pgBackRest repository
-that supports `fsGroup` (please see the [Kubernetes Security Context documentation](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/) for additional details), you can delete the cluster while keeping the backups (using the `--keep-backups` flag) and skip ahead to the [Migrate to PGO v5](#step-2-migrate-to-pgo-v5-1) section:
+2. Next, delete the cluster while keeping backups (using the `--keep-backups` flag):
 
 ```
 pgo delete cluster hippo --keep-backups
 ```
 
-Otherwise, if you are using a PVC-based pgBackRest repository that does not support `fsGroup` (for instance, if using hostPath or NFS, as described [here](https://github.com/kubernetes/examples/issues/260)), shut down and continue following the directions in this section:
+{{% notice warning %}}
 
-```
-pgo update cluster hippo --shutdown
-```
+Additional steps are required to set proper file permissions when using certain storage options,
+such as NFS and HostPath storage, due to a known issue with how fsGroups are applied. When
+migrating from PGO v4, this will require the user to manually set the group value of the pgBackRest
+repo directory, and all subdirectories, to `26` to match the `postgres` group used in PGO v5.
+Please see [here](https://github.com/kubernetes/examples/issues/260) for more information.
 
-Wait for the shutdown to complete.
-
-3. At this point, the pgBackRest dedicated repository host should no longer be running. Scale the dedicated pgBackRest repo host Deployment back up in order to adjust the repository permissions that are required for the PGO v5 migration:
-
-```
-kubectl scale deployment hippo-backrest-shared-repo --replicas=1
-```
-
-The Deployment is named following the pattern `<clusterName>-backrest-shared-repo`.
-
-4\. Identify the name of the pgBackRest repo Pod. You can do so with the following command:
-
-```
-kubectl get pod --selector=pg-cluster=hippo,pgo-backrest-repo=true -o name
-```
-
-For convenience, you can store this value to an environmental variable:
-
-```
-export BACKREST_POD_NAME=$(kubectl get pod --selector=pg-cluster=hippo,pgo-backrest-repo=true -o name)
-```
-
-5\. The PGO v5 Postgres cluster will need to be able to access the pgBackRest repository data. Exec into the pgBackRest repository host and grant group ownership for the pgBackRest repository to the `postgres` group and group read/write access to the repository:
-
-```
-kubectl exec -it "${BACKREST_POD_NAME}" -- \
-  chown -R pgbackrest:postgres /backrestrepo/hippo-backrest-shared-repo
-kubectl exec -it "${BACKREST_POD_NAME}" -- \
-  chmod -R g+rw /backrestrepo/hippo-backrest-shared-repo
-```
-
-Note that the directory name should match the Deployment name.
-
-6\. You can delete the cluster while keeping the backups (using the `--keep-backups` flag):
-
-```
-pgo delete cluster hippo --keep-backups
-```
+{{% /notice %}}
 
 ### Step 2: Migrate to PGO v5
 
