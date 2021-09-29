@@ -23,7 +23,8 @@ It's important for instances in the same high availability set to have the same 
 - `spec.backups.pgbackrest.repoHost.resources` section, which sets the resources for the pgBackRest repo host container, as well as any init containers in the associated pod and containers created by the `pgBackRestVolume` [data migration job]({{< relref "guides/data-migration.md" >}}).
 - `spec.backups.pgbackrest.sidecars.pgbackrest.resources` section, which sets the resources for the `pgbackrest` sidecar container.
 - `spec.backups.pgbackrest.jobs.resources` section, which sets the resources for any pgBackRest backup job.
-- `spec.backups.pgbackrest.restore.resources` section, which sets the resources for any pgBackRest restore job.
+- `spec.backups.pgbackrest.restore.resources` section, which sets the resources for manual pgBackRest restore job.
+- `spec.datasSource.postgresCluster.resources` section, which sets the resources for pgBackRest restore jobs created in the [cloning]({{< relref "./disaster-recovery.md" >}}) process.
 - `spec.proxy.pgBouncer.resources` section, which sets the resources for the `pgbouncer` container.
 - `spec.proxy.pgBouncer.sidecars.pgbouncerconfig.resources` section, which sets the resources for the `pgbouncer-config` sidecar container.
 
