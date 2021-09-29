@@ -62,7 +62,7 @@ func TestHostBasedAuthentication(t *testing.T) {
 			User("KD6-3.7").Method("scram-sha-256").
 			String())
 
-	assert.Equal(t, `hostssl "data" "+admin" all md5  clientcert="verify-ca"`,
+	assert.Equal(t, `hostssl "data" +"admin" all md5  clientcert="verify-ca"`,
 		NewHBA().TLS().Database("data").Role("admin").
 			Method("md5").Options(map[string]string{"clientcert": "verify-ca"}).
 			String())
