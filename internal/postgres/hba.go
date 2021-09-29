@@ -129,7 +129,7 @@ func (hba *HostBasedAuthentication) Replication() *HostBasedAuthentication {
 
 // Role makes hba match connections by users that are members of a specific role.
 func (hba *HostBasedAuthentication) Role(name string) *HostBasedAuthentication {
-	hba.user = hba.quote("+" + name)
+	hba.user = "+" + hba.quote(name)
 	return hba
 }
 
