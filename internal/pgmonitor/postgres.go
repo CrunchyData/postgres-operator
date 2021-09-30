@@ -93,20 +93,31 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 
 	stdout, stderr, err := exec.ExecInAllDatabases(ctx,
 		strings.Join([]string{
+			// Quiet NOTICE messages from IF EXISTS statements.
+			// - https://www.postgresql.org/docs/current/runtime-config-client.html
+			`SET client_min_messages = WARNING;`,
+
 			// Exporter expects that extension(s) to be installed in all databases
 			// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
 			"CREATE EXTENSION IF NOT EXISTS pg_stat_statements;",
 		}, "\n"),
-		nil,
+		map[string]string{
+			"ON_ERROR_STOP": "on", // Abort when any one statement fails.
+			"QUIET":         "on", // Do not print successful commands to stdout.
+		},
 	)
 
 	log.V(1).Info("applied pgMonitor objects", "database", "current and future databases", "stdout", stdout, "stderr", stderr)
 
 	// NOTE: Setup is run last to ensure that the setup sql is used in the hash
 	if err == nil {
-		stdout, stderr, err = postgres.Executor(exec).ExecInDatabasesFromQuery(ctx,
-			database,
+		stdout, stderr, err = exec.ExecInDatabasesFromQuery(ctx,
+			`SELECT :'database'`,
 			strings.Join([]string{
+				// Quiet NOTICE messages from IF EXISTS statements.
+				// - https://www.postgresql.org/docs/current/runtime-config-client.html
+				`SET client_min_messages = WARNING;`,
+
 				// Setup.sql file from the exporter image. sql is specific
 				// to the PostgreSQL version
 				setup,
@@ -123,8 +134,12 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 				`ALTER ROLE :"username" LOGIN PASSWORD :'verifier';`,
 			}, "\n"),
 			map[string]string{
+				"database": database,
 				"username": MonitoringUser,
 				"verifier": string(monitoringSecret.Data["verifier"]),
+
+				"ON_ERROR_STOP": "on", // Abort when any one statement fails.
+				"QUIET":         "on", // Do not print successful commands to stdout.
 			},
 		)
 
