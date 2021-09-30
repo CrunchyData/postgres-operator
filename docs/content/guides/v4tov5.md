@@ -95,9 +95,19 @@ A third PVC used to store write-ahead logs (WAL) may also be present if external
 
 With the PGO v4 cluster's volumes prepared for the move to PGO v5, you can now create a [`PostgresCluster`]({{< relref "references/crd.md" >}}) custom resource using these volumes. This migration method does not carry over any specific configurations or customizations from PGO v4: you will need to create the specific `PostgresCluster` configuration that you need.
 
+{{% notice warning %}}
+
+Additional steps are required to set proper file permissions when using certain storage options,
+such as NFS and HostPath storage, due to a known issue with how fsGroups are applied. When
+migrating from PGO v4, this will require the user to manually set the group value of the pgBackRest
+repo directory, and all subdirectories, to `26` to match the `postgres` group used in PGO v5.
+Please see [here](https://github.com/kubernetes/examples/issues/260) for more information.
+
+{{% /notice %}}
+
 To complete the upgrade process, your `PostgresCluster` custom resource **MUST** include the following:
 
-1\. An `existingVolumes` data source that points to the PostgreSQL data, PostgreSQL WAL (if applicable) and pgBackRest repository PVCs identified in the `spec.dataSource.existingVolumes` section.
+1\. An `volumes` data source that points to the PostgreSQL data, PostgreSQL WAL (if applicable) and pgBackRest repository PVCs identified in the `spec.dataSource.volumes` section.
 
 For example, using the `hippo` cluster:
 
