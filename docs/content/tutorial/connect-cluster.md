@@ -65,6 +65,8 @@ spec:
       - image: quay.io/keycloak/keycloak:latest
         name: keycloak
         env:
+        - name: DB_VENDOR
+          value: "postgres"
         - name: DB_ADDR
           valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: host } }
         - name: DB_PORT
