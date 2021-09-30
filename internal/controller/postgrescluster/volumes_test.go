@@ -727,6 +727,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			naming.LabelInstanceSet: cluster.Spec.InstanceSets[0].Name,
 			naming.LabelInstance:    cluster.Status.StartupInstance,
 			naming.LabelRole:        naming.RolePostgresData,
+			naming.LabelData:        naming.DataPostgres,
 			"somelabel":             "labelvalue-pgdata",
 		}
 
@@ -792,6 +793,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			naming.LabelInstanceSet: cluster.Spec.InstanceSets[0].Name,
 			naming.LabelInstance:    cluster.Status.StartupInstance,
 			naming.LabelRole:        naming.RolePostgresWAL,
+			naming.LabelData:        naming.DataPostgres,
 			"somelabel":             "labelvalue-pgwal",
 		}
 

@@ -126,7 +126,7 @@ Please see the [Data Migration]({{< relref "guides/data-migration.md" >}}) secti
 kubectl apply -k examples/postgrescluster
 ```
 
-Your upgrade is now complete! For more information on how to use PGO v5, we recommend reading through the [PGO v5 tutorial]({{< relref "tutorial/_index.md" >}}).
+Your upgrade is now complete! You should now remove the `spec.dataSource.volumes` section from your `PostgresCluster`. For more information on how to use PGO v5, we recommend reading through the [PGO v5 tutorial]({{< relref "tutorial/_index.md" >}}).
 
 ## Upgrade Method #2: Backups
 
