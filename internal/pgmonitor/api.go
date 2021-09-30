@@ -49,7 +49,7 @@ func (exec Executor) GetExporterSetupSQL(ctx context.Context, version int) (stri
 		// the path to point to the script in our database image.
 		sql = strings.ReplaceAll(stdout.String(),
 			"/usr/bin/pgbackrest-info.sh",
-			"/opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest_info.sh")
+			"/opt/crunchy/bin/postgres/pgbackrest_info.sh")
 	}
 
 	log.V(1).Info("updated pgMonitor default configration", "sql", sql)
