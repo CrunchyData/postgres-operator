@@ -292,11 +292,11 @@ Your upgrade is now complete! For more information on how to use PGO v5, we reco
 
 This upgrade method allows you to migrate from PGO v4 to PGO v5 by creating a new PGO v5 Postgres cluster in a "standby" mode, allowing it to mirror the PGO v4 cluster and continue to receive data updates in real time. This has the advantage of being able to fully inspect your PGO v5 Postgres cluster while leaving your PGO v4 cluster up and running, thus minimizing downtime when you cut over. The tradeoff is that you will temporarily use more resources while this migration is occurring.
 
-This method only works if your PGO v4 cluster uses S3 or an S3-compatible storage system, or GCS. For more information on [standby clusters]({{< relref "tutorial/disaster-recovery.md" >}}#standby-cluster), please refer to the [tutorial](({{< relref "tutorial/disaster-recovery.md" >}}#standby-cluster)).
+This method only works if your PGO v4 cluster uses S3 or an S3-compatible storage system, or GCS. For more information on standby clusters, please refer to the [tutorial]({{< relref "tutorial/disaster-recovery.md" >}}#standby-cluster).
 
 *NOTE*: External WAL volumes **MUST** be enabled for the PGO v4 cluster being upgraded.  Additionally, the backup that will be used to initialize the PGO v5 cluster **MUST** be created with external WAL volumes.
 
-If you did not create your cluster with an external WAL volume (`pgo create cluster --wal-storage-config`), you can do so using the following command. Note that this involves a cluster deletion with the `-keep-data` flag::
+If you did not create your cluster with an external WAL volume (`pgo create cluster --wal-storage-config`), you can do so using the following command. Note that this involves a cluster deletion with the `-keep-data` flag:
 
 ```
 pgo delete cluster hippo --keep-data
