@@ -41,10 +41,14 @@ All connections are over TLS. PGO provides its own certificate authority (CA) to
 
 ## Connect an Application
 
-For this tutorial, we are going to connect [Keycloak](https://www.keycloak.org/), an open source identity management application. Keycloak can be deployed on Kubernetes and is backed by a Postgres database. While we provide an [example of deploying Keycloak](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/keycloak) in the [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples) repository, we will use the sample manifest below to deploy the application:
+For this tutorial, we are going to connect [Keycloak](https://www.keycloak.org/), an open source
+identity management application. Keycloak can be deployed on Kubernetes and is backed by a Postgres
+database. While we provide an [example of deploying Keycloak and a PostgresCluster](https://github.com/CrunchyData/postgres-operator-examples/tree/main/kustomize/keycloak)
+in the [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples)
+repository, the manifest below deploys it using our `hippo` cluster that is already running:
 
 ```
-cat <<EOF >> keycloak.yaml
+kubectl apply --filename=- <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,7 +59,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: keycloak
+      app.kubernetes.io/name: keycloak
   template:
     metadata:
       labels:
@@ -91,40 +95,22 @@ spec:
             path: /auth/realms/master
             port: 8080
       restartPolicy: Always
-
 EOF
-
-kubectl apply -f keycloak.yaml
 ```
 
 Notice this part of the manifest:
 
 ```
 - name: DB_ADDR
-  valueFrom:
-    secretKeyRef:
-      name: hippo-pguser-hippo
-      key: host
+  valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: host } }
 - name: DB_PORT
-  valueFrom:
-    secretKeyRef:
-      name: hippo-pguser-hippo
-      key: port
+  valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: port } }
 - name: DB_DATABASE
-  valueFrom:
-    secretKeyRef:
-      name: hippo-pguser-hippo
-      key: dbname
+  valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: dbname } }
 - name: DB_USER
-  valueFrom:
-    secretKeyRef:
-      name: hippo-pguser-hippo
-      key: user
+  valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: user } }
 - name: DB_PASSWORD
-  valueFrom:
-    secretKeyRef:
-      name: hippo-pguser-hippo
-      key: password
+  valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: password } }
 ```
 
 The above manifest shows how all of these values are derived from the `hippo-pguser-hippo` Secret. This means that we do not need to know any of the connection credentials or have to insecurely pass them around -- they are made directly available to the application!
