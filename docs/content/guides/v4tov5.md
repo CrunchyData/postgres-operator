@@ -144,7 +144,7 @@ This upgrade method allows you to migrate from PGO v4 to PGO v5 by creating a ne
 
 *NOTE*: External WAL volumes **MUST** be enabled for the PGO v4 cluster being upgraded.  Additionally, the backup that will be used to initialize the PGO v5 cluster **MUST** be created with external WAL volumes.
 
-If you did not create your cluster with an external WAL volume (`pgo create cluster --wal-storage-config`), you can do so using the following command. Note that this involves a cluster deletion with the `-keep-data` flag::
+If you did not create your cluster with an external WAL volume (`pgo create cluster --wal-storage-config`), you can do so using the following command. Note that this involves a cluster deletion with the `-keep-data` flag:
 
 ```
 pgo delete cluster hippo --keep-data
