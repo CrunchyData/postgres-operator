@@ -107,7 +107,7 @@ Please see [here](https://github.com/kubernetes/examples/issues/260) for more in
 
 To complete the upgrade process, your `PostgresCluster` custom resource **MUST** include the following:
 
-1\. An `volumes` data source that points to the PostgreSQL data, PostgreSQL WAL (if applicable) and pgBackRest repository PVCs identified in the `spec.dataSource.volumes` section.
+1\. A `volumes` data source that points to the PostgreSQL data, PostgreSQL WAL (if applicable) and pgBackRest repository PVCs identified in the `spec.dataSource.volumes` section.
 
 For example, using the `hippo` cluster:
 
