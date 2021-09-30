@@ -212,10 +212,11 @@ func (r *Reconciler) configureExistingPGVolumes(
 				naming.LabelInstanceSet: cluster.Spec.InstanceSets[0].Name,
 				naming.LabelInstance:    instanceName,
 				naming.LabelRole:        naming.RolePostgresData,
+				naming.LabelData:        naming.DataPostgres,
 			}
 			volume.SetGroupVersionKind(corev1.SchemeGroupVersion.
 				WithKind("PersistentVolumeClaim"))
-			if err := r.setOwnerReference(cluster, volume); err != nil {
+			if err := r.setControllerReference(cluster, volume); err != nil {
 				return volumes, err
 			}
 			if err := errors.WithStack(r.apply(ctx, volume)); err != nil {
@@ -264,10 +265,11 @@ func (r *Reconciler) configureExistingPGWALVolume(
 			naming.LabelInstanceSet: cluster.Spec.InstanceSets[0].Name,
 			naming.LabelInstance:    instanceName,
 			naming.LabelRole:        naming.RolePostgresWAL,
+			naming.LabelData:        naming.DataPostgres,
 		}
 		volume.SetGroupVersionKind(corev1.SchemeGroupVersion.
 			WithKind("PersistentVolumeClaim"))
-		if err := r.setOwnerReference(cluster, volume); err != nil {
+		if err := r.setControllerReference(cluster, volume); err != nil {
 			return volumes, err
 		}
 		if err := errors.WithStack(r.apply(ctx, volume)); err != nil {
@@ -316,7 +318,7 @@ func (r *Reconciler) configureExistingRepoVolumes(
 			//volume.ObjectMeta = naming.PGBackRestRepoVolume(cluster, cluster.Spec.Backups.PGBackRest.Repos[0].Name)
 			volume.SetGroupVersionKind(corev1.SchemeGroupVersion.
 				WithKind("PersistentVolumeClaim"))
-			if err := r.setOwnerReference(cluster, volume); err != nil {
+			if err := r.setControllerReference(cluster, volume); err != nil {
 				return volumes, err
 			}
 			if err := errors.WithStack(r.apply(ctx, volume)); err != nil {
