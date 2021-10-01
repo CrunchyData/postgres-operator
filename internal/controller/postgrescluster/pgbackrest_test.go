@@ -2324,6 +2324,29 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 
 }
 
+func TestGenerateRepoHostIntent(t *testing.T) {
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	r := Reconciler{Client: cc}
+
+	t.Run("empty", func(t *testing.T) {
+		_, err := r.generateRepoHostIntent(&v1beta1.PostgresCluster{}, "", &RepoResources{})
+		assert.NilError(t, err)
+	})
+
+	cluster := &v1beta1.PostgresCluster{}
+	sts, err := r.generateRepoHostIntent(cluster, "", &RepoResources{})
+	assert.NilError(t, err)
+
+	t.Run("ServiceAccount", func(t *testing.T) {
+		assert.Equal(t, sts.Spec.Template.Spec.ServiceAccountName, "")
+		if assert.Check(t, sts.Spec.Template.Spec.AutomountServiceAccountToken != nil) {
+			assert.Equal(t, *sts.Spec.Template.Spec.AutomountServiceAccountToken, false)
+		}
+	})
+}
+
 func TestGenerateRestoreJobIntent(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
@@ -2507,6 +2530,12 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 						})
 						t.Run("PodSecurityContext", func(t *testing.T) {
 							assert.Assert(t, job.Spec.Template.Spec.SecurityContext != nil)
+						})
+						t.Run("ServiceAccount", func(t *testing.T) {
+							assert.Equal(t, job.Spec.Template.Spec.ServiceAccountName, "")
+							if assert.Check(t, job.Spec.Template.Spec.AutomountServiceAccountToken != nil) {
+								assert.Equal(t, *job.Spec.Template.Spec.AutomountServiceAccountToken, false)
+							}
 						})
 					})
 				})
