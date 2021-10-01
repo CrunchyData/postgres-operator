@@ -561,6 +561,10 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		repo.Spec.Replicas = initialize.Int32(1)
 	}
 
+	// pgBackRest does not make any Kubernetes API calls. Use the default
+	// ServiceAccount and do not mount its credentials.
+	repo.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
+
 	repo.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 
 	var resources corev1.ResourceRequirements
@@ -1162,6 +1166,10 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	// of propagation to existing pods when the CRD is updated:
 	// https://github.com/kubernetes/kubernetes/issues/88456
 	job.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
+
+	// pgBackRest does not make any Kubernetes API calls. Use the default
+	// ServiceAccount and do not mount its credentials.
+	job.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 
 	job.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 
