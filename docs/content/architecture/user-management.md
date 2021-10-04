@@ -53,3 +53,40 @@ Users and databases can be customized in the `spec.users` section of the custom 
 - The special `postgres` user can be added as one of the custom users; however, the privileges of the users cannot be adjusted.
 
 For specific examples for how to manage users, please see the [user and database management]({{< relref "tutorial/user-management.md" >}}) section of the [tutorial]({{< relref "tutorial/_index.md" >}}).
+
+## Custom Passwords
+
+There are cases where you may want to explicitly provide your own password for a Postgres user. PGO determines the password from an attribute in the user Secret called `verifier`. This contains a hashed copy of your password. When `verifier` changes, PGO will load the contents of the verifier into your Postgres cluster. This method allows for the secure transmission of the password into the Postgres database.
+
+Postgres provides two methods for hashing password: SCRAM-SHA-256 and md5. The preferred (and as of PostgreSQL 14, default) method is to use SCRAM, which is also what PGO uses as a default.
+
+You can still provide a plaintext password in the `password` field, but this merely for convenience: this makes it easier for your application to connect with an updated password.
+
+### Example
+
+For example, let's say we have a Postgres cluster named `hippo` and a Postgres user named `hippo`. The Secret then would be called `hippo-pguser-hippo`.
+
+Let's say we want to set the password for `hippo` to be `datalake`. We would first need to create a SCRAM version of the password. You can find a script that [creates Postgres SCRAM-SHA-256](https://gist.github.com/jkatz/e0a1f52f66fa03b732945f6eb94d9c21) passwords [here](https://gist.github.com/jkatz/e0a1f52f66fa03b732945f6eb94d9c21).
+
+Below is an example of a SCRAM verifier that may be generated for the password `datalake`, stored in two environmental variables:
+
+```
+PASSWORD=datalake
+VERIFIER='SCRAM-SHA-256$4096:FAnSkUrL3jH6Bp17P5FTuQ==$BecLU0YXzBUwnTk3b3ghIZ7/zS2XvD8wX50Hz5JL0q4=:pxuEtozYTZpAc6wINV53sCr4Afxk8LLfor5MvkYp21s='
+```
+
+To store these in a Kubernetes Secret, both values need to be base64 encoded. You can do so with the following example:
+
+```
+PASSWORD=$(echo -n $PASSWORD | base64 | tr -d '\n')
+VERIFIER=$(echo -n $VERIFIER | base64 | tr -d '\n')
+```
+
+Finally, you can update the Secret using `kubectl patch`. The below assumes that the Secret is stored in the `postgres-operator` namespace:
+
+```
+kubectl patch secret -n postgres-operator hippo-pguser-hippo -p \
+   "{\"data\":{\"password\":\"${PASSWORD}\",\"verifier\":\"${VERIFIER}\"}}"
+```
+
+PGO will apply the updated password to Postgres, and you will be able to login with the password `datalake`.
