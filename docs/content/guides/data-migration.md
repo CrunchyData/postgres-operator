@@ -2,6 +2,7 @@
 title: "Migrate Data Volumes to New Clusters"
 date:
 draft: false
+weight: 105
 ---
 
 There are certain cases where you may want to migrate existing volumes to a new cluster. If so, read on for an in depth look at the steps required.
