@@ -51,20 +51,3 @@ func EnableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 
 	return err
 }
-
-// Query template1 to get active extensions
-func GetEnabledExtensions(ctx context.Context, exec postgres.Executor) ([]string, error) {
-	log := logging.FromContext(ctx)
-
-	stdout, stderr, err := exec.Exec(ctx,
-		strings.NewReader(`SELECT extname FROM pg_extension ORDER BY extname;`),
-		map[string]string{
-			"database":      "template1", // Query template1 as source for new databases
-			"ON_ERROR_STOP": "on",        // Abort when any one statement fails.
-			"QUIET":         "on",        // Do not print successful statements to stdout.
-		})
-
-	log.V(1).Info("queried extensions", "stdout", stdout, "stderr", stderr)
-
-	return strings.Fields(stdout), err
-}

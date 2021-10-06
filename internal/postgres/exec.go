@@ -48,7 +48,7 @@ func (exec Executor) Exec(
 	// Execute `psql` without reading config files nor prompting for a password.
 	var stdout, stderr bytes.Buffer
 	err := exec(ctx, sql, &stdout, &stderr,
-		append([]string{"psql", "-Xwt", "--file=-"}, args...)...)
+		append([]string{"psql", "-Xw", "--file=-"}, args...)...)
 	return stdout.String(), stderr.String(), err
 }
 

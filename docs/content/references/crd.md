@@ -9194,11 +9194,6 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td>Identifies the databases that have been installed into PostgreSQL.</td>
         <td>false</td>
       </tr><tr>
-        <td><b>extensions</b></td>
-        <td>[]string</td>
-        <td>Lists extensions enabled on template1</td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#postgresclusterstatusinstancesindex">instances</a></b></td>
         <td>[]object</td>
         <td>Current state of PostgreSQL instances.</td>

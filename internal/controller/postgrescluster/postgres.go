@@ -22,7 +22,6 @@ import (
 	"io"
 	"net"
 	"net/url"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -190,9 +189,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 
 	// Calculate a hash of the SQL that should be executed in PostgreSQL.
 
-	var pgAuditOK bool
-	var postgisInstallOK error
-	var postgisExtensionsEnabled []string
+	var pgAuditOK, postgisInstallOK bool
 	create := func(ctx context.Context, exec postgres.Executor) error {
 		if pgAuditOK = pgaudit.EnableInPostgreSQL(ctx, exec) == nil; !pgAuditOK {
 			// pgAudit can only be enabled after its shared library is loaded,
@@ -210,9 +207,10 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		// but you cannot reverse the process, as that would potentially remove an extension
 		// that is being used by some database/tables
 		if cluster.Spec.PostGISVersion != "" {
-			postgisInstallOK = postgis.EnableInPostgreSQL(ctx, exec)
-			if postgisInstallOK == nil {
-				postgisExtensionsEnabled, postgisInstallOK = postgis.GetEnabledExtensions(ctx, exec)
+			if postgisInstallOK = postgis.EnableInPostgreSQL(ctx, exec) == nil; !postgisInstallOK {
+				// TODO(benjb): Investigate under what conditions postgis would fail install
+				r.Recorder.Event(cluster, corev1.EventTypeWarning, "postgisDisabled",
+					"Unable to install postgis")
 			}
 		}
 
@@ -247,13 +245,8 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		log := logging.FromContext(ctx).WithValues("revision", revision)
 		err = errors.WithStack(create(logging.NewContext(ctx, log), podExecutor))
 	}
-	if err == nil && pgAuditOK {
+	if err == nil && pgAuditOK && postgisInstallOK {
 		cluster.Status.DatabaseRevision = revision
-	}
-
-	if err == nil && postgisInstallOK == nil &&
-		!reflect.DeepEqual(postgisExtensionsEnabled, cluster.Status.Extensions) {
-		cluster.Status.Extensions = postgisExtensionsEnabled
 	}
 
 	return err

@@ -300,11 +300,6 @@ type PostgresClusterStatus struct {
 	// Identifies the databases that have been installed into PostgreSQL.
 	DatabaseRevision string `json:"databaseRevision,omitempty"`
 
-	// Lists extensions enabled on template1
-	// +listType=set
-	// +optional
-	Extensions []string `json:"extensions,omitempty"`
-
 	// Current state of PostgreSQL instances.
 	// +listType=map
 	// +listMapKey=name
