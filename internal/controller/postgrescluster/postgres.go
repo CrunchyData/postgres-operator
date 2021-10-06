@@ -22,6 +22,7 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -37,6 +38,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
+	"github.com/crunchydata/postgres-operator/internal/postgis"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -189,6 +191,8 @@ func (r *Reconciler) reconcilePostgresDatabases(
 	// Calculate a hash of the SQL that should be executed in PostgreSQL.
 
 	var pgAuditOK bool
+	var postgisInstallOK error
+	var postgisExtensionsEnabled []string
 	create := func(ctx context.Context, exec postgres.Executor) error {
 		if pgAuditOK = pgaudit.EnableInPostgreSQL(ctx, exec) == nil; !pgAuditOK {
 			// pgAudit can only be enabled after its shared library is loaded,
@@ -199,6 +203,17 @@ func (r *Reconciler) reconcilePostgresDatabases(
 			// reporting pending restarts, consider returning this error instead.
 			r.Recorder.Event(cluster, corev1.EventTypeWarning, "pgAuditDisabled",
 				"Unable to install pgAudit; try restarting PostgreSQL")
+		}
+
+		// Enabling PostGIS extensions is a one-way operation
+		// e.g., you can take a PostgresCluster and turn it into a PostGISCluster,
+		// but you cannot reverse the process, as that would potentially remove an extension
+		// that is being used by some database/tables
+		if cluster.Spec.PostGISVersion != "" {
+			postgisInstallOK = postgis.EnableInPostgreSQL(ctx, exec)
+			if postgisInstallOK == nil {
+				postgisExtensionsEnabled, postgisInstallOK = postgis.GetEnabledExtensions(ctx, exec)
+			}
 		}
 
 		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, databases.List())
@@ -234,6 +249,11 @@ func (r *Reconciler) reconcilePostgresDatabases(
 	}
 	if err == nil && pgAuditOK {
 		cluster.Status.DatabaseRevision = revision
+	}
+
+	if err == nil && postgisInstallOK == nil &&
+		!reflect.DeepEqual(postgisExtensionsEnabled, cluster.Status.Extensions) {
+		cluster.Status.Extensions = postgisExtensionsEnabled
 	}
 
 	return err
