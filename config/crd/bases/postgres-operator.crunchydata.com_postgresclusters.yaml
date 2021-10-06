@@ -6328,12 +6328,6 @@ spec:
                 description: Identifies the databases that have been installed into
                   PostgreSQL.
                 type: string
-              extensions:
-                description: Lists extensions enabled on template1
-                items:
-                  type: string
-                type: array
-                x-kubernetes-list-type: set
               instances:
                 description: Current state of PostgreSQL instances.
                 items:
