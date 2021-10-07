@@ -24,8 +24,8 @@ import (
 )
 
 // EnableInPostgreSQL installs triggers for the following extensions into every database:
-// 	- postgis
-//	- postgis_topology
+//  - postgis
+//  - postgis_topology
 //  - fuzzystrmatch
 //  - postgis_tiger_geocoder
 func EnableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
