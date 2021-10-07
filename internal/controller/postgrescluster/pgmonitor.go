@@ -24,6 +24,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -410,5 +411,49 @@ func addPGMonitorExporterToInstancePodSpec(
 	initialize.Labels(template)
 	template.Labels[naming.LabelPGMonitorDiscovery] = "true"
 
+	return nil
+}
+
+// func addPGMonitorExporterService(cluster *v1beta1.PostgresCluster){
+// 	service := &corev1.Service{
+// 		ObjectMeta: naming.PGMonitorExporterService(cluster),
+// 	}	
+	
+// 	service.Spec.Selector = map[string]string{
+// 		naming.LabelCluster: cluster.Name,
+// 	}
+	
+// 	service.Labels = naming.Merge(
+// 		cluster.Spec.Metadata.GetLabelsOrNil(),
+// 		map[string]string{
+// 			naming.LabelCluster: cluster.Name,
+// 			naming.LabelRole:    naming.RolePrimary,
+// 	})
+
+// 	// endpoints := &corev1.Endpoints{}
+// 	// service.ObjectMeta.DeepCopyInto(&endpoints.ObjectMeta)
+// 	// endpoints.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Endpoints"))
+
+// 	service.Spec.ClusterIP = corev1.ClusterIPNone
+
+// 	service.Spec.Ports = []corev1.ServicePort{{
+// 		Name:       naming.ContainerPGMonitorExporter,
+// 		Port:       exporterPort,
+// 		Protocol:   corev1.ProtocolTCP,
+// 		TargetPort:  intstr.FromString(naming.ContainerPGMonitorExporter),
+// 	}}
+// }
+
+func getPGMonitorExporterPort(cluster *v1beta1.PostgresCluster) *corev1.ServicePort {
+	if cluster.Spec.Monitoring != nil && cluster.Spec.Monitoring.PGMonitor != nil && 
+	cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
+		port := &corev1.ServicePort{
+			Name:       naming.ContainerPGMonitorExporter,
+			Port:       exporterPort,
+			Protocol:   corev1.ProtocolTCP,
+			TargetPort:  intstr.FromString(naming.ContainerPGMonitorExporter),
+		}
+		return port
+	}
 	return nil
 }

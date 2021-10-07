@@ -464,3 +464,10 @@ func MovePGBackRestRepoDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMet
 		Name:      cluster.Name + "-move-pgbackrest-repo-dir",
 	}
 }
+
+func PGMonitorExporterService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name: cluster.Name + "-pgmonitor",
+	}
+}

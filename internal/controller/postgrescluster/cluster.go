@@ -29,6 +29,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch
@@ -147,6 +149,16 @@ func (r *Reconciler) generateClusterPrimaryService(
 		Protocol:   corev1.ProtocolTCP,
 		TargetPort: intstr.FromString(naming.PortPostgreSQL),
 	}}
+
+	scopedLog := logf.Log.WithName("scoped")
+	
+	exporterPort := getPGMonitorExporterPort(cluster)
+	if exporterPort != nil{
+		scopedLog.Info("exporterPort is not null")
+		service.Spec.Ports = append(service.Spec.Ports,*exporterPort)
+	}
+
+	scopedLog.Info("exporterPort is null")
 
 	// Copy the LoadBalancerStatus of the leader Service into external fields.
 	// These fields are presented in the "External-IP" field of `kubectl get`.
