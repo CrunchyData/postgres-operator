@@ -450,8 +450,9 @@ func (r *Reconciler) generatePGMonitorService(
 	service := &corev1.Service{ObjectMeta: naming.PGMonitorService(cluster)}
 	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
+	// Service will be created only if cluster.Spec.Monitoring.PGMonitor.Exporter.Expose exists and equals 'true'
 	if cluster.Spec.Monitoring == nil || cluster.Spec.Monitoring.PGMonitor == nil ||
-		cluster.Spec.Monitoring.PGMonitor.Exporter == nil {
+		cluster.Spec.Monitoring.PGMonitor.Exporter == nil || !cluster.Spec.Monitoring.PGMonitor.Exporter.Expose {
 		return service, false, nil
 	}
 
@@ -465,7 +466,7 @@ func (r *Reconciler) generatePGMonitorService(
 		})
 
 	// Allocate an IP address and/or node port and let Kubernetes manage the
-	// Endpoints by selecting Pods with the PgBouncer role.
+	// Endpoints by selecting Pods with the PgMonitor role.
 	// - https://docs.k8s.io/concepts/services-networking/service/#defining-a-service
 	service.Spec.Selector = map[string]string{
 		naming.LabelCluster:            cluster.Name,
@@ -473,7 +474,7 @@ func (r *Reconciler) generatePGMonitorService(
 	}
 	service.Spec.Type = corev1.ServiceTypeClusterIP
 
-	// The TargetPort must be the name (not the number) of the PgBouncer
+	// The TargetPort must be the name (not the number) of the PgMonitor
 	// ContainerPort. This name allows the port number to differ between Pods,
 	// which can happen during a rolling update.
 	service.Spec.Ports = []corev1.ServicePort{{
