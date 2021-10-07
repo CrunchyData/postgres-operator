@@ -418,6 +418,10 @@ func addPGMonitorExporterToInstancePodSpec(
 	return nil
 }
 
+// +kubebuilder:rbac:groups="",resources="services",verbs={get}
+// +kubebuilder:rbac:groups="",resources="services",verbs={create,delete,patch}
+
+// reconcilePGMonitorService writes the Service that resolves to PgMonitor.
 func (r *Reconciler) reconcilePGMonitorService(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
@@ -483,17 +487,3 @@ func (r *Reconciler) generatePGMonitorService(
 
 	return service, true, err
 }
-
-// func getPGMonitorExporterPort(cluster *v1beta1.PostgresCluster) *corev1.ServicePort {
-// 	if cluster.Spec.Monitoring != nil && cluster.Spec.Monitoring.PGMonitor != nil &&
-// 	cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
-// 		port := &corev1.ServicePort{
-// 			Name:       naming.ContainerPGMonitorExporter,
-// 			Port:       exporterPort,
-// 			Protocol:   corev1.ProtocolTCP,
-// 			TargetPort:  intstr.FromString(naming.ContainerPGMonitorExporter),
-// 		}
-// 		return port
-// 	}
-// 	return nil
-// }
