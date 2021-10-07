@@ -23,8 +23,8 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -66,6 +66,10 @@ func (r *Reconciler) reconcilePGMonitor(ctx context.Context,
 	monitoringSecret *corev1.Secret) error {
 
 	err := r.reconcilePGMonitorExporter(ctx, cluster, instances, monitoringSecret)
+
+	if err == nil {
+		err = r.reconcilePGMonitorService(ctx, cluster)
+	}
 
 	return err
 }
@@ -414,46 +418,82 @@ func addPGMonitorExporterToInstancePodSpec(
 	return nil
 }
 
-// func addPGMonitorExporterService(cluster *v1beta1.PostgresCluster){
-// 	service := &corev1.Service{
-// 		ObjectMeta: naming.PGMonitorExporterService(cluster),
-// 	}	
-	
-// 	service.Spec.Selector = map[string]string{
-// 		naming.LabelCluster: cluster.Name,
-// 	}
-	
-// 	service.Labels = naming.Merge(
-// 		cluster.Spec.Metadata.GetLabelsOrNil(),
-// 		map[string]string{
-// 			naming.LabelCluster: cluster.Name,
-// 			naming.LabelRole:    naming.RolePrimary,
-// 	})
+func (r *Reconciler) reconcilePGMonitorService(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) error {
+	service, specified, err := r.generatePGMonitorService(cluster)
 
-// 	// endpoints := &corev1.Endpoints{}
-// 	// service.ObjectMeta.DeepCopyInto(&endpoints.ObjectMeta)
-// 	// endpoints.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Endpoints"))
-
-// 	service.Spec.ClusterIP = corev1.ClusterIPNone
-
-// 	service.Spec.Ports = []corev1.ServicePort{{
-// 		Name:       naming.ContainerPGMonitorExporter,
-// 		Port:       exporterPort,
-// 		Protocol:   corev1.ProtocolTCP,
-// 		TargetPort:  intstr.FromString(naming.ContainerPGMonitorExporter),
-// 	}}
-// }
-
-func getPGMonitorExporterPort(cluster *v1beta1.PostgresCluster) *corev1.ServicePort {
-	if cluster.Spec.Monitoring != nil && cluster.Spec.Monitoring.PGMonitor != nil && 
-	cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
-		port := &corev1.ServicePort{
-			Name:       naming.ContainerPGMonitorExporter,
-			Port:       exporterPort,
-			Protocol:   corev1.ProtocolTCP,
-			TargetPort:  intstr.FromString(naming.ContainerPGMonitorExporter),
+	if err == nil && !specified {
+		// PgMonitor is disabled; delete the Service if it exists. Check the client
+		// cache first using Get.
+		key := client.ObjectKeyFromObject(service)
+		err := errors.WithStack(r.Client.Get(ctx, key, service))
+		if err == nil {
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, service))
 		}
-		return port
+		return client.IgnoreNotFound(err)
 	}
-	return nil
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, service))
+	}
+	return err
 }
+
+func (r *Reconciler) generatePGMonitorService(
+	cluster *v1beta1.PostgresCluster) (*corev1.Service, bool, error,
+) {
+	service := &corev1.Service{ObjectMeta: naming.PGMonitorService(cluster)}
+	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
+
+	if cluster.Spec.Monitoring == nil || cluster.Spec.Monitoring.PGMonitor == nil ||
+		cluster.Spec.Monitoring.PGMonitor.Exporter == nil {
+		return service, false, nil
+	}
+
+	service.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil())
+	service.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RoleMonitoring,
+		})
+
+	// Allocate an IP address and/or node port and let Kubernetes manage the
+	// Endpoints by selecting Pods with the PgBouncer role.
+	// - https://docs.k8s.io/concepts/services-networking/service/#defining-a-service
+	service.Spec.Selector = map[string]string{
+		naming.LabelCluster:            cluster.Name,
+		naming.LabelPGMonitorDiscovery: "true",
+	}
+	service.Spec.Type = corev1.ServiceTypeClusterIP
+
+	// The TargetPort must be the name (not the number) of the PgBouncer
+	// ContainerPort. This name allows the port number to differ between Pods,
+	// which can happen during a rolling update.
+	service.Spec.Ports = []corev1.ServicePort{{
+		Name:       naming.PortExporter,
+		Port:       exporterPort,
+		Protocol:   corev1.ProtocolTCP,
+		TargetPort: intstr.FromString(naming.PortExporter),
+	}}
+
+	err := errors.WithStack(r.setControllerReference(cluster, service))
+
+	return service, true, err
+}
+
+// func getPGMonitorExporterPort(cluster *v1beta1.PostgresCluster) *corev1.ServicePort {
+// 	if cluster.Spec.Monitoring != nil && cluster.Spec.Monitoring.PGMonitor != nil &&
+// 	cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
+// 		port := &corev1.ServicePort{
+// 			Name:       naming.ContainerPGMonitorExporter,
+// 			Port:       exporterPort,
+// 			Protocol:   corev1.ProtocolTCP,
+// 			TargetPort:  intstr.FromString(naming.ContainerPGMonitorExporter),
+// 		}
+// 		return port
+// 	}
+// 	return nil
+// }

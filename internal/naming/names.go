@@ -465,9 +465,9 @@ func MovePGBackRestRepoDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMet
 	}
 }
 
-func PGMonitorExporterService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+func PGMonitorService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.GetNamespace(),
-		Name: cluster.Name + "-pgmonitor",
+		Name:      cluster.Name + "-pgmonitor",
 	}
 }
