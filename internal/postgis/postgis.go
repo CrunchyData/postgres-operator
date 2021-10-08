@@ -47,7 +47,7 @@ func EnableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 			"QUIET":         "on", // Do not print successful statements to stdout.
 		})
 
-	log.V(1).Info("enabled postgis and related extensions", "stdout", stdout, "stderr", stderr)
+	log.V(1).Info("enabled PostGIS and related extensions", "stdout", stdout, "stderr", stderr)
 
 	return err
 }
