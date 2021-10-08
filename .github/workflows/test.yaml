@@ -47,6 +47,7 @@ jobs:
       - uses: nolar/setup-k3d-k3s@v1
         with:
           version: "${{ matrix.kubernetes }}"
+          k3d-tag: v4.4.8
           k3d-args: --no-lb
       - name: Prefetch container images
         run: >

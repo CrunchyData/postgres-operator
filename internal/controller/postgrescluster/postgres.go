@@ -37,6 +37,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
+	"github.com/crunchydata/postgres-operator/internal/postgis"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -188,7 +189,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 
 	// Calculate a hash of the SQL that should be executed in PostgreSQL.
 
-	var pgAuditOK bool
+	var pgAuditOK, postgisInstallOK bool
 	create := func(ctx context.Context, exec postgres.Executor) error {
 		if pgAuditOK = pgaudit.EnableInPostgreSQL(ctx, exec) == nil; !pgAuditOK {
 			// pgAudit can only be enabled after its shared library is loaded,
@@ -199,6 +200,18 @@ func (r *Reconciler) reconcilePostgresDatabases(
 			// reporting pending restarts, consider returning this error instead.
 			r.Recorder.Event(cluster, corev1.EventTypeWarning, "pgAuditDisabled",
 				"Unable to install pgAudit; try restarting PostgreSQL")
+		}
+
+		// Enabling PostGIS extensions is a one-way operation
+		// e.g., you can take a PostgresCluster and turn it into a PostGISCluster,
+		// but you cannot reverse the process, as that would potentially remove an extension
+		// that is being used by some database/tables
+		if cluster.Spec.PostGISVersion != "" {
+			if postgisInstallOK = postgis.EnableInPostgreSQL(ctx, exec) == nil; !postgisInstallOK {
+				// TODO(benjb): Investigate under what conditions postgis would fail install
+				r.Recorder.Event(cluster, corev1.EventTypeWarning, "PostGISDisabled",
+					"Unable to install PostGIS")
+			}
 		}
 
 		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, databases.List())
@@ -232,7 +245,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		log := logging.FromContext(ctx).WithValues("revision", revision)
 		err = errors.WithStack(create(logging.NewContext(ctx, log), podExecutor))
 	}
-	if err == nil && pgAuditOK {
+	if err == nil && pgAuditOK && postgisInstallOK {
 		cluster.Status.DatabaseRevision = revision
 	}
 
