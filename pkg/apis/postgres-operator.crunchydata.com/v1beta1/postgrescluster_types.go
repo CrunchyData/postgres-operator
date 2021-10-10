@@ -591,4 +591,9 @@ type ExporterSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// When this value is set to "true", the operator will create a service that exposes PGMonitor metrics.
+	// +optional
+	// +kubebuilder:default=false
+	Expose bool `json:"expose,omitempty"`
 }
