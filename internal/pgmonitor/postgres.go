@@ -48,19 +48,21 @@ func PostgreSQLHBAs(inCluster *v1beta1.PostgresCluster, outHBAs *postgres.HBAs) 
 // PostgreSQLParameters provides additional required configuration parameters
 // that Postgres needs to support monitoring
 func PostgreSQLParameters(inCluster *v1beta1.PostgresCluster, outParameters *postgres.Parameters) {
+	// Exporter expects that shared_preload_libraries are installed
+	// We add pgnodemx by default
+	// pgnodemx: https://github.com/CrunchyData/pgnodemx
+	libraries := []string{"pgnodemx"}
 	if ExporterEnabled(inCluster) {
-		// Exporter expects that shared_preload_libraries are installed
+		// Add pg_stat_statements if exporter is enabled
 		// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
-		// pgnodemx: https://github.com/CrunchyData/pgnodemx
-		libraries := []string{"pg_stat_statements", "pgnodemx"}
-
-		defined, found := outParameters.Mandatory.Get("shared_preload_libraries")
-		if found {
-			libraries = append(libraries, defined)
-		}
-
-		outParameters.Mandatory.Add("shared_preload_libraries", strings.Join(libraries, ","))
+		libraries = append(libraries, "pg_stat_statements")
 	}
+	defined, found := outParameters.Mandatory.Get("shared_preload_libraries")
+	if found {
+		libraries = append(libraries, defined)
+	}
+
+	outParameters.Mandatory.Add("shared_preload_libraries", strings.Join(libraries, ","))
 }
 
 // DisableExporterInPostgreSQL disables the exporter configuration in PostgreSQL.
