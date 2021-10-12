@@ -10,5 +10,5 @@ jobs:
       - uses: actions/checkout@v2
       - uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.42.0
+          version: latest
           args: --timeout=5m
