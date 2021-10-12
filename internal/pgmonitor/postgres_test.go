@@ -56,10 +56,7 @@ func TestPostgreSQLParameters(t *testing.T) {
 		inCluster := &v1beta1.PostgresCluster{}
 		outParameters := postgres.NewParameters()
 		PostgreSQLParameters(inCluster, &outParameters)
-		libs, found := outParameters.Mandatory.Get("shared_preload_libraries")
-		assert.Assert(t, found)
-		assert.Assert(t, !strings.Contains(libs, "pg_stat_statements"))
-		assert.Assert(t, strings.Contains(libs, "pgnodemx"))
+		assert.Assert(t, !outParameters.Mandatory.Has("shared_preload_libraries"))
 	})
 
 	t.Run("ExporterEnabled", func(t *testing.T) {
