@@ -52,8 +52,8 @@ func TestDownwardAPIVolumeMount(t *testing.T) {
 	mount := DownwardAPIVolumeMount()
 
 	assert.DeepEqual(t, mount, corev1.VolumeMount{
-		Name:      "podinfo",
-		MountPath: "/etc/podinfo",
+		Name:      "containerinfo",
+		MountPath: "/etc/containerinfo",
 		ReadOnly:  false,
 	})
 }
@@ -145,8 +145,8 @@ containers:
     readOnly: true
   - mountPath: /pgdata
     name: postgres-data
-  - mountPath: /etc/podinfo
-    name: podinfo
+  - mountPath: /etc/containerinfo
+    name: containerinfo
 - command:
   - bash
   - -ceu
@@ -294,7 +294,7 @@ volumes:
         apiVersion: v1
         fieldPath: metadata.annotations
       path: annotations
-  name: podinfo
+  name: containerinfo
 	`))
 
 	t.Run("WithWALVolumeWithoutWALVolumeSpec", func(t *testing.T) {
@@ -315,8 +315,8 @@ volumes:
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
-- mountPath: /etc/podinfo
-  name: podinfo
+- mountPath: /etc/containerinfo
+  name: containerinfo
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
 
@@ -383,7 +383,7 @@ volumes:
         apiVersion: v1
         fieldPath: metadata.annotations
       path: annotations
-  name: podinfo
+  name: containerinfo
 - name: postgres-wal
   persistentVolumeClaim:
     claimName: walvol
@@ -413,8 +413,8 @@ volumes:
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
-- mountPath: /etc/podinfo
-  name: podinfo
+- mountPath: /etc/containerinfo
+  name: containerinfo
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
 
@@ -480,7 +480,7 @@ volumes:
         apiVersion: v1
         fieldPath: metadata.annotations
       path: annotations
-  name: podinfo
+  name: containerinfo
 - name: postgres-wal
   persistentVolumeClaim:
     claimName: walvol

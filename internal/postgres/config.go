@@ -45,7 +45,7 @@ safelink() (
 	walMountPath = "/pgwal"
 
 	// downwardAPIPath is where to mount the downwardAPI volume.
-	downwardAPIPath = "/etc/podinfo"
+	downwardAPIPath = "/etc/containerinfo"
 
 	// SocketDirectory is where to bind and connect to UNIX sockets.
 	SocketDirectory = "/tmp/postgres"

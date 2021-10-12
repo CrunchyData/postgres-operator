@@ -44,7 +44,7 @@ func WALVolumeMount() corev1.VolumeMount {
 
 // DownwardAPIVolumeMount returns the name and mount path of the DownwardAPI volume.
 func DownwardAPIVolumeMount() corev1.VolumeMount {
-	return corev1.VolumeMount{Name: "podinfo", MountPath: downwardAPIPath}
+	return corev1.VolumeMount{Name: "containerinfo", MountPath: downwardAPIPath}
 }
 
 // InstancePod initializes outInstancePod with the database container and the
