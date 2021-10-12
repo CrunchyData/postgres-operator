@@ -22,7 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -50,11 +49,6 @@ const (
 	// https://kubernetes.io/docs/concepts/cluster-administration/networking/
 	// https://releases.k8s.io/v1.21.0/pkg/kubelet/kubelet_pods.go#L343
 	exporterHost = "localhost"
-)
-
-var (
-	oneMillicore = resource.MustParse("1m")
-	oneMebibyte  = resource.MustParse("1Mi")
 )
 
 // If pgMonitor is enabled the pgMonitor sidecar(s) have been added to the
@@ -326,85 +320,6 @@ func addPGMonitorExporterToInstancePodSpec(
 		},
 	}
 	template.Spec.Volumes = append(template.Spec.Volumes, configVolume)
-
-	podInfoVolume := corev1.Volume{
-		Name: "podinfo",
-		VolumeSource: corev1.VolumeSource{
-			DownwardAPI: &corev1.DownwardAPIVolumeSource{
-				// The paths defined in Items (cpu_limit, cpu_request, etc.)
-				// are hard coded in the pgnodemx queries defined by
-				// pgMonitor configuration (queries_nodemx.yml)
-				// https://github.com/CrunchyData/pgmonitor/blob/master/exporter/postgres/queries_nodemx.yml
-				Items: []corev1.DownwardAPIVolumeFile{{
-					Path: "cpu_limit",
-					ResourceFieldRef: &corev1.ResourceFieldSelector{
-						ContainerName: naming.ContainerDatabase,
-						Resource:      "limits.cpu",
-						Divisor:       oneMillicore,
-					},
-				}, {
-					Path: "cpu_request",
-					ResourceFieldRef: &corev1.ResourceFieldSelector{
-						ContainerName: naming.ContainerDatabase,
-						Resource:      "requests.cpu",
-						Divisor:       oneMillicore,
-					},
-				}, {
-					Path: "mem_limit",
-					ResourceFieldRef: &corev1.ResourceFieldSelector{
-						ContainerName: naming.ContainerDatabase,
-						Resource:      "limits.memory",
-						Divisor:       oneMebibyte,
-					},
-				}, {
-					Path: "mem_request",
-					ResourceFieldRef: &corev1.ResourceFieldSelector{
-						ContainerName: naming.ContainerDatabase,
-						Resource:      "requests.memory",
-						Divisor:       oneMebibyte,
-					},
-				}, {
-					Path: "labels",
-					FieldRef: &corev1.ObjectFieldSelector{
-						APIVersion: corev1.SchemeGroupVersion.Version,
-						FieldPath:  "metadata.labels",
-					},
-				}, {
-					Path: "annotations",
-					FieldRef: &corev1.ObjectFieldSelector{
-						APIVersion: corev1.SchemeGroupVersion.Version,
-						FieldPath:  "metadata.annotations",
-					},
-				}},
-			},
-		},
-	}
-	template.Spec.Volumes = append(template.Spec.Volumes, podInfoVolume)
-
-	var index int
-	found := false
-	for i, c := range template.Spec.Containers {
-		if c.Name == naming.ContainerDatabase {
-			index = i
-			found = true
-			break
-		}
-	}
-	if !found {
-		return errors.New("could not find database container to mount downstream api")
-	}
-
-	volumeMount := corev1.VolumeMount{
-		Name: "podinfo",
-		// This is the default value for `pgnodemx.kdapi_path` PostgreSQL
-		// parameter
-		// https://github.com/CrunchyData/pgnodemx#kubernetes-downwardapi-related-functions
-		// https://github.com/CrunchyData/pgnodemx#configuration
-		MountPath: "/etc/podinfo",
-	}
-	template.Spec.Containers[index].VolumeMounts = append(
-		template.Spec.Containers[index].VolumeMounts,
-		volumeMount)
 
 	// add the proper label to support Pod discovery by Prometheus per pgMonitor configuration
 	initialize.Labels(template)
