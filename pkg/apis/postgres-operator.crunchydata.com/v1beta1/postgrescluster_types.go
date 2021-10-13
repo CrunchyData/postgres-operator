@@ -161,6 +161,12 @@ type PostgresClusterSpec struct {
 	// +listMapKey=name
 	// +optional
 	Users []PostgresUserSpec `json:"users,omitempty"`
+
+	// If set to true, PostgreSQL will be automatically tuned according to its' resources.
+	// More information: https://pgtune.leopard.in.ua/#/ and https://github.com/le0pard/pgtune
+	// +kubebuilder:default=true
+	// +optional
+	AutoPGTune bool `json:"autoPgTune,omitempty"`
 }
 
 // DataSource defines data sources for a new PostgresCluster.
