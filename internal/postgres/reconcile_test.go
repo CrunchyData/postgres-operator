@@ -52,8 +52,8 @@ func TestDownwardAPIVolumeMount(t *testing.T) {
 	mount := DownwardAPIVolumeMount()
 
 	assert.DeepEqual(t, mount, corev1.VolumeMount{
-		Name:      "containerinfo",
-		MountPath: "/etc/containerinfo",
+		Name:      "database-containerinfo",
+		MountPath: "/etc/database-containerinfo",
 		ReadOnly:  true,
 	})
 }
@@ -145,8 +145,8 @@ containers:
     readOnly: true
   - mountPath: /pgdata
     name: postgres-data
-  - mountPath: /etc/containerinfo
-    name: containerinfo
+  - mountPath: /etc/database-containerinfo
+    name: database-containerinfo
     readOnly: true
 - command:
   - bash
@@ -295,7 +295,7 @@ volumes:
         apiVersion: v1
         fieldPath: metadata.annotations
       path: annotations
-  name: containerinfo
+  name: database-containerinfo
 	`))
 
 	t.Run("WithWALVolumeWithoutWALVolumeSpec", func(t *testing.T) {
@@ -316,8 +316,8 @@ volumes:
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
-- mountPath: /etc/containerinfo
-  name: containerinfo
+- mountPath: /etc/database-containerinfo
+  name: database-containerinfo
   readOnly: true
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
@@ -386,7 +386,7 @@ volumes:
         apiVersion: v1
         fieldPath: metadata.annotations
       path: annotations
-  name: containerinfo
+  name: database-containerinfo
 - name: postgres-wal
   persistentVolumeClaim:
     claimName: walvol
@@ -417,8 +417,8 @@ volumes:
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
-- mountPath: /etc/containerinfo
-  name: containerinfo
+- mountPath: /etc/database-containerinfo
+  name: database-containerinfo
   readOnly: true
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
@@ -486,7 +486,7 @@ volumes:
         apiVersion: v1
         fieldPath: metadata.annotations
       path: annotations
-  name: containerinfo
+  name: database-containerinfo
 - name: postgres-wal
   persistentVolumeClaim:
     claimName: walvol
