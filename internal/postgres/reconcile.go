@@ -96,7 +96,7 @@ func InstancePod(ctx context.Context,
 				// The paths defined in Items (cpu_limit, cpu_request, etc.)
 				// are hard coded in the pgnodemx queries defined by
 				// pgMonitor configuration (queries_nodemx.yml)
-				// https://github.com/CrunchyData/pgmonitor/blob/master/exporter/postgres/queries_nodemx.yml
+				// https://github.com/CrunchyData/pgmonitor/blob/master/postgres_exporter/common/queries_nodemx.yml
 				Items: []corev1.DownwardAPIVolumeFile{{
 					Path: "cpu_limit",
 					ResourceFieldRef: &corev1.ResourceFieldSelector{

@@ -126,7 +126,7 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 				// pgnodemx: https://github.com/CrunchyData/pgnodemx
 				// The `monitor` schema is hard-coded in the setup SQL files
 				// from pgMonitor configuration
-				// https://github.com/CrunchyData/pgmonitor/blob/master/exporter/postgres/queries_nodemx.yml
+				// https://github.com/CrunchyData/pgmonitor/blob/master/postgres_exporter/common/queries_nodemx.yml
 				"CREATE EXTENSION IF NOT EXISTS pgnodemx WITH SCHEMA monitor;",
 
 				// ccp_monitoring user is created in Setup.sql without a
