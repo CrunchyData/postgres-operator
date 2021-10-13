@@ -54,7 +54,7 @@ func TestDownwardAPIVolumeMount(t *testing.T) {
 	assert.DeepEqual(t, mount, corev1.VolumeMount{
 		Name:      "containerinfo",
 		MountPath: "/etc/containerinfo",
-		ReadOnly:  false,
+		ReadOnly:  true,
 	})
 }
 
@@ -147,6 +147,7 @@ containers:
     name: postgres-data
   - mountPath: /etc/containerinfo
     name: containerinfo
+    readOnly: true
 - command:
   - bash
   - -ceu
@@ -317,11 +318,13 @@ volumes:
   name: postgres-data
 - mountPath: /etc/containerinfo
   name: containerinfo
+  readOnly: true
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
 
 		// InitContainer has all mountPaths, except downwardAPI
-		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `- mountPath: /pgconf/tls
+		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
@@ -408,17 +411,20 @@ volumes:
 		assert.Assert(t, len(pod.Containers) > 0)
 		assert.Assert(t, len(pod.InitContainers) > 0)
 
-		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `- mountPath: /pgconf/tls
+		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
 - mountPath: /etc/containerinfo
   name: containerinfo
+  readOnly: true
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
 
-		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `- mountPath: /pgconf/tls
+		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
