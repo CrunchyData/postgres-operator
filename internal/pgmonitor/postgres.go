@@ -60,7 +60,8 @@ func PostgreSQLParameters(inCluster *v1beta1.PostgresCluster, outParameters *pos
 		}
 
 		outParameters.Mandatory.Add("shared_preload_libraries", strings.Join(libraries, ","))
-		outParameters.Mandatory.Add("pgnodemx.kdapi_path", "/etc/containerinfo")
+		outParameters.Mandatory.Add("pgnodemx.kdapi_path",
+			postgres.DownwardAPIVolumeMount().MountPath)
 	}
 }
 
