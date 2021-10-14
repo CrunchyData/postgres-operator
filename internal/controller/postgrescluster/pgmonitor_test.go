@@ -127,23 +127,6 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		assert.Assert(t, container.Ports[0].Protocol == "TCP")
 
 		assert.Assert(t, template.Spec.Volumes != nil)
-		found := false
-		for _, v := range template.Spec.Volumes {
-			if v.Name == "podinfo" {
-				found = true
-			}
-		}
-		assert.Assert(t, found)
-
-		dbContainer := getContainerWithName(template.Spec.Containers, naming.ContainerDatabase)
-		assert.Assert(t, dbContainer.VolumeMounts != nil)
-		found = false
-		for _, vm := range dbContainer.VolumeMounts {
-			if vm.Name == "podinfo" {
-				found = true
-			}
-		}
-		assert.Assert(t, found)
 	})
 
 	t.Run("CustomConfig", func(t *testing.T) {

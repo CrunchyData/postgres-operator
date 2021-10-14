@@ -48,6 +48,16 @@ func TestWALVolumeMount(t *testing.T) {
 	})
 }
 
+func TestDownwardAPIVolumeMount(t *testing.T) {
+	mount := DownwardAPIVolumeMount()
+
+	assert.DeepEqual(t, mount, corev1.VolumeMount{
+		Name:      "database-containerinfo",
+		MountPath: "/etc/database-containerinfo",
+		ReadOnly:  true,
+	})
+}
+
 func TestInstancePod(t *testing.T) {
 	ctx := context.Background()
 
@@ -135,6 +145,9 @@ containers:
     readOnly: true
   - mountPath: /pgdata
     name: postgres-data
+  - mountPath: /etc/database-containerinfo
+    name: database-containerinfo
+    readOnly: true
 - command:
   - bash
   - -ceu
@@ -252,6 +265,37 @@ volumes:
 - name: postgres-data
   persistentVolumeClaim:
     claimName: datavol
+- downwardAPI:
+    items:
+    - path: cpu_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: 1m
+        resource: limits.cpu
+    - path: cpu_request
+      resourceFieldRef:
+        containerName: database
+        divisor: 1m
+        resource: requests.cpu
+    - path: mem_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: 1Mi
+        resource: limits.memory
+    - path: mem_request
+      resourceFieldRef:
+        containerName: database
+        divisor: 1Mi
+        resource: requests.memory
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.labels
+      path: labels
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.annotations
+      path: annotations
+  name: database-containerinfo
 	`))
 
 	t.Run("WithWALVolumeWithoutWALVolumeSpec", func(t *testing.T) {
@@ -265,20 +309,28 @@ volumes:
 		assert.Assert(t, len(pod.Containers) > 0)
 		assert.Assert(t, len(pod.InitContainers) > 0)
 
-		for _, container := range []corev1.Container{
-			pod.Containers[0],
-			pod.InitContainers[0],
-		} {
-			assert.Assert(t, marshalMatches(container.VolumeMounts, `
+		// Container has all mountPaths, including downwardAPI
+		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
+- mountPath: /pgdata
+  name: postgres-data
+- mountPath: /etc/database-containerinfo
+  name: database-containerinfo
+  readOnly: true
+- mountPath: /pgwal
+  name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
+
+		// InitContainer has all mountPaths, except downwardAPI
+		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
 - mountPath: /pgwal
-  name: postgres-wal
-			`), "expected WAL mount in %q container", container.Name)
-		}
+  name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
 
 		assert.Assert(t, marshalMatches(pod.Volumes, `
 - name: cert-volume
@@ -304,6 +356,37 @@ volumes:
 - name: postgres-data
   persistentVolumeClaim:
     claimName: datavol
+- downwardAPI:
+    items:
+    - path: cpu_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: 1m
+        resource: limits.cpu
+    - path: cpu_request
+      resourceFieldRef:
+        containerName: database
+        divisor: 1m
+        resource: requests.cpu
+    - path: mem_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: 1Mi
+        resource: limits.memory
+    - path: mem_request
+      resourceFieldRef:
+        containerName: database
+        divisor: 1Mi
+        resource: requests.memory
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.labels
+      path: labels
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.annotations
+      path: annotations
+  name: database-containerinfo
 - name: postgres-wal
   persistentVolumeClaim:
     claimName: walvol
@@ -328,20 +411,26 @@ volumes:
 		assert.Assert(t, len(pod.Containers) > 0)
 		assert.Assert(t, len(pod.InitContainers) > 0)
 
-		for _, container := range []corev1.Container{
-			pod.Containers[0],
-			pod.InitContainers[0],
-		} {
-			assert.Assert(t, marshalMatches(container.VolumeMounts, `
+		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
+- mountPath: /pgdata
+  name: postgres-data
+- mountPath: /etc/database-containerinfo
+  name: database-containerinfo
+  readOnly: true
+- mountPath: /pgwal
+  name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
+
+		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
 - mountPath: /pgwal
-  name: postgres-wal
-			`), "expected WAL mount in %s", container.Name)
-		}
+  name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
 
 		assert.Assert(t, marshalMatches(pod.Volumes, `
 - name: cert-volume
@@ -367,6 +456,37 @@ volumes:
 - name: postgres-data
   persistentVolumeClaim:
     claimName: datavol
+- downwardAPI:
+    items:
+    - path: cpu_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: 1m
+        resource: limits.cpu
+    - path: cpu_request
+      resourceFieldRef:
+        containerName: database
+        divisor: 1m
+        resource: requests.cpu
+    - path: mem_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: 1Mi
+        resource: limits.memory
+    - path: mem_request
+      resourceFieldRef:
+        containerName: database
+        divisor: 1Mi
+        resource: requests.memory
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.labels
+      path: labels
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.annotations
+      path: annotations
+  name: database-containerinfo
 - name: postgres-wal
   persistentVolumeClaim:
     claimName: walvol

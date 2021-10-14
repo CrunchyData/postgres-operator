@@ -467,12 +467,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &corev1.SecretProjection{
 			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-	}, {
-		dedicatedRepoHostEnabled: true,
-		sshConfig: &corev1.ConfigMapProjection{
-			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-		sshSecret: &corev1.SecretProjection{
-			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}}
 
 	for _, tc := range testCases {
