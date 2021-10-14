@@ -18,6 +18,18 @@ kubectl patch postgrescluster/hippo -n postgres-operator --type merge \
 
 Watch your hippo cluster: you will see the rolling update has been triggered and the restart has begun.
 
+## Shutdown
+
+You can shut down a Postgres cluster by setting the `spec.shutdown` attribute to `true`. You can do this by editing the manifest, or, in the case of the `hippo` cluster, executing a comand like the below:
+
+```
+kubectl patch postgrescluster/hippo -n postgres-operator --type merge \
+  --patch '{"spec":{"shutdown": true}}'
+```
+
+Shutting down a cluster will terminate all of the active Pods. Any Statefulsets or Deployments are scaled to `0`.
+
+To turn a Postgres cluster that is shut down back on, you can set `spec.shutdown` to `false`.
 
 ## Rotating TLS Certificates
 
@@ -76,8 +88,6 @@ There are a few ways to do it:
      --patch '{"spec":{"proxy":{"pgBouncer":{"metadata":{"annotations":{"restarted":"'"$(date)"'"}}}}}}'
    ```
 
-
 ## Next Steps
 
 We've covered a lot in terms of building, maintaining, scaling, customizing, restarting, and expanding our Postgres cluster. However, there may come a time where we need to [delete our Postgres cluster]({{< relref "delete-cluster.md" >}}). How do we do that?
-
