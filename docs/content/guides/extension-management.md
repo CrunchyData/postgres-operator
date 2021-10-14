@@ -9,7 +9,7 @@ weight: 175
 to add some new feature to PostgreSQL in an easy to install package. How easy to install?
 For many extensions, like the `fuzzystrmatch` extension, it's as easy as connecting to the database and running a command like this:
 
-```postgres
+```
 CREATE EXTENSION fuzzystrmatch;
 ```
 
@@ -62,7 +62,7 @@ Those three settings will
 If you create a `PostgresCluster` with those configurations, you will be able to connect, 
 create the extension in a database, and run the functions installed by that extension:
 
-```postgres
+```
 CREATE EXTENSION pgnodemx;
 SELECT * FROM proc_diskstats();
 ```
@@ -77,7 +77,7 @@ First, we have to create a ConfigMap with the initialization SQL. Let's start wi
 case where we want `pgnodemx` created for us in the `hippo` database. Our initialization 
 SQL file might be named `init.sql` and look like this:
 
-```postgres
+```
 \c hippo\\
 CREATE EXTENSION pgnodemx;
 ```
