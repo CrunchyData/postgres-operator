@@ -49,6 +49,24 @@ func unsetEnv(t testing.TB, key string) {
 	assert.NilError(t, os.Unsetenv(key))
 }
 
+func TestPGAdminContainerImage(t *testing.T) {
+	cluster := &v1beta1.PostgresCluster{}
+
+	unsetEnv(t, "RELATED_IMAGE_PGADMIN")
+	assert.Equal(t, PGAdminContainerImage(cluster), "")
+
+	setEnv(t, "RELATED_IMAGE_PGADMIN", "")
+	assert.Equal(t, PGAdminContainerImage(cluster), "")
+
+	setEnv(t, "RELATED_IMAGE_PGADMIN", "env-var-pgadmin")
+	assert.Equal(t, PGAdminContainerImage(cluster), "env-var-pgadmin")
+
+	assert.NilError(t, yaml.Unmarshal([]byte(`{
+		userInterface: { pgAdmin: { image: spec-image } },
+	}`), &cluster.Spec))
+	assert.Equal(t, PGAdminContainerImage(cluster), "spec-image")
+}
+
 func TestPGBackRestContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 

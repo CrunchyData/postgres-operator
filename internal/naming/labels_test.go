@@ -48,8 +48,12 @@ func TestLabelsValid(t *testing.T) {
 }
 
 func TestLabelValuesValid(t *testing.T) {
+	assert.Assert(t, nil == validation.IsValidLabelValue(DataPGAdmin))
+	assert.Assert(t, nil == validation.IsValidLabelValue(DataPGBackRest))
+	assert.Assert(t, nil == validation.IsValidLabelValue(DataPostgres))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePatroniLeader))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePatroniReplica))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RolePGAdmin))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePGBouncer))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePostgresData))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePostgresUser))

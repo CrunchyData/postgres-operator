@@ -13,6 +13,7 @@ spec:
       containers:
         - name: operator
           env:
+            - { name: RELATED_IMAGE_PGADMIN, value: 'registry.connect.redhat.com/crunchydata/crunchy-pgadmin4:ubi8-13.4-4.7.3' }
             - { name: RELATED_IMAGE_PGBACKREST, value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbackrest:ubi8-2.35-0' }
             - { name: RELATED_IMAGE_PGBOUNCER,  value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbouncer:ubi8-1.15-3' }
             - { name: RELATED_IMAGE_PGEXPORTER, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.3-0' }

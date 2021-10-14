@@ -107,6 +107,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 	t.Run("Deployments", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
+			{"ClusterPGAdmin", ClusterPGAdmin(cluster)},
 		})
 	})
 
@@ -164,6 +165,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 	t.Run("Services", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
+			{"ClusterPGAdmin", ClusterPGAdmin(cluster)},
 			{"ClusterPodService", ClusterPodService(cluster)},
 			{"ClusterPrimaryService", ClusterPrimaryService(cluster)},
 			{"ClusterReplicaService", ClusterReplicaService(cluster)},
@@ -176,6 +178,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 
 	t.Run("Volumes", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
+			{"ClusterPGAdmin", ClusterPGAdmin(cluster)},
 			{"PGBackRestRepoVolume", PGBackRestRepoVolume(cluster, repoName)},
 		})
 	})
