@@ -164,7 +164,7 @@ type PostgresClusterSpec struct {
 
 	// If set to true, PostgreSQL will be automatically tuned according to its' resources.
 	// More information: https://pgtune.leopard.in.ua/#/ and https://github.com/le0pard/pgtune
-	// +kubebuilder:default=true
+	// +kubebuilder:default=false
 	// +optional
 	AutoPGTune bool `json:"autoPgTune,omitempty"`
 }

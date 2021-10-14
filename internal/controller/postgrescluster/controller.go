@@ -255,6 +255,9 @@ func (r *Reconciler) Reconcile(
 		instanceServiceAccount, err = r.reconcileRBACResources(ctx, cluster)
 	}
 	if err == nil {
+		err = r.reconcilePGTune(ctx, cluster)
+	}
+	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
 	}
 	if err == nil {

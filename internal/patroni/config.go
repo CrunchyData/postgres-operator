@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgtune"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -213,6 +214,7 @@ func DynamicConfiguration(
 			postgresql[k] = v
 		}
 	}
+
 	root["postgresql"] = postgresql
 
 	// Copy the "postgresql.parameters" section over any defaults.
@@ -243,8 +245,18 @@ func DynamicConfiguration(
 			}
 		}
 	}
-	postgresql["parameters"] = parameters
 
+	//Add PGTuneConfiguration if enabled. Do not override patroni.DynamicConfiguration values
+	if cluster.Spec.AutoPGTune {
+		PGTuneConfig := pgtune.GetPGTuneConfigParameters(cluster)
+		for k, v := range PGTuneConfig {
+			if _, ok := parameters[k]; !ok {
+				parameters[k] = v
+			}
+		}
+	}
+
+	postgresql["parameters"] = parameters
 	// Copy the "postgresql.pg_hba" section after any mandatory values.
 	hba := make([]string, 0, len(pgHBAs.Mandatory))
 	for i := range pgHBAs.Mandatory {

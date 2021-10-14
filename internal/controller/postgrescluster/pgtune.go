@@ -1,5 +1,3 @@
-package patroni
-
 /*
  Copyright 2021 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,37 +13,36 @@ package patroni
  limitations under the License.
 */
 
+package postgrescluster
+
 import (
+	"context"
+
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-func AutoPGTune(cluster *v1beta1.PostgresCluster) error {
+func (r *Reconciler) reconcilePGTune(ctx context.Context, cluster *v1beta1.PostgresCluster) error {
 	if !cluster.Spec.AutoPGTune {
 		return nil
 	}
 
 	if cluster.Spec.InstanceSets == nil ||
-		cluster.Spec.InstanceSets[0].Resources == nil ||
 		cluster.Spec.InstanceSets[0].Resources.Requests == nil {
 		return nil
 	}
 
-	err := TuneWorkMem(cluster)
-	if err == nil {
-		err := TuneSharedBuffers(cluster)
-	}
+	initPatroniForPGTune(cluster)
+	//err := errors.WithStack(r.apply(ctx, cluster))
 
-	if err != nil {
-		return err
-	}
-
-	return err
-}
-
-func TuneWorkMem(cluster *v1beta1.PostgresCluster) error {
 	return nil
 }
 
-func TuneSharedBuffers(cluster *v1beta1.PostgresCluster) error {
-	return nil
+/* initPatroniForPGTune initializes empty Spec.Patroni, for cases when AutoPGTune is
+enabled but Patroni is not.
+AutoPGTune property can be added under Patroni to make this function unneccessary,
+however it is less intuitive. */
+func initPatroniForPGTune(cluster *v1beta1.PostgresCluster) {
+	if cluster.Spec.Patroni == nil {
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{}
+	}
 }
