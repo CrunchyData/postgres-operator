@@ -289,8 +289,9 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		err = r.reconcileDatabaseInitSQL(ctx, cluster, instances)
 	}
-
-	// TODO reconcile pgadmin4
+	if err == nil {
+		err = r.reconcilePGAdmin(ctx, cluster)
+	}
 
 	// at this point everything reconciled successfully, and we can update the
 	// observedGeneration

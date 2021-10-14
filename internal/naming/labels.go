@@ -105,6 +105,9 @@ const (
 	// RolePGBouncer is the LabelRole applied to PgBouncer objects.
 	RolePGBouncer = "pgbouncer"
 
+	// RolePGAdmin is the LabelRole applied to pgAdmin objects.
+	RolePGAdmin = "pgadmin"
+
 	// RolePostgresData is the LabelRole applied to PostgreSQL data volumes.
 	RolePostgresData = "pgdata"
 
@@ -119,11 +122,14 @@ const (
 )
 
 const (
-	// DataPostgres is a LabelData value that indicates the object has PostgreSQL data.
-	DataPostgres = "postgres"
+	// DataPGAdmin is a LabelData value that indicates the object has pgAdmin data.
+	DataPGAdmin = "pgadmin"
 
 	// DataPGBackRest is a LabelData value that indicates the object has pgBackRest data.
 	DataPGBackRest = "pgbackrest"
+
+	// DataPostgres is a LabelData value that indicates the object has PostgreSQL data.
+	DataPostgres = "postgres"
 )
 
 // BackupJobType represents different types of backups (e.g. ad-hoc backups, scheduled backups,

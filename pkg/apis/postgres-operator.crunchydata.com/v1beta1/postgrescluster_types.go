@@ -128,6 +128,10 @@ type PostgresClusterSpec struct {
 	// +optional
 	Proxy *PostgresProxySpec `json:"proxy,omitempty"`
 
+	// The specification of a user interface that connects to PostgreSQL.
+	// +optional
+	UserInterface *UserInterfaceSpec `json:"userInterface,omitempty"`
+
 	// The specification of monitoring tools that connect to PostgreSQL
 	// +optional
 	Monitoring *MonitoringSpec `json:"monitoring,omitempty"`
@@ -283,6 +287,10 @@ func (s *PostgresClusterSpec) Default() {
 
 	if s.Proxy != nil {
 		s.Proxy.Default()
+	}
+
+	if s.UserInterface != nil {
+		s.UserInterface.Default()
 	}
 }
 
@@ -459,6 +467,20 @@ type PostgresProxySpec struct {
 func (s *PostgresProxySpec) Default() {
 	if s.PGBouncer != nil {
 		s.PGBouncer.Default()
+	}
+}
+
+// UserInterfaceSpec is a union of the supported PostgreSQL user interfaces.
+type UserInterfaceSpec struct {
+
+	// Defines a pgAdmin user interface pod.
+	PGAdmin *PGAdminPodSpec `json:"pgAdmin"`
+}
+
+// Default sets the defaults for any user interfaces that are set.
+func (s *UserInterfaceSpec) Default() {
+	if s.PGAdmin != nil {
+		s.PGAdmin.Default()
 	}
 }
 

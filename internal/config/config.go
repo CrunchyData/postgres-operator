@@ -45,6 +45,17 @@ func PGBackRestContainerImage(cluster *v1beta1.PostgresCluster) string {
 	return defaultFromEnv(image, "RELATED_IMAGE_PGBACKREST")
 }
 
+// PGAdminContainerImage returns the container image to use for pgAdmin.
+func PGAdminContainerImage(cluster *v1beta1.PostgresCluster) string {
+	var image string
+	if cluster.Spec.UserInterface != nil &&
+		cluster.Spec.UserInterface.PGAdmin != nil {
+		image = cluster.Spec.UserInterface.PGAdmin.Image
+	}
+
+	return defaultFromEnv(image, "RELATED_IMAGE_PGADMIN")
+}
+
 // PGBouncerContainerImage returns the container image to use for pgBouncer.
 func PGBouncerContainerImage(cluster *v1beta1.PostgresCluster) string {
 	var image string

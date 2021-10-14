@@ -32,6 +32,9 @@ const (
 	// supporting tools: Patroni, pgBackRest, etc.
 	ContainerDatabase = "database"
 
+	// ContainerPGAdmin is the name of a container running pgAdmin.
+	ContainerPGAdmin = "pgadmin"
+
 	// ContainerPGBouncer is the name of a container running PgBouncer.
 	ContainerPGBouncer = "pgbouncer"
 	// ContainerPGBouncerConfig is the name of a container supporting PgBouncer.
@@ -66,6 +69,8 @@ const (
 const (
 	// PortExporter is the named port for the "exporter" container
 	PortExporter = "exporter"
+	// PortPGAdmin is the name of a port that connects to pgAdmin.
+	PortPGAdmin = "pgadmin"
 	// PortPGBouncer is the name of a port that connects to PgBouncer.
 	PortPGBouncer = "pgbouncer"
 	// PortPostgreSQL is the name of a port that connects to PostgreSQL.
@@ -176,6 +181,15 @@ func ClusterInstanceRBAC(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-instance",
+	}
+}
+
+// ClusterPGAdmin returns the ObjectMeta necessary to lookup the Deployment,
+// Service or Volume for the cluster's pgAdmin user interface.
+func ClusterPGAdmin(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-pgadmin",
 	}
 }
 
