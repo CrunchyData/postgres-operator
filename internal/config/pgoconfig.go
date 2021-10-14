@@ -39,9 +39,10 @@ import (
 )
 
 const (
-	CustomConfigMapName     = "pgo-config"
-	defaultConfigPath       = "/default-pgo-config/"
-	openShiftAPIGroupSuffix = ".openshift.io"
+	CustomConfigMapName = "pgo-config"
+	defaultConfigPath   = "/default-pgo-config/"
+	openShiftSCCGroup   = "security.openshift.io"
+	openShiftSCCKind    = "SecurityContextConstraints"
 )
 
 var PgoDefaultServiceAccountTemplate *template.Template
@@ -892,18 +893,24 @@ func (c *PgoConfig) DisableFSGroup() bool {
 
 // isOpenShift returns true if we've detected that we're in an OpenShift cluster
 func isOpenShift(clientset kubernetes.Interface) bool {
-	groups, _, err := clientset.Discovery().ServerGroupsAndResources()
+	_, resourceLists, err := clientset.Discovery().ServerGroupsAndResources()
 
 	if err != nil {
 		log.Errorf("could not get server api groups: %s", err.Error())
 		return false
 	}
 
-	// ff we detect that any API group name ends with "openshift.io", we'll return
-	// that this is an OpenShift environment
-	for _, g := range groups {
-		if strings.HasSuffix(g.Name, openShiftAPIGroupSuffix) {
-			return true
+	// If we detect that the "SecurityContextConstraints" Kind is present in the
+	// "security.openshift.io" Group, we'll return that this is an OpenShift
+	// environment
+	for _, rl := range resourceLists {
+		if strings.HasPrefix(rl.GroupVersion, openShiftSCCGroup+"/") {
+			for _, r := range rl.APIResources {
+				if r.Kind == openShiftSCCKind {
+					log.Info("detected OpenShift environment")
+					return true
+				}
+			}
 		}
 	}
 
