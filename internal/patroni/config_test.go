@@ -24,6 +24,8 @@ import (
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -866,4 +868,106 @@ func TestProbeTiming(t *testing.T) {
 		assert.Assert(t, actual.SuccessThreshold == 1) // Must be 1 for liveness and startup.
 		assert.Assert(t, actual.FailureThreshold >= 1) // Minimum value is 1.
 	}
+}
+
+func TestPatroniOverrides(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Default()
+	cluster.Namespace = "some-namespace"
+	cluster.Name = "cluster-name"
+	cluster.Spec.PostgresVersion = 13
+	cluster.Spec.AutoPGTune = true
+	cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{Name: "test"}}
+	for i := range cluster.Spec.InstanceSets {
+		cluster.Spec.InstanceSets[i].Default(i)
+		cluster.Spec.InstanceSets[i].Resources = v1.ResourceRequirements{Requests: v1.ResourceList{
+			"memory": resource.MustParse("4Gi"),
+			"cpu":    resource.MustParse("2000m"),
+		},
+		}
+	}
+
+	patronidcInput := map[string]interface{}{
+		"postgresql": map[string]interface{}{
+			"parameters": map[string]interface{}{
+				"wal_buffers":    "patroni",
+				"work_mem":       "overrides",
+				"shared_buffers": "pgtune",
+			},
+		},
+	}
+
+	expected := map[string]interface{}{
+		"loop_wait": int32(10),
+		"ttl":       int32(30),
+		"postgresql": map[string]interface{}{
+			"parameters": map[string]interface{}{
+				"wal_buffers":                      "patroni",
+				"work_mem":                         "overrides",
+				"shared_buffers":                   "pgtune",
+				"max_parallel_workers":             "2",
+				"max_parallel_workers_per_gather":  "1",
+				"max_worker_processes":             "2",
+				"max_parallel_maintenance_workers": "1",
+				"default_statistics_target":        "100",
+				"effective_cache_size":             "3072MB",
+				"maintenance_work_mem":             "256MB",
+				"min_wal_size":                     "1GB",
+				"max_wal_size":                     "4GB",
+			},
+			"pg_hba":        []string{},
+			"use_pg_rewind": true,
+			"use_slots":     false,
+		},
+	}
+
+	actual := DynamicConfiguration(cluster, patronidcInput, postgres.HBAs{}, postgres.Parameters{})
+
+	assert.DeepEqual(t, expected, actual)
+}
+
+func TestPatroniPGTuneDisabled(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Default()
+	cluster.Namespace = "some-namespace"
+	cluster.Name = "cluster-name"
+	cluster.Spec.PostgresVersion = 13
+	cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{Name: "test"}}
+	for i := range cluster.Spec.InstanceSets {
+		cluster.Spec.InstanceSets[i].Default(i)
+		cluster.Spec.InstanceSets[i].Resources = v1.ResourceRequirements{Requests: v1.ResourceList{
+			"memory": resource.MustParse("4Gi"),
+			"cpu":    resource.MustParse("2000m"),
+		},
+		}
+	}
+
+	patronidcInput := map[string]interface{}{
+		"postgresql": map[string]interface{}{
+			"parameters": map[string]interface{}{
+				"wal_buffers":    "pgtune",
+				"work_mem":       "is",
+				"shared_buffers": "disabled",
+			},
+		},
+	}
+
+	expected := map[string]interface{}{
+		"loop_wait": int32(10),
+		"ttl":       int32(30),
+		"postgresql": map[string]interface{}{
+			"parameters": map[string]interface{}{
+				"wal_buffers":    "pgtune",
+				"work_mem":       "is",
+				"shared_buffers": "disabled",
+			},
+			"pg_hba":        []string{},
+			"use_pg_rewind": true,
+			"use_slots":     false,
+		},
+	}
+
+	actual := DynamicConfiguration(cluster, patronidcInput, postgres.HBAs{}, postgres.Parameters{})
+
+	assert.DeepEqual(t, expected, actual)
 }

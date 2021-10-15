@@ -48,7 +48,7 @@ const (
 	NameMaxParallelMaintenanceWorkers = "max_parallel_maintenance_workers"
 
 	//Do not assign more then 10GB shared buffers
-	MaxSharedBuffers = 10
+	MaxSharedBuffers = 10 * 1024
 	//Do not assign more then 2GB RAM for maintenance
 	MaxMaintenanceWorkMem = 2048
 	//min and max wal size are constant
@@ -113,7 +113,7 @@ func TuneWorkMem(cluster *v1beta1.PostgresCluster, params map[string]interface{}
 	// This will be tuned only if both memory and cpu has been requested.
 	if parallelWorkersPerGather > 0 &&
 		totalMemKB > 0 { //totalMemKB > 0 implies sharedBuffers > 0
-		workMem := int64((totalMemKB - KB(int64(sharedBuffers), SizeGB))) / (MaxConnections * 3) / parallelWorkersPerGather / 2
+		workMem := int64((totalMemKB - KB(int64(sharedBuffers), SizeMB))) / (MaxConnections * 3) / parallelWorkersPerGather / 2
 		params[NameWorkMem] = fmt.Sprintf("%dkB", workMem)
 	}
 }
@@ -123,8 +123,8 @@ func TuneWorkMem(cluster *v1beta1.PostgresCluster, params map[string]interface{}
 func TuneSharedBuffers(cluster *v1beta1.PostgresCluster, params map[string]interface{}, totalMemKB int64) int {
 	// if totalMemKB == 0, then memory request has not been set. Do not assign sharedBuffers in that case.
 	if totalMemKB > 0 {
-		sharedBuffersVal := int(math.Min(float64(GB(totalMemKB/4, SizeKB)), MaxSharedBuffers))
-		params[NameSharedBuffers] = fmt.Sprintf("%dGB", sharedBuffersVal)
+		sharedBuffersVal := int(math.Min(float64(MB(totalMemKB/4, SizeKB)), MaxSharedBuffers))
+		params[NameSharedBuffers] = fmt.Sprintf("%dMB", sharedBuffersVal)
 		return sharedBuffersVal
 	}
 	return 0
@@ -133,7 +133,7 @@ func TuneSharedBuffers(cluster *v1beta1.PostgresCluster, params map[string]inter
 func TuneEffectiveCacheSize(cluster *v1beta1.PostgresCluster, params map[string]interface{}, totalMemKB int64) {
 	// if totalMemKB == 0, then memory request has not been set. Do not assign EffectiveCacheSize in that case.
 	if totalMemKB > 0 {
-		params[NameEffectiveCacheSize] = fmt.Sprintf("%dGB", GB(totalMemKB*3/4, SizeKB))
+		params[NameEffectiveCacheSize] = fmt.Sprintf("%dMB", MB(totalMemKB*3/4, SizeKB))
 	}
 }
 
@@ -144,10 +144,10 @@ func TuneMaintenanceWorkMem(cluster *v1beta1.PostgresCluster, params map[string]
 	}
 }
 
-func TuneWalBuffers(cluster *v1beta1.PostgresCluster, params map[string]interface{}, SharedBuffersGB int) {
-	//SharedBuffersGB == 0 if and only if requests.memory is not set
-	if SharedBuffersGB > 0 {
-		walBuffersValue := 3 * KB(int64(SharedBuffersGB), SizeGB) / 100              //3% of SharedBuffers value
+func TuneWalBuffers(cluster *v1beta1.PostgresCluster, params map[string]interface{}, SharedBuffersMB int) {
+	//SharedBuffersMB == 0 if and only if requests.memory is not set
+	if SharedBuffersMB > 0 {
+		walBuffersValue := 3 * KB(int64(SharedBuffersMB), SizeMB) / 100              //3% of SharedBuffers value
 		walBuffersValue = int64(math.Min(float64(walBuffersValue), MaxWalBuffersKB)) //at most MaxWalBuffers
 		walBuffersValue = int64(math.Max(float64(walBuffersValue), MinWalBuffersKB)) //at least MinWalBuffers
 		if walBuffersValue >= 1024 {                                                 //format to MB
