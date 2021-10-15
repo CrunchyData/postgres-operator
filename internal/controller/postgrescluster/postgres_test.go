@@ -191,6 +191,7 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
@@ -392,7 +393,7 @@ func TestReconcileDatabaseInitSQL(t *testing.T) {
 	// Test Resources Setup
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": ""}
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, client.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, client.Delete(ctx, ns)) })
 
@@ -520,7 +521,7 @@ func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
 	// Test Resources Setup
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": ""}
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, client.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, client.Delete(ctx, ns)) })
 

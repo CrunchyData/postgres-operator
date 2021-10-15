@@ -811,6 +811,7 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
 

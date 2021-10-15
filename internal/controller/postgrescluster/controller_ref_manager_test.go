@@ -26,7 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -52,10 +52,10 @@ func TestManageControllerRefs(t *testing.T) {
 	})
 
 	clusterName := "hippo"
-	namespace := "postgres-operator-test-" + rand.String(6)
 
 	ns := &corev1.Namespace{}
-	ns.Name = namespace
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
@@ -70,7 +70,7 @@ func TestManageControllerRefs(t *testing.T) {
 	// create a base StatefulSet that can be used by the various tests below
 	objBase := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
+			Namespace: ns.Name,
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{

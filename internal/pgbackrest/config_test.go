@@ -31,6 +31,7 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -123,6 +124,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 
 			ns := &corev1.Namespace{}
 			ns.Name = naming.PGBackRestConfig(postgresCluster).Namespace
+			ns.Labels = labels.Set{"postgres-operator-test": ""}
 			assert.NilError(t, testClient.Create(context.Background(), ns))
 			t.Cleanup(func() { assert.Check(t, testClient.Delete(context.Background(), ns)) })
 

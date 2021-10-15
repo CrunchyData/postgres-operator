@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -982,7 +983,7 @@ func TestDeleteInstance(t *testing.T) {
 
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, reconciler.Client.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, reconciler.Client.Delete(ctx, ns)) })
 

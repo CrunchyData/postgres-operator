@@ -34,8 +34,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -160,6 +160,7 @@ func TestReconcilePatroniLeaderLease(t *testing.T) {
 
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
 
@@ -255,12 +256,12 @@ func TestPatroniReplicationSecret(t *testing.T) {
 	// test postgrescluster values
 	var (
 		clusterName = "hippocluster"
-		namespace   = "postgres-operator-test-" + rand.String(6)
 		clusterUID  = types.UID("hippouid")
 	)
 
 	ns := &corev1.Namespace{}
-	ns.Name = namespace
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
@@ -268,7 +269,7 @@ func TestPatroniReplicationSecret(t *testing.T) {
 	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
-			Namespace: namespace,
+			Namespace: ns.Name,
 			UID:       clusterUID,
 		},
 	}
