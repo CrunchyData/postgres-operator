@@ -33,6 +33,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/tools/record"
@@ -53,7 +54,7 @@ func TestDeleteControlled(t *testing.T) {
 
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
 
