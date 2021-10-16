@@ -65,11 +65,12 @@ const (
 	//Do not assign more then 10GB shared buffers
 	MaxSharedBuffers = 10 * 1024
 	//Do not assign more then 2GB RAM for maintenance
-	MaxMaintenanceWorkMem = 2048
-	MaxWalBuffersKB       = 16 * 1024 //16MB at most, represented in KB
-	MinWalBuffersKB       = 32        //32KB at least
-	MaxWorkersPerGather   = 4
-	MinWorkMem            = 64 //64kb at least
+	MaxMaintenanceWorkMem             = 2048
+	MaxWalBuffersKB                   = 16 * 1024 //16MB at most, represented in KB
+	MinWalBuffersKB                   = 32        //32KB at least
+	MaxWorkersPerGather               = 4
+	MinWorkMem                        = 64 //64kb at least
+	DefaultWorkersPerGatherForWorkMem = 2
 
 	MaxConnections = 100 //This is already set up by Patroni
 )
@@ -85,6 +86,8 @@ func GetPGTuneConfigParameters(cluster *v1beta1.PostgresCluster) map[string]inte
 	TuneWalBuffers(cluster, parameters, sharedBuffersVal)
 	TuneMinWalSize(cluster, parameters)
 	TuneMaxWalSize(cluster, parameters)
+	TuneRandomPageCost(cluster, parameters)
+	TuneEffectiveIOConcurrency(cluster, parameters)
 	parallelWorkersPerGather := TuneParallelSettings(cluster, parameters)
 	TuneWorkMem(cluster, parameters, totalMemKB, sharedBuffersVal, parallelWorkersPerGather)
 
@@ -122,12 +125,13 @@ func TotalCPUCores(cluster *v1beta1.PostgresCluster) int64 {
 // and memory have been requested. cpu must be greather than 2 as it depends on parallel settings
 func TuneWorkMem(cluster *v1beta1.PostgresCluster, params map[string]interface{}, totalMemKB int64, sharedBuffers int, parallelWorkersPerGather int64) {
 	// This will be tuned only if both memory and cpu has been requested.
-	if parallelWorkersPerGather > 0 &&
-		totalMemKB > 0 { //totalMemKB > 0 implies sharedBuffers > 0
-		factor := 2 //mixed and dw
+	if parallelWorkersPerGather == 0 {
+		parallelWorkersPerGather = DefaultWorkersPerGatherForWorkMem
+	}
+	if totalMemKB > 0 { //totalMemKB > 0 implies sharedBuffers > 0
+		factor := 2 //mixed,web and dw
+		fmt.Println(cluster.Spec.AutoPGTune.ApplicationType)
 		switch cluster.Spec.AutoPGTune.ApplicationType {
-		case AppTypeWeb:
-			factor = 1
 		case AppTypeOLTP:
 			factor = 1
 		case AppTypeDesktop:
@@ -185,13 +189,13 @@ func TuneMaintenanceWorkMem(cluster *v1beta1.PostgresCluster, params map[string]
 func TuneWalBuffers(cluster *v1beta1.PostgresCluster, params map[string]interface{}, SharedBuffersMB int) {
 	//SharedBuffersMB == 0 if and only if requests.memory is not set
 	if SharedBuffersMB > 0 {
-		walBuffersValue := 3 * KB(int64(SharedBuffersMB), SizeMB) / 100              //3% of SharedBuffers value
-		walBuffersValue = int64(math.Min(float64(walBuffersValue), MaxWalBuffersKB)) //at most MaxWalBuffers
-		walBuffersValue = int64(math.Max(float64(walBuffersValue), MinWalBuffersKB)) //at least MinWalBuffers
-		if walBuffersValue >= 1024 {                                                 //format to MB
-			params[NameWalBuffers] = fmt.Sprintf("%dMB", MB(walBuffersValue, SizeKB))
+		walBuffersValue := math.Ceil(3 * float64(KB(int64(SharedBuffersMB), SizeMB)) / 100) //3% of SharedBuffers value
+		walBuffersValue = math.Min(walBuffersValue, MaxWalBuffersKB)                        //at most MaxWalBuffers
+		walBuffersValue = math.Max(walBuffersValue, MinWalBuffersKB)                        //at least MinWalBuffers
+		if walBuffersValue >= 1024 {                                                        //format to MB
+			params[NameWalBuffers] = fmt.Sprintf("%dMB", MB(int64(walBuffersValue), SizeKB))
 		} else {
-			params[NameWalBuffers] = fmt.Sprintf("%dKB", walBuffersValue)
+			params[NameWalBuffers] = fmt.Sprintf("%.fKB", walBuffersValue)
 		}
 	}
 }
@@ -242,7 +246,7 @@ func TuneParallelSettings(cluster *v1beta1.PostgresCluster, params map[string]in
 		params[NameMaxParallelWorkers] = fmt.Sprintf("%d", totalCPUCores)
 
 		WorkersPerGather := int64(math.Ceil(float64(totalCPUCores) / 4))
-		CappedWorkersPerGather := int64(math.Min(float64(totalCPUCores)/4, MaxWorkersPerGather))
+		CappedWorkersPerGather := int64(math.Min(float64(WorkersPerGather), MaxWorkersPerGather))
 		if cluster.Spec.AutoPGTune.ApplicationType != AppTypeDW {
 			// do not cap DW type application.
 			WorkersPerGather = CappedWorkersPerGather
@@ -288,9 +292,9 @@ func TuneEffectiveIOConcurrency(cluster *v1beta1.PostgresCluster, params map[str
 func GB(t int64, convertFrom string) int64 {
 	switch convertFrom {
 	case SizeMB:
-		return t / 1024
+		return int64(math.Ceil(float64(t) / 1024))
 	case SizeKB:
-		return t / (1024 * 1024)
+		return int64(math.Ceil(float64(t) / (1024 * 1024)))
 	}
 	return t
 }
@@ -300,7 +304,7 @@ func MB(t int64, convertFrom string) int64 {
 	case SizeGB:
 		return t * 1024
 	case SizeKB:
-		return t / 1024
+		return int64(math.Ceil(float64(t) / 1024))
 	}
 	return t
 }
