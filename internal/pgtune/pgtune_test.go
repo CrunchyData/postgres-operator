@@ -16,7 +16,6 @@
 package pgtune
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -126,19 +125,12 @@ func TestNoCPURequests(t *testing.T) {
 }
 
 func TestStorageTypes(t *testing.T) {
-	cluster := DefaultCluster()
-	for i := range cluster.Spec.InstanceSets {
-		cluster.Spec.InstanceSets[i].Default(i)
-	}
-
 	for _, tt := range []struct {
-		cluster  *v1beta1.PostgresCluster
 		hdtype   string
 		expected map[string]interface{}
 	}{
 		{
-			cluster: cluster,
-			hdtype:  HDTypeSSD,
+			hdtype: HDTypeSSD,
 			expected: map[string]interface{}{
 				"effective_io_concurrency":  "200",
 				"random_page_cost":          "1.1",
@@ -148,8 +140,7 @@ func TestStorageTypes(t *testing.T) {
 			},
 		},
 		{
-			cluster: cluster,
-			hdtype:  HDTypeHDD,
+			hdtype: HDTypeHDD,
 			expected: map[string]interface{}{
 				"effective_io_concurrency":  "2",
 				"random_page_cost":          "4",
@@ -159,8 +150,7 @@ func TestStorageTypes(t *testing.T) {
 			},
 		},
 		{
-			cluster: cluster,
-			hdtype:  HDTypeSAN,
+			hdtype: HDTypeSAN,
 			expected: map[string]interface{}{
 				"effective_io_concurrency":  "300",
 				"random_page_cost":          "1.1",
@@ -170,6 +160,10 @@ func TestStorageTypes(t *testing.T) {
 			},
 		},
 	} {
+		cluster := DefaultCluster()
+		for i := range cluster.Spec.InstanceSets {
+			cluster.Spec.InstanceSets[i].Default(i)
+		}
 		cluster.Spec.AutoPGTune.HDType = &tt.hdtype
 		actual := GetPGTuneConfigParameters(cluster)
 
@@ -178,18 +172,11 @@ func TestStorageTypes(t *testing.T) {
 }
 
 func TestApplicationTypesDefaults(t *testing.T) {
-	cluster := DefaultCluster()
-	for i := range cluster.Spec.InstanceSets {
-		cluster.Spec.InstanceSets[i].Default(i)
-	}
-
 	for _, tt := range []struct {
-		cluster  *v1beta1.PostgresCluster
 		apptype  string
 		expected map[string]interface{}
 	}{
 		{
-			cluster: cluster,
 			apptype: AppTypeDW,
 			expected: map[string]interface{}{
 				"min_wal_size":              "4096MB",
@@ -198,7 +185,6 @@ func TestApplicationTypesDefaults(t *testing.T) {
 			},
 		},
 		{
-			cluster: cluster,
 			apptype: AppTypeDesktop,
 			expected: map[string]interface{}{
 				"min_wal_size":              "100MB",
@@ -207,7 +193,6 @@ func TestApplicationTypesDefaults(t *testing.T) {
 			},
 		},
 		{
-			cluster: cluster,
 			apptype: AppTypeOLTP,
 			expected: map[string]interface{}{
 				"min_wal_size":              "2048MB",
@@ -216,7 +201,6 @@ func TestApplicationTypesDefaults(t *testing.T) {
 			},
 		},
 		{
-			cluster: cluster,
 			apptype: AppTypeWeb,
 			expected: map[string]interface{}{
 				"min_wal_size":              "1024MB",
@@ -225,7 +209,6 @@ func TestApplicationTypesDefaults(t *testing.T) {
 			},
 		},
 		{
-			cluster: cluster,
 			apptype: AppTypeMixed,
 			expected: map[string]interface{}{
 				"min_wal_size":              "1024MB",
@@ -234,6 +217,10 @@ func TestApplicationTypesDefaults(t *testing.T) {
 			},
 		},
 	} {
+		cluster := DefaultCluster()
+		for i := range cluster.Spec.InstanceSets {
+			cluster.Spec.InstanceSets[i].Default(i)
+		}
 		cluster.Spec.AutoPGTune.ApplicationType = tt.apptype
 		actual := GetPGTuneConfigParameters(cluster)
 
@@ -242,14 +229,8 @@ func TestApplicationTypesDefaults(t *testing.T) {
 }
 
 func TestDifferentParameters(t *testing.T) {
-	cluster := DefaultCluster()
-	for i := range cluster.Spec.InstanceSets {
-		cluster.Spec.InstanceSets[i].Default(i)
-	}
-
 	for _, tt := range []struct {
 		name     string
-		cluster  *v1beta1.PostgresCluster
 		apptype  string
 		hdtype   string
 		cpu      string
@@ -257,8 +238,7 @@ func TestDifferentParameters(t *testing.T) {
 		expected map[string]interface{}
 	}{
 		{
-			name:    "contains-all-parameters",
-			cluster: cluster,
+			name:    "1-cpu-not-tuned",
 			apptype: "web",
 			hdtype:  "ssd",
 			cpu:     "1000m",
@@ -276,7 +256,64 @@ func TestDifferentParameters(t *testing.T) {
 				"max_wal_size":              "4096MB",
 			},
 		},
+		{
+			name:    "no-app-type-assume-mixed",
+			apptype: "",
+			hdtype:  "hdd",
+			cpu:     "4000m",
+			memory:  "8Gi",
+			expected: map[string]interface{}{
+				"shared_buffers":                   "2048MB",
+				"effective_cache_size":             "6144MB",
+				"maintenance_work_mem":             "512MB",
+				"wal_buffers":                      "16MB",
+				"default_statistics_target":        "100",
+				"random_page_cost":                 "4",
+				"effective_io_concurrency":         "2",
+				"work_mem":                         "5242kB",
+				"min_wal_size":                     "1024MB",
+				"max_wal_size":                     "4096MB",
+				"max_parallel_maintenance_workers": "2",
+				"max_parallel_workers":             "4",
+				"max_parallel_workers_per_gather":  "2",
+				"max_worker_processes":             "4",
+			},
+		},
+		{
+			name:    "nothing-is-cool",
+			apptype: "",
+			hdtype:  "",
+			cpu:     "0",
+			memory:  "0",
+			expected: map[string]interface{}{
+				"default_statistics_target": "100",
+				"min_wal_size":              "1024MB",
+				"max_wal_size":              "4096MB",
+			},
+		},
+		{
+			name:    "all-but-memory",
+			apptype: "oltp",
+			hdtype:  "san",
+			cpu:     "7000m",
+			memory:  "0",
+			expected: map[string]interface{}{
+				"default_statistics_target":        "100",
+				"random_page_cost":                 "1.1",
+				"effective_io_concurrency":         "300",
+				"min_wal_size":                     "2048MB",
+				"max_wal_size":                     "8192MB",
+				"max_parallel_maintenance_workers": "4",
+				"max_parallel_workers":             "7",
+				"max_parallel_workers_per_gather":  "4",
+				"max_worker_processes":             "7",
+			},
+		},
 	} {
+		cluster := DefaultCluster()
+		for i := range cluster.Spec.InstanceSets {
+			cluster.Spec.InstanceSets[i].Default(i)
+		}
 		if tt.apptype != "" {
 			cluster.Spec.AutoPGTune.ApplicationType = tt.apptype
 		}
@@ -292,7 +329,6 @@ func TestDifferentParameters(t *testing.T) {
 			}
 
 			actual := GetPGTuneConfigParameters(cluster)
-			fmt.Print(actual)
 			assert.DeepEqual(t, tt.expected, actual)
 		}
 	}

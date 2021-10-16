@@ -245,7 +245,7 @@ func TuneParallelSettings(cluster *v1beta1.PostgresCluster, params map[string]in
 		params[NameMaxWorkerProcesses] = fmt.Sprintf("%d", totalCPUCores)
 		params[NameMaxParallelWorkers] = fmt.Sprintf("%d", totalCPUCores)
 
-		WorkersPerGather := int64(math.Ceil(float64(totalCPUCores) / 4))
+		WorkersPerGather := int64(math.Ceil(float64(totalCPUCores) / 2))
 		CappedWorkersPerGather := int64(math.Min(float64(WorkersPerGather), MaxWorkersPerGather))
 		if cluster.Spec.AutoPGTune.ApplicationType != AppTypeDW {
 			// do not cap DW type application.
