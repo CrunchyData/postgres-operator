@@ -19,11 +19,17 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+)
+
+var (
+	oneMillicore = resource.MustParse("1m")
+	oneMebibyte  = resource.MustParse("1Mi")
 )
 
 // DataVolumeMount returns the name and mount path of the PostgreSQL data volume.
@@ -34,6 +40,15 @@ func DataVolumeMount() corev1.VolumeMount {
 // WALVolumeMount returns the name and mount path of the PostgreSQL WAL volume.
 func WALVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "postgres-wal", MountPath: walMountPath}
+}
+
+// DownwardAPIVolumeMount returns the name and mount path of the DownwardAPI volume.
+func DownwardAPIVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      "database-containerinfo",
+		MountPath: downwardAPIPath,
+		ReadOnly:  true,
+	}
 }
 
 // InstancePod initializes outInstancePod with the database container and the
@@ -77,6 +92,60 @@ func InstancePod(ctx context.Context,
 		},
 	}
 
+	downwardAPIVolumeMount := DownwardAPIVolumeMount()
+	downwardAPIVolume := corev1.Volume{
+		Name: downwardAPIVolumeMount.Name,
+		VolumeSource: corev1.VolumeSource{
+			DownwardAPI: &corev1.DownwardAPIVolumeSource{
+				// The paths defined in Items (cpu_limit, cpu_request, etc.)
+				// are hard coded in the pgnodemx queries defined by
+				// pgMonitor configuration (queries_nodemx.yml)
+				// https://github.com/CrunchyData/pgmonitor/blob/master/postgres_exporter/common/queries_nodemx.yml
+				Items: []corev1.DownwardAPIVolumeFile{{
+					Path: "cpu_limit",
+					ResourceFieldRef: &corev1.ResourceFieldSelector{
+						ContainerName: naming.ContainerDatabase,
+						Resource:      "limits.cpu",
+						Divisor:       oneMillicore,
+					},
+				}, {
+					Path: "cpu_request",
+					ResourceFieldRef: &corev1.ResourceFieldSelector{
+						ContainerName: naming.ContainerDatabase,
+						Resource:      "requests.cpu",
+						Divisor:       oneMillicore,
+					},
+				}, {
+					Path: "mem_limit",
+					ResourceFieldRef: &corev1.ResourceFieldSelector{
+						ContainerName: naming.ContainerDatabase,
+						Resource:      "limits.memory",
+						Divisor:       oneMebibyte,
+					},
+				}, {
+					Path: "mem_request",
+					ResourceFieldRef: &corev1.ResourceFieldSelector{
+						ContainerName: naming.ContainerDatabase,
+						Resource:      "requests.memory",
+						Divisor:       oneMebibyte,
+					},
+				}, {
+					Path: "labels",
+					FieldRef: &corev1.ObjectFieldSelector{
+						APIVersion: corev1.SchemeGroupVersion.Version,
+						FieldPath:  "metadata.labels",
+					},
+				}, {
+					Path: "annotations",
+					FieldRef: &corev1.ObjectFieldSelector{
+						APIVersion: corev1.SchemeGroupVersion.Version,
+						FieldPath:  "metadata.annotations",
+					},
+				}},
+			},
+		},
+	}
+
 	container := corev1.Container{
 		Name: naming.ContainerDatabase,
 
@@ -94,7 +163,11 @@ func InstancePod(ctx context.Context,
 		}},
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
-		VolumeMounts:    []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
+		VolumeMounts: []corev1.VolumeMount{
+			certVolumeMount,
+			dataVolumeMount,
+			downwardAPIVolumeMount,
+		},
 	}
 
 	reloader := corev1.Container{
@@ -129,7 +202,11 @@ func InstancePod(ctx context.Context,
 		VolumeMounts: []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
 	}
 
-	outInstancePod.Volumes = []corev1.Volume{certVolume, dataVolume}
+	outInstancePod.Volumes = []corev1.Volume{
+		certVolume,
+		dataVolume,
+		downwardAPIVolume,
+	}
 
 	// Mount the WAL PVC whenever it exists. The startup command will move WAL
 	// files to or from this volume according to inInstanceSpec.

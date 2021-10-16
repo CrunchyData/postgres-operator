@@ -8,7 +8,7 @@ weight: 130
 ![PostgreSQL Operator Monitoring](/images/postgresql-monitoring.png)
 
 While having [high availability]({{< relref "architecture/high-availability.md" >}}),
-[backups]({{< relref "architecture/backups.md" >}}), an disaster recovery systems in place helps in the event of something going wrong with your
+[backups]({{< relref "architecture/backups.md" >}}), and disaster recovery systems in place helps in the event of something going wrong with your
 PostgreSQL cluster, monitoring helps you anticipate problems before they happen.
 Additionally, monitoring can help you diagnose and resolve additional issues
 that may not result in downtime, but cause degraded performance.
@@ -47,6 +47,14 @@ of the monitoring infrastructure including the following components:
 - [pgnodemx](https://github.com/CrunchyData/pgnodemx), a PostgreSQL extension
 that is able to pull container-specific metrics (e.g. CPU utilization, memory
 consumption) from the container itself via SQL queries.
+
+## pgnodemx and the DownwardAPI
+
+pgnodemx is able to pull and format container-specific metrics by accessing several
+Kubernetes fields that are mounted from the pod to the `database` container's filesystem.
+By default, these fields include the pod's labels and annotations, as well as the
+`database` pod's CPU and memory. These fields are mounted at the `/etc/database-containerinfo` 
+path.
 
 ## Visualizations
 

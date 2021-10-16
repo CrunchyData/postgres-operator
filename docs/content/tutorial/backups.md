@@ -16,15 +16,20 @@ An important part of a healthy Postgres cluster is maintaining backups. PGO opti
 
 and more.
 
-Let's explore the various disaster recovery features work in PGO by first looking at how to set up backups.
+Let's explore the various disaster recovery features in PGO by first looking at how to set up backups.
 
 ## Understanding Backup Configuration and Basic Operations
 
-The backup configuration for a PGO managed Postgres cluster resides in the `spec.backups.pgbackrest` section of a custom resource. In addition to indicate which version of pgBackRest to use, this section allows you to configure the fundamental backup settings for your Postgres cluster, including:
+The backup configuration for a PGO managed Postgres cluster resides in the
+`spec.backups.pgbackrest` section of a custom resource. In addition to indicating which
+version of pgBackRest to use, this section allows you to configure the fundamental
+backup settings for your Postgres cluster, including:
 
 - `spec.backups.pgbackrest.configuration` - allows to add additional configuration and references to Secrets that are needed for configuration your backups. For example, this may reference a Secret that contains your S3 credentials.
 - `spec.backups.pgbackrest.global` - a convenience to apply global [pgBackRest configuration](https://pgbackrest.org/configuration.html). An example of this may be setting the global pgBackRest logging level (e.g. `log-level-console: info`), or provide configuration to optimize performance.
-- `spec.backups.pgbackrest.repos` - information on each specific pgBackRest backup repository. This allows you to configure where and how your backups are stored. You can keep backups in up to four (4) different locations!
+- `spec.backups.pgbackrest.repos` - information on each specific pgBackRest backup repository.
+  This allows you to configure where and how your backups and WAL archive are stored.
+  You can keep backups in up to four (4) different locations!
 
 You can configure the `repos` section based on the backup storage system you are looking to use. Specifically, you configure your `repos` section according to the storage type you are using. There are four storage types available in `spec.backups.pgbackrest.repos`:
 

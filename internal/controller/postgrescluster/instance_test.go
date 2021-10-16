@@ -1,3 +1,4 @@
+//go:build envtest
 // +build envtest
 
 /*
@@ -461,12 +462,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		sshSecret                *corev1.SecretProjection
 	}{{
 		dedicatedRepoHostEnabled: false,
-	}, {
-		dedicatedRepoHostEnabled: true,
-		sshConfig: &corev1.ConfigMapProjection{
-			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-		sshSecret: &corev1.SecretProjection{
-			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}, {
 		dedicatedRepoHostEnabled: true,
 		sshConfig: &corev1.ConfigMapProjection{

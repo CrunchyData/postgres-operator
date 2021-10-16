@@ -11,7 +11,7 @@ backups of your database" is automatically "yes!"
 The PostgreSQL Operator uses the open source
 [pgBackRest](https://pgbackrest.org) backup and restore utility that is designed
 for working with databases that are many terabytes in size. As described in the
-[Provisioning](/architecture/provisioning/) section, pgBackRest is enabled by
+[tutorial]({{< relref "/tutorial/backups.md" >}}), pgBackRest is enabled by
 default as it permits the PostgreSQL Operator to automate some advanced as well
 as convenient behaviors, including:
 
@@ -40,26 +40,16 @@ You can store your pgBackRest backups in up to four different locations and usin
 - Google Cloud Storage (GCS)
 - Azure Blob Storage
 
-The pgBackRest repository consists of the following Kubernetes objects:
-
-- A Deployment
-- A Secret that contains information that is specific to the PostgreSQL cluster
-that it is deployed with (e.g. SSH keys, AWS S3 keys, etc.)
-- A Service
-
-The PostgreSQL primary is automatically configured to use the
-`pgbackrest archive-push` and push the write-ahead log (WAL) archives to the
-correct repository.
+PostgreSQL is automatically configured to use the `pgbackrest archive-push` command
+to archive the write-ahead log (WAL) in all repositories.
 
 ## Backups
 
 PGO supports three types of pgBackRest backups:
 
-- Full (`full`): A full backup of all the contents of the PostgreSQL cluster
-- Differential (`diff`): A backup of only the files that have changed since the
-last full backup
-- Incremental (`incr`):  A backup of only the files that have changed since the
-last full or differential backup
+- Full: A full backup of all the contents of the PostgreSQL cluster
+- Differential: A backup of only the files that have changed since the last full backup
+- Incremental: A backup of only the files that have changed since the last full, differential, or incremental backup
 
 ## Scheduling Backups
 
@@ -68,7 +58,8 @@ backups. PGO enables this by managing a series of Kubernetes CronJobs to ensure 
 
 Note that pgBackRest presently only supports taking one backup at a time. This may change in a future release, but for the time being we suggest that you stagger your backup times.
 
-Please see the [backup configuration tutorial]({{< relref "tutorial/backups.md" >}}) for how to set up backup schedules.
+Please see the [backup management tutorial]({{< relref "/tutorial/backup-management.md" >}}) for how to set up backup schedules
+and configure retention policies.
 
 ## Restores
 
@@ -79,11 +70,7 @@ ways to restore a cluster:
 - Restore to a new cluster
 - Restore in-place
 
-For examples for this, please see the [disaster recovery tutorial]({{< relref "tutorial/disaster-recovery.md" >}})
-
-### Setting Backup Retention Policies
-
-Unless specified, pgBackRest will keep an unlimited number of backups. You can specify backup retention using the `repoN-retention-` options. Please see the [backup configuration tutorial]({{< relref "tutorial/backups.md" >}}) for examples.
+For examples of this, please see the [disaster recovery tutorial]({{< relref "/tutorial/disaster-recovery.md" >}})
 
 ## Deleting a Backup
 
