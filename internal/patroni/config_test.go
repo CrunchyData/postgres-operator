@@ -876,7 +876,7 @@ func TestPatroniOverrides(t *testing.T) {
 	cluster.Namespace = "some-namespace"
 	cluster.Name = "cluster-name"
 	cluster.Spec.PostgresVersion = 13
-	cluster.Spec.AutoPGTune = true
+	cluster.Spec.AutoPGTune = &v1beta1.PostgresClusterPGTune{}
 	cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{Name: "test"}}
 	for i := range cluster.Spec.InstanceSets {
 		cluster.Spec.InstanceSets[i].Default(i)

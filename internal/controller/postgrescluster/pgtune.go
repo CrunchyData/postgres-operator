@@ -22,7 +22,7 @@ import (
 )
 
 func (r *Reconciler) reconcilePGTune(ctx context.Context, cluster *v1beta1.PostgresCluster) error {
-	if !cluster.Spec.AutoPGTune {
+	if cluster.Spec.AutoPGTune == nil {
 		return nil
 	}
 
@@ -32,7 +32,6 @@ func (r *Reconciler) reconcilePGTune(ctx context.Context, cluster *v1beta1.Postg
 	}
 
 	initPatroniForPGTune(cluster)
-	//err := errors.WithStack(r.apply(ctx, cluster))
 
 	return nil
 }

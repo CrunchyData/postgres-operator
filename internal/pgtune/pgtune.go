@@ -34,6 +34,16 @@ const (
 	SizeMB = "MB"
 	SizeGB = "GB"
 
+	HDTypeSSD = "ssd"
+	HDTypeHDD = "hdd"
+	HDTypeSAN = "san"
+
+	DBTypeWeb     = "web"
+	DBTypeOLTP    = "oltp"
+	DBTypeDW      = "dw"
+	DBTypeDesktop = "desktop"
+	DBTypeMixed   = "mixed"
+
 	NameSharedBuffers                 = "shared_buffers"
 	NameWorkMem                       = "work_mem"
 	NameEffectiveCacheSize            = "effective_cache_size"
@@ -46,6 +56,8 @@ const (
 	NameMaxParallelWorkersPerGather   = "max_parallel_workers_per_gather"
 	NameMaxParallelWorkers            = "max_parallel_workers"
 	NameMaxParallelMaintenanceWorkers = "max_parallel_maintenance_workers"
+	NameRandomPageCost                = "random_page_cost"
+	NameEffectiveIOConcurrency        = "effective_io_concurrency"
 
 	//Do not assign more then 10GB shared buffers
 	MaxSharedBuffers = 10 * 1024
@@ -172,7 +184,7 @@ func TuneMaxWalSize(cluster *v1beta1.PostgresCluster, params map[string]interfac
 
 /*
 	TuneParallelSettings calculates all properties related to parallel execution
-	They will be tuned only if cpu request is defined and greather than 2 cores.
+	They will be tuned only if cpu request is defined and greather than/equal to 2 cores.
 	Returns the value of max_workers_per_gather property to be used later.
 */
 func TuneParallelSettings(cluster *v1beta1.PostgresCluster, params map[string]interface{}) int64 {
@@ -190,6 +202,33 @@ func TuneParallelSettings(cluster *v1beta1.PostgresCluster, params map[string]in
 		return WorkersPerGather
 	}
 	return 0
+}
+
+func TuneRandomPageCost(cluster *v1beta1.PostgresCluster, params map[string]interface{}) {
+	if hdType := cluster.Spec.AutoPGTune.HDType; hdType != nil {
+		rpc := 1.1
+		if *hdType == HDTypeHDD {
+			rpc = 4
+		}
+		params[NameRandomPageCost] = fmt.Sprintf("%g", rpc)
+	}
+}
+
+func TuneEffectiveIOConcurrency(cluster *v1beta1.PostgresCluster, params map[string]interface{}) {
+	if hdType := cluster.Spec.AutoPGTune.HDType; hdType != nil {
+		iocon := 0
+		switch *hdType {
+		case HDTypeHDD:
+			iocon = 2
+		case HDTypeSSD:
+			iocon = 200
+		case HDTypeSAN:
+			iocon = 300
+		}
+		if iocon > 0 {
+			params[NameEffectiveIOConcurrency] = fmt.Sprintf("%d", iocon)
+		}
+	}
 }
 
 func GB(t int64, convertFrom string) int64 {

@@ -247,7 +247,7 @@ func DynamicConfiguration(
 	}
 
 	//Add PGTuneConfiguration if enabled. Do not override patroni.DynamicConfiguration values
-	if cluster.Spec.AutoPGTune {
+	if cluster.Spec.AutoPGTune != nil {
 		PGTuneConfig := pgtune.GetPGTuneConfigParameters(cluster)
 		for k, v := range PGTuneConfig {
 			if _, ok := parameters[k]; !ok {

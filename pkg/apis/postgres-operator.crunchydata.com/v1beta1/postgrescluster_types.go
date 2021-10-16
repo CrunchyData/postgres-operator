@@ -162,11 +162,12 @@ type PostgresClusterSpec struct {
 	// +optional
 	Users []PostgresUserSpec `json:"users,omitempty"`
 
-	// If set to true, PostgreSQL will be automatically tuned according to its' resources.
+	// If set, PostgreSQL will be automatically tuned according to its' resources.
+	// Memory and CPU values are tuned according to the instances' requests.
+	// Storage is tuned according to HDType property
 	// More information: https://pgtune.leopard.in.ua/#/ and https://github.com/le0pard/pgtune
-	// +kubebuilder:default=false
 	// +optional
-	AutoPGTune bool `json:"autoPgTune,omitempty"`
+	AutoPGTune *PostgresClusterPGTune `json:"autoPgTune,omitempty"`
 }
 
 // DataSource defines data sources for a new PostgresCluster.
@@ -269,6 +270,20 @@ type PostgresClusterDataSource struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+}
+
+type PostgresClusterPGTune struct {
+	// Storage disk type, can be either ssd,hdd or san
+	// if not set, storage optimization will not be applied.
+	// +kubebuilder:validation:Enum={ssd,hdd,san}
+	HDType *string `json:"hdType,omitempty"`
+	// What is the purpose of the database's application? can be either
+	// "web" for web application, "oltp" for Online Transaction Processing,
+	// "dw" for Data Warehouse, "desktop" for Desktop Application or "mixed"
+	// if not set, "mixed" is assumed
+	// +kubebuilder:validation:Enum={web,oltp,dw,desktop,mixed}
+	// +kubebuilder:default="mixed"
+	ApplicationType string `json:"applicationType,omitempty"`
 }
 
 // Default defines several key default values for a Postgres cluster.
