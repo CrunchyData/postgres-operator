@@ -15,10 +15,13 @@ package pgtune
  limitations under the License.
 */
 
-/* This package calculates recommended configuration settings according to pgTune (https://pgtune.leopard.in.ua/), assuming DBType is mixed
+/* This package calculates recommended configuration settings according to pgTune (https://pgtune.leopard.in.ua/)
 The settings are updated using Patroni Dynamic Conifguration which is already implemented, so this essentialy enables Patroni
 This works only if PostgresCluster.Spec.autoPgTune property is set to true (default is false)
 If both PostgresCluster.Spec.autoPgTune and PostgresCluster.Spec.Patroni.DynamicConfiguration are enabled, DynamicConfiguration will override this.
+Memory and CPU values are taken from resources.requests propety,
+Storage and Application Type values are CR fields.
+Default Application Type is mixed, everything else will be ignored if not set.
 Full credit goes to https://github.com/le0pard/pgtune */
 
 import (
@@ -38,11 +41,11 @@ const (
 	HDTypeHDD = "hdd"
 	HDTypeSAN = "san"
 
-	DBTypeWeb     = "web"
-	DBTypeOLTP    = "oltp"
-	DBTypeDW      = "dw"
-	DBTypeDesktop = "desktop"
-	DBTypeMixed   = "mixed"
+	AppTypeWeb     = "web"
+	AppTypeOLTP    = "oltp"
+	AppTypeDW      = "dw"
+	AppTypeDesktop = "desktop"
+	AppTypeMixed   = "mixed"
 
 	NameSharedBuffers                 = "shared_buffers"
 	NameWorkMem                       = "work_mem"
@@ -63,14 +66,10 @@ const (
 	MaxSharedBuffers = 10 * 1024
 	//Do not assign more then 2GB RAM for maintenance
 	MaxMaintenanceWorkMem = 2048
-	//min and max wal size are constant
-	ValueMinWalSize = 1
-	ValueMaxWalSize = 4
-	//DefaultStatisticsTarget value is constant
-	ValueDefaultStatisticsTarget = 100
-	MaxWalBuffersKB              = 16 * 1024 //16MB at most, represented in KB
-	MinWalBuffersKB              = 32        //32KB at least
-	MaxWorkersPerGather          = 4
+	MaxWalBuffersKB       = 16 * 1024 //16MB at most, represented in KB
+	MinWalBuffersKB       = 32        //32KB at least
+	MaxWorkersPerGather   = 4
+	MinWorkMem            = 64 //64kb at least
 
 	MaxConnections = 100 //This is already set up by Patroni
 )
@@ -125,7 +124,19 @@ func TuneWorkMem(cluster *v1beta1.PostgresCluster, params map[string]interface{}
 	// This will be tuned only if both memory and cpu has been requested.
 	if parallelWorkersPerGather > 0 &&
 		totalMemKB > 0 { //totalMemKB > 0 implies sharedBuffers > 0
-		workMem := int64((totalMemKB - KB(int64(sharedBuffers), SizeMB))) / (MaxConnections * 3) / parallelWorkersPerGather / 2
+		factor := 2 //mixed and dw
+		switch cluster.Spec.AutoPGTune.ApplicationType {
+		case AppTypeWeb:
+			factor = 1
+		case AppTypeOLTP:
+			factor = 1
+		case AppTypeDesktop:
+			factor = 6
+		}
+		workMem := int64((totalMemKB - KB(int64(sharedBuffers), SizeMB))) / (MaxConnections * 3) / parallelWorkersPerGather / int64(factor)
+		if workMem < MinWorkMem {
+			workMem = MinWorkMem
+		}
 		params[NameWorkMem] = fmt.Sprintf("%dkB", workMem)
 	}
 }
@@ -135,7 +146,12 @@ func TuneWorkMem(cluster *v1beta1.PostgresCluster, params map[string]interface{}
 func TuneSharedBuffers(cluster *v1beta1.PostgresCluster, params map[string]interface{}, totalMemKB int64) int {
 	// if totalMemKB == 0, then memory request has not been set. Do not assign sharedBuffers in that case.
 	if totalMemKB > 0 {
-		sharedBuffersVal := int(math.Min(float64(MB(totalMemKB/4, SizeKB)), MaxSharedBuffers))
+		factor := 1
+		if cluster.Spec.AutoPGTune.ApplicationType == AppTypeDesktop {
+			factor = 4
+		}
+		// divide by 16 for desktop, 4 for everything else
+		sharedBuffersVal := int(math.Min(float64(MB(totalMemKB/int64(4*factor), SizeKB)), MaxSharedBuffers))
 		params[NameSharedBuffers] = fmt.Sprintf("%dMB", sharedBuffersVal)
 		return sharedBuffersVal
 	}
@@ -145,14 +161,24 @@ func TuneSharedBuffers(cluster *v1beta1.PostgresCluster, params map[string]inter
 func TuneEffectiveCacheSize(cluster *v1beta1.PostgresCluster, params map[string]interface{}, totalMemKB int64) {
 	// if totalMemKB == 0, then memory request has not been set. Do not assign EffectiveCacheSize in that case.
 	if totalMemKB > 0 {
-		params[NameEffectiveCacheSize] = fmt.Sprintf("%dMB", MB(totalMemKB*3/4, SizeKB))
+		factor := 3
+		if cluster.Spec.AutoPGTune.ApplicationType == AppTypeDesktop {
+			factor = 1
+		}
+		// factor by 1/4 for desktop, 3/4 for anything else
+		params[NameEffectiveCacheSize] = fmt.Sprintf("%dMB", MB(totalMemKB*int64(factor)/4, SizeKB))
 	}
 }
 
 func TuneMaintenanceWorkMem(cluster *v1beta1.PostgresCluster, params map[string]interface{}, totalMemKB int64) {
 	// if totalMemKB == 0, then memory request has not been set. Do not assign MaintenanceWorkMem in that case.
 	if totalMemKB > 0 {
-		params[NameMaintenanceWorkMem] = fmt.Sprintf("%dMB", int(math.Min(float64(MB(totalMemKB/16, SizeKB)), MaxMaintenanceWorkMem))) //cap at 2GB
+		factor := 2
+		if cluster.Spec.AutoPGTune.ApplicationType == AppTypeDW {
+			factor = 1
+		}
+		// divide by 8 for DW, 16 for anything else
+		params[NameMaintenanceWorkMem] = fmt.Sprintf("%dMB", int(math.Min(float64(MB(totalMemKB/int64(8*factor), SizeKB)), MaxMaintenanceWorkMem))) //cap at 2GB
 	}
 }
 
@@ -171,15 +197,37 @@ func TuneWalBuffers(cluster *v1beta1.PostgresCluster, params map[string]interfac
 }
 
 func TuneDefaultStatisticsTarget(cluster *v1beta1.PostgresCluster, params map[string]interface{}) {
-	params[NameDefaultStatisticsTarget] = fmt.Sprintf("%d", ValueDefaultStatisticsTarget)
+	dst := 100
+	if cluster.Spec.AutoPGTune.ApplicationType == AppTypeDW {
+		dst = 500
+	}
+	params[NameDefaultStatisticsTarget] = fmt.Sprintf("%d", dst)
 }
 
 func TuneMinWalSize(cluster *v1beta1.PostgresCluster, params map[string]interface{}) {
-	params[NameMinWalSize] = fmt.Sprintf("%dGB", ValueMinWalSize)
+	walSize := 1024 //mixed and web
+	switch cluster.Spec.AutoPGTune.ApplicationType {
+	case AppTypeDW:
+		walSize = 4096
+	case AppTypeOLTP:
+		walSize = 2048
+	case AppTypeDesktop:
+		walSize = 100
+	}
+	params[NameMinWalSize] = fmt.Sprintf("%dMB", walSize)
 }
 
 func TuneMaxWalSize(cluster *v1beta1.PostgresCluster, params map[string]interface{}) {
-	params[NameMaxWalSize] = fmt.Sprintf("%dGB", ValueMaxWalSize)
+	walSize := 4096 //mixed and web
+	switch cluster.Spec.AutoPGTune.ApplicationType {
+	case AppTypeDW:
+		walSize = 16384
+	case AppTypeOLTP:
+		walSize = 8192
+	case AppTypeDesktop:
+		walSize = 2048
+	}
+	params[NameMaxWalSize] = fmt.Sprintf("%dMB", walSize)
 }
 
 /*
@@ -193,11 +241,17 @@ func TuneParallelSettings(cluster *v1beta1.PostgresCluster, params map[string]in
 		params[NameMaxWorkerProcesses] = fmt.Sprintf("%d", totalCPUCores)
 		params[NameMaxParallelWorkers] = fmt.Sprintf("%d", totalCPUCores)
 
-		WorkersPerGather := int64(math.Ceil(math.Min(float64(totalCPUCores)/4, MaxWorkersPerGather)))
+		WorkersPerGather := int64(math.Ceil(float64(totalCPUCores) / 4))
+		CappedWorkersPerGather := int64(math.Min(float64(totalCPUCores)/4, MaxWorkersPerGather))
+		if cluster.Spec.AutoPGTune.ApplicationType != AppTypeDW {
+			// do not cap DW type application.
+			WorkersPerGather = CappedWorkersPerGather
+		}
 		params[NameMaxParallelWorkersPerGather] = fmt.Sprintf("%d", WorkersPerGather)
 
 		if cluster.Spec.PostgresVersion >= 11 {
-			params[NameMaxParallelMaintenanceWorkers] = fmt.Sprintf("%d", WorkersPerGather)
+			// cap any application type
+			params[NameMaxParallelMaintenanceWorkers] = fmt.Sprintf("%d", CappedWorkersPerGather)
 		}
 		return WorkersPerGather
 	}
