@@ -292,6 +292,11 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		err = r.reconcilePGAdmin(ctx, cluster)
 	}
+	if err == nil {
+		// This is after [Reconciler.rolloutInstances] to ensure that recreating
+		// Pods takes precedence.
+		err = r.handlePatroniRestarts(ctx, cluster, instances)
+	}
 
 	// at this point everything reconciled successfully, and we can update the
 	// observedGeneration

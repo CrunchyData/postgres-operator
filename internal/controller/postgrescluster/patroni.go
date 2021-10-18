@@ -57,6 +57,86 @@ func (r *Reconciler) deletePatroniArtifacts(
 	return err
 }
 
+func (r *Reconciler) handlePatroniRestarts(
+	ctx context.Context, cluster *v1beta1.PostgresCluster, instances *observedInstances,
+) error {
+	const container = naming.ContainerDatabase
+	var primaryNeedsRestart, replicaNeedsRestart *Instance
+
+	// Look for one primary and one replica that need to restart. Ignore
+	// containers that are terminating or not running; Kubernetes will start
+	// them again, and calls to their Patroni API will likely be interrupted anyway.
+	for _, instance := range instances.forCluster {
+		if len(instance.Pods) > 0 && patroni.PodRequiresRestart(instance.Pods[0]) {
+			if terminating, known := instance.IsTerminating(); terminating || !known {
+				continue
+			}
+			if running, known := instance.IsRunning(container); !running || !known {
+				continue
+			}
+
+			if primary, _ := instance.IsPrimary(); primary {
+				primaryNeedsRestart = instance
+			} else {
+				replicaNeedsRestart = instance
+			}
+			if primaryNeedsRestart != nil && replicaNeedsRestart != nil {
+				break
+			}
+		}
+	}
+
+	// When the primary instance needs to restart, restart it and return early.
+	// Some PostgreSQL settings must be changed on the primary before any
+	// progress can be made on the replicas, e.g. decreasing "max_connections".
+	// Another reconcile will trigger when an instance with pending restarts
+	// updates its status in DCS. See [Reconciler.watchPods].
+	//
+	// NOTE: In Patroni v2.1.1, regardless of the PostgreSQL parameter, the
+	// primary indicates it needs to restart one "loop_wait" *after* the
+	// replicas indicate it. So, even though we consider the primary ahead of
+	// replicas here, replicas will typically restart first because we see them
+	// first.
+	if primaryNeedsRestart != nil {
+		exec := patroni.Executor(func(
+			ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			pod := primaryNeedsRestart.Pods[0]
+			return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+		})
+
+		return errors.WithStack(exec.RestartPendingMembers(ctx, "master", naming.PatroniScope(cluster)))
+	}
+
+	// When the primary does not need to restart but a replica does, restart all
+	// replicas that still need it.
+	//
+	// NOTE: This does not always clear the "needs restart" indicator on a replica.
+	// Patroni sets that when a parameter must be increased to match the minimum
+	// required of data on disk. When that happens, restarts occur (i.e. downtime)
+	// but the affected parameter cannot change until the replica has replayed
+	// the new minimum from the primary, e.g. decreasing "max_connections".
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/postgresql/config.py#L1069
+	//
+	// TODO(cbandy): The above could interact badly with delayed replication.
+	// When we offer per-instance PostgreSQL configuration, we may need to revisit
+	// how we decide when to restart.
+	// - https://www.postgresql.org/docs/current/runtime-config-replication.html
+	if replicaNeedsRestart != nil {
+		exec := patroni.Executor(func(
+			ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			pod := replicaNeedsRestart.Pods[0]
+			return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+		})
+
+		return errors.WithStack(exec.RestartPendingMembers(ctx, "replica", naming.PatroniScope(cluster)))
+	}
+
+	// Nothing needs to restart.
+	return nil
+}
+
 // +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
 
 // reconcilePatroniDistributedConfiguration sets labels and ownership on the

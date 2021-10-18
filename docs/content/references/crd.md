@@ -7226,22 +7226,22 @@ Changing this value causes PostgreSQL and the exporter to restart. More info: ht
     <tbody><tr>
         <td><b>dynamicConfiguration</b></td>
         <td>object</td>
-        <td></td>
+        <td>Patroni dynamic configuration settings. Changes to this value will be automatically reloaded without validation. Changes to certain PostgreSQL parameters cause PostgreSQL to restart. More info: https://patroni.readthedocs.io/en/latest/SETTINGS.html</td>
         <td>false</td>
       </tr><tr>
         <td><b>leaderLeaseDurationSeconds</b></td>
         <td>integer</td>
-        <td>TTL of the cluster leader lock. "Think of it as the length of time before initiation of the automatic failover process."</td>
+        <td>TTL of the cluster leader lock. "Think of it as the length of time before initiation of the automatic failover process." Changing this value causes PostgreSQL to restart.</td>
         <td>false</td>
       </tr><tr>
         <td><b>port</b></td>
         <td>integer</td>
-        <td>The port on which Patroni should listen.</td>
+        <td>The port on which Patroni should listen. Changing this value causes PostgreSQL to restart.</td>
         <td>false</td>
       </tr><tr>
         <td><b>syncPeriodSeconds</b></td>
         <td>integer</td>
-        <td>The interval for refreshing the leader lock and applying dynamicConfiguration. Must be less than leaderLeaseDurationSeconds.</td>
+        <td>The interval for refreshing the leader lock and applying dynamicConfiguration. Must be less than leaderLeaseDurationSeconds. Changing this value causes PostgreSQL to restart.</td>
         <td>false</td>
       </tr></tbody>
 </table>

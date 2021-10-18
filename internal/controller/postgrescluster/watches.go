@@ -43,6 +43,19 @@ func (*Reconciler) watchPods() handler.Funcs {
 					Namespace: e.ObjectNew.GetNamespace(),
 					Name:      cluster,
 				}})
+				return
+			}
+
+			// Queue an event when a Patroni pod indicates it needs to restart
+			// or finished restarting.
+			if len(cluster) != 0 &&
+				(patroni.PodRequiresRestart(e.ObjectOld) ||
+					patroni.PodRequiresRestart(e.ObjectNew)) {
+				q.Add(reconcile.Request{NamespacedName: client.ObjectKey{
+					Namespace: e.ObjectNew.GetNamespace(),
+					Name:      cluster,
+				}})
+				return
 			}
 		},
 	}

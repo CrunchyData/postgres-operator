@@ -41,7 +41,7 @@ func TestWatchPodsUpdate(t *testing.T) {
 	}, queue)
 	assert.Equal(t, queue.Len(), 0)
 
-	// Cluster label, but not Patroni standby leader; no reconcile.
+	// Cluster label, but nothing else; no reconcile.
 	update(event.UpdateEvent{
 		ObjectOld: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -89,4 +89,55 @@ func TestWatchPodsUpdate(t *testing.T) {
 	expected.Namespace = "some-ns"
 	expected.Name = "starfish"
 	assert.Equal(t, item, expected)
+	queue.Done(item)
+
+	t.Run("PendingRestart", func(t *testing.T) {
+		expected := reconcile.Request{}
+		expected.Namespace = "some-ns"
+		expected.Name = "starfish"
+
+		base := &corev1.Pod{}
+		base.Namespace = "some-ns"
+		base.Labels = map[string]string{
+			"postgres-operator.crunchydata.com/cluster": "starfish",
+		}
+
+		pending := base.DeepCopy()
+		pending.Annotations = map[string]string{
+			"status": `{"pending_restart":true}`,
+		}
+
+		// Newly pending; one reconcile by label.
+		update(event.UpdateEvent{
+			ObjectOld: base.DeepCopy(),
+			ObjectNew: pending.DeepCopy(),
+		}, queue)
+		assert.Equal(t, queue.Len(), 1, "expected one reconcile")
+
+		item, _ := queue.Get()
+		assert.Equal(t, item, expected)
+		queue.Done(item)
+
+		// Still pending; one reconcile by label.
+		update(event.UpdateEvent{
+			ObjectOld: pending.DeepCopy(),
+			ObjectNew: pending.DeepCopy(),
+		}, queue)
+		assert.Equal(t, queue.Len(), 1, "expected one reconcile")
+
+		item, _ = queue.Get()
+		assert.Equal(t, item, expected)
+		queue.Done(item)
+
+		// No longer pending; one reconcile by label.
+		update(event.UpdateEvent{
+			ObjectOld: pending.DeepCopy(),
+			ObjectNew: base.DeepCopy(),
+		}, queue)
+		assert.Equal(t, queue.Len(), 1, "expected one reconcile")
+
+		item, _ = queue.Get()
+		assert.Equal(t, item, expected)
+		queue.Done(item)
+	})
 }

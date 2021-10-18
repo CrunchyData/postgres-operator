@@ -4855,18 +4855,24 @@ spec:
               patroni:
                 properties:
                   dynamicConfiguration:
+                    description: 'Patroni dynamic configuration settings. Changes
+                      to this value will be automatically reloaded without validation.
+                      Changes to certain PostgreSQL parameters cause PostgreSQL to
+                      restart. More info: https://patroni.readthedocs.io/en/latest/SETTINGS.html'
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   leaderLeaseDurationSeconds:
                     default: 30
                     description: TTL of the cluster leader lock. "Think of it as the
                       length of time before initiation of the automatic failover process."
+                      Changing this value causes PostgreSQL to restart.
                     format: int32
                     minimum: 3
                     type: integer
                   port:
                     default: 8008
-                    description: The port on which Patroni should listen.
+                    description: The port on which Patroni should listen. Changing
+                      this value causes PostgreSQL to restart.
                     format: int32
                     minimum: 1024
                     type: integer
@@ -4874,6 +4880,7 @@ spec:
                     default: 10
                     description: The interval for refreshing the leader lock and applying
                       dynamicConfiguration. Must be less than leaderLeaseDurationSeconds.
+                      Changing this value causes PostgreSQL to restart.
                     format: int32
                     minimum: 1
                     type: integer

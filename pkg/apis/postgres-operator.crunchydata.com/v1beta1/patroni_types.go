@@ -22,33 +22,33 @@ import (
 type PatroniSpec struct {
 	// TODO(cbandy): Find a better way to have a map[string]interface{} here.
 	// See: https://github.com/kubernetes-sigs/controller-tools/commit/557da250b8
-	// TODO(cbandy): Describe this field.
 
+	// Patroni dynamic configuration settings. Changes to this value will be
+	// automatically reloaded without validation. Changes to certain PostgreSQL
+	// parameters cause PostgreSQL to restart.
+	// More info: https://patroni.readthedocs.io/en/latest/SETTINGS.html
 	// +optional
 	// +kubebuilder:validation:XPreserveUnknownFields
 	DynamicConfiguration runtime.RawExtension `json:"dynamicConfiguration,omitempty"`
 
-	// TODO(cbandy): Describe the downtime involved with changing.
-
 	// TTL of the cluster leader lock. "Think of it as the
 	// length of time before initiation of the automatic failover process."
+	// Changing this value causes PostgreSQL to restart.
 	// +optional
 	// +kubebuilder:default=30
 	// +kubebuilder:validation:Minimum=3
 	LeaderLeaseDurationSeconds *int32 `json:"leaderLeaseDurationSeconds,omitempty"`
 
-	// TODO(cbandy): Describe the downtime involved with changing.
-
 	// The port on which Patroni should listen.
+	// Changing this value causes PostgreSQL to restart.
 	// +optional
 	// +kubebuilder:default=8008
 	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
-	// TODO(cbandy): Describe the downtime involved with changing.
-
 	// The interval for refreshing the leader lock and applying
 	// dynamicConfiguration. Must be less than leaderLeaseDurationSeconds.
+	// Changing this value causes PostgreSQL to restart.
 	// +optional
 	// +kubebuilder:default=10
 	// +kubebuilder:validation:Minimum=1

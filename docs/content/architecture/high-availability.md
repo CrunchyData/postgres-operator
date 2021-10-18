@@ -204,7 +204,8 @@ the [high availability tutorial]({{< relref "tutorial/high-availability.md" >}}#
 During the lifecycle of a PostgreSQL cluster, there are certain events that may
 require a planned restart, such as an update to a "restart required" PostgreSQL
 configuration setting (e.g. [`shared_buffers`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS))
-or a change to a Kubernetes Deployment template (e.g. [changing the memory request]({{< relref "tutorial/resize-cluster.md">}}#customize-cpu-memory)). Restarts can be disruptive in a high availability deployment, which is
+or a change to a Kubernetes Pod template (e.g. [changing the memory request]({{< relref "tutorial/resize-cluster.md">}}#customize-cpu-memory)).
+Restarts can be disruptive in a high availability deployment, which is
 why many setups employ a ["rolling update" strategy](https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/)
 (aka a "rolling restart") to minimize or eliminate downtime during a planned
 restart.
@@ -222,8 +223,7 @@ process:
   1. The replica is explicitly shut down to ensure any outstanding changes are
   flushed to disk.
 
-  2. If requested, the PostgreSQL Operator will apply any changes to the
-  Deployment.
+  2. If requested, the PostgreSQL Operator will apply any changes to the Pod.
 
   3. The replica is brought back online. The PostgreSQL Operator waits for the
   replica to become available before it proceeds to the next replica.
