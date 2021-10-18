@@ -32,7 +32,7 @@ func ExampleExecutor_execCmd() {
 	_ = Executor(func(
 		ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		// #nosec G204 Executor only calls `patronictl`.
+		// #nosec G204 Nothing calls the function defined in this example.
 		cmd := exec.CommandContext(ctx, command[0], command[1:]...)
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = stdin, stdout, stderr
 		return cmd.Run()
@@ -109,6 +109,26 @@ func TestExecutorReplaceConfiguration(t *testing.T) {
 
 	actual := Executor(exec).ReplaceConfiguration(
 		context.Background(), map[string]interface{}{"some": "values"})
+
+	assert.Equal(t, expected, actual, "should call exec")
+}
+
+func TestExecutorRestartPendingMembers(t *testing.T) {
+	expected := errors.New("oop")
+	exec := func(
+		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error {
+		assert.DeepEqual(t, command, strings.Fields(
+			`patronictl restart --pending --force --role=sock-role shoe-scope`,
+		))
+		assert.Assert(t, stdin == nil, "expected no stdin, got %T", stdin)
+		assert.Assert(t, stderr != nil, "should capture stderr")
+		assert.Assert(t, stdout != nil, "should capture stdout")
+		return expected
+	}
+
+	actual := Executor(exec).RestartPendingMembers(
+		context.Background(), "sock-role", "shoe-scope")
 
 	assert.Equal(t, expected, actual, "should call exec")
 }

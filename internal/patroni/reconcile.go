@@ -187,9 +187,27 @@ func PodIsStandbyLeader(pod metav1.Object) bool {
 		return false
 	}
 
+	// TODO(cbandy): This works only when using Kubernetes for DCS.
+
 	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L190
 	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L294
 	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L353
 	status := pod.GetAnnotations()["status"]
 	return strings.Contains(status, `"role":"standby_leader"`)
+}
+
+// PodRequiresRestart returns whether or not PostgreSQL inside pod has (pending)
+// parameter changes that require a PostgreSQL restart.
+func PodRequiresRestart(pod metav1.Object) bool {
+	if pod == nil {
+		return false
+	}
+
+	// TODO(cbandy): This works only when using Kubernetes for DCS.
+
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/ha.py#L198
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/postgresql/config.py#L977
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/postgresql/config.py#L1007
+	status := pod.GetAnnotations()["status"]
+	return strings.Contains(status, `"pending_restart":true`)
 }

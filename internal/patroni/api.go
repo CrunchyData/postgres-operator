@@ -67,6 +67,7 @@ func (exec Executor) ChangePrimaryAndWait(
 	// HTTP API. It exits zero even when the API says switchover did not occur.
 	// Check for the text that indicates success.
 	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/api.py#L351-L367
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/api.py#L461-L477
 	return strings.Contains(stdout.String(), "switched over"), err
 }
 
@@ -88,6 +89,29 @@ func (exec Executor) ReplaceConfiguration(
 			"stderr", stderr.String(),
 		)
 	}
+
+	return err
+}
+
+// RestartPendingMembers looks up Patroni members with role in scope and restarts
+// those that have a pending restart.
+func (exec Executor) RestartPendingMembers(ctx context.Context, role, scope string) error {
+	var stdout, stderr bytes.Buffer
+
+	// The following exits zero when it is able to read the DCS and communicate
+	// with the Patroni HTTP API. It prints the result of calling "POST /restart"
+	// on each member found with the desired role. The "Failed … 503 … restart
+	// conditions are not satisfied" message is normal and means that a particular
+	// member has already restarted.
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/ctl.py#L580-L596
+	err := exec(ctx, nil, &stdout, &stderr,
+		"patronictl", "restart", "--pending", "--force", "--role="+role, scope)
+
+	log := logging.FromContext(ctx)
+	log.V(1).Info("restarted members",
+		"stdout", stdout.String(),
+		"stderr", stderr.String(),
+	)
 
 	return err
 }

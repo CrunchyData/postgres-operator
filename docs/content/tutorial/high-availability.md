@@ -58,7 +58,7 @@ spec:
                 storage: 1Gi
 ```
 
-Apply these updates to your Kubernetes cluster with the following command:
+Apply these updates to your Postgres cluster with the following command:
 
 ```
 kubectl apply -k kustomize/postgres

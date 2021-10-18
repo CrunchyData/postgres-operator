@@ -196,10 +196,8 @@ func (r *Reconciler) reconcilePostgresDatabases(
 			// but early versions of PGO do not load it automatically. Assume
 			// that an error here is because the cluster started during one of
 			// those versions and has not been restarted.
-			// TODO(cbandy): After we have a more general way of handling or
-			// reporting pending restarts, consider returning this error instead.
 			r.Recorder.Event(cluster, corev1.EventTypeWarning, "pgAuditDisabled",
-				"Unable to install pgAudit; try restarting PostgreSQL")
+				"Unable to install pgAudit")
 		}
 
 		// Enabling PostGIS extensions is a one-way operation

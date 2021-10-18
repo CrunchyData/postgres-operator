@@ -9,7 +9,9 @@ Postgres is known for its ease of customization; PGO helps you to roll out chang
 
 ## Custom Postgres Configuration
 
-Part of the trick of managing multiple instances in a Postgres cluster is ensuring all of the configuration changes are propagated to each of them. This is where PGO helps: when you make a Postgres configuration change for a cluster, PGO will apply the changes to all of the managed instances.
+Part of the trick of managing multiple instances in a Postgres cluster is ensuring all of the configuration
+changes are propagated to each of them. This is where PGO helps: when you make a Postgres configuration
+change for a cluster, PGO will apply it to all of the Postgres instances.
 
 For example, in our previous step we added CPU and memory limits of `2.0` and `4Gi` respectively. Let's tweak some of the Postgres settings to better use our new resources. We can do this in the `spec.patroni.dynamicConfiguration` section. Here is an example updated manifest that tweaks several settings:
 
@@ -69,13 +71,13 @@ patroni:
         work_mem: 2MB
 ```
 
-Apply these updates to your Kubernetes cluster with the following command:
+Apply these updates to your Postgres cluster with the following command:
 
 ```
 kubectl apply -k kustomize/postgres
 ```
 
-PGO will go and apply these settings to all of the Postgres clusters. You can verify that the changes are present using the Postgres `SHOW` command, e.g.
+PGO will go and apply these settings, restarting each Postgres instance when necessary. You can verify that the changes are present using the Postgres `SHOW` command, e.g.
 
 ```
 SHOW work_mem;
@@ -299,9 +301,8 @@ create table t_random as select s, md5(random()::text) from generate_Series(1,5)
 
 ### Changes Not Applied
 
-If your Postgres configuration settings are not present, you may need to check a few things. First, ensure that you are using the syntax that Postgres expects. You can see this in the [Postgres configuration documentation](https://www.postgresql.org/docs/current/runtime-config.html).
-
-Some settings, such as `shared_buffers`, require for Postgres to restart. Patroni only performs a reload when parameter changes are identified.  Therefore, for parameters that require a restart, the restart can be performed manually by  executing into a Postgres instance and running `patronictl restart --force <clusterName>-ha`.
+If your Postgres configuration settings are not present, ensure that you are using the syntax that Postgres expects.
+You can see this in the [Postgres configuration documentation](https://www.postgresql.org/docs/current/runtime-config.html).
 
 ## Next Steps
 
