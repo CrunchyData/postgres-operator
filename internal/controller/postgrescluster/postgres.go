@@ -206,12 +206,12 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		// e.g., you can take a PostgresCluster and turn it into a PostGISCluster,
 		// but you cannot reverse the process, as that would potentially remove an extension
 		// that is being used by some database/tables
-		if cluster.Spec.PostGISVersion != "" {
-			if postgisInstallOK = postgis.EnableInPostgreSQL(ctx, exec) == nil; !postgisInstallOK {
-				// TODO(benjb): Investigate under what conditions postgis would fail install
-				r.Recorder.Event(cluster, corev1.EventTypeWarning, "PostGISDisabled",
-					"Unable to install PostGIS")
-			}
+		if cluster.Spec.PostGISVersion == "" {
+			postgisInstallOK = true
+		} else if postgisInstallOK = postgis.EnableInPostgreSQL(ctx, exec) == nil; !postgisInstallOK {
+			// TODO(benjb): Investigate under what conditions postgis would fail install
+			r.Recorder.Event(cluster, corev1.EventTypeWarning, "PostGISDisabled",
+				"Unable to install PostGIS")
 		}
 
 		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, databases.List())
