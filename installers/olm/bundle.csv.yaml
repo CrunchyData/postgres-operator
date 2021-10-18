@@ -79,6 +79,3 @@ spec:
     spec:
       permissions: # kustomize config/operator
       deployments: # kustomize config/operator
-
-  # https://docs.openshift.com/container-platform/4.7/operators/operator_sdk/osdk-generating-csvs.html#olm-enabling-operator-for-restricted-network_osdk-generating-csvs
-  relatedImages:
