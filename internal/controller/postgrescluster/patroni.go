@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
@@ -430,4 +431,117 @@ func replicationCertSecretProjection(certificate *corev1.Secret) *corev1.SecretP
 			},
 		},
 	}
+}
+
+func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
+	cluster *v1beta1.PostgresCluster, instances *observedInstances) error {
+	log := logging.FromContext(ctx)
+
+	if cluster.Spec.Patroni == nil || cluster.Spec.Patroni.Switchover == nil ||
+		!cluster.Spec.Patroni.Switchover.Enabled {
+		cluster.Status.Patroni.Switchover = nil
+		return nil
+	}
+
+	switchoverAnnotation := cluster.GetAnnotations()[naming.PatroniSwitchover]
+	if switchoverAnnotation == "" {
+		return nil
+	}
+	var switchoverStatus string
+	if cluster.Status.Patroni.Switchover != nil {
+		switchoverStatus = *cluster.Status.Patroni.Switchover
+	}
+	if switchoverStatus == switchoverAnnotation {
+		return nil
+	}
+
+	if len(instances.forCluster) <= 1 {
+		// TODO: event
+		// TODO: Possible webhook validation
+		return errors.New("Need more than one instance to switchover")
+	}
+
+	// 	 TODO: Add webhook validation that requires a targetInstance when requesting failover
+	if cluster.Spec.Patroni.Switchover.Type == "failover" {
+		if cluster.Spec.Patroni.Switchover.TargetInstance == nil ||
+			*cluster.Spec.Patroni.Switchover.TargetInstance == "" {
+			// TODO: event
+			return errors.New("TargetInstance required when running failover")
+		}
+	}
+
+	// Determine if user is specifying a target instance. Validate the
+	// provided instance has been observed in the cluster.
+	var targetInstance *Instance
+	if cluster.Spec.Patroni.Switchover.TargetInstance != nil &&
+		*cluster.Spec.Patroni.Switchover.TargetInstance != "" {
+
+		for _, instance := range instances.forCluster {
+			if *cluster.Spec.Patroni.Switchover.TargetInstance == instance.Name {
+				targetInstance = instance
+			}
+		}
+		if targetInstance == nil {
+			// TODO: event
+			return errors.New("TargetInstance was specified but not found in the cluster")
+		}
+		if len(targetInstance.Pods) != 1 {
+			// We expect that a target instance should have one associated pod.
+			return errors.Errorf(
+				"TargetInstance should have one pod. Pods (%d)", len(targetInstance.Pods))
+		}
+	} else {
+		log.V(1).Info("TargetInstance not provided")
+	}
+
+	// Find a running Pod that can be used to define a PodExec function.
+	var runningPod *corev1.Pod
+	for _, instance := range instances.forCluster {
+		if running, known := instance.IsRunning(naming.ContainerDatabase); running &&
+			known && len(instance.Pods) == 1 {
+
+			runningPod = instance.Pods[0]
+			break
+		}
+	}
+	if runningPod == nil {
+		return errors.New("Could not find a running pod when attempting switchover.")
+	}
+	exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer,
+		command ...string) error {
+		return r.PodExec(runningPod.Namespace, runningPod.Name, naming.ContainerDatabase, stdin,
+			stdout, stderr, command...)
+	}
+
+	// We have the pod executor, now we need to figure out which API call to use
+	// In the default case we will be using SwitchoverAndWait. This API call uses
+	// a Patronictl switchover to move to the target instance.
+	action := func(ctx context.Context, exec patroni.Executor, next string) (bool, error) {
+		success, err := patroni.Executor(exec).SwitchoverAndWait(ctx, next)
+		return success, errors.WithStack(err)
+	}
+
+	if cluster.Spec.Patroni.Switchover.Type == "failover" {
+		// When a failover has been requested we use FailoverAndWait to change the primary.
+		action = func(ctx context.Context, exec patroni.Executor, next string) (bool, error) {
+			success, err := patroni.Executor(exec).FailoverAndWait(ctx, next)
+			return success, errors.WithStack(err)
+		}
+	}
+
+	// If target instance has not been provided, we will pass in an empty string to patronictl
+	nextPrimary := ""
+	if targetInstance != nil {
+		nextPrimary = targetInstance.Pods[0].Name
+	}
+
+	success, err := action(ctx, exec, nextPrimary)
+	if err = errors.WithStack(err); err == nil && !success {
+		err = errors.New("unable to switchover")
+	}
+	if err == nil {
+		cluster.Status.Patroni.Switchover = initialize.String(switchoverAnnotation)
+	}
+
+	return err
 }

@@ -21,6 +21,10 @@ const (
 	// Finalizer marks an object to be garbage collected by this module.
 	Finalizer = annotationPrefix + "finalizer"
 
+	// PatroniSwitchover is the annotation added to a PostgresCluster to initiate a manual
+	// Patroni Switchover (or Failover).
+	PatroniSwitchover = annotationPrefix + "trigger-switchover"
+
 	// PGBackRestBackup is the annotation that is added to a PostgresCluster to initiate a manual
 	// backup.  The value of the annotation will be a unique identifier for a backup Job (e.g. a
 	// timestamp), which will be stored in the PostgresCluster status to properly track completion

@@ -24,6 +24,7 @@ import (
 
 func TestAnnotationsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(Finalizer))
+	assert.Assert(t, nil == validation.IsQualifiedName(PatroniSwitchover))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestBackup))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestConfigHash))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestCurrentConfig))

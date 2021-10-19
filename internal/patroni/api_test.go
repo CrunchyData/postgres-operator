@@ -91,6 +91,110 @@ func TestExecutorChangePrimaryAndWait(t *testing.T) {
 	})
 }
 
+func TestExecutorSwitchoverAndWait(t *testing.T) {
+	t.Run("Arguments", func(t *testing.T) {
+		called := false
+		exec := func(
+			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			called = true
+			assert.DeepEqual(t, command, strings.Fields(
+				`patronictl switchover --scheduled=now --force --candidate=new`,
+			))
+			assert.Assert(t, stdin == nil, "expected no stdin, got %T", stdin)
+			assert.Assert(t, stderr != nil, "should capture stderr")
+			assert.Assert(t, stdout != nil, "should capture stdout")
+			return nil
+		}
+
+		_, _ = Executor(exec).SwitchoverAndWait(context.Background(), "new")
+		assert.Assert(t, called)
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		expected := errors.New("bang")
+		_, actual := Executor(func(
+			context.Context, io.Reader, io.Writer, io.Writer, ...string,
+		) error {
+			return expected
+		}).SwitchoverAndWait(context.Background(), "next")
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("Result", func(t *testing.T) {
+		success, _ := Executor(func(
+			_ context.Context, _ io.Reader, stdout, _ io.Writer, _ ...string,
+		) error {
+			_, _ = stdout.Write([]byte(`no luck`))
+			return nil
+		}).SwitchoverAndWait(context.Background(), "next")
+
+		assert.Assert(t, !success, "expected failure message to become false")
+
+		success, _ = Executor(func(
+			_ context.Context, _ io.Reader, stdout, _ io.Writer, _ ...string,
+		) error {
+			_, _ = stdout.Write([]byte(`Successfully switched over to something`))
+			return nil
+		}).SwitchoverAndWait(context.Background(), "next")
+
+		assert.Assert(t, success, "expected success message to become true")
+	})
+}
+
+func TestExecutorFailoverAndWait(t *testing.T) {
+	t.Run("Arguments", func(t *testing.T) {
+		called := false
+		exec := func(
+			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			called = true
+			assert.DeepEqual(t, command, strings.Fields(
+				`patronictl failover --force --candidate=new`,
+			))
+			assert.Assert(t, stdin == nil, "expected no stdin, got %T", stdin)
+			assert.Assert(t, stderr != nil, "should capture stderr")
+			assert.Assert(t, stdout != nil, "should capture stdout")
+			return nil
+		}
+
+		_, _ = Executor(exec).FailoverAndWait(context.Background(), "new")
+		assert.Assert(t, called)
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		expected := errors.New("bang")
+		_, actual := Executor(func(
+			context.Context, io.Reader, io.Writer, io.Writer, ...string,
+		) error {
+			return expected
+		}).FailoverAndWait(context.Background(), "next")
+
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("Result", func(t *testing.T) {
+		success, _ := Executor(func(
+			_ context.Context, _ io.Reader, stdout, _ io.Writer, _ ...string,
+		) error {
+			_, _ = stdout.Write([]byte(`no luck`))
+			return nil
+		}).FailoverAndWait(context.Background(), "next")
+
+		assert.Assert(t, !success, "expected failure message to become false")
+
+		success, _ = Executor(func(
+			_ context.Context, _ io.Reader, stdout, _ io.Writer, _ ...string,
+		) error {
+			_, _ = stdout.Write([]byte(`Successfully failed over to something`))
+			return nil
+		}).FailoverAndWait(context.Background(), "next")
+
+		assert.Assert(t, success, "expected success message to become true")
+	})
+}
+
 func TestExecutorReplaceConfiguration(t *testing.T) {
 	expected := errors.New("bang")
 	exec := func(

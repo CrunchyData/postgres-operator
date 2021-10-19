@@ -47,7 +47,7 @@ var _ API = Executor(nil)
 // ChangePrimaryAndWait tries to demote the current Patroni leader by calling
 // "patronictl". It returns true when an election completes successfully. It
 // waits up to two "loop_wait" or until an error occurs. When Patroni is paused,
-// next cannot be blank.
+// next cannot be blank. Similar to the "POST /switchover" REST endpoint.
 func (exec Executor) ChangePrimaryAndWait(
 	ctx context.Context, current, next string,
 ) (bool, error) {
@@ -71,8 +71,70 @@ func (exec Executor) ChangePrimaryAndWait(
 	return strings.Contains(stdout.String(), "switched over"), err
 }
 
+// SwitchoverAndWait tries to change the current Patroni leader by calling
+// "patronictl". It returns true when an election completes successfully. It
+// waits up to two "loop_wait" or until an error occurs. When Patroni is paused,
+// next cannot be blank. Similar to the "POST /switchover" REST endpoint.
+// The "patronictl switchover" variant does not require the current master to be passed
+// as a flag.
+func (exec Executor) SwitchoverAndWait(
+	ctx context.Context, target string,
+) (bool, error) {
+	var stdout, stderr bytes.Buffer
+
+	err := exec(ctx, nil, &stdout, &stderr,
+		"patronictl", "switchover", "--scheduled=now", "--force",
+		"--candidate="+target)
+
+	log := logging.FromContext(ctx)
+	log.V(1).Info("changed primary",
+		"stdout", stdout.String(),
+		"stderr", stderr.String(),
+	)
+
+	// The command exits zero when it is able to communicate with the Patroni
+	// HTTP API. It exits zero even when the API says switchover did not occur.
+	// Check for the text that indicates success.
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/api.py#L351-L367
+	// Patroni has an edge case where it could switchover to an instance other
+	// than the requested candidate. In this case, stdout will contain
+	// "Switched over" instead of "switched over" and return false, nil
+	return strings.Contains(stdout.String(), "switched over"), err
+}
+
+// FailoverAndWait tries to change the current Patroni leader by calling
+// "patronictl". It returns true when an election completes successfully. It
+// waits up to two "loop_wait" or until an error occurs. When Patroni is paused,
+// next cannot be blank. Similar to the "POST /switchover" REST endpoint.
+// The "patronictl failover" variant does not require the current master to be passed
+// as a flag.
+func (exec Executor) FailoverAndWait(
+	ctx context.Context, target string,
+) (bool, error) {
+	var stdout, stderr bytes.Buffer
+
+	err := exec(ctx, nil, &stdout, &stderr,
+		"patronictl", "failover", "--force",
+		"--candidate="+target)
+
+	log := logging.FromContext(ctx)
+	log.V(1).Info("changed primary",
+		"stdout", stdout.String(),
+		"stderr", stderr.String(),
+	)
+
+	// The command exits zero when it is able to communicate with the Patroni
+	// HTTP API. It exits zero even when the API says failover did not occur.
+	// Check for the text that indicates success.
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/api.py#L351-L367
+	// Patroni has an edge case where it could failover to an instance other
+	// than the requested candidate. In this case, stdout will contain "Failed over"
+	// instead of "failed over" and return false, nil
+	return strings.Contains(stdout.String(), "failed over"), err
+}
+
 // ReplaceConfiguration replaces Patroni's entire dynamic configuration by
-// calling "patronictl".
+// calling "patronictl". Similar to the "POST /switchover" REST endpoint.
 func (exec Executor) ReplaceConfiguration(
 	ctx context.Context, configuration map[string]interface{},
 ) error {
