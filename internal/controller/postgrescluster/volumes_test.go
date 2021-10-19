@@ -1117,10 +1117,10 @@ containers:
     requests:
       cpu: 1m
   securityContext:
-	  allowPrivilegeEscalation: false
-	  privileged: false
-	  readOnlyRootFilesystem: true
-	  runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
