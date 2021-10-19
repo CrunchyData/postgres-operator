@@ -7239,9 +7239,52 @@ Changing this value causes PostgreSQL and the exporter to restart. More info: ht
         <td>The port on which Patroni should listen. Changing this value causes PostgreSQL to restart.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecpatroniswitchover">switchover</a></b></td>
+        <td>object</td>
+        <td>Switchover gives options to perform ad hoc switchovers in a PostgresCluster.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>syncPeriodSeconds</b></td>
         <td>integer</td>
         <td>The interval for refreshing the leader lock and applying dynamicConfiguration. Must be less than leaderLeaseDurationSeconds. Changing this value causes PostgreSQL to restart.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecpatroniswitchover">
+  PostgresCluster.spec.patroni.switchover
+  <sup><sup><a href="#postgresclusterspecpatroni">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Switchover gives options to perform ad hoc switchovers in a PostgresCluster.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>Whether or not the operator should allow switchovers in a PostgresCluster</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>targetInstance</b></td>
+        <td>string</td>
+        <td>Define the instance that the operator will target in a switchover. When attempting to perform a manual switchover this field is optional. If target is specified, we will attempt to get to an instance that represents that target. If it is not specified, then we will attempt to get any instance. When attempting to perform a failover (i.e. Switchover.Type is `failover`) this field is required.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>Type allows you to specify the type of Patroni switchover that will be performed. `patronictl` supports both `switchovers` and `failovers` where a `failover` is effectively a "forced switchover". The main difference is that `failover` can be used when there is not currently a leader. A TargetInstance must be specified to failover. 
+ NOTE: The switchover type failover is reserved as the "last resort" case.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10828,6 +10871,11 @@ Current state of PostgreSQL cluster monitoring tool configuration
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>switchover</b></td>
+        <td>string</td>
+        <td>Tracks the execution of the switchover requests.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>systemIdentifier</b></td>
         <td>string</td>
         <td>The PostgreSQL system identifier reported by Patroni.</td>

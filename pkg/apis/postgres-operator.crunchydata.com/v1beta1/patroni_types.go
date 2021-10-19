@@ -54,10 +54,41 @@ type PatroniSpec struct {
 	// +kubebuilder:validation:Minimum=1
 	SyncPeriodSeconds *int32 `json:"syncPeriodSeconds,omitempty"`
 
+	// Switchover gives options to perform ad hoc switchovers in a PostgresCluster.
+	// +optional
+	Switchover *PatroniSwitchover `json:"switchover,omitempty"`
+
 	// TODO(cbandy): Add UseConfigMaps bool, default false.
 	// TODO(cbandy): Allow other DCS: etcd, raft, etc?
 	// N.B. changing this will cause downtime.
 	// - https://patroni.readthedocs.io/en/latest/kubernetes.html
+}
+
+type PatroniSwitchover struct {
+
+	// Whether or not the operator should allow switchovers in a PostgresCluster
+	// +required
+	Enabled bool `json:"enabled"`
+
+	// Define the instance that the operator will target in a switchover. When attempting to
+	// perform a manual switchover this field is optional. If target is specified, we will attempt
+	// to get to an instance that represents that target. If it is not specified, then we will
+	// attempt to get any instance. When attempting to perform a failover (i.e. Switchover.Type
+	// is `failover`) this field is required.
+	// +optional
+	TargetInstance *string `json:"targetInstance,omitempty"`
+
+	// Type allows you to specify the type of Patroni switchover that will be performed.
+	// `patronictl` supports both `switchovers` and `failovers` where a `failover` is
+	// effectively a "forced switchover". The main difference is that `failover` can be
+	// used when there is not currently a leader. A TargetInstance must be specified to
+	// failover.
+	//
+	// NOTE: The switchover type failover is reserved as the "last resort" case.
+	// +kubebuilder:validation:Enum={switchover,failover}
+	// +kubebuilder:default:=switchover
+	// +optional
+	Type string `json:"type,omitempty"`
 }
 
 // Default sets the default values for certain Patroni configuration attributes,
@@ -89,4 +120,8 @@ type PatroniStatus struct {
 	// The PostgreSQL system identifier reported by Patroni.
 	// +optional
 	SystemIdentifier string `json:"systemIdentifier,omitempty"`
+
+	// Tracks the execution of the switchover requests.
+	// +optional
+	Switchover *string `json:"switchover,omitempty"`
 }
