@@ -21,6 +21,7 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -469,4 +470,335 @@ func TestReconcilePatroniStatus(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReconcilePatroniSwitchover(t *testing.T) {
+	env, client, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	var called, failover, callError, callFails bool
+	r := Reconciler{
+		Client: client,
+		PodExec: func(namespace, pod, container string,
+			stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+			called = true
+			switch {
+			case callError:
+				return errors.New("boom")
+			case callFails:
+				stdout.Write([]byte("bang"))
+			case failover:
+				stdout.Write([]byte("failed over"))
+			default:
+				stdout.Write([]byte("switched over"))
+			}
+			return nil
+		},
+	}
+
+	ctx := context.Background()
+
+	getObserved := func() *observedInstances {
+		instances := []*Instance{{
+			Name: "target",
+			Pods: []*corev1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pod",
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						Name: naming.ContainerDatabase,
+						State: corev1.ContainerState{
+							Running: new(corev1.ContainerStateRunning),
+						},
+					}},
+				},
+			}},
+			Runner: &appsv1.StatefulSet{},
+		}, {
+			Name: "other",
+			Pods: []*corev1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pod",
+				},
+				Status: corev1.PodStatus{
+					ContainerStatuses: []corev1.ContainerStatus{{
+						Name: naming.ContainerDatabase,
+						State: corev1.ContainerState{
+							Running: new(corev1.ContainerStateRunning),
+						},
+					}},
+				},
+			}},
+			Runner: &appsv1.StatefulSet{},
+		}}
+		return &observedInstances{forCluster: instances}
+	}
+
+	t.Run("empty", func(t *testing.T) {
+		cluster := testCluster()
+		observed := newObservedInstances(cluster, nil, nil)
+		assert.NilError(t, r.reconcilePatroniSwitchover(ctx, cluster, observed))
+	})
+
+	t.Run("early validation", func(t *testing.T) {
+		for _, test := range []struct {
+			desc    string
+			enabled bool
+			trigger string
+			status  string
+			soType  string
+			target  string
+			check   func(*testing.T, error)
+		}{
+			{
+				desc:    "Switchover not enabled",
+				enabled: false,
+				check: func(t *testing.T, err error) {
+					assert.NilError(t, err)
+				},
+			},
+			{
+				desc:    "Switchover trigger annotation not found",
+				enabled: true,
+				check: func(t *testing.T, err error) {
+					assert.NilError(t, err)
+				},
+			},
+			{
+				desc:    "Status matches trigger annotation",
+				enabled: true, trigger: "triggered", status: "triggered",
+				check: func(t *testing.T, err error) {
+					assert.NilError(t, err)
+				},
+			},
+			{
+				desc:    "failover requested without a target",
+				enabled: true, trigger: "triggered", soType: "failover",
+				check: func(t *testing.T, err error) {
+					assert.Equal(t, err.Error(), "TargetInstance required when running failover")
+				},
+			},
+			{
+				desc:    "target instance was specified but not found",
+				enabled: true, trigger: "triggered", target: "bad-target",
+				check: func(t *testing.T, err error) {
+					assert.Equal(t, err.Error(), "TargetInstance was specified but not found in the cluster")
+				},
+			},
+		} {
+			t.Run(test.desc, func(t *testing.T) {
+				cluster := testCluster()
+				cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
+					Name:                "target",
+					Replicas:            Int32(2),
+					DataVolumeClaimSpec: testVolumeClaimSpec(),
+				}}
+				if test.enabled {
+					cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+						Switchover: &v1beta1.PatroniSwitchover{
+							Enabled: true,
+						},
+					}
+				}
+				if test.trigger != "" {
+					cluster.Annotations = map[string]string{
+						naming.PatroniSwitchover: test.trigger,
+					}
+				}
+				if test.status != "" {
+					cluster.Status = v1beta1.PostgresClusterStatus{
+						Patroni: v1beta1.PatroniStatus{
+							Switchover: initialize.String(test.status),
+						},
+					}
+				}
+				if test.soType == "failover" {
+					cluster.Spec.Patroni.Switchover.Type = "failover"
+				}
+				if test.target != "" {
+					cluster.Spec.Patroni.Switchover.TargetInstance = initialize.String(test.target)
+				}
+				test.check(t, r.reconcilePatroniSwitchover(ctx, cluster, getObserved()))
+			})
+		}
+	})
+
+	t.Run("validate target instance", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Annotations = map[string]string{
+			naming.PatroniSwitchover: "trigger",
+		}
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Switchover: &v1beta1.PatroniSwitchover{
+				Enabled:        true,
+				TargetInstance: initialize.String("target"),
+			},
+		}
+
+		t.Run("has no pods", func(t *testing.T) {
+			instances := []*Instance{{
+				Name: "target",
+			}, {
+				Name: "target2",
+			}}
+			observed := &observedInstances{forCluster: instances}
+
+			assert.Equal(t, r.reconcilePatroniSwitchover(ctx, cluster, observed).Error(),
+				"TargetInstance should have one pod. Pods (0)")
+		})
+
+		t.Run("not running", func(t *testing.T) {
+			instances := []*Instance{{
+				Name: "target",
+				Pods: []*corev1.Pod{{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "pod",
+					},
+				}},
+				Runner: &appsv1.StatefulSet{},
+			}, {Name: "other"}}
+			instances[0].Pods[0].Status = corev1.PodStatus{
+				ContainerStatuses: []corev1.ContainerStatus{{
+					Name: naming.ContainerDatabase,
+					State: corev1.ContainerState{
+						Terminated: new(corev1.ContainerStateTerminated),
+					},
+				}},
+			}
+			observed := &observedInstances{forCluster: instances}
+
+			assert.Equal(t, r.reconcilePatroniSwitchover(ctx, cluster, observed).Error(),
+				"Could not find a running pod when attempting switchover.")
+		})
+	})
+
+	t.Run("need replica to switch", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Annotations = map[string]string{
+			naming.PatroniSwitchover: "trigger",
+		}
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Switchover: &v1beta1.PatroniSwitchover{
+				Enabled:        true,
+				TargetInstance: initialize.String("target"),
+			},
+		}
+
+		observed := &observedInstances{forCluster: []*Instance{{
+			Name: "target",
+		}}}
+		assert.Equal(t, r.reconcilePatroniSwitchover(ctx, cluster, observed).Error(),
+			"Need more than one instance to switchover")
+	})
+
+	t.Run("switchover call fails", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Annotations = map[string]string{
+			naming.PatroniSwitchover: "trigger",
+		}
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Switchover: &v1beta1.PatroniSwitchover{
+				Enabled: true,
+			},
+		}
+		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
+			Name:                "target",
+			Replicas:            Int32(2),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
+		}}
+		called, failover, callError, callFails = false, false, false, true
+		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
+		assert.Equal(t, err.Error(), "unable to switchover")
+		assert.Assert(t, called)
+		assert.Assert(t, cluster.Status.Patroni.Switchover == nil)
+	})
+
+	t.Run("switchover call errors", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Annotations = map[string]string{
+			naming.PatroniSwitchover: "trigger",
+		}
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Switchover: &v1beta1.PatroniSwitchover{
+				Enabled: true,
+			},
+		}
+		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
+			Name:                "target",
+			Replicas:            Int32(2),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
+		}}
+		called, failover, callError, callFails = false, false, true, false
+		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
+		assert.Equal(t, err.Error(), "boom")
+		assert.Assert(t, called)
+		assert.Assert(t, cluster.Status.Patroni.Switchover == nil)
+	})
+
+	t.Run("switchover called", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Annotations = map[string]string{
+			naming.PatroniSwitchover: "trigger",
+		}
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Switchover: &v1beta1.PatroniSwitchover{
+				Enabled: true,
+			},
+		}
+		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
+			Name:                "target",
+			Replicas:            Int32(2),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
+		}}
+		called, failover, callError, callFails = false, false, false, false
+		assert.NilError(t, r.reconcilePatroniSwitchover(ctx, cluster, getObserved()))
+		assert.Assert(t, called)
+		assert.Equal(t, *cluster.Status.Patroni.Switchover, "trigger")
+	})
+
+	t.Run("targeted switchover called", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Annotations = map[string]string{
+			naming.PatroniSwitchover: "trigger",
+		}
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Switchover: &v1beta1.PatroniSwitchover{
+				Enabled:        true,
+				TargetInstance: initialize.String("target"),
+			},
+		}
+		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
+			Name:                "target",
+			Replicas:            Int32(2),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
+		}}
+		called, failover, callError, callFails = false, false, false, false
+		assert.NilError(t, r.reconcilePatroniSwitchover(ctx, cluster, getObserved()))
+		assert.Assert(t, called)
+		assert.Equal(t, *cluster.Status.Patroni.Switchover, "trigger")
+	})
+
+	t.Run("targeted failover called", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Annotations = map[string]string{
+			naming.PatroniSwitchover: "trigger",
+		}
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Switchover: &v1beta1.PatroniSwitchover{
+				Enabled:        true,
+				Type:           "failover",
+				TargetInstance: initialize.String("target"),
+			},
+		}
+		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
+			Name:                "target",
+			Replicas:            Int32(2),
+			DataVolumeClaimSpec: testVolumeClaimSpec(),
+		}}
+		called, failover, callError, callFails = false, true, false, false
+		assert.NilError(t, r.reconcilePatroniSwitchover(ctx, cluster, getObserved()))
+		assert.Assert(t, called)
+		assert.Equal(t, *cluster.Status.Patroni.Switchover, "trigger")
+	})
 }
