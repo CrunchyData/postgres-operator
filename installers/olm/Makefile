@@ -3,6 +3,7 @@
 
 CONTAINER ?= docker
 PGO_VERSION ?= 5.0.3
+REPLACES_VERSION ?= 5.0.2
 
 OS_KERNEL  ?= $(shell bash -c 'echo $${1,,}' - `uname -s`)
 OS_MACHINE ?= $(shell bash -c 'echo $${1/x86_/amd}' - `uname -m`)
@@ -11,6 +12,8 @@ SYSTEM = $(OS_KERNEL)-$(OS_MACHINE)
 export PATH := $(CURDIR)/tools/$(SYSTEM):$(PATH)
 
 export PGO_VERSION
+
+export REPLACES_VERSION
 
 distros = community redhat
 
