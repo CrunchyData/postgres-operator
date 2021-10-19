@@ -223,7 +223,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 
 	// set status
 	postgresCluster.Status = v1beta1.PostgresClusterStatus{
-		Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+		Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 		PGBackRest: &v1beta1.PGBackRestStatus{
 			RepoHost: &v1beta1.RepoHostStatus{Ready: true},
 			Repos:    []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
@@ -539,7 +539,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 
 		// set status
 		postgresCluster.Status = v1beta1.PostgresClusterStatus{
-			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 			PGBackRest: &v1beta1.PGBackRestStatus{
 				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 		}
@@ -828,7 +828,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		Reason:             "RepoHostReady",
 		Message:            "pgBackRest dedicated repository host is ready",
 	})
-	postgresCluster.Status.Patroni = &v1beta1.PatroniStatus{
+	postgresCluster.Status.Patroni = v1beta1.PatroniStatus{
 		SystemIdentifier: "6952526174828511264",
 	}
 
@@ -977,7 +977,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		Reason:             "StanzaCreated",
 		Message:            "pgBackRest replica create repo is ready for backups",
 	})
-	postgresCluster.Status.Patroni = &v1beta1.PatroniStatus{
+	postgresCluster.Status.Patroni = v1beta1.PatroniStatus{
 		SystemIdentifier: "6952526174828511264",
 	}
 
@@ -2162,7 +2162,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				cluster.Spec.DataSource = tc.dataSource
 				assert.NilError(t, tClient.Create(ctx, cluster))
 				if tc.clusterBootstrapped {
-					cluster.Status.Patroni = &v1beta1.PatroniStatus{
+					cluster.Status.Patroni = v1beta1.PatroniStatus{
 						SystemIdentifier: "123456789",
 					}
 				}
@@ -2952,7 +2952,7 @@ func TestPrepareForRestore(t *testing.T) {
 				}
 				clusterUID := clusterName
 				cluster := fakePostgresCluster(clusterName, namespace, clusterUID, dedicated)
-				cluster.Status.Patroni = &v1beta1.PatroniStatus{SystemIdentifier: "abcde12345"}
+				cluster.Status.Patroni = v1beta1.PatroniStatus{SystemIdentifier: "abcde12345"}
 				cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = "abcde12345"
 				cluster.Status.Monitoring.ExporterConfiguration = "abcde12345"
 				meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
@@ -3026,7 +3026,7 @@ func TestPrepareForRestore(t *testing.T) {
 						assert.Equal(t, tc.result.expectedClusterCondition.Message, condition.Message)
 					}
 					if tc.result.expectedClusterCondition.Reason == ReasonReadyForRestore {
-						assert.Assert(t, cluster.Status.Patroni == nil)
+						assert.Assert(t, cluster.Status.Patroni.SystemIdentifier == "")
 						assert.Assert(t, cluster.Status.Proxy.PGBouncer.PostgreSQLRevision == "")
 						assert.Assert(t, cluster.Status.Monitoring.ExporterConfiguration == "")
 						assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
@@ -3089,7 +3089,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 				ConditionReplicaCreate: metav1.ConditionTrue,
 			},
 			status: &v1beta1.PostgresClusterStatus{
-				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+				Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
@@ -3107,7 +3107,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 			testDesc:      "no repo host ready condition, should not reconcile",
 			dedicatedOnly: true,
 			status: &v1beta1.PostgresClusterStatus{
-				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+				Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
@@ -3116,7 +3116,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 		}, {
 			testDesc: "no replica create condition, should not reconcile",
 			status: &v1beta1.PostgresClusterStatus{
-				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+				Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
@@ -3126,7 +3126,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 			testDesc:      "false repo host ready condition, should not reconcile",
 			dedicatedOnly: true,
 			status: &v1beta1.PostgresClusterStatus{
-				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+				Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
@@ -3135,7 +3135,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 		}, {
 			testDesc: "false replica create condition, should not reconcile",
 			status: &v1beta1.PostgresClusterStatus{
-				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+				Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
 			},
@@ -3148,7 +3148,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 				ConditionReplicaCreate: metav1.ConditionTrue,
 			},
 			status: &v1beta1.PostgresClusterStatus{
-				Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+				Patroni: v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
 				PGBackRest: &v1beta1.PGBackRestStatus{
 					Repos: []v1beta1.RepoStatus{}},
 			},

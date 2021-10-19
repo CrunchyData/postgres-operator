@@ -315,7 +315,7 @@ type PostgresClusterStatus struct {
 	InstanceSets []PostgresInstanceSetStatus `json:"instances,omitempty"`
 
 	// +optional
-	Patroni *PatroniStatus `json:"patroni,omitempty"`
+	Patroni PatroniStatus `json:"patroni,omitempty"`
 
 	// Status information for pgBackRest
 	// +optional

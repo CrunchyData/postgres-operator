@@ -1090,11 +1090,7 @@ func (in *PostgresClusterStatus) DeepCopyInto(out *PostgresClusterStatus) {
 		*out = make([]PostgresInstanceSetStatus, len(*in))
 		copy(*out, *in)
 	}
-	if in.Patroni != nil {
-		in, out := &in.Patroni, &out.Patroni
-		*out = new(PatroniStatus)
-		**out = **in
-	}
+	out.Patroni = in.Patroni
 	if in.PGBackRest != nil {
 		in, out := &in.PGBackRest, &out.PGBackRest
 		*out = new(PGBackRestStatus)
