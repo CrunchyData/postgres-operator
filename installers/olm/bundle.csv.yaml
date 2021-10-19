@@ -57,6 +57,8 @@ spec:
   # https://olm.operatorframework.io/docs/best-practices/common/
   minKubeVersion: 1.18.0
   maturity: stable
+  # https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.18.2/doc/design/how-to-update-operators.md#replaces--channels
+  replaces: '' # generate.sh
 
   # https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.18.2/doc/design/building-your-csv.md#your-custom-resource-definitions
   customresourcedefinitions:

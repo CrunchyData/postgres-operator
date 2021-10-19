@@ -111,6 +111,7 @@ yq --yaml-roundtrip < bundle.csv.yaml > "${bundle_directory}/manifests/${csv_ste
 	--argjson crds "${crd_descriptions}" \
 	--arg examples "${crd_examples}" \
 	--arg version "${PGO_VERSION}" \
+	--arg replaces "${REPLACES_VERSION}" \
 	--arg description "$(< description.md)" \
 	--arg icon "$(base64 ../seal.svg | tr -d '\n')" \
 	--arg stem "${csv_stem}" \
@@ -120,6 +121,7 @@ yq --yaml-roundtrip < bundle.csv.yaml > "${bundle_directory}/manifests/${csv_ste
 
 	.metadata.name = "\($stem).v\($version)" |
 	.spec.version = $version |
+	.spec.replaces = "\($stem).v\($replaces)" |
 
 	.spec.customresourcedefinitions.owned = $crds |
 	.spec.description = $description |
