@@ -446,8 +446,8 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 		Image:           config.PostgresContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerJobMovePGDataDir,
+		SecurityContext: initialize.RestrictedSecurityContext(),
 		VolumeMounts:    []corev1.VolumeMount{postgres.DataVolumeMount()},
-		Resources:       cluster.Spec.InstanceSets[0].Resources,
 	}
 	if len(cluster.Spec.InstanceSets) > 0 {
 		container.Resources = cluster.Spec.InstanceSets[0].Resources
@@ -558,6 +558,7 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 		Image:           config.PostgresContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerJobMovePGWALDir,
+		SecurityContext: initialize.RestrictedSecurityContext(),
 		VolumeMounts:    []corev1.VolumeMount{postgres.WALVolumeMount()},
 	}
 	if len(cluster.Spec.InstanceSets) > 0 {
@@ -674,6 +675,7 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 		Image:           config.PGBackRestContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerJobMovePGBackRestRepoDir,
+		SecurityContext: initialize.RestrictedSecurityContext(),
 		VolumeMounts:    []corev1.VolumeMount{pgbackrest.RepoVolumeMount()},
 	}
 	if cluster.Spec.Backups.PGBackRest.RepoHost != nil {

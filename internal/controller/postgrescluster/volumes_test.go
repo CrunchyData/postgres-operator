@@ -1014,6 +1014,11 @@ containers:
   resources:
     requests:
       cpu: 1m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
@@ -1059,6 +1064,11 @@ containers:
   resources:
     requests:
       cpu: 1m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
@@ -1106,6 +1116,11 @@ containers:
   resources:
     requests:
       cpu: 1m
+  securityContext:
+	  allowPrivilegeEscalation: false
+	  privileged: false
+	  readOnlyRootFilesystem: true
+	  runAsNonRoot: true
   terminationMessagePath: /dev/termination-log
   terminationMessagePolicy: File
   volumeMounts:
