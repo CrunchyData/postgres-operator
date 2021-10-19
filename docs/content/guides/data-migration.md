@@ -81,7 +81,6 @@ spec:
         directory: oldhippo
       pgWALVolume:
         pvcName: oldhippo-wal
-        #directory: "oldhippo-wal"
       pgBackRestVolume:
         pvcName: oldhippo-pgbr-repo
         directory: oldhippo-backrest-shared-repo
@@ -102,8 +101,6 @@ spec:
   backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
-      repoHost:
-        dedicated: {}
       repos:
       - name: repo1
         volume:

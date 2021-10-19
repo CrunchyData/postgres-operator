@@ -154,7 +154,7 @@ pgo create cluster hippo --wal-storage-config= ...
 
 ### Step 1: Prepare the PGO v4 Cluster for Migration
 
-1. Ensure you have a recent backup of your cluster. You can do so with the `pgo backup` command, e.g.:
+1\. Ensure you have a recent backup of your cluster. You can do so with the `pgo backup` command, e.g.:
 
 ```
 pgo backup hippo
@@ -162,7 +162,7 @@ pgo backup hippo
 
 Please ensure that the backup completes. You will see the latest backup appear using the `pgo show backup` command.
 
-2. Next, delete the cluster while keeping backups (using the `--keep-backups` flag):
+2\. Next, delete the cluster while keeping backups (using the `--keep-backups` flag):
 
 ```
 pgo delete cluster hippo --keep-backups
