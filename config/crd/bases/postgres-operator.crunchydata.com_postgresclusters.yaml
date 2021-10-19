@@ -4876,6 +4876,40 @@ spec:
                     format: int32
                     minimum: 1024
                     type: integer
+                  switchover:
+                    description: Switchover gives options to perform ad hoc switchovers
+                      in a PostgresCluster.
+                    properties:
+                      enabled:
+                        description: Whether or not the operator should allow switchovers
+                          in a PostgresCluster
+                        type: boolean
+                      targetInstance:
+                        description: Define the instance that the operator will target
+                          in a switchover. When attempting to perform a manual switchover
+                          this field is optional. If target is specified, we will
+                          attempt to get to an instance that represents that target.
+                          If it is not specified, then we will attempt to get any
+                          instance. When attempting to perform a failover (i.e. Switchover.Type
+                          is `failover`) this field is required.
+                        type: string
+                      type:
+                        default: switchover
+                        description: "Type allows you to specify the type of Patroni
+                          switchover that will be performed. `patronictl` supports
+                          both `switchovers` and `failovers` where a `failover` is
+                          effectively a \"forced switchover\". The main difference
+                          is that `failover` can be used when there is not currently
+                          a leader. A TargetInstance must be specified to failover.
+                          \n NOTE: The switchover type failover is reserved as the
+                          \"last resort\" case."
+                        enum:
+                        - switchover
+                        - failover
+                        type: string
+                    required:
+                    - enabled
+                    type: object
                   syncPeriodSeconds:
                     default: 10
                     description: The interval for refreshing the leader lock and applying
@@ -7386,6 +7420,9 @@ spec:
                 type: integer
               patroni:
                 properties:
+                  switchover:
+                    description: Tracks the execution of the switchover requests.
+                    type: string
                   systemIdentifier:
                     description: The PostgreSQL system identifier reported by Patroni.
                     type: string
