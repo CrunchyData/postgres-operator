@@ -34,8 +34,7 @@ import (
 // ClusterBootstrapped returns a bool indicating whether or not Patroni has successfully
 // bootstrapped the PostgresCluster
 func ClusterBootstrapped(postgresCluster *v1beta1.PostgresCluster) bool {
-	return (postgresCluster.Status.Patroni != nil &&
-		postgresCluster.Status.Patroni.SystemIdentifier != "")
+	return postgresCluster.Status.Patroni.SystemIdentifier != ""
 }
 
 // ClusterConfigMap populates the shared ConfigMap with fields needed to run Patroni.

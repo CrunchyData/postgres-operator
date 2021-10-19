@@ -312,9 +312,7 @@ func (r *Reconciler) reconcilePatroniStatus(
 	if err == nil {
 		if dcs.Annotations["initialize"] != "" {
 			// After bootstrap, Patroni writes the cluster system identifier to DCS.
-			cluster.Status.Patroni = &v1beta1.PatroniStatus{
-				SystemIdentifier: dcs.Annotations["initialize"],
-			}
+			cluster.Status.Patroni.SystemIdentifier = dcs.Annotations["initialize"]
 		} else if readyInstance {
 			// While we typically expect a value for the initialize key to be present in the
 			// Endpoints above by the time the StatefulSet for any instance indicates "ready"

@@ -954,7 +954,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 			Message:            "Restoring cluster in-place",
 		})
 		// the cluster is no longer bootstrapped
-		cluster.Status.Patroni = nil
+		cluster.Status.Patroni.SystemIdentifier = ""
 		// the restore will change the contents of the database, so the pgbouncer and exporter hashes
 		// are no longer valid
 		cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = ""
