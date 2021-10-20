@@ -276,6 +276,7 @@ type PostgresClusterPGTune struct {
 	// Storage disk type, can be either ssd,hdd or san
 	// if not set, storage optimization will not be applied.
 	// +kubebuilder:validation:Enum={ssd,hdd,san}
+	// +optional
 	HDType *string `json:"hdType,omitempty"`
 	// What is the purpose of the database's application? can be either
 	// "web" for web application, "oltp" for Online Transaction Processing,
@@ -283,6 +284,7 @@ type PostgresClusterPGTune struct {
 	// if not set, "mixed" is assumed
 	// +kubebuilder:validation:Enum={web,oltp,dw,desktop,mixed}
 	// +kubebuilder:default="mixed"
+	// +optional
 	ApplicationType string `json:"applicationType,omitempty"`
 }
 
