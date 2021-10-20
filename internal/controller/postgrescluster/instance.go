@@ -1115,6 +1115,7 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: spec.Name,
 			naming.LabelInstance:    sts.Name,
+			naming.LabelData:        naming.DataPostgres,
 		})
 	sts.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: map[string]string{
