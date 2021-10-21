@@ -1537,7 +1537,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 		Data:       sourceSSHConfig.Data,
 	}
 	// set ownership refs according to PostgresCluster being created (not the source cluster)
-	if err := r.setOwnerReference(cluster, restoreSSHConfig); err != nil {
+	if err := r.setControllerReference(cluster, restoreSSHConfig); err != nil {
 		return errors.WithStack(err)
 	}
 	restoreSSHConfig.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
