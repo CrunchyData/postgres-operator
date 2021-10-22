@@ -87,7 +87,7 @@ Did someone drop the user table? You may want to perform a point-in-time-recover
 You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore) command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers the disaster recovery capabilities of PGO. You will need to set a few options on `spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
 
 - `--type=time`: This tells pgBackRest to perform a PITR.
-- `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11 EDT`.
+- `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11-04`.  The timezone specified here as -04 for EDT.  Please see the [pgBackRest documentation for other timezone options](https://pgbackrest.org/user-guide.html#pitr).
 - `--set` (optional): Choose which backup to start the PITR from.
 
 A few quick notes before we begin:
@@ -97,7 +97,7 @@ A few quick notes before we begin:
 - Be sure to select the correct repository name containing the desired backup!
 
 
-With that in mind, let's use the `elephant` example above. Let's say we want to perform a point-in-time-recovery (PITR) to `2021-06-09 14:15:11 EDT`, we can use the following manifest:
+With that in mind, let's use the `elephant` example above. Let's say we want to perform a point-in-time-recovery (PITR) to `2021-06-09 14:15:11-04`, we can use the following manifest:
 
 ```
 apiVersion: postgres-operator.crunchydata.com/v1beta1
@@ -111,7 +111,7 @@ spec:
       repoName: repo1
       options:
       - --type=time
-      - --target="2021-06-09 14:15:11 EDT"
+      - --target="2021-06-09 14:15:11-04"
   image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
   postgresVersion: 13
   instances:
@@ -143,12 +143,12 @@ spec:
     postgresCluster:
       clusterName: hippo
       repoName: repo1
-      options: --type=time --target="2021-06-09 14:15:11 EDT"
+      options: --type=time --target="2021-06-09 14:15:11-04"
 ```
 
 Notice how we put in the options to specify where to make the PITR.
 
-Using the above manifest, PGO will go ahead and create a new Postgres cluster that recovers its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
+Using the above manifest, PGO will go ahead and create a new Postgres cluster that recovers its data up until `2021-06-09 14:15:11-04`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
 
 ## Perform an In-Place Point-in-time-Recovery (PITR)
 
@@ -157,7 +157,7 @@ Similar to the PITR restore described above, you may want to perform a similar r
 You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore) command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers the disaster recovery capabilities of PGO. You will need to set a few options on `spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
 
 - `--type=time`: This tells pgBackRest to perform a PITR.
-- `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11 EDT`.
+- `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11-04`.
 - `--set` (optional): Choose which backup to start the PITR from.
 
 A few quick notes before we begin:
@@ -177,7 +177,7 @@ spec:
         repoName: repo1
         options:
         - --type=time
-        - --target="2021-06-09 14:15:11 EDT"
+        - --target="2021-06-09 14:15:11-04"
 ```
 
 And to trigger the restore, you will then annotate the PostgresCluster as follows:
@@ -199,7 +199,7 @@ spec:
 
 Notice how we put in the options to specify where to make the PITR.
 
-Using the above manifest, PGO will go ahead and re-create your Postgres cluster that will recover its data up until `2021-06-09 14:15:11 EDT`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
+Using the above manifest, PGO will go ahead and re-create your Postgres cluster that will recover its data up until `2021-06-09 14:15:11-04`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
 
 
 ## Standby Cluster
