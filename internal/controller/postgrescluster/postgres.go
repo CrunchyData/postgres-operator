@@ -66,17 +66,25 @@ func (r *Reconciler) generatePostgresUserSecret(
 	intent.Data["port"] = []byte(port)
 	intent.Data["user"] = []byte(username)
 
-	// Use the existing password and verifier. Generate both when either is missing.
+	// Use the existing password and verifier.
 	if existing != nil {
 		intent.Data["password"] = existing.Data["password"]
 		intent.Data["verifier"] = existing.Data["verifier"]
 	}
-	if len(intent.Data["password"]) == 0 || len(intent.Data["verifier"]) == 0 {
-		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
+
+	var password string
+	// When password is unset, generate a new one.
+	if len(intent.Data["password"]) == 0 {
+		var err error
+		password, err = util.GeneratePassword(util.DefaultGeneratedPasswordLength)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-
+		intent.Data["password"] = []byte(password)
+	}
+	// When a password has been generated or the verifier is empty,
+	// generate a verifier based on the current password.
+	if password != "" || len(intent.Data["verifier"]) == 0 {
 		// Generate the SCRAM verifier now and store alongside the plaintext
 		// password so that later reconciles don't generate it repeatedly.
 		// NOTE(cbandy): We don't have a function to compare a plaintext
@@ -86,7 +94,6 @@ func (r *Reconciler) generatePostgresUserSecret(
 			return nil, errors.WithStack(err)
 		}
 
-		intent.Data["password"] = []byte(password)
 		intent.Data["verifier"] = []byte(verifier)
 	}
 
