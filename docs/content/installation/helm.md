@@ -87,3 +87,16 @@ helm upgrade <name> -n <namespace> helm/install
 ```shell
 helm uninstall <name> -n <namespace>
 ```
+
+## Automated check for upgrades
+
+To help keep track of developments to PGO, you have the option of turning on a process that
+will check for available versions. If you set the environment variable `CHECK_FOR_UPGRADES` 
+to `true` in your PGO deployment, that will start a process that will check available 
+PGO versions every 24 hours.
+
+Currently this process is set to only log information, and so should not interfere 
+with PGO's regular functions: if it retrieves information or runs into an error, it will 
+log that event without interrupting PGO's performance.
+
+This is currently a work-in-progress.

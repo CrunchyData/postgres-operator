@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/util"
 )
 
 var versionString string
@@ -81,8 +82,23 @@ func main() {
 	assertNoError(err)
 
 	log.Info("starting controller runtime manager and will wait for signal to exit")
+
+	// Enable upgrade checking
+	upgradeCheckingEnabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "true")
+	done := make(chan bool, 1)
+	if upgradeCheckingEnabled {
+		log.Info("upgrade checking enabled")
+		go util.CheckForUpgradesScheduler(versionString, done)
+	} else {
+		log.Info("upgrade checking disabled")
+	}
+
 	assertNoError(mgr.Start(ctx))
 	log.Info("signal received, exiting")
+	if upgradeCheckingEnabled {
+		// Send true to channel to cancel ticker cleanly
+		done <- true
+	}
 }
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
