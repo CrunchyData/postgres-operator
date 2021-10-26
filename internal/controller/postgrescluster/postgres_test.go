@@ -99,6 +99,19 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 			assert.Assert(t, len(secret.Data["verifier"]) > 90, "got %v", len(secret.Data["verifier"]))
 		}
 
+		// Generated when existing Secret contains only a password
+		secret, err = reconciler.generatePostgresUserSecret(cluster, spec, &corev1.Secret{
+			Data: map[string][]byte{
+				"password": []byte(`asdf`),
+			},
+		})
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, string(secret.Data["password"]), "asdf")
+			assert.Assert(t, len(secret.Data["verifier"]) > 90, "got %v", len(secret.Data["verifier"]))
+		}
+
 		// Copied when existing Secret is full.
 		secret, err = reconciler.generatePostgresUserSecret(cluster, spec, &corev1.Secret{
 			Data: map[string][]byte{
