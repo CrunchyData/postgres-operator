@@ -171,6 +171,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 			assert.Equal(t, string(secret.Data["pgbouncer-host"]), "hippo2-pgbouncer.ns1.svc")
 			assert.Equal(t, string(secret.Data["pgbouncer-port"]), "10220")
 			assert.Assert(t, secret.Data["pgbouncer-uri"] == nil)
+			assert.Assert(t, secret.Data["pgbouncer-jdbc-uri"] == nil)
 		}
 
 		// Includes a URI when possible.
@@ -183,6 +184,10 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 		if assert.Check(t, secret != nil) {
 			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-pgbouncer.ns1.svc:10220/yes`,
 				string(secret.Data["pgbouncer-uri"])))
+			assert.Assert(t, cmp.Regexp(
+				`^jdbc:postgresql://hippo2-pgbouncer.ns1.svc:10220/yes\?`+
+					`password=[^&]+&prepareThreshold=0&user=some-user-name$`,
+				string(secret.Data["pgbouncer-jdbc-uri"])))
 		}
 	})
 }

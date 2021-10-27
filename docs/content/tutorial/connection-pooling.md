@@ -48,6 +48,7 @@ You should see that there are several new attributes included in this Secret tha
 - `pgbouncer-host`: The name of the host of the PgBouncer connection pooler. This references the [Service](https://kubernetes.io/docs/concepts/services-networking/service/) of the PgBouncer connection pooler.
 - `pgbouncer-port`: The port that the PgBouncer connection pooler is listening on.
 - `pgbouncer-uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) that provides all the information for logging into the Postgres database via the PgBouncer connection pooler.
+- `pgbouncer-jdbc-uri`: A [PostgreSQL JDBC connection URI](https://jdbc.postgresql.org/documentation/head/connect.html) that provides all the information for logging into the Postgres database via the PgBouncer connection pooler using the JDBC driver. Note that by default, the connection string disable JDBC managing prepared transactions for [optimal use with PgBouncer](https://www.pgbouncer.org/faq.html#how-to-use-prepared-statements-with-transaction-pooling).
 
 Open up the file in `kustomize/keycloak/keycloak.yaml`. Update the `DB_ADDR` and `DB_PORT` values to be the following:
 
@@ -209,7 +210,7 @@ Note that setting a toleration does not necessarily mean that the PgBouncer inst
 
 ### Pod Spread Constraints
 
-Besides using affinity, anti-affinity and tolerations, you can also set [Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) through `spec.proxy.pgBouncer.topologySpreadConstraints`. This attribute follows the Kubernetes standard topology spread contraint layout. 
+Besides using affinity, anti-affinity and tolerations, you can also set [Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) through `spec.proxy.pgBouncer.topologySpreadConstraints`. This attribute follows the Kubernetes standard topology spread contraint layout.
 
 For example, since each of of our pgBouncer Pods will have the standard `postgres-operator.crunchydata.com/role: pgbouncer` Label set, we can use this Label when determining the `maxSkew`. In the example below, since we have 3 nodes with a `maxSkew` of 1 and we've set `whenUnsatisfiable` to `ScheduleAnyway`, we should ideally see 1 Pod on each of the nodes, but our Pods can be distributed less evenly if other constraints keep this from happening.
 
@@ -217,11 +218,11 @@ For example, since each of of our pgBouncer Pods will have the standard `postgre
   proxy:
     pgBouncer:
       replicas: 3
-      topologySpreadConstraints: 
+      topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: my-node-label
           whenUnsatisfiable: ScheduleAnyway
-          labelSelector: 
+          labelSelector:
             matchLabels:
               postgres-operator.crunchydata.com/role: pgbouncer
 ```
