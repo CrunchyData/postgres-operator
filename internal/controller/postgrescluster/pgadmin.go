@@ -17,6 +17,8 @@ package postgrescluster
 
 import (
 	"context"
+	"fmt"
+	"io"
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
@@ -26,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -35,6 +38,7 @@ import (
 func (r *Reconciler) reconcilePGAdmin(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
+	// NOTE: [Reconciler.reconcilePGAdminUsers] is called in [Reconciler.reconcilePostgresUsers].
 
 	// TODO(tjmoore4): Currently, the returned service is only used in tests,
 	// but it may be useful during upcoming feature enhancements. If not, we
@@ -289,4 +293,101 @@ func (r *Reconciler) reconcilePGAdminDataVolume(
 	}
 
 	return pvc, err
+}
+
+// +kubebuilder:rbac:groups="",resources="pods",verbs={get}
+
+// reconcilePGAdminUsers creates users inside of pgAdmin.
+func (r *Reconciler) reconcilePGAdminUsers(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	specUsers []v1beta1.PostgresUserSpec, userSecrets map[string]*corev1.Secret,
+) error {
+	const container = naming.ContainerPGAdmin
+	var podExecutor pgadmin.Executor
+
+	if cluster.Spec.UserInterface == nil || cluster.Spec.UserInterface.PGAdmin == nil {
+		// pgAdmin is disabled; clear its status.
+		// TODO(cbandy): Revisit this approach when there is more than one UI.
+		cluster.Status.UserInterface = nil
+		return nil
+	}
+
+	// Find the running pgAdmin container. When there is none, return early.
+
+	pod := &corev1.Pod{ObjectMeta: naming.ClusterPGAdmin(cluster)}
+	pod.Name += "-0"
+
+	err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(pod), pod))
+	if err != nil {
+		return client.IgnoreNotFound(err)
+	}
+
+	var running bool
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == container {
+			running = status.State.Running != nil
+		}
+	}
+	if terminating := pod.DeletionTimestamp != nil; running && !terminating {
+		ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
+
+		podExecutor = func(
+			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+		}
+	}
+	if podExecutor == nil {
+		return nil
+	}
+
+	// Calculate a hash of the commands that should be executed in pgAdmin.
+
+	passwords := make(map[string]string, len(userSecrets))
+	for userName := range userSecrets {
+		passwords[userName] = string(userSecrets[userName].Data["password"])
+	}
+
+	write := func(ctx context.Context, exec pgadmin.Executor) error {
+		return pgadmin.WriteUsersInPGAdmin(ctx, exec, specUsers, passwords)
+	}
+
+	revision, err := safeHash32(func(hasher io.Writer) error {
+		// Discard log messages about executing.
+		return write(logging.NewContext(ctx, logging.Discard()), func(
+			_ context.Context, stdin io.Reader, _, _ io.Writer, command ...string,
+		) error {
+			_, err := fmt.Fprint(hasher, command)
+			if err == nil && stdin != nil {
+				_, err = io.Copy(hasher, stdin)
+			}
+			return err
+		})
+	})
+
+	if err == nil &&
+		cluster.Status.UserInterface != nil &&
+		cluster.Status.UserInterface.PGAdmin.UsersRevision == revision {
+		// The necessary commands have already been run; there's nothing more to do.
+
+		// TODO(cbandy): Give the user a way to trigger execution regardless.
+		// The value of an annotation could influence the hash, for example.
+		return nil
+	}
+
+	// Run the necessary commands and record their hash in cluster.Status.
+	// Include the hash in any log messages.
+
+	if err == nil {
+		log := logging.FromContext(ctx).WithValues("revision", revision)
+		err = errors.WithStack(write(logging.NewContext(ctx, log), podExecutor))
+	}
+	if err == nil {
+		if cluster.Status.UserInterface == nil {
+			cluster.Status.UserInterface = new(v1beta1.PostgresUserInterfaceStatus)
+		}
+		cluster.Status.UserInterface.PGAdmin.UsersRevision = revision
+	}
+
+	return err
 }

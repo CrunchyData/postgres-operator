@@ -295,6 +295,13 @@ func (r *Reconciler) reconcilePostgresUsers(
 	if err == nil {
 		err = r.reconcilePostgresUsersInPostgreSQL(ctx, cluster, instances, users, secrets)
 	}
+	if err == nil {
+		// Copy PostgreSQL users and passwords into pgAdmin. This is here because
+		// reconcilePostgresUserSecrets is building a (default) PostgresUserSpec
+		// that is not in the PostgresClusterSpec. The freshly generated Secrets
+		// are available here, too.
+		err = r.reconcilePGAdminUsers(ctx, cluster, users, secrets)
+	}
 	return err
 }
 

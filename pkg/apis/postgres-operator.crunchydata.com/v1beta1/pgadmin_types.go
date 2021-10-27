@@ -96,3 +96,10 @@ func (s *PGAdminPodSpec) Default() {
 		*s.Replicas = 1
 	}
 }
+
+// PGAdminPodStatus represents the observed state of a pgAdmin deployment.
+type PGAdminPodStatus struct {
+
+	// Hash that indicates which users have been installed into pgAdmin.
+	UsersRevision string `json:"usersRevision,omitempty"`
+}

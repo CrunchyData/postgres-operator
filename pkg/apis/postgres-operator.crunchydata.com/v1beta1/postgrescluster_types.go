@@ -334,6 +334,10 @@ type PostgresClusterStatus struct {
 	// +optional
 	StartupInstanceSet string `json:"startupInstanceSet,omitempty"`
 
+	// Current state of the PostgreSQL user interface.
+	// +optional
+	UserInterface *PostgresUserInterfaceStatus `json:"userInterface,omitempty"`
+
 	// Identifies the users that have been installed into PostgreSQL.
 	UsersRevision string `json:"usersRevision,omitempty"`
 
@@ -470,20 +474,6 @@ func (s *PostgresProxySpec) Default() {
 	}
 }
 
-// UserInterfaceSpec is a union of the supported PostgreSQL user interfaces.
-type UserInterfaceSpec struct {
-
-	// Defines a pgAdmin user interface pod.
-	PGAdmin *PGAdminPodSpec `json:"pgAdmin"`
-}
-
-// Default sets the defaults for any user interfaces that are set.
-func (s *UserInterfaceSpec) Default() {
-	if s.PGAdmin != nil {
-		s.PGAdmin.Default()
-	}
-}
-
 type PostgresProxyStatus struct {
 	PGBouncer PGBouncerPodStatus `json:"pgBouncer,omitempty"`
 }
@@ -500,6 +490,28 @@ type PostgresStandbySpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=^repo[1-4]
 	RepoName string `json:"repoName"`
+}
+
+// UserInterfaceSpec is a union of the supported PostgreSQL user interfaces.
+type UserInterfaceSpec struct {
+
+	// Defines a pgAdmin user interface.
+	PGAdmin *PGAdminPodSpec `json:"pgAdmin"`
+}
+
+// Default sets the defaults for any user interfaces that are set.
+func (s *UserInterfaceSpec) Default() {
+	if s.PGAdmin != nil {
+		s.PGAdmin.Default()
+	}
+}
+
+// PostgresUserInterfaceStatus is a union of the supported PostgreSQL user
+// interface statuses.
+type PostgresUserInterfaceStatus struct {
+
+	// The state of the pgAdmin user interface.
+	PGAdmin PGAdminPodStatus `json:"pgAdmin,omitempty"`
 }
 
 // +kubebuilder:object:root=true

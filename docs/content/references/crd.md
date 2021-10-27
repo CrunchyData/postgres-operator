@@ -9192,7 +9192,7 @@ The specification of a user interface that connects to PostgreSQL.
     <tbody><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadmin">pgAdmin</a></b></td>
         <td>object</td>
-        <td>Defines a pgAdmin user interface pod.</td>
+        <td>Defines a pgAdmin user interface.</td>
         <td>true</td>
       </tr></tbody>
 </table>
@@ -9205,7 +9205,7 @@ The specification of a user interface that connects to PostgreSQL.
 
 
 
-Defines a pgAdmin user interface pod.
+Defines a pgAdmin user interface.
 
 <table>
     <thead>
@@ -10722,6 +10722,11 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td>The instance set associated with the startupInstance</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterstatususerinterface">userInterface</a></b></td>
+        <td>object</td>
+        <td>Current state of the PostgreSQL user interface.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>usersRevision</b></td>
         <td>string</td>
         <td>Identifies the users that have been installed into PostgreSQL.</td>
@@ -11255,6 +11260,60 @@ Current state of the PostgreSQL proxy.
         <td><b>replicas</b></td>
         <td>integer</td>
         <td>Total number of non-terminated pods.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterstatususerinterface">
+  PostgresCluster.status.userInterface
+  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Current state of the PostgreSQL user interface.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterstatususerinterfacepgadmin">pgAdmin</a></b></td>
+        <td>object</td>
+        <td>The state of the pgAdmin user interface.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterstatususerinterfacepgadmin">
+  PostgresCluster.status.userInterface.pgAdmin
+  <sup><sup><a href="#postgresclusterstatususerinterface">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The state of the pgAdmin user interface.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>usersRevision</b></td>
+        <td>string</td>
+        <td>Hash that indicates which users have been installed into pgAdmin.</td>
         <td>false</td>
       </tr></tbody>
 </table>
