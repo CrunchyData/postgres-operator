@@ -124,6 +124,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 		if assert.Check(t, secret != nil) {
 			assert.Assert(t, secret.Data["dbname"] == nil)
 			assert.Assert(t, secret.Data["uri"] == nil)
+			assert.Assert(t, secret.Data["jdbc-uri"] == nil)
 		}
 
 		// Present when specified.
@@ -136,6 +137,10 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 			assert.Equal(t, string(secret.Data["dbname"]), "db1")
 			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/db1`,
 				string(secret.Data["uri"])))
+			assert.Assert(t, cmp.Regexp(
+				`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/db1\?`+
+					`password=[^&]+&user=some-user-name$`,
+				string(secret.Data["jdbc-uri"])))
 		}
 
 		// Only the first in the list.
@@ -148,6 +153,9 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 			assert.Equal(t, string(secret.Data["dbname"]), "first")
 			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/first`,
 				string(secret.Data["uri"])))
+			assert.Assert(t, cmp.Regexp(`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/first\?.+$`,
+				string(secret.Data["jdbc-uri"])))
+
 		}
 	})
 

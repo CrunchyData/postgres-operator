@@ -80,6 +80,7 @@ Within this Secret are attributes that provide information to let you log into t
 - `host`: The name of the host of the database. This references the [Service](https://kubernetes.io/docs/concepts/services-networking/service/) of the primary Postgres instance.
 - `port`: The port that the database is listening on.
 - `uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) that provides all the information for logging into the Postgres database.
+- `jdbc-uri`: A [PostgreSQL JDBC connection URI](https://jdbc.postgresql.org/documentation/head/connect.html) that provides all the information for logging into the Postgres database via the JDBC driver.
 
 If you deploy your Postgres cluster with the [PgBouncer](https://www.pgbouncer.org/) connection pooler, there are additional values that are populated in the user Secret, including:
 
