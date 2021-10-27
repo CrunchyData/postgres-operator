@@ -196,6 +196,102 @@ There is an example in the [Postgres Operator examples](https://github.com/Crunc
 
 While storing Postgres archives (write-ahead log [WAL] files) occurs in parallel when saving data to multiple pgBackRest repos, you cannot take parallel backups to different repos at the same time. PGO will ensure that all backups are taken serially. Future work in pgBackRest will address parallel backups to different repos. Please don't confuse this with parallel backup: pgBackRest does allow for backups to use parallel processes when storing them to a single repo!
 
+## Encryption
+
+You can encrypt your backups using AES-256 encryption using the CBC mode. This can be used independent of any encryption that may be supported by an external backup system.
+
+To encrypt your backups, you need to set the cipher type and provide a passphrase. The passphrase should be long and random (e.g. the pgBackRest documentation recommends `openssl rand -base64 48`). The passphrase should be kept in a Secret.
+
+Let's use our `hippo` cluster as an example. Let's create a new directory. First, create a file called `pgbackrest-secrets.conf` in this directory. It should look something like this:
+
+```
+[global]
+repo1-cipher-pass=your-super-secure-encryption-key-passphrase
+```
+
+This contains the passphrase used to encrypt your data.
+
+Next, create a `kustomization.yaml` file that looks like this:
+
+```yaml
+namespace: postgres-operator
+
+secretGenerator:
+- name: hippo-pgbackrest-secrets
+  files:
+  - pgbackrest-secrets.conf
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+resources:
+- postgres.yaml
+```
+
+Finally, create the manifest for the Postgres cluster in a file named `postgres.yaml` that is similar to the following:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
+  postgresVersion: 13
+  instances:
+    - dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      configuration:
+      - secret:
+          name: hippo-pgbackrest-secrets
+      global:
+        repo1-cipher-type: aes-256-cbc
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+
+```
+
+Notice the reference to the Secret that contains the encryption key:
+
+```yaml
+spec:
+  backups:
+    pgbackrest:
+      configuration:
+      - secret:
+          name: hippo-pgbackrest-secrets
+```
+
+as well as the configuration for enabling AES-256 encryption using the CBC mode:
+
+```yaml
+spec:
+  backups:
+    pgbackrest:
+      global:
+        repo1-cipher-type: aes-256-cbc
+```
+
+You can now create a Postgres cluster that has encrypted backups!
+
+### Limitations
+
+Currently the encryption settings cannot be changed on backups after they are established.
+
 ## Custom Backup Configuration
 
 Most of your backup configuration can be configured through the `spec.backups.pgbackrest.global` attribute, or through information that you supply in the ConfigMap or Secret that you refer to in `spec.backups.pgbackrest.configuration`. You can also provide additional Secret values if need be, e.g. `repo1-cipher-pass` for encrypting backups.
