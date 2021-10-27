@@ -976,13 +976,12 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// save the S3 credentials in a single map so it can be used to either create a new
 	// secret or update an existing one
 	s3Credentials := map[string][]byte{
-		util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert:    backrestS3CACert,
 		util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       []byte(request.BackrestS3Key),
 		util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: []byte(request.BackrestS3KeySecret),
 		util.BackRestRepoSecretKeyAWSS3KeyGCSKey:         backrestGCSKey,
 	}
 
-	_, err = apiserver.Clientset.CoreV1().Secrets(request.Namespace).
+	backrestSecret, err := apiserver.Clientset.CoreV1().Secrets(request.Namespace).
 		Get(ctx, secretName, metav1.GetOptions{})
 
 	switch {
@@ -1019,6 +1018,15 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		resp.Status.Msg = fmt.Sprintf("could not query if backrest repo secret exits: %s", err)
 		return resp
 	default:
+		// if an "aws-s3-ca.crt" file is already in the Secret and "backrestS3CACert" is empty
+		// (indicating that a custom CA wasn't provided), then ensure it is included when
+		// updating the Secret
+		if _, ok :=
+			backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]; ok &&
+			len(backrestS3CACert) == 0 {
+			s3Credentials[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert] =
+				backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
+		}
 		// the pgBackRest repo config secret already exists, update any provided
 		// S3 credential information
 		err = updateRepoSecret(apiserver.Clientset, secretName, request.Namespace, s3Credentials)
