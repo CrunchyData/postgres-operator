@@ -20,6 +20,7 @@ package postgrescluster
 
 import (
 	"context"
+	"io"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -603,6 +605,136 @@ resources:
 storageClassName: storage-class-for-data
 volumeMode: Filesystem
 		`))
+	})
+}
+
+func TestReconcilePGAdminUsers(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Disabled", func(t *testing.T) {
+		r := new(Reconciler)
+		cluster := new(v1beta1.PostgresCluster)
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
+	})
+
+	// pgAdmin enabled
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns1"
+	cluster.Name = "pgc1"
+	cluster.Spec.UserInterface =
+		&v1beta1.UserInterfaceSpec{PGAdmin: &v1beta1.PGAdminPodSpec{}}
+
+	t.Run("NoPods", func(t *testing.T) {
+		r := new(Reconciler)
+		r.Client = fake.NewClientBuilder().Build()
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
+	})
+
+	// Pod in the namespace
+	pod := corev1.Pod{}
+	pod.Namespace = cluster.Namespace
+	pod.Name = cluster.Name + "-pgadmin-0"
+
+	t.Run("ContainerNotRunning", func(t *testing.T) {
+		pod := pod.DeepCopy()
+
+		pod.DeletionTimestamp = nil
+		pod.Status.ContainerStatuses = nil
+
+		r := new(Reconciler)
+		r.Client = fake.NewClientBuilder().WithObjects(pod).Build()
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
+	})
+
+	t.Run("PodTerminating", func(t *testing.T) {
+		pod := pod.DeepCopy()
+
+		pod.DeletionTimestamp = new(metav1.Time)
+		*pod.DeletionTimestamp = metav1.Now()
+		pod.Status.ContainerStatuses =
+			[]corev1.ContainerStatus{{Name: naming.ContainerPGAdmin}}
+		pod.Status.ContainerStatuses[0].State.Running =
+			new(corev1.ContainerStateRunning)
+
+		r := new(Reconciler)
+		r.Client = fake.NewClientBuilder().WithObjects(pod).Build()
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
+	})
+
+	t.Run("PodHealthy", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		pod := pod.DeepCopy()
+
+		pod.DeletionTimestamp = nil
+		pod.Status.ContainerStatuses =
+			[]corev1.ContainerStatus{{Name: naming.ContainerPGAdmin}}
+		pod.Status.ContainerStatuses[0].State.Running =
+			new(corev1.ContainerStateRunning)
+
+		r := new(Reconciler)
+		r.Client = fake.NewClientBuilder().WithObjects(pod).Build()
+
+		calls := 0
+		r.PodExec = func(
+			namespace, pod, container string,
+			stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			calls++
+
+			assert.Equal(t, pod, "pgc1-pgadmin-0")
+			assert.Equal(t, namespace, cluster.Namespace)
+			assert.Equal(t, container, naming.ContainerPGAdmin)
+
+			return nil
+		}
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
+		assert.Equal(t, calls, 1, "PodExec should be called once")
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
+		assert.Equal(t, calls, 1, "PodExec should not be called again")
+
+		// Do the thing when users change.
+		users := []v1beta1.PostgresUserSpec{{Name: "u1"}}
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, users, nil))
+		assert.Equal(t, calls, 2, "PodExec should be called once")
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, users, nil))
+		assert.Equal(t, calls, 2, "PodExec should not be called again")
+
+		// Do the thing when passwords change.
+		passwords := map[string]*corev1.Secret{
+			"u1": {Data: map[string][]byte{"password": []byte(`something`)}},
+		}
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, users, passwords))
+		assert.Equal(t, calls, 3, "PodExec should be called once")
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, users, passwords))
+		assert.Equal(t, calls, 3, "PodExec should not be called again")
+
+		passwords["u1"].Data["password"] = []byte(`rotated`)
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, users, passwords))
+		assert.Equal(t, calls, 4, "PodExec should be called once")
+
+		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, users, passwords))
+		assert.Equal(t, calls, 4, "PodExec should not be called again")
+
+		t.Run("ThenDisabled", func(t *testing.T) {
+			// TODO(cbandy): Revisit this when there is more than one UI.
+			cluster := cluster.DeepCopy()
+			cluster.Spec.UserInterface = nil
+
+			assert.Assert(t, cluster.Status.UserInterface != nil, "expected some status")
+
+			r := new(Reconciler)
+			assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, users, passwords))
+			assert.Assert(t, cluster.Status.UserInterface == nil, "expected no status")
+		})
 	})
 }
 

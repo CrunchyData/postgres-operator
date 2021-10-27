@@ -6243,7 +6243,7 @@ spec:
                   PostgreSQL.
                 properties:
                   pgAdmin:
-                    description: Defines a pgAdmin user interface pod.
+                    description: Defines a pgAdmin user interface.
                     properties:
                       affinity:
                         description: 'Scheduling constraints of a pgAdmin pod. Changing
@@ -7651,6 +7651,18 @@ spec:
               startupInstanceSet:
                 description: The instance set associated with the startupInstance
                 type: string
+              userInterface:
+                description: Current state of the PostgreSQL user interface.
+                properties:
+                  pgAdmin:
+                    description: The state of the pgAdmin user interface.
+                    properties:
+                      usersRevision:
+                        description: Hash that indicates which users have been installed
+                          into pgAdmin.
+                        type: string
+                    type: object
+                type: object
               usersRevision:
                 description: Identifies the users that have been installed into PostgreSQL.
                 type: string
