@@ -102,6 +102,18 @@ func (r *Reconciler) generatePostgresUserSecret(
 			Host:   net.JoinHostPort(hostname, port),
 			Path:   database,
 		}).String())
+
+		// Reference to the PostgreSQL JDBC URI:
+		// https://jdbc.postgresql.org/documentation/head/connect.html
+		jdbc_query := url.Values{}
+		jdbc_query.Set("user", username)
+		jdbc_query.Set("password", string(intent.Data["password"]))
+		intent.Data["jdbc-uri"] = []byte((&url.URL{
+			Scheme:   "jdbc:postgresql",
+			Host:     net.JoinHostPort(hostname, port),
+			Path:     database,
+			RawQuery: jdbc_query.Encode(),
+		}).String())
 	}
 
 	// When PgBouncer is enabled, include values for connecting through it.
