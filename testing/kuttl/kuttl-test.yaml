@@ -2,8 +2,11 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestSuite
 testDirs:
 - testing/kuttl/e2e/
-timeout: 60
+timeout: 120
 parallel: 2
+namespace: postgres-operator
+suppress: 
+- events
 
 # There is an issue where kuttl kills the controller process before finalizers
 # can be removed from clusters. The fix is set for kuttl 0.12 to wait for
