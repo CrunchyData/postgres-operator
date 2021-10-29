@@ -166,26 +166,14 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 
 	users := iniValueSet(cluster.Spec.Proxy.PGBouncer.Config.Users)
 
-	// First, include any custom configuration file with verbosity turned up.
-	// PgBouncer will log a DEBUG message before it processes each line of that
-	// file, providing context when an "%include" is wrong.
-	// - https://github.com/pgbouncer/pgbouncer/issues/584
+	// Include any custom configuration file, then apply global settings, then
+	// pool definitions.
 	result := iniGeneratedWarning +
 		"\n[pgbouncer]" +
-		"\nverbose = 1" +
-		"\n%include " + emptyFileAbsolutePath
+		"\n%include " + emptyFileAbsolutePath +
+		"\n\n[pgbouncer]\n" + global.String() +
+		"\n[databases]\n" + databases.String()
 
-	// Next, apply global settings with verbosity restored.
-	verbose := global["verbose"]
-	delete(global, "verbose")
-	if len(verbose) == 0 {
-		verbose = "0"
-	}
-	result += "\n\n[pgbouncer]\n" +
-		iniValueSet{"verbose": verbose}.String() + "\n" + global.String()
-
-	// Finally, apply pool definitions.
-	result += "\n[databases]\n" + databases.String()
 	if len(users) > 0 {
 		result += "\n[users]\n" + users.String()
 	}
