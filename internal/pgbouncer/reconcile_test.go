@@ -17,7 +17,6 @@ package pgbouncer
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -126,7 +125,7 @@ func TestPod(t *testing.T) {
 
 		call()
 
-		assert.Assert(t, marshalEquals(pod, strings.Trim(`
+		assert.Assert(t, marshalMatches(pod, `
 containers:
 - command:
   - pgbouncer
@@ -145,12 +144,6 @@ containers:
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
-    readOnly: true
-  - mountPath: /etc/pgbouncer/~postgres-operator-backend
-    name: pgbouncer-backend-tls
-    readOnly: true
-  - mountPath: /etc/pgbouncer/~postgres-operator-frontend
-    name: pgbouncer-frontend-tls
     readOnly: true
 - command:
   - bash
@@ -181,10 +174,6 @@ containers:
     name: pgbouncer-config
     readOnly: true
 volumes:
-- name: pgbouncer-backend-tls
-  projected:
-    sources:
-    - secret: {}
 - name: pgbouncer-config
   projected:
     sources:
@@ -200,18 +189,19 @@ volumes:
         items:
         - key: pgbouncer-users.txt
           path: ~postgres-operator/users.txt
-- name: pgbouncer-frontend-tls
-  projected:
-    sources:
     - secret:
         items:
         - key: pgbouncer-frontend.ca-roots
-          path: ca.crt
+          path: ~postgres-operator/frontend-ca.crt
         - key: pgbouncer-frontend.key
-          path: tls.key
+          path: ~postgres-operator/frontend-tls.key
         - key: pgbouncer-frontend.crt
-          path: tls.crt
-		`, "\t\n")+"\n"))
+          path: ~postgres-operator/frontend-tls.crt
+    - secret:
+        items:
+        - key: ca.crt
+          path: ~postgres-operator/backend-ca.crt
+		`))
 
 		// No change when called again.
 		before := pod.DeepCopy()
@@ -228,14 +218,14 @@ volumes:
 		cluster.Spec.Proxy.PGBouncer.CustomTLSSecret = &corev1.SecretProjection{
 			LocalObjectReference: corev1.LocalObjectReference{Name: "tls-name"},
 			Items: []corev1.KeyToPath{
-				{Key: "k1", Path: "p1"},
+				{Key: "k1", Path: "tls.crt"},
+				{Key: "k2", Path: "tls.key"},
 			},
 		}
 
 		call()
 
-		assert.Assert(t, marshalEquals(pod,
-			strings.Trim(`
+		assert.Assert(t, marshalMatches(pod, `
 containers:
 - command:
   - pgbouncer
@@ -258,12 +248,6 @@ containers:
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
-    readOnly: true
-  - mountPath: /etc/pgbouncer/~postgres-operator-backend
-    name: pgbouncer-backend-tls
-    readOnly: true
-  - mountPath: /etc/pgbouncer/~postgres-operator-frontend
-    name: pgbouncer-frontend-tls
     readOnly: true
 - command:
   - bash
@@ -299,10 +283,6 @@ containers:
     name: pgbouncer-config
     readOnly: true
 volumes:
-- name: pgbouncer-backend-tls
-  projected:
-    sources:
-    - secret: {}
 - name: pgbouncer-config
   projected:
     sources:
@@ -318,15 +298,18 @@ volumes:
         items:
         - key: pgbouncer-users.txt
           path: ~postgres-operator/users.txt
-- name: pgbouncer-frontend-tls
-  projected:
-    sources:
     - secret:
         items:
         - key: k1
-          path: p1
+          path: ~postgres-operator/frontend-tls.crt
+        - key: k2
+          path: ~postgres-operator/frontend-tls.key
         name: tls-name
-			`, "\t\n")+"\n"))
+    - secret:
+        items:
+        - key: ca.crt
+          path: ~postgres-operator/backend-ca.crt
+			`))
 	})
 
 	t.Run("Sidecar customization", func(t *testing.T) {
@@ -342,8 +325,7 @@ volumes:
 
 		call()
 
-		assert.Assert(t, marshalEquals(pod,
-			strings.Trim(`
+		assert.Assert(t, marshalMatches(pod, `
 containers:
 - command:
   - pgbouncer
@@ -366,12 +348,6 @@ containers:
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
-    readOnly: true
-  - mountPath: /etc/pgbouncer/~postgres-operator-backend
-    name: pgbouncer-backend-tls
-    readOnly: true
-  - mountPath: /etc/pgbouncer/~postgres-operator-frontend
-    name: pgbouncer-frontend-tls
     readOnly: true
 - command:
   - bash
@@ -406,10 +382,6 @@ containers:
     name: pgbouncer-config
     readOnly: true
 volumes:
-- name: pgbouncer-backend-tls
-  projected:
-    sources:
-    - secret: {}
 - name: pgbouncer-config
   projected:
     sources:
@@ -425,14 +397,18 @@ volumes:
         items:
         - key: pgbouncer-users.txt
           path: ~postgres-operator/users.txt
-- name: pgbouncer-frontend-tls
-  projected:
-    sources:
     - secret:
         items:
         - key: k1
-          path: p1
-        name: tls-name`, "\t\n")+"\n"))
+          path: ~postgres-operator/frontend-tls.crt
+        - key: k2
+          path: ~postgres-operator/frontend-tls.key
+        name: tls-name
+    - secret:
+        items:
+        - key: ca.crt
+          path: ~postgres-operator/backend-ca.crt
+		`))
 	})
 }
 

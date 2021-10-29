@@ -16,7 +16,6 @@
 package pgbouncer
 
 import (
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -24,21 +23,30 @@ import (
 )
 
 func TestBackendAuthority(t *testing.T) {
+	// No items; assume Key matches Path.
 	projection := &corev1.SecretProjection{
 		LocalObjectReference: corev1.LocalObjectReference{Name: "some-name"},
-		Items: []corev1.KeyToPath{
-			{Key: "some-crt-key", Path: "tls.crt"},
-			{Key: "some-ca-key", Path: "ca.crt"},
-		},
 	}
+	assert.Assert(t, marshalMatches(backendAuthority(projection), `
+secret:
+  items:
+  - key: ca.crt
+    path: ~postgres-operator/backend-ca.crt
+  name: some-name
+	`))
 
-	assert.Assert(t, marshalEquals(backendAuthority(projection), strings.Trim(`
+	// Some items; use only the CA Path.
+	projection.Items = []corev1.KeyToPath{
+		{Key: "some-crt-key", Path: "tls.crt"},
+		{Key: "some-ca-key", Path: "ca.crt"},
+	}
+	assert.Assert(t, marshalMatches(backendAuthority(projection), `
 secret:
   items:
   - key: some-ca-key
-    path: ca.crt
+    path: ~postgres-operator/backend-ca.crt
   name: some-name
-	`, "\t\n")+"\n"))
+	`))
 }
 
 func TestFrontendCertificate(t *testing.T) {
@@ -46,32 +54,53 @@ func TestFrontendCertificate(t *testing.T) {
 	secret.Name = "op-secret"
 
 	t.Run("Generated", func(t *testing.T) {
-		assert.Assert(t, marshalEquals(frontendCertificate(nil, secret), strings.Trim(`
+		assert.Assert(t, marshalMatches(frontendCertificate(nil, secret), `
 secret:
   items:
   - key: pgbouncer-frontend.ca-roots
-    path: ca.crt
+    path: ~postgres-operator/frontend-ca.crt
   - key: pgbouncer-frontend.key
-    path: tls.key
+    path: ~postgres-operator/frontend-tls.key
   - key: pgbouncer-frontend.crt
-    path: tls.crt
+    path: ~postgres-operator/frontend-tls.crt
   name: op-secret
-		`, "\t\n")+"\n"))
+		`))
 	})
 
 	t.Run("Custom", func(t *testing.T) {
 		custom := new(corev1.SecretProjection)
 		custom.Name = "some-other"
-		custom.Items = []corev1.KeyToPath{
-			{Key: "any", Path: "thing"},
-		}
 
-		assert.Assert(t, marshalEquals(frontendCertificate(custom, secret), strings.Trim(`
+		// No items; assume Key matches Path.
+		assert.Assert(t, marshalMatches(frontendCertificate(custom, secret), `
 secret:
   items:
-  - key: any
-    path: thing
+  - key: ca.crt
+    path: ~postgres-operator/frontend-ca.crt
+  - key: tls.key
+    path: ~postgres-operator/frontend-tls.key
+  - key: tls.crt
+    path: ~postgres-operator/frontend-tls.crt
   name: some-other
-		`, "\t\n")+"\n"))
+		`))
+
+		// Some items; use only the TLS Paths.
+		custom.Items = []corev1.KeyToPath{
+			{Key: "any", Path: "thing"},
+			{Key: "some-ca-key", Path: "ca.crt"},
+			{Key: "some-cert-key", Path: "tls.crt"},
+			{Key: "some-key-key", Path: "tls.key"},
+		}
+		assert.Assert(t, marshalMatches(frontendCertificate(custom, secret), `
+secret:
+  items:
+  - key: some-ca-key
+    path: ~postgres-operator/frontend-ca.crt
+  - key: some-cert-key
+    path: ~postgres-operator/frontend-tls.crt
+  - key: some-key-key
+    path: ~postgres-operator/frontend-tls.key
+  name: some-other
+		`))
 	})
 }

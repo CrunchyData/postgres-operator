@@ -126,25 +126,16 @@ func Pod(
 		return
 	}
 
-	backend := corev1.Volume{Name: "pgbouncer-backend-tls"}
-	backend.Projected = &corev1.ProjectedVolumeSource{
-		Sources: []corev1.VolumeProjection{
+	configVolumeMount := corev1.VolumeMount{
+		Name: "pgbouncer-config", MountPath: configDirectory, ReadOnly: true,
+	}
+	configVolume := corev1.Volume{Name: configVolumeMount.Name}
+	configVolume.Projected = &corev1.ProjectedVolumeSource{
+		Sources: append(append([]corev1.VolumeProjection{},
+			podConfigFiles(inCluster.Spec.Proxy.PGBouncer.Config, inConfigMap, inSecret)...),
+			frontendCertificate(inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret, inSecret),
 			backendAuthority(inPostgreSQLCertificate),
-		},
-	}
-
-	frontend := corev1.Volume{Name: "pgbouncer-frontend-tls"}
-	frontend.Projected = &corev1.ProjectedVolumeSource{
-		Sources: []corev1.VolumeProjection{
-			frontendCertificate(
-				inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret, inSecret),
-		},
-	}
-
-	configVol := corev1.Volume{Name: "pgbouncer-config"}
-	configVol.Projected = &corev1.ProjectedVolumeSource{
-		Sources: podConfigFiles(
-			inCluster.Spec.Proxy.PGBouncer.Config, inConfigMap, inSecret),
+		),
 	}
 
 	container := corev1.Container{
@@ -154,7 +145,6 @@ func Pod(
 		Image:           config.PGBouncerContainerImage(inCluster),
 		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
 		Resources:       inCluster.Spec.Proxy.PGBouncer.Resources,
-
 		SecurityContext: initialize.RestrictedSecurityContext(),
 
 		Ports: []corev1.ContainerPort{{
@@ -162,24 +152,8 @@ func Pod(
 			ContainerPort: *inCluster.Spec.Proxy.PGBouncer.Port,
 			Protocol:      corev1.ProtocolTCP,
 		}},
-	}
 
-	container.VolumeMounts = []corev1.VolumeMount{
-		{
-			Name:      configVol.Name,
-			MountPath: configDirectory,
-			ReadOnly:  true,
-		},
-		{
-			Name:      backend.Name,
-			MountPath: certBackendDirectory,
-			ReadOnly:  true,
-		},
-		{
-			Name:      frontend.Name,
-			MountPath: certFrontendDirectory,
-			ReadOnly:  true,
-		},
+		VolumeMounts: []corev1.VolumeMount{configVolumeMount},
 	}
 
 	// TODO container.LivenessProbe?
@@ -189,16 +163,11 @@ func Pod(
 		Name: naming.ContainerPGBouncerConfig,
 
 		Command:         reloadCommand(naming.ContainerPGBouncerConfig),
-		Image:           config.PGBouncerContainerImage(inCluster),
-		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
-
+		Image:           container.Image,
+		ImagePullPolicy: container.ImagePullPolicy,
 		SecurityContext: initialize.RestrictedSecurityContext(),
 
-		VolumeMounts: []corev1.VolumeMount{{
-			Name:      configVol.Name,
-			MountPath: configDirectory,
-			ReadOnly:  true,
-		}},
+		VolumeMounts: []corev1.VolumeMount{configVolumeMount},
 	}
 
 	// Let the PgBouncer container drive the QoS of the pod. Set resources only
@@ -220,8 +189,7 @@ func Pod(
 	}
 
 	outPod.Containers = []corev1.Container{container, reloader}
-
-	outPod.Volumes = []corev1.Volume{backend, configVol, frontend}
+	outPod.Volumes = []corev1.Volume{configVolume}
 }
 
 // PostgreSQL populates outHBAs with any records needed to run PgBouncer.

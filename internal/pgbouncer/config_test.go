@@ -77,15 +77,15 @@ verbose = 0
 auth_file = /etc/pgbouncer/~postgres-operator/users.txt
 auth_query = SELECT username, password from pgbouncer.get_auth($1)
 auth_user = _crunchypgbouncer
-client_tls_ca_file = /etc/pgbouncer/~postgres-operator-frontend/ca.crt
-client_tls_cert_file = /etc/pgbouncer/~postgres-operator-frontend/tls.crt
-client_tls_key_file = /etc/pgbouncer/~postgres-operator-frontend/tls.key
+client_tls_ca_file = /etc/pgbouncer/~postgres-operator/frontend-ca.crt
+client_tls_cert_file = /etc/pgbouncer/~postgres-operator/frontend-tls.crt
+client_tls_key_file = /etc/pgbouncer/~postgres-operator/frontend-tls.key
 client_tls_sslmode = require
 conffile = /etc/pgbouncer/~postgres-operator.ini
 ignore_startup_parameters = extra_float_digits
 listen_addr = *
 listen_port = 8888
-server_tls_ca_file = /etc/pgbouncer/~postgres-operator-backend/ca.crt
+server_tls_ca_file = /etc/pgbouncer/~postgres-operator/backend-ca.crt
 server_tls_sslmode = verify-full
 unix_socket_dir =
 
@@ -120,15 +120,15 @@ verbose = whomp
 auth_file = /etc/pgbouncer/~postgres-operator/users.txt
 auth_query = SELECT username, password from pgbouncer.get_auth($1)
 auth_user = _crunchypgbouncer
-client_tls_ca_file = /etc/pgbouncer/~postgres-operator-frontend/ca.crt
-client_tls_cert_file = /etc/pgbouncer/~postgres-operator-frontend/tls.crt
-client_tls_key_file = /etc/pgbouncer/~postgres-operator-frontend/tls.key
+client_tls_ca_file = /etc/pgbouncer/~postgres-operator/frontend-ca.crt
+client_tls_cert_file = /etc/pgbouncer/~postgres-operator/frontend-tls.crt
+client_tls_key_file = /etc/pgbouncer/~postgres-operator/frontend-tls.key
 client_tls_sslmode = require
 conffile = /etc/pgbouncer/~postgres-operator.ini
 ignore_startup_parameters = custom
 listen_addr = *
 listen_port = 8888
-server_tls_ca_file = /etc/pgbouncer/~postgres-operator-backend/ca.crt
+server_tls_ca_file = /etc/pgbouncer/~postgres-operator/backend-ca.crt
 server_tls_sslmode = verify-full
 unix_socket_dir =
 
@@ -154,7 +154,7 @@ func TestPodConfigFiles(t *testing.T) {
 
 	t.Run("Default", func(t *testing.T) {
 		projections := podConfigFiles(config, configmap, secret)
-		assert.Assert(t, marshalEquals(projections, strings.Trim(`
+		assert.Assert(t, marshalMatches(projections, `
 - configMap:
     items:
     - key: pgbouncer-empty
@@ -170,7 +170,7 @@ func TestPodConfigFiles(t *testing.T) {
     - key: pgbouncer-users.txt
       path: ~postgres-operator/users.txt
     name: some-shh
-		`, "\t\n")+"\n"))
+		`))
 	})
 
 	t.Run("CustomFiles", func(t *testing.T) {
@@ -187,7 +187,7 @@ func TestPodConfigFiles(t *testing.T) {
 		}
 
 		projections := podConfigFiles(config, configmap, secret)
-		assert.Assert(t, marshalEquals(projections, strings.Trim(`
+		assert.Assert(t, marshalMatches(projections, `
 - configMap:
     items:
     - key: pgbouncer-empty
@@ -210,7 +210,7 @@ func TestPodConfigFiles(t *testing.T) {
     - key: pgbouncer-users.txt
       path: ~postgres-operator/users.txt
     name: some-shh
-		`, "\t\n")+"\n"))
+		`))
 	})
 }
 

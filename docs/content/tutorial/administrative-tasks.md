@@ -52,7 +52,9 @@ When changing the PostgreSQL certificate authority, make sure to update
 [`customReplicationTLSSecret`]({{< relref "/tutorial/customize-cluster.md" >}}#customize-tls) as well.
 {{% /notice %}}
 
-PgBouncer needs to be restarted after its certificates change.
+PGO automatically notifies PgBouncer when there are changes to the contents of
+PgBouncer certificate Secrets. Recent PgBouncer versions load those changes
+without downtime, but versions prior to 1.16.0 need to be restarted manually.
 There are a few ways to do it:
 
 1. Store the new certificates in a new Secret. Edit the PostgresCluster object
