@@ -16,16 +16,17 @@
 package pgbouncer
 
 import (
+	"strings"
+
 	"gotest.tools/v3/assert/cmp"
 	"sigs.k8s.io/yaml"
 )
 
-func marshalEquals(actual interface{}, expected string) cmp.Comparison {
+// marshalMatches converts actual to YAML and compares that to expected.
+func marshalMatches(actual interface{}, expected string) cmp.Comparison {
 	b, err := yaml.Marshal(actual)
-	return func() cmp.Result {
-		if err != nil {
-			return cmp.ResultFromError(err)
-		}
-		return cmp.DeepEqual(string(b), expected)()
+	if err != nil {
+		return func() cmp.Result { return cmp.ResultFromError(err) }
 	}
+	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
 }
