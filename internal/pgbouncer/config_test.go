@@ -68,12 +68,9 @@ func TestClusterINI(t *testing.T) {
 # Your changes will not be saved.
 
 [pgbouncer]
-verbose = 1
 %include /etc/pgbouncer/pgbouncer.ini
 
 [pgbouncer]
-verbose = 0
-
 auth_file = /etc/pgbouncer/~postgres-operator/users.txt
 auth_query = SELECT username, password from pgbouncer.get_auth($1)
 auth_user = _crunchypgbouncer
@@ -111,12 +108,9 @@ unix_socket_dir =
 # Your changes will not be saved.
 
 [pgbouncer]
-verbose = 1
 %include /etc/pgbouncer/pgbouncer.ini
 
 [pgbouncer]
-verbose = whomp
-
 auth_file = /etc/pgbouncer/~postgres-operator/users.txt
 auth_query = SELECT username, password from pgbouncer.get_auth($1)
 auth_user = _crunchypgbouncer
@@ -131,6 +125,7 @@ listen_port = 8888
 server_tls_ca_file = /etc/pgbouncer/~postgres-operator/backend-ca.crt
 server_tls_sslmode = verify-full
 unix_socket_dir =
+verbose = whomp
 
 [databases]
 appdb = conn=str
