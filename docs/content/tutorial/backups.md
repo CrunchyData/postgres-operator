@@ -113,6 +113,8 @@ s3:
 
 Again, replace these values with the values that match your S3 configuration.
 
+Note that `region` is required by S3, as does pgBackRest. If you are using a storage system with a S3 compatibility layer that does not require `region`, you can fill in region with a random value.
+
 When your configuration is saved, you can deploy your cluster:
 
 ```
