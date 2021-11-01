@@ -4,17 +4,10 @@ testDirs:
 - testing/kuttl/e2e/
 timeout: 120
 parallel: 2
-# comment out namespace if you want kuttl tests to run in its
-# own generated namespace
-namespace: postgres-operator
+# by default kuttl will run in a generated namespace to override
+# that functionality simply uncomment the line below and replace
+# postgres-operator with the desired namespace to run in.
+# namespace: postgres-operator
 suppress: 
 - events
 
-# There is an issue where kuttl kills the controller process before finalizers
-# can be removed from clusters. The fix is set for kuttl 0.12 to wait for
-# namespaces to be deleted before killing the controller:
-# https://github.com/kudobuilder/kuttl/issues/314
-# commands:
-# - command: ./bin/postgres-operator
-#   background: true
-#   skipLogOutput: true

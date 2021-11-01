@@ -1,7 +1,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: test
+  name: cluster-start
 status:
   instances:
     - name: instance1
@@ -13,16 +13,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    postgres-operator.crunchydata.com/cluster: test
+    postgres-operator.crunchydata.com/cluster: cluster-start
     postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
-spec:
-  template:
-    spec:
-      containers:
-      - name: pgbackrest
-        command: ["/opt/crunchy/bin/pgbackrest"]
-        resources:
-          requests:
-            cpu: 1m
 status:
   succeeded: 1

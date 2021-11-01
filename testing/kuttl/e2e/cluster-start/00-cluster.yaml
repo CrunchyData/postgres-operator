@@ -1,7 +1,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: test
+  name: cluster-start
 spec:
   image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
   postgresVersion: 13
@@ -16,10 +16,6 @@ spec:
   backups:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
-      jobs:
-        resources:
-          requests:
-            cpu: 1m
       repos:
       - name: repo1
         volume:

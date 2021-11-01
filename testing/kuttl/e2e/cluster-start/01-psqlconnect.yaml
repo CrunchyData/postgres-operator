@@ -1,9 +1,0 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestStep
-commands:
-- script: /home/vagrant/postgres-operator/testing/kuttl/script/portforward.sh
-  background: true
-# this sleep is needed when running in cloud environments, may not be needed
-# when running locally
-- script: sleep 10
-- script: /home/vagrant/postgres-operator/testing/kuttl/script/connectpsql.sh
