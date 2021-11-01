@@ -24,4 +24,4 @@ A single test is considered to be one directory under `kuttl/e2e`, for example
 
 There are two ways to run a single test in isolation: 
 - using an env var with the make target: `KUTTL_TEST='kuttl test --test <test-name>' make check-kuttl`
-- using `kubectl kuttl --test` flag: `kubectl kuttl test tools/testing/kuttl/e2e --test <test-name>`
+- using `kubectl kuttl --test` flag: `kubectl kuttl test testing/kuttl/e2e --test <test-name>`

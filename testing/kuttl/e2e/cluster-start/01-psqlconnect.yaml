@@ -3,9 +3,7 @@ kind: TestStep
 commands:
 - script: /home/vagrant/postgres-operator/testing/kuttl/script/portforward.sh
   background: true
+# this sleep is needed when running in cloud environments, may not be needed
+# when running locally
 - script: sleep 10
 - script: /home/vagrant/postgres-operator/testing/kuttl/script/connectpsql.sh
-#- script: export PG_CLUSTER_PRIMARY_POD=$(kubectl get pod -n postgres-operator -o name -l postgres-operator.crunchydata.com/cluster=test,postgres-operator.crunchydata.com/role=master)
-#- script: kubectl -n postgres-operator port-forward "${PG_CLUSTER_PRIMARY_POD}" 5432:5432
-#  background: true
-#- script: psql $(kubectl -n postgres-operator get secrets test-pguser-test -o go-template='{{.data.uri | base64decode}}')

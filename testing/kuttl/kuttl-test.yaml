@@ -4,6 +4,8 @@ testDirs:
 - testing/kuttl/e2e/
 timeout: 120
 parallel: 2
+# comment out namespace if you want kuttl tests to run in its
+# own generated namespace
 namespace: postgres-operator
 suppress: 
 - events
