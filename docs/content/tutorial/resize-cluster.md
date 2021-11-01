@@ -172,6 +172,156 @@ Apply these updates to your Postgres cluster with the following command:
 kubectl apply -k kustomize/postgres
 ```
 
+### Resize PVCs With StorageClass That Does Not Allow Expansion
+
+Not all Kubernetes Storage Classes allow for [volume expansion](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#expanding-persistent-volumes-claims). However, with PGO, you can still resize your Postgres cluster data volumes even if your storage class does not allow it!
+
+Let's go back to the previous example:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
+  postgresVersion: 13
+  instances:
+    - name: instance1
+      replicas: 2
+      resources:
+        limits:
+          cpu: 2.0
+          memory: 4Gi
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+First, create a new instance that has the larger volume size. Call this instance `instance2`. The manifest would look like this:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
+  postgresVersion: 13
+  instances:
+    - name: instance1
+      replicas: 2
+      resources:
+        limits:
+          cpu: 2.0
+          memory: 4Gi
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+    - name: instance2
+      replicas: 2
+      resources:
+        limits:
+          cpu: 2.0
+          memory: 4Gi
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 10Gi
+  backups:
+    pgbackrest:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+Take note of the block that contains `instance2`:
+
+```yaml
+- name: instance2
+  replicas: 2
+  resources:
+    limits:
+      cpu: 2.0
+      memory: 4Gi
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 10Gi
+```
+
+This creates a second set of two Postgres instances, both of which come up as replicas, that have a larger PVC.
+
+Once this new instance set is available and they are caught to the primary, you can then apply the following manifest:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+spec:
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
+  postgresVersion: 13
+  instances:
+    - name: instance2
+      replicas: 2
+      resources:
+        limits:
+          cpu: 2.0
+          memory: 4Gi
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 10Gi
+  backups:
+    pgbackrest:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 20Gi
+```
+
+This will promote one of the instances with the larger PVC to be the new primary and remove the instances with the smaller PVCs!
+
+This method can also be used to shrink PVCs to use a smaller amount.
+
 ## Troubleshooting
 
 ### Postgres Pod Can't Be Scheduled
@@ -188,6 +338,8 @@ Ensure that your storage class supports PVC resizing. You can check that by insp
 ```
 kubectl get sc
 ```
+
+If the storage class does not support PVC resizing, you can use the technique described above to resize PVCs using a second instance set.
 
 ## Next Steps
 
