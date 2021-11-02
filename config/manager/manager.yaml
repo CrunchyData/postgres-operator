@@ -23,7 +23,7 @@ spec:
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.1
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:centos8-14.0-3.1-0"
         - name: RELATED_IMAGE_PGADMIN
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:centos8-13.4-4.7.3"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:centos8-4.20-0"
         - name: RELATED_IMAGE_PGBACKREST
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0"
         - name: RELATED_IMAGE_PGBOUNCER
