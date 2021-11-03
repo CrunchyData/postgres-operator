@@ -4172,6 +4172,14 @@ spec:
                             type: string
                           type: object
                       type: object
+                    minAvailable:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: Minimum number of pods that should be available
+                        at a time. Defaults to one when the replicas field is greater
+                        than one.
+                      x-kubernetes-int-or-string: true
                     name:
                       default: ""
                       description: Name that associates this set of PostgreSQL pods.
@@ -5945,6 +5953,14 @@ spec:
                               type: string
                             type: object
                         type: object
+                      minAvailable:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        description: Minimum number of pods that should be available
+                          at a time. Defaults to one when the replicas field is greater
+                          than one.
+                        x-kubernetes-int-or-string: true
                       port:
                         default: 5432
                         description: Port on which PgBouncer should listen for client

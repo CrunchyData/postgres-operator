@@ -3652,6 +3652,11 @@ Resource requirements for a sidecar container
         <td>Metadata contains metadata for PostgresCluster resources</td>
         <td>false</td>
       </tr><tr>
+        <td><b>minAvailable</b></td>
+        <td>int or string</td>
+        <td>Minimum number of pods that should be available at a time. Defaults to one when the replicas field is greater than one.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
         <td>Name that associates this set of PostgreSQL pods. This field is optional when only one instance set is defined. Each instance set in a cluster must have a unique name.</td>
@@ -7364,6 +7369,11 @@ Defines a PgBouncer proxy and connection pooler.
         <td><b><a href="#postgresclusterspecproxypgbouncermetadata">metadata</a></b></td>
         <td>object</td>
         <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>minAvailable</b></td>
+        <td>int or string</td>
+        <td>Minimum number of pods that should be available at a time. Defaults to one when the replicas field is greater than one.</td>
         <td>false</td>
       </tr><tr>
         <td><b>port</b></td>

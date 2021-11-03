@@ -17,6 +17,7 @@ package v1beta1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // PGBouncerConfiguration represents PgBouncer configuration files.
@@ -105,6 +106,11 @@ type PGBouncerPodSpec struct {
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=0
 	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Minimum number of pods that should be available at a time.
+	// Defaults to one when the replicas field is greater than one.
+	// +optional
+	MinAvailable *intstr.IntOrString `json:"minAvailable,omitempty"`
 
 	// Compute resources of a PgBouncer container. Changing this value causes
 	// PgBouncer to restart.

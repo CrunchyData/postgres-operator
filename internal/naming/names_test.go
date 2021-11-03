@@ -63,6 +63,9 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		},
 	}
 	repoName := "hippo-repo"
+	instanceSet := &v1beta1.PostgresInstanceSetSpec{
+		Name: "set-1",
+	}
 
 	type test struct {
 		name  string
@@ -115,6 +118,13 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"PGBackRestBackupJob", PGBackRestBackupJob(cluster)},
 			{"PGBackRestRestoreJob", PGBackRestRestoreJob(cluster)},
+		})
+	})
+
+	t.Run("PodDisruptionBudgets", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"InstanceSetPDB", InstanceSet(cluster, instanceSet)},
+			{"PGBouncerPDB", ClusterPGBouncer(cluster)},
 		})
 	})
 

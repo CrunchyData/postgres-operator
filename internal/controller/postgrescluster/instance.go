@@ -29,11 +29,13 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -577,14 +579,19 @@ func (r *Reconciler) reconcileInstanceSets(
 	// Range over instance sets to scale up and ensure that each set has
 	// at least the number of replicas defined in the spec. The set can
 	// have more replicas than defined
-	for i, set := range cluster.Spec.InstanceSets {
+	for i := range cluster.Spec.InstanceSets {
+		set := &cluster.Spec.InstanceSets[i]
 		_, err := r.scaleUpInstances(
-			ctx, cluster, instances, &cluster.Spec.InstanceSets[i],
+			ctx, cluster, instances, set,
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate,
-			findAvailableInstanceNames(set, instances, clusterVolumes),
+			findAvailableInstanceNames(*set, instances, clusterVolumes),
 			numInstancePods, clusterVolumes)
+
+		if err == nil {
+			err = r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, set)
+		}
 		if err != nil {
 			return err
 		}
@@ -598,6 +605,12 @@ func (r *Reconciler) reconcileInstanceSets(
 		return err
 	}
 
+	// Cleanup Instance Set resources that are no longer needed
+	err = r.cleanupPodDisruptionBudgets(ctx, cluster)
+	if err != nil {
+		return err
+	}
+
 	// Rollout changes to instances by calling rolloutInstance.
 	err = r.rolloutInstances(ctx, cluster, instances,
 		func(ctx context.Context, instance *Instance) error {
@@ -605,6 +618,41 @@ func (r *Reconciler) reconcileInstanceSets(
 		})
 
 	return err
+}
+
+// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=list
+
+// cleanupPodDisruptionBudgets removes pdbs that do not have an
+// associated Instance Set
+func (r *Reconciler) cleanupPodDisruptionBudgets(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+) error {
+	selector, err := naming.AsSelector(naming.ClusterInstanceSets(cluster.Name))
+
+	pdbList := &policyv1beta1.PodDisruptionBudgetList{}
+	if err == nil {
+		err = r.Client.List(ctx, pdbList,
+			client.InNamespace(cluster.Namespace), client.MatchingLabelsSelector{
+				Selector: selector,
+			})
+
+	}
+
+	if err == nil {
+		setNames := sets.String{}
+		for _, set := range cluster.Spec.InstanceSets {
+			setNames.Insert(set.Name)
+		}
+		for i := range pdbList.Items {
+			pdb := pdbList.Items[i]
+			if err == nil && !setNames.Has(pdb.Labels[naming.LabelInstanceSet]) {
+				err = client.IgnoreNotFound(r.deleteControlled(ctx, cluster, &pdb))
+			}
+		}
+	}
+
+	return client.IgnoreNotFound(err)
 }
 
 // TODO (andrewlecuyer): If relevant instance volume (PVC) information is captured for each
@@ -1758,4 +1806,54 @@ func (r *Reconciler) prepareForUpgrade(ctx context.Context,
 		return nil
 	}
 	return nil
+}
+
+// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=create;patch;get;delete
+
+// reconcileInstanceSetPodDisruptionBudget creates a PDB for an instance set. A
+// PDB will be created when the minAvailable is determined to be greater than 0.
+// MinAvailable can be defined in the spec or a default value will be set based
+// on the number of replicas in the instance set.
+func (r *Reconciler) reconcileInstanceSetPodDisruptionBudget(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+	spec *v1beta1.PostgresInstanceSetSpec,
+) error {
+	if spec.Replicas == nil {
+		// Replicas should always have a value because of defaults in the spec
+		return errors.New("Replicas should be defined")
+	}
+	minAvailable := getMinAvailable(spec.MinAvailable, *spec.Replicas)
+
+	meta := naming.InstanceSet(cluster, spec)
+	meta.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
+		spec.Metadata.GetLabelsOrNil(),
+		map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: spec.Name,
+		})
+	meta.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		spec.Metadata.GetAnnotationsOrNil())
+
+	selector := naming.ClusterInstanceSet(cluster.Name, spec.Name)
+	pdb, err := r.generatePodDisruptionBudget(cluster, meta, minAvailable, selector)
+
+	// If 'minAvailable' is set to '0', we will not reconcile the PDB. If one
+	// already exists, we will remove it.
+	var scaled int
+	if err == nil {
+		scaled, err = intstr.GetScaledValueFromIntOrPercent(minAvailable, int(*spec.Replicas), true)
+	}
+	if err == nil && scaled <= 0 {
+		err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(pdb), pdb))
+		if err == nil {
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, pdb))
+		}
+		return client.IgnoreNotFound(err)
+	}
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, pdb))
+	}
+	return err
 }
