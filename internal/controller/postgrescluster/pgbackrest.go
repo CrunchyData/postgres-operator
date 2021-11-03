@@ -209,7 +209,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	for _, gvk := range gvks {
 		uList := &unstructured.UnstructuredList{}
 		uList.SetGroupVersionKind(gvk)
-		if err := r.Client.List(context.Background(), uList,
+		if err := r.Client.List(ctx, uList,
 			client.InNamespace(postgresCluster.GetNamespace()),
 			client.MatchingLabelsSelector{Selector: selector}); err != nil {
 			return nil, errors.WithStack(err)
