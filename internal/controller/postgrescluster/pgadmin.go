@@ -46,7 +46,7 @@ func (r *Reconciler) reconcilePGAdmin(
 		dataVolume, err = r.reconcilePGAdminDataVolume(ctx, cluster)
 	}
 	if err == nil {
-		err = r.reconcilePGAdminDeployment(ctx, cluster, dataVolume)
+		err = r.reconcilePGAdminStatefulSet(ctx, cluster, dataVolume)
 	}
 	return err
 }
@@ -132,32 +132,32 @@ func (r *Reconciler) reconcilePGAdminService(
 	return service, err
 }
 
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=create;delete;patch
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=create;delete;patch
 
-// reconcilePGAdminDeployment writes the Deployment that runs pgAdmin.
-func (r *Reconciler) reconcilePGAdminDeployment(
+// reconcilePGAdminStatefulSet writes the StatefulSet that runs pgAdmin.
+func (r *Reconciler) reconcilePGAdminStatefulSet(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	dataVolume *corev1.PersistentVolumeClaim,
 ) error {
-	deploy := &appsv1.Deployment{ObjectMeta: naming.ClusterPGAdmin(cluster)}
-	deploy.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
+	sts := &appsv1.StatefulSet{ObjectMeta: naming.ClusterPGAdmin(cluster)}
+	sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
 
 	if cluster.Spec.UserInterface == nil || cluster.Spec.UserInterface.PGAdmin == nil {
 		// pgAdmin is disabled; delete the Deployment if it exists. Check the
 		// client cache first using Get.
-		key := client.ObjectKeyFromObject(deploy)
-		err := errors.WithStack(r.Client.Get(ctx, key, deploy))
+		key := client.ObjectKeyFromObject(sts)
+		err := errors.WithStack(r.Client.Get(ctx, key, sts))
 		if err == nil {
-			err = errors.WithStack(r.deleteControlled(ctx, cluster, deploy))
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, sts))
 		}
 		return client.IgnoreNotFound(err)
 	}
 
-	deploy.Annotations = naming.Merge(
+	sts.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
 		cluster.Spec.UserInterface.PGAdmin.Metadata.GetAnnotationsOrNil())
-	deploy.Labels = naming.Merge(
+	sts.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		cluster.Spec.UserInterface.PGAdmin.Metadata.GetLabelsOrNil(),
 		map[string]string{
@@ -165,16 +165,16 @@ func (r *Reconciler) reconcilePGAdminDeployment(
 			naming.LabelRole:    naming.RolePGAdmin,
 			naming.LabelData:    naming.DataPGAdmin,
 		})
-	deploy.Spec.Selector = &metav1.LabelSelector{
+	sts.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGAdmin,
 		},
 	}
-	deploy.Spec.Template.Annotations = naming.Merge(
+	sts.Spec.Template.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
 		cluster.Spec.UserInterface.PGAdmin.Metadata.GetAnnotationsOrNil())
-	deploy.Spec.Template.Labels = naming.Merge(
+	sts.Spec.Template.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		cluster.Spec.UserInterface.PGAdmin.Metadata.GetLabelsOrNil(),
 		map[string]string{
@@ -185,53 +185,60 @@ func (r *Reconciler) reconcilePGAdminDeployment(
 
 	// if the shutdown flag is set, set pgAdmin replicas to 0
 	if cluster.Spec.Shutdown != nil && *cluster.Spec.Shutdown {
-		deploy.Spec.Replicas = initialize.Int32(0)
+		sts.Spec.Replicas = initialize.Int32(0)
 	} else {
-		deploy.Spec.Replicas = cluster.Spec.UserInterface.PGAdmin.Replicas
+		sts.Spec.Replicas = cluster.Spec.UserInterface.PGAdmin.Replicas
 	}
 
-	// Don't clutter the namespace with extra ReplicaSets.
-	deploy.Spec.RevisionHistoryLimit = initialize.Int32(0)
+	// Don't clutter the namespace with extra ControllerRevisions.
+	sts.Spec.RevisionHistoryLimit = initialize.Int32(0)
 
-	// Ensure that the number of Ready pods is never less than the specified
-	// Replicas by starting new pods while old pods are still running.
-	// - https://docs.k8s.io/concepts/workloads/controllers/deployment/#rolling-update-deployment
-	deploy.Spec.Strategy.Type = appsv1.RollingUpdateDeploymentStrategyType
-	deploy.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
-		MaxUnavailable: intstr.ValueOrDefault(nil, intstr.FromInt(0)),
+	// Give the Pod a stable DNS record based on its name.
+	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#stable-network-id
+	// - https://docs.k8s.io/concepts/services-networking/dns-pod-service/#pods
+	sts.Spec.ServiceName = naming.ClusterPodService(cluster).Name
+
+	// Set the StatefulSet update strategy to "RollingUpdate", and the Partition size for the
+	// update strategy to 0 (note that these are the defaults for a StatefulSet).  This means
+	// every pod of the StatefulSet will be deleted and recreated when the Pod template changes.
+	// - https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#rolling-updates
+	// - https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#forced-rollback
+	sts.Spec.UpdateStrategy.Type = appsv1.RollingUpdateStatefulSetStrategyType
+	sts.Spec.UpdateStrategy.RollingUpdate = &appsv1.RollingUpdateStatefulSetStrategy{
+		Partition: initialize.Int32(0),
 	}
 
 	// Use scheduling constraints from the cluster spec.
-	deploy.Spec.Template.Spec.Affinity = cluster.Spec.UserInterface.PGAdmin.Affinity
-	deploy.Spec.Template.Spec.Tolerations = cluster.Spec.UserInterface.PGAdmin.Tolerations
+	sts.Spec.Template.Spec.Affinity = cluster.Spec.UserInterface.PGAdmin.Affinity
+	sts.Spec.Template.Spec.Tolerations = cluster.Spec.UserInterface.PGAdmin.Tolerations
 
 	if cluster.Spec.UserInterface.PGAdmin.PriorityClassName != nil {
-		deploy.Spec.Template.Spec.PriorityClassName = *cluster.Spec.UserInterface.PGAdmin.PriorityClassName
+		sts.Spec.Template.Spec.PriorityClassName = *cluster.Spec.UserInterface.PGAdmin.PriorityClassName
 	}
 
-	deploy.Spec.Template.Spec.TopologySpreadConstraints =
+	sts.Spec.Template.Spec.TopologySpreadConstraints =
 		cluster.Spec.UserInterface.PGAdmin.TopologySpreadConstraints
 
 	// Restart containers any time they stop, die, are killed, etc.
 	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
-	deploy.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyAlways
+	sts.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyAlways
 
 	// pgAdmin does not make any Kubernetes API calls. Use the default
 	// ServiceAccount and do not mount its credentials.
-	deploy.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
+	sts.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 
-	deploy.Spec.Template.Spec.SecurityContext = initialize.RestrictedPodSecurityContext()
+	sts.Spec.Template.Spec.SecurityContext = initialize.RestrictedPodSecurityContext()
 
 	// set the image pull secrets, if any exist
-	deploy.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
+	sts.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 
-	err := errors.WithStack(r.setControllerReference(cluster, deploy))
+	err := errors.WithStack(r.setControllerReference(cluster, sts))
 
 	if err == nil {
-		pgadmin.Pod(cluster, &deploy.Spec.Template.Spec, dataVolume)
+		pgadmin.Pod(cluster, &sts.Spec.Template.Spec, dataVolume)
 	}
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, deploy))
+		err = errors.WithStack(r.apply(ctx, sts))
 	}
 
 	return err

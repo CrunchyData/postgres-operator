@@ -270,7 +270,7 @@ func TestReconcilePGAdminService(t *testing.T) {
 	}
 }
 
-func TestReconcilePGAdminDeployment(t *testing.T) {
+func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	ctx := context.Background()
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
@@ -287,14 +287,14 @@ func TestReconcilePGAdminDeployment(t *testing.T) {
 
 	assert.NilError(t, cc.Create(ctx, cluster))
 
-	t.Run("verify deployment", func(t *testing.T) {
+	t.Run("verify StatefulSet", func(t *testing.T) {
 		pvc := &corev1.PersistentVolumeClaim{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "test-pvc",
 			},
 		}
 
-		err := reconciler.reconcilePGAdminDeployment(ctx, cluster, pvc)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, cluster, pvc)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -304,7 +304,7 @@ func TestReconcilePGAdminDeployment(t *testing.T) {
 		})
 		assert.NilError(t, err)
 
-		list := appsv1.DeploymentList{}
+		list := appsv1.StatefulSetList{}
 		assert.NilError(t, cc.List(ctx, &list, client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selector}))
 		assert.Assert(t, len(list.Items) == 1)
@@ -380,6 +380,7 @@ volumes:
   persistentVolumeClaim:
     claimName: test-pvc
 		`))
+		assert.Assert(t, list.Items[0].Spec.ServiceName == "test-cluster-pods")
 	})
 
 	t.Run("verify customized deployment", func(t *testing.T) {
@@ -446,7 +447,7 @@ volumes:
 			},
 		}
 
-		err := reconciler.reconcilePGAdminDeployment(ctx, customcluster, pvc)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, customcluster, pvc)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -456,7 +457,7 @@ volumes:
 		})
 		assert.NilError(t, err)
 
-		list := appsv1.DeploymentList{}
+		list := appsv1.StatefulSetList{}
 		assert.NilError(t, cc.List(ctx, &list, client.InNamespace(customcluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selector}))
 		assert.Assert(t, len(list.Items) == 1)
@@ -558,6 +559,7 @@ volumes:
   persistentVolumeClaim:
     claimName: test-pvc
 		`))
+		assert.Assert(t, list.Items[0].Spec.ServiceName == "custom-cluster-pods")
 	})
 }
 
