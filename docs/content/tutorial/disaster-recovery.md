@@ -29,7 +29,7 @@ Let's walk through some examples for how we can clone and restore our databases.
 
 ## Clone a Postgres Cluster
 
-Let's create a clone of our [`hippo`]({{< relref "./create-cluster.md" >}}) cluster that we created previously. We know that our cluster is named `hippo` (baesd on its `metadata.name`) and that we only have a single backup repository called `repo1`.
+Let's create a clone of our [`hippo`]({{< relref "./create-cluster.md" >}}) cluster that we created previously. We know that our cluster is named `hippo` (based on its `metadata.name`) and that we only have a single backup repository called `repo1`.
 
 Let's call our new cluster `elephant`. We can create a clone of the `hippo` cluster using a manifest like this:
 
@@ -220,7 +220,7 @@ multiple Kubernetes clusters using an external storage system:
 - Google Cloud Storage
 
 Standby Postgres clusters are managed just like any other Postgres cluster in PGO.
-For example, adding replicas to a standby cluster is matter of increasing the
+For example, adding replicas to a standby cluster is a matter of increasing the
 `spec.instances.replicas` value. The main difference is that PostgreSQL data in
 the cluster is read-only: one PostgreSQL instance is reading in the database
 changes from an external repository while the other instances are replicas of it.
