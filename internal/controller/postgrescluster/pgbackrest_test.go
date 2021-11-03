@@ -555,8 +555,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 				Type: condition, Reason: "testing", Status: status})
 		}
 
-		requeue := r.reconcileScheduledBackups(context.Background(),
-			postgresCluster, serviceAccount)
+		requeue := r.reconcileScheduledBackups(ctx, postgresCluster, serviceAccount)
 		assert.Assert(t, !requeue)
 
 		returnedCronJob := &batchv1beta1.CronJob{}
