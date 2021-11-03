@@ -198,6 +198,41 @@ If it returns `true` (or `t`), then the Postgres instance is a primary!
 
 What if PGO was down during the downtime event? Failover would still occur: the Postgres HA system works independently of PGO and can maintain its own uptime. PGO will still need to assist with some of the healing aspects, but your application will still maintain read/write connectivity to your Postgres cluster!
 
+## Synchronous Replication
+
+PostgreSQL supports synchronous replication, which is a replication mode designed to limit the risk of transaction loss. Synchronous replication waits for a transaction to be written to at least one additional server before it considers the transaction to be committed. For more information on synchronous replication, please read about PGO's [high availability architecture]({{<relref "architecture/high-availability/_index.md" >}}#synchronous-replication-guarding-against-transactions-loss)
+
+To add synchronous replication to your Postgres cluster, you can add the following to your spec:
+
+```yaml
+spec:
+  patroni:
+    dynamicConfiguration:
+      synchronous_mode: true
+```
+
+While PostgreSQL defaults [`synchronous_commit`](https://www.postgresql.org/docs/current/runtime-config-wal.html#GUC-SYNCHRONOUS-COMMIT) to `on`, you may also want to explicitly set it, in which case the above block becomes:
+
+```yaml
+spec:
+  patroni:
+    dynamicConfiguration:
+      synchronous_mode: true
+      postgresql:
+        parameters:
+          synchronous_commit: "on"
+```
+
+Note that Patroni, which manages many aspects of the cluster's availability, will favor availability over synchronicity. This means that if a synchronous replica goes down, Patroni will allow for asynchronous replication to continue as well as writes to the primary. However, if you want to disable all writing if there are no synchronous repliacs available, you would have to enable `synchronous_mode_strict`, i.e.:
+
+```yaml
+spec:
+  patroni:
+    dynamicConfiguration:
+      synchronous_mode: true
+      synchronous_mode_strict: true
+```
+
 ## Affinity
 
 [Kubernetes affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/) rules, which include Pod anti-affinity and Node affinity, can help you to define where you want your workloads to reside. Pod anti-affinity is important for high availability: when used correctly, it ensures that your Postgres instances are distributed amongst different Nodes. Node affinity can be used to assign instances to specific Nodes, e.g. to utilize hardware that's optimized for databases.
@@ -393,7 +428,7 @@ spec:
 
 ## Pod Topology Spread Constraints
 
-In addition to affinity and anti-affinity settings, [Kubernetes Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) can also help you to define where you want your workloads to reside. However, while PodAffinity allows any number of Pods to be added to a qualifying topology domain, and PodAntiAffinity allows only one Pod to be scheduled into a single topology domain, topology spread constraints allow you to distribute Pods across different topology domains with a finer level of control. 
+In addition to affinity and anti-affinity settings, [Kubernetes Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/) can also help you to define where you want your workloads to reside. However, while PodAffinity allows any number of Pods to be added to a qualifying topology domain, and PodAntiAffinity allows only one Pod to be scheduled into a single topology domain, topology spread constraints allow you to distribute Pods across different topology domains with a finer level of control.
 
 ### API Field Configuration
 
@@ -407,8 +442,8 @@ The spread constraint [API fields](https://kubernetes.io/docs/concepts/workloads
         labelSelector: <object>
 ```
 
-where "maxSkew" describes the maximum degree to which Pods can be unevenly distributed, "topologyKey" is the key that defines a topology in the Nodes' Labels, "whenUnsatisfiable" specifies what action should be taken when "maxSkew" can't be satisfied, and "labelSelector" is used to find matching Pods. 
-    
+where "maxSkew" describes the maximum degree to which Pods can be unevenly distributed, "topologyKey" is the key that defines a topology in the Nodes' Labels, "whenUnsatisfiable" specifies what action should be taken when "maxSkew" can't be satisfied, and "labelSelector" is used to find matching Pods.
+
 ### Example Spread Contraints
 
 To help illustrate how you might use this with your cluster, we can review examples for configuring spread constraints on our Instance and pgBackRest repo host Pods. For this example, assume we have a three node Kubernetes cluster where the first node is labeled with `my-node-label=one`, the second node is labeled with `my-node-label=two` and the final node is labeled `my-node-label=three`. The label key `my-node-label` will function as our `topologyKey`. Note all three nodes in our examples will be schedulable, so a Pod could live on any of the three Nodes.
@@ -421,11 +456,11 @@ To begin, we can set our topology spread contraints on our cluster Instance Pods
   instances:
     - name: instance1
       replicas: 5
-      topologySpreadConstraints: 
+      topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: my-node-label
           whenUnsatisfiable: DoNotSchedule
-          labelSelector: 
+          labelSelector:
             matchLabels:
               postgres-operator.crunchydata.com/instance-set: instance1
 ```
@@ -438,11 +473,11 @@ We can also set topology spread constraints on our cluster's pgBackRest repo hos
 
 ```
       repoHost:
-        topologySpreadConstraints: 
+        topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: my-node-label
           whenUnsatisfiable: ScheduleAnyway
-          labelSelector: 
+          labelSelector:
             matchLabels:
               postgres-operator.crunchydata.com/pgbackrest: ""
 ```
@@ -462,11 +497,11 @@ spec:
   instances:
     - name: instance1
       replicas: 5
-      topologySpreadConstraints: 
+      topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: my-node-label
           whenUnsatisfiable: DoNotSchedule
-          labelSelector: 
+          labelSelector:
             matchLabels:
               postgres-operator.crunchydata.com/instance-set: instance1
       dataVolumeClaimSpec:
@@ -479,11 +514,11 @@ spec:
     pgbackrest:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
       repoHost:
-        topologySpreadConstraints: 
+        topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: my-node-label
           whenUnsatisfiable: ScheduleAnyway
-          labelSelector: 
+          labelSelector:
             matchLabels:
               postgres-operator.crunchydata.com/pgbackrest: ""
       repos:
