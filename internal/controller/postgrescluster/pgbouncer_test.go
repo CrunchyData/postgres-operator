@@ -26,6 +26,7 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -364,4 +366,132 @@ func TestReconcilePGBouncerDeployment(t *testing.T) {
 		`))
 	})
 
+}
+
+func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
+	ctx := context.Background()
+
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	r := &Reconciler{
+		Client: cc,
+		Owner:  client.FieldOwner(t.Name()),
+	}
+
+	foundPDB := func(
+		cluster *v1beta1.PostgresCluster,
+	) bool {
+		got := &policyv1beta1.PodDisruptionBudget{}
+		err := r.Client.Get(ctx,
+			naming.AsObjectKey(naming.ClusterPGBouncer(cluster)),
+			got)
+		return !apierrors.IsNotFound(err)
+	}
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	t.Run("empty", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Spec.Proxy = nil
+
+		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
+	})
+
+	t.Run("no replicas in spec", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Spec.Proxy.PGBouncer.Replicas = nil
+		assert.Error(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster),
+			"Replicas should be defined")
+	})
+
+	t.Run("not created", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
+		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringInt32(0)
+		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
+		assert.Assert(t, !foundPDB(cluster))
+	})
+
+	t.Run("int created", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
+		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringInt32(1)
+
+		assert.NilError(t, r.Client.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+
+		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
+		assert.Assert(t, foundPDB(cluster))
+
+		t.Run("deleted", func(t *testing.T) {
+			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringInt32(0)
+			err := r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
+			if apierrors.IsConflict(err) {
+				// When running in an existing environment another controller will sometimes update
+				// the object. This leads to an error where the ResourceVersion of the object does
+				// not match what we expect. When we run into this conflict, try to reconcile the
+				// object again.
+				err = r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
+			}
+			assert.NilError(t, err, errors.Unwrap(err))
+			assert.Assert(t, !foundPDB(cluster))
+		})
+	})
+
+	t.Run("str created", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
+		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("50%")
+
+		assert.NilError(t, r.Client.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+
+		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
+		assert.Assert(t, foundPDB(cluster))
+
+		t.Run("deleted", func(t *testing.T) {
+			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("0%")
+			err := r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
+			if apierrors.IsConflict(err) {
+				// When running in an existing environment another controller will sometimes update
+				// the object. This leads to an error where the ResourceVersion of the object does
+				// not match what we expect. When we run into this conflict, try to reconcile the
+				// object again.
+				err = r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
+			}
+			assert.NilError(t, err, errors.Unwrap(err))
+			assert.Assert(t, !foundPDB(cluster))
+		})
+
+		t.Run("delete with 00%", func(t *testing.T) {
+			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("50%")
+
+			assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
+			assert.Assert(t, foundPDB(cluster))
+
+			t.Run("deleted", func(t *testing.T) {
+				cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("00%")
+				err := r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
+				if apierrors.IsConflict(err) {
+					// When running in an existing environment another controller will sometimes update
+					// the object. This leads to an error where the ResourceVersion of the object does
+					// not match what we expect. When we run into this conflict, try to reconcile the
+					// object again.
+					err = r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
+				}
+				assert.NilError(t, err, errors.Unwrap(err))
+				assert.Assert(t, !foundPDB(cluster))
+			})
+		})
+	})
 }

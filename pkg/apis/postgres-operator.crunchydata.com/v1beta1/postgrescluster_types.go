@@ -20,6 +20,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
@@ -422,6 +423,11 @@ type PostgresInstanceSetSpec struct {
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=1
 	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Minimum number of pods that should be available at a time.
+	// Defaults to one when the replicas field is greater than one.
+	// +optional
+	MinAvailable *intstr.IntOrString `json:"minAvailable,omitempty"`
 
 	// Compute resources of a PostgreSQL container.
 	// +optional

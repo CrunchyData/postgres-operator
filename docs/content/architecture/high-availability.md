@@ -240,3 +240,38 @@ new primary.
 The downtime is thus constrained to the amount of time the switchover takes.
 
 PGO will automatically detect when to apply a rolling update.
+
+## Pod Disruption Budgets
+
+Pods in a Kubernetes cluster can experience [voluntary disruptions](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/#voluntary-and-involuntary-disruptions)
+as a result of actions initiated by the application owner or a Cluster Administrator. During these
+voluntary disruptions Pod Disruption Budgets (PDBs) can be used to ensure that a minimum number of Pods
+will be running. The operator allows you to define a minimum number of Pods that should be
+available for instance sets and pgBouncer deployments in your postgrescluster. This minimum is
+configured in the postgrescluster spec and will be used to create PDBs associated to a resource defined
+in the spec. For example, the following spec will create two PDBs, one for `instance1` and one for
+the PgBouncer deployment:
+
+```
+spec:
+  instances:
+    - name: instance1
+      replicas: 3
+      minAvailable: 1
+  proxy:
+    pgBouncer:
+      replicas: 3
+      minAvailable: 1
+```
+
+{{% notice tip %}}
+The `minAvailable` field accepts number (`3`) or string percentage (`50%`) values. For more
+information see [Specifying a PodDisruptionBudget](https://kubernetes.io/docs/tasks/run-application/configure-pdb/#specifying-a-poddisruptionbudget).
+{{% /notice %}}
+
+If `minAvailable` is set to `0`, we will not reconcile a PDB for the resource and any existing PDBs
+will be removed. This will effectively disable Pod Disruption Budgets for the resource.
+
+If `minAvailable` is not provided for an object, a default value will be defined based on the
+number of replicas defined for that object. If there is one replica, a PDB will not be created. If
+there is more than one replica defined, a minimum of one Pod will be used.

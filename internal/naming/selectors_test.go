@@ -91,6 +91,18 @@ func TestClusterInstanceSet(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid")
 }
 
+func TestClusterInstanceSets(t *testing.T) {
+	s, err := AsSelector(ClusterInstanceSets("something"))
+	assert.NilError(t, err)
+	assert.DeepEqual(t, s.String(), strings.Join([]string{
+		"postgres-operator.crunchydata.com/cluster=something",
+		"postgres-operator.crunchydata.com/instance-set",
+	}, ","))
+
+	_, err = AsSelector(ClusterInstanceSets("--whoa/yikes"))
+	assert.ErrorContains(t, err, "invalid")
+}
+
 func TestClusterPatronis(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Name = "something"
@@ -104,6 +116,22 @@ func TestClusterPatronis(t *testing.T) {
 
 	cluster.Name = "--nope--"
 	_, err = AsSelector(ClusterPatronis(cluster))
+	assert.ErrorContains(t, err, "invalid")
+}
+
+func TestClusterPGBouncerSelector(t *testing.T) {
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Name = "something"
+
+	s, err := AsSelector(ClusterPGBouncerSelector(cluster))
+	assert.NilError(t, err)
+	assert.DeepEqual(t, s.String(), strings.Join([]string{
+		"postgres-operator.crunchydata.com/cluster=something",
+		"postgres-operator.crunchydata.com/role=pgbouncer",
+	}, ","))
+
+	cluster.Name = "--bad--dog"
+	_, err = AsSelector(ClusterPGBouncerSelector(cluster))
 	assert.ErrorContains(t, err, "invalid")
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -57,6 +58,9 @@ func (r *Reconciler) reconcilePGBouncer(
 	}
 	if err == nil {
 		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret)
+	}
+	if err == nil {
+		err = r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
 	}
 	if err == nil {
 		err = r.reconcilePGBouncerInPostgreSQL(ctx, cluster, instances, secret)
@@ -472,5 +476,65 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 		err = errors.WithStack(r.apply(ctx, deploy))
 	}
 
+	return err
+}
+
+// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=create;patch;get;delete
+
+// reconcilePGBouncerPodDisruptionBudget creates a PDB for the PGBouncer deployment.
+// A PDB will be created when minAvailable is determined to be greater than 0 and
+// a PGBouncer proxy is defined in the spec. MinAvailable can be defined in the spec
+// or a default value will be set based on the number of replicas defined for PGBouncer.
+func (r *Reconciler) reconcilePGBouncerPodDisruptionBudget(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+) error {
+	deleteExistingPDB := func(cluster *v1beta1.PostgresCluster) error {
+		existing := &policyv1beta1.PodDisruptionBudget{ObjectMeta: naming.ClusterPGBouncer(cluster)}
+		err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		if err == nil {
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
+		}
+		return client.IgnoreNotFound(err)
+	}
+
+	if cluster.Spec.Proxy == nil || cluster.Spec.Proxy.PGBouncer == nil {
+		return deleteExistingPDB(cluster)
+	}
+
+	if cluster.Spec.Proxy.PGBouncer.Replicas == nil {
+		// Replicas should always have a value because of defaults in the spec
+		return errors.New("Replicas should be defined")
+	}
+	minAvailable := getMinAvailable(cluster.Spec.Proxy.PGBouncer.MinAvailable,
+		*cluster.Spec.Proxy.PGBouncer.Replicas)
+
+	// If 'minAvailable' is set to '0', we will not reconcile the PDB. If one
+	// already exists, we will remove it.
+	scaled, err := intstr.GetScaledValueFromIntOrPercent(minAvailable,
+		int(*cluster.Spec.Proxy.PGBouncer.Replicas), true)
+	if err == nil && scaled <= 0 {
+		return deleteExistingPDB(cluster)
+	}
+
+	meta := naming.ClusterPGBouncer(cluster)
+	meta.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetLabelsOrNil(),
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePGBouncer,
+		})
+	meta.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil())
+
+	selector := naming.ClusterPGBouncerSelector(cluster)
+	pdb := &policyv1beta1.PodDisruptionBudget{}
+	if err == nil {
+		pdb, err = r.generatePodDisruptionBudget(cluster, meta, minAvailable, selector)
+	}
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, pdb))
+	}
 	return err
 }

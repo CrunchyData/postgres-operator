@@ -34,6 +34,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +43,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -2270,4 +2273,219 @@ func fakeUpgradeCluster(clusterName, namespace, clusterUID string) *v1beta1.Post
 	}
 
 	return cluster
+}
+
+func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
+	ctx := context.Background()
+
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	r := &Reconciler{
+		Client: cc,
+		Owner:  client.FieldOwner(t.Name()),
+	}
+
+	foundPDB := func(
+		cluster *v1beta1.PostgresCluster,
+		spec *v1beta1.PostgresInstanceSetSpec,
+	) bool {
+		got := &policyv1beta1.PodDisruptionBudget{}
+		err := r.Client.Get(ctx,
+			naming.AsObjectKey(naming.InstanceSet(cluster, spec)),
+			got)
+		return !apierrors.IsNotFound(err)
+
+	}
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	t.Run("empty", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{}
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+
+		assert.Error(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec),
+			"Replicas should be defined")
+	})
+
+	t.Run("not created", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		spec := &cluster.Spec.InstanceSets[0]
+		spec.MinAvailable = initialize.IntOrStringInt32(0)
+		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
+		assert.Assert(t, !foundPDB(cluster, spec))
+	})
+
+	t.Run("int created", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		spec := &cluster.Spec.InstanceSets[0]
+		spec.MinAvailable = initialize.IntOrStringInt32(1)
+
+		assert.NilError(t, r.Client.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+
+		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
+		assert.Assert(t, foundPDB(cluster, spec))
+
+		t.Run("deleted", func(t *testing.T) {
+			spec.MinAvailable = initialize.IntOrStringInt32(0)
+			err := r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
+			if apierrors.IsConflict(err) {
+				// When running in an existing environment another controller will sometimes update
+				// the object. This leads to an error where the ResourceVersion of the object does
+				// not match what we expect. When we run into this conflict, try to reconcile the
+				// object again.
+				err = r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
+			}
+			assert.NilError(t, err, errors.Unwrap(err))
+			assert.Assert(t, !foundPDB(cluster, spec))
+		})
+	})
+
+	t.Run("str created", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		spec := &cluster.Spec.InstanceSets[0]
+		spec.MinAvailable = initialize.IntOrStringString("50%")
+
+		assert.NilError(t, r.Client.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+
+		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
+		assert.Assert(t, foundPDB(cluster, spec))
+
+		t.Run("deleted", func(t *testing.T) {
+			spec.MinAvailable = initialize.IntOrStringString("0%")
+			err := r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
+			if apierrors.IsConflict(err) {
+				// When running in an existing environment another controller will sometimes update
+				// the object. This leads to an error where the ResourceVersion of the object does
+				// not match what we expect. When we run into this conflict, try to reconcile the
+				// object again.
+				err = r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
+			}
+			assert.NilError(t, err, errors.Unwrap(err))
+			assert.Assert(t, !foundPDB(cluster, spec))
+		})
+
+		t.Run("delete with 00%", func(t *testing.T) {
+			spec.MinAvailable = initialize.IntOrStringString("50%")
+
+			assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
+			assert.Assert(t, foundPDB(cluster, spec))
+
+			t.Run("deleted", func(t *testing.T) {
+				spec.MinAvailable = initialize.IntOrStringString("00%")
+				err := r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
+				if apierrors.IsConflict(err) {
+					// When running in an existing environment another controller will sometimes update
+					// the object. This leads to an error where the ResourceVersion of the object does
+					// not match what we expect. When we run into this conflict, try to reconcile the
+					// object again.
+					err = r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
+				}
+				assert.NilError(t, err, errors.Unwrap(err))
+				assert.Assert(t, !foundPDB(cluster, spec))
+			})
+		})
+	})
+}
+
+func TestCleanupDisruptionBudgets(t *testing.T) {
+	ctx := context.Background()
+
+	env, cc, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	r := &Reconciler{
+		Client: cc,
+		Owner:  client.FieldOwner(t.Name()),
+	}
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	generatePDB := func(
+		t *testing.T,
+		cluster *v1beta1.PostgresCluster,
+		spec *v1beta1.PostgresInstanceSetSpec,
+		minAvailable *intstr.IntOrString,
+	) *policyv1beta1.PodDisruptionBudget {
+		meta := naming.InstanceSet(cluster, spec)
+		meta.Labels = map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: spec.Name,
+		}
+		pdb, err := r.generatePodDisruptionBudget(
+			cluster,
+			meta,
+			minAvailable,
+			naming.ClusterInstanceSet(cluster.Name, spec.Name),
+		)
+		assert.NilError(t, err)
+		return pdb
+	}
+
+	createPDB := func(
+		pdb *policyv1beta1.PodDisruptionBudget,
+	) error {
+		return r.Client.Create(ctx, pdb)
+	}
+
+	foundPDB := func(
+		pdb *policyv1beta1.PodDisruptionBudget,
+	) bool {
+		return !apierrors.IsNotFound(
+			r.Client.Get(ctx, client.ObjectKeyFromObject(pdb),
+				&policyv1beta1.PodDisruptionBudget{}))
+	}
+
+	t.Run("pdbs not found", func(t *testing.T) {
+		cluster := testCluster()
+		assert.NilError(t, r.cleanupPodDisruptionBudgets(ctx, cluster))
+	})
+
+	t.Run("pdbs found", func(t *testing.T) {
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		spec := &cluster.Spec.InstanceSets[0]
+		spec.MinAvailable = initialize.IntOrStringInt32(1)
+
+		assert.NilError(t, r.Client.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+
+		expectedPDB := generatePDB(t, cluster, spec,
+			initialize.IntOrStringInt32(1))
+		assert.NilError(t, createPDB(expectedPDB))
+
+		t.Run("no instances were removed", func(t *testing.T) {
+			assert.Assert(t, foundPDB(expectedPDB))
+			assert.NilError(t, r.cleanupPodDisruptionBudgets(ctx, cluster))
+			assert.Assert(t, foundPDB(expectedPDB))
+		})
+
+		t.Run("cleanup leftover pdb", func(t *testing.T) {
+			leftoverPDB := generatePDB(t, cluster, &v1beta1.PostgresInstanceSetSpec{
+				Name:     "old-instance",
+				Replicas: initialize.Int32(1),
+			}, initialize.IntOrStringInt32(1))
+			assert.NilError(t, createPDB(leftoverPDB))
+
+			assert.Assert(t, foundPDB(expectedPDB))
+			assert.Assert(t, foundPDB(leftoverPDB))
+			assert.NilError(t, r.cleanupPodDisruptionBudgets(ctx, cluster))
+			assert.Assert(t, foundPDB(expectedPDB))
+			assert.Assert(t, !foundPDB(leftoverPDB))
+		})
+	})
+
 }

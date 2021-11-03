@@ -93,12 +93,34 @@ func ClusterInstanceSet(cluster, set string) metav1.LabelSelector {
 	}
 }
 
+// ClusterInstanceSets selects things for sets in a cluster.
+func ClusterInstanceSets(cluster string) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster: cluster,
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{Key: LabelInstanceSet, Operator: metav1.LabelSelectorOpExists},
+		},
+	}
+}
+
 // ClusterPatronis selects things labeled for Patroni in cluster.
 func ClusterPatronis(cluster *v1beta1.PostgresCluster) metav1.LabelSelector {
 	return metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			LabelCluster: cluster.Name,
 			LabelPatroni: PatroniScope(cluster),
+		},
+	}
+}
+
+// ClusterPGBouncerSelector selects things labeled for PGBouncer in cluster.
+func ClusterPGBouncerSelector(cluster *v1beta1.PostgresCluster) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster: cluster.Name,
+			LabelRole:    RolePGBouncer,
 		},
 	}
 }

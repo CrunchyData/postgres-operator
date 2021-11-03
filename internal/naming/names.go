@@ -197,7 +197,8 @@ func ClusterPGAdmin(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 }
 
 // ClusterPGBouncer returns the ObjectMeta necessary to lookup the ConfigMap,
-// Deployment, Secret, or Service that is cluster's PgBouncer proxy.
+// Deployment, Secret, PodDisruptionBudget or Service that is cluster's
+// PgBouncer proxy.
 func ClusterPGBouncer(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
@@ -279,6 +280,16 @@ func InstanceCertificates(instance metav1.Object) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: instance.GetNamespace(),
 		Name:      instance.GetName() + "-certs",
+	}
+}
+
+// InstanceSet returns the ObjectMeta necessary to lookup the objects
+// associated with a single instance set. Includes PodDisruptionBudgets
+func InstanceSet(cluster *v1beta1.PostgresCluster,
+	set *v1beta1.PostgresInstanceSetSpec) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      cluster.Name + "-set-" + set.Name,
+		Namespace: cluster.Namespace,
 	}
 }
 
