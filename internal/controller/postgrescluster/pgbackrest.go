@@ -1018,29 +1018,33 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	opts := append(options, []string{
 		"--stanza=" + pgbackrest.DefaultStanzaName, "--pg1-path=" + pgdata,
 		"--repo=" + regexRepoIndex.FindString(repoName)}...)
-	var deltaOptFound bool
+
+	var deltaOptFound, foundTarget bool
 	for _, opt := range opts {
-		if strings.Contains(opt, "--delta") {
+		switch {
+		case strings.Contains(opt, "--target"):
+			foundTarget = true
+		case strings.Contains(opt, "--delta"):
 			deltaOptFound = true
-			break
 		}
 	}
 	if !deltaOptFound {
 		opts = append(opts, "--delta")
 	}
 
-	var foundTarget, foundTargetAction bool
-	for _, opt := range options {
-		switch {
-		case strings.Contains(opt, "--target"):
-			foundTarget = true
-		case strings.Contains(opt, "--target-action"):
-			foundTargetAction = true
-		}
-	}
-	// typically we'll want to default the target action to promote, but we'll honor any target
-	// action that is explicitly set
-	if foundTarget && !foundTargetAction {
+	// Note on the pgBackRest option `--target-action` in the restore job:
+	// (a) `--target-action` is only allowed if `--target` and `type` are set;
+	// TODO(benjaminjb): ensure that `type` is set as well before accepting `target-action`
+	// (b) our restore job assumes the `hot_standby: on` default, which is true of Postgres >= 10;
+	// (c) pgBackRest passes the `--target-action` setting as `recovery-target-action`
+	// in PostgreSQL versions >=9.5 and as `pause_at_recovery_target` on earlier 9.x versions.
+	// But note, pgBackRest may assume a default action of `pause` and may not pass any setting
+	// - https://pgbackrest.org/command.html#command-restore/category-command/option-type
+	// - https://www.postgresql.org/docs/14/runtime-config-wal.html#RUNTIME-CONFIG-WAL-RECOVERY-TARGET
+	// - https://github.com/pgbackrest/pgbackrest/blob/bb03b3f41942d0b781931092a76877ad309001ef/src/command/restore/restore.c#L1623
+	// - https://github.com/pgbackrest/pgbackrest/issues/1314
+	// - https://github.com/pgbackrest/pgbackrest/issues/987
+	if foundTarget {
 		opts = append(opts, "--target-action=promote")
 	}
 
