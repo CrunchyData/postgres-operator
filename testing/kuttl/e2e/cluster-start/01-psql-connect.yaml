@@ -1,0 +1,10 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+- script: CLUSTER=cluster-start $HOME/postgres-operator/testing/kuttl/script/port-forward.sh
+  background: true
+# this sleep is needed when running in cloud environments to ensure connection-psql.sh
+# will not fail when attempting the port-forward and has suffient time to connect, may 
+# not be needed when running locally
+- script: sleep 10
+- script: CLUSTER=cluster-start $HOME/postgres-operator/testing/kuttl/script/connect-psql.sh
