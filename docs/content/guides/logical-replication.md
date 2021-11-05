@@ -20,8 +20,8 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: {{< param imageCrunchyPostgresCentos >}}
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - dataVolumeClaimSpec:
         accessModes:
@@ -31,7 +31,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: {{< param imageCrunchyPGBackrestCentos >}}
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:
@@ -47,8 +47,8 @@ kind: PostgresCluster
 metadata:
   name: rhino
 spec:
-  image: {{< param imageCrunchyPostgresCentos >}}
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - dataVolumeClaimSpec:
         accessModes:
@@ -58,7 +58,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: {{< param imageCrunchyPGBackrestCentos >}}
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:

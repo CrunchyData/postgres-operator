@@ -72,8 +72,8 @@ kind: PostgresCluster
 metadata:
   name: oldhippo
 spec:
-  image: {{< param imageCrunchyPostgresCentos >}}
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   dataSource:
     volumes:
       pgDataVolume:
@@ -100,7 +100,7 @@ spec:
             storage: 1G
   backups:
     pgbackrest:
-      image: {{< param imageCrunchyPGBackrestCentos >}}
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:

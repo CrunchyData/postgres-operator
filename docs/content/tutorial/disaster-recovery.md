@@ -43,8 +43,8 @@ spec:
     postgresCluster:
       clusterName: hippo
       repoName: repo1
-  image: {{< param imageCrunchyPostgresCentos >}}
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - dataVolumeClaimSpec:
         accessModes:
@@ -54,7 +54,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: {{< param imageCrunchyPGBackrestCentos >}}
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:
@@ -112,8 +112,8 @@ spec:
       options:
       - --type=time
       - --target="2021-06-09 14:15:11-04"
-  image: {{< param imageCrunchyPostgresCentos >}}
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - dataVolumeClaimSpec:
         accessModes:
@@ -123,7 +123,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: {{< param imageCrunchyPGBackrestCentos >}}
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:
@@ -235,8 +235,8 @@ kind: PostgresCluster
 metadata:
   name: hippo-standby
 spec:
-  image: {{< param imageCrunchyPostgresCentos >}}
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - dataVolumeClaimSpec:
         accessModes:
@@ -246,7 +246,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: {{< param imageCrunchyPGBackrestCentos >}}
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         s3:
