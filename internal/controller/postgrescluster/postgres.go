@@ -72,24 +72,24 @@ func (r *Reconciler) generatePostgresUserSecret(
 		intent.Data["verifier"] = existing.Data["verifier"]
 	}
 
-	var password string
+	var updated bool
 	// When password is unset, generate a new one.
 	if len(intent.Data["password"]) == 0 {
-		var err error
-		password, err = util.GeneratePassword(util.DefaultGeneratedPasswordLength)
+		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 		intent.Data["password"] = []byte(password)
+		updated = true
 	}
 	// When a password has been generated or the verifier is empty,
 	// generate a verifier based on the current password.
-	if password != "" || len(intent.Data["verifier"]) == 0 {
+	if updated || len(intent.Data["verifier"]) == 0 {
 		// Generate the SCRAM verifier now and store alongside the plaintext
 		// password so that later reconciles don't generate it repeatedly.
 		// NOTE(cbandy): We don't have a function to compare a plaintext
 		// password to a SCRAM verifier.
-		verifier, err := pgpassword.NewSCRAMPassword(password).Build()
+		verifier, err := pgpassword.NewSCRAMPassword(string(intent.Data["password"])).Build()
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
