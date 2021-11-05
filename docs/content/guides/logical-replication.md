@@ -20,7 +20,7 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
+  image: {{< param imageCrunchyPostgresCentos >}}
   postgresVersion: 13
   instances:
     - dataVolumeClaimSpec:
@@ -31,7 +31,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      image: {{< param imageCrunchyPGBackrestCentos >}}
       repos:
       - name: repo1
         volume:
@@ -47,7 +47,7 @@ kind: PostgresCluster
 metadata:
   name: rhino
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
+  image: {{< param imageCrunchyPostgresCentos >}}
   postgresVersion: 13
   instances:
     - dataVolumeClaimSpec:
@@ -58,7 +58,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      image: {{< param imageCrunchyPGBackrestCentos >}}
       repos:
       - name: repo1
         volume:
