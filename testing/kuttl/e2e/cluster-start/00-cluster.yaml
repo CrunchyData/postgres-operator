@@ -3,7 +3,7 @@ kind: PostgresCluster
 metadata:
   name: cluster-start
 spec:
-  postgresVersion: 13
+  postgresVersion: 14
   instances:
     - name: instance1
       dataVolumeClaimSpec:

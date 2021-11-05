@@ -1,10 +1,26 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestStep
-commands:
-- script: CLUSTER=cluster-start $HOME/postgres-operator/testing/kuttl/script/port-forward.sh
-  background: true
-# this sleep is needed when running in cloud environments to ensure connection-psql.sh
-# will not fail when attempting the port-forward and has suffient time to connect, may 
-# not be needed when running locally
-- script: sleep 10
-- script: CLUSTER=cluster-start $HOME/postgres-operator/testing/kuttl/script/connect-psql.sh
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect
+spec:
+  template:
+    spec:
+      restartPolicy: "OnFailure"
+      containers:
+        - name: psql
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-1
+          command:
+            - "bash"
+            - "-c"
+            - "psql -c 'select version();'"
+          env:
+          - name: PGHOST
+            valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: host } }
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: user } }
+          - name: PGPASSWORD
+            valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: password } }
