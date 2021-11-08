@@ -91,6 +91,8 @@ type PostgresClusterSpec struct {
 	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
+	// Specifies one or more sets of PostgreSQL pods that replicate data for
+	// this cluster.
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
@@ -374,8 +376,16 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
+	// This value goes into the name of an appsv1.StatefulSet and the hostname
+	// of a corev1.Pod. The pattern below is IsDNS1123Label wrapped in "()?" to
+	// accommodate the empty default.
+
+	// Name that associates this set of PostgreSQL pods. This field is optional
+	// when only one instance set is defined. Each instance set in a cluster
+	// must have a unique name.
 	// +optional
 	// +kubebuilder:default=""
+	// +kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$`
 	Name string `json:"name"`
 
 	// Scheduling constraints of a PostgreSQL pod. Changing this value causes
@@ -395,6 +405,7 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 
+	// Number of desired PostgreSQL pods.
 	// +optional
 	// +kubebuilder:default=1
 	// +kubebuilder:validation:Minimum=1
