@@ -92,7 +92,7 @@ PostgresClusterSpec defines the desired state of PostgresCluster
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindex">instances</a></b></td>
         <td>[]object</td>
-        <td></td>
+        <td>Specifies one or more sets of PostgreSQL pods that replicate data for this cluster.</td>
         <td>true</td>
       </tr><tr>
         <td><b>postgresVersion</b></td>
@@ -3649,7 +3649,7 @@ Resource requirements for a sidecar container
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td></td>
+        <td>Name that associates this set of PostgreSQL pods. This field is optional when only one instance set is defined. Each instance set in a cluster must have a unique name.</td>
         <td>false</td>
       </tr><tr>
         <td><b>priorityClassName</b></td>
@@ -3659,7 +3659,7 @@ Resource requirements for a sidecar container
       </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
-        <td></td>
+        <td>Number of desired PostgreSQL pods.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexresources">resources</a></b></td>

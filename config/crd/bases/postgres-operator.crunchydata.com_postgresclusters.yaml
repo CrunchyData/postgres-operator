@@ -3394,6 +3394,8 @@ spec:
                   type: object
                 type: array
               instances:
+                description: Specifies one or more sets of PostgreSQL pods that replicate
+                  data for this cluster.
                 items:
                   properties:
                     affinity:
@@ -4172,6 +4174,10 @@ spec:
                       type: object
                     name:
                       default: ""
+                      description: Name that associates this set of PostgreSQL pods.
+                        This field is optional when only one instance set is defined.
+                        Each instance set in a cluster must have a unique name.
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$
                       type: string
                     priorityClassName:
                       description: 'Priority class name for the PostgreSQL pod. Changing
@@ -4179,6 +4185,7 @@ spec:
                       type: string
                     replicas:
                       default: 1
+                      description: Number of desired PostgreSQL pods.
                       format: int32
                       minimum: 1
                       type: integer
