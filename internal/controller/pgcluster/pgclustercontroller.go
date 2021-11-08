@@ -738,6 +738,38 @@ func updateLabelsForDeployments(c *Controller, cluster *crv1.Pgcluster, labels m
 		).String(),
 	}
 
+	// create the contents of the merge patch for updating the labels on the
+	// Deployments. We're going to create two merge patches: one for just Postgres
+	// instances, and one for every other instance. We're not updating the
+	// template for the Postgres Deployments as that will trigger a restart
+	mergePatchDeployments := kubeapi.NewMergePatch()
+	mergePatchPostgresDeployments := kubeapi.NewMergePatch()
+
+	// first set the patch for labels that need to be removed.
+	for i := range labelsToRemove {
+		mergePatchDeployments.Remove("metadata", "labels", labelsToRemove[i])
+		mergePatchDeployments.Remove("spec", "template", "metadata", "labels", labelsToRemove[i])
+		mergePatchPostgresDeployments.Remove("metadata", "labels", labelsToRemove[i])
+	}
+
+	// now, set the patch for labels that need to be added/updated
+	for k, v := range labels {
+		mergePatchDeployments.Add("metadata", "labels", k)(v)
+		mergePatchDeployments.Add("spec", "template", "metadata", "labels", k)(v)
+		mergePatchPostgresDeployments.Add("metadata", "labels", k)(v)
+	}
+
+	// generate the bytes for the two patches
+	patchDeployments, err := mergePatchDeployments.Bytes()
+	if err != nil {
+		return err
+	}
+
+	patchPostgresDeployments, err := mergePatchPostgresDeployments.Bytes()
+	if err != nil {
+		return err
+	}
+
 	items, err := c.Client.AppsV1().Deployments(cluster.Namespace).List(ctx, options)
 
 	if err != nil {
@@ -747,28 +779,14 @@ func updateLabelsForDeployments(c *Controller, cluster *crv1.Pgcluster, labels m
 	for i := range items.Items {
 		item := &items.Items[i]
 
-		for j := range labelsToRemove {
-			delete(item.ObjectMeta.Labels, labelsToRemove[j])
-
-			// only remove the labels on the template if this is not a Postgres
-			// instance
-			if _, ok := item.ObjectMeta.Labels[config.LABEL_PG_DATABASE]; !ok {
-				delete(item.Spec.Template.ObjectMeta.Labels, labelsToRemove[j])
-			}
+		patch := patchDeployments
+		if _, isPostgresInstance := item.ObjectMeta.Labels[config.LABEL_PG_DATABASE]; isPostgresInstance {
+			patch = patchPostgresDeployments
 		}
 
-		for k, v := range labels {
-			item.ObjectMeta.Labels[k] = v
-
-			// only update the labels on the template if this is not a Postgres
-			// instance
-			if _, ok := item.ObjectMeta.Labels[config.LABEL_PG_DATABASE]; !ok {
-				item.Spec.Template.ObjectMeta.Labels[k] = v
-			}
-		}
-
-		if _, err := c.Client.AppsV1().Deployments(cluster.Namespace).Update(ctx,
-			item, metav1.UpdateOptions{}); err != nil {
+		// and patch!
+		if _, err := c.Client.AppsV1().Deployments(cluster.Namespace).Patch(ctx,
+			item.Name, types.MergePatchType, patch, metav1.PatchOptions{}); err != nil {
 			return err
 		}
 	}
