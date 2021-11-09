@@ -201,6 +201,15 @@ func RestoreCommand(pgdata string, args ...string) []string {
 	// match the values reported by "pg_controldata". Those parameters are also
 	// written to WAL files and may change during recovery. When they increase,
 	// PostgreSQL exits and we reconfigure and restart it.
+	// For PG14, when some parameters from WAL require a restart, the behavior is
+	// to pause unless a restart is requested. For this edge case, we run a CASE
+	// query to check
+	// (a) if the instance is in recovery;
+	// (b) if so, if the WAL replay is paused;
+	// (c) if so, to unpause WAL replay, allowing our expected behavior to resume.
+	// A note on the PostgreSQL code: we cast `pg_catalog.pg_wal_replay_resume()` as text
+	// because that method returns a void (which is a non-NULL but empty result). When
+	// that void is cast as a string, it is an ''
 	// - https://www.postgresql.org/docs/current/hot-standby.html
 	// - https://www.postgresql.org/docs/current/app-pgcontroldata.html
 
@@ -235,7 +244,12 @@ fi
 
 pg_ctl start --silent --wait --options='--config-file=/tmp/postgres.restore.conf'
 fi
-recovery=$(psql -Atc 'SELECT pg_catalog.pg_is_in_recovery()' && sleep 1) || true
+
+recovery=$(psql -Atc "SELECT CASE
+  WHEN NOT pg_catalog.pg_is_in_recovery() THEN false
+  WHEN NOT pg_catalog.pg_is_wal_replay_paused() THEN true
+  ELSE pg_catalog.pg_wal_replay_resume()::text = ''
+END recovery" && sleep 1) || true
 done
 
 pg_ctl stop --silent --wait
