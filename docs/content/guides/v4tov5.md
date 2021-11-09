@@ -142,16 +142,6 @@ Your upgrade is now complete! You should now remove the `spec.dataSource.volumes
 
 This upgrade method allows you to migrate from PGO v4 to PGO v5 by creating a new PGO v5 Postgres cluster using a backup from a PGO v4 cluster. This method allows you to preserve the data in your PGO v4 cluster while you transition to PGO v5. To fully move the data over, you will need to incur downtime and shut down your PGO v4 cluster.
 
-*NOTE*: External WAL volumes **MUST** be enabled for the PGO v4 cluster being upgraded.  Additionally, the backup that will be used to initialize the PGO v5 cluster **MUST** be created with external WAL volumes.
-
-If you did not create your cluster with an external WAL volume (`pgo create cluster --wal-storage-config`), you can do so using the following command. Note that this involves a cluster deletion with the `-keep-data` flag:
-
-```
-pgo delete cluster hippo --keep-data
-# wait for deletion to complete...
-pgo create cluster hippo --wal-storage-config= ...
-```
-
 ### Step 1: Prepare the PGO v4 Cluster for Migration
 
 1\. Ensure you have a recent backup of your cluster. You can do so with the `pgo backup` command, e.g.:
@@ -303,16 +293,6 @@ Your upgrade is now complete! For more information on how to use PGO v5, we reco
 This upgrade method allows you to migrate from PGO v4 to PGO v5 by creating a new PGO v5 Postgres cluster in a "standby" mode, allowing it to mirror the PGO v4 cluster and continue to receive data updates in real time. This has the advantage of being able to fully inspect your PGO v5 Postgres cluster while leaving your PGO v4 cluster up and running, thus minimizing downtime when you cut over. The tradeoff is that you will temporarily use more resources while this migration is occurring.
 
 This method only works if your PGO v4 cluster uses S3 or an S3-compatible storage system, or GCS. For more information on standby clusters, please refer to the [tutorial]({{< relref "tutorial/disaster-recovery.md" >}}#standby-cluster).
-
-*NOTE*: External WAL volumes **MUST** be enabled for the PGO v4 cluster being upgraded.  Additionally, the backup that will be used to initialize the PGO v5 cluster **MUST** be created with external WAL volumes.
-
-If you did not create your cluster with an external WAL volume (`pgo create cluster --wal-storage-config`), you can do so using the following command. Note that this involves a cluster deletion with the `-keep-data` flag:
-
-```
-pgo delete cluster hippo --keep-data
-# wait for deletion to complete...
-pgo create cluster hippo --wal-storage-config= ...
-```
 
 ### Step 1: Migrate to PGO v5
 
