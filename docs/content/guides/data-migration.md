@@ -64,7 +64,7 @@ With the above configuration in place, your existing PVC will be used when creat
 
 Now that we've identified all of our volumes and required directories, we're ready to create our new cluster!
 
-Below is a complete PostgresCluster that includes everything we've talked about. After your `PostgreCluster` is created, you should remove the `spec.dataSource.volumes` section.
+Below is a complete PostgresCluster that includes everything we've talked about. After your `PostgresCluster` is created, you should remove the `spec.dataSource.volumes` section.
 
 ```
 apiVersion: postgres-operator.crunchydata.com/v1beta1
