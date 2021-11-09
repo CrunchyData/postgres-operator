@@ -38,8 +38,8 @@ in the `kustomize/install/bases/kustomization.yaml` file can be modified:
 ```yaml
 images:
 - name: postgres-operator
-  newName: registry.developers.crunchydata.com/crunchydata
-  newTag: ubi8-5.0.3-0
+  newName: {{< param repository >}}
+  newTag: {{< param postgresOperatorTag >}}
 ```
 
 Additionally, please note that the Kustomize install project will also create a namespace for PGO

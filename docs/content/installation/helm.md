@@ -38,8 +38,8 @@ For instance, it might be necessary to customize the image tags that are utilize
 
 ```yaml
 image:
-  repository: registry.developers.crunchydata.com/crunchydata
-  tag: "ubi8-5.0.3-0"
+  repository: {{< param repository >}}
+  tag: "{{< param postgresOperatorTag >}}"
 ```
 
 Please note that the `values.yaml` file is located in `helm/install`.

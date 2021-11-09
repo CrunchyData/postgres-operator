@@ -20,7 +20,7 @@ The only required attribute for adding a PgBouncer connection pooler is to set t
 ```
 proxy:
   pgBouncer:
-    image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:{{< param centosBase >}}-1.15-3
+    image: {{< param imageCrunchyPGBouncer >}}
 ```
 
 (You can also find an example of this in the `kustomize/examples/high-availability` example).

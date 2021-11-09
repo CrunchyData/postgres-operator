@@ -33,8 +33,8 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - name: instance1
       replicas: 2
@@ -46,7 +46,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:
@@ -270,8 +270,8 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - name: instance1
       replicas: 2
@@ -293,7 +293,7 @@ spec:
                   postgres-operator.crunchydata.com/instance-set: instance1
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:
@@ -338,8 +338,8 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - name: instance1
       replicas: 2
@@ -359,7 +359,7 @@ spec:
                 postgres-operator.crunchydata.com/instance-set: instance1
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:
@@ -392,8 +392,8 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - name: instance1
       replicas: 2
@@ -414,7 +414,7 @@ spec:
                 - db
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      image: {{< param imageCrunchyPGBackrest >}}
       repos:
       - name: repo1
         volume:
@@ -492,8 +492,8 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.4-1
-  postgresVersion: 13
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
   instances:
     - name: instance1
       replicas: 5
@@ -512,7 +512,7 @@ spec:
             storage: 1G
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.35-0
+      image: {{< param imageCrunchyPGBackrest >}}
       repoHost:
         topologySpreadConstraints:
         - maxSkew: 1

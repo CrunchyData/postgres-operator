@@ -28,6 +28,13 @@ menushortcutsnewtab = true # set true to open shortcuts links to a new tab/windo
 enableGitInfo = true
 operatorVersion = "5.0.3"
 centosBase = "centos8"
+imageCrunchyPostgres = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.5-0"
+imageCrunchyPGBackrest = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.36-0"
+imageCrunchyPGBouncer = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.16-0"
+imageCrunchyExporter = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.4-0"
+repository = "registry.developers.crunchydata.com/crunchydata"
+postgresOperatorTag = "ubi8-5.0.4-0"
+postgresVersion = "13"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]
