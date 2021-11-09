@@ -1,4 +1,4 @@
-package util
+package upgradecheck
 
 /*
  Copyright 2017 - 2021 Crunchy Data Solutions, Inc.
@@ -17,19 +17,17 @@ package util
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/rest"
+	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
-)
-
-const (
-	clientHeader = "X-Client-Upgrade-State"
 )
 
 var (
@@ -48,13 +46,18 @@ var (
 		Steps:    4,
 	}
 
-	// TODO(benjaminjb): Get real URL
+	// TODO(benjaminjb): Make configurable
 	upgradeCheckURL    = "http://localhost:8080"
 	upgradeCheckPeriod = 24 * time.Hour
 )
 
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
+}
+
+// Creating an interface for cache with WaitForCacheSync to allow easier mocking
+type CacheWithWait interface {
+	WaitForCacheSync(ctx context.Context) bool
 }
 
 func init() {
@@ -71,27 +74,12 @@ func init() {
 	}
 }
 
-// Extensible struct for client upgrade data
-type clientUpgradeData struct {
-	Version string `json:"version"`
-}
-
-func addHeader(req *http.Request, versionString string) (*http.Request, error) {
-	upgradeInfo := &clientUpgradeData{
-		Version: versionString,
-	}
-	marshaled, err := json.Marshal(upgradeInfo)
-	if err == nil {
-		upgradeInfoString := string(marshaled)
-		req.Header.Add(clientHeader, upgradeInfoString)
-	}
-
-	return req, err
-}
-
-func checkForUpgrades(versionString string, backoff wait.Backoff) (message string, err error) {
+func checkForUpgrades(log logr.Logger, versionString string, backoff wait.Backoff,
+	crclient crclient.Client, ctx context.Context, cfg *rest.Config,
+	isOpenShift bool) (message string, err error) {
 	var res *http.Response
 	var bodyBytes []byte
+	var headerPayloadStruct *clientUpgradeData
 
 	// Guard against panics within the checkForUpgrades function to allow the
 	// checkForUpgradesScheduler to reschedule a check
@@ -106,7 +94,11 @@ func checkForUpgrades(versionString string, backoff wait.Backoff) (message strin
 		upgradeCheckURL,
 		nil)
 	if err == nil {
-		req, err = addHeader(req, versionString)
+		// generateHeader always returns some sort of struct, using defaults/nil values
+		// in case some of the checks return errors
+		headerPayloadStruct = generateHeader(ctx, cfg, crclient,
+			log, versionString, isOpenShift)
+		req, err = addHeader(req, headerPayloadStruct)
 	}
 
 	// wait.ExponentialBackoff will retry the func according to the backoff object until
@@ -151,7 +143,11 @@ func checkForUpgrades(versionString string, backoff wait.Backoff) (message strin
 
 // CheckForUpgradesScheduler invokes the check func when the operator starts
 // and then on the given period schedule
-func CheckForUpgradesScheduler(versionString string, channel chan bool) {
+func CheckForUpgradesScheduler(channel chan bool,
+	versionString string, crclient crclient.Client,
+	cfg *rest.Config, isOpenShift bool,
+	cacheClient CacheWithWait,
+) {
 	ctx := context.Background()
 	log := logging.FromContext(ctx)
 	defer func() {
@@ -163,7 +159,20 @@ func CheckForUpgradesScheduler(versionString string, channel chan bool) {
 		}
 	}()
 
-	info, err := checkForUpgrades(versionString, backoff)
+	// Since we pass the client to this function before we start the manager
+	// in cmd/postgres-operator/main.go, we want to make sure cache is synced
+	// before using the client.
+	// If the cache fails to sync, that probably indicates a more serious problem
+	// with the manager starting, so we don't have to worry about restarting or retrying
+	// this process -- simply log and return
+	if synced := cacheClient.WaitForCacheSync(ctx); !synced {
+		log.Error(fmt.Errorf("unable to sync cache for upgrade check"),
+			"cache attempt to WaitForCacheSync returned false")
+		return
+	}
+
+	info, err := checkForUpgrades(log, versionString, backoff,
+		crclient, ctx, cfg, isOpenShift)
 	if err != nil {
 		log.Error(err, err.Error())
 	} else {
@@ -174,7 +183,8 @@ func CheckForUpgradesScheduler(versionString string, channel chan bool) {
 	for {
 		select {
 		case <-ticker.C:
-			info, err = checkForUpgrades(versionString, backoff)
+			info, err = checkForUpgrades(log, versionString, backoff,
+				crclient, ctx, cfg, isOpenShift)
 			if err != nil {
 				log.Error(err, err.Error())
 			} else {

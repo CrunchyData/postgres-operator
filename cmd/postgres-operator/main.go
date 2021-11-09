@@ -29,7 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/util"
+	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 )
 
 var versionString string
@@ -88,7 +88,10 @@ func main() {
 	done := make(chan bool, 1)
 	if upgradeCheckingEnabled {
 		log.Info("upgrade checking enabled")
-		go util.CheckForUpgradesScheduler(versionString, done)
+		go upgradecheck.CheckForUpgradesScheduler(done, versionString,
+			mgr.GetClient(), mgr.GetConfig(), isOpenshift(ctx, mgr.GetConfig()),
+			mgr.GetCache(),
+		)
 	} else {
 		log.Info("upgrade checking disabled")
 	}

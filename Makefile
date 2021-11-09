@@ -106,7 +106,7 @@ deploy:
 	$(PGO_KUBE_CLIENT) apply -k ./config/default
 
 # Deploy the PostgreSQL Operator locally
-deploy-dev: build-postgres-operator
+deploy-dev: build-postgres-operator createnamespaces
 	$(PGO_KUBE_CLIENT) apply -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
@@ -189,18 +189,18 @@ pgo-base-docker: pgo-base-build
 #======== Utility =======
 .PHONY: check
 check:
-	$(GO_TEST) -cover ./...
+	PGO_NAMESPACE="postgres-operator" $(GO_TEST) -cover ./...
 
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
 .PHONY: check-envtest
 check-envtest: hack/tools/envtest
-	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" $(GO_TEST) -count=1 -cover -tags=envtest ./...
+	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -tags=envtest ./...
 
 # - PGO_TEST_TIMEOUT_SCALE=1
 .PHONY: check-envtest-existing
-check-envtest-existing:
+check-envtest-existing: createnamespaces
 	${PGO_KUBE_CLIENT} apply -k ./config/dev
-	USE_EXISTING_CLUSTER=true $(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
+	USE_EXISTING_CLUSTER=true PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
 	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
 # Expects operator to be running

@@ -91,3 +91,10 @@ func PostgresContainerImage(cluster *v1beta1.PostgresCluster) string {
 
 	return defaultFromEnv(image, key)
 }
+
+// PGONamespace returns the namespace where the PGO is running,
+// based on the env var from the DownwardAPI
+// If no env var is found, returns ""
+func PGONamespace() string {
+	return os.Getenv("PGO_NAMESPACE")
+}
