@@ -29,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -47,6 +48,8 @@ const (
 	rollingUpdatePeriod  = 4 * time.Second
 	rollingUpdateTimeout = 60 * time.Second
 )
+
+const rollingUpdateMaxRetries = 5
 
 // RollingUpdate performs a type of "rolling update" on a series of Deployments
 // of a PostgreSQL cluster in an attempt to minimize downtime.
@@ -99,9 +102,8 @@ func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config,
 	for i := range instances[deploymentTypeReplica] {
 		deployment := instances[deploymentTypeReplica][i]
 
-		// Try to apply the update. If it returns an error during the process,
-		// continue on to the next replica
-		if err := applyUpdateToPostgresInstance(clientset, restConfig, cluster, deployment, rescale, updateFunc); err != nil {
+		if err := applyUpdateToPostgresInstanceWithRetries(clientset, restConfig, cluster,
+			deployment, rescale, updateFunc); err != nil {
 			log.Error(err)
 			continue
 		}
@@ -140,9 +142,10 @@ func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config,
 	// as we should have either already promoted a new primary, or this is a
 	// single instance cluster
 	for i := range instances[deploymentTypePrimary] {
-		if err := applyUpdateToPostgresInstance(clientset, restConfig, cluster,
+		if err := applyUpdateToPostgresInstanceWithRetries(clientset, restConfig, cluster,
 			instances[deploymentTypePrimary][i], rescale, updateFunc); err != nil {
 			log.Error(err)
+			continue
 		}
 	}
 
@@ -201,6 +204,52 @@ func applyUpdateToPostgresInstance(clientset kubeapi.Interface, restConfig *rest
 
 		if err := operator.ScaleDeployment(clientset, deployment, replicas); err != nil {
 			log.Warn(err)
+		}
+	}
+
+	return nil
+}
+
+// applyUpdateToPostgresInstanceWithRetries calls the
+// applyUpdateToPostgresInstance function, but allows for it to retry if there
+// are any failures
+func applyUpdateToPostgresInstanceWithRetries(clientset kubeapi.Interface, restConfig *rest.Config,
+	cluster *crv1.Pgcluster, deployment *appsv1.Deployment, rescale bool,
+	updateFunc func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error) error {
+	ctx := context.TODO()
+
+	// Try to apply the update. If it returns an error during the process,
+	// determine if the error is a conflict. If it is, try again for a few
+	// times.
+	//
+	// If not, try again
+	for i := 0; i < rollingUpdateMaxRetries; i++ {
+		err := applyUpdateToPostgresInstance(clientset, restConfig, cluster,
+			deployment, rescale, updateFunc)
+
+		if err == nil {
+			break
+		}
+
+		// if the error is anything other than a conflict, log the error and
+		// continue through the loop
+		if !kerrors.IsConflict(err) {
+			return err
+		}
+
+		// if the error is a conflict and the next time through the loop is the
+		// max number of retries, log that we are giving up.
+		if i+1 >= rollingUpdateMaxRetries {
+			log.Error(err)
+			return fmt.Errorf("abandoning updating instance %s", deployment.Name)
+		}
+
+		// because this is a conflict, reload the deployment
+		// if the reload errors, let's go through the retry loop again with the
+		// same deployment object
+		if d, err := clientset.AppsV1().Deployments(deployment.Namespace).Get(ctx,
+			deployment.Name, metav1.GetOptions{}); err == nil {
+			deployment = d
 		}
 	}
 
