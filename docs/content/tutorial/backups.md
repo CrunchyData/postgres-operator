@@ -111,7 +111,7 @@ s3:
   region: "<YOUR_AWS_S3_REGION>"
 ```
 
-Again, replace these values with the values that match your S3 configuration.
+Again, replace these values with the values that match your S3 configuration. For `endpoint`, only use the domain and, if necessary, the port (e.g. `s3.us-east-2.amazonaws.com`).
 
 Note that `region` is required by S3, as does pgBackRest. If you are using a storage system with a S3 compatibility layer that does not require `region`, you can fill in region with a random value.
 
@@ -161,7 +161,7 @@ repo1-azure-account=<YOUR_AZURE_ACCOUNT>
 repo1-azure-key=<YOUR_AZURE_KEY>
 ```
 
-Replace the values with your AWS S3 credentials and save.
+Replace the values with your Azure credentials and save.
 
 Now, open up `kustomize/azure/postgres.yaml`. In the `azure` section, you will see something similar to:
 
