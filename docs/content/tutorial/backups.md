@@ -82,7 +82,12 @@ In the above example, we assume that the Kubernetes cluster is using a default s
 
 ## Using S3
 
-Setting up backups in S3 requires a few additional modifications to your custom resource spec and the use of a Secret to protect your S3 credentials!
+Setting up backups in S3 requires a few additional modifications to your custom resource spec 
+and either
+- the use of a Secret to protect your S3 credentials, or
+- setting up identity providers in AWS to allow pgBackRest to assume a role with permissions.
+
+### Using S3 Credentials
 
 There is an example for creating a Postgres cluster that uses S3 for backups in the `kustomize/s3` directory in the [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repository. In this directory, there is a file called `s3.conf.example`. Copy this example file to `s3.conf`:
 
@@ -122,6 +127,68 @@ kubectl apply -k kustomize/s3
 ```
 
 Watch your cluster: you will see that your backups and archives are now being stored in S3!
+
+### Using an AWS-integrated identity provider and role
+
+If you deploy PostgresClusters to AWS Elastic Kubernetes Service, you can take advantage of their 
+IAM role integration. When you attach a certain annotation to your PostgresCluster spec, AWS will 
+automatically mount an AWS token and other needed environment variables. These environment 
+variables will then be used by pgBackRest to assume the identity of a role that has permissions 
+to upload to an S3 repository.
+
+This method requires [additional setup in AWS IAM](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
+Follow the procedure there, but skip the third step:
+
+1\. Create an OIDC provider for your EKS cluster
+2\. Create an IAM policy for bucket access and an IAM role with a trust relationship with the 
+OIDC provider in step 1.
+
+The third step is to associate that IAM role with a ServiceAccount, but there's no need to 
+do that manually, as PGO does that for you. First, make a note of the IAM role's `ARN`.
+
+You can then make the following changes to the files in the `kustomize/s3` directory in the 
+[Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repository:
+
+1\. Add the `s3` section to the spec in `kustomize/s3/postgres.yaml` as discussed in the 
+`Using S3 Credentials` section. In addition to that, add the required `eks.amazonaws.com/role-arn` 
+annotation to the PostgresCluster spec using the IAM `ARN` that you noted above.
+
+For instance, given an IAM role with the ARN `arn:aws:iam::123456768901:role/allow_bucket_access`, 
+you would add the following to the PostgresCluster spec:
+
+```
+spec:
+  metadata:
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::123456768901:role/allow_bucket_access"
+```
+
+That `annotations` field will get propagated to the ServiceAccounts that require it automatically.
+
+2\. Copy the `s3.conf.example` file to `s3.conf`:
+
+```
+cp s3.conf.example s3.conf
+```
+
+Update that `kustomize/s3/s3.conf` file so that it looks like this:
+
+```
+[global]
+repo1-s3-key-type=web-id
+```
+
+That `repo1-s3-key-type=web-id` line will tell 
+[pgBackRest(https://pgbackrest.org/configuration.html#section-repository/option-repo-s3-key-type) 
+to use the IAM integration.
+
+With those changes saved, you can deploy your cluster:
+
+```
+kubectl apply -k kustomize/s3
+```
+
+And watch as it spins up and backs up to S3 using pgBackRest's IAM integration.
 
 ## Using Google Cloud Storage (GCS)
 

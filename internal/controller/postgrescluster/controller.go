@@ -217,6 +217,13 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
 	}
+	// reconcile the RBAC resources before reconciling any data source in case
+	// restore/move Job pods require the ServiceAccount to access any data source.
+	// e.g., we are restoring from an S3 source using an IAM for access
+	// - https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts-technical-overview.html
+	if err == nil {
+		instanceServiceAccount, err = r.reconcileRBACResources(ctx, cluster)
+	}
 	// First handle reconciling any data source configured for the PostgresCluster.  This includes
 	// reconciling the data source defined to bootstrap a new cluster, as well as a reconciling
 	// a data source to perform restore in-place and re-bootstrap the cluster.
@@ -253,9 +260,6 @@ func (r *Reconciler) Reconcile(
 	}
 	if err == nil {
 		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster, primaryService)
-	}
-	if err == nil {
-		instanceServiceAccount, err = r.reconcileRBACResources(ctx, cluster)
 	}
 	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
