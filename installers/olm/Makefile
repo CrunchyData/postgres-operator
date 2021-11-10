@@ -2,8 +2,8 @@
 .SUFFIXES:
 
 CONTAINER ?= docker
-PGO_VERSION ?= 5.0.3
-REPLACES_VERSION ?= 5.0.2
+PGO_VERSION ?= 5.0.4
+REPLACES_VERSION ?= 5.0.3
 
 OS_KERNEL  ?= $(shell bash -c 'echo $${1,,}' - `uname -s`)
 OS_MACHINE ?= $(shell bash -c 'echo $${1/x86_/amd}' - `uname -m`)
