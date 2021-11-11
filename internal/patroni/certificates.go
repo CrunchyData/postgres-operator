@@ -30,7 +30,7 @@ const (
 )
 
 // certAuthorities encodes roots in a format suitable for Patroni's TLS verification.
-func certAuthorities(roots ...*pki.Certificate) ([]byte, error) {
+func certAuthorities(roots ...pki.Certificate) ([]byte, error) {
 	var out []byte
 
 	for i := range roots {
@@ -46,7 +46,7 @@ func certAuthorities(roots ...*pki.Certificate) ([]byte, error) {
 
 // certFile encodes cert and key as a combination suitable for
 // Patroni's TLS identification. It can be used by both the client and the server.
-func certFile(key *pki.PrivateKey, cert *pki.Certificate) ([]byte, error) {
+func certFile(key pki.PrivateKey, cert pki.Certificate) ([]byte, error) {
 	var out []byte
 
 	if b, err := key.MarshalText(); err == nil {

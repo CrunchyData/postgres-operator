@@ -1,5 +1,3 @@
-package pki
-
 /*
  Copyright 2021 - 2022 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,340 +13,121 @@ package pki
  limitations under the License.
 */
 
+package pki
+
 import (
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/pem"
-	"errors"
-	"math/big"
-	"reflect"
 	"testing"
-	"time"
+
+	"gotest.tools/v3/assert"
 )
 
-// assertConstructed ensures that private key functions are set.
-func assertConstructed(t testing.TB, key *PrivateKey) {
-	t.Helper()
+func TestCertificateTextMarshaling(t *testing.T) {
+	t.Run("Zero", func(t *testing.T) {
+		// Zero cannot marshal.
+		_, err := Certificate{}.MarshalText()
+		assert.ErrorContains(t, err, "malformed")
 
-	if key.marshalECPrivateKey == nil {
-		t.Fatalf("expected marshalECPrivateKey to be set on private key")
-	}
-}
-
-func TestCertificate(t *testing.T) {
-	// generateCertificate is a helper function that generates a random private key
-	// and ignore any errors. creates a self-signed certificate as we don't need
-	// much
-	generateCertificate := func() *Certificate {
-		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		now := time.Now()
-		template := &x509.Certificate{
-			BasicConstraintsValid: true,
-			KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-			NotBefore:             now,
-			NotAfter:              now.Add(12 * time.Hour),
-			SerialNumber:          big.NewInt(1234),
-			SignatureAlgorithm:    certificateSignatureAlgorithm,
-			Subject: pkix.Name{
-				CommonName: "*",
-			},
-		}
-
-		certificate, _ := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
-
-		return &Certificate{Certificate: certificate}
-	}
-
-	t.Run("MarshalText", func(t *testing.T) {
-		certificate := generateCertificate()
-
-		encoded, err := certificate.MarshalText()
-
-		if err != nil {
-			t.Fatalf("something went horribly wrong")
-		}
-
-		// test that it matches the value of certificate
-		block, _ := pem.Decode(encoded)
-
-		// ensure it's the valid pem type
-		if block.Type != pemCertificateType {
-			t.Fatalf("expected pem type %q actual %q", block.Type, pemCertificateType)
-		}
-
-		// ensure the certificates match
-		if !bytes.Equal(certificate.Certificate, block.Bytes) {
-			t.Fatalf("pem encoded certificate does not match certificate")
-		}
+		// Empty cannot unmarshal.
+		var sink Certificate
+		assert.ErrorContains(t, sink.UnmarshalText(nil), "PEM-encoded")
+		assert.ErrorContains(t, sink.UnmarshalText([]byte{}), "PEM-encoded")
 	})
 
-	t.Run("UnmarshalText", func(t *testing.T) {
-		expected := generateCertificate()
+	root, err := NewRootCertificateAuthority()
+	assert.NilError(t, err)
 
-		t.Run("valid", func(t *testing.T) {
-			// manually marshal the certificate
-			encoded := pem.EncodeToMemory(&pem.Block{Bytes: expected.Certificate, Type: pemCertificateType})
-			c := &Certificate{}
+	cert := root.Certificate
+	txt, err := cert.MarshalText()
+	assert.NilError(t, err)
+	assert.Assert(t, bytes.HasPrefix(txt, []byte("-----BEGIN CERTIFICATE-----\n")), "got %q", txt)
+	assert.Assert(t, bytes.HasSuffix(txt, []byte("\n-----END CERTIFICATE-----\n")), "got %q", txt)
 
-			if err := c.UnmarshalText(encoded); err != nil {
-				t.Fatalf("expected no error, got %s", err.Error())
-			}
+	t.Run("RoundTrip", func(t *testing.T) {
+		var sink Certificate
+		assert.NilError(t, sink.UnmarshalText(txt))
+		assert.DeepEqual(t, cert, sink)
+	})
 
-			if !reflect.DeepEqual(expected.Certificate, c.Certificate) {
-				t.Fatalf("expected encoded certificate to be unmarshaled in identical format")
-			}
-		})
+	t.Run("Bundle", func(t *testing.T) {
+		other, _ := NewRootCertificateAuthority()
+		otherText, err := other.Certificate.MarshalText()
+		assert.NilError(t, err)
 
-		t.Run("invalid", func(t *testing.T) {
-			t.Run("not pem", func(t *testing.T) {
-				c := &Certificate{}
+		bundle := bytes.Join([][]byte{txt, otherText}, nil)
 
-				if err := c.UnmarshalText([]byte("this is very invalid")); !errors.Is(err, ErrInvalidPEM) {
-					t.Fatalf("expected invalid PEM error")
-				}
-			})
+		// Only the first certificate of a bundle is parsed.
+		var sink Certificate
+		assert.NilError(t, sink.UnmarshalText(bundle))
+		assert.DeepEqual(t, cert, sink)
+	})
 
-			t.Run("not a certificate", func(t *testing.T) {
-				encoded := pem.EncodeToMemory(&pem.Block{Bytes: expected.Certificate, Type: "CEREAL"})
-				c := &Certificate{}
+	t.Run("EncodedEmpty", func(t *testing.T) {
+		txt := []byte("-----BEGIN CERTIFICATE-----\n\n-----END CERTIFICATE-----\n")
 
-				if err := c.UnmarshalText(encoded); !errors.Is(err, ErrInvalidPEM) {
-					t.Fatalf("expected invalid PEM error")
-				}
-			})
-		})
+		var sink Certificate
+		assert.ErrorContains(t, sink.UnmarshalText(txt), "malformed")
+	})
+
+	t.Run("EncodedGarbage", func(t *testing.T) {
+		txt := []byte("-----BEGIN CERTIFICATE-----\nasdfasdf\n-----END CERTIFICATE-----\n")
+
+		var sink Certificate
+		assert.ErrorContains(t, sink.UnmarshalText(txt), "malformed")
 	})
 }
 
-func TestNewPrivateKey(t *testing.T) {
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	privateKey := NewPrivateKey(key)
+func TestPrivateKeyTextMarshaling(t *testing.T) {
+	t.Run("Zero", func(t *testing.T) {
+		// Zero cannot marshal.
+		_, err := PrivateKey{}.MarshalText()
+		assert.ErrorContains(t, err, "unknown")
 
-	if reflect.TypeOf(privateKey).String() != "*pki.PrivateKey" {
-		t.Fatalf("expected *pki.PrivateKey in return")
-	}
-}
-
-func TestParseCertificate(t *testing.T) {
-	// generateCertificate is a helper function that generates a random private key
-	// and ignore any errors. creates a self-signed certificate as we don't need
-	// much
-	generateCertificate := func() *Certificate {
-		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		now := time.Now()
-		template := &x509.Certificate{
-			BasicConstraintsValid: true,
-			KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
-			NotBefore:             now,
-			NotAfter:              now.Add(12 * time.Hour),
-			SerialNumber:          big.NewInt(1234),
-			SignatureAlgorithm:    certificateSignatureAlgorithm,
-			Subject: pkix.Name{
-				CommonName: "*",
-			},
-		}
-
-		certificate, _ := x509.CreateCertificate(rand.Reader, template, template, key.Public(), key)
-
-		return &Certificate{Certificate: certificate}
-	}
-
-	t.Run("valid", func(t *testing.T) {
-		expected := generateCertificate()
-		encoded := pem.EncodeToMemory(&pem.Block{Bytes: expected.Certificate, Type: pemCertificateType})
-
-		certificate, err := ParseCertificate(encoded)
-
-		if err != nil {
-			t.Fatalf("expected no error, actual %s", err.Error())
-		}
-
-		if !reflect.DeepEqual(expected.Certificate, certificate.Certificate) {
-			t.Fatalf("expected parsed certificate to match expected")
-		}
+		// Empty cannot unmarshal.
+		var sink PrivateKey
+		assert.ErrorContains(t, sink.UnmarshalText(nil), "PEM-encoded")
+		assert.ErrorContains(t, sink.UnmarshalText([]byte{}), "PEM-encoded")
 	})
 
-	t.Run("invalid", func(t *testing.T) {
-		data := []byte("bad")
+	root, err := NewRootCertificateAuthority()
+	assert.NilError(t, err)
 
-		certificate, err := ParseCertificate(data)
+	key := root.PrivateKey
+	txt, err := key.MarshalText()
+	assert.NilError(t, err)
+	assert.Assert(t, bytes.HasPrefix(txt, []byte("-----BEGIN EC PRIVATE KEY-----\n")), "got %q", txt)
+	assert.Assert(t, bytes.HasSuffix(txt, []byte("\n-----END EC PRIVATE KEY-----\n")), "got %q", txt)
 
-		if err == nil {
-			t.Fatalf("expected error")
-		}
-
-		if certificate != nil {
-			t.Fatalf("expected certificate to be nil")
-		}
-	})
-}
-
-func TestParsePrivateKey(t *testing.T) {
-	// generatePrivateKey is a helper function that generates a random private key
-	// and ignore any errors.
-	generatePrivateKey := func() *PrivateKey {
-		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		privateKey := &PrivateKey{PrivateKey: key}
-		privateKey.marshalECPrivateKey = marshalECPrivateKey
-		return privateKey
-	}
-
-	t.Run("valid", func(t *testing.T) {
-		expected := generatePrivateKey()
-
-		t.Run("plaintext", func(t *testing.T) {
-			b, _ := x509.MarshalECPrivateKey(expected.PrivateKey)
-			encoded := pem.EncodeToMemory(&pem.Block{Bytes: b, Type: pemPrivateKeyType})
-
-			privateKey, err := ParsePrivateKey(encoded)
-
-			if err != nil {
-				t.Fatalf("expected no error, actual %s", err.Error())
-			}
-
-			if !reflect.DeepEqual(expected.PrivateKey, privateKey.PrivateKey) {
-				t.Fatalf("expected parsed key to match expected")
-			}
-
-			// ensure private key functions are set
-			assertConstructed(t, privateKey)
-		})
+	t.Run("RoundTrip", func(t *testing.T) {
+		var sink PrivateKey
+		assert.NilError(t, sink.UnmarshalText(txt))
+		assert.DeepEqual(t, key, sink)
 	})
 
-	t.Run("invalid", func(t *testing.T) {
-		t.Run("plaintext", func(t *testing.T) {
-			data := []byte("bad")
+	t.Run("Bundle", func(t *testing.T) {
+		other, _ := NewRootCertificateAuthority()
+		otherText, err := other.PrivateKey.MarshalText()
+		assert.NilError(t, err)
 
-			privateKey, err := ParsePrivateKey(data)
+		bundle := bytes.Join([][]byte{txt, otherText}, nil)
 
-			if err == nil {
-				t.Fatalf("expected error")
-			}
-
-			if privateKey != nil {
-				t.Fatalf("expected private key to be nil")
-			}
-		})
-	})
-}
-
-func TestPrivateKey(t *testing.T) {
-	// generatePrivateKey is a helper function that generates a random private key
-	// and ignore any errors.
-	generatePrivateKey := func() *PrivateKey {
-		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		privateKey := &PrivateKey{PrivateKey: key}
-		privateKey.marshalECPrivateKey = marshalECPrivateKey
-		return privateKey
-	}
-
-	t.Run("MarshalText", func(t *testing.T) {
-		t.Run("plaintext", func(t *testing.T) {
-			t.Run("valid", func(t *testing.T) {
-				privateKey := generatePrivateKey()
-
-				encoded, err := privateKey.MarshalText()
-
-				if err != nil {
-					t.Fatalf("expected no error, actual: %s", err)
-				}
-
-				block, _ := pem.Decode(encoded)
-
-				if block.Type != pemPrivateKeyType {
-					t.Fatalf("expected pem type %q, actual %q", pemPrivateKeyType, block.Type)
-				}
-
-				decodedKey, err := x509.ParseECPrivateKey(block.Bytes)
-
-				if err != nil {
-					t.Fatalf("expected valid ECDSA key, got error: %s", err.Error())
-				}
-
-				if !privateKey.PrivateKey.Equal(decodedKey) {
-					t.Fatalf("expected private key to match pem encoded key")
-				}
-			})
-
-			t.Run("invalid", func(t *testing.T) {
-				t.Run("ec marshal function not set", func(t *testing.T) {
-					privateKey := generatePrivateKey()
-					privateKey.marshalECPrivateKey = nil
-
-					_, err := privateKey.MarshalText()
-
-					if !errors.Is(err, ErrFunctionNotImplemented) {
-						t.Fatalf("expected function not implemented error")
-					}
-				})
-
-				t.Run("cannot marshal elliptical curve key", func(t *testing.T) {
-					msg := "marshal failed"
-					privateKey := generatePrivateKey()
-					privateKey.marshalECPrivateKey = func(*ecdsa.PrivateKey) ([]byte, error) {
-						return []byte{}, errors.New(msg)
-					}
-
-					_, err := privateKey.MarshalText()
-
-					if err.Error() != msg {
-						t.Fatalf("expected error: %s", msg)
-					}
-				})
-			})
-		})
+		// Only the first key of a bundle is parsed.
+		var sink PrivateKey
+		assert.NilError(t, sink.UnmarshalText(bundle))
+		assert.DeepEqual(t, key, sink)
 	})
 
-	t.Run("UnmarshalText", func(t *testing.T) {
-		expected := generatePrivateKey()
+	t.Run("EncodedEmpty", func(t *testing.T) {
+		txt := []byte("-----BEGIN EC PRIVATE KEY-----\n\n-----END EC PRIVATE KEY-----\n")
 
-		t.Run("plaintext", func(t *testing.T) {
-			t.Run("valid", func(t *testing.T) {
-				// manually marshal the private key
-				b, _ := x509.MarshalECPrivateKey(expected.PrivateKey)
-				encoded := pem.EncodeToMemory(&pem.Block{Bytes: b, Type: pemPrivateKeyType})
-				pk := &PrivateKey{}
+		var sink PrivateKey
+		assert.ErrorContains(t, sink.UnmarshalText(txt), "asn1")
+	})
 
-				if err := pk.UnmarshalText(encoded); err != nil {
-					t.Fatalf("expected no error, got %s", err.Error())
-				}
+	t.Run("EncodedGarbage", func(t *testing.T) {
+		txt := []byte("-----BEGIN EC PRIVATE KEY-----\nasdfasdf\n-----END EC PRIVATE KEY-----\n")
 
-				if !reflect.DeepEqual(expected.PrivateKey, pk.PrivateKey) {
-					t.Fatalf("expected encoded private key to be unmarshaled in identical format")
-				}
-			})
-
-			t.Run("invalid", func(t *testing.T) {
-				t.Run("not pem", func(t *testing.T) {
-					pk := &PrivateKey{}
-
-					if err := pk.UnmarshalText([]byte("this is very invalid")); !errors.Is(err, ErrInvalidPEM) {
-						t.Fatalf("expected invalid PEM error")
-					}
-				})
-
-				t.Run("not labeled private key", func(t *testing.T) {
-					encoded := pem.EncodeToMemory(&pem.Block{Bytes: []byte("bad key"), Type: "CEREAL"})
-					pk := &PrivateKey{}
-
-					if err := pk.UnmarshalText(encoded); !errors.Is(err, ErrInvalidPEM) {
-						t.Fatalf("expected invalid PEM error")
-					}
-				})
-
-				t.Run("not a valid private key", func(t *testing.T) {
-					encoded := pem.EncodeToMemory(&pem.Block{Bytes: []byte("bad key"), Type: pemPrivateKeyType})
-					pk := &PrivateKey{}
-
-					if err := pk.UnmarshalText(encoded); !errors.Is(err, ErrInvalidPEM) {
-						t.Fatalf("expected invalid PEM error")
-					}
-				})
-			})
-		})
+		var sink PrivateKey
+		assert.ErrorContains(t, sink.UnmarshalText(txt), "asn1")
 	})
 }

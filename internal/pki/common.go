@@ -1,5 +1,3 @@
-package pki
-
 /*
  Copyright 2021 - 2022 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +13,8 @@ package pki
  limitations under the License.
 */
 
+package pki
+
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -24,31 +24,23 @@ import (
 	"time"
 )
 
-const (
-	// beforeInterval sets a starting time for the issuance of a certificate,
-	// which is defaulted to an hour earlier
-	beforeInterval = -1 * time.Hour
+// certificateSignatureAlgorithm is ECDSA with SHA-384, the recommended
+// signature algorithm with the P-256 curve.
+const certificateSignatureAlgorithm = x509.ECDSAWithSHA384
 
-	// certificateSignatureAlgorithm sets the default signature algorithm to use
-	// for our certificates, which is the ECDSA with SHA-384. This is the
-	// recommended signature algorithm with the P-256 curve.
-	certificateSignatureAlgorithm = x509.ECDSAWithSHA384
+// currentTime returns the current local time. It is a variable so it can be
+// replaced during testing.
+var currentTime = time.Now
 
-	// serialNumberBits is the number of bits to allow in the generation of a
-	// random serial number
-	serialNumberBits = 128
-)
-
-// generateKey generates a ECDSA keypair using a P-256 curve. This curve is
-// roughly equivalent to a RSA 3072 bit key, but requires less bits to achieve
+// generateKey returns a random ECDSA key using a P-256 curve. This curve is
+// roughly equivalent to an RSA 3072-bit key but requires less bits to achieve
 // the equivalent cryptographic strength. Additionally, ECDSA is FIPS 140-2
 // compliant.
 func generateKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 }
 
-// generateSerialNumber generates a random serial number that can be used for
-// uniquely identifying a certificate
+// generateSerialNumber returns a random 128-bit integer.
 func generateSerialNumber() (*big.Int, error) {
-	return rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), serialNumberBits))
+	return rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 }

@@ -38,8 +38,8 @@ BY8V4Ag=
 -----END CERTIFICATE-----`
 
 func TestCertAuthorities(t *testing.T) {
-	root, err := pki.ParseCertificate([]byte(rootPEM))
-	assert.NilError(t, err)
+	root := pki.Certificate{}
+	assert.NilError(t, root.UnmarshalText([]byte(rootPEM)))
 
 	data, err := certAuthorities(root)
 	assert.NilError(t, err)
@@ -49,11 +49,11 @@ func TestCertAuthorities(t *testing.T) {
 }
 
 func TestCertFile(t *testing.T) {
-	root := pki.NewRootCertificateAuthority()
-	assert.NilError(t, root.Generate())
+	root, err := pki.NewRootCertificateAuthority()
+	assert.NilError(t, err)
 
-	instance := pki.NewLeafCertificate("instance.pod-dns", nil, nil)
-	assert.NilError(t, instance.Generate(root))
+	instance, err := root.GenerateLeafCertificate("instance.pod-dns", nil)
+	assert.NilError(t, err)
 
 	data, err := certFile(instance.PrivateKey, instance.Certificate)
 	assert.NilError(t, err)

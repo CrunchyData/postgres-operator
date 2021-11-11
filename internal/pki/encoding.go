@@ -1,5 +1,3 @@
-package pki
-
 /*
  Copyright 2021 - 2022 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,163 +13,94 @@ package pki
  limitations under the License.
 */
 
+package pki
+
 import (
 	"crypto/ecdsa"
 	"crypto/x509"
+	"encoding"
 	"encoding/pem"
 	"fmt"
 )
 
 const (
-	// pemCertificateType is part of the PEM header that identifies it as a x509
-	// certificate
-	pemCertificateType = "CERTIFICATE"
+	// pemLabelCertificate is the textual encoding label for an X.509 certificate
+	// according to RFC 7468. See https://tools.ietf.org/html/rfc7468.
+	pemLabelCertificate = "CERTIFICATE"
 
-	// pemPrivateKeyType is part of the PEM header that identifies the private
-	// key. This is presently hard coded to ECDSA keys
-	pemPrivateKeyType = "EC PRIVATE KEY"
+	// pemLabelECDSAKey is the textual encoding label for an elliptic curve private key
+	// according to RFC 5915. See https://tools.ietf.org/html/rfc5915.
+	pemLabelECDSAKey = "EC PRIVATE KEY"
 )
 
-// Certificate is a higher-level structure that encapsulates the x509 machinery
-// around a certificate.
-type Certificate struct {
-	// Certificate is the byte encoded value for the certificate
-	Certificate []byte
-}
+var (
+	_ encoding.TextMarshaler   = Certificate{}
+	_ encoding.TextMarshaler   = (*Certificate)(nil)
+	_ encoding.TextUnmarshaler = (*Certificate)(nil)
+)
 
-// MarshalText encodes a x509 certificate into PEM format
-func (c *Certificate) MarshalText() ([]byte, error) {
-	block := &pem.Block{
-		Type:  pemCertificateType,
-		Bytes: c.Certificate,
+// MarshalText returns a PEM encoding of c.
+func (c Certificate) MarshalText() ([]byte, error) {
+	if c.x509 == nil || len(c.x509.Raw) == 0 {
+		_, err := x509.ParseCertificate(nil)
+		return nil, err
 	}
 
-	return pem.EncodeToMemory(block), nil
+	return pem.EncodeToMemory(&pem.Block{
+		Type:  pemLabelCertificate,
+		Bytes: c.x509.Raw,
+	}), nil
 }
 
-// UnmarshalText decodes a x509 certificate from PEM format
+// UnmarshalText populates c from its PEM encoding.
 func (c *Certificate) UnmarshalText(data []byte) error {
 	block, _ := pem.Decode(data)
 
-	// if block is nil, that means it is invalid PEM
-	if block == nil {
-		return fmt.Errorf("%w: malformed data", ErrInvalidPEM)
+	if block == nil || block.Type != pemLabelCertificate {
+		return fmt.Errorf("not a PEM-encoded certificate")
 	}
 
-	// if the type of the PEM block is not a certificate, return an error
-	if block.Type != pemCertificateType {
-		return fmt.Errorf("%w: not type %s", ErrInvalidPEM, pemCertificateType)
+	parsed, err := x509.ParseCertificate(block.Bytes)
+	if err == nil {
+		c.x509 = parsed
 	}
-
-	// everything checks out, at least in terms of PEM. Place encoded bytes in
-	// object
-	c.Certificate = block.Bytes
-
-	return nil
+	return err
 }
 
-// PrivateKey encapsulates functionality around marshalling a ECDSA private key.
-type PrivateKey struct {
-	// PrivateKey is the private key
-	PrivateKey *ecdsa.PrivateKey
+var (
+	_ encoding.TextMarshaler   = PrivateKey{}
+	_ encoding.TextMarshaler   = (*PrivateKey)(nil)
+	_ encoding.TextUnmarshaler = (*PrivateKey)(nil)
+)
 
-	// marshalECPrivateKey turns a ECDSA private key into DER format, which is an
-	// intermediate form prior to turning it into a PEM block
-	marshalECPrivateKey func(*ecdsa.PrivateKey) ([]byte, error)
-}
-
-// MarshalText encodes the private key in PEM format
-func (c *PrivateKey) MarshalText() ([]byte, error) {
-	if c.marshalECPrivateKey == nil {
-		return []byte{}, fmt.Errorf("%w: marshalECPrivateKey", ErrFunctionNotImplemented)
+// MarshalText returns a PEM encoding of k.
+func (k PrivateKey) MarshalText() ([]byte, error) {
+	if k.ecdsa == nil {
+		k.ecdsa = new(ecdsa.PrivateKey)
 	}
 
-	// first, convert private key to DER format
-	der, err := c.marshalECPrivateKey(c.PrivateKey)
-
+	der, err := x509.MarshalECPrivateKey(k.ecdsa)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
-	// encode the private key. in the future, once PKCS #8 encryption is supported
-	// in go, we can encrypt the private key
-	return c.marshalPrivateKey(der), nil
+	return pem.EncodeToMemory(&pem.Block{
+		Type:  pemLabelECDSAKey,
+		Bytes: der,
+	}), nil
 }
 
-// UnmarshalText decodes a private key from PEM format
-func (c *PrivateKey) UnmarshalText(data []byte) error {
+// UnmarshalText populates k from its PEM encoding.
+func (k *PrivateKey) UnmarshalText(data []byte) error {
 	block, _ := pem.Decode(data)
 
-	// if block is nil, that means it is invalid PEM
-	if block == nil {
-		return fmt.Errorf("%w: malformed data", ErrInvalidPEM)
+	if block == nil || block.Type != pemLabelECDSAKey {
+		return fmt.Errorf("not a PEM-encoded private key")
 	}
 
-	// if the type of the PEM block is not private key, return an error
-	if block.Type != pemPrivateKeyType {
-		return fmt.Errorf("%w: not type %s", ErrInvalidPEM, pemPrivateKeyType)
+	key, err := x509.ParseECPrivateKey(block.Bytes)
+	if err == nil {
+		k.ecdsa = key
 	}
-
-	// store the DER; in the future, this is where we would decrypt the DER once
-	// PKCS #8 encryption is supported in Go
-	der := block.Bytes
-
-	// determine if the data actually represents a ECDSA private key
-	privateKey, err := x509.ParseECPrivateKey(der)
-
-	if err != nil {
-		return fmt.Errorf("%w: not a valid ECDSA private key", ErrInvalidPEM)
-	}
-
-	// everything checks out, we have a ECDSA private key
-	c.PrivateKey = privateKey
-
-	return nil
-}
-
-// marshalPrivateKey encodes a private key in PEM format
-func (c *PrivateKey) marshalPrivateKey(der []byte) []byte {
-	block := &pem.Block{
-		Type:  pemPrivateKeyType,
-		Bytes: der,
-	}
-
-	return pem.EncodeToMemory(block)
-}
-
-// NewPrivateKey performs the setup for creating a new private key, including
-// any functions that need to be created
-func NewPrivateKey(key *ecdsa.PrivateKey) *PrivateKey {
-	return &PrivateKey{
-		PrivateKey:          key,
-		marshalECPrivateKey: marshalECPrivateKey,
-	}
-}
-
-// ParseCertificate accepts binary encoded data to parse a certificate
-func ParseCertificate(data []byte) (*Certificate, error) {
-	certificate := &Certificate{}
-
-	if err := certificate.UnmarshalText(data); err != nil {
-		return nil, err
-	}
-
-	return certificate, nil
-}
-
-// ParsePrivateKey accepts binary encoded data attempts to parse a private key
-func ParsePrivateKey(data []byte) (*PrivateKey, error) {
-	privateKey := NewPrivateKey(nil)
-
-	if err := privateKey.UnmarshalText(data); err != nil {
-		return nil, err
-	}
-
-	return privateKey, nil
-}
-
-// marshalECPrivateKey is a wrapper function around the
-// "x509.MarshalECPrivateKey" function that converts a private key
-func marshalECPrivateKey(privateKey *ecdsa.PrivateKey) ([]byte, error) {
-	return x509.MarshalECPrivateKey(privateKey)
+	return err
 }

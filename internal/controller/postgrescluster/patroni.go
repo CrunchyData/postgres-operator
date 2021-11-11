@@ -352,22 +352,17 @@ func (r *Reconciler) reconcileReplicationSecret(
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
-	clientLeaf := pki.NewLeafCertificate("", nil, nil)
-	clientLeaf.DNSNames = []string{postgres.ReplicationUser}
-	clientLeaf.CommonName = clientLeaf.DNSNames[0]
+	clientLeaf := &pki.LeafCertificate{}
+	_ = clientLeaf.Certificate.UnmarshalText(existing.Data[naming.ReplicationCert])
+	_ = clientLeaf.PrivateKey.UnmarshalText(existing.Data[naming.ReplicationPrivateKey])
 
-	if data, ok := existing.Data[naming.ReplicationCert]; err == nil && ok {
-		clientLeaf.Certificate, err = pki.ParseCertificate(data)
-		err = errors.WithStack(err)
-	}
-	if data, ok := existing.Data[naming.ReplicationPrivateKey]; err == nil && ok {
-		clientLeaf.PrivateKey, err = pki.ParsePrivateKey(data)
-		err = errors.WithStack(err)
-	}
+	commonName := postgres.ReplicationUser
+	dnsNames := []string{commonName}
 
 	// if there is an error or the client leaf certificate is bad, generate a new one
 	if err != nil || pki.LeafCertIsBad(ctx, clientLeaf, rootCACert, cluster.Namespace) {
-		err = errors.WithStack(clientLeaf.Generate(rootCACert))
+		clientLeaf, err = rootCACert.GenerateLeafCertificate(commonName, dnsNames)
+		err = errors.WithStack(err)
 	}
 
 	intent := &corev1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}

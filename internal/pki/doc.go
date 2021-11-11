@@ -14,13 +14,11 @@
 */
 
 // Package pki provides types and functions to support the public key
-// infrastructure of the Postgres Operator. It enforces a three layer system
+// infrastructure of the Postgres Operator. It enforces a two layer system
 // of certificate authorities and certificates.
 //
-// NewRootCertificateAuthority().Generate() creates a new root CA.
-// ParseRootCertificateAuthority() loads an existing root certificate and key.
-//
-// NewLeafCertificate().Generate() creates a new leaf certificate.
+// NewRootCertificateAuthority() creates a new root CA.
+// GenerateLeafCertificate() creates a new leaf certificate.
 //
 // Certificate and PrivateKey are primitives that can be marshaled.
 package pki

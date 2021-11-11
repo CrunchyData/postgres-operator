@@ -17,7 +17,6 @@ package pgbackrest
 
 import (
 	"context"
-	"crypto/x509"
 	"fmt"
 	"reflect"
 	"testing"
@@ -829,8 +828,8 @@ func TestSecret(t *testing.T) {
 	existing := new(corev1.Secret)
 	intent := new(corev1.Secret)
 
-	root := pki.NewRootCertificateAuthority()
-	assert.NilError(t, root.Generate())
+	root, err := pki.NewRootCertificateAuthority()
+	assert.NilError(t, err)
 
 	t.Run("NoRepoHost", func(t *testing.T) {
 		// Nothing happens when there is no repository host.
@@ -850,20 +849,14 @@ func TestSecret(t *testing.T) {
 	assert.DeepEqual(t, constant, existing)
 
 	// There is a leaf certificate and private key for the repository host.
-	var err error
-	leaf := pki.NewLeafCertificate("", nil, nil)
-	leaf.Certificate, err = pki.ParseCertificate(intent.Data["pgbackrest-repo-host.crt"])
-	assert.NilError(t, err)
-	leaf.PrivateKey, err = pki.ParsePrivateKey(intent.Data["pgbackrest-repo-host.key"])
-	assert.NilError(t, err)
+	leaf := &pki.LeafCertificate{}
+	assert.NilError(t, leaf.Certificate.UnmarshalText(intent.Data["pgbackrest-repo-host.crt"]))
+	assert.NilError(t, leaf.PrivateKey.UnmarshalText(intent.Data["pgbackrest-repo-host.key"]))
 
 	ok := !pki.LeafCertIsBad(ctx, leaf, root, host.Namespace)
 	assert.Assert(t, ok)
-
-	cert, err := x509.ParseCertificate(leaf.Certificate.Certificate)
-	assert.NilError(t, err)
-	assert.DeepEqual(t, cert.DNSNames, []string{
-		cert.Subject.CommonName,
+	assert.DeepEqual(t, leaf.Certificate.DNSNames(), []string{
+		leaf.Certificate.CommonName(),
 		"some-repo-0.some-domain.ns1.svc",
 		"some-repo-0.some-domain.ns1",
 		"some-repo-0.some-domain",
@@ -877,15 +870,13 @@ func TestSecret(t *testing.T) {
 
 	t.Run("Rotation", func(t *testing.T) {
 		// The leaf certificate is regenerated when the root authority changes.
-		root2 := pki.NewRootCertificateAuthority()
-		assert.NilError(t, root2.Generate())
+		root2, err := pki.NewRootCertificateAuthority()
+		assert.NilError(t, err)
 		assert.NilError(t, Secret(ctx, cluster, host, root2, existing, intent))
 
-		leaf2 := pki.NewLeafCertificate("", nil, nil)
-		leaf2.Certificate, err = pki.ParseCertificate(intent.Data["pgbackrest-repo-host.crt"])
-		assert.NilError(t, err)
-		leaf2.PrivateKey, err = pki.ParsePrivateKey(intent.Data["pgbackrest-repo-host.key"])
-		assert.NilError(t, err)
+		leaf2 := &pki.LeafCertificate{}
+		assert.NilError(t, leaf2.Certificate.UnmarshalText(intent.Data["pgbackrest-repo-host.crt"]))
+		assert.NilError(t, leaf2.PrivateKey.UnmarshalText(intent.Data["pgbackrest-repo-host.key"]))
 
 		ok := !pki.LeafCertIsBad(ctx, leaf2, root2, host.Namespace)
 		assert.Assert(t, ok)

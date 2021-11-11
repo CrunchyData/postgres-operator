@@ -244,8 +244,8 @@ func TestReconcilePGBackRest(t *testing.T) {
 			Type: condition, Reason: "testing", Status: status})
 	}
 
-	rootCA := pki.NewRootCertificateAuthority()
-	assert.NilError(t, rootCA.Generate())
+	rootCA, err := pki.NewRootCertificateAuthority()
+	assert.NilError(t, err)
 
 	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instances, rootCA)
 	if err != nil || result != (reconcile.Result{}) {
@@ -1780,8 +1780,8 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
 	namespace := setupNamespace(t, tClient).Name
-	rootCA := pki.NewRootCertificateAuthority()
-	assert.NilError(t, rootCA.Generate())
+	rootCA, err := pki.NewRootCertificateAuthority()
+	assert.NilError(t, err)
 
 	type testResult struct {
 		configCount, jobCount, pvcCount                         int
@@ -2066,8 +2066,6 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
 	namespace := setupNamespace(t, tClient).Name
-	rootCA := pki.NewRootCertificateAuthority()
-	assert.NilError(t, rootCA.Generate())
 
 	type testResult struct {
 		configCount, jobCount, pvcCount int

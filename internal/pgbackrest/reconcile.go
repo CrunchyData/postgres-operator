@@ -17,7 +17,6 @@ package pgbackrest
 
 import (
 	"context"
-	"crypto/x509"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -496,40 +495,28 @@ func Secret(ctx context.Context,
 		// cluster uses a single client certificate so the "tls-server-auth"
 		// option can stay the same when PostgreSQL instances and repository
 		// hosts are added or removed.
-		leaf := pki.NewLeafCertificate("", nil, nil)
-		leaf.CommonName = clientCommonName(inCluster)
-		leaf.DNSNames = []string{leaf.CommonName}
+		leaf := &pki.LeafCertificate{}
+		_ = leaf.Certificate.UnmarshalText(inSecret.Data[certClientSecretKey])
+		_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certClientPrivateKeySecretKey])
+
+		commonName := clientCommonName(inCluster)
+		dnsNames := []string{commonName}
 
 		if err == nil {
-			var parse error
-			var wrong bool
-			if data, ok := inSecret.Data[certClientSecretKey]; parse == nil && ok {
-				leaf.Certificate, parse = pki.ParseCertificate(data)
-			}
-			if data, ok := inSecret.Data[certClientPrivateKeySecretKey]; parse == nil && ok {
-				leaf.PrivateKey, parse = pki.ParsePrivateKey(data)
-			}
-			if parse == nil && leaf.Certificate != nil {
-				if cert, err := x509.ParseCertificate(leaf.Certificate.Certificate); err != nil {
-					parse = err
-				} else {
-					wrong = cert.Subject.CommonName != leaf.CommonName
-				}
-			}
-
-			if parse != nil || pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) || wrong {
-				err = errors.WithStack(leaf.Generate(inRoot))
+			if pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) || leaf.Certificate.CommonName() != commonName {
+				leaf, err = inRoot.GenerateLeafCertificate(commonName, dnsNames)
+				err = errors.WithStack(err)
 			}
 		}
 
 		if err == nil {
-			outSecret.Data[certAuthoritySecretKey], err = certAuthorities(*inRoot.Certificate)
+			outSecret.Data[certAuthoritySecretKey], err = certAuthorities(inRoot.Certificate)
 		}
 		if err == nil {
-			outSecret.Data[certClientPrivateKeySecretKey], err = certPrivateKey(*leaf.PrivateKey)
+			outSecret.Data[certClientPrivateKeySecretKey], err = certPrivateKey(leaf.PrivateKey)
 		}
 		if err == nil {
-			outSecret.Data[certClientSecretKey], err = certFile(*leaf.Certificate)
+			outSecret.Data[certClientSecretKey], err = certFile(leaf.Certificate)
 		}
 	}
 
@@ -537,28 +524,23 @@ func Secret(ctx context.Context,
 	if inRepoHost != nil {
 		// The client verifies the "pg-host" or "repo-host" option it used is
 		// present in the DNS names of the server certificate.
-		leaf := pki.NewLeafCertificate("", nil, nil)
-		leaf.DNSNames = naming.RepoHostPodDNSNames(ctx, inRepoHost)
-		leaf.CommonName = leaf.DNSNames[0] // FQDN
+		leaf := &pki.LeafCertificate{}
+		_ = leaf.Certificate.UnmarshalText(inSecret.Data[certRepoSecretKey])
+		_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certRepoPrivateKeySecretKey])
 
-		if err == nil {
-			var parse error
-			if data, ok := inSecret.Data[certRepoSecretKey]; parse == nil && ok {
-				leaf.Certificate, parse = pki.ParseCertificate(data)
-			}
-			if data, ok := inSecret.Data[certRepoPrivateKeySecretKey]; parse == nil && ok {
-				leaf.PrivateKey, parse = pki.ParsePrivateKey(data)
-			}
-			if parse != nil || pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
-				err = errors.WithStack(leaf.Generate(inRoot))
-			}
+		dnsNames := naming.RepoHostPodDNSNames(ctx, inRepoHost)
+		commonName := dnsNames[0] // FQDN
+
+		if err == nil && pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
+			leaf, err = inRoot.GenerateLeafCertificate(commonName, dnsNames)
+			err = errors.WithStack(err)
 		}
 
 		if err == nil {
-			outSecret.Data[certRepoPrivateKeySecretKey], err = certPrivateKey(*leaf.PrivateKey)
+			outSecret.Data[certRepoPrivateKeySecretKey], err = certPrivateKey(leaf.PrivateKey)
 		}
 		if err == nil {
-			outSecret.Data[certRepoSecretKey], err = certFile(*leaf.Certificate)
+			outSecret.Data[certRepoSecretKey], err = certFile(leaf.Certificate)
 		}
 	}
 
