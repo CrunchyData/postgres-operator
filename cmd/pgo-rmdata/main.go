@@ -61,8 +61,19 @@ func main() {
 
 	request.Clientset = client
 
+	// create a dynamic client using the same REST config as the typed client
+	dynamicClient, err := kubeapi.NewDynamicClientForConfig(client.Config)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	request.DynamicClient = dynamicClient
+
 	log.Infoln("pgo-rmdata starts")
 	log.Infof("request is %s", request.String())
 
-	Delete(request)
+	// if an error occurs while deleting, then exit with exit code 1
+	if err := Delete(request); err != nil {
+		log.Fatalln(err)
+	}
 }

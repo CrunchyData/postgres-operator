@@ -16,6 +16,7 @@ package kubeapi
 */
 
 import (
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -100,4 +101,10 @@ func NewClientForConfig(config *rest.Config) (*Client, error) {
 	}
 
 	return client, err
+}
+
+// NewDynamicClientForConfig returns a dynamic client that is created and configured using the
+// provided REST configuration.
+func NewDynamicClientForConfig(config *rest.Config) (dynamic.Interface, error) {
+	return dynamic.NewForConfig(config)
 }

@@ -19,15 +19,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/util"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	log "github.com/sirupsen/logrus"
 	kerror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -46,9 +54,12 @@ const (
 	syncConfigMapSuffix     = "sync"
 )
 
-func Delete(request Request) {
+func Delete(request Request) error {
 	ctx := context.TODO()
 	log.Infof("rmdata.Process %v", request)
+
+	// defines the number of PVCs & Secrets that should be retained
+	retainPVCCount, retainSecretCount := 0, 0
 
 	// the case of 'pgo scaledown'
 	if request.IsReplica {
@@ -69,7 +80,7 @@ func Delete(request Request) {
 			// is no longer a primary, and has become a replica.
 			if !(request.ReplicaName == request.ClusterPGHAScope && kerror.IsNotFound(err)) {
 				log.Error(err)
-				return
+				return nil
 			}
 			log.Debug("replica name matches PGHA scope, assuming scale down of original primary" +
 				"and therefore ignoring error attempting to delete nonexistent pgreplica")
@@ -85,7 +96,7 @@ func Delete(request Request) {
 		}
 
 		// scale down is its own use case so we leave when done
-		return
+		return nil
 	}
 
 	if request.IsBackup {
@@ -96,30 +107,29 @@ func Delete(request Request) {
 		removeLogicalBackupPVCs(request)
 		// this is the special case of removing an ad hoc backup removal, so we can
 		// exit here
-		return
+		return nil
 	}
 
 	log.Info("rmdata.Process cluster use case")
-
-	// attempt to delete the pgcluster object if it has not already been deleted.
-	// quite possibly, we are here because one deleted the pgcluster object
-	// already, so this step is optional
-	if _, err := request.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Get(
-		ctx, request.ClusterName, metav1.GetOptions{}); err == nil {
-		if err := request.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Delete(
-			ctx, request.ClusterName, metav1.DeleteOptions{}); err != nil {
-			log.Error(err)
-		}
-	}
 
 	// clear out any of the scheduled jobs that may occur, as this would be
 	// executing asynchronously against any stale data
 	removeSchedules(request)
 
-	// the user had done something like:
-	// pgo delete cluster mycluster --delete-data
+	// Now remove any cluster secrets other that those for pgBackRest.
+	// Note that these secrets are only removed when Postgres data is also being deleted.
+	secretSelector := fmt.Sprintf("%s=%s,%s!=%s", config.LABEL_PG_CLUSTER, request.ClusterName,
+		config.LABEL_PGO_BACKREST_REPO, config.LABEL_TRUE)
+	secrets, err := request.Clientset.
+		CoreV1().Secrets(request.Namespace).
+		List(ctx, metav1.ListOptions{LabelSelector: secretSelector})
+	if err != nil {
+		log.Error(err)
+	}
 	if request.RemoveData {
-		removeUserSecrets(request)
+		removeUserSecrets(request, secrets.Items)
+	} else {
+		retainSecretCount += len(secrets.Items)
 	}
 
 	// remove the cluster Deployments
@@ -129,15 +139,17 @@ func Delete(request Request) {
 	removePgreplicas(request)
 	removePgtasks(request)
 	removeClusterConfigmaps(request)
-	// removeClusterJobs(request)
-	if request.RemoveData {
-		if pvcList, err := getInstancePVCs(request); err != nil {
-			log.Error(err)
-		} else {
-			log.Debugf("rmdata pvc list: [%v]", pvcList)
 
-			removePVCs(pvcList, request)
-		}
+	pvcList, err := getInstancePVCs(request)
+	if err != nil {
+		log.Error(err)
+	}
+	if request.RemoveData {
+		log.Debugf("rmdata pvc list: [%v]", pvcList)
+
+		removePVCs(pvcList, request)
+	} else {
+		retainPVCCount += len(pvcList)
 	}
 
 	// backups have to be the last thing we remove. We want to ensure that all
@@ -158,9 +170,122 @@ func Delete(request Request) {
 	if request.RemoveBackup {
 		removeBackupSecrets(request)
 		removeAllBackupPVCs(request)
+	} else {
+		retainPVCCount++
+		retainSecretCount++
 	}
 	// remove the bootstrap secret if present
 	removeBootstrapSecret(request)
+
+	// Do not perform a final check if DISABLE_FINAL_CHECK is set to "true"
+	if disable, _ := strconv.ParseBool(os.Getenv("DISABLE_FINAL_CHECK")); !disable {
+		log.Info("Now verifying that all resources have been successfully removed")
+		// verify that all resources have been remvoed
+		if err := verifyResourcesDeleted(request, retainPVCCount,
+			retainSecretCount); err != nil {
+			return err
+		}
+	} else {
+		log.Info("Final resource check disabled")
+	}
+
+	// attempt to delete the pgcluster object if it has not already been deleted.
+	// quite possibly, we are here because one deleted the pgcluster object
+	// already, so this step is optional
+	// please note that the pgcluster is deleted last to ensure all resources are
+	// successfully removed prior to deleting the pgcluster
+	if _, err := request.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Get(
+		ctx, request.ClusterName, metav1.GetOptions{}); err == nil {
+		if err := request.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Delete(
+			ctx, request.ClusterName, metav1.DeleteOptions{}); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// verifyResourcesDeleted performs a final check of the environment to verify that any resources
+// expected to be deleted using the rmdata process have indeed been deleted from the environment.
+func verifyResourcesDeleted(request Request, retainPVCCount, retainSecretCount int) error {
+	ctx := context.TODO()
+
+	// we check for the all of resources using the "pg-cluster" label
+	pgClusterSelector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
+	// we check for configMaps created by Patroni using the "crunchy-pgha-scope" label
+	pgHAScopeSelector := config.LABEL_PGHA_SCOPE + "=" + request.ClusterName
+
+	// create slice containing the various resources we want to check for
+	pgClusterResources := make([]schema.GroupVersionResource, 9)
+	position := 0
+	addResource := func(resource schema.GroupVersionResource) {
+		pgClusterResources[position] = resource
+		position++
+	}
+	addResource(appsv1.SchemeGroupVersion.WithResource("deployments"))
+	addResource(batchv1.SchemeGroupVersion.WithResource("jobs"))
+	addResource(corev1.SchemeGroupVersion.WithResource("configmaps"))
+	addResource(corev1.SchemeGroupVersion.WithResource("persistentvolumeclaims"))
+	addResource(corev1.SchemeGroupVersion.WithResource("pods"))
+	addResource(corev1.SchemeGroupVersion.WithResource("secrets"))
+	addResource(corev1.SchemeGroupVersion.WithResource("services"))
+	addResource(crv1.SchemeGroupVersion.WithResource("pgreplicas"))
+	addResource(crv1.SchemeGroupVersion.WithResource("pgtasks"))
+
+	for _, resource := range pgClusterResources {
+
+		// The number of resources expected to be found for a specific resource.  Typically we
+		// expect to find zero resources, but depending on data retention settings, this value
+		// might need to be adjusted.
+		expectedResourceCount := 0
+
+		// Depending on whether or not data and/or backups are being retained, we might expect to
+		// find PVCs and Secrets in the environment on a successful deletion.  Therefore, adjust
+		// the number of expected resources based on the number of PVCs or Secrets we expect to
+		// find.
+		if resource.Resource == "persistentvolumeclaims" {
+			expectedResourceCount = retainPVCCount
+		} else if resource.Resource == "secrets" {
+			expectedResourceCount = retainSecretCount
+		}
+
+		// filter out the rmdata job
+		if resource.Resource == "jobs" {
+			pgClusterSelector += fmt.Sprintf(",%s!=%s", config.LABEL_RMDATA, config.LABEL_TRUE)
+		}
+
+		resources, err := request.DynamicClient.Resource(resource).Namespace(request.Namespace).
+			List(ctx, metav1.ListOptions{LabelSelector: pgClusterSelector})
+		if err != nil {
+			// if we cannot successfully list resources then we also cannot verify all resources
+			// have been deleted, so an error is returned
+			log.Error(err)
+			return err
+		}
+
+		// if more resources are found than expected, return an error
+		if len(resources.Items) > expectedResourceCount {
+			return fmt.Errorf("%s resources still exist", resources.GetKind())
+		}
+
+		// ConfigMaps created by patroni need to be checked using the a selector for
+		// 'crunchy-pgha-scope'.  Therefore look for additional ConfigMaps using this
+		// label.  If an error occurs when attempting to list ConfigMaps, or if any
+		// more ConfigMaps with this label are found, then return an error.
+		if resource.Resource == "configmaps" {
+			resources, err := request.DynamicClient.Resource(resource).Namespace(request.Namespace).
+				List(ctx, metav1.ListOptions{LabelSelector: pgHAScopeSelector})
+			if err != nil {
+				log.Error(err)
+				return err
+			}
+			if len(resources.Items) > 0 {
+				return fmt.Errorf("%s resources still exist", resources.GetKind())
+			}
+		}
+	}
+
+	return nil
 }
 
 // removeBackRestRepo removes the pgBackRest repo that is associated with the
@@ -178,6 +303,16 @@ func removeBackrestRepo(request Request) {
 		Delete(ctx, deploymentName, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		log.Error(err)
+	}
+
+	if err := wait.Poll(time.Second, time.Minute, func() (bool, error) {
+		if _, err := request.Clientset.AppsV1().Deployments(request.Namespace).
+			Get(ctx, deploymentName, metav1.GetOptions{}); err == nil || !kerror.IsNotFound(err) {
+			return false, nil
+		}
+		return true, nil
+	}); err != nil {
+		log.Error("could not terminate the pgBackRest repo deployment")
 	}
 
 	// delete the service for the backrest repo
@@ -359,20 +494,10 @@ func removeReplica(request Request) error {
 	return nil
 }
 
-func removeUserSecrets(request Request) {
+func removeUserSecrets(request Request, secrets []corev1.Secret) {
 	ctx := context.TODO()
-	// get all that match pg-cluster=db
-	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
-	secrets, err := request.Clientset.
-		CoreV1().Secrets(request.Namespace).
-		List(ctx, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	for _, s := range secrets.Items {
+	for _, s := range secrets {
 		if s.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "" {
 			err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(ctx, s.ObjectMeta.Name, metav1.DeleteOptions{})
 			if err != nil {
@@ -389,9 +514,22 @@ func removeAddons(request Request) {
 	pgbouncerDepName := request.ClusterName + "-pgbouncer"
 
 	deletePropagation := metav1.DeletePropagationForeground
-	_ = request.Clientset.
-		AppsV1().Deployments(request.Namespace).
-		Delete(ctx, pgbouncerDepName, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+	if err := request.Clientset.AppsV1().Deployments(request.Namespace).
+		Delete(ctx, pgbouncerDepName,
+			metav1.DeleteOptions{PropagationPolicy: &deletePropagation}); err != nil {
+		log.Error(err)
+		return
+	}
+
+	if err := wait.Poll(time.Second, time.Minute, func() (bool, error) {
+		if _, err := request.Clientset.AppsV1().Deployments(request.Namespace).
+			Get(ctx, pgbouncerDepName, metav1.GetOptions{}); err == nil || !kerror.IsNotFound(err) {
+			return false, nil
+		}
+		return true, nil
+	}); err != nil {
+		log.Error("could not terminate the pgBouncer deployment")
+	}
 
 	// delete the service name=<clustename>-pgbouncer
 
@@ -577,6 +715,18 @@ func removePVCs(pvcList []string, request Request) {
 		if err != nil {
 			log.Error(err)
 		}
+	}
+
+	if err := wait.Poll(time.Second, time.Minute, func() (bool, error) {
+		for _, pvcName := range pvcList {
+			if _, err := request.Clientset.AppsV1().Deployments(request.Namespace).
+				Get(ctx, pvcName, metav1.GetOptions{}); err == nil || !kerror.IsNotFound(err) {
+				return false, nil
+			}
+		}
+		return true, nil
+	}); err != nil {
+		log.Error("could not remove the logical backup pvcs")
 	}
 }
 
