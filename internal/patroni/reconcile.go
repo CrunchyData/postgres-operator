@@ -74,8 +74,8 @@ func InstanceConfigMap(ctx context.Context,
 
 // InstanceCertificates populates the shared Secret with certificates needed to run Patroni.
 func InstanceCertificates(ctx context.Context,
-	inRoot *pki.Certificate, inDNS *pki.Certificate,
-	inDNSKey *pki.PrivateKey, outInstanceCertificates *corev1.Secret,
+	inRoot pki.Certificate, inDNS pki.Certificate,
+	inDNSKey pki.PrivateKey, outInstanceCertificates *corev1.Secret,
 ) error {
 	initialize.ByteMap(&outInstanceCertificates.Data)
 

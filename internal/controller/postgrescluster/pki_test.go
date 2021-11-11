@@ -19,7 +19,6 @@ package postgrescluster
 
 import (
 	"context"
-	"crypto/x509"
 	"fmt"
 	"os"
 	"reflect"
@@ -145,7 +144,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// assert returned certificate matches the one created earlier
-			assert.DeepEqual(t, fromSecret, initialRoot.Certificate)
+			assert.DeepEqual(t, *fromSecret, initialRoot.Certificate)
 		})
 
 		t.Run("root certificate changes", func(t *testing.T) {
@@ -166,10 +165,10 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// check that the cert from the secret does not equal the initial certificate
-			assert.Assert(t, !fromSecret.Equal(*initialRoot.Certificate))
+			assert.Assert(t, !fromSecret.Equal(initialRoot.Certificate))
 
 			// check that the returned cert matches the cert from the secret
-			assert.DeepEqual(t, fromSecret, returnedRoot.Certificate)
+			assert.DeepEqual(t, *fromSecret, returnedRoot.Certificate)
 		})
 
 	})
@@ -201,13 +200,11 @@ func TestReconcileCerts(t *testing.T) {
 			initialLeafCert, err := r.instanceCertificate(ctx, instance, existing, intent, initialRoot)
 			assert.NilError(t, err)
 
-			certificate, err := pki.ParseCertificate(intent.Data["dns.crt"])
-			assert.NilError(t, err)
-			privateKey, err := pki.ParsePrivateKey(intent.Data["dns.key"])
-			assert.NilError(t, err)
+			fromSecret := &pki.LeafCertificate{}
+			assert.NilError(t, fromSecret.Certificate.UnmarshalText(intent.Data["dns.crt"]))
+			assert.NilError(t, fromSecret.PrivateKey.UnmarshalText(intent.Data["dns.key"]))
 
-			assert.DeepEqual(t, certificate, initialLeafCert.Certificate)
-			assert.DeepEqual(t, privateKey, initialLeafCert.PrivateKey)
+			assert.DeepEqual(t, fromSecret, initialLeafCert)
 		})
 
 		t.Run("check that the leaf certs update when root changes", func(t *testing.T) {
@@ -235,14 +232,14 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// assert old leaf cert does not match the newly reconciled one
-			assert.Assert(t, !initialLeaf.Certificate.Equal(*newLeaf.Certificate))
+			assert.Assert(t, !initialLeaf.Certificate.Equal(newLeaf.Certificate))
 
 			// 'reconcile' the certificate when the secret does not change. The returned leaf certificate should not change
 			newLeaf2, err := r.instanceCertificate(ctx, instance, intent, intent, newRootCert)
 			assert.NilError(t, err)
 
 			// check that the leaf cert did not change after another reconciliation
-			assert.DeepEqual(t, newLeaf2.Certificate, newLeaf.Certificate)
+			assert.DeepEqual(t, newLeaf2, newLeaf)
 
 		})
 
@@ -364,17 +361,16 @@ func TestReconcileCerts(t *testing.T) {
 
 			assert.Assert(t, !reflect.DeepEqual(initialClusterCertSecret, newClusterCertSecret))
 
-			pkiCert, err := pki.ParseCertificate(newClusterCertSecret.Data["tls.crt"])
-			assert.NilError(t, err)
+			leaf := &pki.LeafCertificate{}
+			assert.NilError(t, leaf.Certificate.UnmarshalText(newClusterCertSecret.Data["tls.crt"]))
+			assert.NilError(t, leaf.PrivateKey.UnmarshalText(newClusterCertSecret.Data["tls.key"]))
 
-			x509Cert, err := x509.ParseCertificate(pkiCert.Certificate)
-			assert.NilError(t, err)
 			assert.Assert(t,
-				strings.HasPrefix(x509Cert.Subject.CommonName, "the-primary."+namespace+".svc."),
-				"got %q", x509Cert.Subject.CommonName)
+				strings.HasPrefix(leaf.Certificate.CommonName(), "the-primary."+namespace+".svc."),
+				"got %q", leaf.Certificate.CommonName())
 
-			if assert.Check(t, len(x509Cert.DNSNames) > 1) {
-				assert.DeepEqual(t, x509Cert.DNSNames[1:], []string{
+			if dnsNames := leaf.Certificate.DNSNames(); assert.Check(t, len(dnsNames) > 1) {
+				assert.DeepEqual(t, dnsNames[1:], []string{
 					"the-primary." + namespace + ".svc",
 					"the-primary." + namespace,
 					"the-primary",
@@ -404,9 +400,6 @@ func getCertFromSecret(
 	}
 
 	// parse the cert from binary encoded data
-	if fromSecret, err := pki.ParseCertificate(secretCRT); fromSecret == nil || err != nil {
-		return nil, fmt.Errorf("error parsing %s", dataKey)
-	} else {
-		return fromSecret, nil
-	}
+	fromSecret := &pki.Certificate{}
+	return fromSecret, fromSecret.UnmarshalText(secretCRT)
 }

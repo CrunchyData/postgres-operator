@@ -1363,7 +1363,7 @@ func (r *Reconciler) reconcileInstanceCertificates(
 	}
 	if err == nil {
 		err = pgbackrest.InstanceCertificates(ctx, cluster,
-			*root.Certificate, *leafCert.Certificate, *leafCert.PrivateKey,
+			root.Certificate, leafCert.Certificate, leafCert.PrivateKey,
 			instanceCerts)
 	}
 	if err == nil {

@@ -55,20 +55,14 @@ func (r *Reconciler) reconcileRootCertificate(
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
-	root := pki.NewRootCertificateAuthority()
-
-	if data, ok := existing.Data[keyCertificate]; err == nil && ok {
-		root.Certificate, err = pki.ParseCertificate(data)
-		err = errors.WithStack(err)
-	}
-	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
-		root.PrivateKey, err = pki.ParsePrivateKey(data)
-		err = errors.WithStack(err)
-	}
+	root := &pki.RootCertificateAuthority{}
+	_ = root.Certificate.UnmarshalText(existing.Data[keyCertificate])
+	_ = root.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
 
 	// if there is an error or the root CA is bad, generate a new one
 	if err != nil || pki.RootCAIsBad(root) {
-		err = errors.WithStack(root.Generate())
+		root, err = pki.NewRootCertificateAuthority()
+		err = errors.WithStack(err)
 	}
 
 	intent := &corev1.Secret{}
@@ -133,22 +127,17 @@ func (r *Reconciler) reconcileClusterCertificate(
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
-	leaf := pki.NewLeafCertificate("", nil, nil)
-	leaf.DNSNames = naming.ServiceDNSNames(ctx, primaryService)
-	leaf.CommonName = leaf.DNSNames[0] // FQDN
+	leaf := &pki.LeafCertificate{}
+	_ = leaf.Certificate.UnmarshalText(existing.Data[keyCertificate])
+	_ = leaf.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
 
-	if data, ok := existing.Data[keyCertificate]; err == nil && ok {
-		leaf.Certificate, err = pki.ParseCertificate(data)
-		err = errors.WithStack(err)
-	}
-	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
-		leaf.PrivateKey, err = pki.ParsePrivateKey(data)
-		err = errors.WithStack(err)
-	}
+	dnsNames := naming.ServiceDNSNames(ctx, primaryService)
+	dnsFQDN := dnsNames[0]
 
 	// if there is an error or the leaf certificate is bad, generate a new one
 	if err != nil || pki.LeafCertIsBad(ctx, leaf, rootCACert, cluster.Namespace) {
-		err = errors.WithStack(leaf.Generate(rootCACert))
+		leaf, err = rootCACert.GenerateLeafCertificate(dnsFQDN, dnsNames)
+		err = errors.WithStack(err)
 	}
 
 	intent := &corev1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
@@ -212,24 +201,19 @@ func (*Reconciler) instanceCertificate(
 	var err error
 	const keyCertificate, keyPrivateKey = "dns.crt", "dns.key"
 
+	leaf := &pki.LeafCertificate{}
+	_ = leaf.Certificate.UnmarshalText(existing.Data[keyCertificate])
+	_ = leaf.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
+
 	// RFC 2818 states that the certificate DNS names must be used to verify
 	// HTTPS identity.
-	leaf := pki.NewLeafCertificate("", nil, nil)
-	leaf.DNSNames = naming.InstancePodDNSNames(ctx, instance)
-	leaf.CommonName = leaf.DNSNames[0] // FQDN
-
-	if data, ok := existing.Data[keyCertificate]; err == nil && ok {
-		leaf.Certificate, err = pki.ParseCertificate(data)
-		err = errors.WithStack(err)
-	}
-	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
-		leaf.PrivateKey, err = pki.ParsePrivateKey(data)
-		err = errors.WithStack(err)
-	}
+	dnsNames := naming.InstancePodDNSNames(ctx, instance)
+	dnsFQDN := dnsNames[0]
 
 	// if there is an error or the leaf certificate is bad, generate a new one
 	if err != nil || pki.LeafCertIsBad(ctx, leaf, rootCACert, instance.Namespace) {
-		err = errors.WithStack(leaf.Generate(rootCACert))
+		leaf, err = rootCACert.GenerateLeafCertificate(dnsFQDN, dnsNames)
+		err = errors.WithStack(err)
 	}
 
 	if err == nil {

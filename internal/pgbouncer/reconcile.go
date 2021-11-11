@@ -82,21 +82,16 @@ func Secret(ctx context.Context,
 	}
 
 	if inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret == nil {
-		leaf := pki.NewLeafCertificate("", nil, nil)
-		leaf.DNSNames = naming.ServiceDNSNames(ctx, inService)
-		leaf.CommonName = leaf.DNSNames[0] // FQDN
+		leaf := &pki.LeafCertificate{}
+		_ = leaf.Certificate.UnmarshalText(inSecret.Data[certFrontendSecretKey])
+		_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certFrontendPrivateKeySecretKey])
 
-		if err == nil {
-			var parse error
-			if data, ok := inSecret.Data[certFrontendSecretKey]; parse == nil && ok {
-				leaf.Certificate, parse = pki.ParseCertificate(data)
-			}
-			if data, ok := inSecret.Data[certFrontendPrivateKeySecretKey]; parse == nil && ok {
-				leaf.PrivateKey, parse = pki.ParsePrivateKey(data)
-			}
-			if parse != nil || pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
-				err = errors.WithStack(leaf.Generate(inRoot))
-			}
+		dnsNames := naming.ServiceDNSNames(ctx, inService)
+		dnsFQDN := dnsNames[0]
+
+		if err == nil && pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
+			leaf, err = inRoot.GenerateLeafCertificate(dnsFQDN, dnsNames)
+			err = errors.WithStack(err)
 		}
 
 		if err == nil {

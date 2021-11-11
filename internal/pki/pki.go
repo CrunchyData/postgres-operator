@@ -15,17 +15,139 @@
 
 package pki
 
-import "bytes"
+import (
+	"crypto/ecdsa"
+	"crypto/x509"
+	"math/big"
+)
+
+// Certificate represents an X.509 certificate that conforms to the Internet
+// PKI Profile, RFC 5280.
+type Certificate struct{ x509 *x509.Certificate }
+
+// PrivateKey represents the private key of a Certificate.
+type PrivateKey struct{ ecdsa *ecdsa.PrivateKey }
 
 // Equal reports whether c and other have the same value.
 func (c Certificate) Equal(other Certificate) bool {
-	return bytes.Equal(c.Certificate, other.Certificate)
+	return c.x509.Equal(other.x509)
+}
+
+// CommonName returns a copy of the certificate common name (ASN.1 OID 2.5.4.3).
+func (c Certificate) CommonName() string {
+	if c.x509 == nil {
+		return ""
+	}
+	return c.x509.Subject.CommonName
+}
+
+// DNSNames returns a copy of the certificate subject alternative names
+// (ASN.1 OID 2.5.29.17) that are DNS names.
+func (c Certificate) DNSNames() []string {
+	if c.x509 == nil || len(c.x509.DNSNames) == 0 {
+		return nil
+	}
+	return append([]string{}, c.x509.DNSNames...)
 }
 
 // Equal reports whether k and other have the same value.
 func (k PrivateKey) Equal(other PrivateKey) bool {
-	if k.PrivateKey == nil || other.PrivateKey == nil {
-		return k.PrivateKey == other.PrivateKey
+	if k.ecdsa == nil || other.ecdsa == nil {
+		return k.ecdsa == other.ecdsa
 	}
-	return k.PrivateKey.Equal(other.PrivateKey)
+	return k.ecdsa.Equal(other.ecdsa)
+}
+
+// RootIsValid checks if root is valid according to this package's policies.
+func RootIsValid(root *RootCertificateAuthority) bool {
+	if root == nil || root.Certificate.x509 == nil {
+		return false
+	}
+
+	trusted := x509.NewCertPool()
+	trusted.AddCert(root.Certificate.x509)
+
+	// Verify the certificate expiration, basic constraints, key usages, and
+	// critical extensions. Trust the certificate as an authority so it is not
+	// compared to system roots or sent to the platform certificate verifier.
+	_, err := root.Certificate.x509.Verify(x509.VerifyOptions{
+		Roots: trusted,
+	})
+
+	// Its expiration, key usages, and critical extensions are good.
+	ok := err == nil
+
+	// It is an authority with the Subject Key Identifier extension.
+	// The "crypto/x509" package adds the extension automatically since Go 1.15.
+	// - https://tools.ietf.org/html/rfc5280#section-4.2.1.2
+	// - https://go.dev/doc/go1.15#crypto/x509
+	ok = ok &&
+		root.Certificate.x509.BasicConstraintsValid &&
+		root.Certificate.x509.IsCA &&
+		len(root.Certificate.x509.SubjectKeyId) > 0
+
+	// It is signed by this private key.
+	ok = ok &&
+		root.PrivateKey.ecdsa != nil &&
+		root.PrivateKey.ecdsa.PublicKey.Equal(root.Certificate.x509.PublicKey)
+
+	return ok
+}
+
+// GenerateLeafCertificate generates a new key and certificate signed by root.
+func (root *RootCertificateAuthority) GenerateLeafCertificate(
+	commonName string, dnsNames []string,
+) (*LeafCertificate, error) {
+	var leaf LeafCertificate
+	var serial *big.Int
+
+	key, err := generateKey()
+	if err == nil {
+		serial, err = generateSerialNumber()
+	}
+	if err == nil {
+		leaf.PrivateKey.ecdsa = key
+		leaf.Certificate.x509, err = generateLeafCertificate(
+			root.Certificate.x509, root.PrivateKey.ecdsa, &key.PublicKey, serial,
+			commonName, dnsNames)
+	}
+
+	return &leaf, err
+}
+
+// leafIsValid checks if leaf is valid according to this package's policies and
+// is signed by root.
+func (root *RootCertificateAuthority) leafIsValid(leaf *LeafCertificate) bool {
+	if root == nil || root.Certificate.x509 == nil {
+		return false
+	}
+	if leaf == nil || leaf.Certificate.x509 == nil {
+		return false
+	}
+
+	trusted := x509.NewCertPool()
+	trusted.AddCert(root.Certificate.x509)
+
+	// Go 1.10 enforces name constraints for all names in the certificate.
+	// Go 1.15 does not enforce name constraints on the CommonName field.
+	// - https://go.dev/doc/go1.10#crypto/x509
+	// - https://go.dev/doc/go1.15#commonname
+	_, err := leaf.Certificate.x509.Verify(x509.VerifyOptions{
+		Roots: trusted,
+	})
+
+	// Its expiration, name constraints, key usages, and critical extensions are good.
+	ok := err == nil
+
+	// It is not an authority.
+	ok = ok &&
+		leaf.Certificate.x509.BasicConstraintsValid &&
+		!leaf.Certificate.x509.IsCA
+
+	// It is signed by this private key.
+	ok = ok &&
+		leaf.PrivateKey.ecdsa != nil &&
+		leaf.PrivateKey.ecdsa.PublicKey.Equal(leaf.Certificate.x509.PublicKey)
+
+	return ok
 }

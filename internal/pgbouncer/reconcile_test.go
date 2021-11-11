@@ -67,8 +67,8 @@ func TestSecret(t *testing.T) {
 	existing := new(corev1.Secret)
 	intent := new(corev1.Secret)
 
-	root := pki.NewRootCertificateAuthority()
-	assert.NilError(t, root.Generate())
+	root, err := pki.NewRootCertificateAuthority()
+	assert.NilError(t, err)
 
 	t.Run("Disabled", func(t *testing.T) {
 		// Nothing happens when PgBouncer is disabled.

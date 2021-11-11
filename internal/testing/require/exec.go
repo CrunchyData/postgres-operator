@@ -28,6 +28,11 @@ func Flake8(t testing.TB) string { t.Helper(); return flake8(t) }
 
 var flake8 = executable("flake8", "--version")
 
+// OpenSSL returns the path to the "openssl" executable or calls t.Skip.
+func OpenSSL(t testing.TB) string { t.Helper(); return openssl(t) }
+
+var openssl = executable("openssl", "version", "-a")
+
 // ShellCheck returns the path to the "shellcheck" executable or calls t.Skip.
 func ShellCheck(t testing.TB) string { t.Helper(); return shellcheck(t) }
 

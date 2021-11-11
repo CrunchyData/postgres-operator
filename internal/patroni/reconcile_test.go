@@ -55,11 +55,11 @@ func TestClusterConfigMap(t *testing.T) {
 func TestReconcileInstanceCertificates(t *testing.T) {
 	t.Parallel()
 
-	root := pki.NewRootCertificateAuthority()
-	assert.NilError(t, root.Generate(), "bug in test")
+	root, err := pki.NewRootCertificateAuthority()
+	assert.NilError(t, err, "bug in test")
 
-	leaf := pki.NewLeafCertificate("any", nil, nil)
-	assert.NilError(t, leaf.Generate(root), "bug in test")
+	leaf, err := root.GenerateLeafCertificate("any", nil)
+	assert.NilError(t, err, "bug in test")
 
 	ctx := context.Background()
 	secret := new(corev1.Secret)
