@@ -130,6 +130,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		}
 
 		cluster.Spec.PgBouncer.Resources = resources
+		cluster.Spec.PgBouncer.Limits = limits
 
 		// update the cluster CRD with these udpates. If there is an error
 		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
