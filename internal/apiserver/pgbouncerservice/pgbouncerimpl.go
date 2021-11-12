@@ -149,6 +149,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		}
 
 		cluster.Spec.PgBouncer.Resources = resources
+		cluster.Spec.PgBouncer.Limits = limits
 		cluster.Spec.PgBouncer.TLSSecret = request.TLSSecret
 
 		// update the cluster CRD with these udpates. If there is an error
