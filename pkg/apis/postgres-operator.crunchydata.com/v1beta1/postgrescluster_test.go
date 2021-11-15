@@ -64,6 +64,7 @@ spec:
 status:
   monitoring: {}
   patroni: {}
+  postgresVersion: 0
   proxy:
     pgBouncer: {}
 		`)+"\n")
@@ -101,6 +102,7 @@ spec:
 status:
   monitoring: {}
   patroni: {}
+  postgresVersion: 0
   proxy:
     pgBouncer: {}
 		`)+"\n")
