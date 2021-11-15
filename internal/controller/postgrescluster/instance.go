@@ -27,13 +27,16 @@ import (
 	attributes "go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -45,6 +48,32 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+)
+
+const (
+	// ConditionPGUpgradeProgressing is the type used in a condition to indicate that
+	// an Postgres major upgrade is in progress.
+	ConditionPGUpgradeProgressing = "PGUpgradeProgressing"
+
+	// ConditionPGUpgradeCompleted is the type used in a condition to indicate that
+	// a Postgres major upgrade has completed.
+	ConditionPGUpgradeCompleted = "PGUpgradeCompleted"
+
+	// ConditionPostPGUpgrade is the type used in a condition to indicate that
+	// a Postgres major upgrade has completed and follow on tasks (i.e. stanza upgrade
+	// and a new pgBackRest backup) should now be executed.
+	// TODO(tjmoore4): Post upgrade tasks to be implemented in upcoming story.
+	ConditionPostPGUpgrade = "PostPGUpgrade"
+
+	// ConditionPostPGUpgradeCompleted is the type used in a condition to indicate that
+	// the post-upgrade tasks have now been completed.
+	// TODO(tjmoore4): Post upgrade tasks to be implemented in upcoming story.
+	ConditionPostPGUpgradeCompleted = "PostPGUpgradeCompleted"
+
+	// ReasonReadyForUpgrade is the reason utilized within ConditionPGUpgradeProgressing
+	// to indicate that the upgrade Job can proceed because the cluster is now ready to be
+	// upgraded (i.e. it has been properly prepared for an upgrade).
+	ReasonReadyForUpgrade = "ReadyForUpgrade"
 )
 
 // Instance represents a single PostgreSQL instance of a PostgresCluster.
@@ -346,6 +375,16 @@ func (r *Reconciler) observeInstances(
 	restoringInPlace := restoreCondition != nil &&
 		(restoreCondition.Status == metav1.ConditionTrue)
 	if restoringInPlace {
+		return observed, err
+	}
+
+	// Determine if an upgrade is in progress.  If so, simply return to ensure the startup instance
+	// remains properly set throughout the duration of the upgrade.
+	upgradeCondition := meta.FindStatusCondition(cluster.Status.Conditions,
+		ConditionPGUpgradeProgressing)
+	upgrading := upgradeCondition != nil &&
+		(upgradeCondition.Status == metav1.ConditionTrue)
+	if upgrading {
 		return observed, err
 	}
 
@@ -1340,4 +1379,383 @@ func (r *Reconciler) reconcileInstanceCertificates(
 	}
 
 	return instanceCerts, err
+}
+
+// reconcileUpgradeJob creates the Postgres major upgrade Job based on
+// observations made about the cluster's status. Normal PostgresCluster instance
+// reconciliation is halted while the upgrade takes place. One portion of the
+// upgrade preparation process, deleting any existing Endpoints, is handled
+// directly in this method in order to allow for cluster reinitialization. As
+// the upgrade process proceeds, relevant status conditions are set to track the
+// progress being made. Once complete, normal cluster reconciliation is allowed
+// to continue.
+func (r *Reconciler) reconcileUpgradeJob(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	observed *observedInstances, instanceSets []v1beta1.PostgresInstanceSetSpec,
+	sa string, clusterCerts, clientCerts *corev1.SecretProjection,
+	clusterVolumes []corev1.PersistentVolumeClaim,
+) (bool, error) {
+
+	// TODO(tjmoore4): Checking the PG versions below, but in the future, version
+	// validation should be added as a webhook.
+	if cluster.Spec.Upgrade != nil && *cluster.Spec.Upgrade.Enabled {
+		if cluster.Spec.PostgresVersion > cluster.Spec.Upgrade.FromPostgresVersion {
+			// before creating the upgrade job, observe all resources currently
+			// relevant to reconciling data sources, and update status accordingly
+			endpoints, upgradeJob, err := r.observeUpgradeEnv(ctx, cluster)
+			if err != nil {
+				return false, errors.WithStack(err)
+			}
+
+			if upgradeJob == nil {
+				err = r.prepareForUpgrade(ctx, cluster, observed, endpoints, upgradeJob)
+				if err != nil {
+					return false, errors.WithStack(err)
+				}
+
+				// Return early until there are no observed instances, i.e. all
+				// postgres Pods are stopped or if there is an error.
+				observedInstances, err := r.observeInstances(ctx, cluster)
+				if err != nil {
+					return false, err
+				}
+				if len(observedInstances.byName) != 0 {
+					return true, nil
+				}
+
+				// After all observed instances are deleted, delete endpoints to
+				// remove the old DCS information.
+				if len(endpoints) > 0 {
+					for i := range endpoints {
+						if err := r.Client.Delete(ctx, &endpoints[i]); client.IgnoreNotFound(err) != nil {
+							return false, errors.WithStack(err)
+						}
+					}
+					meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+						ObservedGeneration: cluster.GetGeneration(),
+						Type:               ConditionPGUpgradeProgressing,
+						Status:             metav1.ConditionTrue,
+						Reason:             "PGUpgradeRequested",
+						Message:            "Preparing cluster for upgrade: removing DCS",
+					})
+					return true, nil
+				}
+
+				// determine the startup InstanceSet
+				var spec *v1beta1.PostgresInstanceSetSpec
+				for i := range instanceSets {
+					if instanceSets[i].Name == cluster.Status.StartupInstanceSet {
+						spec = &instanceSets[i]
+					}
+				}
+				if spec == nil {
+					return false, errors.Errorf("Unable to determine startup instance set.")
+				}
+
+				// Ensure the startup instance is defined, if so define a fake STS
+				// to use when calling the reconcile functions below since when
+				// bootstrapping the cluster it will not exist until after the
+				// upgrade is complete.
+				if cluster.Status.StartupInstance == "" {
+					return false, errors.Errorf("Unable to determine startup instance name.")
+				}
+				fakeSTS := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{
+					Name:      cluster.Status.StartupInstance,
+					Namespace: cluster.GetNamespace(),
+				}}
+
+				// Reconcile the PGDATA and WAL volumes for the upgrade
+				dataVolume, err := r.reconcilePostgresDataVolume(ctx, cluster, spec, fakeSTS, clusterVolumes)
+				if err != nil {
+					return false, errors.WithStack(err)
+				}
+				walVolume, err := r.reconcilePostgresWALVolume(ctx, cluster, spec, fakeSTS, nil, clusterVolumes)
+				if err != nil {
+					return false, errors.WithStack(err)
+				}
+
+				upgradeJob, err := postgres.GenerateUpgradeJobIntent(cluster, sa, spec,
+					clusterCerts, clientCerts, dataVolume, walVolume)
+				if err != nil {
+					return false, err
+				}
+
+				// set gvk and ownership refs
+				upgradeJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
+				if err = controllerutil.SetControllerReference(cluster, &upgradeJob,
+					r.Client.Scheme()); err != nil {
+					return false, errors.WithStack(err)
+				}
+
+				// add nss_wrapper init container and add nss_wrapper env vars to the
+				// upgrade container
+				if err == nil {
+					addNSSWrapper(
+						config.PGUpgradeContainerImage(cluster),
+						cluster.Spec.ImagePullPolicy,
+						&upgradeJob.Spec.Template)
+				}
+				// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
+				// all containers included within that spec
+				if err == nil {
+					addTMPEmptyDir(&upgradeJob.Spec.Template)
+				}
+				// mount shared memory to the Postgres instance
+				if err == nil {
+					addDevSHM(&upgradeJob.Spec.Template)
+				}
+
+				// server-side apply the upgrade Job intent
+				if err := r.apply(ctx, &upgradeJob); err != nil {
+					return false, errors.WithStack(err)
+				}
+			}
+			// Check the cluster's conditions to determine upgrade has completed.
+			// Only continue the reconcile process if the Job compeleted successfully.
+			if upgradeCondition := meta.FindStatusCondition(cluster.Status.Conditions,
+				ConditionPGUpgradeCompleted); upgradeCondition == nil || (upgradeCondition != nil &&
+				upgradeCondition.Status != metav1.ConditionTrue) {
+				// return early if the upgrade Job has not successfully completed
+				return true, nil
+			}
+		} else {
+			// if the 'from version' is greater than or equal to the desired
+			// upgrade version, set the failed upgrade condition
+			// TODO(tjmoore4): Move this version checking to a webhook to
+			// leverage regular validation.
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPGUpgradeCompleted,
+				Status:             metav1.ConditionFalse,
+				Reason:             "PGUpgradeFailed",
+				Message: fmt.Sprintf("cannot upgrade from postgres version %d to %d",
+					cluster.Spec.Upgrade.FromPostgresVersion, cluster.Spec.PostgresVersion),
+			})
+			r.Recorder.Event(cluster, corev1.EventTypeWarning, "pgUpgradeFailed",
+				fmt.Sprintf(`Cannot upgrade from postgres version %d to %d.
+				Update your PostgresCluster manifest to continue.`,
+					cluster.Spec.Upgrade.FromPostgresVersion, cluster.Spec.PostgresVersion))
+			// return early until this configuration is corrected
+			return true, nil
+		}
+	}
+	// TODO(tjmoore4): At this point, simply disabling the pgupgrade feature
+	// will not remove any existing Job, regardless of status. In later iterations,
+	// the Job should perhaps be removed under certain circumstances.
+	return false, nil
+}
+
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=get
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=list
+
+// observeUpgradeEnv observes the current Kubernetes environment to obtain any resources applicable
+// to performing PostgreSQL major upgrades.  This includes finding any existing Endpoints
+// created by Patroni (i.e. DCS, leader and failover Endpoints), while then also finding any existing
+// upgrade Jobs and then updating upgrade status accordingly.
+func (r *Reconciler) observeUpgradeEnv(ctx context.Context,
+	cluster *v1beta1.PostgresCluster) ([]corev1.Endpoints, *batchv1.Job, error) {
+
+	// lookup the various patroni endpoints
+	leaderEP, dcsEP, failoverEP := corev1.Endpoints{}, corev1.Endpoints{}, corev1.Endpoints{}
+	currentEndpoints := []corev1.Endpoints{}
+	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
+		&leaderEP); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, nil, errors.WithStack(err)
+		}
+	} else {
+		currentEndpoints = append(currentEndpoints, leaderEP)
+	}
+	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
+		&dcsEP); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, nil, errors.WithStack(err)
+		}
+	} else {
+		currentEndpoints = append(currentEndpoints, dcsEP)
+	}
+	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
+		&failoverEP); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, nil, errors.WithStack(err)
+		}
+	} else {
+		currentEndpoints = append(currentEndpoints, failoverEP)
+	}
+
+	// check for existing upgrade job, as in reconcileManualBackup
+	upgradeJobs := &batchv1.JobList{}
+	if err := r.Client.List(ctx, upgradeJobs, &client.ListOptions{
+		LabelSelector: naming.PGUpgradeJobSelector(cluster.GetName()),
+	}); err != nil {
+		return currentEndpoints, nil, errors.WithStack(err)
+	}
+	var upgradeJob *batchv1.Job
+	if len(upgradeJobs.Items) > 1 {
+		return nil, nil, errors.WithStack(
+			errors.New("invalid number of upgrade Jobs found when attempting to reconcile"))
+	} else if len(upgradeJobs.Items) == 1 {
+		upgradeJob = &upgradeJobs.Items[0]
+	}
+
+	if upgradeJob != nil {
+
+		completed := jobCompleted(upgradeJob)
+		failed := jobFailed(upgradeJob)
+
+		if cluster.Status.PGUpgrade != nil {
+			cluster.Status.PGUpgrade.StartTime = upgradeJob.Status.StartTime
+			cluster.Status.PGUpgrade.CompletionTime = upgradeJob.Status.CompletionTime
+			cluster.Status.PGUpgrade.Succeeded = upgradeJob.Status.Succeeded
+			cluster.Status.PGUpgrade.Failed = upgradeJob.Status.Failed
+			cluster.Status.PGUpgrade.Active = upgradeJob.Status.Active
+			if completed || failed {
+				cluster.Status.PGUpgrade.Finished = true
+			}
+		}
+
+		// update the upgrade condition if the Job has finished running, and has
+		// therefore either completed or failed
+		if completed {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPGUpgradeCompleted,
+				Status:             metav1.ConditionTrue,
+				Reason:             "PGUpgradeComplete",
+				Message:            "pg_upgrade completed successfully",
+			})
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPostPGUpgrade,
+				Status:             metav1.ConditionTrue,
+				Reason:             "PGUpgradeComplete",
+				Message:            "pg_upgrade completed successfully, post upgrade tasks required.",
+			})
+			// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
+			if len(cluster.Status.Conditions) > 0 {
+				meta.RemoveStatusCondition(&cluster.Status.Conditions,
+					ConditionPGUpgradeProgressing)
+			}
+		} else if failed {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPGUpgradeCompleted,
+				Status:             metav1.ConditionFalse,
+				Reason:             "PGUpgradeFailed",
+				Message:            "pg_upgrade failed",
+			})
+		}
+	}
+	return currentEndpoints, upgradeJob, nil
+}
+
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=delete
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=delete
+
+// prepareForUpgrade is responsible for preparing the cluster before reconciling a
+// major Postgres upgrade of the PostgresCluster. This includes setting conditions,
+// setting the appropriate instance and instance set for startup after the upgrade
+// completes, removing all existing instance runners and any Endpoints created by
+// Patroni and clearing any statuses/conditions related to re-initialization, which
+// will cause the cluster to re-bootstrap using the new data directory.
+func (r *Reconciler) prepareForUpgrade(ctx context.Context,
+	cluster *v1beta1.PostgresCluster, observed *observedInstances,
+	currentEndpoints []corev1.Endpoints, upgradeJob *batchv1.Job) error {
+
+	setPreparingClusterCondition := func(resource string) {
+		meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: cluster.GetGeneration(),
+			Type:               ConditionPGUpgradeProgressing,
+			Status:             metav1.ConditionTrue,
+			Reason:             "PGUpgradeRequested",
+			Message: fmt.Sprintf("Preparing cluster for upgrade: %s",
+				resource),
+		})
+	}
+
+	cluster.Status.PGUpgrade = &v1beta1.PGUpgradeStatus{}
+
+	// find all runners, the primary, and determine if the cluster is still running
+	var clusterRunning bool
+	runners := []*appsv1.StatefulSet{}
+	var primary *Instance
+	for i, instance := range observed.forCluster {
+		if !clusterRunning {
+			clusterRunning, _ = instance.IsRunning(naming.ContainerDatabase)
+		}
+		if instance.Runner != nil {
+			runners = append(runners, instance.Runner)
+		}
+		if isPrimary, _ := instance.IsPrimary(); isPrimary {
+			primary = observed.forCluster[i]
+		}
+	}
+
+	// Set the proper startup instance for the upgrade. The primary is required and
+	// all replicas will be scaled down.
+	if cluster.Status.StartupInstanceSet == "" || cluster.Status.StartupInstance == "" {
+		if primary != nil {
+			cluster.Status.StartupInstance = primary.Name
+			cluster.Status.StartupInstanceSet = primary.Spec.Name
+		} else {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPGUpgradeCompleted,
+				Status:             metav1.ConditionFalse,
+				Reason:             "PGUpgradeFailed",
+				Message:            "Unable to determine startup instance",
+			})
+			r.Recorder.Event(cluster, corev1.EventTypeWarning, "pgUpgradeFailed",
+				"unable to determine startup instance for major upgrade")
+			return errors.New("unable to determine startup instance for major upgrade")
+		}
+	}
+
+	// remove any existing upgrade Jobs
+	if upgradeJob != nil {
+		setPreparingClusterCondition("removing existing upgrade job")
+		if err := r.Client.Delete(ctx, upgradeJob,
+			client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
+			return errors.WithStack(err)
+		}
+		return nil
+	}
+
+	if clusterRunning {
+		setPreparingClusterCondition("removing runners")
+		// TODO(tjmoore4): The shutdown process used below can be improved.
+		// Consider implementing a more graceful shutdown.
+		for _, runner := range runners {
+			err := r.Client.Delete(ctx, runner,
+				client.PropagationPolicy(metav1.DeletePropagationForeground))
+			if client.IgnoreNotFound(err) != nil {
+				return errors.WithStack(err)
+			}
+		}
+		return nil
+	}
+
+	// if everything is gone, proceed with re-bootstrapping the cluster
+	if len(currentEndpoints) == 0 {
+		if len(cluster.Status.Conditions) > 0 {
+			// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
+			meta.RemoveStatusCondition(&cluster.Status.Conditions, ConditionPostgresDataInitialized)
+		}
+		meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: cluster.GetGeneration(),
+			Type:               ConditionPGUpgradeProgressing,
+			Status:             metav1.ConditionTrue,
+			Reason:             ReasonReadyForUpgrade,
+			Message:            "Upgrading cluster postgres major version",
+		})
+		// the cluster is no longer bootstrapped
+		cluster.Status.Patroni.SystemIdentifier = ""
+		// the upgrade will change the contents of the database, so the pgbouncer and exporter hashes
+		// are no longer valid
+		cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = ""
+		cluster.Status.Monitoring.ExporterConfiguration = ""
+		return nil
+	}
+	return nil
 }

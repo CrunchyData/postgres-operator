@@ -6245,6 +6245,37 @@ spec:
                   minimum: 1
                   type: integer
                 type: array
+              upgrade:
+                description: PostgreSQL major upgrade configuration
+                properties:
+                  enabled:
+                    default: false
+                    description: Whether or not major upgrades are enabled for this
+                      PostgresCluster.
+                    type: boolean
+                  fromPostgresVersion:
+                    description: The major version of PostgreSQL before the upgrade.
+                    maximum: 14
+                    minimum: 10
+                    type: integer
+                  image:
+                    description: The image name of the pg_upgrade container.
+                    type: string
+                  metadata:
+                    description: Metadata contains metadata for PostgresCluster resources
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
+                required:
+                - fromPostgresVersion
+                type: object
               userInterface:
                 description: The specification of a user interface that connects to
                   PostgreSQL.
@@ -7434,6 +7465,43 @@ spec:
                     description: The PostgreSQL system identifier reported by Patroni.
                     type: string
                 type: object
+              pgUpgrade:
+                description: Status information for pgUpgrade
+                properties:
+                  active:
+                    description: The number of actively running upgrade Pods.
+                    format: int32
+                    type: integer
+                  completionTime:
+                    description: Represents the time the upgrade Job was determined
+                      by the Job controller to be completed.  This field is only set
+                      if the backup completed successfully. Additionally, it is represented
+                      in RFC3339 form and is in UTC.
+                    format: date-time
+                    type: string
+                  failed:
+                    description: The number of Pods for the upgrade Job that reached
+                      the "Failed" phase.
+                    format: int32
+                    type: integer
+                  finished:
+                    description: Specifies whether or not the Job is finished executing
+                      (does not indicate success or failure).
+                    type: boolean
+                  startTime:
+                    description: Represents the time the upgrade Job was acknowledged
+                      by the Job controller. It is represented in RFC3339 form and
+                      is in UTC.
+                    format: date-time
+                    type: string
+                  succeeded:
+                    description: The number of Pods for the upgrade Job that reached
+                      the "Succeeded" phase.
+                    format: int32
+                    type: integer
+                required:
+                - finished
+                type: object
               pgbackrest:
                 description: Status information for pgBackRest
                 properties:
@@ -7632,6 +7700,9 @@ spec:
                       type: object
                     type: array
                 type: object
+              postgresVersion:
+                description: Stores the current PostgreSQL major version
+                type: integer
               proxy:
                 description: Current state of the PostgreSQL proxy.
                 properties:

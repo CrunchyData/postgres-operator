@@ -17,9 +17,13 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -257,4 +261,175 @@ func PodSecurityContext(cluster *v1beta1.PostgresCluster) *corev1.PodSecurityCon
 	}
 
 	return podSecurityContext
+}
+
+// GenerateUpgradeJobIntent creates an pg_upgrade Job to perform a major
+// PostgreSQL upgrade.
+func GenerateUpgradeJobIntent(
+	cluster *v1beta1.PostgresCluster, sa string,
+	spec *v1beta1.PostgresInstanceSetSpec,
+	inClusterCertificates, inClientCertificates *corev1.SecretProjection,
+	inDataVolume, inWALVolume *corev1.PersistentVolumeClaim,
+) (batchv1.Job, error) {
+
+	// create the pg_upgrade Job
+	upgradeJob := &batchv1.Job{}
+	upgradeJob.ObjectMeta = naming.PGUpgradeJob(cluster)
+
+	// set labels and annotations
+	var labels, annotations map[string]string
+	labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Upgrade.Metadata.GetLabelsOrNil(),
+		naming.PGUpgradeJobLabels(cluster.Name))
+	annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Upgrade.Metadata.GetAnnotationsOrNil(),
+	)
+	upgradeJob.ObjectMeta.Labels = labels
+	upgradeJob.ObjectMeta.Annotations = annotations
+
+	certVolumeMount := corev1.VolumeMount{
+		Name:      naming.CertVolume,
+		MountPath: naming.CertMountPath,
+		ReadOnly:  true,
+	}
+	certVolume := corev1.Volume{
+		Name: certVolumeMount.Name,
+		VolumeSource: corev1.VolumeSource{
+			Projected: &corev1.ProjectedVolumeSource{
+				// PostgreSQL expects client certificate keys to not be readable
+				// by any other user.
+				// - https://www.postgresql.org/docs/current/libpq-ssl.html
+				DefaultMode: initialize.Int32(0o600),
+				Sources: []corev1.VolumeProjection{
+					{Secret: inClusterCertificates},
+					{Secret: inClientCertificates},
+				},
+			},
+		},
+	}
+
+	dataVolumeMount := DataVolumeMount()
+	dataVolume := corev1.Volume{
+		Name: dataVolumeMount.Name,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: inDataVolume.Name,
+				ReadOnly:  false,
+			},
+		},
+	}
+
+	container := corev1.Container{
+		Command:         upgradeCommand(cluster),
+		Image:           config.PGUpgradeContainerImage(cluster),
+		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
+		Name:            naming.ContainerPGUpgrade,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+		VolumeMounts: []corev1.VolumeMount{
+			certVolumeMount,
+			dataVolumeMount,
+		},
+	}
+
+	if cluster.Spec.Backups.PGBackRest.Jobs != nil {
+		container.Resources = cluster.Spec.Backups.PGBackRest.Jobs.Resources
+	}
+
+	jobSpec := &batchv1.JobSpec{
+		// Set the BackoffLimit to zero because we do not want to attempt the
+		// major upgrade more than once.
+		BackoffLimit: initialize.Int32(0),
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{Labels: labels, Annotations: annotations},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{container},
+				// Set RestartPolicy to "Never" since we want a new Pod to be
+				// created by the Job controller when there is a failure
+				// (instead of the container simply restarting).
+				RestartPolicy:      corev1.RestartPolicyNever,
+				ServiceAccountName: sa,
+				Volumes: []corev1.Volume{{
+					Name:         dataVolume.Name,
+					VolumeSource: dataVolume.VolumeSource,
+				}, {
+					Name:         certVolume.Name,
+					VolumeSource: certVolume.VolumeSource,
+				}},
+				SecurityContext: PodSecurityContext(cluster),
+			},
+		},
+	}
+
+	// set the priority class name, if it exists
+	if spec.PriorityClassName != nil {
+		jobSpec.Template.Spec.PriorityClassName = *spec.PriorityClassName
+	}
+
+	// Set the image pull secrets, if any exist.
+	// This is set here rather than using the service account due to the lack
+	// of propagation to existing pods when the CRD is updated:
+	// https://github.com/kubernetes/kubernetes/issues/88456
+	jobSpec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
+
+	upgradeJob.Spec = *jobSpec
+
+	return *upgradeJob, nil
+}
+
+// upgradeCommand returns an entrypoint that prepares the filesystem for
+// and performs a PostgreSQL major version upgrade using pg_upgrade.
+func upgradeCommand(cluster *v1beta1.PostgresCluster) []string {
+	oldVersion := fmt.Sprint(cluster.Spec.Upgrade.FromPostgresVersion)
+	newVersion := fmt.Sprint(cluster.Spec.PostgresVersion)
+
+	args := []string{oldVersion, newVersion, cluster.Name}
+	script := strings.Join([]string{
+		// Below is the pg_upgrade script used to upgrade a PostgresCluster from
+		// one major verson to another. Additional information concerning the
+		// steps used and command flag specifics can be found in the documentation:
+		// - https://www.postgresql.org/docs/current/pgupgrade.html
+		`declare -r old_version="$1" new_version="$2" cluster_name="$3"`,
+		`echo -e "Performing PostgreSQL upgrade from version ""${old_version}"" to\`,
+		` ""${new_version}"" for cluster ""${cluster_name}"".\n"`,
+
+		// To begin, we first move to the mounted /pgdata directory and create a
+		// new version directory which is then initialized with the initdb command.
+		`cd /pgdata || exit`,
+		`echo -e "Step 1: Making new pgdata directory...\n"`,
+		`mkdir /pgdata/pg"${new_version}"`,
+		`echo -e "Step 2: Initializing new pgdata directory...\n"`,
+		`/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"`,
+
+		// Before running the upgrade check, which ensures the clusters are compatible,
+		// proper permissions have to be set on the old pgdata directory and the
+		// preload library settings must be copied over.
+		`echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"`,
+		`chmod 700 /pgdata/pg"${old_version}"`,
+		`echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"`,
+		`echo "shared_preload_libraries = $(/usr/pgsql-"""${old_version}"""/bin/postgres -D \`,
+		`/pgdata/pg"""${old_version}""" -C shared_preload_libraries)" >> /pgdata/pg"${new_version}"/postgresql.conf`,
+
+		// Before the actual upgrade is run, we will run the upgrade --check to
+		// verify everything before actually changing any data.
+		`echo -e "Step 5: Running pg_upgrade check...\n"`,
+		`time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \`,
+		`--new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}"\`,
+		` --new-datadir /pgdata/pg"${new_version}" --link --check`,
+
+		// Assuming the check completes successfully, the pg_upgrade command will
+		// be run that actually prepares the upgraded pgdata directory.
+		`echo -e "\nStep 6: Running pg_upgrade...\n"`,
+		`time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \`,
+		`--new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}" \`,
+		`--new-datadir /pgdata/pg"${new_version}" --link`,
+
+		// Since we have cleared the Patroni cluster step by removing the EndPoints, we copy patroni.dynamic.json
+		// from the old data dir to help retain PostgreSQL parameters you had set before.
+		// - https://patroni.readthedocs.io/en/latest/existing_data.html#major-upgrade-of-postgresql-version
+		`echo -e "\nStep 7: Copying patroni.dynamic.json...\n"`,
+		`cp /pgdata/pg"${old_version}"/patroni.dynamic.json /pgdata/pg"${new_version}"`,
+		`echo -e "\npg_upgrade Job Complete!"`,
+	}, "\n")
+
+	return append([]string{"bash", "-ceu", "--", script, "upgrade"}, args...)
 }

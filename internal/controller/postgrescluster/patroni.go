@@ -314,6 +314,9 @@ func (r *Reconciler) reconcilePatroniStatus(
 		if dcs.Annotations["initialize"] != "" {
 			// After bootstrap, Patroni writes the cluster system identifier to DCS.
 			cluster.Status.Patroni.SystemIdentifier = dcs.Annotations["initialize"]
+
+			// Once the cluster is bootstrapped, note the current postgres version
+			cluster.Status.PostgresVersion = cluster.Spec.PostgresVersion
 		} else if readyInstance {
 			// While we typically expect a value for the initialize key to be present in the
 			// Endpoints above by the time the StatefulSet for any instance indicates "ready"

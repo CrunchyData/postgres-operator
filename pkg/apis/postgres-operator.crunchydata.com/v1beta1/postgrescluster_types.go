@@ -130,6 +130,10 @@ type PostgresClusterSpec struct {
 	// +optional
 	Proxy *PostgresProxySpec `json:"proxy,omitempty"`
 
+	// PostgreSQL major upgrade configuration
+	// +optional
+	Upgrade *PGMajorUpgrade `json:"upgrade,omitempty"`
+
 	// The specification of a user interface that connects to PostgreSQL.
 	// +optional
 	UserInterface *UserInterfaceSpec `json:"userInterface,omitempty"`
@@ -322,6 +326,14 @@ type PostgresClusterStatus struct {
 	// Status information for pgBackRest
 	// +optional
 	PGBackRest *PGBackRestStatus `json:"pgbackrest,omitempty"`
+
+	// Status information for pgUpgrade
+	// +optional
+	PGUpgrade *PGUpgradeStatus `json:"pgUpgrade,omitempty"`
+
+	// Stores the current PostgreSQL major version
+	// +optional
+	PostgresVersion int `json:"postgresVersion"`
 
 	// Current state of the PostgreSQL proxy.
 	// +optional
@@ -523,6 +535,59 @@ type PostgresUserInterfaceStatus struct {
 
 	// The state of the pgAdmin user interface.
 	PGAdmin PGAdminPodStatus `json:"pgAdmin,omitempty"`
+}
+
+// PGMajorUpgrade defines a PostgreSQL major version upgrade using pg_upgrade.
+type PGMajorUpgrade struct {
+
+	// +optional
+	Metadata *Metadata `json:"metadata,omitempty"`
+
+	// Whether or not major upgrades are enabled for this PostgresCluster.
+	// +optional
+	// +kubebuilder:default=false
+	Enabled *bool `json:"enabled"`
+
+	// The major version of PostgreSQL before the upgrade.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=10
+	// +kubebuilder:validation:Maximum=14
+	FromPostgresVersion int `json:"fromPostgresVersion"`
+
+	// The image name of the pg_upgrade container.
+	// +optional
+	Image *string `json:"image,omitempty"`
+}
+
+// PGUpgradeStatus the status of a PostgreSQL major upgrade.
+type PGUpgradeStatus struct {
+	// Specifies whether or not the Job is finished executing (does not indicate success or
+	// failure).
+	// +kubebuilder:validation:Required
+	Finished bool `json:"finished"`
+
+	// Represents the time the upgrade Job was acknowledged by the Job controller.
+	// It is represented in RFC3339 form and is in UTC.
+	// +optional
+	StartTime *metav1.Time `json:"startTime,omitempty"`
+
+	// Represents the time the upgrade Job was determined by the Job controller
+	// to be completed.  This field is only set if the backup completed successfully.
+	// Additionally, it is represented in RFC3339 form and is in UTC.
+	// +optional
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+
+	// The number of actively running upgrade Pods.
+	// +optional
+	Active int32 `json:"active,omitempty"`
+
+	// The number of Pods for the upgrade Job that reached the "Succeeded" phase.
+	// +optional
+	Succeeded int32 `json:"succeeded,omitempty"`
+
+	// The number of Pods for the upgrade Job that reached the "Failed" phase.
+	// +optional
+	Failed int32 `json:"failed,omitempty"`
 }
 
 // +kubebuilder:object:root=true

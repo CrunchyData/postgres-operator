@@ -40,6 +40,9 @@ const (
 	// ContainerPGBouncerConfig is the name of a container supporting PgBouncer.
 	ContainerPGBouncerConfig = "pgbouncer-config"
 
+	// ContainerPGUpgrade is the name of a container running pg_upgrade.
+	ContainerPGUpgrade = "pgupgrade"
+
 	// ContainerPostgresStartup is the name of the initialization container
 	// that prepares the filesystem for PostgreSQL.
 	ContainerPostgresStartup = "postgres-startup"
@@ -423,6 +426,15 @@ func PGBackRestSSHConfig(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 func PGBackRestSSHSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf(sshSecretNameSuffix, cluster.GetName()),
+		Namespace: cluster.GetNamespace(),
+	}
+}
+
+// PGUpgradeJob returns the ObjectMeta for the pg_upgrade Job utilized to
+// upgrade from one major PostgreSQL version to another
+func PGUpgradeJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      cluster.GetName() + "-pgupgrade",
 		Namespace: cluster.GetNamespace(),
 	}
 }

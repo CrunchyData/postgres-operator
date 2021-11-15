@@ -17,6 +17,7 @@ spec:
             - { name: RELATED_IMAGE_PGBACKREST, value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbackrest:ubi8-2.36-0' }
             - { name: RELATED_IMAGE_PGBOUNCER,  value: 'registry.connect.redhat.com/crunchydata/crunchy-pgbouncer:ubi8-1.16-0' }
             - { name: RELATED_IMAGE_PGEXPORTER, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-exporter:ubi8-5.0.4-0' }
+            - { name: RELATED_IMAGE_PGUPGRADE, value: 'registry.connect.redhat.com/crunchydata/crunchy-upgrade:ubi8-5.1.0-0' }
 
             - { name: RELATED_IMAGE_POSTGRES_12, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres:ubi8-12.9-0' }
             - { name: RELATED_IMAGE_POSTGRES_13, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres:ubi8-13.5-0' }

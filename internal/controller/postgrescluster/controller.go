@@ -271,6 +271,22 @@ func (r *Reconciler) Reconcile(
 		monitoringSecret, err = r.reconcileMonitoringSecret(ctx, cluster)
 	}
 	if err == nil {
+		// Reconcile a major Postgres upgrade as requested.
+		// Since the upgrade must complete before bootstrapping the upgraded
+		// cluster, further reconciliation will not occur until it finishes.
+		// Func reconcileUpgradeJob() will return a bool indicating that the
+		// controller should return early while any required Jobs are running,
+		// after which it will indicate that an early return is no longer needed,
+		// and reconciliation can proceed normally.
+		var returnEarly bool
+		returnEarly, err = r.reconcileUpgradeJob(ctx, cluster, instances,
+			cluster.Spec.InstanceSets, instanceServiceAccount.Name, primaryCertificate,
+			replicationCertSecretProjection(clusterReplicationSecret), clusterVolumes)
+		if err != nil || returnEarly {
+			return patchClusterStatus()
+		}
+	}
+	if err == nil {
 		err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount, instances,
