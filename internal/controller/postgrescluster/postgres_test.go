@@ -148,11 +148,12 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 
 		if assert.Check(t, secret != nil) {
 			assert.Equal(t, string(secret.Data["dbname"]), "db1")
-			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/db1`,
+			assert.Assert(t, cmp.Regexp(
+				`^postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/db1$`,
 				string(secret.Data["uri"])))
 			assert.Assert(t, cmp.Regexp(
-				`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/db1\?`+
-					`password=[^&]+&user=some-user-name$`,
+				`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/db1`+
+					`[?]password=[^&]+&user=some-user-name$`,
 				string(secret.Data["jdbc-uri"])))
 		}
 
@@ -164,9 +165,11 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 
 		if assert.Check(t, secret != nil) {
 			assert.Equal(t, string(secret.Data["dbname"]), "first")
-			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/first`,
+			assert.Assert(t, cmp.Regexp(
+				`^postgresql://some-user-name:[^@]+@hippo2-primary.ns1.svc:9999/first$`,
 				string(secret.Data["uri"])))
-			assert.Assert(t, cmp.Regexp(`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/first\?.+$`,
+			assert.Assert(t, cmp.Regexp(
+				`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/first[?].+$`,
 				string(secret.Data["jdbc-uri"])))
 
 		}
@@ -195,11 +198,12 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 		assert.NilError(t, err)
 
 		if assert.Check(t, secret != nil) {
-			assert.Assert(t, cmp.Regexp(`postgresql://some-user-name:[^@]+@hippo2-pgbouncer.ns1.svc:10220/yes`,
+			assert.Assert(t, cmp.Regexp(
+				`^postgresql://some-user-name:[^@]+@hippo2-pgbouncer.ns1.svc:10220/yes$`,
 				string(secret.Data["pgbouncer-uri"])))
 			assert.Assert(t, cmp.Regexp(
-				`^jdbc:postgresql://hippo2-pgbouncer.ns1.svc:10220/yes\?`+
-					`password=[^&]+&prepareThreshold=0&user=some-user-name$`,
+				`^jdbc:postgresql://hippo2-pgbouncer.ns1.svc:10220/yes`+
+					`[?]password=[^&]+&prepareThreshold=0&user=some-user-name$`,
 				string(secret.Data["pgbouncer-jdbc-uri"])))
 		}
 	})
