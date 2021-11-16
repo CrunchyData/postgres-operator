@@ -266,16 +266,55 @@ func DeleteBackup(request msgs.DeleteBackrestBackupRequest) msgs.DeleteBackrestB
 		return response
 	}
 
+	// determine if TLS verification is enabled or not
+	verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(cluster))
+
 	// set up the command
 	cmd := pgBackRestExpireCommand
 	cmd = append(cmd, request.Target)
 
-	// and execute. if there is an error, return it, otherwise we are done
-	if _, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
-		apiserver.Clientset, cmd, containername, podName, cluster.Spec.Namespace, nil); err != nil {
-		log.Error(stderr)
+	// first, if storage types is empty, assume it's the posix storage type
+	storageTypes := cluster.Spec.BackrestStorageTypes
+	if len(storageTypes) == 0 {
+		storageTypes = append(storageTypes, crv1.BackrestStorageTypePosix)
+	}
+
+	// otherwise, iterate through the different repositories types that are
+	// available. if it's a non-local repository, we need to set an explicit
+	// "--repo-type"
+	ok := false
+
+	for _, storageType := range storageTypes {
+		c := cmd
+
+		switch storageType {
+		default: // do nothing
+		case crv1.BackrestStorageTypeS3:
+			c = append(c, repoTypeFlagS3...)
+
+			if !verifyTLS {
+				c = append(c, noRepoS3VerifyTLS)
+			}
+		}
+
+		// so...we don't necessarily care about the error here, because we're
+		// looking for which of the repos contains the target backup. We'll log the
+		// error, and return it if we don't have success
+		if _, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
+			apiserver.Clientset, c, containername, podName, cluster.Namespace, nil); err != nil {
+			log.Infof("repo type %s does not contain backup %s or other error.", storageType, request.Target)
+			log.Info(stderr)
+		} else {
+			ok = true
+		}
+	}
+
+	// if we don't ever delete the backup, provide a message as to why
+	if !ok {
+		msg := fmt.Sprintf("could not find backup %s in any repo or check logs for other errors.", request.Target)
+		log.Errorf(msg)
 		response.Code = msgs.Error
-		response.Msg = stderr
+		response.Msg = msg
 	}
 
 	return response
