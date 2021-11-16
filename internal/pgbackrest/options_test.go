@@ -1,0 +1,100 @@
+/*
+ Copyright 2021 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+package pgbackrest
+
+import (
+	"strings"
+	"testing"
+
+	"gotest.tools/v3/assert"
+	"sigs.k8s.io/yaml"
+)
+
+func TestMultiSet(t *testing.T) {
+	t.Parallel()
+
+	ms := iniMultiSet{}
+	assert.Equal(t, ms.String(), "")
+	assert.DeepEqual(t, ms.Values("any"), []string(nil))
+
+	ms.Add("x", "y")
+	assert.DeepEqual(t, ms.Values("x"), []string{"y"})
+
+	ms.Add("x", "a")
+	assert.DeepEqual(t, ms.Values("x"), []string{"y", "a"})
+
+	ms.Add("abc", "j'l")
+	assert.DeepEqual(t, ms, iniMultiSet{
+		"x":   []string{"y", "a"},
+		"abc": []string{"j'l"},
+	})
+	assert.Equal(t, ms.String(),
+		"abc = j'l\nx = y\nx = a\n")
+
+	ms.Set("x", "n")
+	assert.DeepEqual(t, ms.Values("x"), []string{"n"})
+	assert.Equal(t, ms.String(),
+		"abc = j'l\nx = n\n")
+
+	ms.Set("x", "p", "q")
+	assert.DeepEqual(t, ms.Values("x"), []string{"p", "q"})
+
+	t.Run("PrettyYAML", func(t *testing.T) {
+		b, err := yaml.Marshal(iniMultiSet{
+			"x": []string{"y"},
+			"z": []string{""},
+		}.String())
+
+		assert.NilError(t, err)
+		assert.Assert(t, strings.HasPrefix(string(b), `|`),
+			"expected literal block scalar, got:\n%s", b)
+	})
+}
+
+func TestSectionSet(t *testing.T) {
+	t.Parallel()
+
+	sections := iniSectionSet{}
+	assert.Equal(t, sections.String(), "")
+
+	sections["db"] = iniMultiSet{"x": []string{"y"}}
+	assert.Equal(t, sections.String(),
+		"\n[db]\nx = y\n")
+
+	sections["db:backup"] = iniMultiSet{"x": []string{"w"}}
+	assert.Equal(t, sections.String(),
+		"\n[db]\nx = y\n\n[db:backup]\nx = w\n",
+		"expected subcommand after its stanza")
+
+	sections["another"] = iniMultiSet{"x": []string{"z"}}
+	assert.Equal(t, sections.String(),
+		"\n[another]\nx = z\n\n[db]\nx = y\n\n[db:backup]\nx = w\n",
+		"expected alphabetical stanzas")
+
+	sections["global"] = iniMultiSet{"x": []string{"t"}}
+	assert.Equal(t, sections.String(),
+		"\n[global]\nx = t\n\n[another]\nx = z\n\n[db]\nx = y\n\n[db:backup]\nx = w\n",
+		"expected global before stanzas")
+
+	t.Run("PrettyYAML", func(t *testing.T) {
+		sections["last"] = iniMultiSet{"z": []string{""}}
+		b, err := yaml.Marshal(sections.String())
+
+		assert.NilError(t, err)
+		assert.Assert(t, strings.HasPrefix(string(b), `|`),
+			"expected literal block scalar, got:\n%s", b)
+	})
+}
