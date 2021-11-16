@@ -18,7 +18,6 @@
 package postgrescluster
 
 import (
-	"bytes"
 	"context"
 	"crypto/x509"
 	"fmt"
@@ -185,7 +184,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// assert returned certificate matches the one created earlier
-			assert.Assert(t, bytes.Equal(fromSecret.Certificate, initialRoot.Certificate.Certificate))
+			assert.DeepEqual(t, fromSecret, initialRoot.Certificate)
 		})
 
 		t.Run("root certificate changes", func(t *testing.T) {
@@ -206,10 +205,10 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// check that the cert from the secret does not equal the initial certificate
-			assert.Assert(t, !bytes.Equal(fromSecret.Certificate, initialRoot.Certificate.Certificate))
+			assert.Assert(t, !fromSecret.Equal(*initialRoot.Certificate))
 
 			// check that the returned cert matches the cert from the secret
-			assert.Assert(t, bytes.Equal(fromSecret.Certificate, returnedRoot.Certificate.Certificate))
+			assert.DeepEqual(t, fromSecret, returnedRoot.Certificate)
 		})
 
 		t.Run("root CA secret is deleted after final cluster is deleted", func(t *testing.T) {
@@ -272,7 +271,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// assert returned certificate matches the one created earlier
-			assert.Assert(t, bytes.Equal(fromSecret.Certificate, initialLeafCert.Certificate.Certificate))
+			assert.DeepEqual(t, fromSecret, initialLeafCert.Certificate)
 		})
 
 		t.Run("check that the leaf certs update when root changes", func(t *testing.T) {
@@ -311,14 +310,14 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// assert old leaf cert does not match the newly reconciled one
-			assert.Assert(t, !bytes.Equal(oldLeafFromSecret.Certificate, newLeaf.Certificate.Certificate))
+			assert.Assert(t, !oldLeafFromSecret.Equal(*newLeaf.Certificate))
 
 			// 'reconcile' the certificate when the secret does not change. The returned leaf certificate should not change
 			newLeaf2, err := r.instanceCertificate(ctx, instance, instanceIntentSecret, instanceIntentSecret, newRootCert)
 			assert.NilError(t, err)
 
 			// check that the leaf cert did not change after another reconciliation
-			assert.Assert(t, bytes.Equal(newLeaf2.Certificate.Certificate, newLeaf.Certificate.Certificate))
+			assert.DeepEqual(t, newLeaf2.Certificate, newLeaf.Certificate)
 
 		})
 

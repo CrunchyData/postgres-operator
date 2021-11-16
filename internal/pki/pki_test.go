@@ -27,6 +27,46 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+func TestCertificateEqual(t *testing.T) {
+	zero := Certificate{}
+	assert.Assert(t, zero.Equal(zero))
+
+	root := NewRootCertificateAuthority()
+	assert.NilError(t, root.Generate())
+	assert.Assert(t, root.Certificate.Equal(*root.Certificate))
+
+	assert.Assert(t, !root.Certificate.Equal(zero))
+	assert.Assert(t, !zero.Equal(*root.Certificate))
+
+	other := NewRootCertificateAuthority()
+	assert.NilError(t, other.Generate())
+	assert.Assert(t, !root.Certificate.Equal(*other.Certificate))
+
+	// DeepEqual calls the Equal method, so no cmp.Option are necessary.
+	assert.DeepEqual(t, zero, zero)
+	assert.DeepEqual(t, root.Certificate, root.Certificate)
+}
+
+func TestPrivateKeyEqual(t *testing.T) {
+	zero := PrivateKey{}
+	assert.Assert(t, zero.Equal(zero))
+
+	root := NewRootCertificateAuthority()
+	assert.NilError(t, root.Generate())
+	assert.Assert(t, root.PrivateKey.Equal(*root.PrivateKey))
+
+	assert.Assert(t, !root.PrivateKey.Equal(zero))
+	assert.Assert(t, !zero.Equal(*root.PrivateKey))
+
+	other := NewRootCertificateAuthority()
+	assert.NilError(t, other.Generate())
+	assert.Assert(t, !root.PrivateKey.Equal(*other.PrivateKey))
+
+	// DeepEqual calls the Equal method, so no cmp.Option are necessary.
+	assert.DeepEqual(t, zero, zero)
+	assert.DeepEqual(t, root.PrivateKey, root.PrivateKey)
+}
+
 // TestPKI does a full test of generating a valid certificate chain
 func TestPKI(t *testing.T) {
 	// generate the root CA
