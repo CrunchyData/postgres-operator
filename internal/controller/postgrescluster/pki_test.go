@@ -255,23 +255,20 @@ func TestReconcileCerts(t *testing.T) {
 			},
 		}
 
-		intent, existing, err := createInstanceSecrets(ctx, tClient, instance, initialRoot)
-		assert.NilError(t, err)
-
-		// apply the secret changes
-		err = errors.WithStack(r.apply(ctx, existing))
-		assert.NilError(t, err)
-
-		initialLeafCert, err := r.instanceCertificate(ctx, instance, existing, intent, initialRoot)
-		assert.NilError(t, err)
-
 		t.Run("check leaf certificate in secret", func(t *testing.T) {
+			existing := &corev1.Secret{Data: make(map[string][]byte)}
+			intent := &corev1.Secret{Data: make(map[string][]byte)}
 
-			fromSecret, err := getCertFromSecret(ctx, tClient, instance.GetName()+"-certs", namespace, "dns.crt")
+			initialLeafCert, err := r.instanceCertificate(ctx, instance, existing, intent, initialRoot)
 			assert.NilError(t, err)
 
-			// assert returned certificate matches the one created earlier
-			assert.DeepEqual(t, fromSecret, initialLeafCert.Certificate)
+			certificate, err := pki.ParseCertificate(intent.Data["dns.crt"])
+			assert.NilError(t, err)
+			privateKey, err := pki.ParsePrivateKey(intent.Data["dns.key"])
+			assert.NilError(t, err)
+
+			assert.DeepEqual(t, certificate, initialLeafCert.Certificate)
+			assert.DeepEqual(t, privateKey, initialLeafCert.PrivateKey)
 		})
 
 		t.Run("check that the leaf certs update when root changes", func(t *testing.T) {
@@ -288,32 +285,21 @@ func TestReconcileCerts(t *testing.T) {
 			newRootCert, err := r.reconcileRootCertificate(ctx, cluster1)
 			assert.NilError(t, err)
 
-			// get the existing leaf/instance secret which will receive a new certificate during reconciliation
-			existingInstanceSecret := &corev1.Secret{}
-			assert.NilError(t, tClient.Get(ctx, types.NamespacedName{
-				Name:      instance.GetName() + "-certs",
-				Namespace: namespace,
-			}, existingInstanceSecret))
+			existing := &corev1.Secret{Data: make(map[string][]byte)}
+			intent := &corev1.Secret{Data: make(map[string][]byte)}
 
-			// create an empty 'intent' secret for the reconcile function
-			instanceIntentSecret := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
-			instanceIntentSecret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
-			instanceIntentSecret.Type = corev1.SecretTypeOpaque
-			instanceIntentSecret.Data = make(map[string][]byte)
-
-			// save a copy of the 'pre-reconciled' certificate
-			oldLeafFromSecret, err := getCertFromSecret(ctx, tClient, instance.GetName()+"-certs", namespace, "dns.crt")
+			initialLeaf, err := r.instanceCertificate(ctx, instance, existing, intent, initialRoot)
 			assert.NilError(t, err)
 
 			// reconcile the certificate
-			newLeaf, err := r.instanceCertificate(ctx, instance, existingInstanceSecret, instanceIntentSecret, newRootCert)
+			newLeaf, err := r.instanceCertificate(ctx, instance, existing, intent, newRootCert)
 			assert.NilError(t, err)
 
 			// assert old leaf cert does not match the newly reconciled one
-			assert.Assert(t, !oldLeafFromSecret.Equal(*newLeaf.Certificate))
+			assert.Assert(t, !initialLeaf.Certificate.Equal(*newLeaf.Certificate))
 
 			// 'reconcile' the certificate when the secret does not change. The returned leaf certificate should not change
-			newLeaf2, err := r.instanceCertificate(ctx, instance, instanceIntentSecret, instanceIntentSecret, newRootCert)
+			newLeaf2, err := r.instanceCertificate(ctx, instance, intent, intent, newRootCert)
 			assert.NilError(t, err)
 
 			// check that the leaf cert did not change after another reconciliation
@@ -484,51 +470,4 @@ func getCertFromSecret(
 	} else {
 		return fromSecret, nil
 	}
-}
-
-// createInstanceSecrets creates the two initial leaf instance secrets for use when
-// testing the leaf cert reconciliation
-func createInstanceSecrets(
-	ctx context.Context, tClient client.Client, instance *appsv1.StatefulSet,
-	rootCA *pki.RootCertificateAuthority,
-) (*corev1.Secret, *corev1.Secret, error) {
-	// create two secret structs for reconciliation
-	intent := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
-	existing := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
-
-	// populate the 'intent' secret
-	err := errors.WithStack(client.IgnoreNotFound(
-		tClient.Get(ctx, client.ObjectKeyFromObject(intent), intent)))
-	intent.Data = make(map[string][]byte)
-	if err != nil {
-		return intent, existing, err
-	}
-
-	// generate a leaf cert for the 'existing' secret
-	leafCert := pki.NewLeafCertificate("", nil, nil)
-	leafCert.DNSNames = naming.InstancePodDNSNames(ctx, instance)
-	leafCert.CommonName = leafCert.DNSNames[0] // FQDN
-	err = errors.WithStack(leafCert.Generate(rootCA))
-	if err != nil {
-		return intent, existing, err
-	}
-
-	// populate the 'existing' secret
-	existing.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
-	existing.Data = make(map[string][]byte)
-
-	if err == nil {
-		existing.Data["dns.crt"], err = leafCert.Certificate.MarshalText()
-		err = errors.WithStack(err)
-	}
-	if err != nil {
-		return intent, existing, err
-	}
-
-	if err == nil {
-		existing.Data["dns.key"], err = leafCert.PrivateKey.MarshalText()
-		err = errors.WithStack(err)
-	}
-
-	return intent, existing, err
 }
