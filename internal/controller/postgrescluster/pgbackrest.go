@@ -1158,9 +1158,12 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 					Resources:       dataSource.Resources,
 				}},
 				RestartPolicy: corev1.RestartPolicyNever,
-				Volumes:       volumes,
-				Affinity:      dataSource.Affinity,
-				Tolerations:   dataSource.Tolerations,
+				// Assign the instance serviceaccount to the job pod to allow AWS IAM integration
+				// - https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts-technical-overview.html
+				ServiceAccountName: naming.ClusterInstanceRBAC(cluster).Name,
+				Volumes:            volumes,
+				Affinity:           dataSource.Affinity,
+				Tolerations:        dataSource.Tolerations,
 			},
 		},
 	}

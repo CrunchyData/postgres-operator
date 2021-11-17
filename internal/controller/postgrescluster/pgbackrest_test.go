@@ -2405,6 +2405,9 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 		PriorityClassName: initialize.String("some-priority-class"),
 	}
 	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test",
+		},
 		Spec: v1beta1.PostgresClusterSpec{
 			Metadata: &v1beta1.Metadata{
 				Labels:      map[string]string{"Global": "test"},
@@ -2539,10 +2542,7 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 							assert.Assert(t, job.Spec.Template.Spec.SecurityContext != nil)
 						})
 						t.Run("ServiceAccount", func(t *testing.T) {
-							assert.Equal(t, job.Spec.Template.Spec.ServiceAccountName, "")
-							if assert.Check(t, job.Spec.Template.Spec.AutomountServiceAccountToken != nil) {
-								assert.Equal(t, *job.Spec.Template.Spec.AutomountServiceAccountToken, false)
-							}
+							assert.Equal(t, job.Spec.Template.Spec.ServiceAccountName, "test-instance")
 						})
 					})
 				})
