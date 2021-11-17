@@ -59,8 +59,7 @@ func (r *Reconciler) reconcileRootCertificate(
 	_ = root.Certificate.UnmarshalText(existing.Data[keyCertificate])
 	_ = root.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
 
-	// if there is an error or the root CA is bad, generate a new one
-	if err != nil || pki.RootCAIsBad(root) {
+	if err == nil && pki.RootCAIsBad(root) {
 		root, err = pki.NewRootCertificateAuthority()
 		err = errors.WithStack(err)
 	}
@@ -134,8 +133,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 	dnsNames := naming.ServiceDNSNames(ctx, primaryService)
 	dnsFQDN := dnsNames[0]
 
-	// if there is an error or the leaf certificate is bad, generate a new one
-	if err != nil || pki.LeafCertIsBad(ctx, leaf, rootCACert, cluster.Namespace) {
+	if err == nil && pki.LeafCertIsBad(ctx, leaf, rootCACert, cluster.Namespace) {
 		leaf, err = rootCACert.GenerateLeafCertificate(dnsFQDN, dnsNames)
 		err = errors.WithStack(err)
 	}
@@ -210,8 +208,7 @@ func (*Reconciler) instanceCertificate(
 	dnsNames := naming.InstancePodDNSNames(ctx, instance)
 	dnsFQDN := dnsNames[0]
 
-	// if there is an error or the leaf certificate is bad, generate a new one
-	if err != nil || pki.LeafCertIsBad(ctx, leaf, rootCACert, instance.Namespace) {
+	if err == nil && pki.LeafCertIsBad(ctx, leaf, rootCACert, instance.Namespace) {
 		leaf, err = rootCACert.GenerateLeafCertificate(dnsFQDN, dnsNames)
 		err = errors.WithStack(err)
 	}

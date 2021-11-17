@@ -359,8 +359,7 @@ func (r *Reconciler) reconcileReplicationSecret(
 	commonName := postgres.ReplicationUser
 	dnsNames := []string{commonName}
 
-	// if there is an error or the client leaf certificate is bad, generate a new one
-	if err != nil || pki.LeafCertIsBad(ctx, clientLeaf, rootCACert, cluster.Namespace) {
+	if err == nil && pki.LeafCertIsBad(ctx, clientLeaf, rootCACert, cluster.Namespace) {
 		clientLeaf, err = rootCACert.GenerateLeafCertificate(commonName, dnsNames)
 		err = errors.WithStack(err)
 	}
