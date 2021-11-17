@@ -58,6 +58,38 @@ func (k PrivateKey) Equal(other PrivateKey) bool {
 	return k.ecdsa.Equal(other.ecdsa)
 }
 
+// LeafCertificate is a certificate and private key pair that can be validated
+// by RootCertificateAuthority.
+type LeafCertificate struct {
+	Certificate Certificate
+	PrivateKey  PrivateKey
+}
+
+// RootCertificateAuthority is a certificate and private key pair that can
+// generate other certificates.
+type RootCertificateAuthority struct {
+	Certificate Certificate
+	PrivateKey  PrivateKey
+}
+
+// NewRootCertificateAuthority generates a new key and self-signed certificate
+// for issuing other certificates.
+func NewRootCertificateAuthority() (*RootCertificateAuthority, error) {
+	var root RootCertificateAuthority
+	var serial *big.Int
+
+	key, err := generateKey()
+	if err == nil {
+		serial, err = generateSerialNumber()
+	}
+	if err == nil {
+		root.PrivateKey.ecdsa = key
+		root.Certificate.x509, err = generateRootCertificate(key, serial)
+	}
+
+	return &root, err
+}
+
 // RootIsValid checks if root is valid according to this package's policies.
 func RootIsValid(root *RootCertificateAuthority) bool {
 	if root == nil || root.Certificate.x509 == nil {
