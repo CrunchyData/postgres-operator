@@ -142,7 +142,7 @@ PRIMARY_POD=$(kubectl -n postgres-operator get pods \
 Inspect the environmental variable to see which Pod is the current primary:
 
 ```
-echo $PRMIARY_POD
+echo $PRIMARY_POD
 ```
 
 should yield something similar to:
