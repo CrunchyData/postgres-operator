@@ -17,9 +17,11 @@ package cluster
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -56,6 +58,10 @@ const (
 // needed for nss_wrapper support when upgrading from versions prior to v4.7
 const nssWrapperForceCommand = `# ensure nss_wrapper env vars are set when executing commands as needed for OpenShift compatibility
 ForceCommand NSS_WRAPPER_SUBDIR=ssh . /opt/crunchy/bin/nss_wrapper_env.sh && $SSH_ORIGINAL_COMMAND`
+
+// legacyS3CASHA256Digest informs us if we should override the S3 CA with the
+// new bundle
+const legacyS3CASHA256Digest = "d1c290ea1e4544dec1934931fbfa1fb2060eb3a0f2239ba191f444ecbce35cbb"
 
 // the following regex expressions are used when upgrading the sshd_config file for a PG cluster
 var (
@@ -485,6 +491,19 @@ func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, nam
 	if err == nil {
 		if b, ok := secret.Data["aws-s3-ca.crt"]; ok {
 			config.BackrestS3CA = b
+
+			// if this matches the old AWS S3 CA bundle, update to the new one.
+			if fmt.Sprintf("%x", sha256.Sum256(config.BackrestS3CA)) == legacyS3CASHA256Digest {
+				file := path.Join("/default-pgo-backrest-repo/aws-s3-ca.crt")
+
+				// if we can't read the contents of the file for whatever reason, warn,
+				// otherwise, update the entry in the Secret
+				if contents, err := ioutil.ReadFile(file); err != nil {
+					log.Warn(err)
+				} else {
+					config.BackrestS3CA = contents
+				}
+			}
 		}
 		if b, ok := secret.Data["aws-s3-key"]; ok {
 			config.BackrestS3Key = string(b)
