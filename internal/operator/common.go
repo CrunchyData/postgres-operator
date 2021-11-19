@@ -17,7 +17,9 @@ package operator
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -40,6 +42,9 @@ const (
 	defaultBackrestRepoConfigPath = "/default-pgo-backrest-repo/"
 	// defaultRegistry is the default registry to pull the container images from
 	defaultRegistry = "registry.developers.crunchydata.com/crunchydata"
+	// legacyS3CASHA256Digest informs us if we should override the S3 CA with the
+	// new bundle
+	legacyS3CASHA256Digest = "d1c290ea1e4544dec1934931fbfa1fb2060eb3a0f2239ba191f444ecbce35cbb"
 )
 
 var CRUNCHY_DEBUG bool
@@ -397,9 +402,18 @@ func initializeOperatorBackrestSecret(clientset kubernetes.Interface, namespace 
 
 	// set any missing defaults
 	for _, filename := range defaultBackrestRepoConfigKeys {
-		// skip if there is already content
+		// skip if there is already content, unless this is aws-s3-ca.crt due to
+		// the change in the CA bundle
 		if len(secret.Data[filename]) != 0 {
-			continue
+			if filename != "aws-s3-ca.crt" {
+				continue
+			}
+
+			// in the case of aws-s3-ca.crt, check that this is the default
+			// certificate. if it is, override it
+			if fmt.Sprintf("%x", sha256.Sum256(secret.Data[filename])) != legacyS3CASHA256Digest {
+				continue
+			}
 		}
 
 		file := path.Join(defaultBackrestRepoConfigPath, filename)
