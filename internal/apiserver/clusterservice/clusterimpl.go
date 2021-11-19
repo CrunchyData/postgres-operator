@@ -981,6 +981,10 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		util.BackRestRepoSecretKeyAWSS3KeyGCSKey:         backrestGCSKey,
 	}
 
+	if len(backrestS3CACert) > 0 {
+		s3Credentials[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert] = backrestS3CACert
+	}
+
 	backrestSecret, err := apiserver.Clientset.CoreV1().Secrets(request.Namespace).
 		Get(ctx, secretName, metav1.GetOptions{})
 
@@ -1026,6 +1030,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			len(backrestS3CACert) == 0 {
 			s3Credentials[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert] =
 				backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
+		} else if len(backrestS3CACert) > 0 {
+			s3Credentials[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert] = backrestS3CACert
 		}
 		// the pgBackRest repo config secret already exists, update any provided
 		// S3 credential information
