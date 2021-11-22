@@ -863,7 +863,7 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 
 	testCases := []struct {
 		cluster           *v1beta1.PostgresCluster
-		repoName          string
+		repo              v1beta1.PGBackRestRepo
 		desc              string
 		expectedSelector  string
 		expectedContainer string
@@ -871,18 +871,11 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 		desc: "volume repo defined dedicated repo host enabled",
 		cluster: &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						Repos: []v1beta1.PGBackRestRepo{{
-							Name:   "repo1",
-							Volume: &v1beta1.RepoPVC{},
-						}},
-					},
-				},
-			},
 		},
-		repoName: "repo1",
+		repo: v1beta1.PGBackRestRepo{
+			Name:   "repo1",
+			Volume: &v1beta1.RepoPVC{},
+		},
 		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
 			"postgres-operator.crunchydata.com/pgbackrest=," +
 			"postgres-operator.crunchydata.com/pgbackrest-dedicated=",
@@ -891,18 +884,11 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 		desc: "cloud repo defined no repo host enabled",
 		cluster: &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						Repos: []v1beta1.PGBackRestRepo{{
-							Name: "repo1",
-							S3:   &v1beta1.RepoS3{},
-						}},
-					},
-				},
-			},
 		},
-		repoName: "repo1",
+		repo: v1beta1.PGBackRestRepo{
+			Name: "repo1",
+			S3:   &v1beta1.RepoS3{},
+		},
 		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
 			"postgres-operator.crunchydata.com/instance," +
 			"postgres-operator.crunchydata.com/role=master",
@@ -911,7 +897,7 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			selector, container, err := getPGBackRestExecSelector(tc.cluster, tc.repoName)
+			selector, container, err := getPGBackRestExecSelector(tc.cluster, tc.repo)
 			assert.NilError(t, err)
 			assert.Assert(t, selector.String() == tc.expectedSelector)
 			assert.Assert(t, container == tc.expectedContainer)
@@ -980,7 +966,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		SystemIdentifier: "6952526174828511264",
 	}
 
-	replicaCreateRepo := postgresCluster.Spec.Backups.PGBackRest.Repos[0].Name
+	replicaCreateRepo := postgresCluster.Spec.Backups.PGBackRest.Repos[0]
 	configHash := "abcde12345"
 
 	sa := &corev1.ServiceAccount{
@@ -994,7 +980,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	// now find the expected job
 	jobs := &batchv1.JobList{}
 	err = tClient.List(ctx, jobs, &client.ListOptions{
-		LabelSelector: naming.PGBackRestBackupJobSelector(clusterName, replicaCreateRepo,
+		LabelSelector: naming.PGBackRestBackupJobSelector(clusterName, replicaCreateRepo.Name,
 			naming.BackupReplicaCreate),
 	})
 	assert.NilError(t, err)
@@ -1014,7 +1000,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	var foundConfigAnnotation, foundHashAnnotation bool
 	// verify annotations
 	for k, v := range backupJob.GetAnnotations() {
-		if k == naming.PGBackRestCurrentConfig && v == pgbackrest.CMRepoKey {
+		if k == naming.PGBackRestCurrentConfig && v == naming.PGBackRestRepoContainerName {
 			foundConfigAnnotation = true
 		}
 		if k == naming.PGBackRestConfigHash && v == configHash {
@@ -1081,7 +1067,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	// verify the status has been updated properly
 	var replicaCreateRepoStatus *v1beta1.RepoStatus
 	for i, r := range postgresCluster.Status.PGBackRest.Repos {
-		if r.Name == replicaCreateRepo {
+		if r.Name == replicaCreateRepo.Name {
 			replicaCreateRepoStatus = &postgresCluster.Status.PGBackRest.Repos[i]
 			break
 		}
@@ -2266,8 +2252,8 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 func TestGenerateBackupJobIntent(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		_, err := generateBackupJobSpecIntent(
-			&v1beta1.PostgresCluster{},
-			"", "", "", "", "",
+			&v1beta1.PostgresCluster{}, v1beta1.PGBackRestRepo{},
+			"",
 			nil, nil,
 		)
 		assert.NilError(t, err)
@@ -2280,8 +2266,8 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 			},
 		}
 		job, err := generateBackupJobSpecIntent(
-			cluster,
-			"", "", "", "", "",
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
 			nil, nil,
 		)
 		assert.NilError(t, err)
@@ -2297,8 +2283,8 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 				PGBackRest: v1beta1.PGBackRestArchive{},
 			}
 			job, err := generateBackupJobSpecIntent(
-				cluster,
-				"", "", "", "", "",
+				cluster, v1beta1.PGBackRestRepo{},
+				"",
 				nil, nil,
 			)
 			assert.NilError(t, err)
@@ -2315,8 +2301,8 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 				},
 			}
 			job, err := generateBackupJobSpecIntent(
-				cluster,
-				"", "", "", "", "",
+				cluster, v1beta1.PGBackRestRepo{},
+				"",
 				nil, nil,
 			)
 			assert.NilError(t, err)
