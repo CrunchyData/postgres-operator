@@ -853,8 +853,6 @@ func TestSecret(t *testing.T) {
 	assert.NilError(t, leaf.Certificate.UnmarshalText(intent.Data["pgbackrest-repo-host.crt"]))
 	assert.NilError(t, leaf.PrivateKey.UnmarshalText(intent.Data["pgbackrest-repo-host.key"]))
 
-	ok := !pki.LeafCertIsBad(ctx, leaf, root, host.Namespace)
-	assert.Assert(t, ok)
 	assert.DeepEqual(t, leaf.Certificate.DNSNames(), []string{
 		leaf.Certificate.CommonName(),
 		"some-repo-0.some-domain.ns1.svc",
@@ -878,8 +876,6 @@ func TestSecret(t *testing.T) {
 		assert.NilError(t, leaf2.Certificate.UnmarshalText(intent.Data["pgbackrest-repo-host.crt"]))
 		assert.NilError(t, leaf2.PrivateKey.UnmarshalText(intent.Data["pgbackrest-repo-host.key"]))
 
-		ok := !pki.LeafCertIsBad(ctx, leaf2, root2, host.Namespace)
-		assert.Assert(t, ok)
 		assert.Assert(t, !reflect.DeepEqual(leaf.Certificate, leaf2.Certificate))
 		assert.Assert(t, !reflect.DeepEqual(leaf.PrivateKey, leaf2.PrivateKey))
 	})

@@ -89,8 +89,8 @@ func Secret(ctx context.Context,
 		dnsNames := naming.ServiceDNSNames(ctx, inService)
 		dnsFQDN := dnsNames[0]
 
-		if err == nil && pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
-			leaf, err = inRoot.GenerateLeafCertificate(dnsFQDN, dnsNames)
+		if err == nil {
+			leaf, err = inRoot.RegenerateLeafWhenNecessary(leaf, dnsFQDN, dnsNames)
 			err = errors.WithStack(err)
 		}
 

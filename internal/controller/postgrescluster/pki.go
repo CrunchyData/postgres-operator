@@ -59,7 +59,7 @@ func (r *Reconciler) reconcileRootCertificate(
 	_ = root.Certificate.UnmarshalText(existing.Data[keyCertificate])
 	_ = root.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
 
-	if err == nil && pki.RootCAIsBad(root) {
+	if err == nil && !pki.RootIsValid(root) {
 		root, err = pki.NewRootCertificateAuthority()
 		err = errors.WithStack(err)
 	}
@@ -110,7 +110,7 @@ func (r *Reconciler) reconcileRootCertificate(
 // tls.crt, tls.key and ca.crt which are the TLS certificate, private key
 // and CA certificate, respectively.
 func (r *Reconciler) reconcileClusterCertificate(
-	ctx context.Context, rootCACert *pki.RootCertificateAuthority,
+	ctx context.Context, root *pki.RootCertificateAuthority,
 	cluster *v1beta1.PostgresCluster, primaryService *corev1.Service,
 ) (
 	*corev1.SecretProjection, error,
@@ -133,8 +133,8 @@ func (r *Reconciler) reconcileClusterCertificate(
 	dnsNames := naming.ServiceDNSNames(ctx, primaryService)
 	dnsFQDN := dnsNames[0]
 
-	if err == nil && pki.LeafCertIsBad(ctx, leaf, rootCACert, cluster.Namespace) {
-		leaf, err = rootCACert.GenerateLeafCertificate(dnsFQDN, dnsNames)
+	if err == nil {
+		leaf, err = root.RegenerateLeafWhenNecessary(leaf, dnsFQDN, dnsNames)
 		err = errors.WithStack(err)
 	}
 
@@ -164,7 +164,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 		err = errors.WithStack(err)
 	}
 	if err == nil {
-		intent.Data[rootCA], err = rootCACert.Certificate.MarshalText()
+		intent.Data[rootCA], err = root.Certificate.MarshalText()
 		err = errors.WithStack(err)
 	}
 
@@ -192,7 +192,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 // using the current root certificate
 func (*Reconciler) instanceCertificate(
 	ctx context.Context, instance *appsv1.StatefulSet,
-	existing, intent *corev1.Secret, rootCACert *pki.RootCertificateAuthority,
+	existing, intent *corev1.Secret, root *pki.RootCertificateAuthority,
 ) (
 	*pki.LeafCertificate, error,
 ) {
@@ -208,8 +208,8 @@ func (*Reconciler) instanceCertificate(
 	dnsNames := naming.InstancePodDNSNames(ctx, instance)
 	dnsFQDN := dnsNames[0]
 
-	if err == nil && pki.LeafCertIsBad(ctx, leaf, rootCACert, instance.Namespace) {
-		leaf, err = rootCACert.GenerateLeafCertificate(dnsFQDN, dnsNames)
+	if err == nil {
+		leaf, err = root.RegenerateLeafWhenNecessary(leaf, dnsFQDN, dnsNames)
 		err = errors.WithStack(err)
 	}
 

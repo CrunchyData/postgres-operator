@@ -45,6 +45,17 @@ func TestCertificateDNSNames(t *testing.T) {
 	assert.Assert(t, zero.DNSNames() == nil)
 }
 
+func TestCertificateHasSubject(t *testing.T) {
+	zero := Certificate{}
+
+	// The zero value has no subject.
+	for _, cn := range []string{"", "any"} {
+		for _, dns := range [][]string{nil, {}, {"any"}} {
+			assert.Assert(t, !zero.hasSubject(cn, dns), "for (%q, %q)", cn, dns)
+		}
+	}
+}
+
 func TestCertificateEqual(t *testing.T) {
 	zero := Certificate{}
 	assert.Assert(t, zero.Equal(zero))
@@ -254,9 +265,6 @@ func TestLeafCertificate(t *testing.T) {
 			assert.Assert(t, cert.IPAddresses == nil)
 			assert.Assert(t, cert.URIs == nil)
 
-			assert.Equal(t, leaf.Certificate.CommonName(), tt.commonName)
-			assert.DeepEqual(t, leaf.Certificate.DNSNames(), tt.dnsNames)
-
 			// CAs must include the Authority Key Identifier on new certificates.
 			// The "crypto/x509" package adds it automatically since Go 1.15.
 			// - https://tools.ietf.org/html/rfc5280#section-4.2.1.1
@@ -281,6 +289,40 @@ func TestLeafCertificate(t *testing.T) {
 				t.Run("Strict", func(t *testing.T) {
 					strictOpenSSLVerify(t, openssl, root.Certificate, leaf.Certificate)
 				})
+			})
+
+			t.Run("Subject", func(t *testing.T) {
+				assert.Equal(t,
+					leaf.Certificate.CommonName(), tt.commonName)
+				assert.DeepEqual(t,
+					leaf.Certificate.DNSNames(), tt.dnsNames)
+				assert.Assert(t,
+					leaf.Certificate.hasSubject(tt.commonName, tt.dnsNames))
+
+				for _, other := range []struct {
+					test       string
+					commonName string
+					dnsNames   []string
+				}{
+					{
+						test:       "DifferentCommonName",
+						commonName: "other",
+						dnsNames:   tt.dnsNames,
+					},
+					{
+						test:       "DifferentDNSNames",
+						commonName: tt.commonName,
+						dnsNames:   []string{"other"},
+					},
+					{
+						test:       "DNSNameSubset",
+						commonName: tt.commonName,
+						dnsNames:   []string{"local-name"},
+					},
+				} {
+					assert.Assert(t,
+						!leaf.Certificate.hasSubject(other.commonName, other.dnsNames))
+				}
 			})
 		})
 	}
@@ -361,6 +403,26 @@ func TestLeafIsInvalid(t *testing.T) {
 
 		assert.Assert(t, !root.leafIsValid(leaf))
 	})
+}
+
+func TestRegenerateLeaf(t *testing.T) {
+	root, err := NewRootCertificateAuthority()
+	assert.NilError(t, err)
+
+	before, err := root.GenerateLeafCertificate("before", nil)
+	assert.NilError(t, err)
+
+	// Leaf is the same when the subject is the same.
+	same, err := root.RegenerateLeafWhenNecessary(before, "before", nil)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, same, before)
+
+	after, err := root.RegenerateLeafWhenNecessary(before, "after", nil)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, same, before) // Argument does not change.
+
+	assert.Assert(t, after.Certificate.hasSubject("after", nil))
+	assert.Assert(t, !after.Certificate.Equal(before.Certificate))
 }
 
 func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf Certificate) {

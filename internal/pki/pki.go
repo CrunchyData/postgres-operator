@@ -50,6 +50,19 @@ func (c Certificate) DNSNames() []string {
 	return append([]string{}, c.x509.DNSNames...)
 }
 
+// hasSubject checks that c has these values in its subject.
+func (c Certificate) hasSubject(commonName string, dnsNames []string) bool {
+	ok := c.x509 != nil &&
+		c.x509.Subject.CommonName == commonName &&
+		len(c.x509.DNSNames) == len(dnsNames)
+
+	for i := range dnsNames {
+		ok = ok && c.x509.DNSNames[i] == dnsNames[i]
+	}
+
+	return ok
+}
+
 // Equal reports whether k and other have the same value.
 func (k PrivateKey) Equal(other PrivateKey) bool {
 	if k.ecdsa == nil || other.ecdsa == nil {
@@ -182,4 +195,19 @@ func (root *RootCertificateAuthority) leafIsValid(leaf *LeafCertificate) bool {
 		leaf.PrivateKey.ecdsa.PublicKey.Equal(leaf.Certificate.x509.PublicKey)
 
 	return ok
+}
+
+// RegenerateLeafWhenNecessary returns leaf when it is valid according to this
+// package's policies, signed by root, and has commonName and dnsNames in its
+// subject. Otherwise, it returns a new key and certificate signed by root.
+func (root *RootCertificateAuthority) RegenerateLeafWhenNecessary(
+	leaf *LeafCertificate, commonName string, dnsNames []string,
+) (*LeafCertificate, error) {
+	ok := root.leafIsValid(leaf) &&
+		leaf.Certificate.hasSubject(commonName, dnsNames)
+
+	if ok {
+		return leaf, nil
+	}
+	return root.GenerateLeafCertificate(commonName, dnsNames)
 }
