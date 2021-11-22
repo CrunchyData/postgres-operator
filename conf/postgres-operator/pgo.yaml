@@ -2,7 +2,7 @@ Cluster:
   CCPImagePrefix:  registry.developers.crunchydata.com/crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos8-12.8-4.5.4
+  CCPImageTag:  centos8-12.9-4.5.5
   Port:  5432
   PGBadgerPort: 10000
   ExporterPort: 9187
@@ -82,4 +82,4 @@ Storage:
 Pgo:
   Audit:  false
   PGOImagePrefix:  registry.developers.crunchydata.com/crunchydata
-  PGOImageTag:  centos8-4.5.4
+  PGOImageTag:  centos8-4.5.5
