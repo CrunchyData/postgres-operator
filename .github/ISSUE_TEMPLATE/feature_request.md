@@ -31,8 +31,8 @@ Tell us about your environment:
 Please provide the following details:
 
 - Platform: (`Kubernetes`, `OpenShift`, `Rancher`, `GKE`, `EKS`, `AKS` etc.)
-- Platform Version: (e.g. `1.20.3`, `4.7.3`)
-- PGO Image Tag: (e.g. `centos8-4.7.3`)
+- Platform Version: (e.g. `1.20.3`, `4.7.4`)
+- PGO Image Tag: (e.g. `centos8-4.7.4`)
 - Postgres Version (e.g. `13`)
 - Storage: (e.g. `hostpath`, `nfs`, or the name of your storage class)
 - Number of Postgres clusters: (`XYZ`)
