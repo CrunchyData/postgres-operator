@@ -334,7 +334,7 @@ func (r *Reconciler) reconcilePatroniStatus(
 // account and enable cert authentication for that user
 func (r *Reconciler) reconcileReplicationSecret(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	rootCACert *pki.RootCertificateAuthority,
+	root *pki.RootCertificateAuthority,
 ) (*corev1.Secret, error) {
 
 	// if a custom postgrescluster secret is provided, just return it
@@ -352,15 +352,15 @@ func (r *Reconciler) reconcileReplicationSecret(
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
-	clientLeaf := &pki.LeafCertificate{}
-	_ = clientLeaf.Certificate.UnmarshalText(existing.Data[naming.ReplicationCert])
-	_ = clientLeaf.PrivateKey.UnmarshalText(existing.Data[naming.ReplicationPrivateKey])
+	leaf := &pki.LeafCertificate{}
+	_ = leaf.Certificate.UnmarshalText(existing.Data[naming.ReplicationCert])
+	_ = leaf.PrivateKey.UnmarshalText(existing.Data[naming.ReplicationPrivateKey])
 
 	commonName := postgres.ReplicationUser
 	dnsNames := []string{commonName}
 
-	if err == nil && pki.LeafCertIsBad(ctx, clientLeaf, rootCACert, cluster.Namespace) {
-		clientLeaf, err = rootCACert.GenerateLeafCertificate(commonName, dnsNames)
+	if err == nil {
+		leaf, err = root.RegenerateLeafWhenNecessary(leaf, commonName, dnsNames)
 		err = errors.WithStack(err)
 	}
 
@@ -382,15 +382,15 @@ func (r *Reconciler) reconcileReplicationSecret(
 		return nil, err
 	}
 	if err == nil {
-		intent.Data[naming.ReplicationCert], err = clientLeaf.Certificate.MarshalText()
+		intent.Data[naming.ReplicationCert], err = leaf.Certificate.MarshalText()
 		err = errors.WithStack(err)
 	}
 	if err == nil {
-		intent.Data[naming.ReplicationPrivateKey], err = clientLeaf.PrivateKey.MarshalText()
+		intent.Data[naming.ReplicationPrivateKey], err = leaf.PrivateKey.MarshalText()
 		err = errors.WithStack(err)
 	}
 	if err == nil {
-		intent.Data[naming.ReplicationCACert], err = rootCACert.Certificate.MarshalText()
+		intent.Data[naming.ReplicationCACert], err = root.Certificate.MarshalText()
 		err = errors.WithStack(err)
 	}
 	if err == nil {

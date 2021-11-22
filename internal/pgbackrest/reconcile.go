@@ -503,10 +503,8 @@ func Secret(ctx context.Context,
 		dnsNames := []string{commonName}
 
 		if err == nil {
-			if pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) || leaf.Certificate.CommonName() != commonName {
-				leaf, err = inRoot.GenerateLeafCertificate(commonName, dnsNames)
-				err = errors.WithStack(err)
-			}
+			leaf, err = inRoot.RegenerateLeafWhenNecessary(leaf, commonName, dnsNames)
+			err = errors.WithStack(err)
 		}
 
 		if err == nil {
@@ -531,8 +529,8 @@ func Secret(ctx context.Context,
 		dnsNames := naming.RepoHostPodDNSNames(ctx, inRepoHost)
 		commonName := dnsNames[0] // FQDN
 
-		if err == nil && pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
-			leaf, err = inRoot.GenerateLeafCertificate(commonName, dnsNames)
+		if err == nil {
+			leaf, err = inRoot.RegenerateLeafWhenNecessary(leaf, commonName, dnsNames)
 			err = errors.WithStack(err)
 		}
 
