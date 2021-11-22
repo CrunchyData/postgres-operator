@@ -35,6 +35,11 @@ imageCrunchyExporter = "registry.developers.crunchydata.com/crunchydata/crunchy-
 repository = "registry.developers.crunchydata.com/crunchydata"
 postgresOperatorTag = "ubi8-5.0.4-0"
 postgresVersion = "13"
+postgresVersion14 = "14.1"
+postgresVersion13 = "13.5"
+postgresVersion12 = "12.9"
+postgresVersion11 = "11.14"
+postgresVersion10 = "10.10"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]

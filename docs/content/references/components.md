@@ -22,31 +22,31 @@ PGO, the Postgres Operator from Crunchy Data, is tested on the following platfor
 The following table defines the compatibility between PGO and the various component containers
 needed to deploy PostgreSQL clusters using PGO.
 
-The listed versions of Postgres show the latest minor release (e.g. 13.4) of each major version (e.g. 13). Older minor releases may still be compatible with PGO. We generally recommend to run the latest minor release for the [same reasons that the PostgreSQL community provides](https://www.postgresql.org/support/versioning/).
+The listed versions of Postgres show the latest minor release (e.g. {{< param postgresVersion13 >}}) of each major version (e.g. {{< param postgresVersion >}}). Older minor releases may still be compatible with PGO. We generally recommend to run the latest minor release for the [same reasons that the PostgreSQL community provides](https://www.postgresql.org/support/versioning/).
 
 Note that for the 5.0.3 release and beyond, the Postgres containers were renamed to `crunchy-postgres` and `crunchy-postgres-gis`.
 
 | Component | Version | PGO Version Min. | PGO Version Max. |
 |-----------|---------|------------------|------------------|
-| `crunchy-pgbackrest` | 2.36 | 5.0.4 | 5.0.4 |
+| `crunchy-pgbackrest` | 2.36 | 5.0.4 | {{< param operatorVersion >}} |
 | `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
 | `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
-| `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.4 |
-| `crunchy-pgbouncer` | 1.16 | 5.0.4 | 5.0.4 |
-| `crunchy-postgres` | 14.0 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres` | 13.4 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres` | 12.8 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres` | 11.13 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres` | 10.18 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 14.0-3.1 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 13.4-3.1 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 13.4-3.0 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 12.8-3.0 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 12.8-2.5 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 11.13-2.5 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 11.13-2.4 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 10.18-2.4 | 5.0.3 | 5.0.3 |
-| `crunchy-postgres-gis` | 10.18-2.3 | 5.0.3 | 5.0.3 |
+| `crunchy-pgbouncer` | 1.16.1 | 5.0.4 | {{< param operatorVersion >}} |
+| `crunchy-pgbouncer` | 1.15 | 5.0.0 | {{< param operatorVersion >}} |
+| `crunchy-postgres` | {{< param postgresVersion14 >}} | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres` | {{< param postgresVersion13 >}} | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres` | {{< param postgresVersion12 >}} | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres` | {{< param postgresVersion11 >}} | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres` | {{< param postgresVersion10 >}} | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion14 >}} -3.1 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion13 >}}-3.1 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion13 >}}-3.0 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion12 >}}-3.0 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion12 >}}-2.5 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion11 >}}-2.5 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion11 >}}-2.4 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion10 >}}-2.4 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion10 >}}-2.3 | 5.0.3 | {{< param operatorVersion >}} |
 
 The latest Postgres containers include Patroni 2.1.1.
 
