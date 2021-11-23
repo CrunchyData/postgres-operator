@@ -172,6 +172,8 @@ type PostgresClusterSpec struct {
 	// +listMapKey=name
 	// +optional
 	Users []PostgresUserSpec `json:"users,omitempty"`
+
+	Config PostgresAdditionalConfig `json:"config,omitempty"`
 }
 
 // DataSource defines data sources for a new PostgresCluster.
@@ -596,6 +598,10 @@ type PGUpgradeStatus struct {
 	// The number of Pods for the upgrade Job that reached the "Failed" phase.
 	// +optional
 	Failed int32 `json:"failed,omitempty"`
+}
+
+type PostgresAdditionalConfig struct {
+	Files []corev1.VolumeProjection `json:"files,omitempty"`
 }
 
 // +kubebuilder:object:root=true

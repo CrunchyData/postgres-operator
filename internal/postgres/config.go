@@ -53,6 +53,9 @@ safelink() (
 	// ReplicationUser is the PostgreSQL role that will be created by Patroni
 	// for streaming replication and for `pg_rewind`.
 	ReplicationUser = "_crunchyrepl"
+
+	// configMountPath is where to mount additional config files
+	configMountPath = "/etc/postgres"
 )
 
 // ConfigDirectory returns the absolute path to $PGDATA for cluster.
@@ -99,6 +102,19 @@ func Environment(cluster *v1beta1.PostgresCluster) []corev1.EnvVar {
 		{
 			Name:  "PGPORT",
 			Value: fmt.Sprint(*cluster.Spec.Port),
+		},
+		// Setting the KRB5_CONFIG for kerberos
+		// - https://web.mit.edu/kerberos/krb5-current/doc/admin/conf_files/krb5_conf.html
+		{
+			Name:  "KRB5_CONFIG",
+			Value: configMountPath + "/krb5.conf",
+		},
+		// In testing it was determined that we need to set this env var for the replay cache
+		// otherwise it defaults to the read-only location `/var/tmp/`
+		// - https://web.mit.edu/kerberos/krb5-current/doc/basic/rcache_def.html#replay-cache-types
+		{
+			Name:  "KRB5RCACHEDIR",
+			Value: "/tmp",
 		},
 	}
 }
