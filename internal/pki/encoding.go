@@ -39,7 +39,7 @@ var (
 	_ encoding.TextUnmarshaler = (*Certificate)(nil)
 )
 
-// MarshalText returns a PEM encoding of c.
+// MarshalText returns a PEM encoding of c that OpenSSL understands.
 func (c Certificate) MarshalText() ([]byte, error) {
 	if c.x509 == nil || len(c.x509.Raw) == 0 {
 		_, err := x509.ParseCertificate(nil)
@@ -73,7 +73,7 @@ var (
 	_ encoding.TextUnmarshaler = (*PrivateKey)(nil)
 )
 
-// MarshalText returns a PEM encoding of k.
+// MarshalText returns a PEM encoding of k that OpenSSL understands.
 func (k PrivateKey) MarshalText() ([]byte, error) {
 	if k.ecdsa == nil {
 		k.ecdsa = new(ecdsa.PrivateKey)

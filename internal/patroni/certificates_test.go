@@ -16,62 +16,31 @@
 package patroni
 
 import (
+	"errors"
 	"testing"
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
-const rootPEM = `-----BEGIN CERTIFICATE-----
-MIIBgTCCASigAwIBAgIRAO0NXdQ5ZtvI26doDvj9Dx8wCgYIKoZIzj0EAwMwHzEd
-MBsGA1UEAxMUcG9zdGdyZXMtb3BlcmF0b3ItY2EwHhcNMjEwMTI3MjEyNTU0WhcN
-MzEwMTI1MjIyNTU0WjAfMR0wGwYDVQQDExRwb3N0Z3Jlcy1vcGVyYXRvci1jYTBZ
-MBMGByqGSM49AgEGCCqGSM49AwEHA0IABL0xD8B6ZQHPscklofw2hpEN1F8h06Ys
-IRhK2xoy8ASkiKOkzXVs22R/Wnv/+jAMVf9rit0vhblZlvn2yP7e29WjRTBDMA4G
-A1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAGAQH/AgECMB0GA1UdDgQWBBQjfqdS
-Ynr3rFHMLd3fHO79tH3w5DAKBggqhkjOPQQDAwNHADBEAiA41LbQXeC0G/AyOHgs
-gaUp3fzHKSsrTGhzA8+dK2mnSgIgEKnv1FquJBJuXRBAxzrmnt0nJPiTWB926iNE
-BY8V4Ag=
------END CERTIFICATE-----`
+type funcMarshaler func() ([]byte, error)
 
-func TestCertAuthorities(t *testing.T) {
-	root := pki.Certificate{}
-	assert.NilError(t, root.UnmarshalText([]byte(rootPEM)))
-
-	data, err := certAuthorities(root)
-	assert.NilError(t, err)
-
-	// PEM-encoded certificates.
-	assert.DeepEqual(t, string(data), rootPEM+"\n")
-}
+func (f funcMarshaler) MarshalText() ([]byte, error) { return f() }
 
 func TestCertFile(t *testing.T) {
-	root, err := pki.NewRootCertificateAuthority()
-	assert.NilError(t, err)
+	expected := errors.New("boom")
+	var short funcMarshaler = func() ([]byte, error) { return []byte(`one`), nil }
+	var fail funcMarshaler = func() ([]byte, error) { return nil, expected }
 
-	instance, err := root.GenerateLeafCertificate("instance.pod-dns", nil)
+	text, err := certFile(short, short, short)
 	assert.NilError(t, err)
+	assert.DeepEqual(t, text, []byte(`oneoneone`))
 
-	data, err := certFile(instance.PrivateKey, instance.Certificate)
-	assert.NilError(t, err)
-
-	// PEM-encoded key followed by the certificate
-	// - https://docs.python.org/3/library/ssl.html#combined-key-and-certificate
-	// - https://docs.python.org/3/library/ssl.html#certificate-chains
-	assert.Assert(t,
-		cmp.Regexp(`^`+
-			`-----BEGIN [^ ]+ PRIVATE KEY-----\n`+
-			`([^-]+\n)+`+
-			`-----END [^ ]+ PRIVATE KEY-----\n`+
-			`-----BEGIN CERTIFICATE-----\n`+
-			`([^-]+\n)+`+
-			`-----END CERTIFICATE-----\n`+
-			`$`,
-			string(data),
-		))
+	text, err = certFile(short, fail, short)
+	assert.Equal(t, err, expected)
+	assert.DeepEqual(t, text, []byte(nil))
 }
 
 func TestInstanceCertificates(t *testing.T) {

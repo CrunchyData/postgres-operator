@@ -16,11 +16,12 @@
 package pgbackrest
 
 import (
+	"encoding"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
-	"github.com/crunchydata/postgres-operator/internal/pki"
 )
 
 const (
@@ -47,13 +48,12 @@ const (
 	certRepoSecretKey           = "pgbackrest-repo-host.crt" // #nosec G101 this is a name, not a credential
 )
 
-// certAuthorities returns the PEM encoding of roots that can be read by OpenSSL
-// for TLS verification.
-func certAuthorities(roots ...pki.Certificate) ([]byte, error) {
+// certFile concatenates the results of multiple PEM-encoding marshalers.
+func certFile(texts ...encoding.TextMarshaler) ([]byte, error) {
 	var out []byte
 
-	for i := range roots {
-		if b, err := roots[i].MarshalText(); err == nil {
+	for i := range texts {
+		if b, err := texts[i].MarshalText(); err == nil {
 			out = append(out, b...)
 		} else {
 			return nil, err
@@ -61,18 +61,6 @@ func certAuthorities(roots ...pki.Certificate) ([]byte, error) {
 	}
 
 	return out, nil
-}
-
-// certFile returns the PEM encoding of cert that can be read by OpenSSL
-// for TLS identification.
-func certFile(cert pki.Certificate) ([]byte, error) {
-	return cert.MarshalText()
-}
-
-// certPrivateKey returns the PEM encoding of key that can be read by OpenSSL
-// for TLS identification.
-func certPrivateKey(key pki.PrivateKey) ([]byte, error) {
-	return key.MarshalText()
 }
 
 // clientCertificates returns projections of CAs, keys, and certificates to
