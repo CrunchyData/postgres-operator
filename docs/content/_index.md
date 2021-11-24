@@ -127,7 +127,7 @@ The Crunchy PostgreSQL Operator extends Kubernetes to provide a higher-level abs
   - [pg_cron](https://github.com/citusdata/pg_cron)
   - [pg_partman](https://github.com/pgpartman/pg_partman)
   - [set_user](https://github.com/pgaudit/set_user)
-  - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache-licensed community edition)
+  - [TimescaleDB](https://github.com/timescale/timescaledb) (Apache 2 edition)
   - [wal2json](https://github.com/eulerto/wal2json)
 - [pgBackRest](https://pgbackrest.org/)
 - [pgBouncer](http://pgbouncer.github.io/)
