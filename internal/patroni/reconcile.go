@@ -80,12 +80,10 @@ func InstanceCertificates(ctx context.Context,
 	initialize.ByteMap(&outInstanceCertificates.Data)
 
 	var err error
-	outInstanceCertificates.Data[certAuthorityFileKey], err =
-		certAuthorities(inRoot)
+	outInstanceCertificates.Data[certAuthorityFileKey], err = certFile(inRoot)
 
 	if err == nil {
-		outInstanceCertificates.Data[certServerFileKey], err =
-			certFile(inDNSKey, inDNS)
+		outInstanceCertificates.Data[certServerFileKey], err = certFile(inDNSKey, inDNS)
 	}
 
 	return err

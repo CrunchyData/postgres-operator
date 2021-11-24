@@ -16,9 +16,9 @@
 package patroni
 
 import (
-	corev1 "k8s.io/api/core/v1"
+	"encoding"
 
-	"github.com/crunchydata/postgres-operator/internal/pki"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -29,36 +29,16 @@ const (
 	certServerFileKey    = "patroni.crt-combined"
 )
 
-// certAuthorities encodes roots in a format suitable for Patroni's TLS verification.
-func certAuthorities(roots ...pki.Certificate) ([]byte, error) {
+// certFile concatenates the results of multiple PEM-encoding marshalers.
+func certFile(texts ...encoding.TextMarshaler) ([]byte, error) {
 	var out []byte
 
-	for i := range roots {
-		if b, err := roots[i].MarshalText(); err == nil {
+	for i := range texts {
+		if b, err := texts[i].MarshalText(); err == nil {
 			out = append(out, b...)
 		} else {
 			return nil, err
 		}
-	}
-
-	return out, nil
-}
-
-// certFile encodes cert and key as a combination suitable for
-// Patroni's TLS identification. It can be used by both the client and the server.
-func certFile(key pki.PrivateKey, cert pki.Certificate) ([]byte, error) {
-	var out []byte
-
-	if b, err := key.MarshalText(); err == nil {
-		out = append(out, b...)
-	} else {
-		return nil, err
-	}
-
-	if b, err := cert.MarshalText(); err == nil {
-		out = append(out, b...)
-	} else {
-		return nil, err
 	}
 
 	return out, nil

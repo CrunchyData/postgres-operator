@@ -61,22 +61,44 @@ func TestReconcileInstanceCertificates(t *testing.T) {
 	leaf, err := root.GenerateLeafCertificate("any", nil)
 	assert.NilError(t, err, "bug in test")
 
+	dataCA, _ := certFile(root.Certificate)
+	assert.Assert(t,
+		cmp.Regexp(`^`+
+			`-----BEGIN CERTIFICATE-----\n`+
+			`([^-]+\n)+`+
+			`-----END CERTIFICATE-----\n`+
+			`$`, string(dataCA),
+		),
+		"expected a PEM-encoded certificate bundle")
+
+	dataCert, _ := certFile(leaf.PrivateKey, leaf.Certificate)
+	assert.Assert(t,
+		cmp.Regexp(`^`+
+			`-----BEGIN [^ ]+ PRIVATE KEY-----\n`+
+			`([^-]+\n)+`+
+			`-----END [^ ]+ PRIVATE KEY-----\n`+
+			`-----BEGIN CERTIFICATE-----\n`+
+			`([^-]+\n)+`+
+			`-----END CERTIFICATE-----\n`+
+			`$`, string(dataCert),
+		),
+		// - https://docs.python.org/3/library/ssl.html#combined-key-and-certificate
+		// - https://docs.python.org/3/library/ssl.html#certificate-chains
+		"expected a PEM-encoded key followed by the certificate")
+
 	ctx := context.Background()
 	secret := new(corev1.Secret)
-	cert := leaf.Certificate
-	key := leaf.PrivateKey
 
-	dataCA, _ := certAuthorities(root.Certificate)
-	dataCert, _ := certFile(key, cert)
-
-	assert.NilError(t, InstanceCertificates(ctx, root.Certificate, cert, key, secret))
+	assert.NilError(t, InstanceCertificates(ctx,
+		root.Certificate, leaf.Certificate, leaf.PrivateKey, secret))
 
 	assert.DeepEqual(t, secret.Data["patroni.ca-roots"], dataCA)
 	assert.DeepEqual(t, secret.Data["patroni.crt-combined"], dataCert)
 
 	// No change when called again.
 	before := secret.DeepCopy()
-	assert.NilError(t, InstanceCertificates(ctx, root.Certificate, cert, key, secret))
+	assert.NilError(t, InstanceCertificates(ctx,
+		root.Certificate, leaf.Certificate, leaf.PrivateKey, secret))
 	assert.DeepEqual(t, secret, before)
 }
 

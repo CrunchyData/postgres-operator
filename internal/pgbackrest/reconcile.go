@@ -390,7 +390,7 @@ func InstanceCertificates(ctx context.Context,
 			outInstanceCertificates.Data[certInstanceSecretKey], err = certFile(inDNS)
 		}
 		if err == nil {
-			outInstanceCertificates.Data[certInstancePrivateKeySecretKey], err = certPrivateKey(inDNSKey)
+			outInstanceCertificates.Data[certInstancePrivateKeySecretKey], err = certFile(inDNSKey)
 		}
 	}
 
@@ -510,10 +510,10 @@ func Secret(ctx context.Context,
 		}
 
 		if err == nil {
-			outSecret.Data[certAuthoritySecretKey], err = certAuthorities(inRoot.Certificate)
+			outSecret.Data[certAuthoritySecretKey], err = certFile(inRoot.Certificate)
 		}
 		if err == nil {
-			outSecret.Data[certClientPrivateKeySecretKey], err = certPrivateKey(leaf.PrivateKey)
+			outSecret.Data[certClientPrivateKeySecretKey], err = certFile(leaf.PrivateKey)
 		}
 		if err == nil {
 			outSecret.Data[certClientSecretKey], err = certFile(leaf.Certificate)
@@ -537,7 +537,7 @@ func Secret(ctx context.Context,
 		}
 
 		if err == nil {
-			outSecret.Data[certRepoPrivateKeySecretKey], err = certPrivateKey(leaf.PrivateKey)
+			outSecret.Data[certRepoPrivateKeySecretKey], err = certFile(leaf.PrivateKey)
 		}
 		if err == nil {
 			outSecret.Data[certRepoSecretKey], err = certFile(leaf.Certificate)
