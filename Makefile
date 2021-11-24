@@ -250,6 +250,7 @@ pull-%:
 generate: generate-crd generate-crd-docs generate-deepcopy generate-rbac
 
 generate-crd:
+	rm -f ./build/crd/generated/*.yaml
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
 		crd:crdVersions='v1',preserveUnknownFields='false' \
 		paths='./pkg/apis/...' \
@@ -257,6 +258,7 @@ generate-crd:
 	@
 	@# Kustomize returns lots of objects. The following only makes sense when there is one CRD.
 	[ "$$(ls -1 ./build/crd/generated)" = 'postgres-operator.crunchydata.com_postgresclusters.yaml' ]
+	./hack/controller-labels.sh --path "build/crd/generated" --version "$(PGO_VERSION)"
 	$(PGO_KUBE_CLIENT) kustomize ./build/crd > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 
 generate-crd-docs:

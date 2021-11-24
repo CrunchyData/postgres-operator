@@ -11,3 +11,6 @@ patchesJson6902:
     kind: CustomResourceDefinition
     name: postgresclusters.postgres-operator.crunchydata.com
   path: validation.yaml
+
+patchesStrategicMerge:
+- generated/labels.yaml
