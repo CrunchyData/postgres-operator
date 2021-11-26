@@ -39,10 +39,6 @@ const (
 	// DefaultStanzaName is the name of the default pgBackRest stanza
 	DefaultStanzaName = "db"
 
-	// configmap key references
-	cmJobKey     = "pgbackrest_job.conf"
-	cmPrimaryKey = "pgbackrest_primary.conf"
-
 	// CMInstanceKey is the name of the pgBackRest configuration file for a PostgreSQL instance
 	CMInstanceKey = "pgbackrest_instance.conf"
 
@@ -56,8 +52,6 @@ const (
 	ConfigHashKey = "config-hash"
 	// ConfigVol is the name of the pgBackRest configuration volume
 	ConfigVol = "pgbackrest-config"
-	// configPath is the pgBackRest configuration file path
-	configPath = "/etc/pgbackrest/pgbackrest.conf"
 
 	// CMNameSuffix is the suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
@@ -125,67 +119,6 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	cm.Data[ConfigHashKey] = configHash
 
 	return cm
-}
-
-// configVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the postgrescluster
-func configVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName, configKey string) {
-	// Note: the 'container' string will be 'database' for the PostgreSQL database container,
-	// otherwise it will be 'backrest'
-	var (
-		pgBackRestConfig []corev1.VolumeProjection
-	)
-
-	volume := corev1.Volume{Name: ConfigVol}
-	volume.Projected = &corev1.ProjectedVolumeSource{}
-
-	// Add our projections after those specified in the CR. Items later in the
-	// list take precedence over earlier items (that is, last write wins).
-	// - https://docs.openshift.com/container-platform/latest/nodes/containers/nodes-containers-projected-volumes.html
-	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
-	volume.Projected.Sources = append(
-		pgBackRestConfig,
-		corev1.VolumeProjection{
-			ConfigMap: &corev1.ConfigMapProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: pgBackRestConfigMap.Name,
-				},
-				Items: []corev1.KeyToPath{{
-					Key:  configKey,
-					Path: configPath,
-				}},
-			},
-		},
-	)
-
-	mount := corev1.VolumeMount{
-		Name:      volume.Name,
-		MountPath: ConfigDir,
-		ReadOnly:  true,
-	}
-
-	pod.Volumes = mergeVolumes(pod.Volumes, volume)
-
-	container := findOrAppendContainer(&pod.Containers, containerName)
-
-	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, mount)
-}
-
-// PostgreSQLConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
-// postgrescluster's PostgreSQL pod
-func PostgreSQLConfigVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName string) {
-	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmPrimaryKey)
-}
-
-// RepositoryConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
-// postgrescluster's pgBackRest repo pod
-func RepositoryConfigVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName string) {
-	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, CMRepoKey)
-}
-
-// JobConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
-// postgrescluster's job pods
-func JobConfigVolumeAndMount(pgBackRestConfigMap *corev1.ConfigMap, pod *corev1.PodSpec, containerName string) {
-	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmJobKey)
 }
 
 // RestoreCommand returns the command for performing a pgBackRest restore.  In addition to calling

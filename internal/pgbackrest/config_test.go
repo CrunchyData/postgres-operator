@@ -90,8 +90,6 @@ func TestPGBackRestConfiguration(t *testing.T) {
 	var cmInitial *corev1.ConfigMap
 	// the returned configmap
 	var cmReturned corev1.ConfigMap
-	// pod spec for testing projected volumes and volume mounts
-	pod := &corev1.PodSpec{}
 
 	testInstanceName := "test-instance-abc"
 	testRepoName := "repo-host"
@@ -214,93 +212,6 @@ pg1-path = /pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
 pg1-port = 2345
 pg1-socket-path = /tmp/postgres
 `)
-	})
-
-	t.Run("check primary config volume", func(t *testing.T) {
-
-		PostgreSQLConfigVolumeAndMount(&cmReturned, pod, "database")
-
-		assert.Assert(t, simpleMarshalContains(&pod.Volumes, strings.TrimSpace(`
-		- name: pgbackrest-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: pgbackrest_primary.conf
-          path: /etc/pgbackrest/pgbackrest.conf
-        name: `+postgresCluster.GetName()+`-pgbackrest-config
-		`)+"\n"))
-	})
-
-	t.Run("check primary config volume mount", func(t *testing.T) {
-
-		PostgreSQLConfigVolumeAndMount(&cmReturned, pod, "database")
-
-		container := findOrAppendContainer(&pod.Containers, "database")
-
-		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
-		- mountPath: /etc/pgbackrest/conf.d
-  name: pgbackrest-config
-  readOnly: true
-		`)+"\n"))
-	})
-
-	t.Run("check default config volume", func(t *testing.T) {
-
-		JobConfigVolumeAndMount(&cmReturned, pod, "pgbackrest")
-
-		assert.Assert(t, simpleMarshalContains(pod.Volumes, strings.TrimSpace(`
-		- name: pgbackrest-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: pgbackrest_job.conf
-          path: /etc/pgbackrest/pgbackrest.conf
-        name: `+postgresCluster.GetName()+`-pgbackrest-config
-		`)+"\n"))
-	})
-
-	t.Run("check default config volume mount", func(t *testing.T) {
-
-		JobConfigVolumeAndMount(&cmReturned, pod, "pgbackrest")
-
-		container := findOrAppendContainer(&pod.Containers, "pgbackrest")
-
-		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
-		- mountPath: /etc/pgbackrest/conf.d
-  name: pgbackrest-config
-  readOnly: true
-		`)+"\n"))
-	})
-
-	t.Run("check repo config volume", func(t *testing.T) {
-
-		RepositoryConfigVolumeAndMount(&cmReturned, pod, "pgbackrest")
-
-		assert.Assert(t, simpleMarshalContains(&pod.Volumes, strings.TrimSpace(`
-		- name: pgbackrest-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: pgbackrest_repo.conf
-          path: /etc/pgbackrest/pgbackrest.conf
-        name: `+postgresCluster.GetName()+`-pgbackrest-config
-		`)+"\n"))
-	})
-
-	t.Run("check repo config volume mount", func(t *testing.T) {
-
-		RepositoryConfigVolumeAndMount(&cmReturned, pod, "pgbackrest")
-
-		container := findOrAppendContainer(&pod.Containers, "pgbackrest")
-
-		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
-		- mountPath: /etc/pgbackrest/conf.d
-  name: pgbackrest-config
-  readOnly: true
-		`)+"\n"))
 	})
 }
 
