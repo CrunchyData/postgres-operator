@@ -1,6 +1,3 @@
-//go:build envtest
-// +build envtest
-
 /*
  Copyright 2021 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,17 +20,10 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
-	"reflect"
-	"strconv"
 	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/rand"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -41,177 +31,154 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// TestPGBackRestConfiguration goes through the various steps of the current
-// pgBackRest configuration setup and verifies the expected values are set in
-// the expected configmap and volumes
-func TestPGBackRestConfiguration(t *testing.T) {
+func TestCreatePGBackRestConfigMapIntent(t *testing.T) {
+	cluster := v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns1"
+	cluster.Name = "hippo-dance"
 
-	// set cluster name and namespace values in postgrescluster spec
-	postgresCluster := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      testclustername,
-			Namespace: "postgres-operator-test-" + rand.String(6),
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: 12,
-			Port:            initialize.Int32(2345),
-			Backups: v1beta1.Backups{
-				PGBackRest: v1beta1.PGBackRestArchive{
-					Global: map[string]string{"repo2-test": "config", "repo4-test": "config",
-						"repo3-test": "config"},
-					// By defining a "Volume" repo a dedicated repo host will be enabled
-					Repos: []v1beta1.PGBackRestRepo{{
-						Name:   "repo1",
-						Volume: &v1beta1.RepoPVC{},
-					}, {
-						Name: "repo2",
-						Azure: &v1beta1.RepoAzure{
-							Container: "container",
-						},
-					}, {
-						Name: "repo3",
-						GCS: &v1beta1.RepoGCS{
-							Bucket: "bucket",
-						},
-					}, {
-						Name: "repo4",
-						S3: &v1beta1.RepoS3{
-							Bucket:   "bucket",
-							Endpoint: "endpoint",
-							Region:   "region",
-						},
-					}},
-				},
-			},
-		},
-	}
-
-	// the initially created configmap
-	var cmInitial *corev1.ConfigMap
-	// the returned configmap
-	var cmReturned corev1.ConfigMap
-
-	testInstanceName := "test-instance-abc"
-	testRepoName := "repo-host"
-	testConfigHash := "abcde12345"
+	cluster.Spec.Port = initialize.Int32(2345)
+	cluster.Spec.PostgresVersion = 12
 
 	domain := naming.KubernetesClusterDomain(context.Background())
 
-	t.Run("pgbackrest configmap checks", func(t *testing.T) {
+	t.Run("DedicatedRepoHost", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Global = map[string]string{
+			"repo3-test": "something",
+		}
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name:   "repo1",
+				Volume: &v1beta1.RepoPVC{},
+			},
+			{
+				Name:  "repo2",
+				Azure: &v1beta1.RepoAzure{Container: "a-container"},
+			},
+			{
+				Name: "repo3",
+				GCS:  &v1beta1.RepoGCS{Bucket: "g-bucket"},
+			},
+			{
+				Name: "repo4",
+				S3: &v1beta1.RepoS3{
+					Bucket: "s-bucket", Endpoint: "endpoint-s", Region: "earth",
+				},
+			},
+		}
 
-		// setup the test environment and ensure a clean teardown
-		testEnv, testClient := setupTestEnv(t)
+		configmap := CreatePGBackRestConfigMapIntent(cluster,
+			"repo-hostname", "abcde12345", "pod-service-name", "test-ns",
+			[]string{"some-instance"})
 
-		// define the cleanup steps to run once the tests complete
-		t.Cleanup(func() {
-			teardownTestEnv(t, testEnv)
+		assert.DeepEqual(t, configmap.Annotations, map[string]string{})
+		assert.DeepEqual(t, configmap.Labels, map[string]string{
+			"postgres-operator.crunchydata.com/cluster":           "hippo-dance",
+			"postgres-operator.crunchydata.com/pgbackrest":        "",
+			"postgres-operator.crunchydata.com/pgbackrest-config": "",
 		})
 
-		t.Run("create pgbackrest configmap struct", func(t *testing.T) {
-			// create an array of one host string value
-			pghosts := []string{testInstanceName}
-			// create the configmap struct
-			cmInitial = CreatePGBackRestConfigMapIntent(postgresCluster, testRepoName,
-				testConfigHash, naming.ClusterPodService(postgresCluster).Name, "test-ns", pghosts)
-
-			// check that there is configmap data
-			assert.Assert(t, cmInitial.Data != nil)
-		})
-
-		t.Run("create pgbackrest configmap", func(t *testing.T) {
-
-			ns := &corev1.Namespace{}
-			ns.Name = naming.PGBackRestConfig(postgresCluster).Namespace
-			ns.Labels = labels.Set{"postgres-operator-test": ""}
-			assert.NilError(t, testClient.Create(context.Background(), ns))
-			t.Cleanup(func() { assert.Check(t, testClient.Delete(context.Background(), ns)) })
-
-			// create the configmap
-			err := testClient.Patch(context.Background(), cmInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
-
-			assert.NilError(t, err)
-		})
-
-		t.Run("get pgbackrest configmap", func(t *testing.T) {
-
-			objectKey := client.ObjectKey{
-				Namespace: naming.PGBackRestConfig(postgresCluster).Namespace,
-				Name:      naming.PGBackRestConfig(postgresCluster).Name,
-			}
-
-			err := testClient.Get(context.Background(), objectKey, &cmReturned)
-
-			assert.NilError(t, err)
-		})
-
-		// finally, verify initial and returned match
-		assert.Assert(t, reflect.DeepEqual(cmInitial.Data, cmReturned.Data))
-
-	})
-
-	t.Run("check pgbackrest configmap repo configuration", func(t *testing.T) {
-
-		assert.Equal(t, getCMData(cmReturned, CMRepoKey),
-			`# Generated by postgres-operator. DO NOT EDIT.
+		assert.Equal(t, configmap.Data["config-hash"], "abcde12345")
+		assert.Equal(t, configmap.Data["pgbackrest_repo.conf"], strings.Trim(`
+# Generated by postgres-operator. DO NOT EDIT.
 # Your changes will not be saved.
 
 [global]
 log-path = /tmp
 repo1-path = /pgbackrest/repo1
-repo2-azure-container = container
+repo2-azure-container = a-container
 repo2-path = /pgbackrest/repo2
-repo2-test = config
 repo2-type = azure
-repo3-gcs-bucket = bucket
+repo3-gcs-bucket = g-bucket
 repo3-path = /pgbackrest/repo3
-repo3-test = config
+repo3-test = something
 repo3-type = gcs
 repo4-path = /pgbackrest/repo4
-repo4-s3-bucket = bucket
-repo4-s3-endpoint = endpoint
-repo4-s3-region = region
-repo4-test = config
+repo4-s3-bucket = s-bucket
+repo4-s3-endpoint = endpoint-s
+repo4-s3-region = earth
 repo4-type = s3
 
 [db]
-pg1-host = `+testInstanceName+`-0.testcluster-pods.test-ns.svc.`+domain+`
-pg1-path = /pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
+pg1-host = some-instance-0.pod-service-name.test-ns.svc.`+domain+`
+pg1-path = /pgdata/pg12
 pg1-port = 2345
 pg1-socket-path = /tmp/postgres
-`)
-	})
+		`, "\t\n")+"\n")
 
-	t.Run("check pgbackrest configmap instance configuration", func(t *testing.T) {
-
-		assert.Equal(t, getCMData(cmReturned, CMInstanceKey),
-			`# Generated by postgres-operator. DO NOT EDIT.
+		assert.Equal(t, configmap.Data["pgbackrest_instance.conf"], strings.Trim(`
+# Generated by postgres-operator. DO NOT EDIT.
 # Your changes will not be saved.
 
 [global]
 log-path = /tmp
-repo1-host = `+testRepoName+`-0.testcluster-pods.test-ns.svc.`+domain+`
+repo1-host = repo-hostname-0.pod-service-name.test-ns.svc.`+domain+`
 repo1-host-user = postgres
 repo1-path = /pgbackrest/repo1
-repo2-azure-container = container
+repo2-azure-container = a-container
 repo2-path = /pgbackrest/repo2
-repo2-test = config
 repo2-type = azure
-repo3-gcs-bucket = bucket
+repo3-gcs-bucket = g-bucket
 repo3-path = /pgbackrest/repo3
-repo3-test = config
+repo3-test = something
 repo3-type = gcs
 repo4-path = /pgbackrest/repo4
-repo4-s3-bucket = bucket
-repo4-s3-endpoint = endpoint
-repo4-s3-region = region
-repo4-test = config
+repo4-s3-bucket = s-bucket
+repo4-s3-endpoint = endpoint-s
+repo4-s3-region = earth
 repo4-type = s3
 
 [db]
-pg1-path = /pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
+pg1-path = /pgdata/pg12
 pg1-port = 2345
 pg1-socket-path = /tmp/postgres
-`)
+		`, "\t\n")+"\n")
+	})
+
+	t.Run("CustomMetadata", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Metadata = &v1beta1.Metadata{
+			Annotations: map[string]string{
+				"ak1": "cluster-av1",
+				"ak2": "cluster-av2",
+			},
+			Labels: map[string]string{
+				"lk1": "cluster-lv1",
+				"lk2": "cluster-lv2",
+
+				"postgres-operator.crunchydata.com/cluster": "cluster-ignored",
+			},
+		}
+		cluster.Spec.Backups.PGBackRest.Metadata = &v1beta1.Metadata{
+			Annotations: map[string]string{
+				"ak2": "backups-av2",
+				"ak3": "backups-av3",
+			},
+			Labels: map[string]string{
+				"lk2": "backups-lv2",
+				"lk3": "backups-lv3",
+
+				"postgres-operator.crunchydata.com/cluster": "backups-ignored",
+			},
+		}
+
+		configmap := CreatePGBackRestConfigMapIntent(cluster,
+			"any", "any", "any", "any", nil)
+
+		assert.DeepEqual(t, configmap.Annotations, map[string]string{
+			"ak1": "cluster-av1",
+			"ak2": "backups-av2",
+			"ak3": "backups-av3",
+		})
+		assert.DeepEqual(t, configmap.Labels, map[string]string{
+			"lk1": "cluster-lv1",
+			"lk2": "backups-lv2",
+			"lk3": "backups-lv3",
+
+			"postgres-operator.crunchydata.com/cluster":           "hippo-dance",
+			"postgres-operator.crunchydata.com/pgbackrest":        "",
+			"postgres-operator.crunchydata.com/pgbackrest-config": "",
+		})
 	})
 }
 
