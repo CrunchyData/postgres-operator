@@ -34,7 +34,7 @@ consumption) from the container itself via SQL queries.
 
 In order to do this, `pgnodemx` requires information from the Kubernetes [DownwardAPI](https://kubernetes.io/docs/tasks/inject-data-application/downward-api-volume-expose-pod-information/) 
 to be mounted on the PostgreSQL pods. Please see the `pgnodemx and the DownwardAPI` 
-section of the [backup architecture]]({{< relref "architecture/backups.md" >}}) page for more information on 
+section of the [backup architecture]({{< relref "architecture/backups.md" >}}) page for more information on 
 where and how the DownwardAPI is mounted.
 
 ### `pgnodemx` Configuration
