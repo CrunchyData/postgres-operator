@@ -35,6 +35,10 @@ func TestPostgreSQLParameters(t *testing.T) {
 		"restore_command": `pgbackrest --stanza=db archive-get %f "%p"`,
 	})
 
+	assert.DeepEqual(t, parameters.Default.AsMap(), map[string]string{
+		"archive_timeout": "60s",
+	})
+
 	cluster.Spec.Standby = &v1beta1.PostgresStandbySpec{
 		Enabled:  true,
 		RepoName: "repo99",
