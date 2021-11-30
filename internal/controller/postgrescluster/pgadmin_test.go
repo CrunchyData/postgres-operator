@@ -621,6 +621,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns1"
 	cluster.Name = "pgc1"
+	cluster.Spec.Port = initialize.Int32(5432)
 	cluster.Spec.UserInterface =
 		&v1beta1.UserInterfaceSpec{PGAdmin: &v1beta1.PGAdminPodSpec{}}
 

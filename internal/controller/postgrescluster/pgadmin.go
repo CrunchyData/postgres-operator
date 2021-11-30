@@ -349,7 +349,7 @@ func (r *Reconciler) reconcilePGAdminUsers(
 	}
 
 	write := func(ctx context.Context, exec pgadmin.Executor) error {
-		return pgadmin.WriteUsersInPGAdmin(ctx, exec, specUsers, passwords)
+		return pgadmin.WriteUsersInPGAdmin(ctx, cluster, exec, specUsers, passwords)
 	}
 
 	revision, err := safeHash32(func(hasher io.Writer) error {

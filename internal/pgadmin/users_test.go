@@ -27,12 +27,23 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestWriteUsersInPGAdmin(t *testing.T) {
 	ctx := context.Background()
+	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testcluster",
+			Namespace: "testnamespace",
+		},
+		Spec: v1beta1.PostgresClusterSpec{
+			Port: initialize.Int32(5432),
+		},
+	}
 
 	t.Run("Arguments", func(t *testing.T) {
 		expected := errors.New("pass-through")
@@ -59,10 +70,12 @@ root = os.path.dirname(spec.submodule_search_locations[0])
 if sys.path[0] != root:
     sys.path.insert(0, root)
 
+import copy
 import json
 import sys
 from pgadmin import create_app
-from pgadmin.model import db, Role, User
+from pgadmin.model import db, Role, User, Server, ServerGroup
+from pgadmin.utils.crypto import encrypt
 
 with create_app().app_context():
     admin = db.session.query(User).filter_by(id=1).first()
@@ -91,11 +104,63 @@ with create_app().app_context():
 
         db.session.add(user)
         db.session.commit()
-`})
+
+        # Set the cluster and host name variable.
+        (clustername, hostname, port) = sys.argv[1:]
+
+        # Get or create the group as necessary
+        group = (
+            db.session.query(ServerGroup).filter_by(
+                user_id=user.id,
+            ).order_by("id").first() or
+            ServerGroup()
+        )
+        group.name = "Crunchy PostgreSQL Operator"
+        group.user_id = user.id
+        db.session.add(group)
+        db.session.commit()
+
+        # Get or create the server connection.
+        server = (
+            db.session.query(Server).filter_by(
+                servergroup_id=group.id,
+                user_id=user.id,
+                name=clustername,
+            ).first() or
+            Server()
+        )
+
+        # Add the required values.
+        server.name = clustername
+        server.servergroup_id = group.id
+        server.user_id = user.id
+        server.ssl_mode = "prefer"
+        server.host = hostname
+        server.username = data['username']
+        # Save the encrypted server password.
+        server.password = encrypt(data['password'], data['password'])
+        server.maintenance_db = "postgres"
+        server.port = port
+
+        # If the existing server doesn't match our needed configuration, create
+        # a new one.
+        if server.id and db.session.is_modified(server):
+            old = copy.deepcopy(server)
+            db.make_transient(server)
+            server.id = None
+            db.session.delete(old)
+
+        db.session.add(server)
+        db.session.commit()
+`,
+				"testcluster",
+				"testcluster-primary.testnamespace.svc",
+				"5432",
+			})
 			return expected
 		}
 
-		assert.Equal(t, expected, WriteUsersInPGAdmin(ctx, exec, nil, nil))
+		assert.Equal(t, expected, WriteUsersInPGAdmin(ctx, cluster, exec, nil, nil))
 	})
 
 	t.Run("Flake8", func(t *testing.T) {
@@ -133,7 +198,7 @@ with create_app().app_context():
 			return nil
 		}
 
-		_ = WriteUsersInPGAdmin(ctx, exec, nil, nil)
+		_ = WriteUsersInPGAdmin(ctx, cluster, exec, nil, nil)
 		assert.Assert(t, called)
 	})
 
@@ -150,13 +215,13 @@ with create_app().app_context():
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPGAdmin(ctx, exec, nil, nil))
+		assert.NilError(t, WriteUsersInPGAdmin(ctx, cluster, exec, nil, nil))
 		assert.Equal(t, calls, 1)
 
-		assert.NilError(t, WriteUsersInPGAdmin(ctx, exec, []v1beta1.PostgresUserSpec{}, nil))
+		assert.NilError(t, WriteUsersInPGAdmin(ctx, cluster, exec, []v1beta1.PostgresUserSpec{}, nil))
 		assert.Equal(t, calls, 2)
 
-		assert.NilError(t, WriteUsersInPGAdmin(ctx, exec, nil, map[string]string{}))
+		assert.NilError(t, WriteUsersInPGAdmin(ctx, cluster, exec, nil, map[string]string{}))
 		assert.Equal(t, calls, 3)
 	})
 
@@ -177,7 +242,7 @@ with create_app().app_context():
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPGAdmin(ctx, exec,
+		assert.NilError(t, WriteUsersInPGAdmin(ctx, cluster, exec,
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "user-no-options",
