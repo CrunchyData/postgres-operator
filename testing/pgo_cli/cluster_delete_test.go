@@ -16,6 +16,7 @@ package pgo_cli_test
 */
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -46,9 +47,14 @@ func TestClusterDelete(t *testing.T) {
 					requireWaitFor(t, gone, time.Minute, time.Second,
 						"timeout waiting for data of %q in %q", cluster(), namespace())
 
-					output, err = pgo("show", "cluster", cluster(), "-n", namespace()).Exec(t)
-					require.NoError(t, err)
-					require.NotContains(t, output, cluster())
+					emptyPGOShow := func() bool {
+						output, err = pgo("show", "cluster", cluster(), "-n", namespace()).Exec(t)
+						require.NoError(t, err)
+						return !strings.Contains(output, cluster())
+					}
+					requireWaitFor(t, emptyPGOShow, time.Minute, time.Second,
+						"timeout waiting for pgo show to no longer display information for cluster %s",
+						cluster())
 				})
 			})
 
@@ -72,9 +78,14 @@ func TestClusterDelete(t *testing.T) {
 					require.NotEmpty(t, pvcs)
 					require.Contains(t, pvcs[0].Name, "pgbr-repo")
 
-					output, err = pgo("show", "cluster", cluster(), "-n", namespace()).Exec(t)
-					require.NoError(t, err)
-					require.NotContains(t, output, cluster())
+					emptyPGOShow := func() bool {
+						output, err = pgo("show", "cluster", cluster(), "-n", namespace()).Exec(t)
+						require.NoError(t, err)
+						return !strings.Contains(output, cluster())
+					}
+					requireWaitFor(t, emptyPGOShow, time.Minute, time.Second,
+						"timeout waiting for pgo show to no longer display information for cluster %s",
+						cluster())
 				})
 			})
 
@@ -97,6 +108,15 @@ func TestClusterDelete(t *testing.T) {
 					pvcs := clusterPVCs(t, namespace(), cluster())
 					require.NotEmpty(t, pvcs)
 					require.Equal(t, cluster(), pvcs[0].Name)
+
+					emptyPGOShow := func() bool {
+						output, err = pgo("show", "cluster", cluster(), "-n", namespace()).Exec(t)
+						require.NoError(t, err)
+						return !strings.Contains(output, cluster())
+					}
+					requireWaitFor(t, emptyPGOShow, time.Minute, time.Second,
+						"timeout waiting for pgo show to no longer display information for cluster %s",
+						cluster())
 				})
 			})
 		})
