@@ -18,6 +18,7 @@ package pgbackrest
 import (
 	"context"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -40,6 +41,18 @@ func TestCreatePGBackRestConfigMapIntent(t *testing.T) {
 	cluster.Spec.PostgresVersion = 12
 
 	domain := naming.KubernetesClusterDomain(context.Background())
+
+	t.Run("NoVolumeRepo", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = nil
+
+		configmap := CreatePGBackRestConfigMapIntent(cluster,
+			"", "number", "pod-service-name", "test-ns",
+			[]string{"some-instance"})
+
+		assert.Equal(t, configmap.Data["config-hash"], "number")
+		assert.Equal(t, configmap.Data["pgbackrest-server.conf"], "")
+	})
 
 	t.Run("DedicatedRepoHost", func(t *testing.T) {
 		cluster := cluster.DeepCopy()
@@ -98,17 +111,6 @@ repo4-s3-bucket = s-bucket
 repo4-s3-endpoint = endpoint-s
 repo4-s3-region = earth
 repo4-type = s3
-tls-server-address = ::
-tls-server-auth = pgbackrest@=db
-tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
-tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt
-tls-server-key-file = /etc/pgbackrest/server/server-tls.key
-
-[global:server-start]
-log-level-console = detail
-log-level-file = off
-log-level-stderr = error
-log-timestamp = n
 
 [db]
 pg1-host = some-instance-0.pod-service-name.test-ns.svc.`+domain+`
@@ -146,17 +148,6 @@ repo4-s3-bucket = s-bucket
 repo4-s3-endpoint = endpoint-s
 repo4-s3-region = earth
 repo4-type = s3
-tls-server-address = ::
-tls-server-auth = pgbackrest@=db
-tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
-tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt
-tls-server-key-file = /etc/pgbackrest/server/server-tls.key
-
-[global:server-start]
-log-level-console = detail
-log-level-file = off
-log-level-stderr = error
-log-timestamp = n
 
 [db]
 pg1-path = /pgdata/pg12
@@ -212,6 +203,40 @@ pg1-socket-path = /tmp/postgres
 	})
 }
 
+func TestReloadCommand(t *testing.T) {
+	shellcheck, err := exec.LookPath("shellcheck")
+	if err != nil {
+		t.Skip(`requires "shellcheck" executable`)
+	} else {
+		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
+		assert.NilError(t, err)
+		t.Logf("using %q:\n%s", shellcheck, output)
+	}
+
+	command := reloadCommand("some-name")
+
+	// Expect a bash command with an inline script.
+	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+	assert.Assert(t, len(command) > 3)
+
+	// Write out that inline script.
+	dir := t.TempDir()
+	file := filepath.Join(dir, "script.bash")
+	assert.NilError(t, os.WriteFile(file, []byte(command[3]), 0o600))
+
+	// Expect shellcheck to be happy.
+	cmd := exec.Command(shellcheck, "--enable=all", file)
+	output, err := cmd.CombinedOutput()
+	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+}
+
+func TestReloadCommandPrettyYAML(t *testing.T) {
+	b, err := yaml.Marshal(reloadCommand("any"))
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(string(b), "\n- |"),
+		"expected literal block scalar, got:\n%s", b)
+}
+
 func TestRestoreCommand(t *testing.T) {
 	shellcheck, err := exec.LookPath("shellcheck")
 	if err != nil {
@@ -245,4 +270,24 @@ func TestRestoreCommandPrettyYAML(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(string(b), "\n- |"),
 		"expected literal block scalar, got:\n%s", b)
+}
+
+func TestServerConfig(t *testing.T) {
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.UID = "shoe"
+
+	assert.Equal(t, serverConfig(cluster).String(), `
+[global]
+tls-server-address = ::
+tls-server-auth = pgbackrest@shoe=*
+tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt
+tls-server-key-file = /etc/pgbackrest/server/server-tls.key
+
+[global:server-start]
+log-level-console = detail
+log-level-file = off
+log-level-stderr = error
+log-timestamp = n
+`)
 }

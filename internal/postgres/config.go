@@ -128,6 +128,7 @@ func reloadCommand(name string) []string {
 	// descriptor and uses the timeout of the builtin `read` to wait. That same
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check
 	// mtimes.
+	// - https://unix.stackexchange.com/a/407383
 	script := fmt.Sprintf(`
 declare -r directory=%q
 exec {fd}<> <(:)

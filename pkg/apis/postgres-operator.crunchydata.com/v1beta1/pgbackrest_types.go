@@ -154,6 +154,10 @@ type PGBackRestSidecars struct {
 	// Defines the configuration for the pgBackRest sidecar container
 	// +optional
 	PGBackRest *Sidecar `json:"pgbackrest,omitempty"`
+
+	// Defines the configuration for the pgBackRest config sidecar container
+	// +optional
+	PGBackRestConfig *Sidecar `json:"pgbackrestConfig,omitempty"`
 }
 
 type BackupJobs struct {

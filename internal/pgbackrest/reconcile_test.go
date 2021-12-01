@@ -243,7 +243,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
 		AddConfigToInstancePod(cluster, out)
 		alwaysExpect(t, out)
 
-		// Instance configuration files plus optional client certificates.
+		// Instance configuration files, server config, and optional client certificates.
 		assert.Assert(t, marshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
@@ -254,6 +254,8 @@ func TestAddConfigToInstancePod(t *testing.T) {
           path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
+        - key: pgbackrest-server.conf
+          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
     - secret:
         items:
@@ -312,7 +314,7 @@ func TestAddConfigToRepoPod(t *testing.T) {
 		AddConfigToRepoPod(cluster, out)
 		alwaysExpect(t, out)
 
-		// Repository configuration files and client certificates
+		// Repository configuration files, server config, and client certificates
 		// after custom projections.
 		assert.Assert(t, marshalMatches(out.Volumes, `
 - name: pgbackrest-config
@@ -326,6 +328,8 @@ func TestAddConfigToRepoPod(t *testing.T) {
           path: pgbackrest_repo.conf
         - key: config-hash
           path: config-hash
+        - key: pgbackrest-server.conf
+          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
     - secret:
         items:
@@ -608,6 +612,13 @@ func TestAddServerToInstancePod(t *testing.T) {
 					},
 				},
 			},
+			PGBackRestConfig: &v1beta1.Sidecar{
+				Resources: &corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("17m"),
+					},
+				},
+			},
 		}
 
 		out := pod.DeepCopy()
@@ -648,6 +659,48 @@ func TestAddServerToInstancePod(t *testing.T) {
     name: postgres-data
   - mountPath: /pgwal
     name: postgres-wal
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:)
+    until read -r -t 5 -u "${fd}"; do
+      if
+        [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --dereference --format='Loaded configuration dated %y' "${filename}"
+      elif
+        { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
+          [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+        } &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded certificates dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbackrest-config
+  - /etc/pgbackrest/server
+  - /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+  - /etc/pgbackrest/conf.d/~postgres-operator_server.conf
+  name: pgbackrest-config
+  resources:
+    limits:
+      cpu: 17m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
 		`))
 
 		// The server certificate comes from the instance Secret.
@@ -691,6 +744,15 @@ func TestAddServerToRepoPod(t *testing.T) {
 				},
 			},
 		}
+		cluster.Spec.Backups.PGBackRest.Sidecars = &v1beta1.PGBackRestSidecars{
+			PGBackRestConfig: &v1beta1.Sidecar{
+				Resources: &corev1.ResourceRequirements{
+					Limits: corev1.ResourceList{
+						corev1.ResourceCPU: resource.MustParse("19m"),
+					},
+				},
+			},
+		}
 
 		out := pod.DeepCopy()
 		AddServerToRepoPod(cluster, out)
@@ -714,6 +776,48 @@ func TestAddServerToRepoPod(t *testing.T) {
   resources:
     requests:
       cpu: 5m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:)
+    until read -r -t 5 -u "${fd}"; do
+      if
+        [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --dereference --format='Loaded configuration dated %y' "${filename}"
+      elif
+        { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
+          [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+        } &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded certificates dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbackrest-config
+  - /etc/pgbackrest/server
+  - /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+  - /etc/pgbackrest/conf.d/~postgres-operator_server.conf
+  name: pgbackrest-config
+  resources:
+    limits:
+      cpu: 19m
   securityContext:
     allowPrivilegeEscalation: false
     privileged: false

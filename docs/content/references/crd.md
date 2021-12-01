@@ -3555,6 +3555,11 @@ Configuration for pgBackRest sidecar containers
         <td>object</td>
         <td>Defines the configuration for the pgBackRest sidecar container</td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestsidecarspgbackrestconfig">pgbackrestConfig</a></b></td>
+        <td>object</td>
+        <td>Defines the configuration for the pgBackRest config sidecar container</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -3589,6 +3594,65 @@ Defines the configuration for the pgBackRest sidecar container
 <h3 id="postgresclusterspecbackupspgbackrestsidecarspgbackrestresources">
   PostgresCluster.spec.backups.pgbackrest.sidecars.pgbackrest.resources
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestsidecarspgbackrest">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource requirements for a sidecar container
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestsidecarspgbackrestconfig">
+  PostgresCluster.spec.backups.pgbackrest.sidecars.pgbackrestConfig
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestsidecars">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines the configuration for the pgBackRest config sidecar container
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestsidecarspgbackrestconfigresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource requirements for a sidecar container</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestsidecarspgbackrestconfigresources">
+  PostgresCluster.spec.backups.pgbackrest.sidecars.pgbackrestConfig.resources
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestsidecarspgbackrestconfig">↩ Parent</a></sup></sup>
 </h3>
 
 

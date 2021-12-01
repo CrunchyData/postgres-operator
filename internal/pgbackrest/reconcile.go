@@ -106,7 +106,11 @@ func AddConfigToInstancePod(
 	secret.Secret.Optional = initialize.Bool(true)
 
 	if DedicatedRepoHostEnabled(cluster) {
-		// TODO(cbandy): add server config file
+		configmap.ConfigMap.Items = append(
+			configmap.ConfigMap.Items, corev1.KeyToPath{
+				Key:  serverConfigMapKey,
+				Path: serverConfigProjectionPath,
+			})
 		secret.Secret.Items = append(secret.Secret.Items, clientCertificates()...)
 	}
 
@@ -136,6 +140,7 @@ func AddConfigToRepoPod(
 	configmap.ConfigMap.Items = []corev1.KeyToPath{
 		{Key: CMRepoKey, Path: CMRepoKey},
 		{Key: ConfigHashKey, Path: ConfigHashKey},
+		{Key: serverConfigMapKey, Path: serverConfigProjectionPath},
 	}
 
 	secret := corev1.VolumeProjection{Secret: &corev1.SecretProjection{}}
@@ -210,6 +215,7 @@ func addConfigVolumeAndMounts(
 		switch container.Name {
 		case
 			naming.ContainerDatabase,
+			naming.ContainerPGBackRestConfig,
 			naming.PGBackRestRepoContainerName,
 			naming.PGBackRestRestoreContainerName:
 
@@ -378,7 +384,24 @@ func addServerContainerAndVolume(
 		}
 	}
 
-	pod.Containers = append(pod.Containers, container)
+	reloader := corev1.Container{
+		Name:            naming.ContainerPGBackRestConfig,
+		Command:         reloadCommand(naming.ContainerPGBackRestConfig),
+		Image:           container.Image,
+		ImagePullPolicy: container.ImagePullPolicy,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+
+		// The configuration mount is appended by [addConfigVolumeAndMounts].
+		VolumeMounts: []corev1.VolumeMount{serverVolumeMount},
+	}
+
+	if sidecars := cluster.Spec.Backups.PGBackRest.Sidecars; sidecars != nil &&
+		sidecars.PGBackRestConfig != nil &&
+		sidecars.PGBackRestConfig.Resources != nil {
+		reloader.Resources = *sidecars.PGBackRestConfig.Resources
+	}
+
+	pod.Containers = append(pod.Containers, container, reloader)
 	pod.Volumes = append(pod.Volumes, serverVolume)
 }
 

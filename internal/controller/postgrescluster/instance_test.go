@@ -513,6 +513,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
           path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
+        - key: pgbackrest-server.conf
+          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
     - secret:
         items:
@@ -577,6 +579,49 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   - mountPath: /etc/pgbackrest/conf.d
     name: pgbackrest-config
     readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:)
+    until read -r -t 5 -u "${fd}"; do
+      if
+        [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --dereference --format='Loaded configuration dated %y' "${filename}"
+      elif
+        { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
+          [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+        } &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded certificates dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbackrest-config
+  - /etc/pgbackrest/server
+  - /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+  - /etc/pgbackrest/conf.d/~postgres-operator_server.conf
+  name: pgbackrest-config
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
 		`))
 
 		t.Run("CustomResources", func(t *testing.T) {
@@ -633,6 +678,49 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     name: postgres-data
   - mountPath: /pgwal
     name: postgres-wal
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:)
+    until read -r -t 5 -u "${fd}"; do
+      if
+        [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --dereference --format='Loaded configuration dated %y' "${filename}"
+      elif
+        { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
+          [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+        } &&
+        pkill --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded certificates dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbackrest-config
+  - /etc/pgbackrest/server
+  - /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+  - /etc/pgbackrest/conf.d/~postgres-operator_server.conf
+  name: pgbackrest-config
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
   - mountPath: /etc/pgbackrest/conf.d
     name: pgbackrest-config
     readOnly: true

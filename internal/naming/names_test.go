@@ -45,6 +45,8 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 	for _, name := range []string{
 		ContainerDatabase,
 		ContainerNSSWrapperInit,
+		ContainerPGAdmin,
+		ContainerPGBackRestConfig,
 		ContainerPGBouncer,
 		ContainerPGBouncerConfig,
 		ContainerPostgresStartup,
