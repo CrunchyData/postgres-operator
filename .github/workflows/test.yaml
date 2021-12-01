@@ -52,9 +52,9 @@ jobs:
       - name: Prefetch container images
         run: >
           {
-            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos8-13.3-4.7.0"'
-            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-13.3-4.7.0"'
-            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.3-4.7.0"'
+            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.5-0"'
+            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.36-0"'
+            echo '"registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.16-0"'
           } |
           jq --slurp --arg name 'image-prefetch' --argjson labels '{"name":"image-prefetch"}' '{
             apiVersion: "apps/v1", kind: "DaemonSet",
