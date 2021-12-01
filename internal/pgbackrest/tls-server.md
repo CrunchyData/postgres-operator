@@ -65,3 +65,16 @@ requires a restart of the server.
   to interact with.
   [Required](https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/config/parse.auto.c#L8471).
 
+
+In pgBackRest 2.36, sending SIGHUP, SIGINT, or SIGTERM to the TLS server all
+cause it to exit with code 63, TermError.
+
+- https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/common/exit.c#L73-L75
+- https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/common/exit.c#L62
+- https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/common/error.auto.c#L48
+
+```
+P00   INFO: server-start command end: terminated on signal [SIGHUP]
+P00   INFO: server-start command end: terminated on signal [SIGINT]
+P00   INFO: server-start command end: terminated on signal [SIGTERM]
+```

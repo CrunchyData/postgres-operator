@@ -248,6 +248,7 @@ func reloadCommand(name string) []string {
 	// descriptor and uses the timeout of the builtin `read` to wait. That same
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check
 	// mtimes.
+	// - https://unix.stackexchange.com/a/407383
 	const script = `
 exec {fd}<> <(:)
 while read -r -t 5 -u "${fd}" || true; do

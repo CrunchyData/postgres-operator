@@ -570,6 +570,9 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	// PID 1 and reaps those processes when they complete.
 	// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/command/server/server.c#L51
 	// - https://github.com/kubernetes/kubernetes/commit/81d27aa23969b77f
+	//
+	// The pgBackRest TLS server must be signaled when its configuration or
+	// certificates change. Let containers see each other's processes.
 	// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
 	repo.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
