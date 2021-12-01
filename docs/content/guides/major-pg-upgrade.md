@@ -23,8 +23,8 @@ protection in cases where the upgrade process does not complete as expected.
 
 ### Step 2: Scale Down Replicas
 
-PGO needs to identify the primary database instance before the running your upgrade because the primary
-pgdata volume will need to be identified and mounted to the upgrade Job. Any cluster replicas will not be
+PGO needs to identify the primary database instance before running your upgrade because the primary
+pgdata volume will need to be mounted to the upgrade Job. Any cluster replicas will not be
 upgraded and will need to be recreated after the upgrade and post-upgrade tasks are completed. To ensure
 errors are avoided, any replicas must be scaled down before initiating the upgrade process. 
 
