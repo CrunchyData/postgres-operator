@@ -28,7 +28,7 @@ pgdata volume will need to be mounted to the upgrade Job. Any cluster replicas w
 upgraded and will need to be recreated after the upgrade and post-upgrade tasks are completed. To ensure
 errors are avoided, any replicas must be scaled down before initiating the upgrade process. 
 
-Scaling down is simple, your manifest should be configured to have only one instance named under `spec.instances`
+Scaling down is simple: your manifest should be configured to have only one instance named under `spec.instances`
 and the `replicas` value, if set, should be equal to `1`. For example, if your existing configuration is
 
 ```
