@@ -1,6 +1,3 @@
-//go:build envtest
-// +build envtest
-
 /*
  Copyright 2021 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,8 +17,10 @@ package pgbackrest
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"gotest.tools/v3/assert/cmp"
 	corev1 "k8s.io/api/core/v1"
 
 	// Google Kubernetes Engine / Google Cloud Platform authentication provider
@@ -43,6 +42,15 @@ const (
 func getCMData(cm corev1.ConfigMap, key string) string {
 
 	return cm.Data[key]
+}
+
+// marshalMatches converts actual to YAML and compares that to expected.
+func marshalMatches(actual interface{}, expected string) cmp.Comparison {
+	b, err := yaml.Marshal(actual)
+	if err != nil {
+		return func() cmp.Result { return cmp.ResultFromError(err) }
+	}
+	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
 }
 
 // simpleMarshalContains takes in a YAML object and checks whether

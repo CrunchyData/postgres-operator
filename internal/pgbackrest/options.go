@@ -67,20 +67,25 @@ func (ms iniMultiSet) Values(key string) []string {
 type iniSectionSet map[string]iniMultiSet
 
 func (sections iniSectionSet) String() string {
-	keys := make([]string, 0, len(sections))
+	global := make([]string, 0, len(sections))
+	stanza := make([]string, 0, len(sections))
+
 	for k := range sections {
-		if k != "global" {
-			keys = append(keys, k)
+		if k == "global" || strings.HasPrefix(k, "global:") {
+			global = append(global, k)
+		} else {
+			stanza = append(stanza, k)
 		}
 	}
 
-	sort.Strings(keys)
+	sort.Strings(global)
+	sort.Strings(stanza)
 
 	var b strings.Builder
-	if len(sections["global"]) > 0 {
-		_, _ = fmt.Fprintf(&b, "\n[global]\n%s", sections["global"])
+	for _, k := range global {
+		_, _ = fmt.Fprintf(&b, "\n[%s]\n%s", k, sections[k])
 	}
-	for _, k := range keys {
+	for _, k := range stanza {
 		_, _ = fmt.Fprintf(&b, "\n[%s]\n%s", k, sections[k])
 	}
 	return b.String()

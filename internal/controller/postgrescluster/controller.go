@@ -184,6 +184,10 @@ func (r *Reconciler) Reconcile(
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
 	if err == nil {
+		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
+	}
+
+	if err == nil {
 		// Since any existing data directories must be moved prior to bootstrapping the
 		// cluster, further reconciliation will not occur until the directory move Jobs
 		// (if configured) have completed. Func reconcileDirMoveJobs() will therefore
@@ -236,16 +240,13 @@ func (r *Reconciler) Reconcile(
 		// which it will indicate that an early return is no longer needed, and reconciliation
 		// can proceed normally.
 		var returnEarly bool
-		returnEarly, err = r.reconcileDataSource(ctx, cluster, instances, clusterVolumes)
+		returnEarly, err = r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA)
 		if err != nil || returnEarly {
 			return patchClusterStatus()
 		}
 	}
 	if err == nil {
 		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters)
-	}
-	if err == nil {
-		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
 	}
 	if err == nil {
 		clusterReplicationSecret, err = r.reconcileReplicationSecret(ctx, cluster, rootCA)
@@ -302,7 +303,7 @@ func (r *Reconciler) Reconcile(
 	}
 
 	if err == nil {
-		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instances))
+		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instances, rootCA))
 	}
 	if err == nil {
 		err = r.reconcilePGBouncer(ctx, cluster, instances, primaryCertificate, rootCA)

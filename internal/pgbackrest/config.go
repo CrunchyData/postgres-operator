@@ -46,12 +46,11 @@ const (
 	// repository host
 	CMRepoKey = "pgbackrest_repo.conf"
 
-	// ConfigDir is the pgBackRest configuration directory
-	ConfigDir = "/etc/pgbackrest/conf.d"
+	// configDirectory is the pgBackRest configuration directory.
+	configDirectory = "/etc/pgbackrest/conf.d"
+
 	// ConfigHashKey is the name of the file storing the pgBackRest config hash
 	ConfigHashKey = "config-hash"
-	// ConfigVol is the name of the pgBackRest configuration volume
-	ConfigVol = "pgbackrest-config"
 
 	// CMNameSuffix is the suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
@@ -60,6 +59,11 @@ const (
 
 	// repoMountPath is where to mount the pgBackRest repo volume.
 	repoMountPath = "/pgbackrest"
+
+	// serverMountPath is the directory containing the TLS server certificate
+	// and key. This is outside of configDirectory so the hash calculated by
+	// backup jobs does not change when the primary changes.
+	serverMountPath = "/etc/pgbackrest/server"
 )
 
 const (
@@ -81,7 +85,8 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	meta.Annotations = naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
-	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+	meta.Labels = naming.Merge(
+		postgresCluster.Spec.Metadata.GetLabelsOrNil(),
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestConfigLabels(postgresCluster.GetName()),
 	)
@@ -102,14 +107,18 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	// Port will always be populated, since the API will set a default of 5432 if not provided
 	pgPort := *postgresCluster.Spec.Port
 	cm.Data[CMInstanceKey] = iniGeneratedWarning +
-		populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName,
+		populatePGInstanceConfigurationMap(
+			postgresCluster,
+			serviceName, serviceNamespace, repoHostName,
 			pgdataDir, pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
 		).String()
 
 	if addDedicatedHost && repoHostName != "" {
 		cm.Data[CMRepoKey] = iniGeneratedWarning +
-			populateRepoHostConfigurationMap(serviceName, serviceNamespace,
+			populateRepoHostConfigurationMap(
+				postgresCluster,
+				serviceName, serviceNamespace,
 				pgdataDir, pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
@@ -200,15 +209,57 @@ mv "${pgdata}" "${pgdata}_bootstrap"`
 
 // populatePGInstanceConfigurationMap returns options representing the pgBackRest configuration for
 // a PostgreSQL instance
-func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostName, pgdataDir string,
+func populatePGInstanceConfigurationMap(
+	cluster *v1beta1.PostgresCluster,
+	serviceName, serviceNamespace, repoHostName, pgdataDir string,
 	pgPort int32, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string,
 ) iniSectionSet {
 
+	// TODO(cbandy): pass a FQDN in already.
+	repoHostFQDN := repoHostName + "-0." +
+		serviceName + "." + serviceNamespace + ".svc." +
+		naming.KubernetesClusterDomain(context.Background())
+
 	global := iniMultiSet{}
+	server := iniMultiSet{}
 	stanza := iniMultiSet{}
 
 	global.Set("log-path", defaultLogPath)
+
+	// When there is a dedicated repository host, the instance runs the pgBackRest
+	// server in a sidecar.
+	if repoHostName != "" {
+		// TODO(cbandy): move to a single server.conf
+
+		// Listen on the unspecified IPv6 address which ends up being the IPv6
+		// wildcard address. On a Linux host with dual-stack networking enabled
+		// and sysctl "net.ipv6.bindv6only = 0", this binds to all IPv6 and IPv4
+		// interfaces.
+		// - https://tools.ietf.org/html/rfc3493#section-3.8
+		global.Set("tls-server-address", "::")
+
+		global.Set("tls-server-ca-file", certAuthorityAbsolutePath)
+		global.Set("tls-server-cert-file", certServerAbsolutePath)
+		global.Set("tls-server-key-file", certServerPrivateKeyAbsolutePath)
+
+		// The client certificate for this cluster is allowed to connect to this
+		// instance for the stanza.
+		global.Add("tls-server-auth", clientCommonName(cluster)+"="+DefaultStanzaName)
+
+		// Send all server logs to stderr and stdout without timestamps.
+		// - stderr has ERROR messages
+		// - stdout has WARN, INFO, and DETAIL messages
+		//
+		// The "trace" level shows when a connection is accepted, but nothing about
+		// the remote address or what commands it might send.
+		// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/command/server/server.c#L47-L48
+		// - https://pgbackrest.org/configuration.html#section-log
+		server.Set("log-level-console", "detail")
+		server.Set("log-level-stderr", "error")
+		server.Set("log-level-file", "off")
+		server.Set("log-timestamp", "n")
+	}
 
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
@@ -225,10 +276,11 @@ func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostN
 		// Only "volume" (i.e. PVC-based) repos should ever have a repo host configured.  This
 		// means cloud-based repos (S3, GCS or Azure) should not have a repo host configured.
 		if repoHostName != "" && repo.Volume != nil {
-			global.Set(repo.Name+"-host", repoHostName+"-0."+
-				serviceName+"."+serviceNamespace+".svc."+
-				naming.KubernetesClusterDomain(context.Background()))
-
+			global.Set(repo.Name+"-host", repoHostFQDN)
+			global.Set(repo.Name+"-host-type", "tls")
+			global.Set(repo.Name+"-host-ca-file", certAuthorityAbsolutePath)
+			global.Set(repo.Name+"-host-cert-file", certClientAbsolutePath)
+			global.Set(repo.Name+"-host-key-file", certClientPrivateKeyAbsolutePath)
 			global.Set(repo.Name+"-host-user", "postgres")
 		}
 	}
@@ -244,22 +296,56 @@ func populatePGInstanceConfigurationMap(serviceName, serviceNamespace, repoHostN
 	stanza.Set("pg1-socket-path", postgres.SocketDirectory)
 
 	return iniSectionSet{
-		"global":          global,
-		DefaultStanzaName: stanza,
+		"global":              global,
+		"global:server-start": server,
+		DefaultStanzaName:     stanza,
 	}
 }
 
 // populateRepoHostConfigurationMap returns options representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
-func populateRepoHostConfigurationMap(serviceName, serviceNamespace, pgdataDir string,
+func populateRepoHostConfigurationMap(
+	cluster *v1beta1.PostgresCluster,
+	serviceName, serviceNamespace, pgdataDir string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string,
 ) iniSectionSet {
 
 	global := iniMultiSet{}
+	server := iniMultiSet{}
 	stanza := iniMultiSet{}
 
 	global.Set("log-path", defaultLogPath)
+
+	// TODO(cbandy): move to a single server.conf
+
+	// Listen on the unspecified IPv6 address which ends up being the IPv6
+	// wildcard address. On a Linux host with dual-stack networking enabled
+	// and sysctl "net.ipv6.bindv6only = 0", this binds to all IPv6 and IPv4
+	// interfaces.
+	// - https://tools.ietf.org/html/rfc3493#section-3.8
+	global.Set("tls-server-address", "::")
+
+	global.Set("tls-server-ca-file", certAuthorityAbsolutePath)
+	global.Set("tls-server-cert-file", certServerAbsolutePath)
+	global.Set("tls-server-key-file", certServerPrivateKeyAbsolutePath)
+
+	// The client certificate for this cluster is allowed to connect to this
+	// repository host for the stanza.
+	global.Add("tls-server-auth", clientCommonName(cluster)+"="+DefaultStanzaName)
+
+	// Send all server logs to stderr and stdout without timestamps.
+	// - stderr has ERROR messages
+	// - stdout has WARN, INFO, and DETAIL messages
+	//
+	// The "trace" level shows when a connection is accepted, but nothing about
+	// the remote address or what commands it might send.
+	// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/command/server/server.c#L47-L48
+	// - https://pgbackrest.org/configuration.html#section-log
+	server.Set("log-level-console", "detail")
+	server.Set("log-level-stderr", "error")
+	server.Set("log-level-file", "off")
+	server.Set("log-timestamp", "n")
 
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
@@ -280,9 +366,16 @@ func populateRepoHostConfigurationMap(serviceName, serviceNamespace, pgdataDir s
 
 	// set the configs for all PG hosts
 	for i, pgHost := range pgHosts {
-		stanza.Set(fmt.Sprintf("pg%d-host", i+1), pgHost+"-0."+
-			serviceName+"."+serviceNamespace+".svc."+
-			naming.KubernetesClusterDomain(context.Background()))
+		// TODO(cbandy): pass a FQDN in already.
+		pgHostFQDN := pgHost + "-0." +
+			serviceName + "." + serviceNamespace + ".svc." +
+			naming.KubernetesClusterDomain(context.Background())
+
+		stanza.Set(fmt.Sprintf("pg%d-host", i+1), pgHostFQDN)
+		stanza.Set(fmt.Sprintf("pg%d-host-type", i+1), "tls")
+		stanza.Set(fmt.Sprintf("pg%d-host-ca-file", i+1), certAuthorityAbsolutePath)
+		stanza.Set(fmt.Sprintf("pg%d-host-cert-file", i+1), certClientAbsolutePath)
+		stanza.Set(fmt.Sprintf("pg%d-host-key-file", i+1), certClientPrivateKeyAbsolutePath)
 
 		stanza.Set(fmt.Sprintf("pg%d-path", i+1), pgdataDir)
 		stanza.Set(fmt.Sprintf("pg%d-port", i+1), fmt.Sprint(pgPort))
@@ -290,8 +383,9 @@ func populateRepoHostConfigurationMap(serviceName, serviceNamespace, pgdataDir s
 	}
 
 	return iniSectionSet{
-		"global":          global,
-		DefaultStanzaName: stanza,
+		"global":              global,
+		"global:server-start": server,
+		DefaultStanzaName:     stanza,
 	}
 }
 
