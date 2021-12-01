@@ -1138,14 +1138,12 @@ func (r *Reconciler) reconcileInstance(
 			postgresDataVolume, postgresWALVolume,
 			&instance.Spec.Template.Spec)
 
+		addPGBackRestToInstancePodSpec(
+			cluster, instanceCertificates, &instance.Spec.Template.Spec)
+
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
-	}
-
-	// Add pgBackRest containers, volumes, etc. to the instance Pod spec
-	if err == nil {
-		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template)
 	}
 
 	// Add pgMonitor resources to the instance Pod spec
@@ -1302,36 +1300,17 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	sts.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 }
 
-// addPGBackRestToInstancePodSpec adds pgBackRest configuration to the PodTemplateSpec.  This
-// includes adding an SSH sidecar if a pgBackRest repoHost is enabled per the current
-// PostgresCluster spec, mounting pgBackRest repo volumes if a dedicated repository is not
-// configured, and then mounting the proper pgBackRest configuration resources (ConfigMaps
-// and Secrets)
+// addPGBackRestToInstancePodSpec adds pgBackRest configurations and sidecars
+// to the PodSpec.
 func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
-	template *corev1.PodTemplateSpec) error {
-
-	dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(cluster)
-	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
-	if dedicatedRepoEnabled {
-		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
-			naming.PGBackRestRepoContainerName)
-		var resources corev1.ResourceRequirements
-		if cluster.Spec.Backups.PGBackRest.Sidecars != nil &&
-			cluster.Spec.Backups.PGBackRest.Sidecars.PGBackRest != nil &&
-			cluster.Spec.Backups.PGBackRest.Sidecars.PGBackRest.Resources != nil {
-			resources = *cluster.Spec.Backups.PGBackRest.Sidecars.PGBackRest.Resources
-		}
-		if err := pgbackrest.AddSSHToPod(cluster, template, true,
-			resources, naming.ContainerDatabase); err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	if err := pgbackrest.AddConfigsToPod(cluster, template, pgbackrest.CMInstanceKey,
-		pgBackRestConfigContainers...); err != nil {
-		return errors.WithStack(err)
+	instanceCertificates *corev1.Secret, instancePod *corev1.PodSpec,
+) {
+	if pgbackrest.DedicatedRepoHostEnabled(cluster) {
+		pgbackrest.AddServerToInstancePod(cluster, instancePod,
+			instanceCertificates.Name)
 	}
 
-	return nil
+	pgbackrest.AddConfigToInstancePod(cluster, instancePod)
 }
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch
@@ -1420,6 +1399,11 @@ func (r *Reconciler) reconcileInstanceCertificates(
 		err = patroni.InstanceCertificates(ctx,
 			root.Certificate, leafCert.Certificate,
 			leafCert.PrivateKey, instanceCerts)
+	}
+	if err == nil {
+		err = pgbackrest.InstanceCertificates(ctx, cluster,
+			*root.Certificate, *leafCert.Certificate, *leafCert.PrivateKey,
+			instanceCerts)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, instanceCerts))

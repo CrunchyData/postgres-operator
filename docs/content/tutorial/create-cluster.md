@@ -82,9 +82,6 @@ Also ensure that you have enough persistent volumes available: your Kubernetes a
 
 If you are on OpenShift, you may need to set `spec.openshift` to `true`.
 
-### Backups Never Complete
-
-The most common occurrence of this is due to the Kubernetes network blocking SSH connections between Pods. Ensure that your Kubernetes networking layer allows for SSH connections over port 2022 in the Namespace that you are deploying your PostgreSQL clusters into.
 
 ## Next Steps
 

@@ -55,6 +55,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -239,7 +240,10 @@ func TestReconcilePGBackRest(t *testing.T) {
 			Type: condition, Reason: "testing", Status: status})
 	}
 
-	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instances)
+	rootCA := pki.NewRootCertificateAuthority()
+	assert.NilError(t, rootCA.Generate())
+
+	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instances, rootCA)
 	if err != nil || result != (reconcile.Result{}) {
 		t.Errorf("unable to reconcile pgBackRest: %v", err)
 	}
@@ -2003,6 +2007,9 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 	namespace := ns.Name
 
+	rootCA := pki.NewRootCertificateAuthority()
+	assert.NilError(t, rootCA.Generate())
+
 	type testResult struct {
 		jobCount, pvcCount                                      int
 		invalidSourceRepo, invalidSourceCluster, invalidOptions bool
@@ -2188,7 +2195,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 					pgclusterDataSource = tc.dataSource.PostgresCluster
 				}
 				err := r.reconcilePostgresClusterDataSource(ctx, cluster, pgclusterDataSource,
-					"testhash", nil)
+					"testhash", nil, rootCA)
 				assert.NilError(t, err)
 
 				restoreJobs := &batchv1.JobList{}

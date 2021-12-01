@@ -89,6 +89,17 @@ func TestSectionSet(t *testing.T) {
 		"\n[global]\nx = t\n\n[another]\nx = z\n\n[db]\nx = y\n\n[db:backup]\nx = w\n",
 		"expected global before stanzas")
 
+	sections["global:command"] = iniMultiSet{"t": []string{"v"}}
+	assert.Equal(t, sections.String(),
+		strings.Join([]string{
+			"\n[global]\nx = t\n",
+			"\n[global:command]\nt = v\n",
+			"\n[another]\nx = z\n",
+			"\n[db]\nx = y\n",
+			"\n[db:backup]\nx = w\n",
+		}, ""),
+		"expected global subcommand after global")
+
 	t.Run("PrettyYAML", func(t *testing.T) {
 		sections["last"] = iniMultiSet{"z": []string{""}}
 		b, err := yaml.Marshal(sections.String())

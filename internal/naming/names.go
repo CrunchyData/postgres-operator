@@ -442,6 +442,14 @@ func PGBackRestSSHSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// PGBackRestSecret returns the ObjectMeta for a pgBackRest Secret
+func PGBackRestSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      cluster.GetName() + "-pgbackrest",
+		Namespace: cluster.GetNamespace(),
+	}
+}
+
 // PGUpgradeJob returns the ObjectMeta for the pg_upgrade Job utilized to
 // upgrade from one major PostgreSQL version to another
 func PGUpgradeJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {

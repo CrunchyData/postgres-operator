@@ -28,6 +28,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
@@ -51,7 +52,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -420,189 +420,226 @@ func TestWritablePod(t *testing.T) {
 }
 
 func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
+	cluster := v1beta1.PostgresCluster{}
+	cluster.Name = "hippo"
+	cluster.Default()
 
-	clusterName := "hippo"
-	clusterUID := types.UID("hippouid")
-	namespace := "test-add-pgbackrest-to-instance-pod-spec"
+	certificates := corev1.Secret{}
+	certificates.Name = "some-secret"
 
-	// create a PostgresCluster to test with
-	postgresCluster := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterName,
-			Namespace: namespace,
-			UID:       clusterUID,
+	pod := corev1.PodSpec{
+		Containers: []corev1.Container{
+			{Name: "database"},
+			{Name: "other"},
 		},
-		Spec: v1beta1.PostgresClusterSpec{
-			Backups: v1beta1.Backups{
-				PGBackRest: v1beta1.PGBackRestArchive{
-					Repos: []v1beta1.PGBackRestRepo{{
-						Name: "repo1",
-						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-								Resources: corev1.ResourceRequirements{
-									Requests: map[corev1.ResourceName]resource.Quantity{
-										corev1.ResourceStorage: resource.MustParse("1Gi"),
-									},
-								},
-							},
-						},
-					}, {
-						Name: "repo2",
-						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-								Resources: corev1.ResourceRequirements{
-									Requests: map[corev1.ResourceName]resource.Quantity{
-										corev1.ResourceStorage: resource.MustParse("2Gi"),
-									},
-								},
-							},
-						},
-					}},
-				},
+		Volumes: []corev1.Volume{
+			{Name: "other"},
+			{Name: "postgres-data"},
+			{Name: "postgres-wal"},
+		},
+	}
+
+	t.Run("NoVolumeRepo", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = nil
+
+		out := pod.DeepCopy()
+		addPGBackRestToInstancePodSpec(cluster, &certificates, out)
+
+		// Only Containers and Volumes fields have changed.
+		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
+
+		// Only database container has mounts.
+		// Other containers are ignored.
+		assert.Assert(t, marshalMatches(out.Containers, `
+- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+- name: other
+  resources: {}
+		`))
+
+		// Instance configuration files but no certificates.
+		// Other volumes are ignored.
+		assert.Assert(t, marshalMatches(out.Volumes, `
+- name: other
+- name: postgres-data
+- name: postgres-wal
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_instance.conf
+          path: pgbackrest_instance.conf
+        - key: config-hash
+          path: config-hash
+        name: hippo-pgbackrest-config
+		`))
+	})
+
+	t.Run("OneVolumeRepo", func(t *testing.T) {
+		alwaysExpect := func(t testing.TB, result *corev1.PodSpec) {
+			// Only Containers and Volumes fields have changed.
+			assert.DeepEqual(t, pod, *result, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
+
+			// Instance configuration files plus client and server certificates.
+			// The server certificate comes from the instance Secret.
+			// Other volumes are untouched.
+			assert.Assert(t, marshalMatches(result.Volumes, `
+- name: other
+- name: postgres-data
+- name: postgres-wal
+- name: pgbackrest-server
+  projected:
+    sources:
+    - secret:
+        items:
+        - key: pgbackrest-server.crt
+          path: server-tls.crt
+        - key: pgbackrest-server.key
+          mode: 384
+          path: server-tls.key
+        name: some-secret
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_instance.conf
+          path: pgbackrest_instance.conf
+        - key: config-hash
+          path: config-hash
+        name: hippo-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-pgbackrest
+        optional: true
+			`))
+		}
+
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name:   "repo1",
+				Volume: new(v1beta1.RepoPVC),
 			},
-		},
-	}
+		}
 
-	testCases := []struct {
-		dedicatedRepoHostEnabled bool
-		sshConfig                *corev1.ConfigMapProjection
-		sshSecret                *corev1.SecretProjection
-	}{{
-		dedicatedRepoHostEnabled: false,
-	}, {
-		dedicatedRepoHostEnabled: true,
-		sshConfig: &corev1.ConfigMapProjection{
-			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
-		sshSecret: &corev1.SecretProjection{
-			LocalObjectReference: corev1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
-	}}
+		out := pod.DeepCopy()
+		addPGBackRestToInstancePodSpec(cluster, &certificates, out)
+		alwaysExpect(t, out)
 
-	for _, tc := range testCases {
-		dedicated := tc.dedicatedRepoHostEnabled
-		customConfig := (tc.sshConfig != nil)
-		customSecret := (tc.sshSecret != nil)
-		t.Run(fmt.Sprintf("dedicated:%t", dedicated), func(t *testing.T) {
+		// The TLS server is added and configuration mounted.
+		// It has PostgreSQL volumes mounted while other volumes are ignored.
+		assert.Assert(t, marshalMatches(out.Containers, `
+- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+- name: other
+  resources: {}
+- command:
+  - pgbackrest
+  - server-start
+  livenessProbe:
+    exec:
+      command:
+      - pgbackrest
+      - server-ping
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
+  - mountPath: /pgdata
+    name: postgres-data
+  - mountPath: /pgwal
+    name: postgres-wal
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+		`))
 
-			template := &corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{Name: naming.ContainerDatabase}},
+		t.Run("CustomResources", func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.Backups.PGBackRest.Sidecars = &v1beta1.PGBackRestSidecars{
+				PGBackRest: &v1beta1.Sidecar{
+					Resources: &corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("5m"),
+						},
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("9Mi"),
+						},
+					},
 				},
 			}
 
-			pgBackRestConfigContainers := []string{naming.ContainerDatabase}
-			if dedicated {
-				pgBackRestConfigContainers = append(pgBackRestConfigContainers,
-					naming.PGBackRestRepoContainerName)
-				if customConfig || customSecret {
-					if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil {
-						postgresCluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{}
-					}
-					postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration = tc.sshConfig
-					postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret = tc.sshSecret
-				}
-			}
+			before := out.DeepCopy()
+			out := pod.DeepCopy()
+			addPGBackRestToInstancePodSpec(cluster, &certificates, out)
+			alwaysExpect(t, out)
 
-			err := addPGBackRestToInstancePodSpec(postgresCluster, template)
-			assert.NilError(t, err)
+			// Only the TLS server container changed.
+			assert.Equal(t, len(before.Containers), len(out.Containers))
+			assert.Assert(t, len(before.Containers) > 2)
+			assert.DeepEqual(t, before.Containers[:2], out.Containers[:2])
 
-			// if a repo host is configured, then verify SSH is enabled
-			if dedicated {
-
-				// verify the ssh volume
-				var foundSSHVolume bool
-				var sshVolume corev1.Volume
-				for _, v := range template.Spec.Volumes {
-					if v.Name == naming.PGBackRestSSHVolume {
-						foundSSHVolume = true
-						sshVolume = v
-						break
-					}
-				}
-				assert.Assert(t, foundSSHVolume)
-
-				// verify the ssh config and secret
-				var foundSSHConfigVolume, foundSSHSecretVolume bool
-				defaultConfigName := naming.PGBackRestSSHConfig(postgresCluster).Name
-				defaultSecretName := naming.PGBackRestSSHSecret(postgresCluster).Name
-				for _, s := range sshVolume.Projected.Sources {
-					if s.ConfigMap != nil {
-						if (!customConfig && s.ConfigMap.Name == defaultConfigName) ||
-							(customConfig && s.ConfigMap.Name == tc.sshConfig.Name) {
-							foundSSHConfigVolume = true
-						}
-					} else if s.Secret != nil {
-						if (!customSecret && s.Secret.Name == defaultSecretName) ||
-							(customSecret && s.Secret.Name == tc.sshSecret.Name) {
-							foundSSHSecretVolume = true
-						}
-					}
-				}
-				assert.Assert(t, foundSSHConfigVolume)
-				assert.Assert(t, foundSSHSecretVolume)
-
-				// verify that pgbackrest container is present and that the proper SSH volume mount in
-				// present in all containers
-				var foundSSHContainer bool
-				for _, c := range template.Spec.Containers {
-					if c.Name == naming.PGBackRestRepoContainerName {
-						foundSSHContainer = true
-					}
-					var foundVolumeMount bool
-					for _, vm := range c.VolumeMounts {
-						if vm.Name == naming.PGBackRestSSHVolume && vm.MountPath == "/etc/ssh" &&
-							vm.ReadOnly == true {
-							foundVolumeMount = true
-							break
-						}
-					}
-					assert.Assert(t, foundVolumeMount)
-				}
-				assert.Assert(t, foundSSHContainer)
-			}
-
-			var foundConfigVolume bool
-			var configVolume corev1.Volume
-			for _, v := range template.Spec.Volumes {
-				if v.Name == pgbackrest.ConfigVol {
-					foundConfigVolume = true
-					configVolume = v
-					break
-				}
-			}
-			assert.Assert(t, foundConfigVolume)
-
-			var foundConfigProjection bool
-			defaultConfigName := naming.PGBackRestConfig(postgresCluster).Name
-			for _, s := range configVolume.Projected.Sources {
-				if s.ConfigMap != nil {
-					if s.ConfigMap.Name == defaultConfigName {
-						foundConfigProjection = true
-					}
-				}
-			}
-			assert.Assert(t, foundConfigProjection)
-
-			for _, container := range pgBackRestConfigContainers {
-				var foundContainer bool
-				for _, c := range template.Spec.Containers {
-					if c.Name == container {
-						foundContainer = true
-					}
-					var foundVolumeMount bool
-					for _, vm := range c.VolumeMounts {
-						if vm.Name == pgbackrest.ConfigVol && vm.MountPath == pgbackrest.ConfigDir {
-							foundVolumeMount = true
-							break
-						}
-					}
-					assert.Assert(t, foundVolumeMount)
-				}
-				assert.Assert(t, foundContainer)
-			}
+			// It has the custom resources.
+			assert.Assert(t, marshalMatches(out.Containers[2:], `
+- command:
+  - pgbackrest
+  - server-start
+  livenessProbe:
+    exec:
+      command:
+      - pgbackrest
+      - server-ping
+  name: pgbackrest
+  resources:
+    limits:
+      memory: 9Mi
+    requests:
+      cpu: 5m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
+  - mountPath: /pgdata
+    name: postgres-data
+  - mountPath: /pgwal
+    name: postgres-wal
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+			`))
 		})
-	}
+	})
+
 }
 
 func TestPodsToKeep(t *testing.T) {

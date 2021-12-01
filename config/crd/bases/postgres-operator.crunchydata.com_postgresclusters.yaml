@@ -1081,7 +1081,9 @@ spec:
                                 type: object
                             type: object
                           sshConfigMap:
-                            description: ConfigMap containing custom SSH configuration
+                            description: 'ConfigMap containing custom SSH configuration.
+                              Deprecated: Repository hosts use mTLS for encryption,
+                              authentication, and authorization.'
                             properties:
                               items:
                                 description: If unspecified, each key-value pair in
@@ -1136,7 +1138,9 @@ spec:
                                 type: boolean
                             type: object
                           sshSecret:
-                            description: Secret containing custom SSH keys
+                            description: 'Secret containing custom SSH keys. Deprecated:
+                              Repository hosts use mTLS for encryption, authentication,
+                              and authorization.'
                             properties:
                               items:
                                 description: If unspecified, each key-value pair in

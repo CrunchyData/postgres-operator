@@ -213,11 +213,13 @@ type PGBackRestRepoHost struct {
 	// +optional
 	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
 
-	// ConfigMap containing custom SSH configuration
+	// ConfigMap containing custom SSH configuration.
+	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
 	// +optional
 	SSHConfiguration *corev1.ConfigMapProjection `json:"sshConfigMap,omitempty"`
 
-	// Secret containing custom SSH keys
+	// Secret containing custom SSH keys.
+	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
 	// +optional
 	SSHSecret *corev1.SecretProjection `json:"sshSecret,omitempty"`
 }

@@ -57,7 +57,7 @@ const (
 	// LabelPGBackRestBackup is used to indicate that a resource is for a pgBackRest backup
 	LabelPGBackRestBackup = labelPrefix + "pgbackrest-backup"
 
-	// LabelPGBackRestConfig is used to indicate that a ConfigMap is for pgBackRest
+	// LabelPGBackRestConfig is used to indicate that a ConfigMap or Secret is for pgBackRest
 	LabelPGBackRestConfig = labelPrefix + "pgbackrest-config"
 
 	// LabelPGBackRestDedicated is used to indicate that a ConfigMap is for a pgBackRest dedicated

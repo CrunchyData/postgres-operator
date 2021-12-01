@@ -27,6 +27,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -266,7 +267,8 @@ func (r *Reconciler) reconcileClusterReplicaService(
 // PostgresCluster spec.
 func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, observed *observedInstances,
-	clusterVolumes []corev1.PersistentVolumeClaim) (bool, error) {
+	clusterVolumes []corev1.PersistentVolumeClaim,
+	rootCA *pki.RootCertificateAuthority) (bool, error) {
 
 	// a hash func to hash the pgBackRest restore options
 	hashFunc := func(jobConfigs []string) (string, error) {
@@ -375,7 +377,7 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 
 	// proceed with initializing the PG data directory if not already initialized
 	if err := r.reconcilePostgresClusterDataSource(ctx, cluster, dataSource,
-		configHash, clusterVolumes); err != nil {
+		configHash, clusterVolumes, rootCA); err != nil {
 		return true, err
 	}
 	// return early until the PG data directory is initialized

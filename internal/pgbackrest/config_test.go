@@ -98,9 +98,24 @@ repo4-s3-bucket = s-bucket
 repo4-s3-endpoint = endpoint-s
 repo4-s3-region = earth
 repo4-type = s3
+tls-server-address = ::
+tls-server-auth = pgbackrest@=db
+tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt
+tls-server-key-file = /etc/pgbackrest/server/server-tls.key
+
+[global:server-start]
+log-level-console = detail
+log-level-file = off
+log-level-stderr = error
+log-timestamp = n
 
 [db]
 pg1-host = some-instance-0.pod-service-name.test-ns.svc.`+domain+`
+pg1-host-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+pg1-host-cert-file = /etc/pgbackrest/conf.d/~postgres-operator/client-tls.crt
+pg1-host-key-file = /etc/pgbackrest/conf.d/~postgres-operator/client-tls.key
+pg1-host-type = tls
 pg1-path = /pgdata/pg12
 pg1-port = 2345
 pg1-socket-path = /tmp/postgres
@@ -113,6 +128,10 @@ pg1-socket-path = /tmp/postgres
 [global]
 log-path = /tmp
 repo1-host = repo-hostname-0.pod-service-name.test-ns.svc.`+domain+`
+repo1-host-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+repo1-host-cert-file = /etc/pgbackrest/conf.d/~postgres-operator/client-tls.crt
+repo1-host-key-file = /etc/pgbackrest/conf.d/~postgres-operator/client-tls.key
+repo1-host-type = tls
 repo1-host-user = postgres
 repo1-path = /pgbackrest/repo1
 repo2-azure-container = a-container
@@ -127,6 +146,17 @@ repo4-s3-bucket = s-bucket
 repo4-s3-endpoint = endpoint-s
 repo4-s3-region = earth
 repo4-type = s3
+tls-server-address = ::
+tls-server-auth = pgbackrest@=db
+tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt
+tls-server-key-file = /etc/pgbackrest/server/server-tls.key
+
+[global:server-start]
+log-level-console = detail
+log-level-file = off
+log-level-stderr = error
+log-timestamp = n
 
 [db]
 pg1-path = /pgdata/pg12

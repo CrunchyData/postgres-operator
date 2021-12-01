@@ -1243,12 +1243,12 @@ Defines configuration for a pgBackRest dedicated repository host.  This section 
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostsshconfigmap">sshConfigMap</a></b></td>
         <td>object</td>
-        <td>ConfigMap containing custom SSH configuration</td>
+        <td>ConfigMap containing custom SSH configuration. Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostsshsecret">sshSecret</a></b></td>
         <td>object</td>
-        <td>Secret containing custom SSH keys</td>
+        <td>Secret containing custom SSH keys. Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohosttolerationsindex">tolerations</a></b></td>
@@ -2195,7 +2195,7 @@ Resource requirements for a pgBackRest repository host
 
 
 
-ConfigMap containing custom SSH configuration
+ConfigMap containing custom SSH configuration. Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
 
 <table>
     <thead>
@@ -2269,7 +2269,7 @@ Maps a string key to a path within a volume.
 
 
 
-Secret containing custom SSH keys
+Secret containing custom SSH keys. Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
 
 <table>
     <thead>
