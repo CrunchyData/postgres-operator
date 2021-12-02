@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -499,5 +500,13 @@ func MovePGBackRestRepoDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMet
 	return metav1.ObjectMeta{
 		Namespace: cluster.GetNamespace(),
 		Name:      cluster.Name + "-move-pgbackrest-repo-dir",
+	}
+}
+
+// UpgradeCheckConfigMap returns the ObjectMeta for the PGO ConfigMap
+func UpgradeCheckConfigMap() metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: config.PGONamespace(),
+		Name:      "pgo-upgrade-check",
 	}
 }
