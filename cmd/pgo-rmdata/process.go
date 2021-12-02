@@ -65,7 +65,6 @@ func Delete(request Request) {
 			// continue with removing the replica
 			if !kerror.IsNotFound(err) {
 				log.Error(err)
-				return
 			} else {
 				log.Debug("pgreplica not found, assuming scale down of original primary")
 			}
