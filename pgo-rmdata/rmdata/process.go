@@ -63,17 +63,13 @@ func Delete(request Request) {
 		if err := request.Clientset.
 			CrunchydataV1().Pgreplicas(request.Namespace).
 			Delete(request.ReplicaName, &metav1.DeleteOptions{}); err != nil {
-			// If the name of the replica being deleted matches the scope for the cluster, then
-			// we assume it was the original primary and the pgreplica deletion will fail with
-			// a not found error.  In this case we allow the rmdata process to continue despite
-			// the error.  This allows for the original primary to be scaled down once it is
-			// is no longer a primary, and has become a replica.
-			if !(request.ReplicaName == request.ClusterPGHAScope && kerror.IsNotFound(err)) {
+			// if the pgreplica is not found, assume we're scaling down the original primary and
+			// continue with removing the replica
+			if !kerror.IsNotFound(err) {
 				log.Error(err)
-				return
+			} else {
+				log.Debug("pgreplica not found, assuming scale down of original primary")
 			}
-			log.Debug("replica name matches PGHA scope, assuming scale down of original primary" +
-				"and therefore ignoring error attempting to delete nonexistent pgreplica")
 		}
 
 		err = removeReplica(request)
