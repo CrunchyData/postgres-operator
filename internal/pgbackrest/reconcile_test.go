@@ -387,64 +387,14 @@ func TestAddConfigToRestorePod(t *testing.T) {
 		AddConfigToRestorePod(cluster, out)
 		alwaysExpect(t, out)
 
-		// Instance configuration files after custom projections.
+		// Instance configuration files and optional client certificates
+		// after custom projections.
 		assert.Assert(t, marshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
     sources:
     - configMap:
         name: custom-configmap
-    - configMap:
-        items:
-        - key: pgbackrest_instance.conf
-          path: pgbackrest_instance.conf
-        name: source-pgbackrest-config
-    - secret:
-        name: source-pgbackrest
-		`))
-	})
-
-	t.Run("NoVolumeRepo", func(t *testing.T) {
-		cluster := cluster.DeepCopy()
-		cluster.Spec.Backups.PGBackRest.Repos = nil
-
-		out := pod.DeepCopy()
-		AddConfigToRestorePod(cluster, out)
-		alwaysExpect(t, out)
-
-		// Instance configuration files but no certificates.
-		assert.Assert(t, marshalMatches(out.Volumes, `
-- name: pgbackrest-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: pgbackrest_instance.conf
-          path: pgbackrest_instance.conf
-        name: source-pgbackrest-config
-    - secret:
-        name: source-pgbackrest
-		`))
-	})
-
-	t.Run("OneVolumeRepo", func(t *testing.T) {
-		cluster := cluster.DeepCopy()
-		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
-			{
-				Name:   "repo1",
-				Volume: new(v1beta1.RepoPVC),
-			},
-		}
-
-		out := pod.DeepCopy()
-		AddConfigToRestorePod(cluster, out)
-		alwaysExpect(t, out)
-
-		// Instance configuration files plus client certificates.
-		assert.Assert(t, marshalMatches(out.Volumes, `
-- name: pgbackrest-config
-  projected:
-    sources:
     - configMap:
         items:
         - key: pgbackrest_instance.conf
@@ -460,6 +410,7 @@ func TestAddConfigToRestorePod(t *testing.T) {
           mode: 384
           path: ~postgres-operator/client-tls.key
         name: source-pgbackrest
+        optional: true
 		`))
 	})
 }

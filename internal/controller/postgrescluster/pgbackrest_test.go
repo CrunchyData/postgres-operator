@@ -2011,7 +2011,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	assert.NilError(t, rootCA.Generate())
 
 	type testResult struct {
-		jobCount, pvcCount                                      int
+		configCount, jobCount, pvcCount                         int
 		invalidSourceRepo, invalidSourceCluster, invalidOptions bool
 		expectedClusterCondition                                *metav1.Condition
 	}
@@ -2033,7 +2033,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "init-source",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 1, pvcCount: 1,
+				configCount: 1, jobCount: 1, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
 				expectedClusterCondition: nil,
 			},
@@ -2046,7 +2046,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "the-right-source",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 0, pvcCount: 0,
+				configCount: 0, jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: false, invalidSourceCluster: true, invalidOptions: false,
 				expectedClusterCondition: nil,
 			},
@@ -2059,7 +2059,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "invalid-repo",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 0, pvcCount: 0,
+				configCount: 1, jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: true, invalidSourceCluster: false, invalidOptions: false,
 				expectedClusterCondition: nil,
 			},
@@ -2073,7 +2073,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "invalid-repo-option",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 0, pvcCount: 1,
+				configCount: 1, jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
 				expectedClusterCondition: nil,
 			},
@@ -2087,7 +2087,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "invalid-stanza-option",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 0, pvcCount: 1,
+				configCount: 1, jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
 				expectedClusterCondition: nil,
 			},
@@ -2101,7 +2101,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "invalid-pgpath-option",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 0, pvcCount: 1,
+				configCount: 1, jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
 				expectedClusterCondition: nil,
 			},
@@ -2114,7 +2114,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "init-cond-missing",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 0, pvcCount: 0,
+				configCount: 0, jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
 				expectedClusterCondition: &metav1.Condition{
 					Type:    ConditionPostgresDataInitialized,
@@ -2132,7 +2132,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 			sourceClusterName:   "invalid-hash",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
-				jobCount: 0, pvcCount: 0,
+				configCount: 0, jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
 				expectedClusterCondition: nil,
 			},
@@ -2169,6 +2169,14 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				sourceCluster.Spec.Backups.PGBackRest.Repos = tc.sourceClusterRepos
 				assert.NilError(t, tClient.Create(ctx, sourceCluster))
 
+				sourceClusterConfig := &corev1.ConfigMap{
+					ObjectMeta: naming.PGBackRestConfig(sourceCluster),
+					Data: map[string]string{
+						"pgbackrest_instance.conf": "source-stuff",
+					},
+				}
+				assert.NilError(t, tClient.Create(ctx, sourceClusterConfig))
+
 				sourceClusterPrimary := &corev1.Pod{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "primary-" + tc.sourceClusterName,
@@ -2197,6 +2205,17 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				err := r.reconcilePostgresClusterDataSource(ctx, cluster, pgclusterDataSource,
 					"testhash", nil, rootCA)
 				assert.NilError(t, err)
+
+				restoreConfig := &corev1.ConfigMap{}
+				err = tClient.Get(ctx,
+					naming.AsObjectKey(naming.PGBackRestConfig(cluster)), restoreConfig)
+
+				if tc.result.configCount == 0 {
+					assert.Assert(t, apierrors.IsNotFound(err), "expected NotFound, got %#v", err)
+				} else {
+					assert.NilError(t, err)
+					assert.DeepEqual(t, restoreConfig.Data, sourceClusterConfig.Data)
+				}
 
 				restoreJobs := &batchv1.JobList{}
 				assert.NilError(t, tClient.List(ctx, restoreJobs, &client.ListOptions{
