@@ -120,20 +120,25 @@ func addControllersToManager(ctx context.Context, mgr manager.Manager) error {
 func isOpenshift(ctx context.Context, cfg *rest.Config) bool {
 	log := logging.FromContext(ctx)
 
-	const sccGroup, sccKind = "security.openshift.io", "SecurityContextConstraints"
+	const sccGroupName, sccKind = "security.openshift.io", "SecurityContextConstraints"
 
 	client, err := discovery.NewDiscoveryClientForConfig(cfg)
 	assertNoError(err)
 
-	_, resourceLists, err := client.ServerGroupsAndResources()
-	assertNoError(err)
-
-	// If we detect that the "SecurityContextConstraints" Kind is present in the
-	// "security.openshift.io" Group, we'll return that this is an OpenShift
-	// environment
-	for _, rl := range resourceLists {
-		if strings.HasPrefix(rl.GroupVersion, sccGroup+"/") {
-			for _, r := range rl.APIResources {
+	groups, err := client.ServerGroups()
+	if err != nil {
+		assertNoError(err)
+	}
+	for _, g := range groups.Groups {
+		if g.Name != sccGroupName {
+			continue
+		}
+		for _, v := range g.Versions {
+			resourceList, err := client.ServerResourcesForGroupVersion(v.GroupVersion)
+			if err != nil {
+				assertNoError(err)
+			}
+			for _, r := range resourceList.APIResources {
 				if r.Kind == sccKind {
 					log.Info("detected OpenShift environment")
 					return true
