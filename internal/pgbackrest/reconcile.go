@@ -17,6 +17,7 @@ package pgbackrest
 
 import (
 	"context"
+	"crypto/x509"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -157,13 +158,13 @@ func AddConfigToRepoPod(
 }
 
 // AddConfigToRestorePod adds and mounts the pgBackRest configuration volume to
-// read from repositories of repoCluster to pod. The pgBackRest containers must
+// for the restore job of cluster to pod. The pgBackRest containers must
 // already be in pod.
 func AddConfigToRestorePod(
-	repoCluster *v1beta1.PostgresCluster, pod *corev1.PodSpec,
+	cluster *v1beta1.PostgresCluster, pod *corev1.PodSpec,
 ) {
 	configmap := corev1.VolumeProjection{ConfigMap: &corev1.ConfigMapProjection{}}
-	configmap.ConfigMap.Name = naming.PGBackRestConfig(repoCluster).Name
+	configmap.ConfigMap.Name = naming.PGBackRestConfig(cluster).Name
 	configmap.ConfigMap.Items = []corev1.KeyToPath{
 		// TODO(cbandy): This may be the instance configuration of a cluster
 		// different from the one we are building/creating. For now the
@@ -171,21 +172,21 @@ func AddConfigToRestorePod(
 		// and these are safe enough to use across different clusters running
 		// the same PostgreSQL version. When that list grows, consider changing
 		// this to use local stanza options and remote repository options.
+		// See also [RestoreConfig].
 		{Key: CMInstanceKey, Path: CMInstanceKey},
 	}
 
+	// Mount client certificates of the source cluster if they exist.
 	secret := corev1.VolumeProjection{Secret: &corev1.SecretProjection{}}
-	secret.Secret.Name = naming.PGBackRestSecret(repoCluster).Name
-
-	if DedicatedRepoHostEnabled(repoCluster) {
-		secret.Secret.Items = append(secret.Secret.Items, clientCertificates()...)
-	}
+	secret.Secret.Name = naming.PGBackRestSecret(cluster).Name
+	secret.Secret.Items = append(secret.Secret.Items, clientCertificates()...)
+	secret.Secret.Optional = initialize.Bool(true)
 
 	// Start with a copy of projections specified in the cluster. Items later in
 	// the list take precedence over earlier items (that is, last write wins).
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
 	sources := append([]corev1.VolumeProjection{},
-		repoCluster.Spec.Backups.PGBackRest.Configuration...)
+		cluster.Spec.Backups.PGBackRest.Configuration...)
 
 	addConfigVolumeAndMounts(pod, append(sources, configmap, secret))
 }
@@ -515,6 +516,36 @@ func RepoVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "pgbackrest-repo", MountPath: repoMountPath}
 }
 
+// RestoreConfig populates targetConfigMap and targetSecret with values needed
+// to restore a cluster from repositories defined in sourceConfigMap and sourceSecret.
+func RestoreConfig(
+	sourceConfigMap, targetConfigMap *corev1.ConfigMap,
+	sourceSecret, targetSecret *corev1.Secret,
+) {
+	initialize.StringMap(&targetConfigMap.Data)
+
+	// Use the repository definitions from the source cluster.
+	//
+	// TODO(cbandy): This is the *entire* instance configuration from another
+	// cluster. For now, the stanza options are "pg1-path", "pg1-port", and
+	// "pg1-socket-path" and these are safe enough to use across different
+	// clusters running the same PostgreSQL version. When that list grows,
+	// consider changing this to use local stanza options and remote repository options.
+	targetConfigMap.Data[CMInstanceKey] = sourceConfigMap.Data[CMInstanceKey]
+
+	if sourceSecret != nil && targetSecret != nil {
+		initialize.ByteMap(&targetSecret.Data)
+
+		// - https://golang.org/issue/45038
+		bytesClone := func(b []byte) []byte { return append([]byte(nil), b...) }
+
+		// Use the CA and client certificate from the source cluster.
+		for _, item := range clientCertificates() {
+			targetSecret.Data[item.Key] = bytesClone(sourceSecret.Data[item.Key])
+		}
+	}
+}
+
 // Secret populates the pgBackRest Secret.
 func Secret(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
@@ -540,13 +571,22 @@ func Secret(ctx context.Context,
 
 		if err == nil {
 			var parse error
+			var wrong bool
 			if data, ok := inSecret.Data[certClientSecretKey]; parse == nil && ok {
 				leaf.Certificate, parse = pki.ParseCertificate(data)
 			}
 			if data, ok := inSecret.Data[certClientPrivateKeySecretKey]; parse == nil && ok {
 				leaf.PrivateKey, parse = pki.ParsePrivateKey(data)
 			}
-			if parse != nil || pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
+			if parse == nil && leaf.Certificate != nil {
+				if cert, err := x509.ParseCertificate(leaf.Certificate.Certificate); err != nil {
+					parse = err
+				} else {
+					wrong = cert.Subject.CommonName != leaf.CommonName
+				}
+			}
+
+			if parse != nil || pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) || wrong {
 				err = errors.WithStack(leaf.Generate(inRoot))
 			}
 		}

@@ -203,6 +203,9 @@ func PGBackRestBackupJobSelector(clusterName, repoName string,
 
 // PGBackRestRestoreConfigLabels provides labels for configuration (e.g. ConfigMaps and Secrets)
 // generated to perform a pgBackRest restore.
+//
+// Deprecated: Store restore data in the pgBackRest ConfigMap and Secret,
+// [PGBackRestConfig] and [PGBackRestSecret].
 func PGBackRestRestoreConfigLabels(clusterName string) labels.Set {
 	commonLabels := PGBackRestLabels(clusterName)
 	jobLabels := map[string]string{
