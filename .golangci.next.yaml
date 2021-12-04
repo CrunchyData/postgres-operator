@@ -1,0 +1,36 @@
+# https://golangci-lint.run/usage/configuration/
+#
+# This file is for linters that might be interesting to enforce in the future.
+# Rules that should be enforced immediately belong in [.golangci.yaml].
+#
+# Both files are used by [.github/workflows/lint.yaml].
+
+linters:
+  disable-all: true
+  enable:
+    - gocritic
+    - godot
+    - godox
+    - goerr113
+    - gofumpt
+    - gosec # exclude-use-default
+    - nilnil
+    - nolintlint
+    - predeclared
+    - revive
+    - staticcheck # exclude-use-default
+    - tenv
+    - thelper
+    - tparallel
+    - unconvert
+    - wastedassign
+
+issues:
+  # https://github.com/golangci/golangci-lint/issues/2239
+  exclude-use-default: false
+
+linters-settings:
+
+run:
+  build-tags:
+    - envtest
