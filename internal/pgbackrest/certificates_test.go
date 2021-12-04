@@ -20,9 +20,10 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func TestClientCommonName(t *testing.T) {
