@@ -115,6 +115,7 @@ func TestInstancePod(t *testing.T) {
 	instanceSpec := new(v1beta1.PostgresInstanceSetSpec)
 	patroniLeaderService := new(corev1.Service)
 	template := new(corev1.PodTemplateSpec)
+	template.Spec.Containers = []corev1.Container{{Name: "database"}}
 
 	call := func() error {
 		return InstancePod(context.Background(),
@@ -206,131 +207,6 @@ volumes:
         - key: patroni.crt-combined
           path: ~postgres-operator/patroni.crt+key
 `)+"\n"))
-
-	// No change when called again.
-	before := template.DeepCopy()
-	assert.NilError(t, call())
-	assert.DeepEqual(t, template, before)
-
-	t.Run("ExistingEnvironment", func(t *testing.T) {
-		// test the env changes are made to both the database
-		// and sidecar container as the sidecar env vars will be
-		// updated to match
-		for i := range template.Spec.Containers {
-			template.Spec.Containers[i].Env = []corev1.EnvVar{
-				{Name: "existed"},
-				{Name: "PATRONI_KUBERNETES_POD_IP"},
-				{Name: "also", Value: "kept"},
-			}
-
-			assert.NilError(t, call())
-
-			// Correct values are there and in order.
-			assert.Assert(t, marshalContains(template.Spec.Containers[i].Env,
-				strings.TrimSpace(`
-- name: PATRONI_NAME
-  valueFrom:
-    fieldRef:
-      apiVersion: v1
-      fieldPath: metadata.name
-- name: PATRONI_KUBERNETES_POD_IP
-  valueFrom:
-    fieldRef:
-      apiVersion: v1
-      fieldPath: status.podIP
-			`)+"\n"))
-
-			// Existing values are there and in the original order.
-			assert.Assert(t, marshalContains(template.Spec.Containers[i].Env,
-				strings.TrimSpace(`
-- name: existed
-- name: also
-  value: kept
-			`)+"\n"))
-
-			// Correct values can be in the middle somewhere.
-			// Use a merge so a duplicate is not added.
-			template.Spec.Containers[i].Env = mergeEnvVars(template.Spec.Containers[i].Env,
-				corev1.EnvVar{Name: "at", Value: "end"})
-		}
-		// No change when already correct.
-		before := template.DeepCopy()
-		assert.NilError(t, call())
-		assert.DeepEqual(t, template, before)
-	})
-
-	t.Run("ExistingVolumes", func(t *testing.T) {
-		template.Spec.Volumes = []corev1.Volume{
-			{Name: "existing"},
-			{Name: "patroni-config", VolumeSource: corev1.VolumeSource{
-				EmptyDir: &corev1.EmptyDirVolumeSource{Medium: "Memory"},
-			}},
-		}
-
-		assert.NilError(t, call())
-
-		// Correct values are there.
-		assert.Assert(t, marshalContains(template.Spec.Volumes,
-			strings.TrimSpace(`
-- name: patroni-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: patroni.yaml
-			`)+"\n"))
-
-		// Existing values are there.
-		assert.Assert(t, marshalContains(template.Spec.Volumes,
-			strings.TrimSpace(`
-- name: existing
-			`)+"\n"))
-
-		// Correct values can be in the middle somewhere.
-		template.Spec.Volumes = append(template.Spec.Volumes,
-			corev1.Volume{Name: "later"})
-
-		// No change when already correct.
-		before := template.DeepCopy()
-		assert.NilError(t, call())
-		assert.DeepEqual(t, template, before)
-	})
-
-	t.Run("ExistingVolumeMounts", func(t *testing.T) {
-		// run the volume mount tests for all containers in pod
-		for i := range template.Spec.Containers {
-			template.Spec.Containers[i].VolumeMounts = []corev1.VolumeMount{
-				{Name: "existing", MountPath: "mount"},
-				{Name: "patroni-config", MountPath: "wrong"},
-			}
-
-			assert.NilError(t, call())
-
-			// Correct values are there.
-			assert.Assert(t, marshalContains(template.Spec.Containers[i].VolumeMounts,
-				strings.TrimSpace(`
-- mountPath: /etc/patroni
-  name: patroni-config
-  readOnly: true
-			`)+"\n"))
-
-			// Existing values are there.
-			assert.Assert(t, marshalContains(template.Spec.Containers[i].VolumeMounts,
-				strings.TrimSpace(`
-- mountPath: mount
-  name: existing
-			`)+"\n"))
-
-			// Correct values can be in the middle somewhere.
-			template.Spec.Containers[i].VolumeMounts = append(
-				template.Spec.Containers[i].VolumeMounts, corev1.VolumeMount{Name: "later"})
-		}
-
-		// No change when already correct.
-		before := template.DeepCopy()
-		assert.NilError(t, call())
-		assert.DeepEqual(t, template, before)
-	})
 }
 
 func TestPodIsStandbyLeader(t *testing.T) {

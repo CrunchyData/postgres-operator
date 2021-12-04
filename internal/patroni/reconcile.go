@@ -92,6 +92,7 @@ func InstanceCertificates(ctx context.Context,
 }
 
 // InstancePod populates a PodTemplateSpec with the fields needed to run Patroni.
+// The database container must already be in the template.
 func InstancePod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	inClusterConfigMap *corev1.ConfigMap,
@@ -109,12 +110,16 @@ func InstancePod(ctx context.Context,
 	// "kubernetes.labels" settings.
 	outInstancePod.Labels[naming.LabelPatroni] = naming.PatroniScope(inCluster)
 
-	container := findOrAppendContainer(&outInstancePod.Spec.Containers,
-		naming.ContainerDatabase)
+	var container *corev1.Container
+	for i := range outInstancePod.Spec.Containers {
+		if outInstancePod.Spec.Containers[i].Name == naming.ContainerDatabase {
+			container = &outInstancePod.Spec.Containers[i]
+		}
+	}
 
 	container.Command = []string{"patroni", configDirectory}
 
-	container.Env = mergeEnvVars(container.Env,
+	container.Env = append(container.Env,
 		instanceEnvironment(inCluster, inClusterPodService, inPatroniLeaderService,
 			outInstancePod.Spec.Containers)...)
 
@@ -124,15 +129,13 @@ func InstancePod(ctx context.Context,
 	// Add our projections after those specified in the CR. Items later in the
 	// list take precedence over earlier items (that is, last write wins).
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
-	volume.Projected.Sources = append(append(append(
-		// TODO(cbandy): User config will come from the spec.
-		volume.Projected.Sources, []corev1.VolumeProjection(nil)...),
+	volume.Projected.Sources = append(append(volume.Projected.Sources,
 		instanceConfigFiles(inClusterConfigMap, inInstanceConfigMap)...),
 		instanceCertificates(inInstanceCertificates)...)
 
-	outInstancePod.Spec.Volumes = mergeVolumes(outInstancePod.Spec.Volumes, volume)
+	outInstancePod.Spec.Volumes = append(outInstancePod.Spec.Volumes, volume)
 
-	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, corev1.VolumeMount{
+	container.VolumeMounts = append(container.VolumeMounts, corev1.VolumeMount{
 		Name:      volume.Name,
 		MountPath: configDirectory,
 		ReadOnly:  true,
