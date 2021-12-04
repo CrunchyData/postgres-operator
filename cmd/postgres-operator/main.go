@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"errors"
 	"os"
 	"strings"
 
@@ -88,10 +89,17 @@ func main() {
 	done := make(chan bool, 1)
 	if upgradeCheckingEnabled {
 		log.Info("upgrade checking enabled")
-		go upgradecheck.CheckForUpgradesScheduler(done, versionString,
-			mgr.GetClient(), mgr.GetConfig(), isOpenshift(ctx, mgr.GetConfig()),
-			mgr.GetCache(),
-		)
+		// set the URL for the check for upgrades endpoint
+		upgradeCheckURL := os.Getenv("CHECK_FOR_UPGRADES_URL")
+		if upgradeCheckURL == "" {
+			log.Error(errors.New("check for upgrades URL is not set"),
+				"unable to check for upgrades")
+		} else {
+			go upgradecheck.CheckForUpgradesScheduler(done, versionString, upgradeCheckURL,
+				mgr.GetClient(), mgr.GetConfig(), isOpenshift(ctx, mgr.GetConfig()),
+				mgr.GetCache(),
+			)
+		}
 	} else {
 		log.Info("upgrade checking disabled")
 	}

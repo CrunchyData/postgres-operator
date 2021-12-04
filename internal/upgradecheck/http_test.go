@@ -171,6 +171,7 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 	_, server := setupVersionServer(t, true)
 	defer server.Close()
 	cfg := &rest.Config{Host: server.URL}
+	const testUpgradeCheckURL = "http://localhost:8080"
 
 	t.Run("panic from checkForUpgrades doesn't bubble up", func(t *testing.T) {
 		done := make(chan bool, 1)
@@ -185,7 +186,8 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 			panic(fmt.Errorf("oh no!"))
 		}
 
-		go CheckForUpgradesScheduler(done, "4.7.3", fakeClient, cfg, false, &MockCacheClient{works: true})
+		go CheckForUpgradesScheduler(done, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
+			&MockCacheClient{works: true})
 		time.Sleep(1 * time.Second)
 		done <- true
 
@@ -206,7 +208,8 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		// Set loop time to 1s and sleep for 2s before sending the done signal -- though the cache sync
 		// failure will exit the func before the sleep ends
 		upgradeCheckPeriod = 1 * time.Second
-		go CheckForUpgradesScheduler(done, "4.7.3", fakeClient, cfg, false, &MockCacheClient{works: false})
+		go CheckForUpgradesScheduler(done, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
+			&MockCacheClient{works: false})
 		time.Sleep(2 * time.Second)
 		done <- true
 
@@ -234,7 +237,8 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 
 		// Set loop time to 1s and sleep for 2s before sending the done signal
 		upgradeCheckPeriod = 1 * time.Second
-		go CheckForUpgradesScheduler(done, "4.7.3", fakeClient, cfg, false, &MockCacheClient{works: true})
+		go CheckForUpgradesScheduler(done, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
+			&MockCacheClient{works: true})
 		time.Sleep(2 * time.Second)
 		done <- true
 

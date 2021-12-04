@@ -46,8 +46,8 @@ var (
 		Steps:    4,
 	}
 
-	// TODO(benjaminjb): Make configurable
-	upgradeCheckURL    = "http://localhost:8080"
+	// upgradeCheckURL is set using the CHECK_FOR_UPGRADES_URL env var
+	upgradeCheckURL    string
 	upgradeCheckPeriod = 24 * time.Hour
 )
 
@@ -144,7 +144,7 @@ func checkForUpgrades(log logr.Logger, versionString string, backoff wait.Backof
 // CheckForUpgradesScheduler invokes the check func when the operator starts
 // and then on the given period schedule
 func CheckForUpgradesScheduler(channel chan bool,
-	versionString string, crclient crclient.Client,
+	versionString, url string, crclient crclient.Client,
 	cfg *rest.Config, isOpenShift bool,
 	cacheClient CacheWithWait,
 ) {
@@ -158,6 +158,9 @@ func CheckForUpgradesScheduler(channel chan bool,
 			)
 		}
 	}()
+
+	// set the URL for the check for upgrades endpoint
+	upgradeCheckURL = url
 
 	// Since we pass the client to this function before we start the manager
 	// in cmd/postgres-operator/main.go, we want to make sure cache is synced
