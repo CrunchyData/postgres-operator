@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -721,15 +722,7 @@ tags: {}
 func TestPGBackRestCreateReplicaCommand(t *testing.T) {
 	t.Parallel()
 
-	shellcheck, err := exec.LookPath("shellcheck")
-	if err != nil {
-		t.Skip(`requires "shellcheck" executable`)
-	} else {
-		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
-		assert.NilError(t, err)
-		t.Logf("using %q:\n%s", shellcheck, output)
-	}
-
+	shellcheck := require.ShellCheck(t)
 	cluster := new(v1beta1.PostgresCluster)
 	instance := new(v1beta1.PostgresInstanceSetSpec)
 

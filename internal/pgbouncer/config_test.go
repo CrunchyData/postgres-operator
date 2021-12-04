@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -210,15 +211,7 @@ func TestPodConfigFiles(t *testing.T) {
 }
 
 func TestReloadCommand(t *testing.T) {
-	shellcheck, err := exec.LookPath("shellcheck")
-	if err != nil {
-		t.Skip(`requires "shellcheck" executable`)
-	} else {
-		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
-		assert.NilError(t, err)
-		t.Logf("using %q:\n%s", shellcheck, output)
-	}
-
+	shellcheck := require.ShellCheck(t)
 	command := reloadCommand("some-name")
 
 	// Expect a bash command with an inline script.

@@ -26,6 +26,8 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 // This example demonstrates how Executor can work with exec.Cmd.
@@ -177,14 +179,7 @@ done <<< "${databases}"
 	assert.Equal(t, stderr, "and stderr")
 
 	t.Run("ShellCheck", func(t *testing.T) {
-		shellcheck, err := exec.LookPath("shellcheck")
-		if err != nil {
-			t.Skip(`requires "shellcheck" executable`)
-		} else {
-			output, err := exec.Command(shellcheck, "--version").CombinedOutput()
-			assert.NilError(t, err)
-			t.Logf("using %q:\n%s", shellcheck, output)
-		}
+		shellcheck := require.ShellCheck(t)
 
 		_, _, _ = Executor(func(
 			_ context.Context, _ io.Reader, _, _ io.Writer, command ...string,
