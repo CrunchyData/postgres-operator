@@ -18,11 +18,40 @@ package cmp
 import (
 	"strings"
 
+	gocmp "github.com/google/go-cmp/cmp"
 	gotest "gotest.tools/v3/assert/cmp"
 	"sigs.k8s.io/yaml"
 )
 
 type Comparison = gotest.Comparison
+
+// Contains succeeds if item is in collection. The collection may be a string,
+// map, slice, or array. See [gotest.tools/v3/assert/cmp.Contains]. When either
+// item or collection is a multi-line string, the failure message contains a
+// multi-line report of the differences.
+func Contains(collection, item interface{}) Comparison {
+	cString, cStringOK := collection.(string)
+	iString, iStringOK := item.(string)
+
+	if cStringOK && iStringOK {
+		if strings.Contains(cString, "\n") || strings.Contains(iString, "\n") {
+			return func() gotest.Result {
+				if strings.Contains(cString, iString) {
+					return gotest.ResultSuccess
+				}
+				return gotest.ResultFailureTemplate(`
+--- {{ with callArg 0 }}{{ formatNode . }}{{else}}←{{end}} string does not contain
++++ {{ with callArg 1 }}{{ formatNode . }}{{else}}→{{end}} substring
+{{ .Data.diff }}`,
+					map[string]interface{}{
+						"diff": gocmp.Diff(collection, item),
+					})
+			}
+		}
+	}
+
+	return gotest.Contains(collection, item)
+}
 
 // MarshalMatches converts actual to YAML and compares that to expected.
 func MarshalMatches(actual interface{}, expected string) Comparison {

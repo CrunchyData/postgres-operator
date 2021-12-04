@@ -23,20 +23,12 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func TestCreateDatabasesInPostgreSQL(t *testing.T) {
 	ctx := context.Background()
-
-	contains := func(actual, expected string) cmp.Comparison {
-		return func() cmp.Result {
-			if !strings.Contains(actual, expected) {
-				return cmp.DeepEqual(actual, expected)()
-			}
-			return cmp.ResultSuccess
-		}
-	}
 
 	t.Run("Arguments", func(t *testing.T) {
 		expected := errors.New("pass-through")
@@ -94,7 +86,7 @@ SELECT pg_catalog.format('CREATE DATABASE %I',
 
 			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
-			assert.Assert(t, contains(string(b), `
+			assert.Assert(t, cmp.Contains(string(b), `
 \copy input (data) from stdin with (format text)
 {"database":"white space"}
 {"database":"eXaCtLy"}
