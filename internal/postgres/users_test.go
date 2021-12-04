@@ -23,22 +23,13 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestWriteUsersInPostgreSQL(t *testing.T) {
 	ctx := context.Background()
-
-	contains := func(actual, expected string) cmp.Comparison {
-		return func() cmp.Result {
-			if !strings.Contains(actual, expected) {
-				return cmp.DeepEqual(actual, expected)()
-			}
-			return cmp.ResultSuccess
-		}
-	}
 
 	t.Run("Arguments", func(t *testing.T) {
 		expected := errors.New("pass-through")
@@ -114,7 +105,7 @@ COMMIT;`))
 
 			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
-			assert.Assert(t, contains(string(b), `
+			assert.Assert(t, cmp.Contains(string(b), `
 \copy input (data) from stdin with (format text)
 {"databases":["db1"],"options":"","username":"user-no-options","verifier":""}
 {"databases":null,"options":"some options here","username":"user-no-databases","verifier":""}
@@ -155,7 +146,7 @@ COMMIT;`))
 
 			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
-			assert.Assert(t, contains(string(b), `
+			assert.Assert(t, cmp.Contains(string(b), `
 \copy input (data) from stdin with (format text)
 {"databases":["postgres"],"options":"LOGIN SUPERUSER","username":"postgres","verifier":"allowed"}
 \.
