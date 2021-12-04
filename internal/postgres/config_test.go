@@ -16,7 +16,6 @@
 package postgres
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -88,7 +87,7 @@ func TestBashSafeLink(t *testing.T) {
 		// assertSetupContents ensures that directory contents match setupDirectory.
 		assertSetupContents := func(t testing.TB, directory string) {
 			t.Helper()
-			entries, err := ioutil.ReadDir(directory)
+			entries, err := os.ReadDir(directory)
 			assert.NilError(t, err)
 			assert.Equal(t, len(entries), 1)
 			assert.Equal(t, entries[0].Name(), "original.file")
@@ -169,14 +168,14 @@ func TestBashSafeLink(t *testing.T) {
 			t.Helper()
 			root = t.TempDir()
 			current = filepath.Join(root, "original")
-			assert.NilError(t, ioutil.WriteFile(current, []byte(`treasure`), 0o600))
+			assert.NilError(t, os.WriteFile(current, []byte(`treasure`), 0o600))
 			return
 		}
 
 		// assertSetupContents ensures that file contents match setupFile.
 		assertSetupContents := func(t testing.TB, file string) {
 			t.Helper()
-			content, err := ioutil.ReadFile(file)
+			content, err := os.ReadFile(file)
 			assert.NilError(t, err)
 			assert.Equal(t, string(content), `treasure`)
 		}
@@ -252,7 +251,7 @@ func TestBashSafeLink(t *testing.T) {
 		assert.NilError(t, err, "expected symlink")
 		assert.Equal(t, result, current)
 
-		entries, err := ioutil.ReadDir(current)
+		entries, err := os.ReadDir(current)
 		assert.NilError(t, err)
 		assert.Equal(t, len(entries), 1)
 		assert.Equal(t, entries[0].Name(), "original.file")
@@ -281,7 +280,7 @@ func TestBashSafeLink(t *testing.T) {
 		assert.NilError(t, err, "expected symlink")
 		assert.Equal(t, result, desired)
 
-		entries, err := ioutil.ReadDir(desired)
+		entries, err := os.ReadDir(desired)
 		assert.NilError(t, err)
 		assert.Equal(t, len(entries), 1)
 		assert.Equal(t, entries[0].Name(), "original.file")
@@ -340,7 +339,7 @@ func TestStartupCommand(t *testing.T) {
 	// Write out that inline script.
 	dir := t.TempDir()
 	file := filepath.Join(dir, "script.bash")
-	assert.NilError(t, ioutil.WriteFile(file, []byte(command[3]), 0o600))
+	assert.NilError(t, os.WriteFile(file, []byte(command[3]), 0o600))
 
 	// Expect shellcheck to be happy.
 	cmd := exec.Command(shellcheck, "--enable=all", file)

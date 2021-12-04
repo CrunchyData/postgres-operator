@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -59,7 +58,7 @@ func TestCreateDatabasesInPostgreSQL(t *testing.T) {
 		) error {
 			calls++
 
-			b, err := ioutil.ReadAll(stdin)
+			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.Equal(t, string(b), strings.TrimLeft(`
 SET search_path TO '';
@@ -93,7 +92,7 @@ SELECT pg_catalog.format('CREATE DATABASE %I',
 		) error {
 			calls++
 
-			b, err := ioutil.ReadAll(stdin)
+			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.Assert(t, contains(string(b), `
 \copy input (data) from stdin with (format text)

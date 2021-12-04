@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -210,7 +209,7 @@ with create_app().app_context():
 		) error {
 			calls++
 
-			b, err := ioutil.ReadAll(stdin)
+			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.Assert(t, len(b) == 0, "expected no stdin, got %q", string(b))
 			return nil
@@ -233,7 +232,7 @@ with create_app().app_context():
 		) error {
 			calls++
 
-			b, err := ioutil.ReadAll(stdin)
+			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.DeepEqual(t, string(b), strings.TrimLeft(`
 {"password":"","username":"user-no-options"}

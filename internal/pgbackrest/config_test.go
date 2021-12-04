@@ -17,7 +17,6 @@ package pgbackrest
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -258,7 +257,7 @@ func TestRestoreCommand(t *testing.T) {
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "script.bash")
-	assert.NilError(t, ioutil.WriteFile(file, []byte(command[3]), 0o600))
+	assert.NilError(t, os.WriteFile(file, []byte(command[3]), 0o600))
 
 	cmd := exec.Command(shellcheck, "--enable=all", file)
 	output, err := cmd.CombinedOutput()

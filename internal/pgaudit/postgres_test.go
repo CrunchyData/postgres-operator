@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -40,7 +39,7 @@ func TestEnableInPostgreSQL(t *testing.T) {
 			`SELECT datname FROM pg_catalog.pg_database`,
 		), "expected all databases and templates")
 
-		b, err := ioutil.ReadAll(stdin)
+		b, err := io.ReadAll(stdin)
 		assert.NilError(t, err)
 		assert.Equal(t, string(b), strings.Trim(`
 SET client_min_messages = WARNING; CREATE EXTENSION IF NOT EXISTS pgaudit;

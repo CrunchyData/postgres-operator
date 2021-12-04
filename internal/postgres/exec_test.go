@@ -19,7 +19,7 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -45,7 +45,7 @@ func TestExecutorExec(t *testing.T) {
 	fn := func(
 		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		b, err := ioutil.ReadAll(stdin)
+		b, err := io.ReadAll(stdin)
 		assert.NilError(t, err)
 		assert.Equal(t, string(b), `statements; to run;`)
 
@@ -80,7 +80,7 @@ func TestExecutorExecInAllDatabases(t *testing.T) {
 	fn := func(
 		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		b, err := ioutil.ReadAll(stdin)
+		b, err := io.ReadAll(stdin)
 		assert.NilError(t, err)
 		assert.Equal(t, string(b), `the; stuff;`)
 
@@ -126,7 +126,7 @@ func TestExecutorExecInDatabasesFromQuery(t *testing.T) {
 	fn := func(
 		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		b, err := ioutil.ReadAll(stdin)
+		b, err := io.ReadAll(stdin)
 		assert.NilError(t, err)
 		assert.Equal(t, string(b), `statements; to run;`)
 
@@ -197,7 +197,7 @@ done <<< "${databases}"
 			// Write out that inline script.
 			dir := t.TempDir()
 			file := filepath.Join(dir, "script.bash")
-			assert.NilError(t, ioutil.WriteFile(file, []byte(script), 0o600))
+			assert.NilError(t, os.WriteFile(file, []byte(script), 0o600))
 
 			// Expect shellcheck to be happy.
 			cmd := exec.Command(shellcheck, "--enable=all", file)

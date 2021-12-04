@@ -18,7 +18,7 @@ package pgbackrest
 import (
 	"context"
 	"io"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
@@ -71,7 +71,7 @@ fi
 	// Write out that inline script.
 	dir := t.TempDir()
 	file := filepath.Join(dir, "script.bash")
-	assert.NilError(t, ioutil.WriteFile(file, []byte(shellCheckScript), 0o600))
+	assert.NilError(t, os.WriteFile(file, []byte(shellCheckScript), 0o600))
 
 	// Expect shellcheck to be happy.
 	cmd := exec.Command(shellcheck, "--enable=all", file)
