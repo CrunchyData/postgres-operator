@@ -17,8 +17,8 @@ package pki
 
 import (
 	"crypto/x509"
-	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -152,7 +152,7 @@ func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) {
 	rootFile := filepath.Join(dir, "root.crt")
 	rootBytes, err := root.MarshalText()
 	assert.NilError(t, err)
-	assert.NilError(t, ioutil.WriteFile(rootFile, rootBytes, 0600))
+	assert.NilError(t, os.WriteFile(rootFile, rootBytes, 0o600))
 
 	// The root certificate cannot be verified independently because it is self-signed.
 	// It is checked below by being the specified CA.
@@ -160,7 +160,7 @@ func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) {
 	leafFile := filepath.Join(dir, "leaf.crt")
 	leafBytes, err := leaf.MarshalText()
 	assert.NilError(t, err)
-	assert.NilError(t, ioutil.WriteFile(leafFile, leafBytes, 0600))
+	assert.NilError(t, os.WriteFile(leafFile, leafBytes, 0o600))
 
 	// Older versions of OpenSSL have fewer options for verifying certificates.
 	// When the only flag available is "-CAfile", CAs must be bundled
@@ -182,7 +182,7 @@ func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) {
 	// on the verification method given below.
 
 	bundleFile := filepath.Join(dir, "ca-chain.crt")
-	assert.NilError(t, ioutil.WriteFile(bundleFile, rootBytes, 0600))
+	assert.NilError(t, os.WriteFile(bundleFile, rootBytes, 0o600))
 
 	verify(t, "-CAfile", bundleFile, leafFile)
 	verify(t, "-CAfile", bundleFile, "-purpose", "sslclient", leafFile)
@@ -208,7 +208,7 @@ func strictOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) 
 	rootFile := filepath.Join(dir, "root.crt")
 	rootBytes, err := root.MarshalText()
 	assert.NilError(t, err)
-	assert.NilError(t, ioutil.WriteFile(rootFile, rootBytes, 0600))
+	assert.NilError(t, os.WriteFile(rootFile, rootBytes, 0o600))
 
 	// The root certificate cannot be verified independently because it is self-signed.
 	// Some checks are performed when it is a "trusted" certificate below.
@@ -216,7 +216,7 @@ func strictOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) 
 	leafFile := filepath.Join(dir, "leaf.crt")
 	leafBytes, err := leaf.MarshalText()
 	assert.NilError(t, err)
-	assert.NilError(t, ioutil.WriteFile(leafFile, leafBytes, 0600))
+	assert.NilError(t, os.WriteFile(leafFile, leafBytes, 0o600))
 
 	verify(t, "-trusted", rootFile, leafFile)
 	verify(t, "-trusted", rootFile, "-purpose", "sslclient", leafFile)

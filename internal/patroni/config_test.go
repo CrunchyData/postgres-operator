@@ -16,7 +16,7 @@
 package patroni
 
 import (
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -751,7 +751,7 @@ func TestPGBackRestCreateReplicaCommand(t *testing.T) {
 	{
 		command := parsed.PostgreSQL.PGBackRest.Command
 		file := filepath.Join(dir, "command.sh")
-		assert.NilError(t, ioutil.WriteFile(file, []byte(command), 0o600))
+		assert.NilError(t, os.WriteFile(file, []byte(command), 0o600))
 
 		cmd := exec.Command(shellcheck, "--enable=all", "--shell=sh", file)
 		output, err := cmd.CombinedOutput()
@@ -773,7 +773,7 @@ func TestPGBackRestCreateReplicaCommand(t *testing.T) {
 	// It should pass shellcheck.
 	{
 		file := filepath.Join(dir, "script.bash")
-		assert.NilError(t, ioutil.WriteFile(file, []byte(script), 0o600))
+		assert.NilError(t, os.WriteFile(file, []byte(script), 0o600))
 
 		cmd := exec.Command(shellcheck, "--enable=all", file)
 		output, err := cmd.CombinedOutput()

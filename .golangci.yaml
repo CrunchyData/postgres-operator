@@ -5,6 +5,7 @@ linters:
     - gofumpt
     - scopelint
   enable:
+    - depguard
     - gomodguard
     - gosimple
     - importas
@@ -15,6 +16,12 @@ linters:
     - unused
 
 linters-settings:
+  depguard:
+    include-go-root: true
+    packages-with-error-message:
+      - io/ioutil: >
+          Use the "io" and "os" packages instead.
+          See https://go.dev/doc/go1.16#ioutil
   exhaustive:
     default-signifies-exhaustive: true
   goimports:

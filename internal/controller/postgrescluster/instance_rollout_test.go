@@ -19,7 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -84,7 +83,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 			assert.Equal(t, container, "database")
 
 			// Checkpoint with timeout.
-			b, _ := ioutil.ReadAll(stdin)
+			b, _ := io.ReadAll(stdin)
 			assert.Equal(t, string(b), "SET statement_timeout = :'timeout'; CHECKPOINT;")
 			commandString := strings.Join(command, " ")
 			assert.Assert(t, cmp.Contains(commandString, "psql"))

@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -61,7 +60,7 @@ func TestWriteUsersInPostgreSQL(t *testing.T) {
 		) error {
 			calls++
 
-			b, err := ioutil.ReadAll(stdin)
+			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.Equal(t, string(b), strings.TrimSpace(`
 SET search_path TO '';
@@ -113,7 +112,7 @@ COMMIT;`))
 		) error {
 			calls++
 
-			b, err := ioutil.ReadAll(stdin)
+			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.Assert(t, contains(string(b), `
 \copy input (data) from stdin with (format text)
@@ -154,7 +153,7 @@ COMMIT;`))
 		) error {
 			calls++
 
-			b, err := ioutil.ReadAll(stdin)
+			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.Assert(t, contains(string(b), `
 \copy input (data) from stdin with (format text)
