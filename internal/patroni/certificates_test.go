@@ -16,14 +16,14 @@
 package patroni
 
 import (
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
+	gotest "gotest.tools/v3/assert/cmp"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 const rootPEM = `-----BEGIN CERTIFICATE-----
@@ -63,7 +63,7 @@ func TestCertFile(t *testing.T) {
 	// - https://docs.python.org/3/library/ssl.html#combined-key-and-certificate
 	// - https://docs.python.org/3/library/ssl.html#certificate-chains
 	assert.Assert(t,
-		cmp.Regexp(`^`+
+		gotest.Regexp(`^`+
 			`-----BEGIN [^ ]+ PRIVATE KEY-----\n`+
 			`([^-]+\n)+`+
 			`-----END [^ ]+ PRIVATE KEY-----\n`+
@@ -81,7 +81,7 @@ func TestInstanceCertificates(t *testing.T) {
 
 	projections := instanceCertificates(certs)
 
-	assert.Assert(t, marshalEquals(projections, strings.TrimSpace(`
+	assert.Assert(t, cmp.MarshalMatches(projections, `
 - secret:
     items:
     - key: patroni.ca-roots
@@ -89,5 +89,5 @@ func TestInstanceCertificates(t *testing.T) {
     - key: patroni.crt-combined
       path: ~postgres-operator/patroni.crt+key
     name: some-name
-	`)+"\n"))
+	`))
 }

@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -559,7 +560,7 @@ func TestInstanceConfigFiles(t *testing.T) {
 
 	projections := instanceConfigFiles(cm1, cm2)
 
-	assert.Assert(t, marshalEquals(projections, strings.TrimSpace(`
+	assert.Assert(t, cmp.MarshalMatches(projections, `
 - configMap:
     items:
     - key: patroni.yaml
@@ -570,7 +571,7 @@ func TestInstanceConfigFiles(t *testing.T) {
     - key: patroni.yaml
       path: ~postgres-operator_instance.yaml
     name: cm2
-	`)+"\n"))
+	`))
 }
 
 func TestInstanceEnvironment(t *testing.T) {
@@ -585,7 +586,7 @@ func TestInstanceEnvironment(t *testing.T) {
 
 	vars := instanceEnvironment(cluster, podService, leaderService, nil)
 
-	assert.Assert(t, marshalEquals(vars, strings.TrimSpace(`
+	assert.Assert(t, cmp.MarshalMatches(vars, `
 - name: PATRONI_NAME
   valueFrom:
     fieldRef:
@@ -613,7 +614,7 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
-	`)+"\n"))
+	`))
 
 	t.Run("MatchingPorts", func(t *testing.T) {
 		leaderService.Spec.Ports = []corev1.ServicePort{{Name: "postgres"}}
@@ -625,7 +626,7 @@ func TestInstanceEnvironment(t *testing.T) {
 
 		vars := instanceEnvironment(cluster, podService, leaderService, containers)
 
-		assert.Assert(t, marshalEquals(vars, strings.TrimSpace(`
+		assert.Assert(t, cmp.MarshalMatches(vars, `
 - name: PATRONI_NAME
   valueFrom:
     fieldRef:
@@ -655,7 +656,7 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
-		`)+"\n"))
+		`))
 	})
 }
 

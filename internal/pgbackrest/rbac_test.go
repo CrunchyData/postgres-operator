@@ -16,11 +16,11 @@
 package pgbackrest
 
 import (
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -48,7 +48,7 @@ func TestPermissions(t *testing.T) {
 		assert.Assert(t, isUniqueAndSorted(rule.Verbs), "got %q", rule.Verbs)
 	}
 
-	assert.Assert(t, marshalEquals(permissions, strings.Trim(`
+	assert.Assert(t, cmp.MarshalMatches(permissions, `
 - apiGroups:
   - ""
   resources:
@@ -61,5 +61,5 @@ func TestPermissions(t *testing.T) {
   - pods/exec
   verbs:
   - create
-	`, "\t\n")+"\n"))
+	`))
 }

@@ -16,17 +16,10 @@
 package pgbouncer
 
 import (
-	"strings"
-
-	"gotest.tools/v3/assert/cmp"
-	"sigs.k8s.io/yaml"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 // marshalMatches converts actual to YAML and compares that to expected.
 func marshalMatches(actual interface{}, expected string) cmp.Comparison {
-	b, err := yaml.Marshal(actual)
-	if err != nil {
-		return func() cmp.Result { return cmp.ResultFromError(err) }
-	}
-	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
+	return cmp.MarshalMatches(actual, expected)
 }

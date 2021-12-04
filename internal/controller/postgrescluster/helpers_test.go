@@ -20,11 +20,9 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
-	"gotest.tools/v3/assert/cmp"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,10 +30,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -67,11 +65,7 @@ func init() {
 
 // marshalMatches converts actual to YAML and compares that to expected.
 func marshalMatches(actual interface{}, expected string) cmp.Comparison {
-	b, err := yaml.Marshal(actual)
-	if err != nil {
-		return func() cmp.Result { return cmp.ResultFromError(err) }
-	}
-	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
+	return cmp.MarshalMatches(actual, expected)
 }
 
 func testVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {

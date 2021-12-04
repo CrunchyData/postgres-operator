@@ -17,7 +17,6 @@ package patroni
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -27,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -129,7 +129,7 @@ func TestInstancePod(t *testing.T) {
 		Labels: map[string]string{naming.LabelPatroni: "some-such-ha"},
 	})
 
-	assert.Assert(t, marshalEquals(template.Spec, strings.TrimSpace(`
+	assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
   - patroni
@@ -206,7 +206,7 @@ volumes:
           path: ~postgres-operator/patroni.ca-roots
         - key: patroni.crt-combined
           path: ~postgres-operator/patroni.crt+key
-`)+"\n"))
+	`))
 }
 
 func TestPodIsStandbyLeader(t *testing.T) {
