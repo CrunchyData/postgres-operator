@@ -20,7 +20,8 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func TestNewHBAs(t *testing.T) {

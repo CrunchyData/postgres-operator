@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	gotest "gotest.tools/v3/assert/cmp"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -63,7 +62,7 @@ func TestCertFile(t *testing.T) {
 	// - https://docs.python.org/3/library/ssl.html#combined-key-and-certificate
 	// - https://docs.python.org/3/library/ssl.html#certificate-chains
 	assert.Assert(t,
-		gotest.Regexp(`^`+
+		cmp.Regexp(`^`+
 			`-----BEGIN [^ ]+ PRIVATE KEY-----\n`+
 			`([^-]+\n)+`+
 			`-----END [^ ]+ PRIVATE KEY-----\n`+

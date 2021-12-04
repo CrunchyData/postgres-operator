@@ -53,6 +53,14 @@ func Contains(collection, item interface{}) Comparison {
 	return gotest.Contains(collection, item)
 }
 
+// DeepEqual compares two values using [github.com/google/go-cmp/cmp] and
+// succeeds if the values are equal. The comparison can be customized using
+// comparison Options. See [github.com/google/go-cmp/cmp.Option] constructors
+// and [github.com/google/go-cmp/cmp/cmpopts].
+func DeepEqual(x, y interface{}, opts ...gocmp.Option) Comparison {
+	return gotest.DeepEqual(x, y, opts...)
+}
+
 // MarshalMatches converts actual to YAML and compares that to expected.
 func MarshalMatches(actual interface{}, expected string) Comparison {
 	b, err := yaml.Marshal(actual)
@@ -60,4 +68,11 @@ func MarshalMatches(actual interface{}, expected string) Comparison {
 		return func() gotest.Result { return gotest.ResultFromError(err) }
 	}
 	return gotest.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
+}
+
+// Regexp succeeds if value contains any match of the regular expression re.
+// The regular expression may be a *regexp.Regexp or a string that is a valid
+// regexp pattern.
+func Regexp(re interface{}, value string) Comparison {
+	return gotest.Regexp(re, value)
 }
