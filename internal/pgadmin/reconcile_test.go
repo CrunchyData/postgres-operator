@@ -16,13 +16,13 @@
 package pgadmin
 
 import (
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -50,7 +50,7 @@ func TestPod(t *testing.T) {
 
 		call()
 
-		assert.Assert(t, marshalEquals(pod, strings.Trim(`
+		assert.Assert(t, cmp.MarshalMatches(pod, `
 containers:
 - env:
   - name: PGADMIN_SETUP_EMAIL
@@ -97,7 +97,7 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
-		`, "\t\n")+"\n"))
+		`))
 
 		// No change when called again.
 		before := pod.DeepCopy()
@@ -114,8 +114,7 @@ volumes:
 
 		call()
 
-		assert.Assert(t, marshalEquals(pod,
-			strings.Trim(`
+		assert.Assert(t, cmp.MarshalMatches(pod, `
 containers:
 - env:
   - name: PGADMIN_SETUP_EMAIL
@@ -166,6 +165,6 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
-			`, "\t\n")+"\n"))
+			`))
 	})
 }

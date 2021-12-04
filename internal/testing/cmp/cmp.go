@@ -13,19 +13,22 @@
  limitations under the License.
 */
 
-package pgbackrest
+package cmp
 
 import (
-	"gotest.tools/v3/assert/cmp"
+	"strings"
+
+	gotest "gotest.tools/v3/assert/cmp"
 	"sigs.k8s.io/yaml"
 )
 
-func marshalEquals(actual interface{}, expected string) cmp.Comparison {
+type Comparison = gotest.Comparison
+
+// MarshalMatches converts actual to YAML and compares that to expected.
+func MarshalMatches(actual interface{}, expected string) Comparison {
 	b, err := yaml.Marshal(actual)
-	return func() cmp.Result {
-		if err != nil {
-			return cmp.ResultFromError(err)
-		}
-		return cmp.DeepEqual(string(b), expected)()
+	if err != nil {
+		return func() gotest.Result { return gotest.ResultFromError(err) }
 	}
+	return gotest.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
 }
