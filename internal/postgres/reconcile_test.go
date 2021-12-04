@@ -29,6 +29,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -795,14 +796,7 @@ status: {}
 }
 
 func TestUpgradeCommand(t *testing.T) {
-	shellcheck, err := exec.LookPath("shellcheck")
-	if err != nil {
-		t.Skip(`requires "shellcheck" executable`)
-	} else {
-		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
-		assert.NilError(t, err)
-		t.Logf("using %q:\n%s", shellcheck, output)
-	}
+	shellcheck := require.ShellCheck(t)
 
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Name = "test-upgrade-cluster"

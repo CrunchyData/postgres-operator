@@ -24,18 +24,12 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestStanzaCreateOrUpgrade(t *testing.T) {
-
-	shellcheck, err := exec.LookPath("shellcheck")
-	if err != nil {
-		t.Skip(`requires "shellcheck" executable`)
-	} else {
-		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
-		assert.NilError(t, err)
-		t.Logf("using %q:\n%s", shellcheck, output)
-	}
+	shellcheck := require.ShellCheck(t)
 
 	ctx := context.Background()
 	configHash := "7f5d4d5bdc"
