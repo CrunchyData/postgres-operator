@@ -8,7 +8,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with: { go-version: 1.x }
+
       - uses: golangci/golangci-lint-action@v2
         with:
+          # https://github.com/golangci/golangci-lint-action/issues/365
+          skip-go-installation: true
           version: latest
           args: --timeout=5m
+
+      # Count issues reported by disabled linters. The command always
+      # exits zero to ensure it does not fail the pull request check.
+      - name: Count non-blocking issues
+        run: >
+          golangci-lint run \
+            --config .golangci.next.yaml \
+            --issues-exit-code 0 \
+            --max-issues-per-linter 0 \
+            --max-same-issues 0 \
+            --out-format json |
+          jq --color-output --sort-keys \
+            'reduce .Issues[] as $i ({}; .[$i.FromLinter] += 1)' ||
+          true
