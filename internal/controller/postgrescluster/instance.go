@@ -636,7 +636,6 @@ func (r *Reconciler) cleanupPodDisruptionBudgets(
 			client.InNamespace(cluster.Namespace), client.MatchingLabelsSelector{
 				Selector: selector,
 			})
-
 	}
 
 	if err == nil {
