@@ -2388,9 +2388,10 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 					// the object. This leads to an error where the ResourceVersion of the object does
 					// not match what we expect. When we run into this conflict, try to reconcile the
 					// object again.
+					t.Log("conflict:", err)
 					err = r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
 				}
-				assert.NilError(t, err, errors.Unwrap(err))
+				assert.NilError(t, err, "\n%#v", errors.Unwrap(err))
 				assert.Assert(t, !foundPDB(cluster, spec))
 			})
 		})
@@ -2482,10 +2483,19 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 
 			assert.Assert(t, foundPDB(expectedPDB))
 			assert.Assert(t, foundPDB(leftoverPDB))
-			assert.NilError(t, r.cleanupPodDisruptionBudgets(ctx, cluster))
+			err := r.cleanupPodDisruptionBudgets(ctx, cluster)
+
+			// The disruption controller updates the status of a PDB any time a
+			// related Pod changes. When this happens, the resourceVersion of
+			// the PDB does not match what we expect and we get a conflict. Retry.
+			if apierrors.IsConflict(err) {
+				t.Log("conflict:", err)
+				err = r.cleanupPodDisruptionBudgets(ctx, cluster)
+			}
+
+			assert.NilError(t, err, "\n%#v", errors.Unwrap(err))
 			assert.Assert(t, foundPDB(expectedPDB))
 			assert.Assert(t, !foundPDB(leftoverPDB))
 		})
 	})
-
 }
