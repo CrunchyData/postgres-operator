@@ -85,9 +85,9 @@ func main() {
 	log.Info("starting controller runtime manager and will wait for signal to exit")
 
 	// Enable upgrade checking
-	upgradeCheckingEnabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "true")
+	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
 	done := make(chan bool, 1)
-	if upgradeCheckingEnabled {
+	if !upgradeCheckingDisabled {
 		log.Info("upgrade checking enabled")
 		// set the URL for the check for upgrades endpoint
 		upgradeCheckURL := os.Getenv("CHECK_FOR_UPGRADES_URL")
@@ -106,7 +106,7 @@ func main() {
 
 	assertNoError(mgr.Start(ctx))
 	log.Info("signal received, exiting")
-	if upgradeCheckingEnabled {
+	if !upgradeCheckingDisabled {
 		// Send true to channel to cancel ticker cleanly
 		done <- true
 	}

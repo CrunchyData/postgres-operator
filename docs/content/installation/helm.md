@@ -97,13 +97,14 @@ helm uninstall <name> -n <namespace>
 
 ## Automated check for upgrades
 
-To help keep track of developments to PGO, you have the option of turning on a process that
-will check for available versions. If you set the environment variable `CHECK_FOR_UPGRADES`
-to `true` in your PGO deployment, that will start a process that will check available
-PGO versions every 24 hours.
+To help keep track of developments to PGO, PGO automatically checks for available versions 
+every 24 hours. If you set the environment variable `CHECK_FOR_UPGRADES` to `false` in your 
+PGO deployment, this process will be disabled.
 
-Currently this process is set to only log information, and so should not interfere
+If enabled, this process is set to only log information, and so should not interfere
 with PGO's regular functions: if it retrieves information or runs into an error, it will
 log that event without interrupting PGO's performance.
 
-This is currently a work-in-progress.
+On a successful run, this process will log the available versions for PGO, but will not 
+automatically upgrade PGO or otherwise interfere with the running of the operator or 
+PostgreSQL clusters.
