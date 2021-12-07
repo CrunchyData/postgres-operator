@@ -122,8 +122,6 @@ type RepoResources struct {
 	replicaCreateBackupJobs []*batchv1.Job
 	hosts                   []*appsv1.StatefulSet
 	pvcs                    []*corev1.PersistentVolumeClaim
-	sshConfig               *corev1.ConfigMap
-	sshSecret               *corev1.Secret
 }
 
 // applyRepoHostIntent ensures the pgBackRest repository host StatefulSet is synchronized with the
@@ -224,8 +222,8 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 			return nil, errors.WithStack(err)
 		}
 		uList.Items = owned
-		if err := unstructuredToRepoResources(postgresCluster, gvk.Kind,
-			repoResources, uList); err != nil {
+		if err := unstructuredToRepoResources(gvk.Kind, repoResources,
+			uList); err != nil {
 			return nil, errors.WithStack(err)
 		}
 
@@ -270,11 +268,17 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			ownedNoDelete = append(ownedNoDelete, owned)
 			delete = false
 		case hasLabel(naming.LabelPGBackRestDedicated):
-			// If a dedicated repo host resource and a dedicated repo host is enabled, then
-			// add to the slice and do not delete.
-			if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
-				ownedNoDelete = append(ownedNoDelete, owned)
-				delete = false
+			// Any resources from before 5.1 that relate to the previously required
+			// SSH configuration should be deleted.
+			// TODO(tjmoore4): This can be removed once 5.0 is EOL.
+			if owned.GetName() != naming.PGBackRestSSHConfig(postgresCluster).Name &&
+				owned.GetName() != naming.PGBackRestSSHSecret(postgresCluster).Name {
+				// If a dedicated repo host resource and a dedicated repo host is enabled, then
+				// add to the slice and do not delete.
+				if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
+					ownedNoDelete = append(ownedNoDelete, owned)
+					delete = false
+				}
 			}
 		case hasLabel(naming.LabelPGBackRestRepoVolume):
 			// If a volume (PVC) is identified for a repo that no longer exists in the
@@ -352,23 +356,10 @@ func backupScheduleFound(repo v1beta1.PGBackRestRepo, backupType string) bool {
 
 // unstructuredToRepoResources converts unstructured pgBackRest repository resources (specifically
 // unstructured StatefulSetLists and PersistentVolumeClaimList) into their structured equivalent.
-func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind string,
-	repoResources *RepoResources, uList *unstructured.UnstructuredList) error {
+func unstructuredToRepoResources(kind string, repoResources *RepoResources,
+	uList *unstructured.UnstructuredList) error {
 
 	switch kind {
-	case "ConfigMapList":
-		var cmList corev1.ConfigMapList
-		if err := runtime.DefaultUnstructuredConverter.
-			FromUnstructured(uList.UnstructuredContent(), &cmList); err != nil {
-			return errors.WithStack(err)
-		}
-		// we only care about ConfigMaps with the proper names
-		for i, cm := range cmList.Items {
-			if cm.GetName() == naming.PGBackRestSSHConfig(postgresCluster).Name {
-				repoResources.sshConfig = &cmList.Items[i]
-				break
-			}
-		}
 	case "JobList":
 		var jobList batchv1.JobList
 		if err := runtime.DefaultUnstructuredConverter.
@@ -395,19 +386,6 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 		for i := range pvcList.Items {
 			repoResources.pvcs = append(repoResources.pvcs, &pvcList.Items[i])
 		}
-	case "SecretList":
-		var secretList corev1.SecretList
-		if err := runtime.DefaultUnstructuredConverter.
-			FromUnstructured(uList.UnstructuredContent(), &secretList); err != nil {
-			return errors.WithStack(err)
-		}
-		// we only care about Secret with the proper names
-		for i, secret := range secretList.Items {
-			if secret.GetName() == naming.PGBackRestSSHSecret(postgresCluster).Name {
-				repoResources.sshSecret = &secretList.Items[i]
-				break
-			}
-		}
 	case "StatefulSetList":
 		var stsList appsv1.StatefulSetList
 		if err := runtime.DefaultUnstructuredConverter.
@@ -426,6 +404,16 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 		for i := range cronList.Items {
 			repoResources.cronjobs = append(repoResources.cronjobs, &cronList.Items[i])
 		}
+	case "ConfigMapList":
+		// Repository host now uses mTLS for encryption, authentication, and authorization.
+		// Configmaps for SSHD are no longer managed here.
+		// TODO(tjmoore4): Consider adding all pgBackRest configs to RepoResources to
+		// observe all pgBackRest configs in one place.
+	case "SecretList":
+		// Repository host now uses mTLS for encryption, authentication, and authorization.
+		// Secrets for SSHD are no longer managed here.
+		// TODO(tjmoore4): Consider adding all pgBackRest secrets to RepoResources to
+		// observe all pgBackRest secrets in one place.
 	default:
 		return fmt.Errorf("unexpected kind %q", kind)
 	}
@@ -1274,7 +1262,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	sort.Strings(instanceNames)
 	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, repoHostName,
 		configHash, naming.ClusterPodService(postgresCluster).Name,
-		postgresCluster.GetNamespace(), instanceNames, repoResources.sshSecret); err != nil {
+		postgresCluster.GetNamespace(), instanceNames); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest configuration")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
@@ -1579,10 +1567,9 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
-	instanceNames []string, sshSecret *corev1.Secret) error {
+	instanceNames []string) error {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoConfig")
-	errMsg := "reconciling pgBackRest configuration"
 
 	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, instanceNames)
@@ -1598,32 +1585,6 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	if !repoHostConfigured {
 		log.V(1).Info("skipping SSH reconciliation, no repo hosts configured")
 		return nil
-	}
-
-	sshdConfig := pgbackrest.CreateSSHConfigMapIntent(postgresCluster)
-	if err := controllerutil.SetControllerReference(postgresCluster, &sshdConfig,
-		r.Client.Scheme()); err != nil {
-		log.Error(err, errMsg)
-		return err
-	}
-	if err := r.apply(ctx, &sshdConfig); err != nil {
-		log.Error(err, errMsg)
-		return err
-	}
-
-	sshdSecret, err := pgbackrest.CreateSSHSecretIntent(postgresCluster, sshSecret,
-		serviceName, serviceNamespace)
-	if err != nil {
-		log.Error(err, errMsg)
-		return err
-	}
-	if err := controllerutil.SetControllerReference(postgresCluster, &sshdSecret,
-		r.Client.Scheme()); err != nil {
-		return err
-	}
-	if err := r.apply(ctx, &sshdSecret); err != nil {
-		log.Error(err, errMsg)
-		return err
 	}
 
 	return nil

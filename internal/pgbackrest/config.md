@@ -34,12 +34,12 @@ As shown, the settings with the `cfgSectionGlobal` designation are
 `repo-path`: Path where backups and archive are stored. 
              The repository is where pgBackRest stores backups and archives WAL segments.
 
-`repo-host`: Repository host when operating remotely via SSH.
+`repo-host`: Repository host when operating remotely via TLS.
 
 
 The settings with the `cfgSectionStanza` designation are
 
-`pg-host`: PostgreSQL host for operating remotely via SSH.
+`pg-host`: PostgreSQL host for operating remotely via TLS.
 
 `pg-path`: The path of the PostgreSQL data directory.
 		       This should be the same as the data_directory setting in postgresql.conf.

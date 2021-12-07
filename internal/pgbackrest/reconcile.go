@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -225,112 +224,6 @@ func addConfigVolumeAndMounts(
 	}
 
 	pod.Volumes = append(pod.Volumes, configVolume)
-}
-
-// AddSSHToPod populates a Pod template Spec with with the container and volumes needed to enable
-// SSH within a Pod.  It will also mount the SSH configuration to any additional containers specified.
-func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *corev1.PodTemplateSpec,
-	enableSSHD bool, resources corev1.ResourceRequirements,
-	additionalVolumeMountContainers ...string) error {
-
-	sshConfigs := []corev1.VolumeProjection{}
-	// stores all SSH configurations (ConfigMaps & Secrets)
-	if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil ||
-		postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration == nil {
-		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
-			ConfigMap: &corev1.ConfigMapProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: naming.PGBackRestSSHConfig(postgresCluster).Name,
-				},
-			},
-		})
-	} else {
-		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
-			ConfigMap: postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHConfiguration,
-		})
-	}
-	if postgresCluster.Spec.Backups.PGBackRest.RepoHost == nil ||
-		postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret == nil {
-		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: naming.PGBackRestSSHSecret(postgresCluster).Name,
-				},
-			},
-		})
-	} else {
-		sshConfigs = append(sshConfigs, corev1.VolumeProjection{
-			Secret: postgresCluster.Spec.Backups.PGBackRest.RepoHost.SSHSecret,
-		})
-	}
-	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
-		Name: naming.PGBackRestSSHVolume,
-		VolumeSource: corev1.VolumeSource{
-			Projected: &corev1.ProjectedVolumeSource{
-				Sources:     sshConfigs,
-				DefaultMode: initialize.Int32(0o040),
-			},
-		},
-	})
-
-	sshVolumeMount := corev1.VolumeMount{
-		Name:      naming.PGBackRestSSHVolume,
-		MountPath: sshConfigPath,
-		ReadOnly:  true,
-	}
-
-	// Only add the SSHD container if requested.  Sometimes (e.g. when running a restore Job) it is
-	// not necessary to run a full SSHD server, but the various SSH configs are still needed.
-	if enableSSHD {
-		container := corev1.Container{
-			Command:         []string{"/usr/sbin/sshd", "-D", "-e"},
-			Image:           config.PGBackRestContainerImage(postgresCluster),
-			ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
-			LivenessProbe: &corev1.Probe{
-				Handler: corev1.Handler{
-					TCPSocket: &corev1.TCPSocketAction{
-						Port: intstr.FromInt(2022),
-					},
-				},
-			},
-			Name:            naming.PGBackRestRepoContainerName,
-			VolumeMounts:    []corev1.VolumeMount{sshVolumeMount},
-			SecurityContext: initialize.RestrictedSecurityContext(),
-			Resources:       resources,
-		}
-
-		// Mount PostgreSQL volumes if they are present in the template.
-		postgresMounts := map[string]corev1.VolumeMount{
-			postgres.DataVolumeMount().Name: postgres.DataVolumeMount(),
-			postgres.WALVolumeMount().Name:  postgres.WALVolumeMount(),
-		}
-		for i := range template.Spec.Volumes {
-			if mount, ok := postgresMounts[template.Spec.Volumes[i].Name]; ok {
-				container.VolumeMounts = append(container.VolumeMounts, mount)
-			}
-		}
-
-		template.Spec.Containers = append(template.Spec.Containers, container)
-	}
-
-	for _, name := range additionalVolumeMountContainers {
-		var containerFound bool
-		var index int
-		for index = range template.Spec.Containers {
-			if template.Spec.Containers[index].Name == name {
-				containerFound = true
-				break
-			}
-		}
-		if !containerFound {
-			return errors.Errorf("Unable to find container %q when adding pgBackRest to Pod",
-				name)
-		}
-		template.Spec.Containers[index].VolumeMounts =
-			append(template.Spec.Containers[index].VolumeMounts, sshVolumeMount)
-	}
-
-	return nil
 }
 
 // addServerContainerAndVolume adds the TLS server container and certificate
