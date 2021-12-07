@@ -33,6 +33,7 @@ imageCrunchyPGBackrest = "registry.developers.crunchydata.com/crunchydata/crunch
 imageCrunchyPGBouncer = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.16-1"
 imageCrunchyPGUpgrade = "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi8-5.1.0-0"
 imageCrunchyExporter = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.1.0-0"
+imageCrunchyPGAdmin = "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:centos8-4.20-0"
 repository = "registry.developers.crunchydata.com/crunchydata"
 postgresOperatorTag = "ubi8-5.1.0-0"
 fromPostgresVersion = "12"
