@@ -490,53 +490,6 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 		assert.Check(t, instanceConfFound)
 		assert.Check(t, dedicatedRepoConfFound)
-
-		sshConfig := &corev1.ConfigMap{}
-		if err := tClient.Get(ctx, types.NamespacedName{
-			Name:      naming.PGBackRestSSHConfig(postgresCluster).Name,
-			Namespace: postgresCluster.GetNamespace(),
-		}, sshConfig); err != nil {
-			assert.NilError(t, err)
-		}
-		assert.Assert(t, len(sshConfig.Data) > 0)
-
-		var foundSSHConfig, foundSSHDConfig bool
-		for k, v := range sshConfig.Data {
-			if v != "" {
-				if k == "ssh_config" {
-					foundSSHConfig = true
-				} else if k == "sshd_config" {
-					foundSSHDConfig = true
-				}
-			}
-		}
-		assert.Check(t, foundSSHConfig)
-		assert.Check(t, foundSSHDConfig)
-
-		sshSecret := &corev1.Secret{}
-		if err := tClient.Get(ctx, types.NamespacedName{
-			Name:      naming.PGBackRestSSHSecret(postgresCluster).Name,
-			Namespace: postgresCluster.GetNamespace(),
-		}, sshSecret); err != nil {
-			assert.NilError(t, err)
-		}
-		assert.Assert(t, len(sshSecret.Data) > 0)
-
-		var foundPubKey, foundPrivKey, foundKnownHosts bool
-		for k, v := range sshSecret.Data {
-			if len(v) > 0 {
-				if k == "id_ecdsa.pub" {
-					foundPubKey = true
-				} else if k == "id_ecdsa" {
-					foundPrivKey = true
-				} else if k == "ssh_known_hosts" {
-					foundKnownHosts = true
-				}
-			}
-		}
-		assert.Check(t, foundPubKey)
-		assert.Check(t, foundPrivKey)
-		assert.Check(t, foundKnownHosts)
 	})
 
 	t.Run("verify pgbackrest schedule cronjob", func(t *testing.T) {
@@ -1562,8 +1515,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 	namespace := ns.Name
 
 	type testResult struct {
-		jobCount, hostCount, pvcCount      int
-		sshConfigPresent, sshSecretPresent bool
+		jobCount, hostCount, pvcCount int
 	}
 
 	testCases := []struct {
@@ -1607,7 +1559,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 		},
 		result: testResult{
 			jobCount: 1, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
 		},
 	}, {
 		desc: "repo no longer exists delete job",
@@ -1645,7 +1596,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 		},
 		result: testResult{
 			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
 		},
 	}, {
 		desc: "repo still defined keep pvc",
@@ -1685,7 +1635,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 		},
 		result: testResult{
 			jobCount: 0, pvcCount: 1, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
 		},
 	}, {
 		desc: "repo no longer exists delete pvc",
@@ -1725,7 +1674,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 		},
 		result: testResult{
 			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
 		},
 	}, {
 		desc: "dedicated repo host defined keep dedicated sts",
@@ -1764,7 +1712,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 		},
 		result: testResult{
 			jobCount: 0, pvcCount: 0, hostCount: 1,
-			sshConfigPresent: false, sshSecretPresent: false,
 		},
 	}, {
 		desc: "no dedicated repo host defined delete dedicated sts",
@@ -1801,7 +1748,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 		},
 		result: testResult{
 			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
 		},
 	}, {
 		desc: "no repo host defined delete dedicated sts",
@@ -1838,127 +1784,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 		},
 		result: testResult{
 			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
-		},
-	}, {
-		desc: "dedicated repo host defined keep ssh configmap",
-		createResources: []client.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					// cleanup logic is sensitive the name of this resource
-					Name:      "keep-ssh-cm-ssh-config",
-					Namespace: namespace,
-					Labels:    naming.PGBackRestDedicatedLabels("keep-ssh-cm"),
-				},
-				Data: map[string]string{},
-			},
-		},
-		cluster: &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "keep-ssh-cm",
-				Namespace: namespace,
-				UID:       types.UID(clusterUID),
-			},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						Repos: []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
-					},
-				},
-			},
-		},
-		result: testResult{
-			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: true, sshSecretPresent: false,
-		},
-	}, {
-		desc: "no repo host defined keep delete configmap",
-		createResources: []client.Object{
-			&corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					// cleanup logic is sensitive the name of this resource
-					Name:      "delete-ssh-cm-ssh-config",
-					Namespace: namespace,
-					Labels:    naming.PGBackRestDedicatedLabels("delete-ssh-cm"),
-				},
-				Data: map[string]string{},
-			},
-		},
-		cluster: &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "delete-ssh-cm",
-				Namespace: namespace,
-				UID:       types.UID(clusterUID),
-			},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{},
-				},
-			},
-		},
-		result: testResult{
-			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
-		},
-	}, {
-		desc: "dedicated repo host defined keep ssh secret",
-		createResources: []client.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					// cleanup logic is sensitive the name of this resource
-					Name:      "keep-ssh-secret-ssh",
-					Namespace: namespace,
-					Labels:    naming.PGBackRestDedicatedLabels("keep-ssh-secret"),
-				},
-				Data: map[string][]byte{},
-			},
-		},
-		cluster: &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "keep-ssh-secret",
-				Namespace: namespace,
-				UID:       types.UID(clusterUID),
-			},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						Repos: []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
-					},
-				},
-			},
-		},
-		result: testResult{
-			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: true,
-		},
-	}, {
-		desc: "no repo host defined keep delete secret",
-		createResources: []client.Object{
-			&corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					// cleanup logic is sensitive the name of this resource
-					Name:      "delete-ssh-secret-ssh-secret",
-					Namespace: namespace,
-					Labels:    naming.PGBackRestDedicatedLabels("delete-ssh-secret"),
-				},
-				Data: map[string][]byte{},
-			},
-		},
-		cluster: &v1beta1.PostgresCluster{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "delete-ssh-secret",
-				Namespace: namespace,
-				UID:       types.UID(clusterUID),
-			},
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{},
-				},
-			},
-		},
-		result: testResult{
-			jobCount: 0, pvcCount: 0, hostCount: 0,
-			sshConfigPresent: false, sshSecretPresent: false,
 		},
 	}}
 
@@ -1977,8 +1802,6 @@ func TestGetPGBackRestResources(t *testing.T) {
 				assert.Assert(t, tc.result.jobCount == len(resources.replicaCreateBackupJobs))
 				assert.Assert(t, tc.result.hostCount == len(resources.hosts))
 				assert.Assert(t, tc.result.pvcCount == len(resources.pvcs))
-				assert.Assert(t, tc.result.sshConfigPresent == (resources.sshConfig != nil))
-				assert.Assert(t, tc.result.sshSecretPresent == (resources.sshSecret != nil))
 			}
 		})
 	}

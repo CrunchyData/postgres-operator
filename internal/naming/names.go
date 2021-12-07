@@ -137,8 +137,7 @@ const (
 )
 
 const (
-	// PGBackRestRepoContainerName is the name assigned to the container used to run pgBackRest and
-	// SSH
+	// PGBackRestRepoContainerName is the name assigned to the container used to run pgBackRest
 	PGBackRestRepoContainerName = "pgbackrest"
 
 	// PGBackRestRestoreContainerName is the name assigned to the container used to run pgBackRest
@@ -148,9 +147,6 @@ const (
 	// PGBackRestRepoName is the name used for a pgbackrest repository
 	PGBackRestRepoName = "%s-pgbackrest-repo-%s"
 
-	// PGBackRestSSHVolume is the name the SSH volume used when configuring SSH in a pgBackRest Pod
-	PGBackRestSSHVolume = "ssh"
-
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
@@ -159,11 +155,15 @@ const (
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-ssh-config'
+	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
+	// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
 	sshCMNameSuffix = "%s-ssh-config"
 
 	// suffix used with postgrescluster name for associated secret.
 	// for instance, if the cluster is named 'mycluster', the
 	// secret will be named 'mycluster-ssh'
+	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
+	// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
 	sshSecretNameSuffix = "%s-ssh"
 )
 
@@ -430,6 +430,8 @@ func PGBackRestRepoVolume(cluster *v1beta1.PostgresCluster,
 }
 
 // PGBackRestSSHConfig returns the ObjectMeta for a pgBackRest SSHD ConfigMap
+// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
+// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
 func PGBackRestSSHConfig(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf(sshCMNameSuffix, cluster.GetName()),
@@ -438,6 +440,8 @@ func PGBackRestSSHConfig(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 }
 
 // PGBackRestSSHSecret returns the ObjectMeta for a pgBackRest SSHD Secret
+// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
+// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
 func PGBackRestSSHSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf(sshSecretNameSuffix, cluster.GetName()),
