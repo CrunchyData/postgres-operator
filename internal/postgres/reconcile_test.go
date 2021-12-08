@@ -630,6 +630,7 @@ func TestUpgradeJob(t *testing.T) {
 	assert.Assert(t, marshalMatches(job, `
 metadata:
   annotations:
+    postgres-operator.crunchydata.com/pg-upgrade: "12"
     someAnnotation: testvalue2
   creationTimestamp: null
   labels:
@@ -643,6 +644,7 @@ spec:
   template:
     metadata:
       annotations:
+        postgres-operator.crunchydata.com/pg-upgrade: "12"
         someAnnotation: testvalue2
       creationTimestamp: null
       labels:
@@ -667,8 +669,8 @@ spec:
           echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"
           chmod 700 /pgdata/pg"${old_version}"
           echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"
-          echo "shared_preload_libraries = $(/usr/pgsql-"""${old_version}"""/bin/postgres -D \
-          /pgdata/pg"""${old_version}""" -C shared_preload_libraries)" >> /pgdata/pg"${new_version}"/postgresql.conf
+          echo "shared_preload_libraries = '$(/usr/pgsql-"""${old_version}"""/bin/postgres -D \
+          /pgdata/pg"""${old_version}""" -C shared_preload_libraries)'" >> /pgdata/pg"${new_version}"/postgresql.conf
           echo -e "Step 5: Running pg_upgrade check...\n"
           time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \
           --new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}"\
@@ -679,6 +681,7 @@ spec:
           --new-datadir /pgdata/pg"${new_version}" --link
           echo -e "\nStep 7: Copying patroni.dynamic.json...\n"
           cp /pgdata/pg"${old_version}"/patroni.dynamic.json /pgdata/pg"${new_version}"
+          mv /pgdata/pg"${new_version}" /pgdata/pg"${new_version}"_bootstrap
           echo -e "\npg_upgrade Job Complete!"
         - upgrade
         - "11"

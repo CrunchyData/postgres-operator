@@ -18,6 +18,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -283,7 +284,7 @@ func GenerateUpgradeJobIntent(
 		naming.PGUpgradeJobLabels(cluster.Name))
 	annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil(),
 		cluster.Spec.Upgrade.Metadata.GetAnnotationsOrNil(),
-	)
+		map[string]string{naming.PGUpgradeVersion: strconv.Itoa(cluster.Spec.PostgresVersion)})
 	upgradeJob.ObjectMeta.Labels = labels
 	upgradeJob.ObjectMeta.Annotations = annotations
 
@@ -406,8 +407,8 @@ func upgradeCommand(cluster *v1beta1.PostgresCluster) []string {
 		`echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"`,
 		`chmod 700 /pgdata/pg"${old_version}"`,
 		`echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"`,
-		`echo "shared_preload_libraries = $(/usr/pgsql-"""${old_version}"""/bin/postgres -D \`,
-		`/pgdata/pg"""${old_version}""" -C shared_preload_libraries)" >> /pgdata/pg"${new_version}"/postgresql.conf`,
+		`echo "shared_preload_libraries = '$(/usr/pgsql-"""${old_version}"""/bin/postgres -D \`,
+		`/pgdata/pg"""${old_version}""" -C shared_preload_libraries)'" >> /pgdata/pg"${new_version}"/postgresql.conf`,
 
 		// Before the actual upgrade is run, we will run the upgrade --check to
 		// verify everything before actually changing any data.
@@ -428,6 +429,10 @@ func upgradeCommand(cluster *v1beta1.PostgresCluster) []string {
 		// - https://patroni.readthedocs.io/en/latest/existing_data.html#major-upgrade-of-postgresql-version
 		`echo -e "\nStep 7: Copying patroni.dynamic.json...\n"`,
 		`cp /pgdata/pg"${old_version}"/patroni.dynamic.json /pgdata/pg"${new_version}"`,
+
+		// Rename the new data directory for the "existing" bootstrap method
+		`mv /pgdata/pg"${new_version}" /pgdata/pg"${new_version}"_bootstrap`,
+
 		`echo -e "\npg_upgrade Job Complete!"`,
 	}, "\n")
 

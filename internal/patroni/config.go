@@ -551,11 +551,15 @@ func instanceYAML(
 	postgresql["create_replica_methods"] = methods
 
 	if !ClusterBootstrapped(cluster) {
-		// if restore status exists, then a restore occurred an the "existing" method is used
-		if (cluster.Status.PGBackRest != nil && cluster.Status.PGBackRest.Restore != nil) ||
-			(cluster.Spec.DataSource != nil && cluster.Spec.DataSource.Volumes != nil &&
-				cluster.Spec.DataSource.Volumes.PGDataVolume != nil &&
-				cluster.Spec.DataSource.Volumes.PGDataVolume.Directory != "") {
+		isUpgrade := cluster.Status.PGUpgrade != nil
+		isRestore := (cluster.Status.PGBackRest != nil && cluster.Status.PGBackRest.Restore != nil)
+		isDataSource := (cluster.Spec.DataSource != nil && cluster.Spec.DataSource.Volumes != nil &&
+			cluster.Spec.DataSource.Volumes.PGDataVolume != nil &&
+			cluster.Spec.DataSource.Volumes.PGDataVolume.Directory != "")
+		// If the cluster is being bootstrapped using existing volumes, or if the cluster is being
+		// bootstrapped following a restore or a major PG upgrade, then use the "existing"
+		// bootstrap method.  Otherwise use "initdb".
+		if isRestore || isDataSource || isUpgrade {
 			data_dir := postgres.DataDirectory(cluster)
 			root["bootstrap"] = map[string]interface{}{
 				"method": "existing",

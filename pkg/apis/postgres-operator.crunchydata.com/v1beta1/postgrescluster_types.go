@@ -332,7 +332,9 @@ type PostgresClusterStatus struct {
 	// +optional
 	PGUpgrade *PGUpgradeStatus `json:"pgUpgrade,omitempty"`
 
-	// Stores the current PostgreSQL major version
+	// Stores the current PostgreSQL major version.  This field is updated following a
+	// successful major PostgreSQL upgrade in order to track the PostgresCluster's
+	// PostgreSQL version across multiple major upgrades.
 	// +optional
 	PostgresVersion int `json:"postgresVersion"`
 

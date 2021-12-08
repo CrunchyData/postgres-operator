@@ -35,29 +35,37 @@ type Executor func(
 	ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 ) error
 
-// StanzaCreate runs the pgBackRest "stanza-create" command.  If the bool returned from this
-// function is false, this indicates that a pgBackRest config hash mismatch was identified that
-// prevented the "pgbackrest stanza-create" command from running (with a config has mitmatch
-// indicating that pgBackRest configuration as stored in the cluster's pgBackRest ConfigMap has
-// not yet propagated to the Pod).
-func (exec Executor) StanzaCreate(ctx context.Context, configHash string) (bool, error) {
+// StanzaCreateOrUpgrade runs either the pgBackRest "stanza-create" or "stanza-upgrade" command
+// depending on the boolean value of the "upgrade" function parameter.  If the bool returned from
+// this function is false, this indicates that a pgBackRest config hash mismatch was identified
+// that prevented the pgBackRest stanza-create or stanza-upgrade command from running (with a
+// config mismatch indicating that the pgBackRest configuration as stored in the cluster's
+// pgBackRest ConfigMap has not yet propagated to the Pod).
+func (exec Executor) StanzaCreateOrUpgrade(ctx context.Context, configHash string,
+	upgrade bool) (bool, error) {
 
 	var stdout, stderr bytes.Buffer
+
+	stanzaCmd := "create"
+	if upgrade {
+		stanzaCmd = "upgrade"
+	}
 
 	// this is the script that is run to create a stanza.  First it checks the
 	// "config-hash" file to ensure all configuration changes (e.g. from ConfigMaps) have
 	// propagated to the container, and if so then runs the "stanza-create" command (and if
 	// not, it prints an error and returns with exit code 1).
 	const script = `
-declare -r hash="$1" stanza="$2" message="$3"
+declare -r hash="$1" stanza="$2" message="$3" cmd="$4"
 if [[ "$(< /etc/pgbackrest/conf.d/config-hash)" != "${hash}" ]]; then
     printf >&2 "%s" "${message}"; exit 1;
 else
-    pgbackrest stanza-create --stanza="${stanza}"
+    pgbackrest "${cmd}" --stanza="${stanza}"
 fi
 `
 	if err := exec(ctx, nil, &stdout, &stderr, "bash", "-ceu", "--",
-		script, "-", configHash, DefaultStanzaName, errMsgConfigHashMismatch); err != nil {
+		script, "-", configHash, DefaultStanzaName, errMsgConfigHashMismatch,
+		fmt.Sprintf("stanza-%s", stanzaCmd)); err != nil {
 
 		// if the config hashes didn't match, return true and don't return an error since this is
 		// expected while waiting for config changes in ConfigMaps and Secrets to make it to the

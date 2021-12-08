@@ -2311,13 +2311,26 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 		return r.PodExec(postgresCluster.GetNamespace(), writableInstanceName,
 			naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
-	configHashMismatch, err := pgbackrest.Executor(exec).StanzaCreate(ctx, configHash)
+
+	condition := meta.FindStatusCondition(postgresCluster.Status.Conditions,
+		ConditionPGBackRestPostPGUpgrade)
+	stanzaUpgrade := (condition != nil && condition.Status == metav1.ConditionTrue)
+
+	configHashMismatch, err := pgbackrest.Executor(exec).StanzaCreateOrUpgrade(ctx, configHash,
+		stanzaUpgrade)
 	if err != nil {
 		// record and log any errors resulting from running the stanza-create command
 		r.Recorder.Event(postgresCluster, corev1.EventTypeWarning, EventUnableToCreateStanzas,
 			err.Error())
 
 		return false, errors.WithStack(err)
+	} else if stanzaUpgrade {
+		// once a "stanza-upgrade" is successful, all pgBackRest post-major PG upgrade tasks
+		// are complete, and the "PGBackRestPostPGUpgrade" condition can therefore be removed.
+		if len(postgresCluster.Status.Conditions) > 0 {
+			meta.RemoveStatusCondition(&postgresCluster.Status.Conditions,
+				ConditionPGBackRestPostPGUpgrade)
+		}
 	}
 	// Don't record event or return an error if configHashMismatch is true, since this just means
 	// configuration changes in ConfigMaps/Secrets have not yet propagated to the container.
@@ -2632,4 +2645,52 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 		log.Error(err, "error when attempting to create pgBackRest CronJob")
 	}
 	return err
+}
+
+// preparePGBackRestForPGUpgrade prepares pgBackRest for a major PG upgrade.  This includes
+// updating status and conditions as needed to ensure all stanzas are upgraded and the replica
+// creation repository is able to bootstrap new replicas post upgrade. Additionally, any pgBackRest
+// resources (e.g. Jobs) are removed, and a boolean is returned indicating whether or not any
+// pgBackRest resources were found that required deletion.
+func (r *Reconciler) preparePGBackRestForPGUpgrade(ctx context.Context,
+	cluster *v1beta1.PostgresCluster) (bool, error) {
+
+	pgBackRestJobs := &batchv1.JobList{}
+	if err := r.Client.List(ctx, pgBackRestJobs, &client.ListOptions{
+		LabelSelector: naming.PGBackRestSelector(cluster.GetName()),
+	}); err != nil {
+		return false, errors.WithStack(err)
+	}
+	var foundPGBackRestJob bool
+	for i := range pgBackRestJobs.Items {
+		foundPGBackRestJob = true
+		// remove any replica create backup Jobs in order to create a new replica creation backup
+		// once the upgrade completes
+		if err := r.Client.Delete(ctx, &pgBackRestJobs.Items[i],
+			client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
+			return false, errors.WithStack(err)
+		}
+	}
+
+	cluster.Status.PGBackRest = nil
+	if len(cluster.Status.Conditions) > 0 {
+		meta.RemoveStatusCondition(&cluster.Status.Conditions,
+			ConditionRepoHostReady)
+		meta.RemoveStatusCondition(&cluster.Status.Conditions,
+			ConditionReplicaRepoReady)
+		meta.RemoveStatusCondition(&cluster.Status.Conditions,
+			ConditionReplicaCreate)
+	}
+	meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+		ObservedGeneration: cluster.GetGeneration(),
+		Type:               ConditionPGBackRestPostPGUpgrade,
+		Status:             metav1.ConditionFalse,
+		Reason:             "PreparedForPGUpgrade",
+		Message:            "pgBackRest has been prepared for a major PG upgrade",
+	})
+
+	if foundPGBackRestJob {
+		return true, nil
+	}
+	return false, nil
 }

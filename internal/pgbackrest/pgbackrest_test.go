@@ -26,7 +26,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestStanzaCreate(t *testing.T) {
+func TestStanzaCreateOrUpgrade(t *testing.T) {
 
 	shellcheck, err := exec.LookPath("shellcheck")
 	if err != nil {
@@ -40,14 +40,15 @@ func TestStanzaCreate(t *testing.T) {
 	ctx := context.Background()
 	configHash := "7f5d4d5bdc"
 	expectedCommand := []string{"bash", "-ceu", "--", `
-declare -r hash="$1" stanza="$2" message="$3"
+declare -r hash="$1" stanza="$2" message="$3" cmd="$4"
 if [[ "$(< /etc/pgbackrest/conf.d/config-hash)" != "${hash}" ]]; then
     printf >&2 "%s" "${message}"; exit 1;
 else
-    pgbackrest stanza-create --stanza="${stanza}"
+    pgbackrest "${cmd}" --stanza="${stanza}"
 fi
 `,
-		"-", "7f5d4d5bdc", "db", "postgres operator error: pgBackRest config hash mismatch"}
+		"-", "7f5d4d5bdc", "db", "postgres operator error: pgBackRest config hash mismatch",
+		"stanza-create"}
 
 	var shellCheckScript string
 	stanzaExec := func(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer,
@@ -62,7 +63,7 @@ fi
 		return nil
 	}
 
-	configHashMismatch, err := Executor(stanzaExec).StanzaCreate(ctx, configHash)
+	configHashMismatch, err := Executor(stanzaExec).StanzaCreateOrUpgrade(ctx, configHash, false)
 	assert.NilError(t, err)
 	assert.Assert(t, !configHashMismatch)
 

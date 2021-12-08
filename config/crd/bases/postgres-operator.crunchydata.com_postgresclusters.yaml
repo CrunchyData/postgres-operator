@@ -7717,7 +7717,10 @@ spec:
                     type: array
                 type: object
               postgresVersion:
-                description: Stores the current PostgreSQL major version
+                description: Stores the current PostgreSQL major version.  This field
+                  is updated following a successful major PostgreSQL upgrade in order
+                  to track the PostgresCluster's PostgreSQL version across multiple
+                  major upgrades.
                 type: integer
               proxy:
                 description: Current state of the PostgreSQL proxy.
