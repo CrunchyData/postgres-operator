@@ -48,7 +48,7 @@ Note that for the 5.0.3 release and beyond, the Postgres containers were renamed
 | `crunchy-postgres-gis` | {{< param postgresVersion10 >}}-2.4 | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres-gis` | {{< param postgresVersion10 >}}-2.3 | 5.0.3 | {{< param operatorVersion >}} |
 
-The latest Postgres containers include Patroni 2.1.1.
+The latest Postgres containers include Patroni 2.1.2.
 
 The following are the Postgres containers available for version 5.0.2 of PGO and older:
 
