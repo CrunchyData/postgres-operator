@@ -10867,7 +10867,7 @@ PostgresClusterStatus defines the observed state of PostgresCluster
       </tr><tr>
         <td><b>postgresVersion</b></td>
         <td>integer</td>
-        <td>Stores the current PostgreSQL major version</td>
+        <td>Stores the current PostgreSQL major version.  This field is updated following a successful major PostgreSQL upgrade in order to track the PostgresCluster's PostgreSQL version across multiple major upgrades.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterstatusproxy">proxy</a></b></td>

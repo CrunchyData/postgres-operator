@@ -50,4 +50,8 @@ const (
 	// timestamp), which will be stored in the PostgresCluster status to properly track completion
 	// of the Job.
 	PGBackRestRestore = annotationPrefix + "pgbackrest-restore"
+
+	// PGUpgradeVersion is an annotation used to specify the version of PostgreSQL being upgraded
+	// to via a pg_upgrade Job.
+	PGUpgradeVersion = annotationPrefix + "pg-upgrade"
 )

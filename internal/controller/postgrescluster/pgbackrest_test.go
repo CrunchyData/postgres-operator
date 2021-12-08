@@ -3373,3 +3373,208 @@ func TestSetScheduledJobStatus(t *testing.T) {
 		assert.Assert(t, len(postgresCluster.Status.PGBackRest.ScheduledBackups) == 0)
 	})
 }
+
+func TestPreparePGBackRestForPGUpgrade(t *testing.T) {
+
+	// setup the test environment and ensure a clean teardown
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   tClient,
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+
+	generateBackupJob := func(cluster *v1beta1.PostgresCluster, repoName string,
+		backupType naming.BackupJobType) *batchv1.Job {
+
+		meta := naming.PGBackRestBackupJob(cluster)
+		labels := naming.PGBackRestBackupJobLabels(cluster.Name, repoName, backupType)
+		meta.Labels = labels
+
+		pgBackRestJob := &batchv1.Job{
+			ObjectMeta: meta,
+			Spec: batchv1.JobSpec{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: meta,
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Image: "test",
+							Name:  naming.PGBackRestRepoContainerName,
+						}},
+						RestartPolicy: corev1.RestartPolicyNever,
+					},
+				},
+			},
+		}
+
+		return pgBackRestJob
+	}
+
+	generateRestoreJob := func(cluster *v1beta1.PostgresCluster) *batchv1.Job {
+
+		meta := naming.PGBackRestRestoreJob(cluster)
+		labels := naming.PGBackRestRestoreJobLabels(cluster.Name)
+		meta.Labels = labels
+
+		pgBackRestJob := &batchv1.Job{
+			ObjectMeta: meta,
+			Spec: batchv1.JobSpec{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: meta,
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Image: "test",
+							Name:  naming.PGBackRestRestoreContainerName,
+						}},
+						RestartPolicy: corev1.RestartPolicyNever,
+					},
+				},
+			},
+		}
+
+		return pgBackRestJob
+	}
+
+	type testResult struct {
+		pgBackRestJobCount       int
+		expectedPGBackRestStatus *v1beta1.PGBackRestStatus
+		expectedConditions       []metav1.Condition
+	}
+
+	testCases := []struct {
+		desc            string
+		createResources func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) []*batchv1.Job
+		pgBackRestStatus *v1beta1.PGBackRestStatus
+		conditions       []metav1.Condition
+		result           testResult
+	}{{
+		desc: "remove replica create backup job",
+		createResources: func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) (jobs []*batchv1.Job) {
+			replicaCreateBackupJob := generateBackupJob(cluster, "repo1", naming.BackupManual)
+			assert.NilError(t, r.Client.Create(ctx, replicaCreateBackupJob))
+			jobs = []*batchv1.Job{replicaCreateBackupJob}
+			return
+		},
+		result: testResult{
+			expectedConditions: []metav1.Condition{
+				{Type: ConditionPGBackRestPostPGUpgrade},
+			},
+		},
+	}, {
+		desc: "remove various backup and restore jobs",
+		createResources: func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) (jobs []*batchv1.Job) {
+			manualBackupJob1 := generateBackupJob(cluster, "repo1", naming.BackupManual)
+			manualBackupJob2 := generateBackupJob(cluster, "repo2", naming.BackupManual)
+			replicaCreateBackupJob := generateBackupJob(cluster, "repo1", naming.BackupManual)
+			restoreJob := generateRestoreJob(cluster)
+			assert.NilError(t, r.Client.Create(ctx, manualBackupJob1))
+			assert.NilError(t, r.Client.Create(ctx, manualBackupJob2))
+			assert.NilError(t, r.Client.Create(ctx, replicaCreateBackupJob))
+			assert.NilError(t, r.Client.Create(ctx, restoreJob))
+			jobs = []*batchv1.Job{manualBackupJob1, manualBackupJob2,
+				replicaCreateBackupJob, restoreJob}
+			return
+		},
+		result: testResult{
+			expectedConditions: []metav1.Condition{
+				{Type: ConditionPGBackRestPostPGUpgrade},
+			},
+		},
+	}, {
+		desc: "remove pgBackRest conditions",
+		conditions: []metav1.Condition{
+			{Type: ConditionRepoHostReady},
+			{Type: ConditionReplicaRepoReady},
+			{Type: ConditionReplicaCreate},
+			{Type: "DoNotRemove"},
+		},
+		result: testResult{
+			expectedConditions: []metav1.Condition{
+				{Type: "DoNotRemove"},
+				{Type: ConditionPGBackRestPostPGUpgrade},
+			},
+		},
+	}, {
+		desc: "clear pgBackRest status",
+		pgBackRestStatus: &v1beta1.PGBackRestStatus{
+			Repos:            []v1beta1.RepoStatus{},
+			ManualBackup:     &v1beta1.PGBackRestJobStatus{},
+			ScheduledBackups: []v1beta1.PGBackRestScheduledBackupStatus{},
+			RepoHost:         &v1beta1.RepoHostStatus{},
+			Restore:          &v1beta1.PGBackRestJobStatus{},
+		},
+		result: testResult{
+			expectedPGBackRestStatus: nil,
+			expectedConditions: []metav1.Condition{
+				{Type: ConditionPGBackRestPostPGUpgrade},
+			},
+		},
+	}}
+
+	for i, tc := range testCases {
+		name := tc.desc
+		t.Run(name, func(t *testing.T) {
+			clusterName := "prepare-pgbackrest-for-upgrade-" + strconv.Itoa(i)
+			cluster := &v1beta1.PostgresCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      clusterName,
+					Namespace: ns.GetName(),
+				},
+			}
+			cluster.Status.PGBackRest = tc.pgBackRestStatus
+			cluster.Status.Conditions = tc.conditions
+			createdPGBackRestJobs := []*batchv1.Job{}
+			if tc.createResources != nil {
+				createdPGBackRestJobs = tc.createResources(t, cluster)
+			}
+
+			resourcesRemain, err := r.preparePGBackRestForPGUpgrade(ctx, cluster)
+			assert.NilError(t, err)
+			if len(createdPGBackRestJobs) > 0 {
+				assert.Assert(t, resourcesRemain)
+			}
+
+			currentJobCount := 0
+			for i := range createdPGBackRestJobs {
+				err := r.Client.Get(ctx, client.ObjectKeyFromObject(createdPGBackRestJobs[i]),
+					&batchv1.Job{})
+				assert.NilError(t, client.IgnoreNotFound(err))
+				if err == nil {
+					currentJobCount++
+				}
+			}
+			assert.Assert(t, currentJobCount == tc.result.pgBackRestJobCount)
+
+			assert.Assert(t, len(cluster.Status.Conditions) == len(tc.result.expectedConditions))
+			for _, c := range tc.result.expectedConditions {
+				assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
+					c.Type) != nil)
+			}
+
+			readyCondition := meta.FindStatusCondition(cluster.Status.Conditions,
+				ConditionPGBackRestPostPGUpgrade)
+			if readyCondition != nil {
+				assert.Assert(t, readyCondition.Status == metav1.ConditionFalse)
+				assert.Assert(t, readyCondition.Reason == "PreparedForPGUpgrade")
+				assert.Assert(t, readyCondition.Message == "pgBackRest has been prepared for a major PG upgrade")
+			}
+
+			assert.Assert(t, cluster.Status.PGBackRest == tc.result.expectedPGBackRestStatus)
+		})
+	}
+}

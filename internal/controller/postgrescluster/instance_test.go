@@ -1732,35 +1732,90 @@ func TestReconcileUpgrade(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: "hippo-sa"},
 	}
 
-	obs := &observedInstances{
-		forCluster: []*Instance{{
-			Name: "instance1",
-			Pods: []*corev1.Pod{{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
-				},
-				Status: corev1.PodStatus{
-					ContainerStatuses: []corev1.ContainerStatus{{
-						Name: "database",
-						State: corev1.ContainerState{
-							Running: &corev1.ContainerStateRunning{},
-						},
-					}},
-				},
-			}},
-			Spec: &v1beta1.PostgresInstanceSetSpec{
-				Name: "instance1",
+	generateJob := func(clusterName, pgVersion string, completed, failed *bool) {
+
+		cluster := &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterName,
+				Namespace: ns.GetName(),
 			},
-		}},
+		}
+		meta := naming.PGUpgradeJob(cluster)
+		labels := naming.PGUpgradeJobLabels(cluster.Name)
+		meta.Labels = labels
+		meta.Annotations = map[string]string{
+			naming.PGBackRestConfigHash: "testhash",
+			naming.PGUpgradeVersion:     pgVersion,
+		}
+
+		upgradeJob := &batchv1.Job{
+			ObjectMeta: meta,
+			Spec: batchv1.JobSpec{
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: meta,
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Image: "test",
+							Name:  naming.PGBackRestRestoreContainerName,
+						}},
+						RestartPolicy: corev1.RestartPolicyNever,
+					},
+				},
+			},
+		}
+
+		var updateStatus bool
+		if completed != nil {
+			if *completed {
+				upgradeJob.Status.Conditions = append(upgradeJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobComplete,
+					Status:  corev1.ConditionTrue,
+					Reason:  "test",
+					Message: "test",
+				})
+			} else {
+				upgradeJob.Status.Conditions = append(upgradeJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobComplete,
+					Status:  corev1.ConditionFalse,
+					Reason:  "test",
+					Message: "test",
+				})
+			}
+			updateStatus = true
+		} else if failed != nil {
+			if *failed {
+				upgradeJob.Status.Conditions = append(upgradeJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobFailed,
+					Status:  corev1.ConditionTrue,
+					Reason:  "test",
+					Message: "test",
+				})
+			} else {
+				upgradeJob.Status.Conditions = append(upgradeJob.Status.Conditions, batchv1.JobCondition{
+					Type:    batchv1.JobFailed,
+					Status:  corev1.ConditionFalse,
+					Reason:  "test",
+					Message: "test",
+				})
+			}
+			updateStatus = true
+		}
+
+		assert.NilError(t, r.Client.Create(ctx, upgradeJob.DeepCopy()))
+		if updateStatus {
+			assert.NilError(t, r.Client.Status().Update(ctx, upgradeJob))
+		}
 	}
+
+	obs := &observedInstances{}
 
 	testCases := []struct {
 		// a description of the test
 		testDesc string
-		// whether or not to mock cluster endpoints
-		createEndpoints bool
+		// function that creates resources for the test
+		createResources func(t *testing.T, clusterName string)
 		// conditions to apply to the mock postgrescluster
-		clusterConditions map[string]metav1.ConditionStatus
+		clusterConditions []*metav1.Condition
 		// the status to apply to the mock postgrescluster
 		status *v1beta1.PostgresClusterStatus
 		// the upgrade field to define in the postgrescluster spec for the test
@@ -1780,19 +1835,26 @@ func TestReconcileUpgrade(t *testing.T) {
 		expectReconcile:     false,
 		expectedReturnEarly: false,
 	}, {
-		testDesc:        "upgrade enabled, no upgrade job, endpoints exist",
-		createEndpoints: true,
+		testDesc: "upgrade enabled, no upgrade job, completed condition not set",
 		upgrade: &v1beta1.PGMajorUpgrade{
 			Enabled:             initialize.Bool(true),
 			FromPostgresVersion: 12,
 			Image:               initialize.String("upgrade-image"),
 		},
-		status:              &v1beta1.PostgresClusterStatus{},
+		status: &v1beta1.PostgresClusterStatus{
+			StartupInstance:    "instance1-abcd",
+			StartupInstanceSet: "instance1",
+		},
 		expectReconcile:     false,
 		expectedReturnEarly: true,
 	}, {
-		testDesc:        "upgrade enabled, no upgrade job, endpoints do not exist, completed condition not set",
-		createEndpoints: false,
+		testDesc: "upgrade job completed",
+		createResources: func(t *testing.T, clusterName string) {
+			if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+				t.Skip("requires mocking of Job conditions")
+			}
+			generateJob(clusterName, "13", initialize.Bool(true), nil)
+		},
 		upgrade: &v1beta1.PGMajorUpgrade{
 			Enabled:             initialize.Bool(true),
 			FromPostgresVersion: 12,
@@ -1802,11 +1864,44 @@ func TestReconcileUpgrade(t *testing.T) {
 			StartupInstance:    "instance1-abcd",
 			StartupInstanceSet: "instance1",
 		},
-		expectReconcile:     true,
+		expectReconcile:     false,
+		expectedReturnEarly: false,
+	}, {
+		testDesc: "upgrade job failed",
+		createResources: func(t *testing.T, clusterName string) {
+			if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+				t.Skip("requires mocking of Job conditions")
+			}
+			generateJob(clusterName, "13", nil, initialize.Bool(true))
+		},
+		upgrade: &v1beta1.PGMajorUpgrade{
+			Enabled:             initialize.Bool(true),
+			FromPostgresVersion: 12,
+			Image:               initialize.String("upgrade-image"),
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			StartupInstance:    "instance1-abcd",
+			StartupInstanceSet: "instance1",
+		},
+		expectReconcile:     false,
 		expectedReturnEarly: true,
 	}, {
-		testDesc:        "upgrade enabled, created",
-		createEndpoints: false,
+		testDesc: "invalid from PG version",
+		upgrade: &v1beta1.PGMajorUpgrade{
+			Enabled:             initialize.Bool(true),
+			FromPostgresVersion: 14,
+			Image:               initialize.String("upgrade-image"),
+		},
+		clusterConditions: []*metav1.Condition{{
+			Type:    ConditionPGUpgradeCompleted,
+			Status:  metav1.ConditionTrue,
+			Reason:  "test",
+			Message: "",
+		}},
+		expectReconcile:     false,
+		expectedReturnEarly: true,
+	}, {
+		testDesc: "upgrade progressing, not ready for pg_upgrade job",
 		upgrade: &v1beta1.PGMajorUpgrade{
 			Enabled:             initialize.Bool(true),
 			FromPostgresVersion: 12,
@@ -1816,11 +1911,33 @@ func TestReconcileUpgrade(t *testing.T) {
 			StartupInstance:    "instance1-abcd",
 			StartupInstanceSet: "instance1",
 		},
-		clusterConditions: map[string]metav1.ConditionStatus{
-			ConditionPGUpgradeCompleted: metav1.ConditionTrue,
+		clusterConditions: []*metav1.Condition{{
+			Type:    ConditionPGUpgradeProgressing,
+			Reason:  "test",
+			Status:  metav1.ConditionTrue,
+			Message: "",
+		}},
+		expectReconcile:     false,
+		expectedReturnEarly: true,
+	}, {
+		testDesc: "upgrade progressing, ready for pg_upgrade job",
+		upgrade: &v1beta1.PGMajorUpgrade{
+			Enabled:             initialize.Bool(true),
+			FromPostgresVersion: 12,
+			Image:               initialize.String("upgrade-image"),
 		},
+		status: &v1beta1.PostgresClusterStatus{
+			StartupInstance:    "instance1-abcd",
+			StartupInstanceSet: "instance1",
+		},
+		clusterConditions: []*metav1.Condition{{
+			Type:    ConditionPGUpgradeProgressing,
+			Reason:  ReasonReadyForUpgrade,
+			Status:  metav1.ConditionTrue,
+			Message: "test",
+		}},
 		expectReconcile:     true,
-		expectedReturnEarly: false,
+		expectedReturnEarly: true,
 	}}
 
 	for i, tc := range testCases {
@@ -1828,13 +1945,18 @@ func TestReconcileUpgrade(t *testing.T) {
 
 		t.Run(tc.testDesc, func(t *testing.T) {
 
+			if tc.createResources != nil {
+				tc.createResources(t, clusterName)
+			}
+
 			ctx := context.Background()
 			cluster := fakeUpgradeCluster(clusterName, ns.GetName(), "")
 			cluster.Spec.Upgrade = tc.upgrade
-			cluster.Status = *tc.status
-			for condition, status := range tc.clusterConditions {
-				meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
-					Type: condition, Reason: "testing", Status: status})
+			if tc.status != nil {
+				cluster.Status = *tc.status
+			}
+			for i := range tc.clusterConditions {
+				meta.SetStatusCondition(&cluster.Status.Conditions, *tc.clusterConditions[i])
 			}
 			assert.NilError(t, tClient.Create(ctx, cluster))
 			t.Cleanup(func() {
@@ -1844,21 +1966,6 @@ func TestReconcileUpgrade(t *testing.T) {
 						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
 			})
 			assert.NilError(t, tClient.Status().Update(ctx, cluster))
-
-			if tc.createEndpoints {
-				fakeLeaderEP := corev1.Endpoints{}
-				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
-				fakeLeaderEP.ObjectMeta.Namespace = ns.Name
-				assert.NilError(t, r.Client.Create(ctx, &fakeLeaderEP))
-				fakeDCSEP := corev1.Endpoints{}
-				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
-				fakeDCSEP.ObjectMeta.Namespace = ns.Name
-				assert.NilError(t, r.Client.Create(ctx, &fakeDCSEP))
-				fakeFailoverEP := corev1.Endpoints{}
-				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
-				fakeFailoverEP.ObjectMeta.Namespace = ns.Name
-				assert.NilError(t, r.Client.Create(ctx, &fakeFailoverEP))
-			}
 
 			// resources needed for reconcileUpgradeJob
 			spec := []v1beta1.PostgresInstanceSetSpec{{
@@ -1889,7 +1996,13 @@ func TestReconcileUpgrade(t *testing.T) {
 					LabelSelector: naming.PGUpgradeJobSelector(clusterName),
 				})
 				assert.NilError(t, err)
-				assert.Assert(t, len(jobs.Items) == 1)
+				runningJobs := []*batchv1.Job{}
+				for i := range jobs.Items {
+					if !jobFailed(&jobs.Items[i]) && !jobCompleted(&jobs.Items[i]) {
+						runningJobs = append(runningJobs, &jobs.Items[i])
+					}
+				}
+				assert.Assert(t, len(runningJobs) == 1)
 
 				var foundOwnershipRef bool
 				for _, r := range jobs.Items[0].GetOwnerReferences() {
@@ -1909,7 +2022,13 @@ func TestReconcileUpgrade(t *testing.T) {
 					LabelSelector: naming.PGUpgradeJobSelector(clusterName),
 				})
 				assert.NilError(t, err)
-				assert.Assert(t, len(jobs.Items) == 0)
+				runningJobs := []*batchv1.Job{}
+				for i := range jobs.Items {
+					if !jobFailed(&jobs.Items[i]) && !jobCompleted(&jobs.Items[i]) {
+						runningJobs = append(runningJobs, &jobs.Items[i])
+					}
+				}
+				assert.Assert(t, len(runningJobs) == 0)
 
 				return
 			}
@@ -1951,7 +2070,10 @@ func TestObserveUpgradeEnv(t *testing.T) {
 		meta := naming.PGUpgradeJob(cluster)
 		labels := naming.PGUpgradeJobLabels(cluster.Name)
 		meta.Labels = labels
-		meta.Annotations = map[string]string{naming.PGBackRestConfigHash: "testhash"}
+		meta.Annotations = map[string]string{
+			naming.PGBackRestConfigHash: "testhash",
+			naming.PGUpgradeVersion:     "13",
+		}
 
 		upgradeJob := &batchv1.Job{
 			ObjectMeta: meta,
@@ -2169,12 +2291,13 @@ func TestPrepareForUpgrade(t *testing.T) {
 		cluster := &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      clusterName,
-				Namespace: namespace,
+				Namespace: ns.GetName(),
 			},
 		}
 		meta := naming.PGUpgradeJob(cluster)
 		labels := naming.PGUpgradeJobLabels(cluster.Name)
 		meta.Labels = labels
+		meta.Annotations = map[string]string{naming.PGUpgradeVersion: "13"}
 
 		upgradeJob := &batchv1.Job{
 			ObjectMeta: meta,
@@ -2195,9 +2318,73 @@ func TestPrepareForUpgrade(t *testing.T) {
 		return upgradeJob
 	}
 
+	generateRunner := func(name string) *appsv1.StatefulSet {
+		return &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: name, Namespace: namespace,
+			},
+			Spec: appsv1.StatefulSetSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{"test": "test"},
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: map[string]string{"test": "test"},
+					},
+				},
+			},
+		}
+	}
+
+	generateDCS := func(cluster *v1beta1.PostgresCluster) (ep []corev1.Endpoints) {
+		leaderEP := corev1.Endpoints{}
+		leaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
+		leaderEP.ObjectMeta.Namespace = ns.Name
+		ep = append(ep, leaderEP)
+		dcsEP := corev1.Endpoints{}
+		dcsEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
+		dcsEP.ObjectMeta.Namespace = ns.Name
+		ep = append(ep, dcsEP)
+		failoverEP := corev1.Endpoints{}
+		failoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
+		failoverEP.ObjectMeta.Namespace = ns.Name
+		ep = append(ep, failoverEP)
+		return
+	}
+
+	generatePVC := func(instanceName string) *corev1.PersistentVolumeClaim {
+		return &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      instanceName,
+				Namespace: ns.GetName(),
+				Labels: map[string]string{
+					naming.LabelData:     naming.DataPostgres,
+					naming.LabelInstance: instanceName,
+				},
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+				Resources: corev1.ResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceStorage: resource.MustParse("1Gi"),
+					},
+				},
+			},
+		}
+	}
+
+	type testResources struct {
+		upgradeJob *batchv1.Job
+		endpoints  []corev1.Endpoints
+		runners    []appsv1.StatefulSet
+		pvcs       []corev1.PersistentVolumeClaim
+	}
+
 	type testResult struct {
-		upgradeJobExists         bool
-		endpointCountZero        bool
+		upgradeJobCount          int
+		endpointCount            int
+		runnerCount              int
+		pvcCount                 int
 		expectedClusterCondition *metav1.Condition
 	}
 	const primaryInstanceName = "primary-instance"
@@ -2205,36 +2392,114 @@ func TestPrepareForUpgrade(t *testing.T) {
 
 	testCases := []struct {
 		desc            string
-		createResources func(t *testing.T, cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints)
-		upgradeEnabled  bool
-		result          testResult
+		createResources func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) testResources
+		instances *observedInstances
+		result    testResult
 	}{{
 		desc: "remove upgrade jobs",
 		createResources: func(t *testing.T,
-			cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
+			cluster *v1beta1.PostgresCluster) testResources {
 			job := generateJob(cluster.Name)
 			assert.NilError(t, r.Client.Create(ctx, job))
-			return job, nil
+			return testResources{
+				upgradeJob: job,
+			}
 		},
 		result: testResult{
-			upgradeJobExists:  true,
-			endpointCountZero: true,
 			expectedClusterCondition: &metav1.Condition{
 				Type:    ConditionPGUpgradeProgressing,
 				Status:  metav1.ConditionTrue,
-				Reason:  "PGUpgradeRequested",
+				Reason:  "PreparingPGForPGUpgrade",
 				Message: "Preparing cluster for upgrade: removing existing upgrade job",
+			},
+		},
+	}, {
+		desc: "remove runners",
+		createResources: func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) (tr testResources) {
+			runner1 := generateRunner("runner1")
+			runner2 := generateRunner("runner2")
+			runner3 := generateRunner("runner3")
+			assert.NilError(t, r.Client.Create(ctx, runner1))
+			assert.NilError(t, r.Client.Create(ctx, runner2))
+			assert.NilError(t, r.Client.Create(ctx, runner3))
+			tr.runners = []appsv1.StatefulSet{*runner1, *runner2, *runner3}
+			return
+		},
+		result: testResult{
+			expectedClusterCondition: &metav1.Condition{
+				Type:    ConditionPGUpgradeProgressing,
+				Status:  metav1.ConditionTrue,
+				Reason:  "PreparingPGForPGUpgrade",
+				Message: "Preparing cluster for upgrade: removing runners",
+			},
+		},
+		instances: &observedInstances{forCluster: []*Instance{{
+			Name: primaryInstanceName,
+			Spec: &v1beta1.PostgresInstanceSetSpec{Name: primaryInstanceSetName},
+			Runner: &appsv1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "runner1", Namespace: ns.GetName(),
+				},
+			},
+		}}},
+	}, {
+		desc: "remove endpoints",
+		createResources: func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) (tr testResources) {
+			dcs := generateDCS(cluster)
+			for i := range dcs {
+				assert.NilError(t, r.Client.Create(ctx, &dcs[i]))
+			}
+			tr.endpoints = dcs
+			return
+		},
+		result: testResult{
+			expectedClusterCondition: &metav1.Condition{
+				Type:    ConditionPGUpgradeProgressing,
+				Status:  metav1.ConditionTrue,
+				Reason:  "PreparingPGForPGUpgrade",
+				Message: "Preparing cluster for upgrade: removing DCS",
+			},
+		},
+	}, {
+		desc: "remove replica pvcs",
+		createResources: func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) (tr testResources) {
+			createdPVCs := []corev1.PersistentVolumeClaim{}
+			primaryPVC := generatePVC(primaryInstanceName)
+			assert.NilError(t, r.Client.Create(ctx, primaryPVC))
+			createdPVCs = append(createdPVCs, *primaryPVC)
+			replicaPVC1 := generatePVC("replica1")
+			assert.NilError(t, r.Client.Create(ctx, replicaPVC1))
+			createdPVCs = append(createdPVCs, *replicaPVC1)
+			replicaPVC2 := generatePVC("replica2")
+			assert.NilError(t, r.Client.Create(ctx, replicaPVC2))
+			createdPVCs = append(createdPVCs, *replicaPVC2)
+			tr.pvcs = createdPVCs
+			return
+		},
+		result: testResult{
+			expectedClusterCondition: &metav1.Condition{
+				Type:    ConditionPGUpgradeProgressing,
+				Status:  metav1.ConditionTrue,
+				Reason:  "PreparingPGForPGUpgrade",
+				Message: "Preparing cluster for upgrade: removing replica PVCs",
 			},
 		},
 	}, {
 		desc: "cluster fully prepared, primary as startup instance",
 		createResources: func(t *testing.T,
-			cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
-			return nil, []corev1.Endpoints{}
+			cluster *v1beta1.PostgresCluster) (tr testResources) {
+			// set to ensure any previous upgrade completion condition is removed
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				Type:   ConditionPGUpgradeCompleted,
+				Reason: "test",
+			})
+			return tr
 		},
 		result: testResult{
-			upgradeJobExists:  false,
-			endpointCountZero: true,
 			expectedClusterCondition: &metav1.Condition{
 				Type:    ConditionPGUpgradeProgressing,
 				Status:  metav1.ConditionTrue,
@@ -2242,6 +2507,29 @@ func TestPrepareForUpgrade(t *testing.T) {
 				Message: "Upgrading cluster postgres major version",
 			},
 		},
+	}, {
+		desc: "PG still running, shutdown cluster",
+		createResources: func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) (tr testResources) {
+			return
+		},
+		result: testResult{
+			expectedClusterCondition: &metav1.Condition{
+				Type:    ConditionPGUpgradeProgressing,
+				Status:  metav1.ConditionTrue,
+				Reason:  ReasonClusterShutdown,
+				Message: "Preparing cluster for upgrade: shutting down cluster",
+			},
+		},
+		instances: &observedInstances{forCluster: []*Instance{{
+			Name: primaryInstanceName,
+			Spec: &v1beta1.PostgresInstanceSetSpec{Name: primaryInstanceSetName},
+			Pods: []*corev1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
+				},
+			}}},
+		}},
 	}}
 
 	for i, tc := range testCases {
@@ -2251,13 +2539,8 @@ func TestPrepareForUpgrade(t *testing.T) {
 			clusterName := "prepare-for-upgrade-" + strconv.Itoa(i)
 			clusterUID := clusterName
 			cluster := fakeUpgradeCluster(clusterName, namespace, clusterUID)
-			if tc.upgradeEnabled {
-				cluster.Spec.Upgrade = &v1beta1.PGMajorUpgrade{
-					Enabled:             initialize.Bool(true),
-					FromPostgresVersion: 12,
-					Image:               initialize.String("test-upgrade-image"),
-				}
-			}
+			cluster.Status.StartupInstance = primaryInstanceName
+			cluster.Status.StartupInstanceSet = primaryInstanceSetName
 			cluster.Status.Patroni.SystemIdentifier = "abcde12345"
 			cluster.Status.Proxy.PGBouncer.PostgreSQLRevision = "abcde12345"
 			cluster.Status.Monitoring.ExporterConfiguration = "abcde12345"
@@ -2269,67 +2552,59 @@ func TestPrepareForUpgrade(t *testing.T) {
 				Message:            "pg_upgrade completed successfully",
 			})
 
-			job, endpoints := tc.createResources(t, cluster)
+			testResources := tc.createResources(t, cluster)
 
-			upgradeJobs := &batchv1.JobList{}
-			assert.NilError(t, r.Client.List(ctx, upgradeJobs, &client.ListOptions{
-				LabelSelector: naming.PGUpgradeJobSelector(cluster.GetName()),
-			}))
-			assert.Assert(t, tc.result.upgradeJobExists == (len(upgradeJobs.Items) == 1))
+			fakeObserved := &observedInstances{}
+			if tc.instances != nil {
+				fakeObserved = tc.instances
+			}
 
-			fakeObserved := &observedInstances{forCluster: []*Instance{{
-				Name: primaryInstanceName,
-				Spec: &v1beta1.PostgresInstanceSetSpec{Name: primaryInstanceSetName},
-				Pods: []*corev1.Pod{{
-					ObjectMeta: metav1.ObjectMeta{
-						Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
-					},
-				}}},
-			}}
 			assert.NilError(t, r.prepareForUpgrade(ctx, cluster, fakeObserved,
-				endpoints, job))
+				testResources.endpoints, testResources.upgradeJob, testResources.pvcs))
 
-			var primaryInstance *Instance
-			for i, instance := range fakeObserved.forCluster {
-				isPrimary, _ := instance.IsPrimary()
-				if isPrimary {
-					primaryInstance = fakeObserved.forCluster[i]
+			currentUpgradeJobCount := 0
+			if testResources.upgradeJob != nil {
+				err := r.Client.Get(ctx, client.ObjectKeyFromObject(testResources.upgradeJob),
+					&batchv1.Job{})
+				assert.NilError(t, client.IgnoreNotFound(err))
+				if err == nil {
+					currentUpgradeJobCount = 1
 				}
 			}
+			assert.Equal(t, tc.result.upgradeJobCount, currentUpgradeJobCount)
 
-			if primaryInstance != nil {
-				assert.Assert(t, cluster.Status.StartupInstance == primaryInstanceName)
-			} else {
-				assert.Equal(t, cluster.Status.StartupInstance,
-					naming.GenerateStartupInstance(cluster, &cluster.Spec.InstanceSets[0]).Name)
+			currentEndpointCount := 0
+			for i := range testResources.endpoints {
+				err := r.Client.Get(ctx, client.ObjectKeyFromObject(&testResources.endpoints[i]),
+					&batchv1.Job{})
+				assert.NilError(t, client.IgnoreNotFound(err))
+				if err == nil {
+					currentEndpointCount++
+				}
 			}
+			assert.Assert(t, currentEndpointCount == tc.result.endpointCount)
 
-			leaderEP, dcsEP, failoverEP := corev1.Endpoints{}, corev1.Endpoints{}, corev1.Endpoints{}
-			currentEndpoints := []corev1.Endpoints{}
-			if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
-				&leaderEP); err != nil {
+			currentRunnerCount := 0
+			for i := range testResources.runners {
+				err := r.Client.Get(ctx, client.ObjectKeyFromObject(&testResources.runners[i]),
+					&batchv1.Job{})
 				assert.NilError(t, client.IgnoreNotFound(err))
-			} else {
-				currentEndpoints = append(currentEndpoints, leaderEP)
+				if err == nil {
+					currentRunnerCount++
+				}
 			}
-			if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
-				&dcsEP); err != nil {
-				assert.NilError(t, client.IgnoreNotFound(err))
-			} else {
-				currentEndpoints = append(currentEndpoints, dcsEP)
-			}
-			if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
-				&failoverEP); err != nil {
-				assert.NilError(t, client.IgnoreNotFound(err))
-			} else {
-				currentEndpoints = append(currentEndpoints, failoverEP)
-			}
+			assert.Assert(t, currentRunnerCount == tc.result.runnerCount)
 
-			if tc.result.endpointCountZero {
-				assert.Assert(t, len(currentEndpoints) == 0)
-			} else {
-				assert.Assert(t, len(currentEndpoints) != 0)
+			currentPVCCount := 0
+			for i := range testResources.pvcs {
+				err := r.Client.Get(ctx, client.ObjectKeyFromObject(&testResources.pvcs[i]),
+					&batchv1.Job{})
+				assert.NilError(t, client.IgnoreNotFound(err))
+				if err == nil {
+					currentPVCCount++
+				}
 			}
+			assert.Assert(t, currentPVCCount == tc.result.pvcCount)
 
 			if tc.result.expectedClusterCondition != nil {
 				condition := meta.FindStatusCondition(cluster.Status.Conditions,
@@ -2345,6 +2620,8 @@ func TestPrepareForUpgrade(t *testing.T) {
 					assert.Assert(t, cluster.Status.Monitoring.ExporterConfiguration == "")
 					assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
 						ConditionPostgresDataInitialized) == nil)
+					assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
+						ConditionPGUpgradeCompleted) == nil)
 				}
 			}
 		})
