@@ -38,7 +38,7 @@ Note that for the 5.0.3 release and beyond, the Postgres containers were renamed
 | `crunchy-postgres` | {{< param postgresVersion12 >}} | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres` | {{< param postgresVersion11 >}} | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres` | {{< param postgresVersion10 >}} | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion14 >}} -3.1 | 5.0.3 | {{< param operatorVersion >}} |
+| `crunchy-postgres-gis` | {{< param postgresVersion14 >}}-3.1 | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres-gis` | {{< param postgresVersion13 >}}-3.1 | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres-gis` | {{< param postgresVersion13 >}}-3.0 | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres-gis` | {{< param postgresVersion12 >}}-3.0 | 5.0.3 | {{< param operatorVersion >}} |
@@ -81,11 +81,11 @@ For example, if pulling from the [customer portal](https://access.crunchydata.co
 - `centos8-1.15-3`
 - `centos8-1.15-5.0.3-0`
 
-The [developer portal](https://www.crunchydata.com/developers/download-postgres/containers) provides CentOS based images. For example, pgBouncer would use this tag:
+The [developer portal](https://www.crunchydata.com/developers/download-postgres/containers) provides CentOS based images. For example, PgBouncer would use this tag:
 
 - `centos8-1.15-3`
 
-PostGIS enabled containers have both the Postgres and PostGIS software versions included. For example, Postgres 14 with Postgis 3.1 would use the following tags:
+PostGIS enabled containers have both the Postgres and PostGIS software versions included. For example, Postgres 14 with PostGIS 3.1 would use the following tags:
 
 - `ubi8-14.0-3.1-0`
 - `ubi8-14.0-3.1-5.0.3-0`

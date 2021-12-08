@@ -72,7 +72,7 @@ PGO, the Postgres Operator from Crunchy Data, uses [Kubernetes StatefulSets](htt
 for running Postgres instances, and will use [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) for more ephemeral services.
 
 PGO deploys Kubernetes Statefulsets in a way to allow for creating both different Postgres instance groups and be able to support advanced operations such as rolling updates that minimize or eliminate Postgres downtime. Additional components in our
-PostgreSQL cluster, such as the pgBackRest repository or an optional pgBouncer,
+PostgreSQL cluster, such as the pgBackRest repository or an optional PgBouncer,
 are deployed with Kubernetes Deployments.
 
 With the PGO architecture, we can also leverage Statefulsets to apply affinity and toleration rules across every Postgres instance or individual ones. For instance, we may want to force one or more of our PostgreSQL replicas to run on Nodes in a different region than

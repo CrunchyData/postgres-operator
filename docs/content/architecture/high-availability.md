@@ -247,7 +247,7 @@ Pods in a Kubernetes cluster can experience [voluntary disruptions](https://kube
 as a result of actions initiated by the application owner or a Cluster Administrator. During these
 voluntary disruptions Pod Disruption Budgets (PDBs) can be used to ensure that a minimum number of Pods
 will be running. The operator allows you to define a minimum number of Pods that should be
-available for instance sets and pgBouncer deployments in your postgrescluster. This minimum is
+available for instance sets and PgBouncer deployments in your postgrescluster. This minimum is
 configured in the postgrescluster spec and will be used to create PDBs associated to a resource defined
 in the spec. For example, the following spec will create two PDBs, one for `instance1` and one for
 the PgBouncer deployment:

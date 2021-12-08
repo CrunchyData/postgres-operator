@@ -69,7 +69,7 @@ topologySpreadConstraints:
         - pgbackrest
 ```
 
-Similarly, for pgBouncer Pods they will be:
+Similarly, for PgBouncer Pods they will be:
 
 ```
 topologySpreadConstraints:
@@ -93,7 +93,7 @@ Which, as described in the [API documentation](https://kubernetes.io/docs/concep
 means that there should be a maximum of one Pod difference within the 
 `kubernetes.io/hostname` and `topology.kubernetes.io/zone` failure domains when
 considering either `data` Pods, i.e. Postgres Instance or pgBackRest repo host Pods
-from a single PostgresCluster or when considering pgBouncer Pods from a single 
+from a single PostgresCluster or when considering PgBouncer Pods from a single
 PostgresCluster. 
 
 Any other scheduling configuration settings, such as [Affinity, Anti-affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity),
