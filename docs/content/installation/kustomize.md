@@ -137,6 +137,12 @@ install PGO only:
 kubectl apply -k kustomize/install/bases
 ```
 
+### Automated Upgrade Checks
+
+By default, PGO will automatically check for updates to itself and software components by making a request to a URL. If PGO detects there are updates available, it will print them in the logs. As part of the check, PGO will send aggregated, anonymized information about the current deployment to the endpoint. An upcoming release will allow for PGO to opt-in to receive and apply updates to software components automatically.
+
+PGO will check for updates upon startup and once every 24 hours. Any errors in checking will have no impact on PGO's operation. To disable the upgrade check, you can set the `CHECK_FOR_UPGRADES` environmental variable on the `pgo` Deployment to `"false"`.
+
 ## Uninstall
 
 Once PGO has been installed, it can also be uninstalled using `kubectl` and Kustomize.
@@ -154,17 +160,3 @@ the following command can be utilized:
 ```shell
 kubectl delete -k kustomize/install/bases
 ```
-
-## Automated check for upgrades
-
-To help keep track of developments to PGO, PGO automatically checks for available versions 
-every 24 hours. If you set the environment variable `CHECK_FOR_UPGRADES` to `false` in your 
-PGO deployment, this process will be disabled.
-
-If enabled, this process is set to only log information, and so should not interfere
-with PGO's regular functions: if it retrieves information or runs into an error, it will
-log that event without interrupting PGO's performance.
-
-On a successful run, this process will log the available versions for PGO, but will not 
-automatically upgrade PGO or otherwise interfere with the running of the operator or 
-PostgreSQL clusters.
