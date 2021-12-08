@@ -152,9 +152,8 @@ func CheckForUpgradesScheduler(channel chan bool,
 	log := logging.FromContext(ctx)
 	defer func() {
 		if err := recover(); err != nil {
-			log.Error(
-				fmt.Errorf("%s", err),
-				"Error in scheduling upgrade checks",
+			log.V(1).Info("encountered panic in upgrade check",
+				"response", err,
 			)
 		}
 	}()
@@ -169,15 +168,15 @@ func CheckForUpgradesScheduler(channel chan bool,
 	// with the manager starting, so we don't have to worry about restarting or retrying
 	// this process -- simply log and return
 	if synced := cacheClient.WaitForCacheSync(ctx); !synced {
-		log.Error(fmt.Errorf("unable to sync cache for upgrade check"),
-			"cache attempt to WaitForCacheSync returned false")
+		log.V(1).Info("unable to sync cache for upgrade check")
 		return
 	}
 
 	info, err := checkForUpgrades(log, versionString, backoff,
 		crclient, ctx, cfg, isOpenShift)
 	if err != nil {
-		log.Error(err, err.Error())
+		log.V(1).Info("could not complete upgrade check",
+			"response", err.Error())
 	} else {
 		log.V(1).Info(info)
 	}
@@ -189,7 +188,8 @@ func CheckForUpgradesScheduler(channel chan bool,
 			info, err = checkForUpgrades(log, versionString, backoff,
 				crclient, ctx, cfg, isOpenShift)
 			if err != nil {
-				log.Error(err, err.Error())
+				log.V(1).Info("could not complete scheduled upgrade check",
+					"response", err.Error())
 			} else {
 				log.V(1).Info(info)
 			}

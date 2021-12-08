@@ -194,7 +194,7 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		// Sleeping leads to some non-deterministic results, but we expect at least 1 execution
 		// plus one log for the failure to apply the configmap
 		assert.Assert(t, len(calls) >= 2)
-		assert.Equal(t, calls[1], `oh no!`)
+		assert.Equal(t, calls[1], `could not complete upgrade check`)
 	})
 
 	t.Run("cache sync fail leads to log and exit", func(t *testing.T) {
@@ -214,7 +214,7 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		done <- true
 
 		assert.Assert(t, len(calls) == 1)
-		assert.Equal(t, calls[0], `cache attempt to WaitForCacheSync returned false`)
+		assert.Equal(t, calls[0], `unable to sync cache for upgrade check`)
 	})
 
 	t.Run("successful log each loop, ticker works", func(t *testing.T) {
