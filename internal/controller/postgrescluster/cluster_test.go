@@ -797,10 +797,11 @@ subsets:
 		assert.NilError(t, err)
 		alwaysExpect(t, service, endpoints)
 
-		assert.DeepEqual(t, service.Spec.ExternalIPs, []string{
-			"55.44.33.22", "99.88.77.66", "1.2.3.4",
-		})
-		assert.Equal(t, service.Spec.ExternalName, "some.host")
+		// generateClusterPrimaryService no longer sets ExternalIPs or ExternalName from
+		// LoadBalancer-type leader service
+		// - https://cloud.google.com/anthos/clusters/docs/security-bulletins#gcp-2020-015
+		assert.Equal(t, len(service.Spec.ExternalIPs), 0)
+		assert.Equal(t, service.Spec.ExternalName, "")
 	})
 }
 
