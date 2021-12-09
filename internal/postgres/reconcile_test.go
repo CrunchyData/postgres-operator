@@ -129,6 +129,10 @@ containers:
     value: /tmp/postgres
   - name: PGPORT
     value: "5432"
+  - name: KRB5_CONFIG
+    value: /etc/postgres/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   imagePullPolicy: Always
   name: database
   ports:
@@ -229,6 +233,10 @@ initContainers:
     value: /tmp/postgres
   - name: PGPORT
     value: "5432"
+  - name: KRB5_CONFIG
+    value: /etc/postgres/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   imagePullPolicy: Always
   name: postgres-startup
   resources:
@@ -399,6 +407,49 @@ volumes:
 		// Startup moves WAL files to data volume.
 		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
 			[]string{"startup", "11", "/pgdata/pg11_wal"})
+	})
+
+	t.Run("WithAdditionalConfigFiles", func(t *testing.T) {
+		clusterWithConfig := cluster.DeepCopy()
+		clusterWithConfig.Spec.Config.Files = []corev1.VolumeProjection{
+			{
+				Secret: &corev1.SecretProjection{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "keytab",
+					},
+				},
+			},
+		}
+
+		pod := new(corev1.PodSpec)
+		InstancePod(ctx, clusterWithConfig, instance,
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
+
+		assert.Assert(t, len(pod.Containers) > 0)
+		assert.Assert(t, len(pod.InitContainers) > 0)
+
+		// Container has all mountPaths, including downwardAPI,
+		// and the postgres-config
+		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
+- mountPath: /pgdata
+  name: postgres-data
+- mountPath: /etc/database-containerinfo
+  name: database-containerinfo
+  readOnly: true
+- mountPath: /etc/postgres
+  name: postgres-config
+  readOnly: true`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
+
+		// InitContainer has all mountPaths, except downwardAPI and additionalConfig
+		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
+- mountPath: /pgdata
+  name: postgres-data`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
 	})
 
 	t.Run("WithWALVolumeWithWALVolumeSpec", func(t *testing.T) {

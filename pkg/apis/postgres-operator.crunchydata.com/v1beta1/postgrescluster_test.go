@@ -53,6 +53,7 @@ spec:
   backups:
     pgbackrest:
       repos: null
+  config: {}
   instances: null
   patroni:
     dynamicConfiguration: null
@@ -86,6 +87,7 @@ spec:
   backups:
     pgbackrest:
       repos: null
+  config: {}
   instances:
   - dataVolumeClaimSpec:
       resources: {}

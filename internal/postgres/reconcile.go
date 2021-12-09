@@ -56,6 +56,15 @@ func DownwardAPIVolumeMount() corev1.VolumeMount {
 	}
 }
 
+// AdditionalConfigVolumeMount returns the name and mount path of the additional config files.
+func AdditionalConfigVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      "postgres-config",
+		MountPath: configMountPath,
+		ReadOnly:  true,
+	}
+}
+
 // InstancePod initializes outInstancePod with the database container and the
 // volumes needed by PostgreSQL.
 func InstancePod(ctx context.Context,
@@ -211,6 +220,16 @@ func InstancePod(ctx context.Context,
 		certVolume,
 		dataVolume,
 		downwardAPIVolume,
+	}
+
+	if len(inCluster.Spec.Config.Files) != 0 {
+		additionalConfigVolumeMount := AdditionalConfigVolumeMount()
+		additionalConfigVolume := corev1.Volume{Name: additionalConfigVolumeMount.Name}
+		additionalConfigVolume.Projected = &corev1.ProjectedVolumeSource{
+			Sources: append([]corev1.VolumeProjection{}, inCluster.Spec.Config.Files...),
+		}
+		container.VolumeMounts = append(container.VolumeMounts, additionalConfigVolumeMount)
+		outInstancePod.Volumes = append(outInstancePod.Volumes, additionalConfigVolume)
 	}
 
 	// Mount the WAL PVC whenever it exists. The startup command will move WAL
