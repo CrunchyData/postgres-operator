@@ -149,20 +149,6 @@ func (r *Reconciler) generateClusterPrimaryService(
 		TargetPort: intstr.FromString(naming.PortPostgreSQL),
 	}}
 
-	// Copy the LoadBalancerStatus of the leader Service into external fields.
-	// These fields are presented in the "External-IP" field of `kubectl get`.
-	// - https://releases.k8s.io/v1.18.0/pkg/printers/internalversion/printers.go#L1046
-	// - https://releases.k8s.io/v1.22.0/pkg/printers/internalversion/printers.go#L1110
-	if leader.Spec.Type == corev1.ServiceTypeLoadBalancer {
-		for _, ingress := range leader.Status.LoadBalancer.Ingress {
-			service.Spec.ExternalIPs = append(service.Spec.ExternalIPs, ingress.IP)
-
-			if service.Spec.ExternalName == "" && ingress.Hostname != "" {
-				service.Spec.ExternalName = ingress.Hostname
-			}
-		}
-	}
-
 	// Resolve to the ClusterIP for which Patroni has configured the Endpoints.
 	endpoints.Subsets = []corev1.EndpointSubset{{
 		Addresses: []corev1.EndpointAddress{{IP: leader.Spec.ClusterIP}},
