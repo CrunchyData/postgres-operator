@@ -36,13 +36,13 @@ imageCrunchyExporter = "registry.developers.crunchydata.com/crunchydata/crunchy-
 imageCrunchyPGAdmin = "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:centos8-4.20-0"
 repository = "registry.developers.crunchydata.com/crunchydata"
 postgresOperatorTag = "ubi8-5.1.0-0"
-fromPostgresVersion = "12"
-postgresVersion = "13"
+fromPostgresVersion = "13"
+postgresVersion = "14"
 postgresVersion14 = "14.1"
 postgresVersion13 = "13.5"
 postgresVersion12 = "12.9"
 postgresVersion11 = "11.14"
-postgresVersion10 = "10.10"
+postgresVersion10 = "10.19"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]
