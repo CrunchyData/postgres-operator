@@ -96,7 +96,6 @@ A few quick notes before we begin:
 - All relevant WAL files must be successfully pushed for the restore to complete correctly.
 - Be sure to select the correct repository name containing the desired backup!
 
-
 With that in mind, let's use the `elephant` example above. Let's say we want to perform a point-in-time-recovery (PITR) to `2021-06-09 14:15:11-04`, we can use the following manifest:
 
 ```
@@ -143,8 +142,8 @@ spec:
     postgresCluster:
       clusterName: hippo
       repoName: repo1
-      options: 
-      - --type=time 
+      options:
+      - --type=time
       - --target="2021-06-09 14:15:11-04"
 ```
 
@@ -185,7 +184,7 @@ spec:
 And to trigger the restore, you will then annotate the PostgresCluster as follows:
 
 ```
-kubectl annotate postgrescluster hippo --overwrite \
+kubectl annotate -n postgres-operator postgrescluster hippo --overwrite \
   postgres-operator.crunchydata.com/pgbackrest-restore=id1
 ```
 
@@ -203,6 +202,24 @@ Notice how we put in the options to specify where to make the PITR.
 
 Using the above manifest, PGO will go ahead and re-create your Postgres cluster that will recover its data up until `2021-06-09 14:15:11-04`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
 
+## Restore Individual Databases
+
+You can restore individual databases using a spec similar to the following:
+
+```yaml
+spec:
+  backups:
+    pgbackrest:
+      restore:
+        enabled: true
+        repoName: repo1
+        options:
+        - --db-include=hippo
+```
+
+where `--db-include=hippo` would restore only the contents of the `hippo` database.
+
+Please review the pgBackRest documentation on the [limitations on restoring individual databases](https://pgbackrest.org/user-guide.html#restore/option-db-include).
 
 ## Standby Cluster
 
