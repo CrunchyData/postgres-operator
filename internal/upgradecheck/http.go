@@ -46,8 +46,8 @@ var (
 		Steps:    4,
 	}
 
-	// upgradeCheckURL is set using the CHECK_FOR_UPGRADES_URL env var
-	upgradeCheckURL    string
+	// upgradeCheckURL can be set using the CHECK_FOR_UPGRADES_URL env var
+	upgradeCheckURL    = "https://operator-maestro.crunchydata.com/pgo-versions"
 	upgradeCheckPeriod = 24 * time.Hour
 )
 
@@ -158,8 +158,10 @@ func CheckForUpgradesScheduler(channel chan bool,
 		}
 	}()
 
-	// set the URL for the check for upgrades endpoint
-	upgradeCheckURL = url
+	// set the URL for the check for upgrades endpoint if provided
+	if url != "" {
+		upgradeCheckURL = url
+	}
 
 	// Since we pass the client to this function before we start the manager
 	// in cmd/postgres-operator/main.go, we want to make sure cache is synced
