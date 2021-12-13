@@ -753,15 +753,14 @@ spec:
           readOnly: true
         - mountPath: /pgdata
           name: postgres-data
+        - mountPath: /pgwal
+          name: postgres-wal
       restartPolicy: Never
       securityContext:
         fsGroup: 26
         runAsNonRoot: true
       serviceAccountName: hippo-sa
       volumes:
-      - name: postgres-data
-        persistentVolumeClaim:
-          claimName: datavol
       - name: cert-volume
         projected:
           defaultMode: 384
@@ -782,6 +781,12 @@ spec:
               - key: tls.key
                 path: replication/tls.key
               name: repl-secret
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: datavol
+      - name: postgres-wal
+        persistentVolumeClaim:
+          claimName: walvol
 status: {}
 `))
 }

@@ -307,6 +307,9 @@ func GenerateUpgradeJobIntent(
 	upgradeJob.ObjectMeta.Labels = labels
 	upgradeJob.ObjectMeta.Annotations = annotations
 
+	volumeMounts := []corev1.VolumeMount{}
+	volumes := []corev1.Volume{}
+
 	certVolumeMount := corev1.VolumeMount{
 		Name:      naming.CertVolume,
 		MountPath: naming.CertMountPath,
@@ -327,6 +330,8 @@ func GenerateUpgradeJobIntent(
 			},
 		},
 	}
+	volumeMounts = append(volumeMounts, certVolumeMount)
+	volumes = append(volumes, certVolume)
 
 	dataVolumeMount := DataVolumeMount()
 	dataVolume := corev1.Volume{
@@ -338,6 +343,24 @@ func GenerateUpgradeJobIntent(
 			},
 		},
 	}
+	volumeMounts = append(volumeMounts, dataVolumeMount)
+	volumes = append(volumes, dataVolume)
+
+	var walVolume corev1.Volume
+	if inWALVolume != nil {
+		walVolumeMount := WALVolumeMount()
+		walVolume = corev1.Volume{
+			Name: walVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: inWALVolume.Name,
+					ReadOnly:  false,
+				},
+			},
+		}
+		volumeMounts = append(volumeMounts, walVolumeMount)
+		volumes = append(volumes, walVolume)
+	}
 
 	container := corev1.Container{
 		Command:         upgradeCommand(cluster),
@@ -345,10 +368,7 @@ func GenerateUpgradeJobIntent(
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerPGUpgrade,
 		SecurityContext: initialize.RestrictedSecurityContext(),
-		VolumeMounts: []corev1.VolumeMount{
-			certVolumeMount,
-			dataVolumeMount,
-		},
+		VolumeMounts:    volumeMounts,
 	}
 
 	if cluster.Spec.Backups.PGBackRest.Jobs != nil {
@@ -368,14 +388,8 @@ func GenerateUpgradeJobIntent(
 				// (instead of the container simply restarting).
 				RestartPolicy:      corev1.RestartPolicyNever,
 				ServiceAccountName: sa,
-				Volumes: []corev1.Volume{{
-					Name:         dataVolume.Name,
-					VolumeSource: dataVolume.VolumeSource,
-				}, {
-					Name:         certVolume.Name,
-					VolumeSource: certVolume.VolumeSource,
-				}},
-				SecurityContext: PodSecurityContext(cluster),
+				Volumes:            volumes,
+				SecurityContext:    PodSecurityContext(cluster),
 			},
 		},
 	}
