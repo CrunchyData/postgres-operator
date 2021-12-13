@@ -369,6 +369,7 @@ dnsPolicy: ClusterFirst
 restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
+  fsGroup: 26
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
@@ -534,6 +535,7 @@ imagePullSecrets:
 restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
+  fsGroup: 26
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 tolerations:
