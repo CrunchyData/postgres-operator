@@ -31,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgadmin"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -231,7 +232,7 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	// ServiceAccount and do not mount its credentials.
 	sts.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 
-	sts.Spec.Template.Spec.SecurityContext = initialize.RestrictedPodSecurityContext()
+	sts.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 
 	// set the image pull secrets, if any exist
 	sts.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
