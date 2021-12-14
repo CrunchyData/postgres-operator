@@ -10,8 +10,11 @@ You can perform a PostgreSQL major version upgrade declratively using PGO! The b
 Note that major version upgrades are **permanent**, you cannot roll back a major version upgrade through declarative management at this time. If this is an issue, we recommend keeping a copy of your Postgres cluster running your previous version of Postgres.
 
 {{% notice warning %}}
-Please note that your Postgres clusters needs to be in a healthy state in order for the upgrade to
-complete. If there are any issues, such as Pods that are not running correctly or other similar problems, you need to be addressed them before proceeding!
+**Please note the following prior to performing a PostgreSQL major version upgrade:**
+- Any Postgres cluster being upgraded must be in a healthy state in order for the upgrade to
+complete successfully.  If the cluster is experiencing issues such as Pods that are not running
+properly, or any other similar problems, those issues must be addressed before proceeding.
+- Major PostgreSQL version upgrades of PostGIS clusters are not currently supported.
 {{% /notice %}}
 
 ## Step 1: Take a Full Backup
