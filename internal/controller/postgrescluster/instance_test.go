@@ -1938,6 +1938,21 @@ func TestReconcileUpgrade(t *testing.T) {
 		}},
 		expectReconcile:     true,
 		expectedReturnEarly: true,
+	}, {
+		testDesc: "upgrade progressing, shutdown",
+		upgrade: &v1beta1.PGMajorUpgrade{
+			Enabled:             initialize.Bool(true),
+			FromPostgresVersion: 12,
+			Image:               initialize.String("upgrade-image"),
+		},
+		clusterConditions: []*metav1.Condition{{
+			Type:    ConditionRepoHostReady,
+			Reason:  "test",
+			Status:  metav1.ConditionTrue,
+			Message: "test",
+		}},
+		expectReconcile:     false,
+		expectedReturnEarly: false,
 	}}
 
 	for i, tc := range testCases {
@@ -2013,7 +2028,6 @@ func TestReconcileUpgrade(t *testing.T) {
 					}
 				}
 				assert.Assert(t, foundOwnershipRef)
-				return
 			} else {
 				// verify expected results when a reconcile is not expected
 				jobs := &batchv1.JobList{}
@@ -2029,8 +2043,13 @@ func TestReconcileUpgrade(t *testing.T) {
 					}
 				}
 				assert.Assert(t, len(runningJobs) == 0)
+			}
 
-				return
+			progressing := meta.FindStatusCondition(cluster.Status.Conditions,
+				ConditionPGUpgradeProgressing)
+			if progressing != nil && progressing.Reason == ReasonClusterShutdown {
+				assert.Equal(t, *cluster.Spec.Shutdown, true)
+				assert.Equal(t, cluster.Spec.PostgresVersion, cluster.Spec.Upgrade.FromPostgresVersion)
 			}
 		})
 	}
@@ -2530,6 +2549,26 @@ func TestPrepareForUpgrade(t *testing.T) {
 				},
 			}}},
 		}},
+	}, {
+		desc: "pgBackRest repo host still running, shutdown cluster",
+		createResources: func(t *testing.T,
+			cluster *v1beta1.PostgresCluster) (tr testResources) {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				Type:    ConditionRepoHostReady,
+				Status:  metav1.ConditionTrue,
+				Reason:  "test",
+				Message: "test",
+			})
+			return
+		},
+		result: testResult{
+			expectedClusterCondition: &metav1.Condition{
+				Type:    ConditionPGUpgradeProgressing,
+				Status:  metav1.ConditionTrue,
+				Reason:  ReasonClusterShutdown,
+				Message: "Preparing cluster for upgrade: shutting down cluster",
+			},
+		},
 	}}
 
 	for i, tc := range testCases {
