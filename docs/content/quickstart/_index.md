@@ -140,7 +140,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app: keycloak
+      app.kubernetes.io/name: keycloak
   template:
     metadata:
       labels:
