@@ -278,7 +278,7 @@ func TestServerConfig(t *testing.T) {
 
 	assert.Equal(t, serverConfig(cluster).String(), `
 [global]
-tls-server-address = ::
+tls-server-address = 0.0.0.0
 tls-server-auth = pgbackrest@shoe=*
 tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
 tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt

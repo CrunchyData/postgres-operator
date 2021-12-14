@@ -408,12 +408,22 @@ func serverConfig(cluster *v1beta1.PostgresCluster) iniSectionSet {
 	global := iniMultiSet{}
 	server := iniMultiSet{}
 
-	// Listen on the unspecified IPv6 address which ends up being the IPv6
-	// wildcard address. On a Linux host with dual-stack networking enabled
-	// and sysctl "net.ipv6.bindv6only = 0", this binds to all IPv6 and IPv4
-	// interfaces.
+	// IPv6 support is a relatively recent addition to Kubernetes, so listen on
+	// the IPv4 wildcard address and trust that Pod DNS names will resolve to
+	// IPv4 addresses for now.
+	//
+	// NOTE(cbandy): The unspecified IPv6 address, which ends up being the IPv6
+	// wildcard address, did not work in all environments. In some cases, the
+	// the "server-ping" command would not connect.
 	// - https://tools.ietf.org/html/rfc3493#section-3.8
-	global.Set("tls-server-address", "::")
+	//
+	// TODO(cbandy): When pgBackRest provides a way to bind to all addresses,
+	// use that here and configure "server-ping" to use "localhost" which
+	// Kubernetes guarantees resolves to a loopback address.
+	// - https://kubernetes.io/docs/concepts/cluster-administration/networking/
+	// - https://releases.k8s.io/v1.18.0/pkg/kubelet/kubelet_pods.go#L327
+	// - https://releases.k8s.io/v1.23.0/pkg/kubelet/kubelet_pods.go#L345
+	global.Set("tls-server-address", "0.0.0.0")
 
 	// The client certificate for this cluster is allowed to connect for any stanza.
 	// Without the wildcard "*", the "pgbackrest info" and "pgbackrest repo-ls"
