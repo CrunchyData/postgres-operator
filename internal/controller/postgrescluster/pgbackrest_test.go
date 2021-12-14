@@ -2173,12 +2173,13 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 	r := Reconciler{Client: cc}
 
 	t.Run("empty", func(t *testing.T) {
-		_, err := r.generateRepoHostIntent(&v1beta1.PostgresCluster{}, "", &RepoResources{})
+		_, err := r.generateRepoHostIntent(&v1beta1.PostgresCluster{}, "", &RepoResources{},
+			&observedInstances{})
 		assert.NilError(t, err)
 	})
 
 	cluster := &v1beta1.PostgresCluster{}
-	sts, err := r.generateRepoHostIntent(cluster, "", &RepoResources{})
+	sts, err := r.generateRepoHostIntent(cluster, "", &RepoResources{}, &observedInstances{})
 	assert.NilError(t, err)
 
 	t.Run("ServiceAccount", func(t *testing.T) {
@@ -2186,6 +2187,34 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 		if assert.Check(t, sts.Spec.Template.Spec.AutomountServiceAccountToken != nil) {
 			assert.Equal(t, *sts.Spec.Template.Spec.AutomountServiceAccountToken, false)
 		}
+	})
+
+	t.Run("Replicas", func(t *testing.T) {
+		assert.Equal(t, *sts.Spec.Replicas, int32(1))
+	})
+
+	t.Run("PG instances observed, do not shutdown repo host", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Shutdown: initialize.Bool(true),
+			},
+		}
+		observed := &observedInstances{forCluster: []*Instance{{Pods: []*corev1.Pod{{}}}}}
+		sts, err := r.generateRepoHostIntent(cluster, "", &RepoResources{}, observed)
+		assert.NilError(t, err)
+		assert.Equal(t, *sts.Spec.Replicas, int32(1))
+	})
+
+	t.Run("No PG instances observed, shutdown repo host", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Shutdown: initialize.Bool(true),
+			},
+		}
+		observed := &observedInstances{forCluster: []*Instance{{}}}
+		sts, err := r.generateRepoHostIntent(cluster, "", &RepoResources{}, observed)
+		assert.NilError(t, err)
+		assert.Equal(t, *sts.Spec.Replicas, int32(0))
 	})
 }
 

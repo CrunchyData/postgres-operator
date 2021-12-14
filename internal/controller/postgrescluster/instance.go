@@ -1470,6 +1470,9 @@ func (r *Reconciler) reconcileUpgradeJob(
 				ConditionPGUpgradeProgressing)
 			if condition != nil && condition.Reason == ReasonClusterShutdown {
 				cluster.Spec.Shutdown = initialize.Bool(true)
+				// while shutting down the cluster continue to reconcile according to the PG
+				// version being upgraded from
+				cluster.Spec.PostgresVersion = cluster.Spec.Upgrade.FromPostgresVersion
 			} else {
 				return true, nil
 			}
@@ -1695,11 +1698,18 @@ func (r *Reconciler) prepareForUpgrade(ctx context.Context,
 			ConditionPGUpgradeCompleted)
 	}
 
+	repoHostReady := meta.IsStatusConditionTrue(cluster.Status.Conditions,
+		ConditionRepoHostReady)
+	var instanceExists bool
 	for _, instance := range observed.forCluster {
 		if len(instance.Pods) > 0 {
-			setPreparingClusterCondition("shutting down cluster", ReasonClusterShutdown)
-			return nil
+			instanceExists = true
+			break
 		}
+	}
+	if repoHostReady || instanceExists {
+		setPreparingClusterCondition("shutting down cluster", ReasonClusterShutdown)
+		return nil
 	}
 
 	// At this point we should be shutdown, which means a startup instance and a startup instance

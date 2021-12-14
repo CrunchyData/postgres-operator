@@ -131,9 +131,11 @@ type RepoResources struct {
 // rollout of the pgBackRest repository host StatefulSet in accordance with its configured
 // strategy.
 func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
-	repoHostName string, repoResources *RepoResources) (*appsv1.StatefulSet, error) {
+	repoHostName string, repoResources *RepoResources,
+	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
 
-	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName, repoResources)
+	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName, repoResources,
+		observedInstances)
 	if err != nil {
 		return nil, err
 	}
@@ -474,7 +476,7 @@ func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
 // as needed to create and reconcile a pgBackRest dedicated repository host within the kubernetes
 // cluster.
 func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresCluster,
-	repoHostName string, repoResources *RepoResources,
+	repoHostName string, repoResources *RepoResources, observedInstances *observedInstances,
 ) (*appsv1.StatefulSet, error) {
 
 	annotations := naming.Merge(
@@ -540,8 +542,18 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	// https://github.com/kubernetes/kubernetes/issues/88456
 	repo.Spec.Template.Spec.ImagePullSecrets = postgresCluster.Spec.ImagePullSecrets
 
-	// if the cluster is set to be shutdown, stop repohost pod
-	if postgresCluster.Spec.Shutdown != nil && *postgresCluster.Spec.Shutdown {
+	// determine if any PG Pods still exist
+	var instancePodExists bool
+	for _, instance := range observedInstances.forCluster {
+		if len(instance.Pods) > 0 {
+			instancePodExists = true
+			break
+		}
+	}
+
+	// if the cluster is set to be shutdown and no instance Pods remain, stop the repohost pod
+	if postgresCluster.Spec.Shutdown != nil && *postgresCluster.Spec.Shutdown &&
+		!instancePodExists {
 		repo.Spec.Replicas = initialize.Int32(0)
 	} else {
 		// the cluster should not be shutdown, set this value to 1
@@ -1217,7 +1229,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	dedicatedEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
 	if dedicatedEnabled {
 		// reconcile the pgbackrest repository host
-		repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources)
+		repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources, instances)
 		if err != nil {
 			log.Error(err, "unable to reconcile pgBackRest repo host")
 			result = updateReconcileResult(result, reconcile.Result{Requeue: true})
@@ -1707,7 +1719,8 @@ func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
 // StatefulSet according to a specific PostgresCluster custom resource.
 func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
-	repoResources *RepoResources) (*appsv1.StatefulSet, error) {
+	repoResources *RepoResources,
+	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoHost")
 
@@ -1747,7 +1760,8 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 		})
 	}
 	repoHostName := repoResources.hosts[0].Name
-	repoHost, err := r.applyRepoHostIntent(ctx, postgresCluster, repoHostName, repoResources)
+	repoHost, err := r.applyRepoHostIntent(ctx, postgresCluster, repoHostName, repoResources,
+		observedInstances)
 	if err != nil {
 		log.Error(err, "reconciling repository host")
 		return nil, err
