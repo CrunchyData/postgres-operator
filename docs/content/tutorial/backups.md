@@ -137,10 +137,10 @@ variables will then be used by pgBackRest to assume the identity of a role that 
 to upload to an S3 repository.
 
 This method requires [additional setup in AWS IAM](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
-Follow the procedure there, but skip the third step:
+Use the procedure in the linked documentation for the first two steps described below:
 
-1\. Create an OIDC provider for your EKS cluster
-2\. Create an IAM policy for bucket access and an IAM role with a trust relationship with the 
+1. Create an OIDC provider for your EKS cluster.
+2. Create an IAM policy for bucket access and an IAM role with a trust relationship with the 
 OIDC provider in step 1.
 
 The third step is to associate that IAM role with a ServiceAccount, but there's no need to 
@@ -150,7 +150,7 @@ You can then make the following changes to the files in the `kustomize/s3` direc
 [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repository:
 
 1\. Add the `s3` section to the spec in `kustomize/s3/postgres.yaml` as discussed in the 
-`Using S3 Credentials` section. In addition to that, add the required `eks.amazonaws.com/role-arn` 
+`Using S3 Credentials` [section above](#using-s3-credentials). In addition to that, add the required `eks.amazonaws.com/role-arn` 
 annotation to the PostgresCluster spec using the IAM `ARN` that you noted above.
 
 For instance, given an IAM role with the ARN `arn:aws:iam::123456768901:role/allow_bucket_access`, 
@@ -179,7 +179,7 @@ repo1-s3-key-type=web-id
 ```
 
 That `repo1-s3-key-type=web-id` line will tell 
-[pgBackRest(https://pgbackrest.org/configuration.html#section-repository/option-repo-s3-key-type) 
+[pgBackRest](https://pgbackrest.org/configuration.html#section-repository/option-repo-s3-key-type) 
 to use the IAM integration.
 
 With those changes saved, you can deploy your cluster:
