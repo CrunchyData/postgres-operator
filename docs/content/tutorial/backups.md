@@ -150,7 +150,7 @@ You can then make the following changes to the files in the `kustomize/s3` direc
 [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repository:
 
 1\. Add the `s3` section to the spec in `kustomize/s3/postgres.yaml` as discussed in the 
-`Using S3 Credentials` [section above](#using-s3-credentials). In addition to that, add the required `eks.amazonaws.com/role-arn` 
+[Using S3 Credentials](#using-s3-credentials) section above. In addition to that, add the required `eks.amazonaws.com/role-arn` 
 annotation to the PostgresCluster spec using the IAM `ARN` that you noted above.
 
 For instance, given an IAM role with the ARN `arn:aws:iam::123456768901:role/allow_bucket_access`, 
