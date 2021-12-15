@@ -100,6 +100,7 @@ with create_app().app_context():
         user.roles = db.session.query(Role).filter_by(name='User').all()
 
         if user.password:
+            user.masterpass_check = 'any'
             user.verify_and_update_password(user.password)
 
         db.session.add(user)

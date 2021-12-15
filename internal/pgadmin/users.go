@@ -74,6 +74,11 @@ if sys.path[0] != root:
 	//
 	// TODO(cbandy): pgAdmin v4.21 adds "auth_source" and "username" as required attributes.
 	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/model/__init__.py;hb=REL-4_21#l65
+	//
+	// After a user logs in, pgAdmin checks that the "master password" is set.
+	// It does not seem to use the value nor check that it is valid. We set it
+	// to "any" to satisfy the check.
+	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/browser/__init__.py;hb=REL-4_20#l853
 
 	// When the users are created or modified, server groups and connections will
 	// also be configured, similar to the way server groups and connections are
@@ -94,9 +99,9 @@ if sys.path[0] != root:
 
 	// The server connection password is the plaintext password encrypted with the
 	// password itself as the key.
-	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;;f=web/pgadmin/__init__.py;hb=REL-4_20#l580
+	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/__init__.py;hb=REL-4_20#l580
 	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/utils/master_password.py;hb=REL-4_20#l20
-	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;;f=web/pgadmin/browser/server_groups/servers/__init__.py;hb=REL-4_20#l840
+	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/browser/server_groups/servers/__init__.py;hb=REL-4_20#l840
 
 	// Due to limitations on the types of updates that can be made to active server
 	// connections, when the current server connection is updated, we need to delete
@@ -139,6 +144,7 @@ with create_app().app_context():
         user.roles = db.session.query(Role).filter_by(name='User').all()
 
         if user.password:
+            user.masterpass_check = 'any'
             user.verify_and_update_password(user.password)
 
         db.session.add(user)
