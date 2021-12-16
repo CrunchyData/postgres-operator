@@ -18,7 +18,7 @@ package upgradecheck
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -77,8 +77,6 @@ func init() {
 func checkForUpgrades(log logr.Logger, versionString string, backoff wait.Backoff,
 	crclient crclient.Client, ctx context.Context, cfg *rest.Config,
 	isOpenShift bool) (message string, err error) {
-	var res *http.Response
-	var bodyBytes []byte
 	var headerPayloadStruct *clientUpgradeData
 
 	// Guard against panics within the checkForUpgrades function to allow the
@@ -105,40 +103,42 @@ func checkForUpgrades(log logr.Logger, versionString string, backoff wait.Backof
 	// (a) func returns done as true or
 	// (b) the backoff settings are exhausted,
 	// i.e., the process hits the cap for time or the number of steps
-	// The anonymous function here sets certain preexisting variables (res, err)
+	// The anonymous function here sets certain preexisting variables (bodyBytes, err, status)
 	// which are then used by the surrounding `checkForUpgrades` function as part of the return
+	var bodyBytes []byte
+	var status int
+
 	if err == nil {
 		_ = wait.ExponentialBackoff(
 			backoff,
 			func() (done bool, backoffErr error) {
-				// We can't close the body of this response in this block since we use it outside
-				// so ignore this linting error
-				res, err = client.Do(req) //nolint:bodyclose
-				// This is a very basic check, ignoring nuances around
-				// certain StatusCodes that should either prevent or impact retries
-				if err == nil && res.StatusCode == http.StatusOK {
-					return true, nil
-				}
+				var res *http.Response
+				res, err = client.Do(req)
+
 				if err == nil {
-					err = fmt.Errorf("received StatusCode %d", res.StatusCode)
+					defer res.Body.Close()
+					status = res.StatusCode
+
+					// This is a very basic check, ignoring nuances around
+					// certain StatusCodes that should either prevent or impact retries
+					if status == http.StatusOK {
+						bodyBytes, err = io.ReadAll(res.Body)
+						return true, nil
+					}
 				}
+
 				// Return false, nil to continue checking
 				return false, nil
 			})
 	}
-	// If the final value of err is nil and the final res.StatusCode is OK,
-	// we can go on with reading the body of the response
-	if err == nil && res.StatusCode == http.StatusOK {
-		defer res.Body.Close()
-		bodyBytes, err = ioutil.ReadAll(res.Body)
+
+	// We received responses, but none of them were 200 OK.
+	if err == nil && status != http.StatusOK {
+		err = fmt.Errorf("received StatusCode %d", status)
 	}
 
 	// TODO: Parse response and log info for user on potential upgrades
-	if err == nil {
-		return string(bodyBytes), nil
-	}
-
-	return "", err
+	return string(bodyBytes), err
 }
 
 // CheckForUpgradesScheduler invokes the check func when the operator starts
