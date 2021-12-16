@@ -3362,7 +3362,7 @@ func TestPreparePGBackRestForPGUpgrade(t *testing.T) {
 			},
 		},
 	}, {
-		desc: "clear pgBackRest status",
+		desc: "clear pgBackRest repo status",
 		pgBackRestStatus: &v1beta1.PGBackRestStatus{
 			Repos:            []v1beta1.RepoStatus{},
 			ManualBackup:     &v1beta1.PGBackRestJobStatus{},
@@ -3371,7 +3371,13 @@ func TestPreparePGBackRestForPGUpgrade(t *testing.T) {
 			Restore:          &v1beta1.PGBackRestJobStatus{},
 		},
 		result: testResult{
-			expectedPGBackRestStatus: nil,
+			// ensure only the "repos" section of the status is removed
+			expectedPGBackRestStatus: &v1beta1.PGBackRestStatus{
+				ManualBackup:     &v1beta1.PGBackRestJobStatus{},
+				ScheduledBackups: []v1beta1.PGBackRestScheduledBackupStatus{},
+				RepoHost:         &v1beta1.RepoHostStatus{},
+				Restore:          &v1beta1.PGBackRestJobStatus{},
+			},
 			expectedConditions: []metav1.Condition{
 				{Type: ConditionPGBackRestPostPGUpgrade},
 			},
@@ -3426,7 +3432,7 @@ func TestPreparePGBackRestForPGUpgrade(t *testing.T) {
 				assert.Assert(t, readyCondition.Message == "pgBackRest has been prepared for a major PG upgrade")
 			}
 
-			assert.Assert(t, cluster.Status.PGBackRest == tc.result.expectedPGBackRestStatus)
+			assert.DeepEqual(t, cluster.Status.PGBackRest, tc.result.expectedPGBackRestStatus)
 		})
 	}
 }

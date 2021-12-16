@@ -2665,7 +2665,9 @@ func (r *Reconciler) preparePGBackRestForPGUpgrade(ctx context.Context,
 		}
 	}
 
-	cluster.Status.PGBackRest = nil
+	if cluster.Status.PGBackRest != nil {
+		cluster.Status.PGBackRest.Repos = nil
+	}
 	if len(cluster.Status.Conditions) > 0 {
 		meta.RemoveStatusCondition(&cluster.Status.Conditions,
 			ConditionRepoHostReady)

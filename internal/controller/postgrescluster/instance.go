@@ -1802,10 +1802,6 @@ func (r *Reconciler) prepareForUpgrade(ctx context.Context,
 	}
 
 	// if everything is gone, proceed with re-bootstrapping the cluster
-	if len(cluster.Status.Conditions) > 0 {
-		// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
-		meta.RemoveStatusCondition(&cluster.Status.Conditions, ConditionPostgresDataInitialized)
-	}
 	meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
 		ObservedGeneration: cluster.GetGeneration(),
 		Type:               ConditionPGUpgradeProgressing,
