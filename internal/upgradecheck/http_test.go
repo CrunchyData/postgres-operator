@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/wojas/genericr"
 	"gotest.tools/v3/assert"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -64,10 +63,8 @@ func (cc *MockCacheClient) WaitForCacheSync(ctx context.Context) bool {
 }
 
 func TestCheckForUpgrades(t *testing.T) {
-	discardLogs := logr.DiscardLogger{}
-
 	fakeClient := setupFakeClientWithPGOScheme(t, false)
-	ctx := context.Background()
+	ctx := logging.NewContext(context.Background(), logging.Discard())
 	cfg := &rest.Config{}
 
 	t.Run("success", func(t *testing.T) {
@@ -80,8 +77,8 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, err := checkForUpgrades(discardLogs, "4.7.3", backoff,
-			fakeClient, ctx, cfg, false)
+		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+			fakeClient, cfg, false)
 		assert.NilError(t, err)
 		assert.Equal(t, res, `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
 	})
@@ -94,8 +91,8 @@ func TestCheckForUpgrades(t *testing.T) {
 			return &http.Response{}, errors.New("whoops")
 		}
 
-		res, err := checkForUpgrades(discardLogs, "4.7.3", backoff,
-			fakeClient, ctx, cfg, false)
+		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+			fakeClient, cfg, false)
 		// Two failed calls because of env var
 		assert.Equal(t, counter, 2)
 		assert.Equal(t, res, "")
@@ -110,8 +107,8 @@ func TestCheckForUpgrades(t *testing.T) {
 			panic(fmt.Errorf("oh no!"))
 		}
 
-		res, err := checkForUpgrades(discardLogs, "4.7.3", backoff,
-			fakeClient, ctx, cfg, false)
+		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+			fakeClient, cfg, false)
 		// One call because of panic
 		assert.Equal(t, counter, 1)
 		assert.Equal(t, res, "")
@@ -129,8 +126,8 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, err := checkForUpgrades(discardLogs, "4.7.3", backoff,
-			fakeClient, ctx, cfg, false)
+		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+			fakeClient, cfg, false)
 		assert.Equal(t, res, "")
 		// Two failed calls because of env var
 		assert.Equal(t, counter, 2)
@@ -157,8 +154,8 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, err := checkForUpgrades(discardLogs, "4.7.3", backoff,
-			fakeClient, ctx, cfg, false)
+		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+			fakeClient, cfg, false)
 		assert.Equal(t, counter, 2)
 		assert.NilError(t, err)
 		assert.Equal(t, res, `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)

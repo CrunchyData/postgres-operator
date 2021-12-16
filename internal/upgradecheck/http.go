@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -74,8 +73,8 @@ func init() {
 	}
 }
 
-func checkForUpgrades(log logr.Logger, versionString string, backoff wait.Backoff,
-	crclient crclient.Client, ctx context.Context, cfg *rest.Config,
+func checkForUpgrades(ctx context.Context, versionString string, backoff wait.Backoff,
+	crclient crclient.Client, cfg *rest.Config,
 	isOpenShift bool) (message string, err error) {
 	var headerPayloadStruct *clientUpgradeData
 
@@ -95,7 +94,7 @@ func checkForUpgrades(log logr.Logger, versionString string, backoff wait.Backof
 		// generateHeader always returns some sort of struct, using defaults/nil values
 		// in case some of the checks return errors
 		headerPayloadStruct = generateHeader(ctx, cfg, crclient,
-			log, versionString, isOpenShift)
+			versionString, isOpenShift)
 		req, err = addHeader(req, headerPayloadStruct)
 	}
 
@@ -174,8 +173,8 @@ func CheckForUpgradesScheduler(channel chan bool,
 		return
 	}
 
-	info, err := checkForUpgrades(log, versionString, backoff,
-		crclient, ctx, cfg, isOpenShift)
+	info, err := checkForUpgrades(ctx, versionString, backoff,
+		crclient, cfg, isOpenShift)
 	if err != nil {
 		log.V(1).Info("could not complete upgrade check",
 			"response", err.Error())
@@ -187,8 +186,8 @@ func CheckForUpgradesScheduler(channel chan bool,
 	for {
 		select {
 		case <-ticker.C:
-			info, err = checkForUpgrades(log, versionString, backoff,
-				crclient, ctx, cfg, isOpenShift)
+			info, err = checkForUpgrades(ctx, versionString, backoff,
+				crclient, cfg, isOpenShift)
 			if err != nil {
 				log.V(1).Info("could not complete scheduled upgrade check",
 					"response", err.Error())

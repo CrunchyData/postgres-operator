@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/go-logr/logr"
 	googleuuid "github.com/google/uuid"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/client-go/rest"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -54,27 +54,27 @@ type clientUpgradeData struct {
 // generateHeader aggregates data and returns a struct of that data
 // If any errors are encountered, it logs those errors and uses the default values
 func generateHeader(ctx context.Context, cfg *rest.Config, crClient crclient.Client,
-	log logr.Logger, pgoVersion string, isOpenShift bool) *clientUpgradeData {
+	pgoVersion string, isOpenShift bool) *clientUpgradeData {
 
 	return &clientUpgradeData{
 		PGOVersion:       pgoVersion,
 		IsOpenShift:      isOpenShift,
-		DeploymentID:     ensureDeploymentID(ctx, crClient, log),
-		PGOClustersTotal: getManagedClusters(ctx, crClient, log),
-		KubernetesEnv:    getServerVersion(cfg, log),
+		DeploymentID:     ensureDeploymentID(ctx, crClient),
+		PGOClustersTotal: getManagedClusters(ctx, crClient),
+		KubernetesEnv:    getServerVersion(ctx, cfg),
 	}
 }
 
 // ensureDeploymentID checks if the UUID exists in memory or in a ConfigMap
 // If no UUID exists, ensureDeploymentID creates one and saves it in memory/as a ConfigMap
 // Any errors encountered will be logged and the ID result will be what is in memory
-func ensureDeploymentID(ctx context.Context, crClient crclient.Client, log logr.Logger) string {
+func ensureDeploymentID(ctx context.Context, crClient crclient.Client) string {
 	// If there is no deploymentID in memory, generate one for possible use
 	if deploymentID == "" {
 		deploymentID = string(uuid.NewUUID())
 	}
 
-	cm := manageUpgradeCheckConfigMap(ctx, crClient, log, deploymentID)
+	cm := manageUpgradeCheckConfigMap(ctx, crClient, deploymentID)
 
 	if cm != nil && cm.Data["deployment_id"] != "" {
 		deploymentID = cm.Data["deployment_id"]
@@ -88,8 +88,9 @@ func ensureDeploymentID(ctx context.Context, crClient crclient.Client, log logr.
 // If it exists and it has a valid UUID, use that to replace the in-memory ID
 // If it exists but the field is blank or mangled, we update the ConfigMap with the in-memory ID
 func manageUpgradeCheckConfigMap(ctx context.Context, crClient crclient.Client,
-	log logr.Logger, currentID string) *corev1.ConfigMap {
+	currentID string) *corev1.ConfigMap {
 
+	log := logging.FromContext(ctx)
 	upgradeCheckConfigMapMetadata := naming.UpgradeCheckConfigMap()
 
 	cm := &corev1.ConfigMap{
@@ -154,11 +155,12 @@ func applyConfigMap(ctx context.Context, crClient crclient.Client,
 
 // getManagedClusters returns a count of postgres clusters managed by this PGO instance
 // Any errors encountered will be logged and the count result will be 0
-func getManagedClusters(ctx context.Context, crClient crclient.Client, log logr.Logger) int {
+func getManagedClusters(ctx context.Context, crClient crclient.Client) int {
 	var count int
 	clusters := &v1beta1.PostgresClusterList{}
 	err := crClient.List(ctx, clusters)
 	if err != nil {
+		log := logging.FromContext(ctx)
 		log.V(1).Info("upgrade check issue: could not count postgres clusters",
 			"response", err.Error())
 	} else {
@@ -170,7 +172,8 @@ func getManagedClusters(ctx context.Context, crClient crclient.Client, log logr.
 // getServerVersion returns the stringified server version (i.e., the same info `kubectl version`
 // returns for the server)
 // Any errors encountered will be logged and will return an empty string
-func getServerVersion(cfg *rest.Config, log logr.Logger) string {
+func getServerVersion(ctx context.Context, cfg *rest.Config) string {
+	log := logging.FromContext(ctx)
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
 		log.V(1).Info("upgrade check issue: could not retrieve discovery client",
