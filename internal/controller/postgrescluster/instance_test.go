@@ -2587,8 +2587,8 @@ func TestPrepareForUpgrade(t *testing.T) {
 				ObservedGeneration: cluster.GetGeneration(),
 				Type:               ConditionPostgresDataInitialized,
 				Status:             metav1.ConditionTrue,
-				Reason:             "PGUpgradeComplete",
-				Message:            "pg_upgrade completed successfully",
+				Reason:             "test",
+				Message:            "test",
 			})
 
 			testResources := tc.createResources(t, cluster)
@@ -2658,11 +2658,13 @@ func TestPrepareForUpgrade(t *testing.T) {
 					assert.Assert(t, cluster.Status.Proxy.PGBouncer.PostgreSQLRevision == "")
 					assert.Assert(t, cluster.Status.Monitoring.ExporterConfiguration == "")
 					assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
-						ConditionPostgresDataInitialized) == nil)
-					assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
 						ConditionPGUpgradeCompleted) == nil)
 				}
 			}
+
+			// ensure the PostgresDataInitialized condition is never removed
+			assert.Assert(t, meta.FindStatusCondition(cluster.Status.Conditions,
+				ConditionPostgresDataInitialized) != nil)
 		})
 	}
 }
