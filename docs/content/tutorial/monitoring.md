@@ -21,7 +21,7 @@ The only required attribute for adding the Exporter sidecar is to set `spec.moni
 monitoring:
   pgmonitor:
     exporter:
-     image: {{< param imageCrunchyExporter >}}
+      image: {{< param imageCrunchyExporter >}}
 ```
 
 Save your changes and run:
