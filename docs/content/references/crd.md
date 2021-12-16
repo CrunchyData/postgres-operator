@@ -787,7 +787,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -999,7 +999,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -2219,7 +2219,7 @@ ConfigMap containing custom SSH configuration. Deprecated: Repository hosts use 
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -2293,7 +2293,7 @@ Secret containing custom SSH keys. Deprecated: Repository hosts use mTLS for enc
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -5454,7 +5454,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -5666,7 +5666,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -5777,7 +5777,7 @@ The secret containing the replication client certificates and keys for secure co
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -5851,7 +5851,7 @@ The secret containing the Certificates and Keys to encrypt PostgreSQL traffic wi
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -7150,7 +7150,7 @@ LocalObjectReference contains enough information to let you locate the reference
     <tbody><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7347,7 +7347,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -7559,7 +7559,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -8882,7 +8882,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -9094,7 +9094,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -9205,7 +9205,7 @@ A secret projection containing a certificate and key with which to encrypt conne
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
