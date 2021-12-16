@@ -74,9 +74,8 @@ func TestCheckForUpgrades(t *testing.T) {
 		// A successful call
 		funcFoo = func() (*http.Response, error) {
 			json := `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`
-			r := io.NopCloser(strings.NewReader(json))
 			return &http.Response{
-				Body:       r,
+				Body:       io.NopCloser(strings.NewReader(json)),
 				StatusCode: http.StatusOK,
 			}, nil
 		}
@@ -125,6 +124,7 @@ func TestCheckForUpgrades(t *testing.T) {
 		funcFoo = func() (*http.Response, error) {
 			counter++
 			return &http.Response{
+				Body:       io.NopCloser(strings.NewReader("")),
 				StatusCode: http.StatusBadRequest,
 			}, nil
 		}
@@ -145,14 +145,14 @@ func TestCheckForUpgrades(t *testing.T) {
 			if counter < 1 {
 				counter++
 				return &http.Response{
+					Body:       io.NopCloser(strings.NewReader("")),
 					StatusCode: http.StatusBadRequest,
 				}, nil
 			}
 			counter++
 			json := `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`
-			r := io.NopCloser(strings.NewReader(json))
 			return &http.Response{
-				Body:       r,
+				Body:       io.NopCloser(strings.NewReader(json)),
 				StatusCode: http.StatusOK,
 			}, nil
 		}
@@ -228,9 +228,8 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		// A successful call
 		funcFoo = func() (*http.Response, error) {
 			json := `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`
-			r := io.NopCloser(strings.NewReader(json))
 			return &http.Response{
-				Body:       r,
+				Body:       io.NopCloser(strings.NewReader(json)),
 				StatusCode: http.StatusOK,
 			}, nil
 		}
