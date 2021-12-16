@@ -46,13 +46,21 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
         with: { go-version: 1.x }
-      - uses: nolar/setup-k3d-k3s@v1
-        with:
-          version: "${{ matrix.kubernetes }}"
-          k3d-tag: v4.4.8
-          k3d-args: --no-lb
+
+      - name: Install k3d
+        # Git tag from https://github.com/rancher/k3d/releases or "latest"
+        env: { K3D_TAG: latest }
+        run: |
+          curl --fail --silent https://raw.githubusercontent.com/rancher/k3d/main/install.sh |
+            TAG="${K3D_TAG#latest}" bash && k3d version | head -n1
+
+      - name: Start k3s
+        # https://rancher.com/docs/k3s/latest/en/upgrades/basic/#release-channels
+        env: { K3S_CHANNEL: "${{ matrix.kubernetes }}" }
+        run: k3d cluster create --image="+${K3S_CHANNEL}" --no-lb --timeout=2m --wait
+
       - name: Prefetch container images
-        run: >
+        run: |
           {
             echo '"registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.5-0"'
             echo '"registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.36-0"'
