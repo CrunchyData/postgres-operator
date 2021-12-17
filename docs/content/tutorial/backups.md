@@ -82,7 +82,7 @@ In the above example, we assume that the Kubernetes cluster is using a default s
 
 ## Using S3
 
-Setting up backups in S3 requires a few additional modifications to your custom resource spec 
+Setting up backups in S3 requires a few additional modifications to your custom resource spec
 and either
 - the use of a Secret to protect your S3 credentials, or
 - setting up identity providers in AWS to allow pgBackRest to assume a role with permissions.
@@ -120,6 +120,15 @@ Again, replace these values with the values that match your S3 configuration. Fo
 
 Note that `region` is required by S3, as does pgBackRest. If you are using a storage system with a S3 compatibility layer that does not require `region`, you can fill in region with a random value.
 
+If you are using MinIO, you may need to set the URI style to use `path` mode. You can do this from the global settings, e.g. for `repo1`:
+
+```yaml
+spec:
+  backups:
+    pgbackrest:
+      repo1-s3-uri-style: path
+```
+
 When your configuration is saved, you can deploy your cluster:
 
 ```
@@ -130,30 +139,30 @@ Watch your cluster: you will see that your backups and archives are now being st
 
 ### Using an AWS-integrated identity provider and role
 
-If you deploy PostgresClusters to AWS Elastic Kubernetes Service, you can take advantage of their 
-IAM role integration. When you attach a certain annotation to your PostgresCluster spec, AWS will 
-automatically mount an AWS token and other needed environment variables. These environment 
-variables will then be used by pgBackRest to assume the identity of a role that has permissions 
+If you deploy PostgresClusters to AWS Elastic Kubernetes Service, you can take advantage of their
+IAM role integration. When you attach a certain annotation to your PostgresCluster spec, AWS will
+automatically mount an AWS token and other needed environment variables. These environment
+variables will then be used by pgBackRest to assume the identity of a role that has permissions
 to upload to an S3 repository.
 
 This method requires [additional setup in AWS IAM](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html).
 Use the procedure in the linked documentation for the first two steps described below:
 
 1. Create an OIDC provider for your EKS cluster.
-2. Create an IAM policy for bucket access and an IAM role with a trust relationship with the 
+2. Create an IAM policy for bucket access and an IAM role with a trust relationship with the
 OIDC provider in step 1.
 
-The third step is to associate that IAM role with a ServiceAccount, but there's no need to 
+The third step is to associate that IAM role with a ServiceAccount, but there's no need to
 do that manually, as PGO does that for you. First, make a note of the IAM role's `ARN`.
 
-You can then make the following changes to the files in the `kustomize/s3` directory in the 
+You can then make the following changes to the files in the `kustomize/s3` directory in the
 [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repository:
 
-1\. Add the `s3` section to the spec in `kustomize/s3/postgres.yaml` as discussed in the 
-[Using S3 Credentials](#using-s3-credentials) section above. In addition to that, add the required `eks.amazonaws.com/role-arn` 
+1\. Add the `s3` section to the spec in `kustomize/s3/postgres.yaml` as discussed in the
+[Using S3 Credentials](#using-s3-credentials) section above. In addition to that, add the required `eks.amazonaws.com/role-arn`
 annotation to the PostgresCluster spec using the IAM `ARN` that you noted above.
 
-For instance, given an IAM role with the ARN `arn:aws:iam::123456768901:role/allow_bucket_access`, 
+For instance, given an IAM role with the ARN `arn:aws:iam::123456768901:role/allow_bucket_access`,
 you would add the following to the PostgresCluster spec:
 
 ```
@@ -178,8 +187,8 @@ Update that `kustomize/s3/s3.conf` file so that it looks like this:
 repo1-s3-key-type=web-id
 ```
 
-That `repo1-s3-key-type=web-id` line will tell 
-[pgBackRest](https://pgbackrest.org/configuration.html#section-repository/option-repo-s3-key-type) 
+That `repo1-s3-key-type=web-id` line will tell
+[pgBackRest](https://pgbackrest.org/configuration.html#section-repository/option-repo-s3-key-type)
 to use the IAM integration.
 
 With those changes saved, you can deploy your cluster:
