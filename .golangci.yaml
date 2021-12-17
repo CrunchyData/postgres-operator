@@ -22,10 +22,19 @@ linters-settings:
       - io/ioutil: >
           Use the "io" and "os" packages instead.
           See https://go.dev/doc/go1.16#ioutil
+
+      - net/http/httptest: Should be used only in tests.
+      - testing/*: The "testing" packages should be used only in tests.
+
+      - github.com/crunchydata/postgres-operator/internal/testing/*: >
+          The "internal/testing" packages should be used only in tests.
+
   exhaustive:
     default-signifies-exhaustive: true
+
   goimports:
     local-prefixes: github.com/crunchydata/postgres-operator
+
   gomodguard:
     blocked:
       modules:
@@ -36,6 +45,7 @@ linters-settings:
             reason: >
               k8s.io/kubernetes is for managing dependencies of the Kubernetes
               project, i.e. building kubelet and kubeadm.
+
   importas:
     alias:
       - pkg: k8s.io/api/(\w+)/(v[\w\w]+)
@@ -45,6 +55,14 @@ linters-settings:
       - pkg: k8s.io/apimachinery/pkg/api/errors
         alias: apierrors
     no-unaliased: true
+
+issues:
+  exclude-rules:
+    # These testing packages are allowed in test files. The packages are
+    # disallowed everywhere then ignored here because that is how depguard works.
+    - linters: [depguard]
+      path: _test[.]go$
+      text: \`(net/http/httptest|[^`]*testing[^`]*)`
 
 run:
   build-tags:
