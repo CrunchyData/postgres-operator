@@ -190,13 +190,13 @@ You can configure the tolerations for your Postgres instances on the `postgrescl
 ## Pod Topology Spread Constraints
 
 Kubernetes [Pod Topology Spread Constraints](https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/)
-can also help you efficiently schedule your workloads by ensuring your Pods are 
+can also help you efficiently schedule your workloads by ensuring your Pods are
 not scheduled in only one portion of your Kubernetes cluster. By spreading your
 Pods across your Kubernetes cluster among your various failure-domains, such as
 regions, zones, nodes, and other user-defined topology domains, you can achieve
 high availability as well as efficient resource utilization.
 
-For an example of how pod topology spread constraints work with PGO, please see 
+For an example of how pod topology spread constraints work with PGO, please see
 the [high availability tutorial]({{< relref "tutorial/high-availability.md" >}}#pod-topology-spread-constraints).
 
 ## Rolling Updates

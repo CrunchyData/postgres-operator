@@ -60,5 +60,5 @@ kubectl delete sts hippo-repo-host
 ```
 
 Additionally, please be sure to update and apply all PostgresCluster custom resources in accordance
-with any applicable spec changes described in the 
+with any applicable spec changes described in the
 [PGO v5.0.3 release notes]({{< relref "../releases/5.0.3.md" >}}).

@@ -53,7 +53,7 @@ consumption) from the container itself via SQL queries.
 pgnodemx is able to pull and format container-specific metrics by accessing several
 Kubernetes fields that are mounted from the pod to the `database` container's filesystem.
 By default, these fields include the pod's labels and annotations, as well as the
-`database` pod's CPU and memory. These fields are mounted at the `/etc/database-containerinfo` 
+`database` pod's CPU and memory. These fields are mounted at the `/etc/database-containerinfo`
 path.
 
 ## Visualizations

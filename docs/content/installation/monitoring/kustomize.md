@@ -16,7 +16,7 @@ repository, which contains the PGO Monitoring Kustomize installer.
 
 [https://github.com/CrunchyData/postgres-operator-examples/fork](https://github.com/CrunchyData/postgres-operator-examples/fork)
 
-Once you have forked this repo, you can download it to your working environment with a command 
+Once you have forked this repo, you can download it to your working environment with a command
 similar to this:
 
 ```
@@ -29,10 +29,10 @@ The PGO Monitoring project is located in the `kustomize/monitoring` directory.
 
 ## Configuration
 
-While the default Kustomize install should work in most Kubernetes environments, it may be 
+While the default Kustomize install should work in most Kubernetes environments, it may be
 necessary to further customize the project according to your specific needs.
 
-For instance, by default `fsGroup` is set to `26` for the `securityContext` defined for the 
+For instance, by default `fsGroup` is set to `26` for the `securityContext` defined for the
 various Deployments comprising the PGO Monitoring stack:
 
 ```yaml
@@ -55,8 +55,8 @@ securityContext:
   supplementalGroups : 65534
 ```
 
-Therefore, the following files (located under `kustomize/monitoring`) should be modified and/or 
-patched (e.g. using additional overlays) as needed to ensure the `securityContext` is properly 
+Therefore, the following files (located under `kustomize/monitoring`) should be modified and/or
+patched (e.g. using additional overlays) as needed to ensure the `securityContext` is properly
 defined for your Kubernetes environment:
 
 - `deploy-alertmanager.yaml`
@@ -90,7 +90,7 @@ kubectl apply -k kustomize/monitoring
 
 ## Uninstall
 
-And similarly, once PGO Monitoring has been installed, it can uninstalled using `kubectl` and 
+And similarly, once PGO Monitoring has been installed, it can uninstalled using `kubectl` and
 Kustomize:
 
 ```shell
