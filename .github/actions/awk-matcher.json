@@ -1,0 +1,13 @@
+{
+  "problemMatcher": [
+    {
+      "owner": "awk",
+      "pattern": [
+        {
+          "regexp": "^([^:]+):([^ ]+) (([^:]+):.*)$",
+          "file": 1, "line": 2, "message": 3, "severity": 4
+        }
+      ]
+    }
+  ]
+}
