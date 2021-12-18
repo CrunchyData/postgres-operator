@@ -1,0 +1,8 @@
+# PostgresCluster "v1beta1" is in "/spec/versions/0"
+
+- op: add
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/status/properties/conditions/items/description
+  value: Condition contains details for one aspect of the current state of this API Resource.
+- op: add
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/status/properties/conditions/items/properties/type/description
+  value: type of condition in CamelCase.

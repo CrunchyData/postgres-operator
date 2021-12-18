@@ -7754,8 +7754,7 @@ Switchover gives options to perform ad hoc switchovers in a PostgresCluster.
       </tr><tr>
         <td><b>type</b></td>
         <td>enum</td>
-        <td>Type allows you to specify the type of Patroni switchover that will be performed. `patronictl` supports both `switchovers` and `failovers` where a `failover` is effectively a "forced switchover". The main difference is that `failover` can be used when there is not currently a leader. A TargetInstance must be specified to failover. 
- NOTE: The switchover type failover is reserved as the "last resort" case.</td>
+        <td>Type allows you to specify the type of Patroni switchover that will be performed. `patronictl` supports both `switchovers` and `failovers` where a `failover` is effectively a "forced switchover". The main difference is that `failover` can be used when there is not currently a leader. A TargetInstance must be specified to failover. NOTE: The switchover type failover is reserved as the "last resort" case.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11302,8 +11301,7 @@ PostgresClusterStatus defines the observed state of PostgresCluster
 
 
 
-Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{     // Represents the observations of a foo's current state.     // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"     // +patchMergeKey=type     // +patchStrategy=merge     // +listType=map     // +listMapKey=type     Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"` 
-     // other fields }
+Condition contains details for one aspect of the current state of this API Resource.
 
 <table>
     <thead>
@@ -11337,7 +11335,7 @@ Condition contains details for one aspect of the current state of this API Resou
       </tr><tr>
         <td><b>type</b></td>
         <td>string</td>
-        <td>type of condition in CamelCase or in foo.example.com/CamelCase. --- Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be useful (see .node.status.conditions), the ability to deconflict is important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)</td>
+        <td>type of condition in CamelCase.</td>
         <td>true</td>
       </tr><tr>
         <td><b>observedGeneration</b></td>

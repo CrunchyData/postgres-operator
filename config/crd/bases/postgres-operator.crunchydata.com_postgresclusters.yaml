@@ -5151,14 +5151,14 @@ spec:
                         type: string
                       type:
                         default: switchover
-                        description: "Type allows you to specify the type of Patroni
+                        description: 'Type allows you to specify the type of Patroni
                           switchover that will be performed. `patronictl` supports
                           both `switchovers` and `failovers` where a `failover` is
-                          effectively a \"forced switchover\". The main difference
-                          is that `failover` can be used when there is not currently
+                          effectively a "forced switchover". The main difference is
+                          that `failover` can be used when there is not currently
                           a leader. A TargetInstance must be specified to failover.
-                          \n NOTE: The switchover type failover is reserved as the
-                          \"last resort\" case."
+                          NOTE: The switchover type failover is reserved as the "last
+                          resort" case.'
                         enum:
                         - switchover
                         - failover
@@ -7592,16 +7592,8 @@ spec:
                   current state. Known .status.conditions.type are: "PersistentVolumeResizing",
                   "ProxyAvailable"'
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource. --- This struct is intended for direct
-                    use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{     // Represents the observations of a
-                    foo's current state.     // Known .status.conditions.type are:
-                    \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type
-                    \    // +patchStrategy=merge     // +listType=map     // +listMapKey=type
-                    \    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`
-                    \n     // other fields }"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: lastTransitionTime is the last time the condition
@@ -7643,11 +7635,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
-                        --- Many .condition.type values are consistent across resources
-                        like Available, but because arbitrary conditions can be useful
-                        (see .node.status.conditions), the ability to deconflict is
-                        important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
