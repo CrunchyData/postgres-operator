@@ -238,11 +238,11 @@ In some cases, due to how Kubernetes treats PostgresCluster status, PGO may run 
 Now that `databaseInitSQL` is defined in your cluster status, verify database objects have been created as expected. After verifying, we recommend removing the `spec.databaseInitSQL` field from your spec. Removing the field from the spec will also remove `databaseInitSQL` from the cluster status.
 
 ### PSQL Usage
-PGO uses the psql interactive terminal to execute SQL statements in your database. Statements are passed in using standard input and the filename flag (e.g. `psql -f -`). 
+PGO uses the psql interactive terminal to execute SQL statements in your database. Statements are passed in using standard input and the filename flag (e.g. `psql -f -`).
 
-SQL statements are executed as superuser in the default maintenance database. This means you have full control to create database objects, extensions, or run any SQL statements that you might need. 
+SQL statements are executed as superuser in the default maintenance database. This means you have full control to create database objects, extensions, or run any SQL statements that you might need.
 
-#### Integration with User and Database Management 
+#### Integration with User and Database Management
 
 If you are creating users or databases, please see the [User/Database Management]({{< relref "tutorial/user-management.md" >}}) documentation. Databases created through the user management section of the spec can be referenced in your initialization sql. For example, if a database `zoo` is defined:
 
@@ -263,7 +263,7 @@ create table t_zoo as select s, md5(random()::text) from generate_Series(1,5) s;
 
 #### Transaction support
 
-By default, `psql` commits each SQL command as it completes. To combine multiple commands into a single [transaction](https://www.postgresql.org/docs/current/tutorial-transactions.html), use the [`BEGIN`](https://www.postgresql.org/docs/current/sql-begin.html) and [`COMMIT`](https://www.postgresql.org/docs/current/sql-commit.html) commands. 
+By default, `psql` commits each SQL command as it completes. To combine multiple commands into a single [transaction](https://www.postgresql.org/docs/current/tutorial-transactions.html), use the [`BEGIN`](https://www.postgresql.org/docs/current/sql-begin.html) and [`COMMIT`](https://www.postgresql.org/docs/current/sql-commit.html) commands.
 
 ```
 BEGIN;

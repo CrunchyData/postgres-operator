@@ -142,10 +142,10 @@ another way to determine when the switchover was requested.
 
 After the instance Pod labels have been updated and `Status.Patroni.Switchover` has been set, the
 primary has been changed on your cluster!
- 
+
 {{% notice info %}}
 After changing the primary, we recommend that you disable swichovers by setting `Spec.Patroni.Switchover.Enabled`
-to false or remove the field from your spec entirely. If the field is removed the corresponding 
+to false or remove the field from your spec entirely. If the field is removed the corresponding
 status will also be removed from the PostgresCluster.
 {{% /notice %}}
 
@@ -153,7 +153,7 @@ status will also be removed from the PostgresCluster.
 #### Targeting an instance
 
 Another option you have when switching the primary is providing a target instance as the new
-primary. This target instance will be used as the candidate when performing the switchover. 
+primary. This target instance will be used as the candidate when performing the switchover.
 The `Switchover.TargetInstance` field takes the name of the instance that you are switching to.
 
 This name can be found in a couple different places; one is as the name of the StatefulSet and

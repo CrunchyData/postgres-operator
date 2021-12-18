@@ -186,7 +186,7 @@ spec:
                 matchLabels:
                   postgres-operator.crunchydata.com/cluster: keycloakdb
                   postgres-operator.crunchydata.com/role: pgbouncer
-              topologyKey: kubernetes.io/hostname              
+              topologyKey: kubernetes.io/hostname
 ```
 
 ### Tolerations

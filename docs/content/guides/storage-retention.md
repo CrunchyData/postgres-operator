@@ -214,7 +214,7 @@ spec:
         - "ReadWriteOnce"
         resources:
           requests:
-            storage: 1Gi    
+            storage: 1Gi
   backups:
     pgbackrest:
       image: {{< param imageCrunchyPGBackrest >}}

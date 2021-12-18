@@ -50,14 +50,14 @@ You will need to set up your PGO v4 Postgres cluster so that it can be migrated 
 
 You can get a list of replicas using the `pgo scaledown --query` command, e.g.:
 ```
-pgo scaledown hippo --query  
+pgo scaledown hippo --query
 ```
 
 If there are any replicas, you will see something similar to:
 
 ```
 Cluster: hippo
-REPLICA                 STATUS          NODE ...   
+REPLICA                 STATUS          NODE ...
 hippo                   running         node01 ...
 ```
 

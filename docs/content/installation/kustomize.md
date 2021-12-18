@@ -103,7 +103,7 @@ bases:
 - manager
 ```
 
-Note that `rbac/cluster` has been changed to `rbac/namespace`.  
+Note that `rbac/cluster` has been changed to `rbac/namespace`.
 
 Add the PGO_TARGET_NAMESPACE environment variable to the env section of the `kustomize/install/bases/manager/manager.yaml` file to facilitate the ability to specify the single namespace as follows:
 
