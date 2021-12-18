@@ -83,7 +83,6 @@ type PatroniSwitchover struct {
 	// effectively a "forced switchover". The main difference is that `failover` can be
 	// used when there is not currently a leader. A TargetInstance must be specified to
 	// failover.
-	//
 	// NOTE: The switchover type failover is reserved as the "last resort" case.
 	// +kubebuilder:validation:Enum={switchover,failover}
 	// +kubebuilder:default:=switchover
