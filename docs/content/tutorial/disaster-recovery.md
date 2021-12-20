@@ -319,6 +319,191 @@ spec:
 This change triggers the promotion of the standby leader to a primary PostgreSQL
 instance, and the cluster begins accepting writes.
 
+## Clone From Backups Stored in S3 / GCS / Azure Blob Storage
+
+You can clone a Postgres cluster from backups that are stored in AWS S3 (or a storage system that uses the S3 protocol), GCS, or Azure Blob Storage without needing an active Postgres cluster! The method to do so is similar to how you would create a standby cluster. This is useful if you want to have a data set for people to use but keep it compressed on cheaper storage.
+
+For the purposes of this example, let's say that you created a Postgres cluster named `hippo` that has its backups stored in S3 that looks similar to this:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+spec:
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
+  instances:
+    - dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      image: {{< param imageCrunchyPGBackrest >}}
+      configuration:
+      - secret:
+          name: pgo-s3-creds
+      global:
+        repo1-path: /pgbackrest/postgres-operator/hippo/repo1
+      manual:
+        repoName: repo1
+        options:
+         - --type=full
+      repos:
+      - name: repo1
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+```
+
+Ensure that the credentials in `pgo-s3-creds` match your S3 credentials. For more details on [deploying a Postgres cluster using S3 for backups]({{< relref "./backups.md" >}}#using-s3), please see the [Backups]({{< relref "./backups.md" >}}#using-s3) section of the tutorial.
+
+For optimal performance when creating a new cluster, ensure that you take a recent full backup of the previous cluster. The above manifest is set up to take a full backup. Assuming `hippo` is created in the `postgres-operator` namespace, you can trigger a full backup with the following command:
+
+```shell
+kubectl annotate -n postgres-operator postgrescluster hippo --overwrite \
+  postgres-operator.crunchydata.com/pgbackrest-backup="$( date '+%F_%H:%M:%S' )"
+```
+
+Wait for the backup to complete. Once this is done, you can delete the Postgres cluster.
+
+Now, let's clone the data from the `hippo` backup into a new cluster called `elephant`. You can use a manifest similar to this:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: elephant
+spec:
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
+  instances:
+    - dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      image: {{< param imageCrunchyPGBackrest >}}
+      configuration:
+      - secret:
+          name: pgo-s3-creds
+      global:
+        repo1-path: /pgbackrest/postgres-operator/elephant/repo1
+        repo2-path: /pgbackrest/postgres-operator/hippo/repo1
+      repos:
+      - name: repo1
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+      - name: repo2
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+  standby:
+    enabled: true
+    repoName: repo2
+```
+
+There are a few things to note in this manifest. First, observe the two backup repositories that are set up:
+
+```yaml
+spec:
+  backups:
+    pgbackrest:
+      global:
+        repo1-path: /pgbackrest/postgres-operator/elephant/repo1
+        repo2-path: /pgbackrest/postgres-operator/hippo/repo1
+      repos:
+      - name: repo1
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+      - name: repo2
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+```
+
+`repo1` represents a new backup repository that we will store backups for the `elephant` cluster to. `repo2` is the existing backup repository for the `hippo` cluster that we are cloning the data from. The backup repository for `repo1` can be stored in any of the [PGO supported backup storage systems]({{< relref "./backups.md" >}}); we are using S3 in this example for convenience.
+
+The `spec.backups.pgbackrest.global.repo2-path` references the location that the backups for the `hippo` are stored in S3. This needs to match what you set up for the original Postgres cluster.
+
+Additionally, the `pgo-s3-creds` Secret needs to contain the S3 credential information for `repo2` (e.g. `repo2-s3-key`, `repo2-s3-key-secret`), and any other credential information that you may need for `repo1`.
+
+Finally note that we are deploying this cluster initially as a standby:
+
+```yaml
+spec:
+  standby:
+    enabled: true
+    repoName: repo2
+```
+
+This will ensure that our data in the original backup repository is appropriately preserved.
+
+Deploy this manifest to create the `elephant` Postgres cluster. Observe that it comes up and running:
+
+```
+kubectl -n postgres-operator describe postgrescluster elephant
+```
+
+When it is ready, you will see that the number of expected instances matches the number of ready instances, e.g.:
+
+```
+Instances:
+  Name:               00
+  Ready Replicas:     1
+  Replicas:           1
+  Updated Replicas:   1
+```
+
+You can now remove information about `repo2` from the manifest and exit standby mode. First, remove any references to `repo2-` from the `pgo-s3-creds` Secret before you apply the changes to remove the `repo2` repository from the manifest.
+
+You can deploy a manifest for `elephant` that looks similar to:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: elephant
+spec:
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
+  instances:
+    - dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      image: {{< param imageCrunchyPGBackrest >}}
+      configuration:
+      - secret:
+          name: pgo-s3-creds
+      global:
+        repo1-path: /pgbackrest/postgres-operator/elephant/repo1
+      repos:
+      - name: repo1
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+```
+
+PGO will make `elephant` available for writes and take an initial backup into `repo1`. You've now successfully created a new cluster from a backup stored in S3!
 
 ## Next Steps
 
