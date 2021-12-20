@@ -10,4 +10,7 @@ parallel: 2
 # namespace: postgres-operator
 suppress: 
 - events
-
+# By default kuttl deletes the resources created during a test.
+# For debugging, it may be helpful to uncomment the following line
+# in order to inspect the resources.
+# skipDelete: true
