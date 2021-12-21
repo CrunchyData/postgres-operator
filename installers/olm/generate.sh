@@ -15,6 +15,8 @@ package_name='postgresql'
 case "${DISTRIBUTION}" in
 	# https://redhat-connect.gitbook.io/certified-operator-guide/appendix/what-if-ive-already-published-a-community-operator
 	'redhat') package_name='crunchy-postgres-operator' ;;
+	# https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#bundle-structure
+	'marketplace') package_name='crunchy-postgres-operator-rhmp' ;;
 esac
 
 operator_yamls=$(kubectl kustomize "config/${DISTRIBUTION}")
@@ -137,6 +139,19 @@ case "${DISTRIBUTION}" in
 		yq --in-place --yaml-roundtrip \
 		'
 			.metadata.annotations.certified = "true" |
+		.' \
+			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
+		;;
+	'marketplace')
+		# Annotations needed when targeting Red Hat Marketplace
+		# https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#bundle-structure
+		yq --in-place --yaml-roundtrip \
+				--arg package_url "https://marketplace.redhat.com/en-us/operators/${package_name}" \
+		'
+				.metadata.annotations["marketplace.openshift.io/remote-workflow"] =
+						"\($package_url)/pricing?utm_source=openshift_console" |
+				.metadata.annotations["marketplace.openshift.io/support-workflow"] =
+						"\($package_url)/support?utm_source=openshift_console" |
 		.' \
 			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
 		;;
