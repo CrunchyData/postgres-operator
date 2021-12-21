@@ -15,7 +15,7 @@ export PGO_VERSION
 
 export REPLACES_VERSION
 
-distros = community redhat
+distros = community redhat marketplace
 
 .PHONY: bundles
 bundles: ## Build OLM bundles
@@ -33,6 +33,11 @@ bundles/community:
 .PHONY: bundles/redhat
 bundles/redhat:
 	./generate.sh redhat
+	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
+
+.PHONY: bundles/marketplace
+bundles/marketplace:
+	./generate.sh marketplace
 	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
 
 .PHONY: clean
