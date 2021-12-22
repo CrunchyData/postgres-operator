@@ -1,5 +1,3 @@
-package util
-
 /*
  Copyright 2017 - 2021 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,78 +13,69 @@ package util
  limitations under the License.
 */
 
+package util
+
 import (
 	"crypto/rand"
+	"io"
 	"math/big"
-	"strconv"
-	"strings"
 )
 
-// The following constants are used as a part of password generation. For more
-// information on these selections, please consulting the ASCII man page
-// (`man ascii`)
+// The following constants are used as a part of password generation.
 const (
 	// DefaultGeneratedPasswordLength is the default length of what a generated
 	// password should be if it's not set elsewhere
 	DefaultGeneratedPasswordLength = 24
-
-	// passwordCharLower is the lowest ASCII character to use for generating a
-	// password, which is 40
-	passwordCharLower = 40
-	// passwordCharUpper is the highest ASCII character to use for generating a
-	// password, which is 126
-	passwordCharUpper = 126
-	// passwordCharExclude is a map of characters that we choose to exclude from
-	// the password to simplify usage in the shell. There is still enough entropy
-	// that exclusion of these characters is OK.
-	passwordCharExclude = "`\\"
 )
-
-// passwordCharSelector is a "big int" that we need to select the random ASCII
-// character for the password. Since the random integer generator looks for
-// values from [0,X), we need to force this to be [40,126]
-var passwordCharSelector = big.NewInt(passwordCharUpper - passwordCharLower)
 
 // GeneratePassword generates a password of a given length out of the acceptable
 // ASCII characters suitable for a password
 func GeneratePassword(length int) (string, error) {
-	password := make([]byte, length)
-	i := 0
+	return accumulate(length, randomASCII)
+}
 
-	for i < length {
-		val, err := rand.Int(rand.Reader, passwordCharSelector)
-		// if there is an error generating the random integer, return
-		if err != nil {
+// accumulate gathers n bytes from f and returns them as a string. It returns
+// an empty string when f returns an error.
+func accumulate(n int, f func() (byte, error)) (string, error) {
+	result := make([]byte, n)
+
+	for i := range result {
+		if b, err := f(); err == nil {
+			result[i] = b
+		} else {
 			return "", err
 		}
+	}
 
-		char := byte(passwordCharLower + val.Int64())
+	return string(result), nil
+}
 
-		// if the character is in the exclusion list, continue
-		if idx := strings.IndexAny(string(char), passwordCharExclude); idx > -1 {
-			continue
+// randomCharacter builds a function that returns random bytes from class.
+func randomCharacter(random io.Reader, class string) func() (byte, error) {
+	if random == nil {
+		panic("requires a random source")
+	}
+	if len(class) == 0 {
+		panic("class cannot be empty")
+	}
+
+	size := big.NewInt(int64(len(class)))
+
+	return func() (byte, error) {
+		if i, err := rand.Int(random, size); err == nil {
+			return class[int(i.Int64())], nil
+		} else {
+			return 0, err
 		}
-
-		password[i] = char
-		i++
 	}
-
-	return string(password), nil
 }
 
-// GeneratedPasswordLength returns the value for what the length of a
-// randomly generated password should be. It first determines if the user
-// provided this value via a configuration file, and if not and/or the value is
-// invalid, uses the default value
-func GeneratedPasswordLength(configuredPasswordLength string) int {
-	// set the generated password length for random password generation
-	// note that "configuredPasswordLength" may be an empty string, and as such
-	// the below line could fail. That's ok though! as we have a default set up
-	generatedPasswordLength, err := strconv.Atoi(configuredPasswordLength)
-	// if there is an error...set it to a default
-	if err != nil {
-		generatedPasswordLength = DefaultGeneratedPasswordLength
-	}
+// policyASCII is the list of acceptable characters from which to generate an
+// ASCII password.
+const policyASCII = `` +
+	`()*+,-./` + `:;<=>?@` + `[]^_` + `{|}` +
+	`ABCDEFGHIJKLMNOPQRSTUVWXYZ` +
+	`abcdefghijklmnopqrstuvwxyz` +
+	`0123456789`
 
-	return generatedPasswordLength
-}
+var randomASCII = randomCharacter(rand.Reader, policyASCII)
