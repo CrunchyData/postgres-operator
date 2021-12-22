@@ -24,6 +24,7 @@ import (
 
 	"gotest.tools/v3/assert"
 	"gotest.tools/v3/assert/cmp"
+	"k8s.io/apimachinery/pkg/util/sets"
 )
 
 func TestAccumulate(t *testing.T) {
@@ -55,50 +56,59 @@ func TestAccumulate(t *testing.T) {
 	})
 }
 
-func TestGeneratePassword(t *testing.T) {
-	// different lengths
-	for _, length := range []int{1, 2, 3, 5, 20, 200} {
-		password, err := GeneratePassword(length)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if expected, actual := length, len(password); expected != actual {
-			t.Fatalf("expected length %v, got %v", expected, actual)
-		}
-		if i := strings.IndexFunc(password, func(r rune) bool { return !unicode.IsPrint(r) }); i > -1 {
-			t.Fatalf("expected only printable characters, got %q in %q", password[i], password)
-		}
-		if i := strings.IndexAny(password, "`\\"); i > -1 {
-			t.Fatalf("expected no exclude characters, got %q in %q", password[i], password)
+func TestGenerateAlphaNumericPassword(t *testing.T) {
+	for _, length := range []int{0, 1, 2, 3, 5, 20, 200} {
+		password, err := GenerateAlphaNumericPassword(length)
+
+		assert.NilError(t, err)
+		assert.Equal(t, length, len(password))
+		assert.Assert(t, cmp.Regexp(`^[A-Za-z0-9]*$`, password))
+	}
+
+	previous := sets.String{}
+	for i := 0; i < 10; i++ {
+		password, err := GenerateAlphaNumericPassword(5)
+
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Regexp(`^[A-Za-z0-9]{5}$`, password))
+
+		assert.Assert(t, !previous.Has(password), "%q generated twice", password)
+		previous.Insert(password)
+	}
+}
+
+func TestGenerateASCIIPassword(t *testing.T) {
+	for _, length := range []int{0, 1, 2, 3, 5, 20, 200} {
+		password, err := GenerateASCIIPassword(length)
+
+		assert.NilError(t, err)
+		assert.Equal(t, length, len(password))
+
+		// Check every rune in the string. See [TestPolicyASCII].
+		for _, c := range password {
+			assert.Assert(t, strings.ContainsRune(policyASCII, c), "%q is not acceptable", c)
 		}
 	}
 
-	// random contents
-	previous := []string{}
-
+	previous := sets.String{}
 	for i := 0; i < 10; i++ {
-		password, err := GeneratePassword(5)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if i := strings.IndexFunc(password, func(r rune) bool { return !unicode.IsPrint(r) }); i > -1 {
-			t.Fatalf("expected only printable characters, got %q in %q", password[i], password)
-		}
-		if i := strings.IndexAny(password, "`\\"); i > -1 {
-			t.Fatalf("expected no exclude characters, got %q in %q", password[i], password)
+		password, err := GenerateASCIIPassword(5)
+
+		assert.NilError(t, err)
+		assert.Equal(t, 5, len(password))
+
+		// Check every rune in the string. See [TestPolicyASCII].
+		for _, c := range password {
+			assert.Assert(t, strings.ContainsRune(policyASCII, c), "%q is not acceptable", c)
 		}
 
-		for i := range previous {
-			if password == previous[i] {
-				t.Fatalf("expected passwords to not repeat, got %q after %q", password, previous)
-			}
-		}
-		previous = append(previous, password)
+		assert.Assert(t, !previous.Has(password), "%q generated twice", password)
+		previous.Insert(password)
 	}
 }
 
 func TestPolicyASCII(t *testing.T) {
-	// [GeneratePassword] used to pick random characters by doing
+	// [GenerateASCIIPassword] used to pick random characters by doing
 	// arithmetic on ASCII codepoints. It now uses a constant set of characters
 	// that satisfy the following properties. For more information on these
 	// selections, consult the ASCII man page, `man ascii`.

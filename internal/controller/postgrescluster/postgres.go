@@ -72,28 +72,35 @@ func (r *Reconciler) generatePostgresUserSecret(
 		intent.Data["verifier"] = existing.Data["verifier"]
 	}
 
-	var updated bool
-	// When password is unset, generate a new one.
+	// When password is unset, generate a new one according to the specified policy.
 	if len(intent.Data["password"]) == 0 {
-		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
+		// NOTE: The tests around ASCII passwords are lacking. When changing
+		// this, make sure that ASCII is the default.
+		generate := util.GenerateASCIIPassword
+		if spec.Password != nil {
+			switch spec.Password.Type {
+			case v1beta1.PostgresPasswordTypeAlphaNumeric:
+				generate = util.GenerateAlphaNumericPassword
+			}
+		}
+
+		password, err := generate(util.DefaultGeneratedPasswordLength)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 		intent.Data["password"] = []byte(password)
-		updated = true
+		intent.Data["verifier"] = nil
 	}
+
 	// When a password has been generated or the verifier is empty,
 	// generate a verifier based on the current password.
-	if updated || len(intent.Data["verifier"]) == 0 {
-		// Generate the SCRAM verifier now and store alongside the plaintext
-		// password so that later reconciles don't generate it repeatedly.
-		// NOTE(cbandy): We don't have a function to compare a plaintext
-		// password to a SCRAM verifier.
+	// NOTE(cbandy): We don't have a function to compare a plaintext
+	// password to a SCRAM verifier.
+	if len(intent.Data["verifier"]) == 0 {
 		verifier, err := pgpassword.NewSCRAMPassword(string(intent.Data["password"])).Build()
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-
 		intent.Data["verifier"] = []byte(verifier)
 	}
 

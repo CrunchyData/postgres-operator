@@ -7572,6 +7572,23 @@ spec:
                         is ignored for the "postgres" user. More info: https://www.postgresql.org/docs/current/role-attributes.html'
                       pattern: ^[^;]*$
                       type: string
+                    password:
+                      description: Properties of the password generated for this user.
+                      properties:
+                        type:
+                          default: ASCII
+                          description: Type of password to generate. Defaults to ASCII.
+                            Valid options are ASCII and AlphaNumeric. "ASCII" passwords
+                            contain letters, numbers, and symbols from the US-ASCII
+                            character set. "AlphaNumeric" passwords contain letters
+                            and numbers from the US-ASCII character set.
+                          enum:
+                          - ASCII
+                          - AlphaNumeric
+                          type: string
+                      required:
+                      - type
+                      type: object
                   required:
                   - name
                   type: object

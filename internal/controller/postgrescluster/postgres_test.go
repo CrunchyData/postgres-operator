@@ -99,7 +99,35 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 			assert.Assert(t, len(secret.Data["verifier"]) > 90, "got %v", len(secret.Data["verifier"]))
 		}
 
-		// Generated when existing Secret contains only a password
+		t.Run("Policy", func(t *testing.T) {
+			spec := spec.DeepCopy()
+
+			// ASCII when unspecified.
+			spec.Password = nil
+			secret, err = reconciler.generatePostgresUserSecret(cluster, spec, new(corev1.Secret))
+			assert.NilError(t, err)
+
+			if assert.Check(t, secret != nil) {
+				// This assertion is lacking, but distinguishing between "alphanumeric"
+				// and "alphanumeric+symbols" is hard. If our generator changes to
+				// guarantee at least one symbol, we can check for symbols here.
+				assert.Assert(t, len(secret.Data["password"]) != 0)
+			}
+
+			// AlphaNumeric when specified.
+			spec.Password = &v1beta1.PostgresPasswordSpec{
+				Type: v1beta1.PostgresPasswordTypeAlphaNumeric,
+			}
+
+			secret, err = reconciler.generatePostgresUserSecret(cluster, spec, new(corev1.Secret))
+			assert.NilError(t, err)
+
+			if assert.Check(t, secret != nil) {
+				assert.Assert(t, cmp.Regexp(`^[A-Za-z0-9]+$`, string(secret.Data["password"])))
+			}
+		})
+
+		// Verifier is generated when existing Secret contains only a password.
 		secret, err = reconciler.generatePostgresUserSecret(cluster, spec, &corev1.Secret{
 			Data: map[string][]byte{
 				"password": []byte(`asdf`),

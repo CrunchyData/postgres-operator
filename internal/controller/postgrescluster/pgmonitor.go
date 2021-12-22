@@ -205,7 +205,7 @@ func (r *Reconciler) reconcileMonitoringSecret(
 	intent.Data = make(map[string][]byte)
 
 	if len(existing.Data["password"]) == 0 || len(existing.Data["verifier"]) == 0 {
-		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
+		password, err := util.GenerateASCIIPassword(util.DefaultGeneratedPasswordLength)
 		if err != nil {
 			return nil, err
 		}

@@ -22,6 +22,22 @@ package v1beta1
 // +kubebuilder:validation:MaxLength=63
 type PostgresIdentifier string
 
+type PostgresPasswordSpec struct {
+	// Type of password to generate. Defaults to ASCII. Valid options are ASCII
+	// and AlphaNumeric.
+	// "ASCII" passwords contain letters, numbers, and symbols from the US-ASCII character set.
+	// "AlphaNumeric" passwords contain letters and numbers from the US-ASCII character set.
+	// +kubebuilder:default=ASCII
+	// +kubebuilder:validation:Enum={ASCII,AlphaNumeric}
+	Type string `json:"type"`
+}
+
+// PostgresPasswordSpec types.
+const (
+	PostgresPasswordTypeAlphaNumeric = "AlphaNumeric"
+	PostgresPasswordTypeASCII        = "ASCII"
+)
+
 type PostgresUserSpec struct {
 
 	// This value goes into the name of a corev1.Secret and a label value, so
@@ -47,4 +63,8 @@ type PostgresUserSpec struct {
 	// +kubebuilder:validation:Pattern=`^[^;]*$`
 	// +optional
 	Options string `json:"options,omitempty"`
+
+	// Properties of the password generated for this user.
+	// +optional
+	Password *PostgresPasswordSpec `json:"password,omitempty"`
 }

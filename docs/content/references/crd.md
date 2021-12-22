@@ -11193,6 +11193,38 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td>string</td>
         <td>ALTER ROLE options except for PASSWORD. This field is ignored for the "postgres" user. More info: https://www.postgresql.org/docs/current/role-attributes.html</td>
         <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecusersindexpassword">password</a></b></td>
+        <td>object</td>
+        <td>Properties of the password generated for this user.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecusersindexpassword">
+  PostgresCluster.spec.users[index].password
+  <sup><sup><a href="#postgresclusterspecusersindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Properties of the password generated for this user.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>Type of password to generate. Defaults to ASCII. Valid options are ASCII and AlphaNumeric. "ASCII" passwords contain letters, numbers, and symbols from the US-ASCII character set. "AlphaNumeric" passwords contain letters and numbers from the US-ASCII character set.</td>
+        <td>true</td>
       </tr></tbody>
 </table>
 
