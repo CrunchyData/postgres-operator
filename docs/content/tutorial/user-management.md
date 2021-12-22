@@ -63,7 +63,7 @@ spec:
       options: "NOSUPERUSER"
 ```
 
-If you want to add multiple privileges, you can add each privilege with a space between them in `options`, e.g:
+If you want to add multiple privileges, you can add each privilege with a space between them in `options`, e.g.:
 
 ```
 spec:
@@ -88,7 +88,7 @@ This will create a Secret of the pattern `<clusterName>-pguser-postgres` that co
 
 ## Deleting a User
 
-As mentioned earlier, PGO does not let you delete a user automatically: if you remove the user from the spec, it will still exist in your cluster. To remove a user and all of its objects, as a superuser you will need to run [`DROP OWNED`](https://www.postgresql.org/docs/current/sql-drop-owned.html) in each database the user has objects in, and [`DROP ROLE`](https://www.postgresql.org/docs/current/sql-droprole.html)
+PGO does not delete users automatically: after you remove the user from the spec, it will still exist in your cluster. To remove a user and all of its objects, as a superuser you will need to run [`DROP OWNED`](https://www.postgresql.org/docs/current/sql-drop-owned.html) in each database the user has objects in, and [`DROP ROLE`](https://www.postgresql.org/docs/current/sql-droprole.html)
 in your Postgres cluster.
 
 For example, with the above `rhino` user, you would run the following:
@@ -100,11 +100,9 @@ DROP ROLE rhino;
 
 Note that you may need to run `DROP OWNED BY rhino CASCADE;` based upon your object ownership structure -- be very careful with this command!
 
-Once you have removed the user in the database, you can remove the user from the custom resource.
-
 ## Deleting a Database
 
-As mentioned earlier, PGO does not let you delete a database automatically: if you remove all instances of the database from the spec, it will still exist in your cluster. To completely remove the database, you must run the [`DROP DATABASE`](https://www.postgresql.org/docs/current/sql-dropdatabase.html)
+PGO does not delete databases automatically: after you remove all instances of the database from the spec, it will still exist in your cluster. To completely remove the database, you must run the [`DROP DATABASE`](https://www.postgresql.org/docs/current/sql-dropdatabase.html)
 command as a Postgres superuser.
 
 For example, to remove the `zoo` database, you would execute the following:
@@ -112,8 +110,6 @@ For example, to remove the `zoo` database, you would execute the following:
 ```
 DROP DATABASE zoo;
 ```
-
-Once you have removed the database, you can remove any references to the database from the custom resource.
 
 ## Next Steps
 

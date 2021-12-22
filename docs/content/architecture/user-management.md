@@ -48,18 +48,38 @@ Users and databases can be customized in the `spec.users` section of the custom 
 - For any users added in `spec.users`, PGO will created a Secret of the format `<clusterName>-pguser-<userName>`. This will contain the user credentials.
   - If no databases are specified, `dbname` and `uri` will not be present in the Secret.
   - If at least one `spec.users.databases` is specified, the first database in the list will be populated into the connection credentials.
-- To prevent accidental data loss, PGO will not automatically drop users. We will see how to drop a user below.
-- Similarly, to prevent accidental data loss PGO will not automatically drop databases. We will see how to drop a database below.
+- To prevent accidental data loss, PGO does not automatically drop users. We will see how to drop a user below.
+- Similarly, to prevent accidental data loss PGO does not automatically drop databases. We will see how to drop a database below.
 - Role attributes are not automatically dropped if you remove them. You will have to set the inverse attribute to drop them (e.g. `NOSUPERUSER`).
 - The special `postgres` user can be added as one of the custom users; however, the privileges of the users cannot be adjusted.
 
 For specific examples for how to manage users, please see the [user and database management]({{< relref "tutorial/user-management.md" >}}) section of the [tutorial]({{< relref "tutorial/_index.md" >}}).
 
-## Custom Passwords
+## Generated Passwords
 
-There are cases where you may want to explicitly provide your own password for a Postgres user. PGO determines the password from an attribute in the user Secret called `verifier`. This contains a hashed copy of your password. When `verifier` changes, PGO will load the contents of the verifier into your Postgres cluster. This method allows for the secure transmission of the password into the Postgres database.
+PGO generates a random password for each Postgres user it creates. Postgres allows almost any character
+in its passwords, but your application may have stricter requirements. To have PGO generate a password
+without special characters, set the `spec.users.password.type` field for that user to `AlphaNumeric`.
+For complete control over a user's password, see the [custom passwords](#custom-passwords) section.
 
-Postgres provides two methods for hashing password: SCRAM-SHA-256 and md5. The preferred (and as of PostgreSQL 14, default) method is to use SCRAM, which is also what PGO uses as a default.
+To have PGO generate a new password, remove the existing `password` field from the user _Secret_.
+For example, on a Postgres cluster named `hippo` in the `postgres-operator` namespace with
+a Postgres user named `hippo`, use the following `kubectl patch` command:
+
+```shell
+kubectl patch secret -n postgres-operator hippo-pguser-hippo -p '{"data":{"password":""}}'
+```
+
+## Custom Passwords {#custom-passwords}
+
+There are cases where you may want to explicitly provide your own password for a Postgres user.
+PGO determines the password from an attribute in the user Secret called `verifier`. This contains
+a hashed copy of your password. When `verifier` changes, PGO will load the contents of the verifier
+into your Postgres cluster. This method allows for the secure transmission of the password into the
+Postgres database.
+
+Postgres provides two methods for hashing passwords: SCRAM-SHA-256 and MD5.
+PGO uses the preferred (and as of PostgreSQL 14, default) method, SCRAM-SHA-256.
 
 There are two ways you can set a custom password for a user. You can provide a plaintext password
 in the `password` field and remove the `verifier`. When PGO detects a password without a verifier
@@ -74,10 +94,9 @@ The Secret then would be called `hippo-pguser-hippo`. We want to set the passwor
 be `datalake` and we can achieve this with a simple `kubectl patch` command. The below assumes that
 the Secret is stored in the `postgres-operator` namespace:
 
-```
-PASSWORD=datalake
+```shell
 kubectl patch secret -n postgres-operator hippo-pguser-hippo -p \
-   "{\"stringData\":{\"password\":\"${PASSWORD}\",\"verifier\":\"\"}}"
+   '{"stringData":{"password":"datalake","verifier":""}}'
 ```
 
 {{% notice tip %}}

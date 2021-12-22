@@ -214,7 +214,7 @@ func generatePassword() (plaintext, verifier string, err error) {
 	// - https://www.pgbouncer.org/config.html#authentication-file-format
 	// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
 
-	plaintext, err = util.GeneratePassword(32)
+	plaintext, err = util.GenerateASCIIPassword(32)
 	if err == nil {
 		verifier, err = password.NewSCRAMPassword(plaintext).Build()
 	}

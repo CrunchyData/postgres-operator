@@ -21,18 +21,12 @@ import (
 	"math/big"
 )
 
-// The following constants are used as a part of password generation.
+// The following constant is used as a part of password generation.
 const (
 	// DefaultGeneratedPasswordLength is the default length of what a generated
 	// password should be if it's not set elsewhere
 	DefaultGeneratedPasswordLength = 24
 )
-
-// GeneratePassword generates a password of a given length out of the acceptable
-// ASCII characters suitable for a password
-func GeneratePassword(length int) (string, error) {
-	return accumulate(length, randomASCII)
-}
 
 // accumulate gathers n bytes from f and returns them as a string. It returns
 // an empty string when f returns an error.
@@ -70,6 +64,16 @@ func randomCharacter(random io.Reader, class string) func() (byte, error) {
 	}
 }
 
+var randomAlphaNumeric = randomCharacter(rand.Reader, ``+
+	`ABCDEFGHIJKLMNOPQRSTUVWXYZ`+
+	`abcdefghijklmnopqrstuvwxyz`+
+	`0123456789`)
+
+// GenerateAlphaNumericPassword returns a random alphanumeric string.
+func GenerateAlphaNumericPassword(length int) (string, error) {
+	return accumulate(length, randomAlphaNumeric)
+}
+
 // policyASCII is the list of acceptable characters from which to generate an
 // ASCII password.
 const policyASCII = `` +
@@ -79,3 +83,8 @@ const policyASCII = `` +
 	`0123456789`
 
 var randomASCII = randomCharacter(rand.Reader, policyASCII)
+
+// GenerateASCIIPassword returns a random string of printable ASCII characters.
+func GenerateASCIIPassword(length int) (string, error) {
+	return accumulate(length, randomASCII)
+}
