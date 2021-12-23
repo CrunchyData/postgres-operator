@@ -306,4 +306,4 @@ You can see this in the [Postgres configuration documentation](https://www.postg
 
 ## Next Steps
 
-You've now seen how you can further customize your Postgres cluster, but what about [managing users and atabases]({{< relref "./user-management.md" >}})? That's a great question that is answered in the [next section]({{< relref "./user-management.md" >}}).
+You've now seen how you can further customize your Postgres cluster, but what about [managing users and databases]({{< relref "./user-management.md" >}})? That's a great question that is answered in the [next section]({{< relref "./user-management.md" >}}).
