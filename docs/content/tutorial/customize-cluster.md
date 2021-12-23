@@ -121,7 +121,7 @@ kubectl create secret generic -n postgres-operator hippo.tls \
   --from-file=tls.crt=hippo.crt
 ```
 
-You can specify the custom TLS Secret in the `spec.customTLSSecret.name` field in your `postgrescluster.postgres-operator.crunchydata.com` custom resource, e.g:
+You can specify the custom TLS Secret in the `spec.customTLSSecret.name` field in your `postgrescluster.postgres-operator.crunchydata.com` custom resource, e.g.:
 
 ```
 spec:

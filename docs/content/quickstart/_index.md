@@ -190,7 +190,7 @@ There is a full example for how to deploy Keycloak with the Postgres Operator in
 
 Congratulations, you've got your Postgres cluster up and running, perhaps with an application connected to it! &#x1f44f; &#x1f44f; &#x1f44f;
 
-You can find out more about the [`postgresclusters` custom resource definition]({{< relref "references/crd.md" >}}) through the [documentation]({{< relref "references/crd.md" >}}) and through `kubectl explain`, i.e:
+You can find out more about the [`postgresclusters` custom resource definition]({{< relref "references/crd.md" >}}) through the [documentation]({{< relref "references/crd.md" >}}) and through `kubectl explain`, i.e.:
 
 ```
 kubectl explain postgresclusters
