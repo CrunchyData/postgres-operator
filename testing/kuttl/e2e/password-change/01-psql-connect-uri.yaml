@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect-uri
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: "OnFailure"
+      containers:
+        - name: psql
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+          command:
+            - psql
+            - "$(PGURI)"
+            - -c
+            - "select version();"
+          env:
+          - name: PGURI
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: uri } }
