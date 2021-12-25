@@ -339,13 +339,13 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 		if n := len(cluster.Name); n > 63 {
 			allErrors = append(allErrors,
 				field.Invalid(path, cluster.Name,
-					fmt.Sprintf("should be at most %d chars long", 63)))
+					fmt.Sprintf("should be at most %d chars long (a RFC 1123 label)", 63)))
 		}
 		// See v1beta1.PostgresRoleSpec validation markers.
 		if !reUser.MatchString(cluster.Name) {
 			allErrors = append(allErrors,
 				field.Invalid(path, cluster.Name,
-					fmt.Sprintf("should match '%s'", reUser)))
+					fmt.Sprintf("should match '%s' (a RFC 1123 label)", reUser)))
 		}
 
 		if len(allErrors) > 0 {
