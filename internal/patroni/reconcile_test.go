@@ -233,3 +233,24 @@ func TestPodIsStandbyLeader(t *testing.T) {
 	pod.Annotations["status"] = `{"role":"standby_leader"}`
 	assert.Assert(t, PodIsStandbyLeader(pod))
 }
+
+func TestPodRequiresRestart(t *testing.T) {
+	// No object
+	assert.Assert(t, !PodRequiresRestart(nil))
+
+	// No annotations
+	pod := &corev1.Pod{}
+	assert.Assert(t, !PodRequiresRestart(pod))
+
+	// Normal; no flag
+	pod.Annotations = map[string]string{"status": `{}`}
+	assert.Assert(t, !PodRequiresRestart(pod))
+
+	// Unexpected value
+	pod.Annotations["status"] = `{"pending_restart":"mystery"}`
+	assert.Assert(t, !PodRequiresRestart(pod))
+
+	// Expected value
+	pod.Annotations["status"] = `{"pending_restart":true}`
+	assert.Assert(t, PodRequiresRestart(pod))
+}
