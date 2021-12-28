@@ -8,7 +8,7 @@ spec:
       restartPolicy: "OnFailure"
       containers:
         - name: psql
-          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-1
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
           command:
             - "bash"
             - "-c"

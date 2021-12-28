@@ -9,7 +9,7 @@ spec:
       restartPolicy: "OnFailure"
       containers:
         - name: psql
-          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-1
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
           command:
             # https://www.postgresql.org/docs/current/plpgsql-errors-and-messages.html#PLPGSQL-STATEMENTS-ASSERT
             # If run on a non-replica, this assertion fails, resulting in the pod erroring
