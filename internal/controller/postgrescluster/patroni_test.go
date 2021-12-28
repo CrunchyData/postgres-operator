@@ -574,7 +574,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			},
 			{
 				desc:    "failover requested without a target",
-				enabled: true, trigger: "triggered", soType: "failover",
+				enabled: true, trigger: "triggered", soType: "Failover",
 				check: func(t *testing.T, err error) {
 					assert.Error(t, err, "TargetInstance required when running failover")
 				},
@@ -613,8 +613,8 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 						},
 					}
 				}
-				if test.soType == "failover" {
-					cluster.Spec.Patroni.Switchover.Type = "failover"
+				if test.soType != "" {
+					cluster.Spec.Patroni.Switchover.Type = test.soType
 				}
 				if test.target != "" {
 					cluster.Spec.Patroni.Switchover.TargetInstance = initialize.String(test.target)
@@ -787,7 +787,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
 			Switchover: &v1beta1.PatroniSwitchover{
 				Enabled:        true,
-				Type:           "failover",
+				Type:           "Failover",
 				TargetInstance: initialize.String("target"),
 			},
 		}
