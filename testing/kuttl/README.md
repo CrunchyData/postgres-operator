@@ -9,6 +9,21 @@ Options:
     and `kubectl krew install kuttl`
 ## Cheat sheet
 
+### Suppressing Noisy Logs
+
+KUTTL gives you the option to suppress events from the test logging output. To enable this feature
+update the `kuttl` parameter when calling the `make` target
+
+```
+KUTTL_TEST='kuttl test --suppress-logs=events' make check-kuttl
+```
+
+To suppress the events permanently, you can add the following to the KUTTL config (kuttl-test.yaml)
+```
+suppress: 
+- events
+```
+
 ### Run test suite
 
 Make sure that the operator is running in your kubernetes environment and that your `kubeconfig` is
