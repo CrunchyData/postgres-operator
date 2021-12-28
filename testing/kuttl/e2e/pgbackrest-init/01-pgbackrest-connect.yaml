@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+# When the cluster comes up, only the repo in the 0th position has activated with a backup,
+# so the pgbackrest status should be "mixed" and there should be only one backup
+- script: CLUSTER=init-pgbackrest ../../scripts/pgbackrest-initialization.sh "mixed" 1
