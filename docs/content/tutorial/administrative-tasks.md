@@ -93,7 +93,7 @@ There are a few ways to do it:
 ## Changing the Primary
 
 There may be times when you want to change the primary in your HA cluster. This can be done
-using the switchover section of the Patroni spec (`Spec.Patroni.Switchover`). Switchover allows
+using the `patroni.switchover` section of the PostgresCluster spec. It allows
 you to enable switchovers in your PostgresClusters, target a specific instance as the new
 primary, and run a failover if your PostgresCluster has entered a bad state.
 
@@ -102,7 +102,7 @@ Let's go through the process of performing a switchover!
 First you need to update your spec to prepare your cluster to change the primary. Edit your spec
 to have the following fields:
 
-```
+```yaml
 spec:
   patroni:
     switchover:
@@ -110,9 +110,9 @@ spec:
 ```
 
 After you apply this change, PGO will be looking for the trigger to perform a switchover in your
-cluster. You will trigger the switchover by adding the `postgres-operator.crunchydata.com
-trigger-switchover` annotation to your custom resource. The best way to set this annotation is
-with a timestamp, so you know when you initialized the change.
+cluster. You will trigger the switchover by adding the `postgres-operator.crunchydata.com/trigger-switchover`
+annotation to your custom resource. The best way to set this annotation is
+with a timestamp, so you know when you initiated the change.
 
 For example, for our `hippo` cluster, we can run the following command to trigger the switchover:
 
@@ -133,18 +133,17 @@ kubectl annotate -n postgres-operator postgrescluster hippo --overwrite \
 PGO will detect this annotation and use the Patroni API to request a change to the current primary!
 
 The roles on your database instance Pods will start changing as Patroni works. The new primary
-will have the `promoted` role label that will eventually be updated to `master`. The old primary
-will lose its `master` label and be updated to `replica`.
+will have the `master` role label, and the old primary will be updated to `replica`.
 
-The status of the switch will be tracked using the `Patroni.Switchover` status. This will be set
+The status of the switch will be tracked using the `status.patroni.switchover` field. This will be set
 to the value defined in your trigger annotation. If you use a timestamp as the annotation this is
 another way to determine when the switchover was requested.
 
-After the instance Pod labels have been updated and `Status.Patroni.Switchover` has been set, the
+After the instance Pod labels have been updated and `status.patroni.switchover` has been set, the
 primary has been changed on your cluster!
 
 {{% notice info %}}
-After changing the primary, we recommend that you disable swichovers by setting `Spec.Patroni.Switchover.Enabled`
+After changing the primary, we recommend that you disable switchovers by setting `spec.patroni.switchover.enabled`
 to false or remove the field from your spec entirely. If the field is removed the corresponding
 status will also be removed from the PostgresCluster.
 {{% /notice %}}
@@ -154,17 +153,18 @@ status will also be removed from the PostgresCluster.
 
 Another option you have when switching the primary is providing a target instance as the new
 primary. This target instance will be used as the candidate when performing the switchover.
-The `Switchover.TargetInstance` field takes the name of the instance that you are switching to.
+The `spec.patroni.switchover.targetInstance` field takes the name of the instance that you are switching to.
 
 This name can be found in a couple different places; one is as the name of the StatefulSet and
 another is on the database Pod as the `postgres-operator.crunchydata.com/instance` label. The
 following commands can help you determine who is the current primary and what name to use as the
 `targetInstance`:
 
-```shell
-$ kubectl get Pods -l postgres-operator.crunchydata.com/cluster=hippo \
+```shell-session
+$ kubectl get pods -l postgres-operator.crunchydata.com/cluster=hippo \
     -L postgres-operator.crunchydata.com/instance \
     -L postgres-operator.crunchydata.com/role
+
 NAME                      READY   STATUS      RESTARTS   AGE     INSTANCE               ROLE
 hippo-instance1-jdb5-0    3/3     Running     0          2m47s   hippo-instance1-jdb5   master
 hippo-instance1-wm5p-0    3/3     Running     0          2m47s   hippo-instance1-wm5p   replica
@@ -174,7 +174,7 @@ In our example cluster `hippo-instance1-jdb5` is currently the primary meaning w
 `hippo-instance1-wm5p` in the switchover. Now that you know which instance is currently the
 primary and how to find your `targetInstance`, let's update your cluster spec:
 
-```
+```yaml
 spec:
   patroni:
     switchover:
@@ -184,31 +184,31 @@ spec:
 
 After applying this change you will once again need to trigger the switchover by annotating the
 PostgresCluster (see above commands). You can verify the switchover has completed by checking the
-Pod role labels and `Status.Patroni.Switchover`.
+Pod role labels and `status.patroni.switchover`.
 
 #### Failover
 
 Finally, we have the option to failover when your cluster has entered an unhealthy state. The
-only spec change necessary to accomplish this is updating the `Spec.Patroni.Switchover.Type`
-field to the `failover` type. One note with this is that a `targetInstance` is required when
+only spec change necessary to accomplish this is updating the `spec.patroni.switchover.type`
+field to the `Failover` type. One note with this is that a `targetInstance` is required when
 performing a failover. Based on the example cluster above, assuming `hippo-instance1-wm5p` is still
 a replica, we can update the spec:
 
-```
+```yaml
 spec:
   patroni:
     switchover:
       enabled: true
       targetInstance: hippo-instance1-wm5p
-      type: failover
+      type: Failover
 ```
 
 Apply this spec change and your PostgresCluster will be prepared to perform the failover. Again
 you will need to trigger the switchover by annotating the PostgresCluster (see above commands)
-and verify that the Pod role labels and `Status.Patroni.Switchover` are updated accordingly.
+and verify that the Pod role labels and `status.patroni.switchover` are updated accordingly.
 
 {{% notice warning %}}
-Errors encountered in the switchover proccess can leave your cluster in a bad
+Errors encountered in the switchover process can leave your cluster in a bad
 state. If you encounter issues, found in the operator logs, you can update the spec to fix the
 issues and apply the change. Once the change has been applied, PGO will attempt to perform the
 switchover again.

@@ -70,25 +70,28 @@ type PatroniSwitchover struct {
 	// +required
 	Enabled bool `json:"enabled"`
 
-	// Define the instance that the operator will target in a switchover. When attempting to
-	// perform a manual switchover this field is optional. If target is specified, we will attempt
-	// to get to an instance that represents that target. If it is not specified, then we will
-	// attempt to get any instance. When attempting to perform a failover (i.e. Switchover.Type
-	// is `failover`) this field is required.
+	// The instance that should become primary during a switchover. This field is
+	// optional when Type is "Switchover" and required when Type is "Failover".
+	// When it is not specified, a healthy replica is automatically selected.
 	// +optional
 	TargetInstance *string `json:"targetInstance,omitempty"`
 
-	// Type allows you to specify the type of Patroni switchover that will be performed.
-	// `patronictl` supports both `switchovers` and `failovers` where a `failover` is
-	// effectively a "forced switchover". The main difference is that `failover` can be
-	// used when there is not currently a leader. A TargetInstance must be specified to
-	// failover.
-	// NOTE: The switchover type failover is reserved as the "last resort" case.
-	// +kubebuilder:validation:Enum={switchover,failover}
-	// +kubebuilder:default:=switchover
+	// Type of switchover to perform. Valid options are Switchover and Failover.
+	// "Switchover" changes the primary instance of a healthy PostgresCluster.
+	// "Failover" forces a particular instance to be primary, regardless of other
+	// factors. A TargetInstance must be specified to failover.
+	// NOTE: The Failover type is reserved as the "last resort" case.
+	// +kubebuilder:validation:Enum={Switchover,Failover}
+	// +kubebuilder:default:=Switchover
 	// +optional
 	Type string `json:"type,omitempty"`
 }
+
+// PatroniSwitchover types.
+const (
+	PatroniSwitchoverTypeFailover   = "Failover"
+	PatroniSwitchoverTypeSwitchover = "Switchover"
+)
 
 // Default sets the default values for certain Patroni configuration attributes,
 // including:

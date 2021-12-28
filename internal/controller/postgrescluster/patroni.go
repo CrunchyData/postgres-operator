@@ -443,15 +443,11 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 		return nil
 	}
 
-	switchoverAnnotation := cluster.GetAnnotations()[naming.PatroniSwitchover]
-	if switchoverAnnotation == "" {
-		return nil
-	}
-	var switchoverStatus string
-	if cluster.Status.Patroni.Switchover != nil {
-		switchoverStatus = *cluster.Status.Patroni.Switchover
-	}
-	if switchoverStatus == switchoverAnnotation {
+	annotation := cluster.GetAnnotations()[naming.PatroniSwitchover]
+	spec := cluster.Spec.Patroni.Switchover
+	status := cluster.Status.Patroni.Switchover
+
+	if annotation == "" || (status != nil && *status == annotation) {
 		return nil
 	}
 
@@ -462,9 +458,8 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	}
 
 	// 	 TODO: Add webhook validation that requires a targetInstance when requesting failover
-	if cluster.Spec.Patroni.Switchover.Type == "failover" {
-		if cluster.Spec.Patroni.Switchover.TargetInstance == nil ||
-			*cluster.Spec.Patroni.Switchover.TargetInstance == "" {
+	if spec.Type == v1beta1.PatroniSwitchoverTypeFailover {
+		if spec.TargetInstance == nil || *spec.TargetInstance == "" {
 			// TODO: event
 			return errors.New("TargetInstance required when running failover")
 		}
@@ -473,11 +468,9 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	// Determine if user is specifying a target instance. Validate the
 	// provided instance has been observed in the cluster.
 	var targetInstance *Instance
-	if cluster.Spec.Patroni.Switchover.TargetInstance != nil &&
-		*cluster.Spec.Patroni.Switchover.TargetInstance != "" {
-
+	if spec.TargetInstance != nil && *spec.TargetInstance != "" {
 		for _, instance := range instances.forCluster {
-			if *cluster.Spec.Patroni.Switchover.TargetInstance == instance.Name {
+			if *spec.TargetInstance == instance.Name {
 				targetInstance = instance
 			}
 		}
@@ -521,7 +514,7 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 		return success, errors.WithStack(err)
 	}
 
-	if cluster.Spec.Patroni.Switchover.Type == "failover" {
+	if spec.Type == v1beta1.PatroniSwitchoverTypeFailover {
 		// When a failover has been requested we use FailoverAndWait to change the primary.
 		action = func(ctx context.Context, exec patroni.Executor, next string) (bool, error) {
 			success, err := patroni.Executor(exec).FailoverAndWait(ctx, next)
@@ -540,7 +533,7 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 		err = errors.New("unable to switchover")
 	}
 	if err == nil {
-		cluster.Status.Patroni.Switchover = initialize.String(switchoverAnnotation)
+		cluster.Status.Patroni.Switchover = initialize.String(annotation)
 	}
 
 	return err
