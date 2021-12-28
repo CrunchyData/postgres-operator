@@ -576,14 +576,14 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 				desc:    "failover requested without a target",
 				enabled: true, trigger: "triggered", soType: "failover",
 				check: func(t *testing.T, err error) {
-					assert.Equal(t, err.Error(), "TargetInstance required when running failover")
+					assert.Error(t, err, "TargetInstance required when running failover")
 				},
 			},
 			{
 				desc:    "target instance was specified but not found",
 				enabled: true, trigger: "triggered", target: "bad-target",
 				check: func(t *testing.T, err error) {
-					assert.Equal(t, err.Error(), "TargetInstance was specified but not found in the cluster")
+					assert.Error(t, err, "TargetInstance was specified but not found in the cluster")
 				},
 			},
 		} {
@@ -644,7 +644,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			}}
 			observed := &observedInstances{forCluster: instances}
 
-			assert.Equal(t, r.reconcilePatroniSwitchover(ctx, cluster, observed).Error(),
+			assert.Error(t, r.reconcilePatroniSwitchover(ctx, cluster, observed),
 				"TargetInstance should have one pod. Pods (0)")
 		})
 
@@ -668,7 +668,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			}
 			observed := &observedInstances{forCluster: instances}
 
-			assert.Equal(t, r.reconcilePatroniSwitchover(ctx, cluster, observed).Error(),
+			assert.Error(t, r.reconcilePatroniSwitchover(ctx, cluster, observed),
 				"Could not find a running pod when attempting switchover.")
 		})
 	})
@@ -688,7 +688,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		observed := &observedInstances{forCluster: []*Instance{{
 			Name: "target",
 		}}}
-		assert.Equal(t, r.reconcilePatroniSwitchover(ctx, cluster, observed).Error(),
+		assert.Error(t, r.reconcilePatroniSwitchover(ctx, cluster, observed),
 			"Need more than one instance to switchover")
 	})
 
@@ -709,7 +709,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		}}
 		called, failover, callError, callFails = false, false, false, true
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
-		assert.Equal(t, err.Error(), "unable to switchover")
+		assert.Error(t, err, "unable to switchover")
 		assert.Assert(t, called)
 		assert.Assert(t, cluster.Status.Patroni.Switchover == nil)
 	})
@@ -731,7 +731,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		}}
 		called, failover, callError, callFails = false, false, true, false
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
-		assert.Equal(t, err.Error(), "boom")
+		assert.Error(t, err, "boom")
 		assert.Assert(t, called)
 		assert.Assert(t, cluster.Status.Patroni.Switchover == nil)
 	})
