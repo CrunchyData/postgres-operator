@@ -363,6 +363,21 @@ spec:
 
 Note: When the v5 cluster is running in non-standby mode, you will not be able to restart the v4 cluster, as that data is now being managed by the v5 cluster.
 
+Once the v5 cluster is up and running, you will need to run the following SQL commands as a PostgreSQL superuser. For example, you can login as the `postgres` user, or exec into the Pod and use `psql`:
+
+```sql
+-- add the managed replication user
+CREATE ROLE _crunchyrepl WITH LOGIN REPLICATION;
+
+-- allow for the replication user to execute the functions required as part of "rewinding"
+GRANT EXECUTE ON function pg_catalog.pg_ls_dir(text, boolean, boolean) TO _crunchyrepl;
+GRANT EXECUTE ON function pg_catalog.pg_stat_file(text, boolean) TO _crunchyrepl;
+GRANT EXECUTE ON function pg_catalog.pg_read_binary_file(text) TO _crunchyrepl;
+GRANT EXECUTE ON function pg_catalog.pg_read_binary_file(text, bigint, bigint, boolean) TO _crunchyrepl;
+```
+
+The above step will be automated in an upcoming release.
+
 Your upgrade is now complete! Once you verify that the PGO v5 cluster is running and you have recorded the user credentials from the v4 cluster, you can remove the old cluster:
 
 ```
