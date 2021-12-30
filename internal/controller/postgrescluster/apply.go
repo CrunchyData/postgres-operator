@@ -167,12 +167,6 @@ func applyPodTemplateSpec(
 func applyServiceSpec(
 	patch *kubeapi.JSON6902, actual, intent corev1.ServiceSpec, path ...string,
 ) {
-	// Empty "omitempty" slices are ignored until Kubernetes 1.19.
-	// - https://issue.k8s.io/89273
-	if !equality.Semantic.DeepEqual(actual.ExternalIPs, intent.ExternalIPs) {
-		patch.Replace(append(path, "externalIPs")...)(intent.ExternalIPs)
-	}
-
 	// Service.Spec.Selector is not +mapType=atomic until Kubernetes 1.22.
 	// - https://issue.k8s.io/97970
 	if !equality.Semantic.DeepEqual(actual.Selector, intent.Selector) {

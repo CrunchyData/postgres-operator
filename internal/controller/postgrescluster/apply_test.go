@@ -341,56 +341,6 @@ func TestServerSideApply(t *testing.T) {
 		}
 	})
 
-	t.Run("ServiceSpec", func(t *testing.T) {
-		constructor := func(name string) *corev1.Service {
-			var service corev1.Service
-			service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
-			service.Namespace, service.Name = ns.Name, name
-			service.Spec.Ports = []corev1.ServicePort{{
-				Port: 9999, Protocol: corev1.ProtocolTCP,
-			}}
-			return &service
-		}
-
-		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
-
-		// Start with fields filled out.
-		intent := constructor("change-to-zero")
-		intent.Spec.ExternalIPs = []string{"10.9.8.7", "192.0.2.10"}
-
-		// Create the StatefulSet.
-		before := intent.DeepCopy()
-		assert.NilError(t,
-			cc.Patch(ctx, before, client.Apply, client.ForceOwnership, reconciler.Owner))
-
-		// Change fields to zero.
-		intent.Spec.ExternalIPs = nil
-
-		// client.Apply cannot correct it in old versions of Kubernetes.
-		after := intent.DeepCopy()
-		assert.NilError(t,
-			cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
-
-		switch {
-		case serverVersion.LessThan(version.MustParseGeneric("1.18.19")):
-
-			// - https://pr.k8s.io/101179
-			assert.Assert(t, !equality.Semantic.DeepEqual(
-				after.Spec.ExternalIPs,
-				intent.Spec.ExternalIPs),
-				"expected https://issue.k8s.io/89273, got %v",
-				after.Spec.ExternalIPs)
-
-		default:
-			assert.DeepEqual(t, after.Spec.ExternalIPs, intent.Spec.ExternalIPs)
-		}
-
-		// Our apply method corrects it.
-		again := intent.DeepCopy()
-		assert.NilError(t, reconciler.apply(ctx, again))
-		assert.DeepEqual(t, again.Spec.ExternalIPs, intent.Spec.ExternalIPs)
-	})
-
 	t.Run("ServiceType", func(t *testing.T) {
 		constructor := func(name string) *corev1.Service {
 			var service corev1.Service
