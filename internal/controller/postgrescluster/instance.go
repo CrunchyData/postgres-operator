@@ -1270,6 +1270,11 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
 	sts.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
+	// Patroni calls the Kubernetes API and pgBackRest may interact with a cloud
+	// storage provider. Use the instance ServiceAccount and automatically mount
+	// its Kubernetes credentials.
+	// - https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity
+	// - https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
 	sts.Spec.Template.Spec.ServiceAccountName = instanceServiceAccountName
 
 	sts.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
