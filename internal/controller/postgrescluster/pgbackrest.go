@@ -1158,12 +1158,9 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 					Resources:       dataSource.Resources,
 				}},
 				RestartPolicy: corev1.RestartPolicyNever,
-				// Assign the instance serviceaccount to the job pod to allow AWS IAM integration
-				// - https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts-technical-overview.html
-				ServiceAccountName: naming.ClusterInstanceRBAC(cluster).Name,
-				Volumes:            volumes,
-				Affinity:           dataSource.Affinity,
-				Tolerations:        dataSource.Tolerations,
+				Volumes:       volumes,
+				Affinity:      dataSource.Affinity,
+				Tolerations:   dataSource.Tolerations,
 			},
 		},
 	}
@@ -1174,9 +1171,13 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	// https://github.com/kubernetes/kubernetes/issues/88456
 	job.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 
-	// pgBackRest does not make any Kubernetes API calls. Use the default
-	// ServiceAccount and do not mount its credentials.
+	// pgBackRest does not make any Kubernetes API calls, but it may interact
+	// with a cloud storage provider. Use the instance ServiceAccount for its
+	// possible cloud identity without mounting its Kubernetes API credentials.
+	// - https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity
+	// - https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
 	job.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
+	job.Spec.Template.Spec.ServiceAccountName = naming.ClusterInstanceRBAC(cluster).Name
 
 	job.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 

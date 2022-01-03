@@ -2407,6 +2407,9 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 						})
 						t.Run("ServiceAccount", func(t *testing.T) {
 							assert.Equal(t, job.Spec.Template.Spec.ServiceAccountName, "test-instance")
+							if assert.Check(t, job.Spec.Template.Spec.AutomountServiceAccountToken != nil) {
+								assert.Equal(t, *job.Spec.Template.Spec.AutomountServiceAccountToken, false)
+							}
 						})
 					})
 				})
