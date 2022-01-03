@@ -24,11 +24,9 @@ import (
 
 	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -271,84 +269,120 @@ func TestReconcilePGBouncerService(t *testing.T) {
 	}
 }
 
-func TestReconcilePGBouncerDeployment(t *testing.T) {
-	ctx := context.Background()
+func TestGeneratePGBouncerDeployment(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	reconciler := &Reconciler{Client: cc}
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns3"
+	cluster.Name = "test-cluster"
 
-	cluster := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-cluster",
-			Namespace: ns.Name,
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: 13,
-			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				DataVolumeClaimSpec: testVolumeClaimSpec(),
-			}},
-			Backups: v1beta1.Backups{
-				PGBackRest: v1beta1.PGBackRestArchive{
-					Repos: []v1beta1.PGBackRestRepo{{
-						Name: "repo1",
-						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-								Resources: corev1.ResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceStorage: resource.MustParse("1Gi"),
-									},
-								},
-							},
-						},
-					}},
-				},
-			},
-			Proxy: &v1beta1.PostgresProxySpec{
-				PGBouncer: &v1beta1.PGBouncerPodSpec{
-					Port:  initialize.Int32(19041),
-					Image: "test-image",
-				},
-			},
-		},
+	t.Run("Unspecified", func(t *testing.T) {
+		for _, spec := range []*v1beta1.PostgresProxySpec{
+			nil, new(v1beta1.PostgresProxySpec),
+		} {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.Proxy = spec
+
+			deploy, specified, err := reconciler.generatePGBouncerDeployment(cluster, nil, nil, nil)
+			assert.NilError(t, err)
+			assert.Assert(t, !specified)
+
+			assert.Assert(t, marshalMatches(deploy.ObjectMeta, `
+creationTimestamp: null
+name: test-cluster-pgbouncer
+namespace: ns3
+			`))
+		}
+	})
+
+	cluster.Spec.Proxy = &v1beta1.PostgresProxySpec{
+		PGBouncer: &v1beta1.PGBouncerPodSpec{},
 	}
-	assert.NilError(t, cc.Create(ctx, cluster))
+	cluster.Default()
 
-	t.Run("verify default scheduling constraints", func(t *testing.T) {
-		sp := &corev1.SecretProjection{
-			LocalObjectReference: corev1.LocalObjectReference{
-				Name: "test-secret-projection",
-			},
-		}
-		cm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-configmap",
-			},
-		}
-		s := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-secret",
-			},
+	configmap := &corev1.ConfigMap{}
+	configmap.Name = "some-cm2"
+
+	secret := &corev1.Secret{}
+	secret.Name = "some-secret3"
+
+	primary := &corev1.SecretProjection{}
+
+	t.Run("AnnotationsLabels", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Metadata = &v1beta1.Metadata{
+			Annotations: map[string]string{"a": "v1"},
+			Labels:      map[string]string{"b": "v2"},
 		}
 
-		err := reconciler.reconcilePGBouncerDeployment(ctx, cluster, sp, cm, s)
+		deploy, specified, err := reconciler.generatePGBouncerDeployment(
+			cluster, primary, configmap, secret)
 		assert.NilError(t, err)
+		assert.Assert(t, specified)
 
-		list := appsv1.DeploymentList{}
-		assert.NilError(t, cc.List(ctx, &list, client.InNamespace(cluster.Namespace)))
-		assert.Assert(t, len(list.Items) > 0)
-		assert.Equal(t, len(list.Items[0].Spec.Template.Spec.TopologySpreadConstraints), 2)
+		// Annotations present in the metadata.
+		assert.DeepEqual(t, deploy.ObjectMeta.Annotations, map[string]string{
+			"a": "v1",
+		})
+
+		// Labels present in the metadata.
+		assert.DeepEqual(t, deploy.ObjectMeta.Labels, map[string]string{
+			"b": "v2",
+			"postgres-operator.crunchydata.com/cluster": "test-cluster",
+			"postgres-operator.crunchydata.com/role":    "pgbouncer",
+		})
+
+		// Labels not in the pod selector.
+		assert.DeepEqual(t, deploy.Spec.Selector,
+			&metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"postgres-operator.crunchydata.com/cluster": "test-cluster",
+					"postgres-operator.crunchydata.com/role":    "pgbouncer",
+				},
+			})
+
+		// Annotations present in the pod template.
+		assert.DeepEqual(t, deploy.Spec.Template.Annotations, map[string]string{
+			"a": "v1",
+		})
+
+		// Labels present in the pod template.
+		assert.DeepEqual(t, deploy.Spec.Template.Labels, map[string]string{
+			"b": "v2",
+			"postgres-operator.crunchydata.com/cluster": "test-cluster",
+			"postgres-operator.crunchydata.com/role":    "pgbouncer",
+		})
+	})
+
+	t.Run("PodSpec", func(t *testing.T) {
+		deploy, specified, err := reconciler.generatePGBouncerDeployment(
+			cluster, primary, configmap, secret)
+		assert.NilError(t, err)
+		assert.Assert(t, specified)
+
+		// Containers and Volumes should be populated.
+		assert.Assert(t, len(deploy.Spec.Template.Spec.Containers) != 0)
+		assert.Assert(t, len(deploy.Spec.Template.Spec.Volumes) != 0)
+
+		// Ignore Containers and Volumes in the comparison below.
+		deploy.Spec.Template.Spec.Containers = nil
+		deploy.Spec.Template.Spec.Volumes = nil
+
 		// TODO(tjmoore4): Add additional tests to test appending existing
 		// topology spread constraints and spec.disableDefaultPodScheduling being
 		// set to true (as done in instance StatefulSet tests).
-		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.Spec.TopologySpreadConstraints, `
+
+		assert.Assert(t, marshalMatches(deploy.Spec.Template.Spec, `
+automountServiceAccountToken: false
+containers: null
+restartPolicy: Always
+securityContext:
+  runAsNonRoot: true
+shareProcessNamespace: true
+topologySpreadConstraints:
 - labelSelector:
     matchLabels:
       postgres-operator.crunchydata.com/cluster: test-cluster
@@ -364,8 +398,19 @@ func TestReconcilePGBouncerDeployment(t *testing.T) {
   topologyKey: topology.kubernetes.io/zone
   whenUnsatisfiable: ScheduleAnyway
 		`))
-	})
 
+		t.Run("DisableDefaultPodScheduling", func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.DisableDefaultPodScheduling = initialize.Bool(true)
+
+			deploy, specified, err := reconciler.generatePGBouncerDeployment(
+				cluster, primary, configmap, secret)
+			assert.NilError(t, err)
+			assert.Assert(t, specified)
+
+			assert.Assert(t, deploy.Spec.Template.Spec.TopologySpreadConstraints == nil)
+		})
+	})
 }
 
 func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {

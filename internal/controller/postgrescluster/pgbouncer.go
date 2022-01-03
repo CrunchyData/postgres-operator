@@ -323,64 +323,18 @@ func (r *Reconciler) reconcilePGBouncerService(
 	return service, err
 }
 
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=create;delete;patch
-
-// reconcilePGBouncerDeployment writes the Deployment that runs PgBouncer.
-func (r *Reconciler) reconcilePGBouncerDeployment(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
+// generatePGBouncerDeployment returns an appsv1.Deployment that runs PgBouncer pods.
+func (r *Reconciler) generatePGBouncerDeployment(
+	cluster *v1beta1.PostgresCluster,
 	primaryCertificate *corev1.SecretProjection,
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
-) error {
+) (*appsv1.Deployment, bool, error) {
 	deploy := &appsv1.Deployment{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	deploy.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
 
-	// Set observations whether the deployment exists or not.
-	defer func() {
-		cluster.Status.Proxy.PGBouncer.Replicas = deploy.Status.Replicas
-		cluster.Status.Proxy.PGBouncer.ReadyReplicas = deploy.Status.ReadyReplicas
-
-		// NOTE(cbandy): This should be somewhere else when there is more than
-		// one proxy implementation.
-
-		var available *appsv1.DeploymentCondition
-		for i := range deploy.Status.Conditions {
-			if deploy.Status.Conditions[i].Type == appsv1.DeploymentAvailable {
-				available = &deploy.Status.Conditions[i]
-			}
-		}
-
-		if available == nil {
-			// Avoid a panic! Fixed in Kubernetes v1.21.0 and controller-runtime v0.9.0-alpha.0.
-			// - https://issue.k8s.io/99714
-			if len(cluster.Status.Conditions) > 0 {
-				meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.ProxyAvailable)
-			}
-		} else {
-			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
-				Type:    v1beta1.ProxyAvailable,
-				Status:  metav1.ConditionStatus(available.Status),
-				Reason:  available.Reason,
-				Message: available.Message,
-
-				LastTransitionTime: available.LastTransitionTime,
-				ObservedGeneration: cluster.Generation,
-			})
-		}
-	}()
-
 	if cluster.Spec.Proxy == nil || cluster.Spec.Proxy.PGBouncer == nil {
-		// PgBouncer is disabled; delete the Deployment if it exists. Check the
-		// client cache first using Get.
-		key := client.ObjectKeyFromObject(deploy)
-		err := errors.WithStack(r.Client.Get(ctx, key, deploy))
-		if err == nil {
-			err = errors.WithStack(r.deleteControlled(ctx, cluster, deploy))
-		}
-		return client.IgnoreNotFound(err)
+		return deploy, false, nil
 	}
-
-	err := errors.WithStack(r.setControllerReference(cluster, deploy))
 
 	deploy.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
@@ -469,13 +423,75 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	// set the image pull secrets, if any exist
 	deploy.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 
+	err := errors.WithStack(r.setControllerReference(cluster, deploy))
+
 	if err == nil {
 		pgbouncer.Pod(cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)
 	}
+
+	return deploy, true, err
+}
+
+// +kubebuilder:rbac:groups="apps",resources="deployments",verbs={get}
+// +kubebuilder:rbac:groups="apps",resources="deployments",verbs={create,delete,patch}
+
+// reconcilePGBouncerDeployment writes the Deployment that runs PgBouncer.
+func (r *Reconciler) reconcilePGBouncerDeployment(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	primaryCertificate *corev1.SecretProjection,
+	configmap *corev1.ConfigMap, secret *corev1.Secret,
+) error {
+	deploy, specified, err := r.generatePGBouncerDeployment(
+		cluster, primaryCertificate, configmap, secret)
+
+	// Set observations whether the deployment exists or not.
+	defer func() {
+		cluster.Status.Proxy.PGBouncer.Replicas = deploy.Status.Replicas
+		cluster.Status.Proxy.PGBouncer.ReadyReplicas = deploy.Status.ReadyReplicas
+
+		// NOTE(cbandy): This should be somewhere else when there is more than
+		// one proxy implementation.
+
+		var available *appsv1.DeploymentCondition
+		for i := range deploy.Status.Conditions {
+			if deploy.Status.Conditions[i].Type == appsv1.DeploymentAvailable {
+				available = &deploy.Status.Conditions[i]
+			}
+		}
+
+		if available == nil {
+			// Avoid a panic! Fixed in Kubernetes v1.21.0 and controller-runtime v0.9.0-alpha.0.
+			// - https://issue.k8s.io/99714
+			if len(cluster.Status.Conditions) > 0 {
+				meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.ProxyAvailable)
+			}
+		} else {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				Type:    v1beta1.ProxyAvailable,
+				Status:  metav1.ConditionStatus(available.Status),
+				Reason:  available.Reason,
+				Message: available.Message,
+
+				LastTransitionTime: available.LastTransitionTime,
+				ObservedGeneration: cluster.Generation,
+			})
+		}
+	}()
+
+	if err == nil && !specified {
+		// PgBouncer is disabled; delete the Deployment if it exists. Check the
+		// client cache first using Get.
+		key := client.ObjectKeyFromObject(deploy)
+		err := errors.WithStack(r.Client.Get(ctx, key, deploy))
+		if err == nil {
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, deploy))
+		}
+		return client.IgnoreNotFound(err)
+	}
+
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, deploy))
 	}
-
 	return err
 }
 
