@@ -232,6 +232,9 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	// ServiceAccount and do not mount its credentials.
 	sts.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 
+	// Do not add environment variables describing services in this namespace.
+	sts.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
+
 	sts.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 
 	// set the image pull secrets, if any exist

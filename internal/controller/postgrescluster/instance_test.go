@@ -1521,6 +1521,10 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			)
 
 			test.run(t, sts)
+
+			if assert.Check(t, sts.Spec.Template.Spec.EnableServiceLinks != nil) {
+				assert.Equal(t, *sts.Spec.Template.Spec.EnableServiceLinks, false)
+			}
 		})
 	}
 }

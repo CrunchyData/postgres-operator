@@ -378,6 +378,7 @@ namespace: ns3
 		assert.Assert(t, marshalMatches(deploy.Spec.Template.Spec, `
 automountServiceAccountToken: false
 containers: null
+enableServiceLinks: false
 restartPolicy: Always
 securityContext:
   runAsNonRoot: true

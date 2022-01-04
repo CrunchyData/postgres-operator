@@ -312,24 +312,40 @@ func TestReconcilePGBackRest(t *testing.T) {
 				repo.GetLabels(), expectedLabels)
 		}
 
-		// Ensure Affinity Spec has been added to dedicated repo
-		if repo.Spec.Template.Spec.Affinity == nil {
-			t.Error("dedicated repo host is missing affinity spec")
-		}
+		template := repo.Spec.Template.DeepCopy()
 
-		// Ensure Tolerations have been added to dedicated repo
-		if repo.Spec.Template.Spec.Tolerations == nil {
-			t.Error("dedicated repo host is missing tolerations")
-		}
-		// Ensure TopologySpreadConstraints have been added to dedicated repo
-		if repo.Spec.Template.Spec.TopologySpreadConstraints == nil {
-			t.Error("dedicated repo host is missing topology spread constraints")
-		}
+		// Containers and Volumes should be populated.
+		assert.Assert(t, len(template.Spec.Containers) != 0)
+		assert.Assert(t, len(template.Spec.InitContainers) != 0)
+		assert.Assert(t, len(template.Spec.Volumes) != 0)
+
+		// Ignore Containers and Volumes in the comparison below.
+		template.Spec.Containers = nil
+		template.Spec.InitContainers = nil
+		template.Spec.Volumes = nil
 
 		// TODO(tjmoore4): Add additional tests to test appending existing
 		// topology spread constraints and spec.disableDefaultPodScheduling being
 		// set to true (as done in instance StatefulSet tests).
-		assert.Assert(t, marshalMatches(repo.Spec.Template.Spec.TopologySpreadConstraints, `
+		assert.Assert(t, marshalMatches(template.Spec, `
+affinity: {}
+automountServiceAccountToken: false
+containers: null
+dnsPolicy: ClusterFirst
+enableServiceLinks: false
+imagePullSecrets:
+- name: myImagePullSecret
+priorityClassName: some-priority-class
+restartPolicy: Always
+schedulerName: default-scheduler
+securityContext:
+  fsGroup: 26
+  runAsNonRoot: true
+shareProcessNamespace: true
+terminationGracePeriodSeconds: 30
+tolerations:
+- key: woot
+topologySpreadConstraints:
 - labelSelector:
     matchExpressions:
     - key: postgres-operator.crunchydata.com/cluster
@@ -366,23 +382,6 @@ func TestReconcilePGBackRest(t *testing.T) {
   topologyKey: topology.kubernetes.io/zone
   whenUnsatisfiable: ScheduleAnyway
 		`))
-
-		// Ensure pod priority class has been added to dedicated repo
-		if repo.Spec.Template.Spec.PriorityClassName != "some-priority-class" {
-			t.Error("dedicated repo host priority class not set correctly")
-		}
-
-		// Ensure imagePullSecret has been added to the dedicated repo
-		if repo.Spec.Template.Spec.ImagePullSecrets == nil {
-			t.Error("image pull secret is missing tolerations")
-		}
-
-		if repo.Spec.Template.Spec.ImagePullSecrets != nil {
-			if repo.Spec.Template.Spec.ImagePullSecrets[0].Name !=
-				"myImagePullSecret" {
-				t.Error("image pull secret name is not set correctly")
-			}
-		}
 
 		// verify that the repohost container exists and contains the proper env vars
 		var repoHostContExists bool
@@ -2100,12 +2099,55 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 
 func TestGenerateBackupJobIntent(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		_, err := generateBackupJobSpecIntent(
+		spec, err := generateBackupJobSpecIntent(
 			&v1beta1.PostgresCluster{}, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
 		)
 		assert.NilError(t, err)
+		assert.Assert(t, marshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - /opt/crunchy/bin/pgbackrest
+  env:
+  - name: COMMAND
+    value: backup
+  - name: COMMAND_OPTS
+    value: --stanza=db --repo=
+  - name: COMPARE_HASH
+    value: "true"
+  - name: CONTAINER
+    value: database
+  - name: NAMESPACE
+  - name: SELECTOR
+    value: postgres-operator.crunchydata.com/cluster=,postgres-operator.crunchydata.com/instance,postgres-operator.crunchydata.com/role=master
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  runAsNonRoot: true
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_instance.conf
+          path: pgbackrest_instance.conf
+        - key: config-hash
+          path: config-hash
+        name: -pgbackrest-config
+		`))
 	})
 
 	t.Run("ImagePullPolicy", func(t *testing.T) {
@@ -2404,6 +2446,11 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 						})
 						t.Run("PodSecurityContext", func(t *testing.T) {
 							assert.Assert(t, job.Spec.Template.Spec.SecurityContext != nil)
+						})
+						t.Run("EnableServiceLinks", func(t *testing.T) {
+							if assert.Check(t, job.Spec.Template.Spec.EnableServiceLinks != nil) {
+								assert.Equal(t, *job.Spec.Template.Spec.EnableServiceLinks, false)
+							}
 						})
 						t.Run("ServiceAccount", func(t *testing.T) {
 							assert.Equal(t, job.Spec.Template.Spec.ServiceAccountName, "test-instance")

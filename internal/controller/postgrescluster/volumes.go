@@ -463,9 +463,10 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
 				RestartPolicy: corev1.RestartPolicyNever,
-				// Since these Jobs don't make Kubernetes API calls, we can just
-				// use the default ServiceAccount and mount the credentials.
+				// These Jobs don't make Kubernetes API calls, so we can just
+				// use the default ServiceAccount and not mount its credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
+				EnableServiceLinks:           initialize.Bool(false),
 				Volumes: []corev1.Volume{{
 					Name: "postgres-data",
 					VolumeSource: corev1.VolumeSource{
@@ -575,9 +576,10 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
 				RestartPolicy: corev1.RestartPolicyNever,
-				// Since these Jobs don't make Kubernetes API calls, we can just
-				// use the default ServiceAccount and mount the credentials.
+				// These Jobs don't make Kubernetes API calls, so we can just
+				// use the default ServiceAccount and not mount its credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
+				EnableServiceLinks:           initialize.Bool(false),
 				Volumes: []corev1.Volume{{
 					Name: "postgres-wal",
 					VolumeSource: corev1.VolumeSource{
@@ -691,9 +693,10 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
 				// controller when there is a failure (instead of the container simply restarting).
 				RestartPolicy: corev1.RestartPolicyNever,
-				// Since these Jobs don't make Kubernetes API calls, we can just
-				// use the default ServiceAccount and mount the credentials.
+				// These Jobs don't make Kubernetes API calls, so we can just
+				// use the default ServiceAccount and not mount its credentials.
 				AutomountServiceAccountToken: initialize.Bool(false),
+				EnableServiceLinks:           initialize.Bool(false),
 				Volumes: []corev1.Volume{{
 					Name: "pgbackrest-repo",
 					VolumeSource: corev1.VolumeSource{

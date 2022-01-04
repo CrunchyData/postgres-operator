@@ -1277,6 +1277,11 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	// - https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
 	sts.Spec.Template.Spec.ServiceAccountName = instanceServiceAccountName
 
+	// Disable environment variables for services other than the Kubernetes API.
+	// - https://docs.k8s.io/concepts/services-networking/connect-applications-service/#accessing-the-service
+	// - https://releases.k8s.io/v1.23.0/pkg/kubelet/kubelet_pods.go#L553-L563
+	sts.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
+
 	sts.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 
 	// Set the image pull secrets, if any exist.
