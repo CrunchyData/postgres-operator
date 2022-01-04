@@ -366,6 +366,7 @@ containers:
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
 dnsPolicy: ClusterFirst
+enableServiceLinks: false
 restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
@@ -530,6 +531,7 @@ containers:
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
 dnsPolicy: ClusterFirst
+enableServiceLinks: false
 imagePullSecrets:
 - name: myImagePullSecret
 restartPolicy: Always

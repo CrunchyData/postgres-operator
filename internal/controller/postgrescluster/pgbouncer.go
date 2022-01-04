@@ -418,6 +418,9 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	// ServiceAccount and do not mount its credentials.
 	deploy.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 
+	// Do not add environment variables describing services in this namespace.
+	deploy.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
+
 	deploy.Spec.Template.Spec.SecurityContext = initialize.RestrictedPodSecurityContext()
 
 	// set the image pull secrets, if any exist

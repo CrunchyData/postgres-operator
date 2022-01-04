@@ -580,6 +580,9 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	// ServiceAccount and do not mount its credentials.
 	repo.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 
+	// Do not add environment variables describing services in this namespace.
+	repo.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
+
 	repo.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 
 	pgbackrest.AddServerToRepoPod(postgresCluster, &repo.Spec.Template.Spec)
@@ -699,11 +702,18 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 			ObjectMeta: metav1.ObjectMeta{Labels: labels, Annotations: annotations},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{container},
+
+				// Disable environment variables for services other than the Kubernetes API.
+				// - https://docs.k8s.io/concepts/services-networking/connect-applications-service/#accessing-the-service
+				// - https://releases.k8s.io/v1.23.0/pkg/kubelet/kubelet_pods.go#L553-L563
+				EnableServiceLinks: initialize.Bool(false),
+
 				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
 				// controller when there is a failure (instead of the container simply restarting).
 				// This will ensure the Job always has the latest configs mounted following a
 				// failure as needed to successfully verify config hashes and run the Job.
 				RestartPolicy:      corev1.RestartPolicyNever,
+				SecurityContext:    initialize.RestrictedPodSecurityContext(),
 				ServiceAccountName: serviceAccountName,
 			},
 		},
@@ -1178,6 +1188,9 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	// - https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
 	job.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 	job.Spec.Template.Spec.ServiceAccountName = naming.ClusterInstanceRBAC(cluster).Name
+
+	// Do not add environment variables describing services in this namespace.
+	job.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
 
 	job.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 

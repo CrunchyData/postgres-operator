@@ -1028,6 +1028,7 @@ containers:
   - mountPath: /pgdata
     name: postgres-data
 dnsPolicy: ClusterFirst
+enableServiceLinks: false
 priorityClassName: some-priority-class
 restartPolicy: Never
 schedulerName: default-scheduler
@@ -1078,6 +1079,7 @@ containers:
   - mountPath: /pgwal
     name: postgres-wal
 dnsPolicy: ClusterFirst
+enableServiceLinks: false
 priorityClassName: some-priority-class
 restartPolicy: Never
 schedulerName: default-scheduler
@@ -1130,6 +1132,7 @@ containers:
   - mountPath: /pgbackrest
     name: pgbackrest-repo
 dnsPolicy: ClusterFirst
+enableServiceLinks: false
 priorityClassName: some-priority-class
 restartPolicy: Never
 schedulerName: default-scheduler

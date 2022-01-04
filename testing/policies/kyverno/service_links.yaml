@@ -1,0 +1,43 @@
+# Copyright 2022 Crunchy Data Solutions, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disable-service-links
+  annotations:
+    policies.kyverno.io/title: Disable Injection of Service Environment Variables
+    policies.kyverno.io/category: PGO
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Kubernetes automatically adds environment variables describing every Service in a Pod's namespace.
+      This can inadvertently change the behavior of things that read from the environment. For example,
+      a PodSpec that worked in the past might start to fail when the Pod is recreated with new Services
+      around.
+
+spec:
+  validationFailureAction: audit
+  background: true
+  rules:
+  - name: validate-enableServiceLinks
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: Do not inject Service environment variables.
+      pattern:
+        spec:
+          enableServiceLinks: false
