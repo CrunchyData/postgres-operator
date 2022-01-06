@@ -1,0 +1,21 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: major-upgrade
+spec:
+  postgresVersion: 13
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: major-upgrade
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+status:
+  succeeded: 1

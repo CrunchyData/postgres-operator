@@ -2,7 +2,7 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestSuite
 testDirs:
 - testing/kuttl/e2e/
-timeout: 120
+timeout: 180
 parallel: 2
 # by default kuttl will run in a generated namespace to override
 # that functionality simply uncomment the line below and replace
