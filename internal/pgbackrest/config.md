@@ -150,6 +150,15 @@ the option occurs twice on the command-line or twice in a file:
 ERROR: [031]: option 'io-timeout' cannot be set multiple times
 ```
 
+A few options are only allowed in certain places. Credentials, for example,
+cannot be passed as command-line arguments (see `PARSE_RULE_OPTION_SECURE` in [parse.auto.c][]).
+Some others cannot be in INI files (see `cfgSectionCommandLine` in [parse.auto.c][]).
+Notably, these must be environment variables or command-line arguments:
+
+- `--repo` and `--stanza`
+- restore `--target` and `--target-action`
+- backup and restore `--type`
+
 pgBackRest looks for and loads multiple INI files from multiple places according
 to the `config`, `config-include-path`, and/or `config-path` options. The order
 is a [little complicated][file-precedence]. When none of these options are set:
