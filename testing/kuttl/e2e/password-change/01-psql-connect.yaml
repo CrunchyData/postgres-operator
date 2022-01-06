@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: "OnFailure"
+      containers:
+        - name: psql
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+          command:
+            - psql
+            - -c
+            - "select version();"
+          env:
+          - name: PGHOST
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: host } }
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: user } }
+          - name: PGPASSWORD
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: password } }

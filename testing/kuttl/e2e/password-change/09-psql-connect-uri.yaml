@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect-uri5
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: "OnFailure"
+      containers:
+        - name: psql
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+          command:
+            - psql
+            - "$(PGURI)"
+            - -c
+            - "select version();"
+          env:
+          # The ./08-errors.yaml checks that the secret is not in the state that we set it to
+          # in the ./08-secret.yaml file, i.e., the secret has been reconciled by PGO,
+          # so the uri field of the secret should be updated with the new password by this time
+          - name: PGURI
+            valueFrom: { secretKeyRef: { name: password-change-pguser-rhino, key: uri } }
