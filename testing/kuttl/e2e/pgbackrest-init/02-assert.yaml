@@ -1,0 +1,10 @@
+# Manual backup job should have pushed to repo2
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: init-pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest-backup: manual
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo2
+status:
+  succeeded: 1

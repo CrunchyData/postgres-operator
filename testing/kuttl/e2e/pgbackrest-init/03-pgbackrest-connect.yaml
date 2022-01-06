@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+# Now that a manual backup has been pushed to repo2, the pgbackrest status should be "ok"
+# and there should be two backups
+- script: CLUSTER=init-pgbackrest ../../scripts/pgbackrest-initialization.sh "ok" 2
