@@ -15,7 +15,7 @@ KUTTL gives you the option to suppress events from the test logging output. To e
 update the `kuttl` parameter when calling the `make` target
 
 ```
-KUTTL_TEST='kuttl test --suppress-logs=events' make check-kuttl
+KUTTL_TEST='kuttl test --suppress-log=events' make check-kuttl
 ```
 
 To suppress the events permanently, you can add the following to the KUTTL config (kuttl-test.yaml)
