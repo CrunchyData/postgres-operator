@@ -1,0 +1,14 @@
+resources:
+- "./cluster-start/00-cluster.yaml"
+- "./replica-read/00-cluster.yaml"
+
+# patchesStrategicMerge:
+# - set_13.yaml
+
+patches:
+- patch: |-
+    - op: replace
+      path: /spec/postgresVersion
+      value: 13
+  target:
+    kind: PostgresCluster

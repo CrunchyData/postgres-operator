@@ -203,11 +203,34 @@ check-envtest-existing: createnamespaces
 	USE_EXISTING_CLUSTER=true PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
 	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
+CLUSTER_FILES := $(shell find testing/kuttl/e2e \
+	-type f -name '00-cluster.yaml')
+
+kuttl-cluster-set-13:
+	@for f in $(CLUSTER_FILES); do \
+		yq e -i '.spec.postgresVersion = 13' $${f}; \
+	done
+
+kuttl-cluster-set-14:
+	@for f in $(CLUSTER_FILES); do \
+		yq e -i '.spec.postgresVersion = 14' $${f}; \
+	done
+
 # Expects operator to be running
-.PHONY: check-kuttl
-check-kuttl:
+.PHONY: check-kuttl-13
+check-kuttl-13: kuttl-cluster-set-13
 	${PGO_KUBE_CLIENT} ${KUTTL_TEST} \
 		--config testing/kuttl/kuttl-test.yaml
+
+.PHONY: check-kuttl-14
+check-kuttl-14: kuttl-cluster-set-14
+	${PGO_KUBE_CLIENT} ${KUTTL_TEST} \
+		--config testing/kuttl/kuttl-test.yaml
+
+.PHONY: check-kuttl
+check-kuttl: check-kuttl-13 check-kuttl-14
+
+# $(PGO_KUBE_CLIENT) kustomize ./build/crd > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy generate-rbac

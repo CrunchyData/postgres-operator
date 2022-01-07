@@ -19,19 +19,19 @@ spec:
         - name: CRUNCHY_DEBUG
           value: "true"
         - name: RELATED_IMAGE_POSTGRES_13
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.5-1"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.5-0"
         - name: RELATED_IMAGE_POSTGRES_13_GIS_3.1
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:centos8-13.5-3.1-1"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:centos8-13.5-3.1-0"
         - name: RELATED_IMAGE_POSTGRES_14
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-1"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0"
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.1
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:centos8-14.1-3.1-1"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:centos8-14.1-3.1-0"
         - name: RELATED_IMAGE_PGADMIN
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:centos8-4.20-0"
         - name: RELATED_IMAGE_PGBACKREST
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.36-1"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.36-0"
         - name: RELATED_IMAGE_PGBOUNCER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.16-1"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.16-0"
         - name: RELATED_IMAGE_PGEXPORTER
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.1.0-0"
         - name: RELATED_IMAGE_PGUPGRADE
