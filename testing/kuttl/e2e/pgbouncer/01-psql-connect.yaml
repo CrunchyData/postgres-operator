@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect
+spec:
+  template:
+    spec:
+      backoffLimit: 3
+      restartPolicy: "OnFailure"
+      containers:
+        - name: psql
+          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+          command:
+            - "bash"
+            - "-c"
+            - "psql -c 'select version();'"
+          env:
+          - name: PGSSLMODE
+            value: verify-full
+          - name: PGSSLROOTCERT
+            value: "/tmp/certs/ca.crt"
+          - name: PGHOST
+            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: pgbouncer-host } }
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: pgbouncer-port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: user } }
+          - name: PGPASSWORD
+            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: password } }
+          volumeMounts:
+          - name: certs
+            mountPath: "/tmp/certs"
+      volumes:
+      - name: certs
+        secret:
+          secretName: pgbouncer-test-cluster-cert
