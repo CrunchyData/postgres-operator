@@ -161,7 +161,7 @@ and limit as well as actually utilization.
 - CPU: The amount of CPU being utilized by a Pod
 - Network Traffic: The amount of networking traffic passing through each network
 device.
-- Container ResourceS: The CPU and memory limits and requests.
+- Container Resources: The CPU and memory limits and requests.
 
 ### Backups
 
