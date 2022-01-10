@@ -42,6 +42,8 @@ images:
   newTag: {{< param postgresOperatorTag >}}
 ```
 
+If you are deploying using the images from the [Crunchy Data Customer Portal](https://access.crunchydata.com/), please refer to the [private registries]({{< relref "guides/private-registries.md" >}}) guide for additional setup information.
+
 Please note that the Kustomize install project will also create a namespace for PGO
 by default (though it is possible to install without creating the namespace, as shown below).  To
 modify the name of namespace created by the installer, the `kustomize/install/namespace.yaml`
