@@ -1,0 +1,18 @@
+---
+# Annotate the cluster with the timestamp at which PostgreSQL last started.
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      INSTANCE=$(
+        kubectl get statefulset.apps --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/instance'
+      )
+      START=$(
+        kubectl exec --namespace "${NAMESPACE}" "${INSTANCE}" \
+          -- psql -qAt --command 'SELECT pg_postmaster_start_time()'
+      )
+      kubectl annotate --namespace "${NAMESPACE}" postgrescluster/original \
+        "testing/start-before=${START}"
