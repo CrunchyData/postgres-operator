@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/evanphx/json-patch v4.9.0+incompatible
+	github.com/ghodss/yaml v1.0.0
 	github.com/go-logr/logr v0.4.0
 	github.com/google/go-cmp v0.5.4
 	github.com/google/uuid v1.1.2

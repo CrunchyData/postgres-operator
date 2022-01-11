@@ -1,0 +1,7 @@
+name: cluster.yaml
+source: cluster-base.yaml
+alterations: "[{\"op\": \"replace\", \"path\": \"/spec/postgresVersion\", \"value\": \"${VALUE}\" }]"
+---
+name: assert.yaml
+source: assert-base.yaml
+alterations: "[{\"op\": \"replace\", \"path\": \"/metadata/name\", \"value\": \"cluster-start2\"}]"
