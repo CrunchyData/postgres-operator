@@ -1,0 +1,12 @@
+---
+# Wait for the clone cluster to come online.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: clone-two
+status:
+  instances:
+    - name: '00'
+      replicas: 1
+      readyReplicas: 1
+      updatedReplicas: 1

@@ -1,0 +1,8 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Annotate the cluster to trigger a backup.
+  - script: |
+      kubectl annotate --namespace="${NAMESPACE}" postgrescluster/original \
+        'postgres-operator.crunchydata.com/pgbackrest-backup=one'
