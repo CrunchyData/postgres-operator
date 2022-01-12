@@ -1,0 +1,55 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/role=master'
+      )
+      OBJECTIVE=$(
+        kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+          -- psql -qAt --command 'SELECT clock_timestamp()'
+      )
+
+      # Store the recovery objective for later steps.
+      kubectl annotate --namespace "${NAMESPACE}" postgrescluster/original \
+        "testing/objective=${OBJECTIVE}"
+
+      # A reason to restore. Wait for the change to be sent to the WAL archive.
+      kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+        -- psql -qb original --set ON_ERROR_STOP=1 \
+          --command 'DROP TABLE important' \
+          --command "SELECT pg_stat_reset_shared('archiver')" \
+          --command '
+            DO $$
+            BEGIN
+              LOOP
+                PERFORM pg_switch_wal() FROM pg_stat_archiver WHERE archived_count = 0;
+                EXIT WHEN NOT FOUND;
+                PERFORM pg_sleep(1); -- seconds
+                ROLLBACK; -- fresh stats
+              END LOOP;
+            END $$'
+
+  # The replica should also need to be restored.
+  - script: |
+      REPLICA=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/role=replica'
+      )
+
+      kubectl exec --stdin --namespace "${NAMESPACE}" "${REPLICA}" \
+        -- psql -qb original --set ON_ERROR_STOP=1 \
+          --file=- <<'SQL'
+        DO $$
+        BEGIN
+          ASSERT to_regclass('important') IS NULL, 'expected no table';
+          PERFORM * FROM information_schema.tables WHERE table_name = 'important';
+          ASSERT NOT FOUND, 'expected no table';
+        END $$
+      SQL

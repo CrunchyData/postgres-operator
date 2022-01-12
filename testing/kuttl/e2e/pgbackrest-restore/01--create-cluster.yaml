@@ -15,6 +15,7 @@ spec:
           max_connections: 200
   instances:
     - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+      replicas: 2
   backups:
     pgbackrest:
       manual:

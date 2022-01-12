@@ -7,17 +7,17 @@ commands:
         kubectl get --namespace "${NAMESPACE}" postgrescluster/original \
           --output 'go-template={{ index .metadata.annotations "testing/start-before" }}'
       )
-      INSTANCE=$(
-        kubectl get statefulset.apps --namespace "${NAMESPACE}" --output name \
-          --selector '
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
             postgres-operator.crunchydata.com/cluster=original,
-            postgres-operator.crunchydata.com/instance'
+            postgres-operator.crunchydata.com/role=master'
       )
 
       # Wait for PostgreSQL to restart.
       while true; do
         START=$(
-          kubectl exec --namespace "${NAMESPACE}" "${INSTANCE}" \
+          kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
             -- psql -qAt --command 'SELECT pg_postmaster_start_time()'
         )
         if [ "${START}" ] && [ "${START}" != "${BEFORE}" ]; then break; else sleep 1; fi
@@ -25,5 +25,5 @@ commands:
       echo "${START} != ${BEFORE}"
 
       # Reset counters in the "pg_stat_archiver" view.
-      kubectl exec --namespace "${NAMESPACE}" "${INSTANCE}" \
+      kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
         -- psql -qb --command "SELECT pg_stat_reset_shared('archiver')"

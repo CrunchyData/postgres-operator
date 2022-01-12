@@ -1,0 +1,22 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      TARGET_JSON=$(
+        kubectl get --namespace "${NAMESPACE}" postgrescluster/original \
+          --output 'go-template={{ index .metadata.annotations "testing/objective" | printf "--target=%q" | printf "%q" }}'
+      )
+
+      # Configure the cluster for an in-place point-in-time restore (PITR).
+      kubectl patch --namespace "${NAMESPACE}" postgrescluster/original \
+        --type 'merge' --patch '
+          {"spec":{"backups":{"pgbackrest":{"restore":{
+            "enabled": true,
+            "repoName": "repo1",
+            "options": ["--type=time", '"${TARGET_JSON}"']
+          }}}}}'
+
+      # Annotate the cluster to trigger the restore.
+      kubectl annotate --namespace="${NAMESPACE}" postgrescluster/original \
+        'postgres-operator.crunchydata.com/pgbackrest-restore=one'
