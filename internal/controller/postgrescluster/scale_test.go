@@ -203,6 +203,7 @@ func TestScaleDown(t *testing.T) {
 
 			// Continue until instances are healthy.
 			var instances []appsv1.StatefulSet
+			var ready int32
 			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 				mustReconcile(t, cluster)
 
@@ -218,12 +219,12 @@ func TestScaleDown(t *testing.T) {
 
 				instances = list.Items
 
-				ready := int32(0)
+				ready = int32(0)
 				for i := range instances {
 					ready += instances[i].Status.ReadyReplicas
 				}
 				return ready == test.createRunningInstances, nil
-			}), "expected %v instances to be ready, got:\n%+v", test.createRunningInstances, instances)
+			}), "expected %v instances to be ready, got:\n%+v", test.createRunningInstances, ready)
 
 			if test.primaryTest != nil {
 				// Grab the old primary name to use later
