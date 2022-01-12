@@ -940,7 +940,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 			naming.BackupReplicaCreate),
 	})
 	assert.NilError(t, err)
-	assert.Assert(t, len(jobs.Items) == 1)
+	assert.Equal(t, len(jobs.Items), 1, "expected 1 job")
 	backupJob := jobs.Items[0]
 
 	var foundOwnershipRef bool
