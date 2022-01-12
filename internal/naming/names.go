@@ -59,6 +59,10 @@ const (
 	// for the nss_wrapper
 	ContainerNSSWrapperInit = "nss-wrapper-init"
 
+	// ContainerPGBackRestLogDirInit is the name of the init container utilized to make
+	// a pgBackRest log directory when using a dedicated repo host.
+	ContainerPGBackRestLogDirInit = "pgbackrest-log-dir"
+
 	// ContainerPGMonitorExporter is the name of a container running postgres_exporter
 	ContainerPGMonitorExporter = "exporter"
 
@@ -146,6 +150,14 @@ const (
 
 	// PGBackRestRepoName is the name used for a pgbackrest repository
 	PGBackRestRepoName = "%s-pgbackrest-repo-%s"
+
+	// PGBackRestPGDataLogPath is the pgBackRest default log path configuration used by the
+	// PostgreSQL instance.
+	PGBackRestPGDataLogPath = "/pgdata/pgbackrest/log"
+
+	// PGBackRestRepoLogPath is the pgBackRest default log path configuration used by the
+	// dedicated repo host, if configured.
+	PGBackRestRepoLogPath = "/pgbackrest/%s/log"
 
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the

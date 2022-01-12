@@ -47,6 +47,7 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 		ContainerNSSWrapperInit,
 		ContainerPGAdmin,
 		ContainerPGBackRestConfig,
+		ContainerPGBackRestLogDirInit,
 		ContainerPGBouncer,
 		ContainerPGBouncerConfig,
 		ContainerPostgresStartup,

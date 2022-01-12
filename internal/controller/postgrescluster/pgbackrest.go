@@ -587,6 +587,9 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	pgbackrest.AddServerToRepoPod(postgresCluster, &repo.Spec.Template.Spec)
 
+	// add the init container to make the pgBackRest repo volume log directory
+	pgbackrest.MakePGBackrestLogDir(&repo.Spec.Template, postgresCluster)
+
 	// add pgBackRest repo volumes to pod
 	if err := pgbackrest.AddRepoVolumesToPod(postgresCluster, &repo.Spec.Template,
 		getRepoPVCNames(postgresCluster, repoResources.pvcs),

@@ -180,9 +180,9 @@ func startupCommand(
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
 	walDir := WALDirectory(cluster, instance)
 
-	args := []string{version, walDir}
+	args := []string{version, walDir, naming.PGBackRestPGDataLogPath}
 	script := strings.Join([]string{
-		`declare -r expected_major_version="$1" pgwal_directory="$2"`,
+		`declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3"`,
 
 		// Function to log values in a basic structured format.
 		`results() { printf '::postgres-operator: %s::%s\n' "$@"; }`,
@@ -219,6 +219,10 @@ func startupCommand(
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_13_0#l319
 		// - https://issue.k8s.io/93802#issuecomment-717646167
 		`install --directory --mode=0700 "${postgres_data_directory}"`,
+
+		// Create the pgBackRest log directory.
+		`results 'pgBackRest log directory' "${pgbrLog_directory}"`,
+		`install --directory --mode=0775 "${pgbrLog_directory}"`,
 
 		// Copy replication client certificate files
 		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order

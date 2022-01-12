@@ -39,31 +39,41 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 
 	testsCases := []struct {
-		repos      []v1beta1.PGBackRestRepo
-		containers []corev1.Container
-		testMap    map[string]string
+		repos          []v1beta1.PGBackRestRepo
+		containers     []corev1.Container
+		initContainers []corev1.Container
+		testMap        map[string]string
 	}{{
 		repos: []v1beta1.PGBackRestRepo{
 			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 		},
-		containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
-		testMap:    map[string]string{},
+		initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+		containers:     []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		testMap:        map[string]string{},
 	}, {
 		repos: []v1beta1.PGBackRestRepo{
 			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 		},
-		containers: []corev1.Container{{Name: "database"}},
-		testMap:    map[string]string{},
+		initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+		containers:     []corev1.Container{{Name: "database"}},
+		testMap:        map[string]string{},
 	}, {
-		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-		containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
-		testMap:    map[string]string{},
+		repos:          []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+		initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+		containers:     []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		testMap:        map[string]string{},
 	}, {
-		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-		containers: []corev1.Container{{Name: "database"}},
-		testMap:    map[string]string{},
+		repos:          []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+		initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+		containers:     []corev1.Container{{Name: "database"}},
+		testMap:        map[string]string{},
+	}, {
+		repos:          []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+		initContainers: []corev1.Container{},
+		containers:     []corev1.Container{{Name: "database"}},
+		testMap:        map[string]string{},
 	},
 		// rerun the same tests, but this time simulate an existing PVC
 		{
@@ -71,7 +81,8 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 				{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 				{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 			},
-			containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+			initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+			containers:     []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
@@ -80,19 +91,29 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 				{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
 				{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
 			},
-			containers: []corev1.Container{{Name: "database"}},
+			initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+			containers:     []corev1.Container{{Name: "database"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
 		}, {
-			repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-			containers: []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+			repos:          []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+			initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+			containers:     []corev1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
 		}, {
-			repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
-			containers: []corev1.Container{{Name: "database"}},
+			repos:          []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+			initContainers: []corev1.Container{{Name: "pgbackrest-log-dir"}},
+			containers:     []corev1.Container{{Name: "database"}},
+			testMap: map[string]string{
+				"repo1": "hippo-repo1",
+			},
+		}, {
+			repos:          []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
+			initContainers: []corev1.Container{},
+			containers:     []corev1.Container{{Name: "database"}},
 			testMap: map[string]string{
 				"repo1": "hippo-repo1",
 			},
@@ -103,37 +124,54 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 			postgresCluster.Spec.Backups.PGBackRest.Repos = tc.repos
 			template := &corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					Containers: tc.containers,
+					InitContainers: tc.initContainers,
+					Containers:     tc.containers,
 				},
 			}
 			err := AddRepoVolumesToPod(postgresCluster, template, tc.testMap, getContainerNames(tc.containers)...)
-			assert.NilError(t, err)
+			if len(tc.initContainers) == 0 {
+				assert.Error(t, err, "Unable to find init container \"pgbackrest-log-dir\" when adding pgBackRest repo volumes")
+			} else {
+				assert.NilError(t, err)
 
-			// verify volumes and volume mounts
-			for _, r := range tc.repos {
-				var foundVolume bool
-				for _, v := range template.Spec.Volumes {
-					if v.Name == r.Name && v.VolumeSource.PersistentVolumeClaim.ClaimName ==
-						naming.PGBackRestRepoVolume(postgresCluster, r.Name).Name {
-						foundVolume = true
-						break
-					}
-				}
-
-				if !foundVolume {
-					t.Error(fmt.Errorf("volume %s is missing or invalid", r.Name))
-				}
-
-				for _, c := range template.Spec.Containers {
-					var foundVolumeMount bool
-					for _, vm := range c.VolumeMounts {
-						if vm.Name == r.Name && vm.MountPath == "/pgbackrest/"+r.Name {
-							foundVolumeMount = true
+				// verify volumes and volume mounts
+				for _, r := range tc.repos {
+					var foundVolume bool
+					for _, v := range template.Spec.Volumes {
+						if v.Name == r.Name && v.VolumeSource.PersistentVolumeClaim.ClaimName ==
+							naming.PGBackRestRepoVolume(postgresCluster, r.Name).Name {
+							foundVolume = true
 							break
 						}
 					}
-					if !foundVolumeMount {
-						t.Error(fmt.Errorf("volume mount %s is missing or invalid", r.Name))
+
+					if !foundVolume {
+						t.Errorf("volume %s is missing or invalid", r.Name)
+					}
+
+					for _, c := range template.Spec.Containers {
+						var foundVolumeMount bool
+						for _, vm := range c.VolumeMounts {
+							if vm.Name == r.Name && vm.MountPath == "/pgbackrest/"+r.Name {
+								foundVolumeMount = true
+								break
+							}
+						}
+						if !foundVolumeMount {
+							t.Errorf("container volume mount %s is missing or invalid", r.Name)
+						}
+					}
+					for _, c := range template.Spec.InitContainers {
+						var foundVolumeMount bool
+						for _, vm := range c.VolumeMounts {
+							if vm.Name == r.Name && vm.MountPath == "/pgbackrest/"+r.Name {
+								foundVolumeMount = true
+								break
+							}
+						}
+						if !foundVolumeMount {
+							t.Errorf("init container volume mount %s is missing or invalid", r.Name)
+						}
 					}
 				}
 			}

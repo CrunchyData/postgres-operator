@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -29,10 +30,6 @@ import (
 )
 
 const (
-	// global pgBackRest default log path configuration, used by all three
-	// default pod configurations
-	defaultLogPath = "/tmp"
-
 	// defaultRepo1Path stores the default pgBackRest repo path
 	defaultRepo1Path = "/pgbackrest/"
 
@@ -142,6 +139,37 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	return cm
 }
 
+// MakePGBackrestLogDir creates the pgBackRest default log path directory used when a
+// dedicated repo host is configured.
+func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
+	cluster *v1beta1.PostgresCluster) {
+
+	var pgBackRestLogPath string
+	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
+		if repo.Volume != nil {
+			pgBackRestLogPath = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
+			break
+		}
+	}
+
+	container := corev1.Container{
+		Command:         []string{"bash", "-c", "mkdir -p " + pgBackRestLogPath},
+		Image:           config.PGBackRestContainerImage(cluster),
+		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
+		Name:            naming.ContainerPGBackRestLogDirInit,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+	}
+
+	// Set the container resources to the 'pgbackrest' container configuration.
+	for i, c := range template.Spec.Containers {
+		if c.Name == naming.PGBackRestRepoContainerName {
+			container.Resources = template.Spec.Containers[i].Resources
+			break
+		}
+	}
+	template.Spec.InitContainers = append(template.Spec.InitContainers, container)
+}
+
 // RestoreCommand returns the command for performing a pgBackRest restore.  In addition to calling
 // the pgBackRest restore command with any pgBackRest options provided, the script also does the
 // following:
@@ -235,7 +263,8 @@ func populatePGInstanceConfigurationMap(
 	global := iniMultiSet{}
 	stanza := iniMultiSet{}
 
-	global.Set("log-path", defaultLogPath)
+	// pgBackRest will log to the pgData volume for commands run on the PostgreSQL instance
+	global.Set("log-path", naming.PGBackRestPGDataLogPath)
 
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
@@ -288,8 +317,7 @@ func populateRepoHostConfigurationMap(
 	global := iniMultiSet{}
 	stanza := iniMultiSet{}
 
-	global.Set("log-path", defaultLogPath)
-
+	var pgBackRestLogPathSet bool
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
 
@@ -300,6 +328,15 @@ func populateRepoHostConfigurationMap(
 			for option, val := range getExternalRepoConfigs(repo) {
 				global.Set(option, val)
 			}
+		}
+
+		if !pgBackRestLogPathSet && repo.Volume != nil {
+			// pgBackRest will log to the first configured repo volume when commands
+			// are run on the pgBackRest repo host. With our previous check in
+			// DedicatedRepoHostEnabled(), we've already validated that at least one
+			// defined repo has a volume.
+			global.Set("log-path", fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name))
+			pgBackRestLogPathSet = true
 		}
 	}
 
