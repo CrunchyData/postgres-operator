@@ -1,0 +1,22 @@
+---
+# Confirm that the replica is streaming from the primary.
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      REPLICA=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/role=replica'
+      )
+
+      kubectl exec --stdin --namespace "${NAMESPACE}" "${REPLICA}" \
+        -- psql -qb original --set ON_ERROR_STOP=1 \
+          --file=- <<'SQL'
+        DO $$
+        BEGIN
+          ASSERT pg_is_in_recovery(), 'expected replica';
+          ASSERT current_setting('primary_conninfo') <> '', 'expected streaming';
+        END $$
+      SQL

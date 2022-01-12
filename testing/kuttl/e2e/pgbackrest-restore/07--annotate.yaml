@@ -4,14 +4,14 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 commands:
   - script: |
-      INSTANCE=$(
-        kubectl get statefulset.apps --namespace "${NAMESPACE}" \
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
           --output name --selector '
             postgres-operator.crunchydata.com/cluster=original,
-            postgres-operator.crunchydata.com/instance'
+            postgres-operator.crunchydata.com/role=master'
       )
       START=$(
-        kubectl exec --namespace "${NAMESPACE}" "${INSTANCE}" \
+        kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
           -- psql -qAt --command 'SELECT pg_postmaster_start_time()'
       )
       kubectl annotate --namespace "${NAMESPACE}" postgrescluster/original \
