@@ -227,6 +227,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 			// Continue until instances are healthy.
 			var instances []appsv1.StatefulSet
+			var ready int32
 			assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 				mustReconcile(t, cluster)
 
@@ -242,12 +243,12 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 				instances = list.Items
 
-				ready := int32(0)
+				ready = int32(0)
 				for i := range instances {
 					ready += instances[i].Status.ReadyReplicas
 				}
 				return ready >= test.waitForRunningInstances, nil
-			}), "expected %v instances to be ready, got:\n%+v", test.waitForRunningInstances, instances)
+			}), "expected %v instances to be ready, got:\n%v", test.waitForRunningInstances, ready)
 
 			if test.beforeDelete != nil {
 				test.beforeDelete(t, cluster)
@@ -459,6 +460,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	})
 
 	var instances []appsv1.StatefulSet
+	var ready int32
 	assert.NilError(t, wait.Poll(time.Second, Scale(time.Minute), func() (bool, error) {
 		list := appsv1.StatefulSetList{}
 		selector, err := labels.Parse(strings.Join([]string{
@@ -472,12 +474,12 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 
 		instances = list.Items
 
-		ready := 0
+		ready = 0
 		for i := range instances {
-			ready += int(instances[i].Status.ReadyReplicas)
+			ready += instances[i].Status.ReadyReplicas
 		}
 		return ready >= 2, nil
-	}), "expected instances to be ready, got:\n%+v", instances)
+	}), "expected 2 instances to be ready, got:\n%v", ready)
 
 	// Delete the namespace.
 	assert.NilError(t, cc.Delete(ctx, ns))
