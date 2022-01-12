@@ -60,6 +60,25 @@ func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *cor
 			},
 		})
 
+		var initContainerFound bool
+		var index int
+		for index = range template.Spec.InitContainers {
+			if template.Spec.InitContainers[index].Name == naming.ContainerPGBackRestLogDirInit {
+				initContainerFound = true
+				break
+			}
+		}
+		if !initContainerFound {
+			return errors.Errorf(
+				"Unable to find init container %q when adding pgBackRest repo volumes",
+				naming.ContainerPGBackRestLogDirInit)
+		}
+		template.Spec.InitContainers[index].VolumeMounts =
+			append(template.Spec.InitContainers[index].VolumeMounts, corev1.VolumeMount{
+				Name:      repo.Name,
+				MountPath: "/pgbackrest/" + repo.Name,
+			})
+
 		for _, name := range containerNames {
 			var containerFound bool
 			var index int
