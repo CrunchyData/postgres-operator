@@ -1,0 +1,4 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+- command: kubectl exec -n krb5 -it krb5-kdc-0 -- /krb5-scripts/krb5.sh "${NAMESPACE}"
