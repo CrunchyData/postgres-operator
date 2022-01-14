@@ -1,7 +1,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: pgbouncer-test
+  name: proxied
 status:
   instances:
     - name: instance1
@@ -12,4 +12,4 @@ status:
 apiVersion: v1
 kind: Service
 metadata:
-  name: pgbouncer-test-pgbouncer
+  name: proxied-pgbouncer

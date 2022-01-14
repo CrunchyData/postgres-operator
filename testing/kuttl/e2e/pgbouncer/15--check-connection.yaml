@@ -1,0 +1,35 @@
+---
+# Confirm that the open connection is encrypted and remained open through rotation.
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      CONNECTION=$(
+        kubectl logs --namespace "${NAMESPACE}" job.batch/psql-open-connection
+      )
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=proxied,
+            postgres-operator.crunchydata.com/role=master'
+      )
+
+      kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" \
+        -- psql -qb --set ON_ERROR_STOP=1 --set CONNECTION="${CONNECTION}" \
+          --file=- <<'SQL'
+        SELECT
+          set_config('testing.pid', (string_to_array(:'CONNECTION', '|'))[1], false) AS "testing.pid",
+          set_config('testing.start', (string_to_array(:'CONNECTION', '|'))[2], false) AS "testing.start";
+
+        DO $$
+        BEGIN
+          PERFORM * FROM pg_stat_ssl
+            WHERE ssl AND pid = current_setting('testing.pid')::integer;
+          ASSERT FOUND, 'expected TLS end-to-end';
+
+          PERFORM * FROM pg_stat_activity
+            WHERE pid = current_setting('testing.pid')::integer
+              AND backend_start = current_setting('testing.start')::timestamptz;
+          ASSERT FOUND, 'expected to stay connected';
+        END $$;
+      SQL

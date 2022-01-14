@@ -1,0 +1,18 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      BEFORE=$(date -u +%FT%TZ)
+
+      # Wipe out the stored PgBouncer certificate.
+      kubectl patch --namespace "${NAMESPACE}" secret/proxied-pgbouncer \
+        --patch '{"data":{"pgbouncer-frontend.crt":""}}'
+
+      # Wait for the certificate to be regenerated then loaded.
+      until
+        kubectl logs --namespace "${NAMESPACE}" deployment.apps/proxied-pgbouncer \
+          --container pgbouncer-config --since-time "${BEFORE}" | grep 'Loaded'
+      do
+        sleep 1
+      done

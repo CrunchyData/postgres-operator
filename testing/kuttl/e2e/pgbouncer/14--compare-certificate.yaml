@@ -1,0 +1,14 @@
+---
+# Confirm that PgBouncer is serving a new certificate.
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      bash -c '! diff -u \
+        <(kubectl logs --namespace "${NAMESPACE}" job.batch/read-cert-before) \
+        <(kubectl logs --namespace "${NAMESPACE}" job.batch/read-cert-after) \
+      ' || {
+        echo 'Certificate did not change!'
+        kubectl logs --namespace "${NAMESPACE}" job.batch/read-cert-after
+        exit 1
+      }
