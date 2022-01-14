@@ -2,11 +2,14 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: psql-connect
+  labels: { postgres-operator-test: kuttl }
 spec:
+  backoffLimit: 3
   template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
     spec:
-      backoffLimit: 3
-      restartPolicy: "OnFailure"
+      restartPolicy: Never
       containers:
         - name: psql
           image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
@@ -20,19 +23,19 @@ spec:
           - name: PGSSLROOTCERT
             value: "/tmp/certs/ca.crt"
           - name: PGHOST
-            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: pgbouncer-host } }
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-host } }
           - name: PGPORT
-            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: pgbouncer-port } }
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-port } }
           - name: PGDATABASE
-            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: dbname } }
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: dbname } }
           - name: PGUSER
-            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: user } }
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: user } }
           - name: PGPASSWORD
-            valueFrom: { secretKeyRef: { name: pgbouncer-test-pguser-pgbouncer-test, key: password } }
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: password } }
           volumeMounts:
           - name: certs
             mountPath: "/tmp/certs"
       volumes:
       - name: certs
         secret:
-          secretName: pgbouncer-test-cluster-cert
+          secretName: proxied-cluster-cert
