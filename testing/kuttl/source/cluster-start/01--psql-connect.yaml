@@ -8,11 +8,11 @@ spec:
       restartPolicy: "OnFailure"
       containers:
         - name: psql
-          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+          image: ${KUTTL_PSQL_IMAGE}
           command:
-            - "bash"
-            - "-c"
-            - "psql -c 'select version();'"
+            - psql
+            - -c
+            - "select version();"
           env:
           - name: PGHOST
             valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: host } }
@@ -24,3 +24,5 @@ spec:
             valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: user } }
           - name: PGPASSWORD
             valueFrom: { secretKeyRef: { name: cluster-start-pguser-cluster-start, key: password } }
+          # Do not wait indefinitely.
+          - { name: PGCONNECT_TIMEOUT, value: '5' }

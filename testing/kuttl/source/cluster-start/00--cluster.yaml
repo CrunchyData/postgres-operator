@@ -1,12 +1,9 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: major-upgrade
+  name: cluster-start
 spec:
-  upgrade:
-    enabled: true
-    fromPostgresVersion: 13
-  postgresVersion: 14
+  postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - name: instance1
       dataVolumeClaimSpec:

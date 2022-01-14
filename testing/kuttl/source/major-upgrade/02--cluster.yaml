@@ -1,9 +1,12 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: replica-read
+  name: major-upgrade
 spec:
-  postgresVersion: 14
+  upgrade:
+    enabled: true
+    fromPostgresVersion: ${KUTTL_PG_UPGRADE_FROM_VERSION}
+  postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - name: instance1
       dataVolumeClaimSpec:
@@ -12,7 +15,6 @@ spec:
         resources:
           requests:
             storage: 1Gi
-      replicas: 2
   backups:
     pgbackrest:
       repos:

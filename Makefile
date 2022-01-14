@@ -209,6 +209,35 @@ check-kuttl:
 	${PGO_KUBE_CLIENT} ${KUTTL_TEST} \
 		--config testing/kuttl/kuttl-test.yaml
 
+# Set reasonable default for KUTTL_ env vars for templating
+KUTTL_PG_VERSION ?= 14
+KUTTL_PG_UPGRADE_FROM_VERSION ?= 13
+KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+
+# TODO: When I attempted to loop through the directories and find the yaml files,
+# due to how makefile expands variables, each file would end up in each directory.
+# So this implementation loops through to create the folders under generated
+# and then loops through all the yaml files, using a `sed` substition to place them
+# For safety, this removes the `testing/kuttl/generated` folder if it exists
+.PHONY: generate-kuttl
+generate-kuttl:
+	[ ! -d testing/kuttl/generated ] || rm -r testing/kuttl/generated
+	for SRCDIR in $(shell ls testing/kuttl/source); do \
+		mkdir -p testing/kuttl/generated/$${SRCDIR}; \
+	done;
+	for FILEPATH in $(wildcard testing/kuttl/source/*/*.yaml); do \
+		NEW_FILEPATH=`echo $${FILEPATH} | sed 's/source/generated/'`; \
+		KUTTL_PG_VERSION=$(KUTTL_PG_VERSION) \
+			KUTTL_PG_UPGRADE_FROM_VERSION=$(KUTTL_PG_UPGRADE_FROM_VERSION) \
+			KUTTL_PSQL_IMAGE=$(KUTTL_PSQL_IMAGE) \
+			envsubst < $${FILEPATH} > $${NEW_FILEPATH}; \
+	done
+
+.PHONY: check-generated-kuttl
+check-generated-kuttl: generate-kuttl
+	${PGO_KUBE_CLIENT} ${KUTTL_TEST} \
+		--config testing/kuttl/kuttl-test-generated.yaml
+
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy generate-rbac
 	git diff --exit-code -- config/crd
@@ -218,6 +247,7 @@ check-generate: generate-crd generate-deepcopy generate-rbac
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f config/rbac/role.yaml
+	[ ! -d testing/kuttl/generated ] || rm -r testing/kuttl/generated
 	[ ! -d build/crd/generated ] || rm -r build/crd/generated
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*

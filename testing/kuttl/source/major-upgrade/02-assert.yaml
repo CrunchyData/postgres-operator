@@ -3,7 +3,7 @@ kind: PostgresCluster
 metadata:
   name: major-upgrade
 spec:
-  postgresVersion: 14
+  postgresVersion: ${KUTTL_PG_VERSION}
 status:
   instances:
     - name: instance1

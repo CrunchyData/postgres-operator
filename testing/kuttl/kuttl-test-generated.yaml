@@ -1,0 +1,14 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestSuite
+testDirs:
+- testing/kuttl/generated/
+timeout: 180
+parallel: 2
+# by default kuttl will run in a generated namespace to override
+# that functionality simply uncomment the line below and replace
+# postgres-operator with the desired namespace to run in.
+# namespace: postgres-operator
+# By default kuttl deletes the resources created during a test.
+# For debugging, it may be helpful to uncomment the following line
+# in order to inspect the resources.
+# skipDelete: true
