@@ -39,6 +39,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -48,10 +49,9 @@ func TestReconcileCerts(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
+	_, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
 	ctx := context.Background()
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	namespace := setupNamespace(t, tClient).Name
 
 	r := &Reconciler{

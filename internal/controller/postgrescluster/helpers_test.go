@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -67,6 +68,60 @@ func init() {
 // marshalMatches converts actual to YAML and compares that to expected.
 func marshalMatches(actual interface{}, expected string) cmp.Comparison {
 	return cmp.MarshalMatches(actual, expected)
+}
+
+var kubernetes struct {
+	sync.Mutex
+
+	env   *envtest.Environment
+	count int
+}
+
+// setupKubernetes starts or connects to a Kubernetes API and returns a client
+// that uses it. When starting a local API, the client is a member of the
+// "system:masters" group. It also creates any CRDs present in the
+// "/config/crd/bases" directory. When any of these fail, it calls t.Fatal.
+// It deletes CRDs and stops the local API using t.Cleanup.
+func setupKubernetes(t testing.TB) (*envtest.Environment, client.Client) {
+	t.Helper()
+
+	kubernetes.Lock()
+	defer kubernetes.Unlock()
+
+	if kubernetes.env == nil {
+		env := &envtest.Environment{
+			CRDDirectoryPaths: []string{
+				filepath.Join("..", "..", "..", "config", "crd", "bases"),
+			},
+		}
+
+		_, err := env.Start()
+		assert.NilError(t, err)
+
+		kubernetes.env = env
+	}
+
+	kubernetes.count++
+
+	t.Cleanup(func() {
+		kubernetes.Lock()
+		defer kubernetes.Unlock()
+
+		kubernetes.count--
+
+		if kubernetes.count == 0 {
+			assert.Check(t, kubernetes.env.Stop())
+			kubernetes.env = nil
+		}
+	})
+
+	scheme, err := runtime.CreatePostgresOperatorScheme()
+	assert.NilError(t, err)
+
+	client, err := client.New(kubernetes.env.Config, client.Options{Scheme: scheme})
+	assert.NilError(t, err)
+
+	return kubernetes.env, client
 }
 
 // setupNamespace creates a random namespace that will be deleted by t.Cleanup.
@@ -137,6 +192,8 @@ func testCluster() *v1beta1.PostgresCluster {
 
 // setupTestEnv configures and starts an EnvTest instance of etcd and the Kubernetes API server
 // for test usage, as well as creates a new client instance.
+//
+// Deprecated: use setupKubernetes instead.
 func setupTestEnv(t *testing.T,
 	_ string) (*envtest.Environment, client.Client, *rest.Config) {
 
@@ -147,6 +204,7 @@ func setupTestEnv(t *testing.T,
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log("DEPRECATED: Use setupKubernetes instead of setupTestEnv.")
 	t.Log("Test environment started")
 
 	pgoScheme, err := runtime.CreatePostgresOperatorScheme()

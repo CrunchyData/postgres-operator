@@ -38,6 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -47,21 +48,21 @@ func TestScaleDown(t *testing.T) {
 	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
 		t.Skip("requires a running garbage collection controller")
 	}
-	// TODO: Update tests that include envtest package to better handle
-	// running in parallel
-	// t.Parallel()
-	env, cc, config := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	env, cc := setupKubernetes(t)
+
+	// TODO(cbandy): Assume this should run alone for now.
+	require.ParallelCapacity(t, 99)
 
 	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
 		reconciler = &Reconciler{
 			Client:   cc,
 			Owner:    client.FieldOwner(t.Name()),
 			Recorder: new(record.FakeRecorder),
 			Tracer:   otel.Tracer(t.Name()),
 		}
-		podExec, err := newPodExecutor(config)
+		podExec, err := newPodExecutor(env.Config)
 		assert.NilError(t, err)
 		reconciler.PodExec = podExec
 	})

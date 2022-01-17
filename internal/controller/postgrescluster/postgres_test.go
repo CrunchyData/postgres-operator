@@ -37,12 +37,13 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestGeneratePostgresUserSecret(t *testing.T) {
-	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	_, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	reconciler := &Reconciler{Client: tClient}
 
@@ -238,8 +239,8 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 
 func TestReconcilePostgresVolumes(t *testing.T) {
 	ctx := context.Background()
-	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	_, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{
 		Client: tClient,
@@ -429,8 +430,8 @@ func TestReconcileDatabaseInitSQL(t *testing.T) {
 	var called bool
 
 	// Test Environment Setup
-	env, client, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, client := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{
 		Client: client,
@@ -553,8 +554,8 @@ func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
 	var called bool
 
 	// Test Environment Setup
-	env, client, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, client := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{
 		Client: client,

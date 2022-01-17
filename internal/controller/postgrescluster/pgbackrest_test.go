@@ -56,6 +56,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -178,11 +179,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
+
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -609,11 +610,11 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
+
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -672,12 +673,11 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 }
 
 func TestReconcileStanzaCreate(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -848,12 +848,11 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 }
 
 func TestReconcileReplicaCreateBackup(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -1015,12 +1014,11 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 }
 
 func TestReconcileManualBackup(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	_, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -1465,11 +1463,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
+
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -1777,12 +1775,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 }
 
 func TestReconcilePostgresClusterDataSource(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 4)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2173,8 +2170,8 @@ volumes:
 }
 
 func TestGenerateRepoHostIntent(t *testing.T) {
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	r := Reconciler{Client: cc}
 
@@ -2225,8 +2222,8 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 }
 
 func TestGenerateRestoreJobIntent(t *testing.T) {
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	r := Reconciler{
 		Client: cc,
@@ -2430,12 +2427,11 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 }
 
 func TestObserveRestoreEnv(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2654,12 +2650,11 @@ func TestObserveRestoreEnv(t *testing.T) {
 }
 
 func TestPrepareForRestore(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2906,11 +2901,11 @@ func TestPrepareForRestore(t *testing.T) {
 }
 
 func TestReconcileScheduledBackups(t *testing.T) {
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
+
 	r := &Reconciler{}
-	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	_, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -3127,12 +3122,11 @@ func TestReconcileScheduledBackups(t *testing.T) {
 }
 
 func TestSetScheduledJobStatus(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -3222,12 +3216,11 @@ func TestSetScheduledJobStatus(t *testing.T) {
 }
 
 func TestPreparePGBackRestForPGUpgrade(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 4)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
