@@ -28,7 +28,6 @@ import (
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -180,16 +179,10 @@ func TestReconcilePGBouncerService(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
 	cluster := testCluster()
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, cc).Name
 	assert.NilError(t, cc.Create(ctx, cluster))
 
 	t.Run("Unspecified", func(t *testing.T) {
@@ -435,11 +428,7 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		return !apierrors.IsNotFound(err)
 	}
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	ns := setupNamespace(t, cc)
 
 	t.Run("empty", func(t *testing.T) {
 		cluster := testCluster()

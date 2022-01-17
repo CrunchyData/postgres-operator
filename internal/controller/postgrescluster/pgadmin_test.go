@@ -30,7 +30,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -183,16 +182,10 @@ func TestReconcilePGAdminService(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
 	cluster := testCluster()
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, cc).Name
 	assert.NilError(t, cc.Create(ctx, cluster))
 
 	t.Run("Unspecified", func(t *testing.T) {
@@ -277,14 +270,9 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
+	ns := setupNamespace(t, cc)
 	cluster := pgAdminTestCluster(*ns)
 
 	assert.NilError(t, cc.Create(ctx, cluster))
@@ -579,12 +567,7 @@ func TestReconcilePGAdminDataVolume(t *testing.T) {
 		Owner:  client.FieldOwner(t.Name()),
 	}
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, tClient)
 	cluster := pgAdminTestCluster(*ns)
 
 	assert.NilError(t, tClient.Create(ctx, cluster))

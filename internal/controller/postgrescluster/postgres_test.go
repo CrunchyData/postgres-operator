@@ -30,7 +30,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
@@ -247,14 +246,8 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 		Owner:  client.FieldOwner(t.Name()),
 	}
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
 	cluster := testCluster()
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, tClient).Name
 
 	assert.NilError(t, tClient.Create(ctx, cluster))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
@@ -452,11 +445,7 @@ func TestReconcileDatabaseInitSQL(t *testing.T) {
 	}
 
 	// Test Resources Setup
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, client.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, client.Delete(ctx, ns)) })
+	ns := setupNamespace(t, client)
 
 	// Define a status to be set if sql has already been run
 	status := "set"
@@ -580,11 +569,7 @@ func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
 	}
 
 	// Test Resources Setup
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, client.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, client.Delete(ctx, ns)) })
+	ns := setupNamespace(t, client)
 
 	// reconcileDatabaseInitSQL expects to find a pod that is running with a writable
 	// database container. Define this pod in an observed instance so that

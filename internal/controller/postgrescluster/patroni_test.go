@@ -35,7 +35,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -159,12 +158,7 @@ func TestReconcilePatroniLeaderLease(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, cc)
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
 	cluster := testCluster()
@@ -260,17 +254,11 @@ func TestPatroniReplicationSecret(t *testing.T) {
 		clusterUID  = types.UID("hippouid")
 	)
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
 	// create a PostgresCluster to test with
 	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
-			Namespace: ns.Name,
+			Namespace: setupNamespace(t, tClient).Name,
 			UID:       clusterUID,
 		},
 	}
@@ -357,20 +345,13 @@ func TestPatroniReplicationSecret(t *testing.T) {
 }
 
 func TestReconcilePatroniStatus(t *testing.T) {
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	ctx := context.Background()
+	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	namespace := "test-reconcile-patroni-status"
+	ns := setupNamespace(t, tClient)
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+
 	systemIdentifier := "6952526174828511264"
 	createResources := func(index, readyReplicas int,
 		writeAnnotation bool) (*v1beta1.PostgresCluster, *observedInstances) {
@@ -389,13 +370,13 @@ func TestReconcilePatroniStatus(t *testing.T) {
 		postgresCluster := &v1beta1.PostgresCluster{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      clusterName,
-				Namespace: namespace,
+				Namespace: ns.Name,
 			},
 		}
 
 		runner := &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: namespace,
+				Namespace: ns.Name,
 				Name:      instanceName,
 				Labels:    labels,
 			},
@@ -440,10 +421,6 @@ func TestReconcilePatroniStatus(t *testing.T) {
 
 		return postgresCluster, observedInstances
 	}
-
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	testsCases := []struct {
 		requeueExpected bool
