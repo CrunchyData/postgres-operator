@@ -51,6 +51,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -1099,11 +1100,11 @@ func TestPodsToKeep(t *testing.T) {
 }
 
 func TestDeleteInstance(t *testing.T) {
-	env, cc, config := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
 		reconciler = &Reconciler{
 			Client:   cc,
 			Owner:    client.FieldOwner(t.Name()),
@@ -1705,11 +1706,13 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 }
 
 func TestReconcileUpgrade(t *testing.T) {
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	tEnv, tClient := setupKubernetes(t)
+
+	// TODO(cbandy): Assume this should run alone for now.
+	require.ParallelCapacity(t, 99)
+
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2048,12 +2051,13 @@ func TestReconcileUpgrade(t *testing.T) {
 }
 
 func TestObserveUpgradeEnv(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	// TODO(cbandy): Assume this should run alone for now.
+	require.ParallelCapacity(t, 99)
+
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2270,12 +2274,13 @@ func TestObserveUpgradeEnv(t *testing.T) {
 }
 
 func TestPrepareForUpgrade(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	// TODO(cbandy): Assume this should run alone for now.
+	require.ParallelCapacity(t, 99)
+
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2702,9 +2707,8 @@ func fakeUpgradeCluster(clusterName, namespace, clusterUID string) *v1beta1.Post
 
 func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 	ctx := context.Background()
-
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
 		Client: cc,
@@ -2821,9 +2825,8 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 
 func TestCleanupDisruptionBudgets(t *testing.T) {
 	ctx := context.Background()
-
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
 		Client: cc,

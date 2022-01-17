@@ -44,6 +44,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -53,8 +54,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	tEnv, cc, _ := setupTestEnv(t, t.Name())
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, cc)
 
@@ -603,12 +604,11 @@ func TestGetPVCNameMethods(t *testing.T) {
 }
 
 func TestReconcileConfigureExistingPVCs(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -872,12 +872,11 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 }
 
 func TestReconcileMoveDirectories(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),

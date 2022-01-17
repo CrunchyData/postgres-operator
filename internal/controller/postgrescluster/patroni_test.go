@@ -42,12 +42,13 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestGeneratePatroniLeaderLeaseService(t *testing.T) {
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	reconciler := &Reconciler{Client: cc}
 
@@ -155,8 +156,8 @@ ownerReferences:
 
 func TestReconcilePatroniLeaderLease(t *testing.T) {
 	ctx := context.Background()
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	ns := setupNamespace(t, cc)
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
@@ -233,12 +234,11 @@ func TestPatroniReplicationSecret(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -346,8 +346,8 @@ func TestPatroniReplicationSecret(t *testing.T) {
 
 func TestReconcilePatroniStatus(t *testing.T) {
 	ctx := context.Background()
-	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	_, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient)
 	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
@@ -450,8 +450,8 @@ func TestReconcilePatroniStatus(t *testing.T) {
 }
 
 func TestReconcilePatroniSwitchover(t *testing.T) {
-	env, client, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, client := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	var called, failover, callError, callFails bool
 	r := Reconciler{

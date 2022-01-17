@@ -32,12 +32,13 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestGeneratePGBouncerService(t *testing.T) {
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	reconciler := &Reconciler{Client: cc}
 
@@ -176,8 +177,8 @@ ownerReferences:
 
 func TestReconcilePGBouncerService(t *testing.T) {
 	ctx := context.Background()
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
@@ -263,8 +264,8 @@ func TestReconcilePGBouncerService(t *testing.T) {
 }
 
 func TestGeneratePGBouncerDeployment(t *testing.T) {
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	reconciler := &Reconciler{Client: cc}
 
@@ -409,9 +410,8 @@ topologySpreadConstraints:
 
 func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 	ctx := context.Background()
-
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{
 		Client: cc,

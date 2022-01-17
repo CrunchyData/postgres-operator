@@ -29,14 +29,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestManageControllerRefs(t *testing.T) {
+	tEnv, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
-	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -44,10 +45,7 @@ func TestManageControllerRefs(t *testing.T) {
 			Owner:    ControllerName,
 		}
 	})
-	t.Cleanup(func() {
-		teardownManager(cancel, t)
-		teardownTestEnv(t, tEnv)
-	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
 
 	clusterName := "hippo"
 

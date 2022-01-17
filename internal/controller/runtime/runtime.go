@@ -49,6 +49,7 @@ func CreateRuntimeManager(namespace string, config *rest.Config,
 		Scheme:     pgoScheme,
 	}
 	if disableMetrics {
+		options.HealthProbeBindAddress = "0"
 		options.MetricsBindAddress = "0"
 	}
 

@@ -64,6 +64,12 @@ issues:
       path: _test[.]go$
       text: \`(net/http/httptest|[^`]*testing[^`]*)`
 
+    # Allow setupTestEnv and teardownTestEnv to remain unused for a while.
+    # TODO(cbandy): Remove these functions after setupKubernetes has landed.
+    - linters: [deadcode, unused]
+      path: internal/controller/postgrescluster/helpers_test.go
+      text: \`(setupTestEnv|teardownTestEnv)`
+
 run:
   build-tags:
     - envtest

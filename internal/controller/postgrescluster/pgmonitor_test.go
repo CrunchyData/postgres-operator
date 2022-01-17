@@ -40,6 +40,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -516,11 +517,11 @@ func TestReconcilePGMonitorSecret(t *testing.T) {
 		t.Skip("Test failing with existing cluster")
 	}
 
-	env, cc, config := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
 		reconciler = &Reconciler{
 			Client:   cc,
 			Owner:    client.FieldOwner(t.Name()),

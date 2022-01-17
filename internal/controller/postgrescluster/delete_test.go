@@ -22,7 +22,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -34,18 +33,16 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/patroni"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -53,28 +50,10 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
 		t.Skip("requires a running garbage collection controller")
 	}
-	// TODO: Update tests that include envtest package to better handle
-	// running in parallel
-	// t.Parallel()
 
 	ctx := context.Background()
-	env := &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "..", "config", "crd", "bases"),
-		},
-	}
-
-	options := client.Options{}
-	options.Scheme = runtime.NewScheme()
-	assert.NilError(t, scheme.AddToScheme(options.Scheme))
-	assert.NilError(t, v1beta1.AddToScheme(options.Scheme))
-
-	config, err := env.Start()
-	assert.NilError(t, err)
-	t.Cleanup(func() { assert.Check(t, env.Stop()) })
-
-	cc, err := client.New(config, options)
-	assert.NilError(t, err)
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
 
 	ns := setupNamespace(t, cc)
 	reconciler := Reconciler{
@@ -84,7 +63,8 @@ func TestReconcilerHandleDelete(t *testing.T) {
 		Tracer:   otel.Tracer(t.Name()),
 	}
 
-	reconciler.PodExec, err = newPodExecutor(config)
+	var err error
+	reconciler.PodExec, err = newPodExecutor(env.Config)
 	assert.NilError(t, err)
 
 	mustReconcile := func(t *testing.T, cluster *v1beta1.PostgresCluster) reconcile.Result {
@@ -353,28 +333,9 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 		t.Skip("requires a running garbage collection controller")
 	}
 
-	// TODO: Update tests that include envtest package to better handle
-	// running in parallel
-	// t.Parallel()
-
 	ctx := context.Background()
-	env := &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "..", "config", "crd", "bases"),
-		},
-	}
-
-	options := client.Options{}
-	options.Scheme = runtime.NewScheme()
-	assert.NilError(t, scheme.AddToScheme(options.Scheme))
-	assert.NilError(t, v1beta1.AddToScheme(options.Scheme))
-
-	config, err := env.Start()
-	assert.NilError(t, err)
-	t.Cleanup(func() { assert.Check(t, env.Stop()) })
-
-	cc, err := client.New(config, options)
-	assert.NilError(t, err)
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
 
 	ns := setupNamespace(t, cc)
 
@@ -385,11 +346,12 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 		Stop    context.CancelFunc
 	}
 
+	var err error
 	mm.Context, mm.Stop = context.WithCancel(context.Background())
 	mm.Error = make(chan error, 1)
-	mm.Manager, err = manager.New(config, manager.Options{
+	mm.Manager, err = manager.New(env.Config, manager.Options{
 		Namespace: ns.Name,
-		Scheme:    options.Scheme,
+		Scheme:    cc.Scheme(),
 
 		HealthProbeBindAddress: "0", // disable
 		MetricsBindAddress:     "0", // disable

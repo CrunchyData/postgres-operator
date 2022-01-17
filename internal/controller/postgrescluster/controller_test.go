@@ -42,13 +42,14 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestDeleteControlled(t *testing.T) {
 	ctx := context.Background()
-	tEnv, cc, _ := setupTestEnv(t, t.Name())
-	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	ns := setupNamespace(t, cc)
 	reconciler := Reconciler{Client: cc}

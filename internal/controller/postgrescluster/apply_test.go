@@ -37,26 +37,18 @@ import (
 	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestServerSideApply(t *testing.T) {
-	// TODO: Update tests that include envtest package to better handle
-	// running in parallel
-	// t.Parallel()
-
 	ctx := context.Background()
-	env := &envtest.Environment{}
-	config, err := env.Start()
-	assert.NilError(t, err)
-	t.Cleanup(func() { assert.Check(t, env.Stop()) })
-
-	cc, err := client.New(config, client.Options{})
-	assert.NilError(t, err)
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, cc)
 
-	dc, err := discovery.NewDiscoveryClientForConfig(config)
+	dc, err := discovery.NewDiscoveryClientForConfig(env.Config)
 	assert.NilError(t, err)
 
 	server, err := dc.ServerVersion()

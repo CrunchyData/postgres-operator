@@ -43,6 +43,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -93,13 +94,11 @@ var gvks = []schema.GroupVersionKind{{
 }}
 
 func TestCustomLabels(t *testing.T) {
-	t.Parallel()
-
-	env, cc, config := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
 
 	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
 		reconciler = &Reconciler{
 			Client:   cc,
 			Owner:    client.FieldOwner(t.Name()),
@@ -351,13 +350,11 @@ func TestCustomLabels(t *testing.T) {
 }
 
 func TestCustomAnnotations(t *testing.T) {
-	t.Parallel()
-
-	env, cc, config := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 2)
 
 	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
 		reconciler = &Reconciler{
 			Client:   cc,
 			Owner:    client.FieldOwner(t.Name()),
@@ -614,20 +611,18 @@ func TestContainerSecurityContext(t *testing.T) {
 		t.Skip("Test requires pods to be created")
 	}
 
-	t.Parallel()
-
-	env, cc, config := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	env, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
 		reconciler = &Reconciler{
 			Client:   cc,
 			Owner:    client.FieldOwner(t.Name()),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
 			Tracer:   otel.Tracer(t.Name()),
 		}
-		podExec, err := newPodExecutor(config)
+		podExec, err := newPodExecutor(env.Config)
 		assert.NilError(t, err)
 		reconciler.PodExec = podExec
 	})
@@ -691,8 +686,8 @@ func TestContainerSecurityContext(t *testing.T) {
 }
 
 func TestGenerateClusterPrimaryService(t *testing.T) {
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	reconciler := &Reconciler{Client: cc}
 
@@ -792,8 +787,8 @@ subsets:
 
 func TestReconcileClusterPrimaryService(t *testing.T) {
 	ctx := context.Background()
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
@@ -813,8 +808,8 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 }
 
 func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
-	env, cc, _ := setupTestEnv(t, ControllerName)
-	t.Cleanup(func() { teardownTestEnv(t, env) })
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
 
 	reconciler := &Reconciler{Client: cc}
 
