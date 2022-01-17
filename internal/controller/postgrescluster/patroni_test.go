@@ -29,7 +29,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -37,7 +36,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -234,19 +232,11 @@ func TestPatroniReplicationSecret(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	tEnv, tClient := setupKubernetes(t)
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	ctx := context.Background()
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
 	// test postgrescluster values
 	var (

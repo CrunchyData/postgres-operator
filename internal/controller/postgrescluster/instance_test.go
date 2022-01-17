@@ -45,8 +45,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -1100,19 +1100,16 @@ func TestPodsToKeep(t *testing.T) {
 }
 
 func TestDeleteInstance(t *testing.T) {
-	env, cc := setupKubernetes(t)
+	ctx := context.Background()
+	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
-		reconciler = &Reconciler{
-			Client:   cc,
-			Owner:    client.FieldOwner(t.Name()),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(t.Name()),
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	reconciler := &Reconciler{
+		Client:   cc,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: new(record.FakeRecorder),
+		Tracer:   otel.Tracer(t.Name()),
+	}
 
 	// Define, Create, and Reconcile a cluster to get an instance running in kube
 	cluster := testCluster()
@@ -1706,21 +1703,17 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 }
 
 func TestReconcileUpgrade(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 
 	// TODO(cbandy): Assume this should run alone for now.
 	require.ParallelCapacity(t, 99)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	r := &Reconciler{
+		Client:   tClient,
+		Recorder: new(record.FakeRecorder),
+		Owner:    client.FieldOwner(t.Name()),
+	}
 
 	ns := setupNamespace(t, tClient)
 	sa := &corev1.ServiceAccount{
@@ -2051,22 +2044,13 @@ func TestReconcileUpgrade(t *testing.T) {
 }
 
 func TestObserveUpgradeEnv(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 
 	// TODO(cbandy): Assume this should run alone for now.
 	require.ParallelCapacity(t, 99)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
-
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
@@ -2274,22 +2258,13 @@ func TestObserveUpgradeEnv(t *testing.T) {
 }
 
 func TestPrepareForUpgrade(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 
 	// TODO(cbandy): Assume this should run alone for now.
 	require.ParallelCapacity(t, 99)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
-
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 	ns := setupNamespace(t, tClient)
 
 	generateJob := func(clusterName string) *batchv1.Job {

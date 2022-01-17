@@ -19,6 +19,7 @@
 package postgrescluster
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
@@ -34,7 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -49,24 +49,22 @@ func TestScaleDown(t *testing.T) {
 		t.Skip("requires a running garbage collection controller")
 	}
 
+	ctx := context.Background()
 	env, cc := setupKubernetes(t)
 
 	// TODO(cbandy): Assume this should run alone for now.
 	require.ParallelCapacity(t, 99)
 
-	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
-		reconciler = &Reconciler{
-			Client:   cc,
-			Owner:    client.FieldOwner(t.Name()),
-			Recorder: new(record.FakeRecorder),
-			Tracer:   otel.Tracer(t.Name()),
-		}
-		podExec, err := newPodExecutor(env.Config)
-		assert.NilError(t, err)
-		reconciler.PodExec = podExec
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	reconciler := &Reconciler{
+		Client:   cc,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: new(record.FakeRecorder),
+		Tracer:   otel.Tracer(t.Name()),
+	}
+
+	var err error
+	reconciler.PodExec, err = newPodExecutor(env.Config)
+	assert.NilError(t, err)
 
 	ns := setupNamespace(t, cc)
 

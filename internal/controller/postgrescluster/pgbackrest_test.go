@@ -610,19 +610,11 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -848,19 +840,11 @@ func TestGetPGBackRestExecSelector(t *testing.T) {
 }
 
 func TestReconcileReplicaCreateBackup(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -1463,19 +1447,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -2427,20 +2403,11 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 }
 
 func TestObserveRestoreEnv(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
-
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
@@ -2650,20 +2617,11 @@ func TestObserveRestoreEnv(t *testing.T) {
 }
 
 func TestPrepareForRestore(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
-
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string) *batchv1.Job {
@@ -3122,19 +3080,11 @@ func TestReconcileScheduledBackups(t *testing.T) {
 }
 
 func TestSetScheduledJobStatus(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -3216,20 +3166,11 @@ func TestSetScheduledJobStatus(t *testing.T) {
 }
 
 func TestPreparePGBackRestForPGUpgrade(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 4)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
-
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 	ns := setupNamespace(t, tClient)
 
 	generateBackupJob := func(cluster *v1beta1.PostgresCluster, repoName string,
