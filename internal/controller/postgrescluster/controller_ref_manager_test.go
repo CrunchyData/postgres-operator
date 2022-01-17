@@ -19,34 +19,24 @@ package postgrescluster
 */
 
 import (
+	"context"
 	"testing"
 
-	"go.opentelemetry.io/otel"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestManageControllerRefs(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
-
+	ctx := context.Background()
+	r := &Reconciler{Client: tClient}
 	clusterName := "hippo"
 
 	cluster := testCluster()

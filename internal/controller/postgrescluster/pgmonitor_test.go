@@ -27,7 +27,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -35,7 +34,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -517,19 +515,11 @@ func TestReconcilePGMonitorSecret(t *testing.T) {
 		t.Skip("Test failing with existing cluster")
 	}
 
-	env, cc := setupKubernetes(t)
+	ctx := context.Background()
+	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
-		reconciler = &Reconciler{
-			Client:   cc,
-			Owner:    client.FieldOwner(t.Name()),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(t.Name()),
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
 	cluster := testCluster()
 	cluster.Default()

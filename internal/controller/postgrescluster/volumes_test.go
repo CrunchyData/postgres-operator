@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -39,7 +38,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -604,19 +602,11 @@ func TestGetPVCNameMethods(t *testing.T) {
 }
 
 func TestReconcileConfigureExistingPVCs(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
 	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{
@@ -872,19 +862,11 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 }
 
 func TestReconcileMoveDirectories(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
 	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{

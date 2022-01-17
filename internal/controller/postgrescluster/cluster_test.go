@@ -37,8 +37,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -94,19 +94,16 @@ var gvks = []schema.GroupVersionKind{{
 }}
 
 func TestCustomLabels(t *testing.T) {
-	env, cc := setupKubernetes(t)
+	ctx := context.Background()
+	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 2)
 
-	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
-		reconciler = &Reconciler{
-			Client:   cc,
-			Owner:    client.FieldOwner(t.Name()),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(t.Name()),
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	reconciler := &Reconciler{
+		Client:   cc,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: new(record.FakeRecorder),
+		Tracer:   otel.Tracer(t.Name()),
+	}
 
 	ns := setupNamespace(t, cc)
 
@@ -350,19 +347,16 @@ func TestCustomLabels(t *testing.T) {
 }
 
 func TestCustomAnnotations(t *testing.T) {
-	env, cc := setupKubernetes(t)
+	ctx := context.Background()
+	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 2)
 
-	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
-		reconciler = &Reconciler{
-			Client:   cc,
-			Owner:    client.FieldOwner(t.Name()),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(t.Name()),
-		}
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	reconciler := &Reconciler{
+		Client:   cc,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: new(record.FakeRecorder),
+		Tracer:   otel.Tracer(t.Name()),
+	}
 
 	ns := setupNamespace(t, cc)
 
@@ -611,22 +605,20 @@ func TestContainerSecurityContext(t *testing.T) {
 		t.Skip("Test requires pods to be created")
 	}
 
+	ctx := context.Background()
 	env, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{}
-	ctx, cancel := setupManager(t, env.Config, func(mgr manager.Manager) {
-		reconciler = &Reconciler{
-			Client:   cc,
-			Owner:    client.FieldOwner(t.Name()),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(t.Name()),
-		}
-		podExec, err := newPodExecutor(env.Config)
-		assert.NilError(t, err)
-		reconciler.PodExec = podExec
-	})
-	t.Cleanup(func() { teardownManager(cancel, t) })
+	reconciler := &Reconciler{
+		Client:   cc,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: new(record.FakeRecorder),
+		Tracer:   otel.Tracer(t.Name()),
+	}
+
+	var err error
+	reconciler.PodExec, err = newPodExecutor(env.Config)
+	assert.NilError(t, err)
 
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
