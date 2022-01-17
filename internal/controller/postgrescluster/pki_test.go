@@ -33,7 +33,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,16 +51,8 @@ func TestReconcileCerts(t *testing.T) {
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
 	ctx := context.Background()
-	// set namespace name
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() {
-		assert.Check(t, tClient.Delete(ctx, ns))
-		teardownTestEnv(t, tEnv)
-	})
-	namespace := ns.Name
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	namespace := setupNamespace(t, tClient).Name
 
 	r := &Reconciler{
 		Client: tClient,

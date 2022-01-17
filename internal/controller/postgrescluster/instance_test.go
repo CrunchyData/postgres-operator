@@ -41,7 +41,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -1114,15 +1113,9 @@ func TestDeleteInstance(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, reconciler.Client.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, reconciler.Client.Delete(ctx, ns)) })
-
 	// Define, Create, and Reconcile a cluster to get an instance running in kube
 	cluster := testCluster()
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, cc).Name
 
 	assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
 	t.Cleanup(func() {
@@ -1726,12 +1719,7 @@ func TestReconcileUpgrade(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, tClient)
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{Name: "hippo-sa"},
 	}
@@ -2075,12 +2063,7 @@ func TestObserveUpgradeEnv(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
 
@@ -2302,12 +2285,7 @@ func TestPrepareForUpgrade(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	ns := setupNamespace(t, tClient)
 
 	generateJob := func(clusterName string) *batchv1.Job {
 
@@ -2344,7 +2322,7 @@ func TestPrepareForUpgrade(t *testing.T) {
 	generateRunner := func(name string) *appsv1.StatefulSet {
 		return &appsv1.StatefulSet{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: name, Namespace: namespace,
+				Name: name, Namespace: ns.Name,
 			},
 			Spec: appsv1.StatefulSetSpec{
 				Selector: &metav1.LabelSelector{
@@ -2581,7 +2559,7 @@ func TestPrepareForUpgrade(t *testing.T) {
 
 			clusterName := "prepare-for-upgrade-" + strconv.Itoa(i)
 			clusterUID := clusterName
-			cluster := fakeUpgradeCluster(clusterName, namespace, clusterUID)
+			cluster := fakeUpgradeCluster(clusterName, ns.Name, clusterUID)
 			cluster.Status.StartupInstance = primaryInstanceName
 			cluster.Status.StartupInstanceSet = primaryInstanceSetName
 			cluster.Status.Patroni.SystemIdentifier = "abcde12345"
@@ -2745,11 +2723,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 
 	}
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	ns := setupNamespace(t, cc)
 
 	t.Run("empty", func(t *testing.T) {
 		cluster := &v1beta1.PostgresCluster{}
@@ -2856,11 +2830,7 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 		Owner:  client.FieldOwner(t.Name()),
 	}
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	ns := setupNamespace(t, cc)
 
 	generatePDB := func(
 		t *testing.T,

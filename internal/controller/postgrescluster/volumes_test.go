@@ -35,7 +35,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
@@ -57,11 +56,7 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 	tEnv, cc, _ := setupTestEnv(t, t.Name())
 	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	ns := setupNamespace(t, cc)
 
 	// Stub to see that handlePersistentVolumeClaimError returns nil.
 	cluster := new(v1beta1.PostgresCluster)
@@ -623,12 +618,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testcluster",
@@ -897,12 +887,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testcluster",

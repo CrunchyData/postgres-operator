@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,6 +67,22 @@ func init() {
 // marshalMatches converts actual to YAML and compares that to expected.
 func marshalMatches(actual interface{}, expected string) cmp.Comparison {
 	return cmp.MarshalMatches(actual, expected)
+}
+
+// setupNamespace creates a random namespace that will be deleted by t.Cleanup.
+// When creation fails, it calls t.Fatal. The caller may delete the namespace
+// at any time.
+func setupNamespace(t testing.TB, cc client.Client) *corev1.Namespace {
+	t.Helper()
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
+
+	ctx := context.Background()
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, client.IgnoreNotFound(cc.Delete(ctx, ns))) })
+
+	return ns
 }
 
 func testVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {

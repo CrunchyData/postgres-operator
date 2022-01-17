@@ -22,11 +22,9 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/otel"
-	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -53,14 +51,8 @@ func TestManageControllerRefs(t *testing.T) {
 
 	clusterName := "hippo"
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
 	cluster := testCluster()
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, tClient).Name
 
 	// create the test PostgresCluster
 	if err := tClient.Create(ctx, cluster); err != nil {
@@ -70,7 +62,7 @@ func TestManageControllerRefs(t *testing.T) {
 	// create a base StatefulSet that can be used by the various tests below
 	objBase := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: ns.Name,
+			Namespace: cluster.Namespace,
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{

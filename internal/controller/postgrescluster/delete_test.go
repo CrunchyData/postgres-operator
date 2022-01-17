@@ -76,12 +76,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	cc, err := client.New(config, options)
 	assert.NilError(t, err)
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, cc)
 	reconciler := Reconciler{
 		Client:   cc,
 		Owner:    client.FieldOwner(t.Name()),
@@ -381,11 +376,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	cc, err := client.New(config, options)
 	assert.NilError(t, err)
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, client.IgnoreNotFound(cc.Delete(ctx, ns))) })
+	ns := setupNamespace(t, cc)
 
 	var mm struct {
 		manager.Manager

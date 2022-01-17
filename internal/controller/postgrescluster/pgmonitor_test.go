@@ -33,7 +33,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -531,16 +530,10 @@ func TestReconcilePGMonitorSecret(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
 	cluster := testCluster()
 	cluster.Default()
 	cluster.UID = types.UID("hippouid")
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, cc).Name
 
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		t.Run("NotExisting", func(t *testing.T) {
@@ -587,7 +580,7 @@ func TestReconcilePGMonitorSecret(t *testing.T) {
 		t.Run("Existing", func(t *testing.T) {
 			actual, err = reconciler.reconcileMonitoringSecret(ctx, cluster)
 			assert.NilError(t, err)
-			assert.Assert(t, bytes.Equal(actual.Data["password"], existing.Data["password"]), ns.Name)
+			assert.Assert(t, bytes.Equal(actual.Data["password"], existing.Data["password"]))
 		})
 	})
 }

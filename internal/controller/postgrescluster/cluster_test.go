@@ -34,7 +34,6 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -110,11 +109,7 @@ func TestCustomLabels(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
 		assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
@@ -372,11 +367,7 @@ func TestCustomAnnotations(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": ""}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
 		assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
@@ -642,14 +633,8 @@ func TestContainerSecurityContext(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": ""}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
 	cluster := testCluster()
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, cc).Name
 
 	assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
 	t.Cleanup(func() {
@@ -673,7 +658,7 @@ func TestContainerSecurityContext(t *testing.T) {
 		}
 
 		err = reconciler.Client.List(ctx, pods,
-			client.InNamespace(ns.Name),
+			client.InNamespace(cluster.Namespace),
 			client.MatchingLabels{
 				naming.LabelCluster: cluster.Name,
 			})
@@ -810,16 +795,10 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 	env, cc, _ := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, env) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
 	cluster := testCluster()
-	cluster.Namespace = ns.Name
+	cluster.Namespace = setupNamespace(t, cc).Name
 	assert.NilError(t, cc.Create(ctx, cluster))
 
 	_, err := reconciler.reconcileClusterPrimaryService(ctx, cluster, nil)

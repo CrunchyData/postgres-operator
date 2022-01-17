@@ -67,11 +67,7 @@ func TestScaleDown(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+	ns := setupNamespace(t, cc)
 
 	mustReconcile := func(t *testing.T, cluster *v1beta1.PostgresCluster) reconcile.Result {
 		t.Helper()

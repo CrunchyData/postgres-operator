@@ -34,7 +34,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/tools/record"
@@ -51,13 +50,8 @@ func TestDeleteControlled(t *testing.T) {
 	tEnv, cc, _ := setupTestEnv(t, t.Name())
 	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 
+	ns := setupNamespace(t, cc)
 	reconciler := Reconciler{Client: cc}
-
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
 
 	cluster := testCluster()
 	cluster.Namespace = ns.Name

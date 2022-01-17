@@ -195,12 +195,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	ns := setupNamespace(t, tClient)
 
 	// create a PostgresCluster to test with
 	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
@@ -256,7 +251,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 
 		// get the pgBackRest repo sts using the labels we expect it to have
 		dedicatedRepos := &appsv1.StatefulSetList{}
-		if err := tClient.List(ctx, dedicatedRepos, client.InNamespace(namespace),
+		if err := tClient.List(ctx, dedicatedRepos, client.InNamespace(ns.Name),
 			client.MatchingLabels{
 				naming.LabelCluster:             clusterName,
 				naming.LabelPGBackRest:          "",
@@ -421,7 +416,7 @@ topologySpreadConstraints:
 			if err := tClient.List(ctx, events, &client.MatchingFields{
 				"involvedObject.kind":      "PostgresCluster",
 				"involvedObject.name":      clusterName,
-				"involvedObject.namespace": namespace,
+				"involvedObject.namespace": ns.Name,
 				"involvedObject.uid":       string(clusterUID),
 				"reason":                   "RepoHostCreated",
 			}); err != nil {
@@ -440,7 +435,7 @@ topologySpreadConstraints:
 
 		// get the pgBackRest repo sts using the labels we expect it to have
 		repoVols := &corev1.PersistentVolumeClaimList{}
-		if err := tClient.List(ctx, repoVols, client.InNamespace(namespace),
+		if err := tClient.List(ctx, repoVols, client.InNamespace(ns.Name),
 			client.MatchingLabels{
 				naming.LabelCluster:              clusterName,
 				naming.LabelPGBackRest:           "",
@@ -631,11 +626,7 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	ns := setupNamespace(t, tClient)
 
 	// create a PostgresCluster to test with
 	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
@@ -699,12 +690,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	ns := setupNamespace(t, tClient)
 
 	// create a PostgresCluster to test with
 	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
@@ -752,7 +738,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		if err := tClient.List(ctx, events, &client.MatchingFields{
 			"involvedObject.kind":      "PostgresCluster",
 			"involvedObject.name":      clusterName,
-			"involvedObject.namespace": namespace,
+			"involvedObject.namespace": ns.Name,
 			"involvedObject.uid":       string(clusterUID),
 			"reason":                   "StanzasCreated",
 		}); err != nil {
@@ -796,7 +782,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		if err := tClient.List(ctx, events, &client.MatchingFields{
 			"involvedObject.kind":      "PostgresCluster",
 			"involvedObject.name":      clusterName,
-			"involvedObject.namespace": namespace,
+			"involvedObject.namespace": ns.Name,
 			"involvedObject.uid":       string(clusterUID),
 			"reason":                   "UnableToCreateStanzas",
 		}); err != nil {
@@ -880,12 +866,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	ns := setupNamespace(t, tClient)
 
 	// create a PostgresCluster to test with
 	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
@@ -982,7 +963,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 		case "CONTAINER":
 			assert.Assert(t, env.Value == naming.PGBackRestRepoContainerName)
 		case "NAMESPACE":
-			assert.Assert(t, env.Value == namespace)
+			assert.Assert(t, env.Value == ns.Name)
 		case "SELECTOR":
 			assert.Assert(t, env.Value == "postgres-operator.crunchydata.com/cluster=hippocluster,"+
 				"postgres-operator.crunchydata.com/pgbackrest=,"+
@@ -1039,7 +1020,7 @@ func TestReconcileManualBackup(t *testing.T) {
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -1049,12 +1030,7 @@ func TestReconcileManualBackup(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, tClient)
 	defaultBackupId := "default-backup-id"
 	backupId := metav1.Now().OpenAPISchemaFormat()
 
@@ -1505,13 +1481,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
-
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	namespace := setupNamespace(t, tClient).Name
 
 	type testResult struct {
 		jobCount, hostCount, pvcCount int
@@ -1822,13 +1792,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
-
+	namespace := setupNamespace(t, tClient).Name
 	rootCA := pki.NewRootCertificateAuthority()
 	assert.NilError(t, rootCA.Generate())
 
@@ -2481,12 +2445,7 @@ func TestObserveRestoreEnv(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
 
@@ -2710,12 +2669,7 @@ func TestPrepareForRestore(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string) *batchv1.Job {
 
@@ -2956,7 +2910,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
 	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2966,12 +2920,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-
+	ns := setupNamespace(t, tClient)
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{Name: "hippo-sa"},
 	}
@@ -3196,11 +3145,7 @@ func TestSetScheduledJobStatus(t *testing.T) {
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	ns := setupNamespace(t, tClient)
 
 	t.Run("set scheduled backup status", func(t *testing.T) {
 		// create a PostgresCluster to test with
@@ -3292,11 +3237,7 @@ func TestPreparePGBackRestForPGUpgrade(t *testing.T) {
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
 
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	ns := setupNamespace(t, tClient)
 
 	generateBackupJob := func(cluster *v1beta1.PostgresCluster, repoName string,
 		backupType naming.BackupJobType) *batchv1.Job {
