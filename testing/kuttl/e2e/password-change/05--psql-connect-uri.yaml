@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: psql-connect-uri6
+  name: psql-connect-uri3
 spec:
   backoffLimit: 3
   template:
@@ -16,8 +16,11 @@ spec:
             - -c
             - "select version();"
           env:
-          # The ./10-errors.yaml checks that the secret is not in the state that we set it to
-          # in the ./10-secret.yaml file, i.e., the secret has been reconciled by PGO,
+          # The ./04-errors.yaml checks that the secret is not in the state that we set it to
+          # in the ./04-secret.yaml file, i.e., the secret has been reconciled by PGO,
           # so the uri field of the secret should be updated with the new password by this time
           - name: PGURI
-            valueFrom: { secretKeyRef: { name: password-change-pguser-rhino, key: uri } }
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: uri } }
+          
+          # Do not wait indefinitely.
+          - { name: PGCONNECT_TIMEOUT, value: '5' }

@@ -29,3 +29,6 @@ spec:
           # in the ./02-secret.yaml file, i.e., the secret has been reconciled by PGO
           - name: PGPASSWORD
             value: datalake
+          
+          # Do not wait indefinitely.
+          - { name: PGCONNECT_TIMEOUT, value: '5' }
