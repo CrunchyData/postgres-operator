@@ -8379,6 +8379,18 @@ spec:
                                 type: array
                             type: object
                         type: object
+                      config:
+                        description: Configuration settings for the pgAdmin process.
+                          Changes to any of these values will be loaded without validation.
+                          Be careful, as you may put pgAdmin into an unusable state.
+                        properties:
+                          settings:
+                            description: 'Settings for the pgAdmin server process.
+                              Keys should be uppercase and values must be constants.
+                              More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html'
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
+                        type: object
                       dataVolumeClaimSpec:
                         description: 'Defines a PersistentVolumeClaim for pgAdmin
                           data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes'

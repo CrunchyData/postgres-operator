@@ -36,6 +36,10 @@ const (
 	// ContainerPGAdmin is the name of a container running pgAdmin.
 	ContainerPGAdmin = "pgadmin"
 
+	// ContainerPGAdminStartup is the name of the initialization container
+	// that prepares the filesystem for pgAdmin.
+	ContainerPGAdminStartup = "pgadmin-startup"
+
 	// ContainerPGBackRestConfig is the name of a container supporting pgBackRest.
 	ContainerPGBackRestConfig = "pgbackrest-config"
 
@@ -203,8 +207,8 @@ func ClusterInstanceRBAC(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
-// ClusterPGAdmin returns the ObjectMeta necessary to lookup the Deployment,
-// Service or Volume for the cluster's pgAdmin user interface.
+// ClusterPGAdmin returns the ObjectMeta necessary to lookup the ConfigMap,
+// Service, StatefulSet, or Volume for the cluster's pgAdmin user interface.
 func ClusterPGAdmin(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,

@@ -35,9 +35,99 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestGeneratePGAdminConfigMap(t *testing.T) {
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
+
+	reconciler := &Reconciler{Client: cc}
+
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.Namespace = "some-ns"
+	cluster.Name = "pg1"
+
+	t.Run("Unspecified", func(t *testing.T) {
+		for _, spec := range []*v1beta1.UserInterfaceSpec{
+			nil, new(v1beta1.UserInterfaceSpec),
+		} {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.UserInterface = spec
+
+			configmap, specified, err := reconciler.generatePGAdminConfigMap(cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, !specified)
+
+			assert.Equal(t, configmap.Namespace, cluster.Namespace)
+			assert.Equal(t, configmap.Name, "pg1-pgadmin")
+		}
+	})
+
+	cluster.Spec.UserInterface = &v1beta1.UserInterfaceSpec{
+		PGAdmin: &v1beta1.PGAdminPodSpec{},
+	}
+
+	t.Run("Data,ObjectMeta,TypeMeta", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+
+		configmap, specified, err := reconciler.generatePGAdminConfigMap(cluster)
+		assert.NilError(t, err)
+		assert.Assert(t, specified)
+
+		assert.Assert(t, cmp.MarshalMatches(configmap.TypeMeta, `
+apiVersion: v1
+kind: ConfigMap
+		`))
+		assert.Assert(t, cmp.MarshalMatches(configmap.ObjectMeta, `
+creationTimestamp: null
+labels:
+  postgres-operator.crunchydata.com/cluster: pg1
+  postgres-operator.crunchydata.com/role: pgadmin
+name: pg1-pgadmin
+namespace: some-ns
+ownerReferences:
+- apiVersion: postgres-operator.crunchydata.com/v1beta1
+  blockOwnerDeletion: true
+  controller: true
+  kind: PostgresCluster
+  name: pg1
+  uid: ""
+		`))
+
+		assert.Assert(t, len(configmap.Data) > 0, "expected some configuration")
+	})
+
+	t.Run("Annotations,Labels", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Metadata = &v1beta1.Metadata{
+			Annotations: map[string]string{"a": "v1", "b": "v2"},
+			Labels:      map[string]string{"c": "v3", "d": "v4"},
+		}
+		cluster.Spec.UserInterface.PGAdmin.Metadata = &v1beta1.Metadata{
+			Annotations: map[string]string{"a": "v5", "e": "v6"},
+			Labels:      map[string]string{"c": "v7", "f": "v8"},
+		}
+
+		configmap, specified, err := reconciler.generatePGAdminConfigMap(cluster)
+		assert.NilError(t, err)
+		assert.Assert(t, specified)
+
+		// Annotations present in the metadata.
+		assert.DeepEqual(t, configmap.ObjectMeta.Annotations, map[string]string{
+			"a": "v5", "b": "v2", "e": "v6",
+		})
+
+		// Labels present in the metadata.
+		assert.DeepEqual(t, configmap.ObjectMeta.Labels, map[string]string{
+			"c": "v7", "d": "v4", "f": "v8",
+			"postgres-operator.crunchydata.com/cluster": "pg1",
+			"postgres-operator.crunchydata.com/role":    "pgadmin",
+		})
+	})
+}
 
 func TestGeneratePGAdminService(t *testing.T) {
 	_, cc := setupKubernetes(t)
@@ -277,15 +367,16 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	cluster := pgAdminTestCluster(*ns)
 
 	assert.NilError(t, cc.Create(ctx, cluster))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
+
+	configmap := &corev1.ConfigMap{}
+	configmap.Name = "test-cm"
+
+	pvc := &corev1.PersistentVolumeClaim{}
+	pvc.Name = "test-pvc"
 
 	t.Run("verify StatefulSet", func(t *testing.T) {
-		pvc := &corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-pvc",
-			},
-		}
-
-		err := reconciler.reconcilePGAdminStatefulSet(ctx, cluster, pvc)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, cluster, configmap, pvc)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -298,62 +389,31 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 		list := appsv1.StatefulSetList{}
 		assert.NilError(t, cc.List(ctx, &list, client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selector}))
-		assert.Assert(t, len(list.Items) == 1)
-		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.ObjectMeta, `
+		assert.Equal(t, len(list.Items), 1)
+		assert.Equal(t, list.Items[0].Spec.ServiceName, "test-cluster-pods")
+
+		template := list.Items[0].Spec.Template.DeepCopy()
+
+		// Containers and Volumes should be populated.
+		assert.Assert(t, len(template.Spec.Containers) != 0)
+		assert.Assert(t, len(template.Spec.InitContainers) != 0)
+		assert.Assert(t, len(template.Spec.Volumes) != 0)
+
+		// Ignore Containers and Volumes in the comparison below.
+		template.Spec.Containers = nil
+		template.Spec.InitContainers = nil
+		template.Spec.Volumes = nil
+
+		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: test-cluster
   postgres-operator.crunchydata.com/data: pgadmin
   postgres-operator.crunchydata.com/role: pgadmin
 		`))
-		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 automountServiceAccountToken: false
-containers:
-- env:
-  - name: PGADMIN_SETUP_EMAIL
-    value: admin
-  - name: PGADMIN_SETUP_PASSWORD
-    value: admin
-  image: test-image
-  imagePullPolicy: Always
-  livenessProbe:
-    failureThreshold: 3
-    initialDelaySeconds: 15
-    periodSeconds: 20
-    successThreshold: 1
-    tcpSocket:
-      port: 5050
-    timeoutSeconds: 1
-  name: pgadmin
-  ports:
-  - containerPort: 5050
-    name: pgadmin
-    protocol: TCP
-  readinessProbe:
-    failureThreshold: 3
-    initialDelaySeconds: 20
-    periodSeconds: 10
-    successThreshold: 1
-    tcpSocket:
-      port: 5050
-    timeoutSeconds: 1
-  resources: {}
-  securityContext:
-    allowPrivilegeEscalation: false
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-  terminationMessagePath: /dev/termination-log
-  terminationMessagePolicy: File
-  volumeMounts:
-  - mountPath: /tmp
-    name: tmp
-  - mountPath: /etc/httpd/run
-    name: tmp
-  - mountPath: /var/log/pgadmin
-    name: pgadmin-log
-  - mountPath: /var/lib/pgadmin
-    name: pgadmin-data
+containers: null
 dnsPolicy: ClusterFirst
 enableServiceLinks: false
 restartPolicy: Always
@@ -362,18 +422,7 @@ securityContext:
   fsGroup: 26
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
-volumes:
-- emptyDir:
-    medium: Memory
-  name: tmp
-- emptyDir:
-    medium: Memory
-  name: pgadmin-log
-- name: pgadmin-data
-  persistentVolumeClaim:
-    claimName: test-pvc
 		`))
-		assert.Assert(t, list.Items[0].Spec.ServiceName == "test-cluster-pods")
 	})
 
 	t.Run("verify customized deployment", func(t *testing.T) {
@@ -433,14 +482,9 @@ volumes:
 			Name: "myImagePullSecret"}}
 
 		assert.NilError(t, cc.Create(ctx, customcluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, customcluster)) })
 
-		pvc := &corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-pvc",
-			},
-		}
-
-		err := reconciler.reconcilePGAdminStatefulSet(ctx, customcluster, pvc)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, customcluster, configmap, pvc)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -453,8 +497,22 @@ volumes:
 		list := appsv1.StatefulSetList{}
 		assert.NilError(t, cc.List(ctx, &list, client.InNamespace(customcluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selector}))
-		assert.Assert(t, len(list.Items) == 1)
-		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.ObjectMeta, `
+		assert.Equal(t, len(list.Items), 1)
+		assert.Equal(t, list.Items[0].Spec.ServiceName, "custom-cluster-pods")
+
+		template := list.Items[0].Spec.Template.DeepCopy()
+
+		// Containers and Volumes should be populated.
+		assert.Assert(t, len(template.Spec.Containers) != 0)
+		assert.Assert(t, len(template.Spec.InitContainers) != 0)
+		assert.Assert(t, len(template.Spec.Volumes) != 0)
+
+		// Ignore Containers and Volumes in the comparison below.
+		template.Spec.Containers = nil
+		template.Spec.InitContainers = nil
+		template.Spec.Volumes = nil
+
+		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 annotations:
   annotation1: annotationvalue
 creationTimestamp: null
@@ -464,7 +522,7 @@ labels:
   postgres-operator.crunchydata.com/data: pgadmin
   postgres-operator.crunchydata.com/role: pgadmin
 		`))
-		assert.Assert(t, marshalMatches(list.Items[0].Spec.Template.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
@@ -473,52 +531,7 @@ affinity:
         - key: key
           operator: Exists
 automountServiceAccountToken: false
-containers:
-- env:
-  - name: PGADMIN_SETUP_EMAIL
-    value: admin
-  - name: PGADMIN_SETUP_PASSWORD
-    value: admin
-  image: test-image
-  imagePullPolicy: Always
-  livenessProbe:
-    failureThreshold: 3
-    initialDelaySeconds: 15
-    periodSeconds: 20
-    successThreshold: 1
-    tcpSocket:
-      port: 5050
-    timeoutSeconds: 1
-  name: pgadmin
-  ports:
-  - containerPort: 5050
-    name: pgadmin
-    protocol: TCP
-  readinessProbe:
-    failureThreshold: 3
-    initialDelaySeconds: 20
-    periodSeconds: 10
-    successThreshold: 1
-    tcpSocket:
-      port: 5050
-    timeoutSeconds: 1
-  resources: {}
-  securityContext:
-    allowPrivilegeEscalation: false
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-  terminationMessagePath: /dev/termination-log
-  terminationMessagePolicy: File
-  volumeMounts:
-  - mountPath: /tmp
-    name: tmp
-  - mountPath: /etc/httpd/run
-    name: tmp
-  - mountPath: /var/log/pgadmin
-    name: pgadmin-log
-  - mountPath: /var/lib/pgadmin
-    name: pgadmin-data
+containers: null
 dnsPolicy: ClusterFirst
 enableServiceLinks: false
 imagePullSecrets:
@@ -543,18 +556,7 @@ topologySpreadConstraints:
   maxSkew: 1
   topologyKey: fakekey
   whenUnsatisfiable: ScheduleAnyway
-volumes:
-- emptyDir:
-    medium: Memory
-  name: tmp
-- emptyDir:
-    medium: Memory
-  name: pgadmin-log
-- name: pgadmin-data
-  persistentVolumeClaim:
-    claimName: test-pvc
 		`))
-		assert.Assert(t, list.Items[0].Spec.ServiceName == "custom-cluster-pods")
 	})
 }
 

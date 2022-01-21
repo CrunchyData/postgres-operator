@@ -29,6 +29,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -170,14 +171,7 @@ with create_app().app_context():
 	})
 
 	t.Run("Flake8", func(t *testing.T) {
-		flake8, err := exec.LookPath("flake8")
-		if err != nil {
-			t.Skip(`requires "flake8" executable`)
-		} else {
-			output, err := exec.Command(flake8, "--version").CombinedOutput()
-			assert.NilError(t, err)
-			t.Logf("using %q:\n%s", flake8, output)
-		}
+		flake8 := require.Flake8(t)
 
 		called := false
 		exec := func(

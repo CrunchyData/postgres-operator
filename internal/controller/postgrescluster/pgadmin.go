@@ -46,14 +46,76 @@ func (r *Reconciler) reconcilePGAdmin(
 	// may consider removing the service return altogether and refactoring
 	// this function to only return errors.
 	_, err := r.reconcilePGAdminService(ctx, cluster)
+
+	var configmap *corev1.ConfigMap
 	var dataVolume *corev1.PersistentVolumeClaim
+
+	if err == nil {
+		configmap, err = r.reconcilePGAdminConfigMap(ctx, cluster)
+	}
 	if err == nil {
 		dataVolume, err = r.reconcilePGAdminDataVolume(ctx, cluster)
 	}
 	if err == nil {
-		err = r.reconcilePGAdminStatefulSet(ctx, cluster, dataVolume)
+		err = r.reconcilePGAdminStatefulSet(ctx, cluster, configmap, dataVolume)
 	}
 	return err
+}
+
+// generatePGAdminConfigMap returns a v1.ConfigMap for pgAdmin.
+func (r *Reconciler) generatePGAdminConfigMap(
+	cluster *v1beta1.PostgresCluster) (*corev1.ConfigMap, bool, error,
+) {
+	configmap := &corev1.ConfigMap{ObjectMeta: naming.ClusterPGAdmin(cluster)}
+	configmap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
+
+	if cluster.Spec.UserInterface == nil || cluster.Spec.UserInterface.PGAdmin == nil {
+		return configmap, false, nil
+	}
+
+	configmap.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.UserInterface.PGAdmin.Metadata.GetAnnotationsOrNil())
+	configmap.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.UserInterface.PGAdmin.Metadata.GetLabelsOrNil(),
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePGAdmin,
+		})
+
+	err := errors.WithStack(pgadmin.ConfigMap(cluster, configmap))
+	if err == nil {
+		err = errors.WithStack(r.setControllerReference(cluster, configmap))
+	}
+
+	return configmap, true, err
+}
+
+// +kubebuilder:rbac:groups="",resources="configmaps",verbs={get}
+// +kubebuilder:rbac:groups="",resources="configmaps",verbs={create,delete,patch}
+
+// reconcilePGAdminConfigMap writes the ConfigMap for pgAdmin.
+func (r *Reconciler) reconcilePGAdminConfigMap(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) (*corev1.ConfigMap, error) {
+	configmap, specified, err := r.generatePGAdminConfigMap(cluster)
+
+	if err == nil && !specified {
+		// pgAdmin is disabled; delete the ConfigMap if it exists. Check the
+		// client cache first using Get.
+		key := client.ObjectKeyFromObject(configmap)
+		err := errors.WithStack(r.Client.Get(ctx, key, configmap))
+		if err == nil {
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, configmap))
+		}
+		return nil, client.IgnoreNotFound(err)
+	}
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, configmap))
+	}
+	return configmap, err
 }
 
 // generatePGAdminService returns a v1.Service that exposes pgAdmin pods.
@@ -143,7 +205,7 @@ func (r *Reconciler) reconcilePGAdminService(
 // reconcilePGAdminStatefulSet writes the StatefulSet that runs pgAdmin.
 func (r *Reconciler) reconcilePGAdminStatefulSet(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	dataVolume *corev1.PersistentVolumeClaim,
+	configmap *corev1.ConfigMap, dataVolume *corev1.PersistentVolumeClaim,
 ) error {
 	sts := &appsv1.StatefulSet{ObjectMeta: naming.ClusterPGAdmin(cluster)}
 	sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
@@ -243,7 +305,7 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	err := errors.WithStack(r.setControllerReference(cluster, sts))
 
 	if err == nil {
-		pgadmin.Pod(cluster, &sts.Spec.Template.Spec, dataVolume)
+		pgadmin.Pod(cluster, configmap, &sts.Spec.Template.Spec, dataVolume)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, sts))

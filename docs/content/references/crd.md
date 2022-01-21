@@ -11586,6 +11586,11 @@ Defines a pgAdmin user interface.
         <td>Scheduling constraints of a pgAdmin pod. Changing this value causes pgAdmin to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfig">config</a></b></td>
+        <td>object</td>
+        <td>Configuration settings for the pgAdmin process. Changes to any of these values will be loaded without validation. Be careful, as you may put pgAdmin into an unusable state.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>image</b></td>
         <td>string</td>
         <td>Name of a container image that can run pgAdmin 4. Changing this value causes pgAdmin to restart. The image may also be set using the RELATED_IMAGE_PGADMIN environment variable. More info: https://kubernetes.io/docs/concepts/containers/images</td>
@@ -12716,6 +12721,33 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td><b>values</b></td>
         <td>[]string</td>
         <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfig">
+  PostgresCluster.spec.userInterface.pgAdmin.config
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadmin">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Configuration settings for the pgAdmin process. Changes to any of these values will be loaded without validation. Be careful, as you may put pgAdmin into an unusable state.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>settings</b></td>
+        <td>object</td>
+        <td>Settings for the pgAdmin server process. Keys should be uppercase and values must be constants. More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html</td>
         <td>false</td>
       </tr></tbody>
 </table>
