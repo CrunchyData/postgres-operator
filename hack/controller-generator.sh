@@ -15,10 +15,6 @@
 
 set -eu
 
-# Create and cleanup a temporary directory.
-DIR="$(mktemp -d)"
-trap "rm -rf '$DIR'" EXIT
-
 # Find the Go install path.
 [ "${GOBIN:-}" ] || GOBIN="$(go env GOBIN)"
 [ "${GOBIN:-}" ] || GOBIN="$(go env GOPATH)/bin"
@@ -26,6 +22,6 @@ trap "rm -rf '$DIR'" EXIT
 # Find `controller-gen` on the current PATH or install it to the Go install path.
 tool="$(command -v controller-gen || true)"
 [ -n "$tool" ] || tool="$GOBIN/controller-gen"
-[ -x "$tool" ] || ( cd "$DIR" && go mod init tmp && go get 'sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1' )
+[ -x "$tool" ] || go install 'sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0'
 
 "$tool" "$@"

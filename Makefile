@@ -289,7 +289,7 @@ generate: generate-crd generate-crd-docs generate-deepcopy generate-rbac
 
 generate-crd:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
-		crd:crdVersions='v1',preserveUnknownFields='false' \
+		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
 		output:dir='build/crd/generated' # build/crd/generated/{group}_{plural}.yaml
 	@
