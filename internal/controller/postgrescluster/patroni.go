@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -216,13 +215,10 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
-	// Deserialize the schemaless field. There will be no error because the
-	// Kubernetes API has already ensured it is a JSON object.
-	configuration := make(map[string]interface{})
-	_ = yaml.Unmarshal(
-		cluster.Spec.Patroni.DynamicConfiguration.Raw, &configuration,
-	)
-
+	var configuration map[string]interface{}
+	if cluster.Spec.Patroni != nil {
+		configuration = cluster.Spec.Patroni.DynamicConfiguration
+	}
 	configuration = patroni.DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters)
 
 	return errors.WithStack(

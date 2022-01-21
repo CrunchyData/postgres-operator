@@ -165,13 +165,9 @@ func clusterYAML(
 		// Patroni has not yet bootstrapped. Populate the "bootstrap.dcs" field to
 		// facilitate it. When Patroni is already bootstrapped, this field is ignored.
 
-		// Deserialize the schemaless field. There will be no error because the
-		// Kubernetes API has already ensured it is a JSON object.
-		configuration := make(map[string]interface{})
+		var configuration map[string]interface{}
 		if cluster.Spec.Patroni != nil {
-			_ = yaml.Unmarshal(
-				cluster.Spec.Patroni.DynamicConfiguration.Raw, &configuration,
-			)
+			configuration = cluster.Spec.Patroni.DynamicConfiguration
 		}
 
 		root["bootstrap"] = map[string]interface{}{

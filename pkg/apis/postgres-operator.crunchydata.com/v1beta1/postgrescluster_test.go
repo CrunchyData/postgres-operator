@@ -56,7 +56,6 @@ spec:
   config: {}
   instances: null
   patroni:
-    dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
     port: 8008
     syncPeriodSeconds: 10
@@ -95,7 +94,6 @@ spec:
     replicas: 1
     resources: {}
   patroni:
-    dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
     port: 8008
     syncPeriodSeconds: 10
