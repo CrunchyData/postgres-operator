@@ -26,7 +26,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/xdg/stringprep"
+	"github.com/xdg-go/stringprep"
 	"golang.org/x/crypto/pbkdf2"
 )
 
