@@ -24,7 +24,7 @@ If you've done the [quickstart]({{< relref "quickstart/_index.md" >}}), add the
 following fields to the spec and reapply; if you don't have any Postgres clusters
 running, add the fields to a spec, and apply.
 
-```
+```yaml
   userInterface:
     pgAdmin:
       image: {{< param imageCrunchyPGAdmin >}}
@@ -72,6 +72,20 @@ Optionally, you can also set a [custom password]({{< relref "architecture/user-m
 The operator will synchronize users defined in the spec (e.g., in `spec.users`) with the pgAdmin 4
 deployment. Any user created in the database without being defined in the spec will not be
 synchronized.
+
+## Custom Configuration
+
+You can adjust some pgAdmin settings through the
+[`userInterface.pgAdmin.config`]({{< relref "/references/crd#postgresclusterspecuserinterfacepgadminconfig" >}})
+field. For example, set `SHOW_GRAVATAR_IMAGE` to `False` to disable automatic profile pictures:
+
+```yaml
+  userInterface:
+    pgAdmin:
+      config:
+        settings:
+          SHOW_GRAVATAR_IMAGE: False
+```
 
 ## Deleting pgAdmin 4
 

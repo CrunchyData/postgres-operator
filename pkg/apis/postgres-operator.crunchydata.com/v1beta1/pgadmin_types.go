@@ -19,6 +19,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+// PGAdminConfiguration represents pgAdmin configuration files.
+type PGAdminConfiguration struct {
+	// Settings for the pgAdmin server process. Keys should be uppercase and
+	// values must be constants.
+	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html
+	// +optional
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:validation:Type=object
+	Settings SchemalessObject `json:"settings,omitempty"`
+}
+
 // PGAdminPodSpec defines the desired state of a pgAdmin deployment.
 type PGAdminPodSpec struct {
 	// +optional
@@ -29,6 +41,12 @@ type PGAdminPodSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Configuration settings for the pgAdmin process. Changes to any of these
+	// values will be loaded without validation. Be careful, as
+	// you may put pgAdmin into an unusable state.
+	// +optional
+	Config PGAdminConfiguration `json:"config,omitempty"`
 
 	// Defines a PersistentVolumeClaim for pgAdmin data.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes

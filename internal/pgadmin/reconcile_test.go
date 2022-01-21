@@ -26,14 +26,66 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestConfigMap(t *testing.T) {
+	t.Parallel()
+
+	cluster := new(v1beta1.PostgresCluster)
+	config := new(corev1.ConfigMap)
+
+	t.Run("Disabled", func(t *testing.T) {
+		before := config.DeepCopy()
+		assert.NilError(t, ConfigMap(cluster, config))
+
+		// No change when pgAdmin is not requested in the spec.
+		assert.DeepEqual(t, before, config)
+	})
+
+	t.Run("Defaults", func(t *testing.T) {
+		cluster.Spec.UserInterface = new(v1beta1.UserInterfaceSpec)
+		cluster.Spec.UserInterface.PGAdmin = new(v1beta1.PGAdminPodSpec)
+		cluster.Default()
+
+		assert.NilError(t, ConfigMap(cluster, config))
+
+		assert.Assert(t, cmp.MarshalMatches(config.Data, `
+pgadmin-settings.json: |
+  {
+    "SERVER_MODE": true
+  }
+		`))
+	})
+
+	t.Run("Customizations", func(t *testing.T) {
+		cluster.Spec.UserInterface = new(v1beta1.UserInterfaceSpec)
+		cluster.Spec.UserInterface.PGAdmin = new(v1beta1.PGAdminPodSpec)
+		cluster.Spec.UserInterface.PGAdmin.Config.Settings = map[string]interface{}{
+			"some":       "thing",
+			"UPPER_CASE": false,
+		}
+		cluster.Default()
+
+		assert.NilError(t, ConfigMap(cluster, config))
+
+		assert.Assert(t, cmp.MarshalMatches(config.Data, `
+pgadmin-settings.json: |
+  {
+    "SERVER_MODE": true,
+    "UPPER_CASE": false,
+    "some": "thing"
+  }
+		`))
+	})
+}
+
 func TestPod(t *testing.T) {
 	t.Parallel()
 
 	cluster := new(v1beta1.PostgresCluster)
+	config := new(corev1.ConfigMap)
 	pod := new(corev1.PodSpec)
 	pvc := new(corev1.PersistentVolumeClaim)
 
-	call := func() { Pod(cluster, pod, pvc) }
+	call := func() { Pod(cluster, config, pod, pvc) }
 
 	t.Run("Disabled", func(t *testing.T) {
 		before := pod.DeepCopy()
@@ -79,6 +131,12 @@ containers:
     readOnlyRootFilesystem: true
     runAsNonRoot: true
   volumeMounts:
+  - mountPath: /etc/pgadmin
+    name: pgadmin-startup
+    readOnly: true
+  - mountPath: /etc/pgadmin/conf.d
+    name: pgadmin-config
+    readOnly: true
   - mountPath: /tmp
     name: tmp
   - mountPath: /etc/httpd/run
@@ -87,6 +145,33 @@ containers:
     name: pgadmin-log
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
+initContainers:
+- command:
+  - bash
+  - -ceu
+  - --
+  - (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
+  - startup
+  - |
+    import glob, json, re
+    DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
+    with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin.json') as _f:
+        _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
+        if type(_data) is dict:
+            globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+  name: pgadmin-startup
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgadmin
+    name: pgadmin-startup
+  - mountPath: /etc/pgadmin/conf.d
+    name: pgadmin-config
+    readOnly: true
 volumes:
 - emptyDir:
     medium: Memory
@@ -97,6 +182,17 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
+- name: pgadmin-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgadmin-settings.json
+          path: ~postgres-operator/pgadmin.json
+- emptyDir:
+    medium: Memory
+    sizeLimit: 32Ki
+  name: pgadmin-startup
 		`))
 
 		// No change when called again.
@@ -147,6 +243,12 @@ containers:
     readOnlyRootFilesystem: true
     runAsNonRoot: true
   volumeMounts:
+  - mountPath: /etc/pgadmin
+    name: pgadmin-startup
+    readOnly: true
+  - mountPath: /etc/pgadmin/conf.d
+    name: pgadmin-config
+    readOnly: true
   - mountPath: /tmp
     name: tmp
   - mountPath: /etc/httpd/run
@@ -155,6 +257,37 @@ containers:
     name: pgadmin-log
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
+initContainers:
+- command:
+  - bash
+  - -ceu
+  - --
+  - (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
+  - startup
+  - |
+    import glob, json, re
+    DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
+    with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin.json') as _f:
+        _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
+        if type(_data) is dict:
+            globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+  image: new-image
+  imagePullPolicy: Always
+  name: pgadmin-startup
+  resources:
+    requests:
+      cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgadmin
+    name: pgadmin-startup
+  - mountPath: /etc/pgadmin/conf.d
+    name: pgadmin-config
+    readOnly: true
 volumes:
 - emptyDir:
     medium: Memory
@@ -165,6 +298,17 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
+- name: pgadmin-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgadmin-settings.json
+          path: ~postgres-operator/pgadmin.json
+- emptyDir:
+    medium: Memory
+    sizeLimit: 32Ki
+  name: pgadmin-startup
 			`))
 	})
 }

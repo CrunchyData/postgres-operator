@@ -23,6 +23,11 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+// Flake8 returns the path to the "flake8" executable or calls t.Skip.
+func Flake8(t testing.TB) string { t.Helper(); return flake8(t) }
+
+var flake8 = executable("flake8", "--version")
+
 // ShellCheck returns the path to the "shellcheck" executable or calls t.Skip.
 func ShellCheck(t testing.TB) string { t.Helper(); return shellcheck(t) }
 

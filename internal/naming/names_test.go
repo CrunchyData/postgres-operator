@@ -46,6 +46,7 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 		ContainerDatabase,
 		ContainerNSSWrapperInit,
 		ContainerPGAdmin,
+		ContainerPGAdminStartup,
 		ContainerPGBackRestConfig,
 		ContainerPGBackRestLogDirInit,
 		ContainerPGBouncer,
@@ -92,6 +93,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 	t.Run("ConfigMaps", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterConfigMap", ClusterConfigMap(cluster)},
+			{"ClusterPGAdmin", ClusterPGAdmin(cluster)},
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderConfigMap", PatroniLeaderConfigMap(cluster)},
@@ -113,7 +115,6 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 	t.Run("Deployments", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
-			{"ClusterPGAdmin", ClusterPGAdmin(cluster)},
 		})
 	})
 
@@ -186,6 +187,12 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderEndpoints", PatroniLeaderEndpoints(cluster)},
 			{"PatroniTrigger", PatroniTrigger(cluster)},
+		})
+	})
+
+	t.Run("StatefulSets", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"ClusterPGAdmin", ClusterPGAdmin(cluster)},
 		})
 	})
 
@@ -289,4 +296,22 @@ func TestGenerateStartupInstance(t *testing.T) {
 	instanceTwo := GenerateStartupInstance(cluster, set)
 	assert.DeepEqual(t, instanceOne, instanceTwo)
 
+}
+
+func TestPortNamesUniqueAndValid(t *testing.T) {
+	// Port names have to be unique within a Pod. The number of ports we employ
+	// should be few enough that we can name them uniquely across all pods.
+	// - https://docs.k8s.io/reference/kubernetes-api/workload-resources/pod-v1/#ports
+
+	names := sets.NewString()
+	for _, name := range []string{
+		PortExporter,
+		PortPGAdmin,
+		PortPGBouncer,
+		PortPostgreSQL,
+	} {
+		assert.Assert(t, !names.Has(name), "%q defined already", name)
+		assert.Assert(t, nil == validation.IsValidPortName(name))
+		names.Insert(name)
+	}
 }

@@ -16,7 +16,11 @@
 package pgadmin
 
 import (
+	"bytes"
+	"encoding/json"
+
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -25,9 +29,37 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// ConfigMap populates a ConfigMap with the configuration needed to run pgAdmin.
+func ConfigMap(
+	inCluster *v1beta1.PostgresCluster,
+	outConfigMap *corev1.ConfigMap,
+) error {
+	if inCluster.Spec.UserInterface == nil || inCluster.Spec.UserInterface.PGAdmin == nil {
+		// pgAdmin is disabled; there is nothing to do.
+		return nil
+	}
+
+	initialize.StringMap(&outConfigMap.Data)
+
+	// To avoid spurious reconciles, the following value must not change when
+	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
+	// emitting map keys in sorted order. Indent so the value is not rendered
+	// as one long line by `kubectl`.
+	buffer := new(bytes.Buffer)
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+	err := encoder.Encode(systemSettings(inCluster.Spec.UserInterface.PGAdmin))
+	if err == nil {
+		outConfigMap.Data[settingsConfigMapKey] = buffer.String()
+	}
+	return err
+}
+
 // Pod populates a PodSpec with the container and volumes needed to run pgAdmin.
 func Pod(
 	inCluster *v1beta1.PostgresCluster,
+	inConfigMap *corev1.ConfigMap,
 	outPod *corev1.PodSpec, pgAdminVolume *corev1.PersistentVolumeClaim,
 ) {
 	if inCluster.Spec.UserInterface == nil || inCluster.Spec.UserInterface.PGAdmin == nil {
@@ -60,6 +92,28 @@ func Pod(
 		},
 	}
 
+	configVolumeMount := corev1.VolumeMount{
+		Name: "pgadmin-config", MountPath: configMountPath, ReadOnly: true,
+	}
+	configVolume := corev1.Volume{Name: configVolumeMount.Name}
+	configVolume.Projected = &corev1.ProjectedVolumeSource{
+		Sources: podConfigFiles(inConfigMap),
+	}
+
+	startupVolumeMount := corev1.VolumeMount{
+		Name: "pgadmin-startup", MountPath: startupMountPath, ReadOnly: true,
+	}
+	startupVolume := corev1.Volume{Name: startupVolumeMount.Name}
+	startupVolume.EmptyDir = &corev1.EmptyDirVolumeSource{
+		Medium: corev1.StorageMediumMemory,
+
+		// When this volume is too small, the Pod will be evicted and recreated
+		// by the StatefulSet controller.
+		// - https://kubernetes.io/docs/concepts/storage/volumes/#emptydir
+		// NOTE: tmpfs blocks are PAGE_SIZE, usually 4KiB, and size rounds up.
+		SizeLimit: resource.NewQuantity(32<<10, resource.BinarySI),
+	}
+
 	// pgadmin container
 	container := corev1.Container{
 		Name: naming.ContainerPGAdmin,
@@ -85,6 +139,8 @@ func Pod(
 			Protocol:      corev1.ProtocolTCP,
 		}},
 		VolumeMounts: []corev1.VolumeMount{
+			startupVolumeMount,
+			configVolumeMount,
 			{
 				Name:      tmpVolume,
 				MountPath: tmpMountPath,
@@ -122,6 +178,24 @@ func Pod(
 		},
 	}
 
+	startup := corev1.Container{
+		Name:    naming.ContainerPGAdminStartup,
+		Command: startupCommand(),
+
+		Image:           container.Image,
+		ImagePullPolicy: container.ImagePullPolicy,
+		Resources:       container.Resources,
+		SecurityContext: initialize.RestrictedSecurityContext(),
+		VolumeMounts: []corev1.VolumeMount{
+			startupVolumeMount,
+			configVolumeMount,
+		},
+	}
+
+	// The startup container is the only one allowed to write to the startup volume.
+	startup.VolumeMounts[0].ReadOnly = false
+
 	outPod.Containers = []corev1.Container{container}
-	outPod.Volumes = []corev1.Volume{tmp, pgAdminLog, pgAdminData}
+	outPod.InitContainers = []corev1.Container{startup}
+	outPod.Volumes = []corev1.Volume{tmp, pgAdminLog, pgAdminData, configVolume, startupVolume}
 }
