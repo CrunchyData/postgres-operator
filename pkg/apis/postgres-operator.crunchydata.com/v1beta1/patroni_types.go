@@ -15,21 +15,16 @@
 
 package v1beta1
 
-import (
-	"k8s.io/apimachinery/pkg/runtime"
-)
-
 type PatroniSpec struct {
-	// TODO(cbandy): Find a better way to have a map[string]interface{} here.
-	// See: https://github.com/kubernetes-sigs/controller-tools/commit/557da250b8
-
 	// Patroni dynamic configuration settings. Changes to this value will be
 	// automatically reloaded without validation. Changes to certain PostgreSQL
 	// parameters cause PostgreSQL to restart.
 	// More info: https://patroni.readthedocs.io/en/latest/SETTINGS.html
 	// +optional
-	// +kubebuilder:validation:XPreserveUnknownFields
-	DynamicConfiguration runtime.RawExtension `json:"dynamicConfiguration,omitempty"`
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:validation:Type=object
+	DynamicConfiguration SchemalessObject `json:"dynamicConfiguration,omitempty"`
 
 	// TTL of the cluster leader lock. "Think of it as the
 	// length of time before initiation of the automatic failover process."

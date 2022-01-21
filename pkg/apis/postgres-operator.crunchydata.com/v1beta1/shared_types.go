@@ -15,7 +15,28 @@
 
 package v1beta1
 
-import corev1 "k8s.io/api/core/v1"
+import (
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+)
+
+// SchemalessObject is a map compatible with JSON object.
+//
+// Use with the following markers:
+// - kubebuilder:pruning:PreserveUnknownFields
+// - kubebuilder:validation:Schemaless
+// - kubebuilder:validation:Type=object
+type SchemalessObject map[string]interface{}
+
+// DeepCopy creates a new SchemalessObject by copying the receiver.
+func (in *SchemalessObject) DeepCopy() *SchemalessObject {
+	if in == nil {
+		return nil
+	}
+	out := new(SchemalessObject)
+	*out = runtime.DeepCopyJSON(*in)
+	return out
+}
 
 type ServiceSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
