@@ -141,13 +141,12 @@ func checkForUpgrades(ctx context.Context, versionString string, backoff wait.Ba
 }
 
 // CheckForUpgradesScheduler invokes the check func when the operator starts
-// and then on the given period schedule
-func CheckForUpgradesScheduler(channel chan bool,
+// and then on the given period schedule. It stops when the context is cancelled.
+func CheckForUpgradesScheduler(ctx context.Context,
 	versionString, url string, crclient crclient.Client,
 	cfg *rest.Config, isOpenShift bool,
 	cacheClient CacheWithWait,
 ) {
-	ctx := context.Background()
 	log := logging.FromContext(ctx)
 	defer func() {
 		if err := recover(); err != nil {
@@ -194,7 +193,7 @@ func CheckForUpgradesScheduler(channel chan bool,
 			} else {
 				log.V(1).Info(info)
 			}
-		case <-channel:
+		case <-ctx.Done():
 			ticker.Stop()
 			return
 		}

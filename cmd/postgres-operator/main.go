@@ -85,12 +85,11 @@ func main() {
 
 	// Enable upgrade checking
 	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
-	done := make(chan bool, 1)
 	if !upgradeCheckingDisabled {
 		log.Info("upgrade checking enabled")
 		// get the URL for the check for upgrades endpoint if set in the env
 		upgradeCheckURL := os.Getenv("CHECK_FOR_UPGRADES_URL")
-		go upgradecheck.CheckForUpgradesScheduler(done, versionString, upgradeCheckURL,
+		go upgradecheck.CheckForUpgradesScheduler(ctx, versionString, upgradeCheckURL,
 			mgr.GetClient(), mgr.GetConfig(), isOpenshift(ctx, mgr.GetConfig()),
 			mgr.GetCache(),
 		)
@@ -100,10 +99,6 @@ func main() {
 
 	assertNoError(mgr.Start(ctx))
 	log.Info("signal received, exiting")
-	if !upgradeCheckingDisabled {
-		// Send true to channel to cancel ticker cleanly
-		done <- true
-	}
 }
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
