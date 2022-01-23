@@ -171,22 +171,24 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 	const testUpgradeCheckURL = "http://localhost:8080"
 
 	t.Run("panic from checkForUpgrades doesn't bubble up", func(t *testing.T) {
-		done := make(chan bool, 1)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		// capture logs
 		var calls []string
-		logging.SetLogFunc(1, func(input genericr.Entry) {
+		ctx = logging.NewContext(ctx, genericr.New(func(input genericr.Entry) {
 			calls = append(calls, input.Message)
-		})
+		}))
 
 		// A panicking call
 		funcFoo = func() (*http.Response, error) {
 			panic(fmt.Errorf("oh no!"))
 		}
 
-		go CheckForUpgradesScheduler(done, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
+		go CheckForUpgradesScheduler(ctx, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
 			&MockCacheClient{works: true})
 		time.Sleep(1 * time.Second)
-		done <- true
+		cancel()
 
 		// Sleeping leads to some non-deterministic results, but we expect at least 1 execution
 		// plus one log for the failure to apply the configmap
@@ -195,32 +197,36 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 	})
 
 	t.Run("cache sync fail leads to log and exit", func(t *testing.T) {
-		done := make(chan bool, 1)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		// capture logs
 		var calls []string
-		logging.SetLogFunc(1, func(input genericr.Entry) {
+		ctx = logging.NewContext(ctx, genericr.New(func(input genericr.Entry) {
 			calls = append(calls, input.Message)
-		})
+		}))
 
 		// Set loop time to 1s and sleep for 2s before sending the done signal -- though the cache sync
 		// failure will exit the func before the sleep ends
 		upgradeCheckPeriod = 1 * time.Second
-		go CheckForUpgradesScheduler(done, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
+		go CheckForUpgradesScheduler(ctx, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
 			&MockCacheClient{works: false})
 		time.Sleep(2 * time.Second)
-		done <- true
+		cancel()
 
 		assert.Assert(t, len(calls) == 1)
 		assert.Equal(t, calls[0], `unable to sync cache for upgrade check`)
 	})
 
 	t.Run("successful log each loop, ticker works", func(t *testing.T) {
-		done := make(chan bool, 1)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		// capture logs
 		var calls []string
-		logging.SetLogFunc(1, func(input genericr.Entry) {
+		ctx = logging.NewContext(ctx, genericr.New(func(input genericr.Entry) {
 			calls = append(calls, input.Message)
-		})
+		}))
 
 		// A successful call
 		funcFoo = func() (*http.Response, error) {
@@ -233,10 +239,10 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 
 		// Set loop time to 1s and sleep for 2s before sending the done signal
 		upgradeCheckPeriod = 1 * time.Second
-		go CheckForUpgradesScheduler(done, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
+		go CheckForUpgradesScheduler(ctx, "4.7.3", testUpgradeCheckURL, fakeClient, cfg, false,
 			&MockCacheClient{works: true})
 		time.Sleep(2 * time.Second)
-		done <- true
+		cancel()
 
 		// Sleeping leads to some non-deterministic results, but we expect at least 2 executions
 		// plus one log for the failure to apply the configmap
