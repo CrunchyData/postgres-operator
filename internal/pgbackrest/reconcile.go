@@ -266,7 +266,7 @@ func addServerContainerAndVolume(
 
 	container := corev1.Container{
 		Name:            naming.PGBackRestRepoContainerName,
-		Command:         []string{"pgbackrest", "server-start"},
+		Command:         []string{"pgbackrest", "server"},
 		Image:           config.PGBackRestContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		SecurityContext: initialize.RestrictedSecurityContext(),

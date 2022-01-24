@@ -504,7 +504,7 @@ func TestAddServerToInstancePod(t *testing.T) {
   resources: {}
 - command:
   - pgbackrest
-  - server-start
+  - server
   livenessProbe:
     exec:
       command:
@@ -537,7 +537,7 @@ func TestAddServerToInstancePod(t *testing.T) {
     until read -r -t 5 -u "${fd}"; do
       if
         [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
-        pkill --exact --parent=0 pgbackrest
+        pkill -HUP --exact --parent=0 pgbackrest
       then
         exec {fd}>&- && exec {fd}<> <(:)
         stat --dereference --format='Loaded configuration dated %y' "${filename}"
@@ -545,7 +545,7 @@ func TestAddServerToInstancePod(t *testing.T) {
         { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
           [ "${authority}" -nt "/proc/self/fd/${fd}" ]
         } &&
-        pkill --exact --parent=0 pgbackrest
+        pkill -HUP --exact --parent=0 pgbackrest
       then
         exec {fd}>&- && exec {fd}<> <(:)
         stat --format='Loaded certificates dated %y' "${directory}"
@@ -634,7 +634,7 @@ func TestAddServerToRepoPod(t *testing.T) {
   resources: {}
 - command:
   - pgbackrest
-  - server-start
+  - server
   livenessProbe:
     exec:
       command:
@@ -663,7 +663,7 @@ func TestAddServerToRepoPod(t *testing.T) {
     until read -r -t 5 -u "${fd}"; do
       if
         [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
-        pkill --exact --parent=0 pgbackrest
+        pkill -HUP --exact --parent=0 pgbackrest
       then
         exec {fd}>&- && exec {fd}<> <(:)
         stat --dereference --format='Loaded configuration dated %y' "${filename}"
@@ -671,7 +671,7 @@ func TestAddServerToRepoPod(t *testing.T) {
         { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
           [ "${authority}" -nt "/proc/self/fd/${fd}" ]
         } &&
-        pkill --exact --parent=0 pgbackrest
+        pkill -HUP --exact --parent=0 pgbackrest
       then
         exec {fd}>&- && exec {fd}<> <(:)
         stat --format='Loaded certificates dated %y' "${directory}"

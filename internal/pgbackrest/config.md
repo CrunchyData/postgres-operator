@@ -183,7 +183,7 @@ options in less specific sections.
 
 [default-config]:  https://pgbackrest.org/configuration.html#introduction
 [file-precedence]: https://pgbackrest.org/user-guide.html#quickstart/configure-stanza
-[parse.auto.c]: https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/config/parse.auto.c
+[parse.auto.c]: https://github.com/pgbackrest/pgbackrest/blob/release/2.37/src/config/parse.auto.c
 
 ```console
 $ tail -vn+0 pgbackrest.conf conf.d/*
