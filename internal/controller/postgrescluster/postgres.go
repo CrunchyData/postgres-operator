@@ -693,7 +693,7 @@ func (r *Reconciler) reconcileDatabaseInitSQL(ctx context.Context,
 		data string
 	)
 
-	getDataFromConfigMap := func() (error, string) {
+	getDataFromConfigMap := func() (string, error) {
 		cm := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      cluster.Spec.DatabaseInitSQL.Name,
@@ -702,19 +702,19 @@ func (r *Reconciler) reconcileDatabaseInitSQL(ctx context.Context,
 		}
 		err := r.Client.Get(ctx, client.ObjectKeyFromObject(cm), cm)
 		if err != nil {
-			return err, ""
+			return "", err
 		}
 
 		key := cluster.Spec.DatabaseInitSQL.Key
 		if _, ok := cm.Data[key]; !ok {
 			err := errors.Errorf("ConfigMap did not contain expected key: %s", key)
-			return err, ""
+			return "", err
 		}
 
-		return nil, cm.Data[key]
+		return cm.Data[key], nil
 	}
 
-	if err, data = getDataFromConfigMap(); err != nil {
+	if data, err = getDataFromConfigMap(); err != nil {
 		log.Error(err, "Could not get data from ConfigMap",
 			"ConfigMap", cluster.Spec.DatabaseInitSQL.Name,
 			"Key", cluster.Spec.DatabaseInitSQL.Key)

@@ -1006,7 +1006,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	pgdataVolume, pgwalVolume *corev1.PersistentVolumeClaim,
 	dataSource *v1beta1.PostgresClusterDataSource,
-	instanceName, instanceSetName, configHash string) error {
+	instanceName, instanceSetName, configHash, stanzaName string) error {
 
 	repoName := dataSource.RepoName
 	options := dataSource.Options
@@ -1041,7 +1041,8 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	// combine options provided by user in the spec with those populated by the operator for a
 	// successful restore
 	opts := append(options, []string{
-		"--stanza=" + pgbackrest.DefaultStanzaName, "--pg1-path=" + pgdata,
+		"--stanza=" + stanzaName,
+		"--pg1-path=" + pgdata,
 		"--repo=" + regexRepoIndex.FindString(repoName)}...)
 
 	var deltaOptFound, foundTarget bool
@@ -1385,7 +1386,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	// repo name is required by the api, so RepoName should be populated
 	sourceRepoName := dataSource.RepoName
 
-	// Ensure we proper instance and instance set can be identified via the status.  The
+	// Ensure the proper instance and instance set can be identified via the status.  The
 	// StartupInstance and StartupInstanceSet values should be populated when the cluster
 	// is being prepared for a restore, and should therefore always exist at this point.
 	// Therefore, if either are not found it is treated as an error.
@@ -1507,11 +1508,128 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory
 	if err := r.reconcileRestoreJob(ctx, cluster, pgdata, pgwal, dataSource,
-		instanceName, instanceSetName, configHash); err != nil {
+		instanceName, instanceSetName, configHash, pgbackrest.DefaultStanzaName); err != nil {
 		return errors.WithStack(err)
 	}
 
 	return nil
+}
+
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;delete
+
+// reconcileCloudBasedDataSource is responsible for reconciling a cloud-based PostgresCluster
+// data source, i.e., S3, etc.
+func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
+	cluster *v1beta1.PostgresCluster, dataSource *v1beta1.PGBackRestDataSource,
+	configHash string, clusterVolumes []corev1.PersistentVolumeClaim) error {
+
+	// Ensure the proper instance and instance set can be identified via the status.  The
+	// StartupInstance and StartupInstanceSet values should be populated when the cluster
+	// is being prepared for a restore, and should therefore always exist at this point.
+	// Therefore, if either are not found it is treated as an error.
+	instanceName := cluster.Status.StartupInstance
+	if instanceName == "" {
+		return errors.WithStack(
+			errors.New("unable to find instance name for pgBackRest restore Job"))
+	}
+	instanceSetName := cluster.Status.StartupInstanceSet
+	if instanceSetName == "" {
+		return errors.WithStack(
+			errors.New("unable to find instance set name for pgBackRest restore Job"))
+	}
+
+	// Ensure an instance set can be found in the current spec that corresponds to the
+	// instanceSetName.  A valid instance spec is needed to reconcile and cluster volumes
+	// below (e.g. the PGDATA and/or WAL volumes).
+	var instanceSet *v1beta1.PostgresInstanceSetSpec
+	for i, set := range cluster.Spec.InstanceSets {
+		if set.Name == instanceSetName {
+			instanceSet = &cluster.Spec.InstanceSets[i]
+			break
+		}
+	}
+	if instanceSet == nil {
+		return errors.WithStack(
+			errors.New("unable to determine the proper instance set for the restore"))
+	}
+
+	// If the cluster is already bootstrapped, or if the bootstrap Job is complete, then
+	// nothing to do.  However, also ensure the "data sources initialized" condition is set
+	// to true if for some reason it doesn't exist (e.g. if it was deleted since the
+	// data source for the cluster was initialized).
+	if patroni.ClusterBootstrapped(cluster) {
+		condition := meta.FindStatusCondition(cluster.Status.Conditions,
+			ConditionPostgresDataInitialized)
+		if condition == nil || (condition.Status != metav1.ConditionTrue) {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: cluster.GetGeneration(),
+				Type:               ConditionPostgresDataInitialized,
+				Status:             metav1.ConditionTrue,
+				Reason:             "ClusterAlreadyBootstrapped",
+				Message:            "The cluster is already bootstrapped",
+			})
+		}
+		return nil
+	}
+
+	if err := r.createRestoreConfig(ctx, cluster, configHash); err != nil {
+		return err
+	}
+
+	// TODO(benjaminjb): Is there a way to check that a repo exists outside of spinning
+	// up a pod with pgBackRest and checking?
+
+	// Define a fake STS to use when calling the reconcile functions below since when
+	// bootstrapping the cluster it will not exist until after the restore is complete.
+	fakeSTS := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{
+		Name:      instanceName,
+		Namespace: cluster.GetNamespace(),
+	}}
+	// Reconcile the PGDATA and WAL volumes for the restore
+	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS, clusterVolumes)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	pgwal, err := r.reconcilePostgresWALVolume(ctx, cluster, instanceSet, fakeSTS, nil, clusterVolumes)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	// The `reconcileRestoreJob` was originally designed to take a PostgresClusterDataSource
+	// and rather than reconfigure that func's signature, we translate the PGBackRestDataSource
+	tmpDataSource := &v1beta1.PostgresClusterDataSource{
+		RepoName:          dataSource.Repo.Name,
+		Options:           dataSource.Options,
+		Resources:         dataSource.Resources,
+		Affinity:          dataSource.Affinity,
+		Tolerations:       dataSource.Tolerations,
+		PriorityClassName: dataSource.PriorityClassName,
+	}
+
+	// reconcile the pgBackRest restore Job to populate the cluster's data directory
+	if err := r.reconcileRestoreJob(ctx, cluster, pgdata, pgwal, tmpDataSource,
+		instanceName, instanceSetName, configHash, dataSource.Stanza); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+// createRestoreConfig creates a configmap struct with pgBackRest pgbackrest.conf settings
+// in the data field, for use with restoring from cloud-based data sources
+func (r *Reconciler) createRestoreConfig(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
+	configHash string) error {
+
+	postgresClusterWithMockedBackups := postgresCluster.DeepCopy()
+	postgresClusterWithMockedBackups.Spec.Backups.PGBackRest.Global = postgresCluster.Spec.
+		DataSource.PGBackRest.Global
+	postgresClusterWithMockedBackups.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+		postgresCluster.Spec.DataSource.PGBackRest.Repo,
+	}
+
+	return r.reconcilePGBackRestConfig(ctx, postgresClusterWithMockedBackups,
+		"", configHash, "", "", []string{})
 }
 
 // copyRestoreConfiguration copies pgBackRest configuration from another cluster for use by
@@ -1592,7 +1710,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 	return err
 }
 
-// reconcilePGBackRestConfig is responsible for reconciling the pgBackRest ConfigMaps and Secrets.
+// reconcilePGBackRestConfig is responsible for reconciling the pgBackRest ConfigMaps
 func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,

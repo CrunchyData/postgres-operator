@@ -106,8 +106,12 @@ deploy:
 	$(PGO_KUBE_CLIENT) apply -k ./config/default
 
 # Deploy the PostgreSQL Operator locally
+# Note: using `--server-side=true --force-conflicts` when applying the K8s objects in order to remove the
+# `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it was violating the limit
+# on size of `metadata.annotations`
+# - https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L36
 deploy-dev: build-postgres-operator createnamespaces
-	$(PGO_KUBE_CLIENT) apply -k ./config/dev
+	$(PGO_KUBE_CLIENT) apply --server-side=true --force-conflicts -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
 		CRUNCHY_DEBUG=true \
@@ -197,9 +201,13 @@ check-envtest: hack/tools/envtest
 	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -tags=envtest ./...
 
 # - PGO_TEST_TIMEOUT_SCALE=1
+# Note: using `--server-side=true --force-conflicts` when applying the K8s objects in order to remove the
+# `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it was violating the limit
+# on size of `metadata.annotations`
+# - https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L36
 .PHONY: check-envtest-existing
 check-envtest-existing: createnamespaces
-	${PGO_KUBE_CLIENT} apply -k ./config/dev
+	${PGO_KUBE_CLIENT} apply --server-side=true --force-conflicts -k ./config/dev
 	USE_EXISTING_CLUSTER=true PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
 	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
