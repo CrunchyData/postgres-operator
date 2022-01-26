@@ -75,7 +75,7 @@ func init() {
 
 func checkForUpgrades(ctx context.Context, versionString string, backoff wait.Backoff,
 	crclient crclient.Client, cfg *rest.Config,
-	isOpenShift bool) (message string, err error) {
+	isOpenShift bool) (message string, header string, err error) {
 	var headerPayloadStruct *clientUpgradeData
 
 	// Guard against panics within the checkForUpgrades function to allow the
@@ -137,7 +137,7 @@ func checkForUpgrades(ctx context.Context, versionString string, backoff wait.Ba
 	}
 
 	// TODO: Parse response and log info for user on potential upgrades
-	return string(bodyBytes), err
+	return string(bodyBytes), req.Header.Get(clientHeader), err
 }
 
 // CheckForUpgradesScheduler invokes the check func when the operator starts
@@ -172,26 +172,26 @@ func CheckForUpgradesScheduler(ctx context.Context,
 		return
 	}
 
-	info, err := checkForUpgrades(ctx, versionString, backoff,
+	info, header, err := checkForUpgrades(ctx, versionString, backoff,
 		crclient, cfg, isOpenShift)
 	if err != nil {
 		log.V(1).Info("could not complete upgrade check",
 			"response", err.Error())
 	} else {
-		log.V(1).Info(info)
+		log.Info(info, clientHeader, header)
 	}
 
 	ticker := time.NewTicker(upgradeCheckPeriod)
 	for {
 		select {
 		case <-ticker.C:
-			info, err = checkForUpgrades(ctx, versionString, backoff,
+			info, header, err = checkForUpgrades(ctx, versionString, backoff,
 				crclient, cfg, isOpenShift)
 			if err != nil {
 				log.V(1).Info("could not complete scheduled upgrade check",
 					"response", err.Error())
 			} else {
-				log.V(1).Info(info)
+				log.Info(info, clientHeader, header)
 			}
 		case <-ctx.Done():
 			ticker.Stop()
