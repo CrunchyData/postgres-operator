@@ -17,6 +17,7 @@ package upgradecheck
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -67,6 +68,16 @@ func TestCheckForUpgrades(t *testing.T) {
 	ctx := logging.NewContext(context.Background(), logging.Discard())
 	cfg := &rest.Config{}
 
+	// Pass *testing.T to allows the correct messages from the assert package
+	// in the event of certain failures.
+	checkData := func(t *testing.T, header string) {
+		data := clientUpgradeData{}
+		err := json.Unmarshal([]byte(header), &data)
+		assert.NilError(t, err)
+		assert.Assert(t, data.DeploymentID != "")
+		assert.Equal(t, data.PGOVersion, "4.7.3")
+	}
+
 	t.Run("success", func(t *testing.T) {
 		// A successful call
 		funcFoo = func() (*http.Response, error) {
@@ -77,10 +88,11 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
 			fakeClient, cfg, false)
 		assert.NilError(t, err)
 		assert.Equal(t, res, `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
+		checkData(t, header)
 	})
 
 	t.Run("total failure, err sending", func(t *testing.T) {
@@ -91,12 +103,13 @@ func TestCheckForUpgrades(t *testing.T) {
 			return &http.Response{}, errors.New("whoops")
 		}
 
-		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
 			fakeClient, cfg, false)
 		// Two failed calls because of env var
 		assert.Equal(t, counter, 2)
 		assert.Equal(t, res, "")
 		assert.Equal(t, err.Error(), `whoops`)
+		checkData(t, header)
 	})
 
 	t.Run("recovers from panic", func(t *testing.T) {
@@ -107,12 +120,14 @@ func TestCheckForUpgrades(t *testing.T) {
 			panic(fmt.Errorf("oh no!"))
 		}
 
-		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
 			fakeClient, cfg, false)
 		// One call because of panic
 		assert.Equal(t, counter, 1)
 		assert.Equal(t, res, "")
 		assert.Equal(t, err.Error(), `oh no!`)
+		// no http response returned, so don't perform full check
+		assert.Assert(t, header == "")
 	})
 
 	t.Run("total failure, bad StatusCode", func(t *testing.T) {
@@ -126,12 +141,13 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
 			fakeClient, cfg, false)
 		assert.Equal(t, res, "")
 		// Two failed calls because of env var
 		assert.Equal(t, counter, 2)
 		assert.Equal(t, err.Error(), `received StatusCode 400`)
+		checkData(t, header)
 	})
 
 	t.Run("one failure, then success", func(t *testing.T) {
@@ -154,11 +170,12 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
 			fakeClient, cfg, false)
 		assert.Equal(t, counter, 2)
 		assert.NilError(t, err)
 		assert.Equal(t, res, `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
+		checkData(t, header)
 	})
 }
 
