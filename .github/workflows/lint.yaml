@@ -42,9 +42,8 @@ jobs:
       # Count issues reported by disabled linters. The command always
       # exits zero to ensure it does not fail the pull request check.
       - name: Count non-blocking issues
-        run: >
-          golangci-lint run \
-            --config .golangci.next.yaml \
+        run: |
+          golangci-lint run --config .golangci.next.yaml \
             --issues-exit-code 0 \
             --max-issues-per-linter 0 \
             --max-same-issues 0 \
