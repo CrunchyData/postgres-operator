@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	attributes "go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -873,10 +873,10 @@ func (r *Reconciler) rolloutInstances(
 	}
 
 	span.SetAttributes(
-		attributes.Int("instances", len(instances.forCluster)),
-		attributes.Int("specified", numSpecified),
-		attributes.Int("available", numAvailable),
-		attributes.Int("considering", len(consider)),
+		attribute.Int("instances", len(instances.forCluster)),
+		attribute.Int("specified", numSpecified),
+		attribute.Int("available", numAvailable),
+		attribute.Int("considering", len(consider)),
 	)
 
 	// Redeploy instances up to the allowed maximum while "rolling over" any

@@ -54,7 +54,7 @@ func FromContext(ctx context.Context) logr.Logger {
 	// Omit trace flags for now because they don't seem relevant.
 	// - https://github.com/open-telemetry/opentelemetry-specification/blob/v0.7.0/specification/logs/overview.md
 	if sc := trace.SpanFromContext(ctx).SpanContext(); sc.IsValid() {
-		log = log.WithValues("spanid", sc.SpanID, "traceid", sc.TraceID)
+		log = log.WithValues("spanid", sc.SpanID(), "traceid", sc.TraceID())
 	}
 
 	return log

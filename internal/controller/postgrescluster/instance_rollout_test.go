@@ -17,12 +17,14 @@ package postgrescluster
 
 import (
 	"context"
-	"encoding/json"
 	"io"
 	"strings"
 	"testing"
 
-	"go.opentelemetry.io/otel/oteltest"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -69,7 +71,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 		key := client.ObjectKey{Namespace: "ns1", Name: "one-pod-bruh"}
 		reconciler := &Reconciler{}
 		reconciler.Client = fake.NewClientBuilder().WithObjects(instances[0].Pods[0]).Build()
-		reconciler.Tracer = oteltest.DefaultTracer()
+		reconciler.Tracer = otel.Tracer(t.Name())
 
 		execCalls := 0
 		reconciler.PodExec = func(
@@ -130,7 +132,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 		t.Run("Success", func(t *testing.T) {
 			execCalls := 0
 			reconciler := &Reconciler{}
-			reconciler.Tracer = oteltest.DefaultTracer()
+			reconciler.Tracer = otel.Tracer(t.Name())
 			reconciler.PodExec = func(
 				namespace, pod, container string, _ io.Reader, stdout, _ io.Writer, command ...string,
 			) error {
@@ -158,7 +160,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 
 		t.Run("Failure", func(t *testing.T) {
 			reconciler := &Reconciler{}
-			reconciler.Tracer = oteltest.DefaultTracer()
+			reconciler.Tracer = otel.Tracer(t.Name())
 			reconciler.PodExec = func(
 				_, _, _ string, _ io.Reader, _, _ io.Writer, _ ...string,
 			) error {
@@ -174,24 +176,24 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 
 func TestReconcilerRolloutInstances(t *testing.T) {
 	ctx := context.Background()
-	reconciler := &Reconciler{Tracer: oteltest.DefaultTracer()}
+	reconciler := &Reconciler{Tracer: otel.Tracer(t.Name())}
 
 	accumulate := func(on *[]*Instance) func(context.Context, *Instance) error {
 		return func(_ context.Context, i *Instance) error { *on = append(*on, i); return nil }
 	}
 
 	logSpanAttributes := func(t testing.TB) {
-		recorder := new(oteltest.StandardSpanRecorder)
-		provider := oteltest.NewTracerProvider(oteltest.WithSpanRecorder(recorder))
+		recorder := tracetest.NewSpanRecorder()
+		provider := trace.NewTracerProvider(trace.WithSpanProcessor(recorder))
 
 		former := reconciler.Tracer
-		reconciler.Tracer = provider.Tracer("")
+		reconciler.Tracer = provider.Tracer(t.Name())
 
 		t.Cleanup(func() {
 			reconciler.Tracer = former
-			for _, span := range recorder.Completed() {
-				b, _ := json.Marshal(span.Attributes())
-				t.Log(span.Name(), string(b))
+			for _, span := range recorder.Ended() {
+				attr := attribute.NewSet(span.Attributes()...)
+				t.Log(span.Name(), attr.Encoded(attribute.DefaultEncoder()))
 			}
 		})
 	}
