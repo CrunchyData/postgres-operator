@@ -451,6 +451,48 @@ func TestAddConfigToRestorePod(t *testing.T) {
         optional: true
 		`))
 	})
+
+	t.Run("CloudBasedDataSourceProjections", func(t *testing.T) {
+		custom := corev1.SecretProjection{}
+		custom.Name = "custom-secret"
+
+		cluster := cluster.DeepCopy()
+		cluster.Spec.DataSource = &v1beta1.DataSource{
+			PGBackRest: &v1beta1.PGBackRestDataSource{
+				Configuration: []corev1.VolumeProjection{{Secret: &custom}},
+			},
+		}
+
+		out := pod.DeepCopy()
+		AddConfigToRestorePod(cluster, out)
+		alwaysExpect(t, out)
+
+		// Instance configuration files and optional client certificates
+		// after custom projections.
+		assert.Assert(t, marshalMatches(out.Volumes, `
+- name: pgbackrest-config
+  projected:
+    sources:
+    - secret:
+        name: custom-secret
+    - configMap:
+        items:
+        - key: pgbackrest_instance.conf
+          path: pgbackrest_instance.conf
+        name: source-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: source-pgbackrest
+        optional: true
+		`))
+	})
 }
 
 func TestAddServerToInstancePod(t *testing.T) {

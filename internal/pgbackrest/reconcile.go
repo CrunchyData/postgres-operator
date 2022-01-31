@@ -175,7 +175,7 @@ func AddConfigToRepoPod(
 	addConfigVolumeAndMounts(pod, append(sources, configmap, secret))
 }
 
-// AddConfigToRestorePod adds and mounts the pgBackRest configuration volume to
+// AddConfigToRestorePod adds and mounts the pgBackRest configuration volume
 // for the restore job of cluster to pod. The pgBackRest containers must
 // already be in pod.
 func AddConfigToRestorePod(
@@ -205,6 +205,12 @@ func AddConfigToRestorePod(
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
 	sources := append([]corev1.VolumeProjection{},
 		cluster.Spec.Backups.PGBackRest.Configuration...)
+
+	if cluster.Spec.DataSource != nil &&
+		cluster.Spec.DataSource.PGBackRest != nil &&
+		cluster.Spec.DataSource.PGBackRest.Configuration != nil {
+		sources = append(sources, cluster.Spec.DataSource.PGBackRest.Configuration...)
+	}
 
 	addConfigVolumeAndMounts(pod, append(sources, configmap, secret))
 }

@@ -251,6 +251,10 @@ func (r *Reconciler) reconcileClusterReplicaService(
 // This involves ensuring the PostgreSQL data directory for the cluster is properly populated
 // prior to bootstrapping the cluster, specifically according to any data source configured in the
 // PostgresCluster spec.
+// TODO(benjaminjb): Right now the spec will accept a dataSource with both a PostgresCluster and
+// a PGBackRest section, but the code will only honor the PostgresCluster in that case; this would
+// be better handled with a webhook to reject a spec with both `dataSource.postgresCluster` and
+// `dataSource.pgbackrest` fields
 func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, observed *observedInstances,
 	clusterVolumes []corev1.PersistentVolumeClaim,
@@ -275,7 +279,8 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 
 	// determine if the user wants to initialize the PG data directory
 	postgresDataInitRequested := cluster.Spec.DataSource != nil &&
-		cluster.Spec.DataSource.PostgresCluster != nil
+		(cluster.Spec.DataSource.PostgresCluster != nil ||
+			cluster.Spec.DataSource.PGBackRest != nil)
 
 	// determine if the user has requested an in-place restore
 	restoreID := cluster.GetAnnotations()[naming.PGBackRestRestore]
@@ -288,6 +293,7 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	// in place (and therefore recreating the data directory).  If the user hasn't requested
 	// PG data initialization or an in-place restore, then simply return.
 	var dataSource *v1beta1.PostgresClusterDataSource
+	var cloudDataSource *v1beta1.PGBackRestDataSource
 	switch {
 	case restoreInPlaceRequested:
 		dataSource = cluster.Spec.Backups.PGBackRest.Restore.PostgresClusterDataSource
@@ -296,6 +302,9 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 		// restore ID for bootstrap
 		restoreID = "~pgo-bootstrap-" + cluster.GetName()
 		dataSource = cluster.Spec.DataSource.PostgresCluster
+		if dataSource == nil {
+			cloudDataSource = cluster.Spec.DataSource.PGBackRest
+		}
 	default:
 		return false, nil
 	}
@@ -328,8 +337,15 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 
 	// calculate the configHash for the options in the current data source, and if an existing
 	// restore Job exists, determine if the config has changed
-	configs := []string{dataSource.ClusterName, dataSource.RepoName}
-	configs = append(configs, dataSource.Options...)
+	var configs []string
+	switch {
+	case dataSource != nil:
+		configs = []string{dataSource.ClusterName, dataSource.RepoName}
+		configs = append(configs, dataSource.Options...)
+	case cloudDataSource != nil:
+		configs = []string{cloudDataSource.Stanza, cloudDataSource.Repo.Name}
+		configs = append(configs, cloudDataSource.Options...)
+	}
 	configHash, err := hashFunc(configs)
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -362,9 +378,17 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	}
 
 	// proceed with initializing the PG data directory if not already initialized
-	if err := r.reconcilePostgresClusterDataSource(ctx, cluster, dataSource,
-		configHash, clusterVolumes, rootCA); err != nil {
-		return true, err
+	switch {
+	case dataSource != nil:
+		if err := r.reconcilePostgresClusterDataSource(ctx, cluster, dataSource,
+			configHash, clusterVolumes, rootCA); err != nil {
+			return true, err
+		}
+	case cloudDataSource != nil:
+		if err := r.reconcileCloudBasedDataSource(ctx, cluster, cloudDataSource,
+			configHash, clusterVolumes); err != nil {
+			return true, err
+		}
 	}
 	// return early until the PG data directory is initialized
 	return true, nil
