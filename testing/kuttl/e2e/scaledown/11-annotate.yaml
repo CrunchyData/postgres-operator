@@ -1,0 +1,13 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Label instance pods with their current role.
+  - script: |
+      kubectl label --namespace="${NAMESPACE}" pods \
+        --selector='postgres-operator.crunchydata.com/role=master' \
+        'testing/role-before=master'
+  - script: |
+      kubectl label --namespace="${NAMESPACE}" pods \
+        --selector='postgres-operator.crunchydata.com/role=replica' \
+        'testing/role-before=replica'

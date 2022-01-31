@@ -558,7 +558,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 				cluster := testCluster()
 				cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 					Name:                "target",
-					Replicas:            Int32(2),
+					Replicas:            initialize.Int32(2),
 					DataVolumeClaimSpec: testVolumeClaimSpec(),
 				}}
 				if test.enabled {
@@ -671,7 +671,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		}
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
-			Replicas:            Int32(2),
+			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		called, failover, callError, callFails = false, false, false, true
@@ -693,7 +693,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		}
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
-			Replicas:            Int32(2),
+			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		called, failover, callError, callFails = false, false, true, false
@@ -715,7 +715,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		}
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
-			Replicas:            Int32(2),
+			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		called, failover, callError, callFails = false, false, false, false
@@ -737,7 +737,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		}
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
-			Replicas:            Int32(2),
+			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		called, failover, callError, callFails = false, false, false, false
@@ -760,7 +760,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		}
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
-			Replicas:            Int32(2),
+			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		called, failover, callError, callFails = false, true, false, false
