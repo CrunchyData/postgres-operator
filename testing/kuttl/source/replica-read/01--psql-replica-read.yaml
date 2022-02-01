@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-replica-read
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: "OnFailure"
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          command:
+            # https://www.postgresql.org/docs/current/plpgsql-errors-and-messages.html#PLPGSQL-STATEMENTS-ASSERT
+            # If run on a non-replica, this assertion fails, resulting in the pod erroring
+            # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+            # - https://kubernetes.io/docs/tasks/inject-data-application/
+            - psql
+            - -qc
+            - |
+                DO $$$$ 
+                BEGIN 
+                  ASSERT pg_is_in_recovery(); 
+                END $$$$;
+          env:
+          # The Replica svc is not held in the user secret, so we hard-code the Service address
+          # (using the downstream API for the namespace)
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: PGHOST
+            value: "replica-read-replicas.$(NAMESPACE).svc"
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: replica-read-pguser-replica-read, key: port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: replica-read-pguser-replica-read, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: replica-read-pguser-replica-read, key: user } }
+          - name: PGPASSWORD
+            valueFrom: { secretKeyRef: { name: replica-read-pguser-replica-read, key: password } }
+          # Do not wait indefinitely.
+          - { name: PGCONNECT_TIMEOUT, value: '5' }

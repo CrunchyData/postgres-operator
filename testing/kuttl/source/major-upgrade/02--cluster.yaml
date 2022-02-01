@@ -3,7 +3,10 @@ kind: PostgresCluster
 metadata:
   name: major-upgrade
 spec:
-  postgresVersion: 13
+  upgrade:
+    enabled: true
+    fromPostgresVersion: ${KUTTL_PG_UPGRADE_FROM_VERSION}
+  postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - name: instance1
       dataVolumeClaimSpec:
