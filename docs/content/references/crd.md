@@ -11603,7 +11603,7 @@ Defines a pgAdmin user interface.
       </tr><tr>
         <td><b>priorityClassName</b></td>
         <td>string</td>
-        <td>Priority class name for the pgAdmin pod. Changing this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
+        <td>Priority class name for the pgAdmin pod. Changing this value causes pgAdmin to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
         <td>false</td>
       </tr><tr>
         <td><b>replicas</b></td>

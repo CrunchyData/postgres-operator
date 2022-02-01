@@ -49,7 +49,7 @@ type PGAdminPodSpec struct {
 	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
-	// Priority class name for the pgAdmin pod. Changing this value causes PostgreSQL
+	// Priority class name for the pgAdmin pod. Changing this value causes pgAdmin
 	// to restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
 	// +optional
