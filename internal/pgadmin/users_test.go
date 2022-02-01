@@ -57,6 +57,12 @@ func TestWriteUsersInPGAdmin(t *testing.T) {
 				"Python should not be indented with tabs")
 
 			assert.DeepEqual(t, command, []string{"python", "-c", `
+import sys
+import types
+
+cluster = types.SimpleNamespace()
+(cluster.name, cluster.hostname, cluster.port) = sys.argv[1:]
+
 import importlib.util
 import os
 import sys
@@ -72,15 +78,19 @@ if sys.path[0] != root:
 import copy
 import json
 import sys
+
 from pgadmin import create_app
 from pgadmin.model import db, Role, User, Server, ServerGroup
+from pgadmin.utils.constants import INTERNAL
 from pgadmin.utils.crypto import encrypt
 
 with create_app().app_context():
+
     admin = db.session.query(User).filter_by(id=1).first()
     admin.active = False
     admin.email = ''
     admin.password = ''
+    admin.username = ''
 
     db.session.add(admin)
     db.session.commit()
@@ -90,10 +100,13 @@ with create_app().app_context():
             continue
 
         data = json.loads(line)
+        address = data['username'] + '@pgo'
         user = (
-            db.session.query(User).filter_by(email=data['username']).first() or
-            User(email=data['username'])
+            db.session.query(User).filter_by(username=address).first() or
+            User()
         )
+        user.auth_source = INTERNAL
+        user.email = user.username = address
         user.password = data['password']
         user.active = bool(user.password)
         user.roles = db.session.query(Role).filter_by(name='User').all()
@@ -105,10 +118,6 @@ with create_app().app_context():
         db.session.add(user)
         db.session.commit()
 
-        # Set the cluster and host name variable.
-        (clustername, hostname, port) = sys.argv[1:]
-
-        # Get or create the group as necessary
         group = (
             db.session.query(ServerGroup).filter_by(
                 user_id=user.id,
@@ -120,30 +129,27 @@ with create_app().app_context():
         db.session.add(group)
         db.session.commit()
 
-        # Get or create the server connection.
         server = (
             db.session.query(Server).filter_by(
                 servergroup_id=group.id,
                 user_id=user.id,
-                name=clustername,
+                name=cluster.name,
             ).first() or
             Server()
         )
 
-        # Add the required values.
-        server.name = clustername
+        server.name = cluster.name
+        server.host = cluster.hostname
+        server.port = cluster.port
         server.servergroup_id = group.id
         server.user_id = user.id
-        server.ssl_mode = "prefer"
-        server.host = hostname
-        server.username = data['username']
-        # Save the encrypted server password.
-        server.password = encrypt(data['password'], data['password'])
         server.maintenance_db = "postgres"
-        server.port = port
+        server.ssl_mode = "prefer"
 
-        # If the existing server doesn't match our needed configuration, create
-        # a new one.
+        server.username = data['username']
+        server.password = encrypt(data['password'], data['password'])
+        server.save_password = int(bool(data['password']))
+
         if server.id and db.session.is_modified(server):
             old = copy.deepcopy(server)
             db.make_transient(server)

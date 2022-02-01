@@ -8533,7 +8533,7 @@ spec:
                         type: integer
                       priorityClassName:
                         description: 'Priority class name for the pgAdmin pod. Changing
-                          this value causes PostgreSQL to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
+                          this value causes pgAdmin to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'
                         type: string
                       replicas:
                         default: 1
