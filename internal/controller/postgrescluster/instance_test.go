@@ -1429,7 +1429,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 					DisableDefaultPodScheduling: initialize.Bool(true),
 					InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 						Name:                "instance1",
-						Replicas:            Int32(1),
+						Replicas:            initialize.Int32(1),
 						DataVolumeClaimSpec: testVolumeClaimSpec(),
 						TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
 							MaxSkew:           int32(1),
@@ -1973,7 +1973,7 @@ func TestReconcileUpgrade(t *testing.T) {
 			// resources needed for reconcileUpgradeJob
 			spec := []v1beta1.PostgresInstanceSetSpec{{
 				Name:                "instance1",
-				Replicas:            Int32(1),
+				Replicas:            initialize.Int32(1),
 				DataVolumeClaimSpec: testVolumeClaimSpec(),
 			}}
 			clusterCerts := &corev1.SecretProjection{
