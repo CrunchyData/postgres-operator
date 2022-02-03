@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -106,6 +107,23 @@ func setupKubernetes(t testing.TB) (*envtest.Environment, client.Client) {
 	t.Cleanup(func() {
 		kubernetes.Lock()
 		defer kubernetes.Unlock()
+
+		if t.Failed() {
+			if cc, err := client.New(kubernetes.env.Config, client.Options{}); err == nil {
+				var namespaces corev1.NamespaceList
+				_ = cc.List(context.Background(), &namespaces, client.HasLabels{"postgres-operator-test"})
+
+				type shaped map[string]corev1.NamespaceStatus
+				result := make([]shaped, len(namespaces.Items))
+
+				for i, ns := range namespaces.Items {
+					result[i] = shaped{ns.Labels["postgres-operator-test"]: ns.Status}
+				}
+
+				formatted, _ := yaml.Marshal(result)
+				t.Logf("Test Namespaces:\n%s", formatted)
+			}
+		}
 
 		kubernetes.count--
 
