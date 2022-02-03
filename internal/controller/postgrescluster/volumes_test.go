@@ -53,7 +53,7 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 
 	ctx := context.Background()
 	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
+	require.ParallelCapacity(t, 1)
 
 	ns := setupNamespace(t, cc)
 
