@@ -457,8 +457,13 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: labels},
 			Spec: corev1.PodSpec{
-				Containers:      []corev1.Container{container},
-				SecurityContext: postgres.PodSecurityContext(cluster),
+				// Set the image pull secrets, if any exist.
+				// This is set here rather than using the service account due to the lack
+				// of propagation to existing pods when the CRD is updated:
+				// https://github.com/kubernetes/kubernetes/issues/88456
+				ImagePullSecrets: cluster.Spec.ImagePullSecrets,
+				Containers:       []corev1.Container{container},
+				SecurityContext:  postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
@@ -570,8 +575,13 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: labels},
 			Spec: corev1.PodSpec{
-				Containers:      []corev1.Container{container},
-				SecurityContext: postgres.PodSecurityContext(cluster),
+				// Set the image pull secrets, if any exist.
+				// This is set here rather than using the service account due to the lack
+				// of propagation to existing pods when the CRD is updated:
+				// https://github.com/kubernetes/kubernetes/issues/88456
+				ImagePullSecrets: cluster.Spec.ImagePullSecrets,
+				Containers:       []corev1.Container{container},
+				SecurityContext:  postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be
 				// created by the Job controller when there is a failure
 				// (instead of the container simply restarting).
@@ -688,8 +698,13 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{Labels: labels},
 			Spec: corev1.PodSpec{
-				Containers:      []corev1.Container{container},
-				SecurityContext: postgres.PodSecurityContext(cluster),
+				// Set the image pull secrets, if any exist.
+				// This is set here rather than using the service account due to the lack
+				// of propagation to existing pods when the CRD is updated:
+				// https://github.com/kubernetes/kubernetes/issues/88456
+				ImagePullSecrets: cluster.Spec.ImagePullSecrets,
+				Containers:       []corev1.Container{container},
+				SecurityContext:  postgres.PodSecurityContext(cluster),
 				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
 				// controller when there is a failure (instead of the container simply restarting).
 				RestartPolicy: corev1.RestartPolicyNever,
