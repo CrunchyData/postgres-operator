@@ -13,20 +13,25 @@ Let's dive in.
 
 ## Resize Memory and CPU
 
-Memory and CPU resources are an important component for vertically scaling your Postgres cluster. Couple with [tweaks to your Postgres configuration file]({{< relref "./customize-cluster.md" >}}), allowing your cluster to have more memory and CPU allotted to it can help it to perform better under load.
+Memory and CPU resources are an important component for vertically scaling your Postgres cluster.
+Coupled with [tweaks to your Postgres configuration file]({{< relref "./customize-cluster.md" >}}),
+allocating more memory and CPU to your cluster can help it to perform better under load.
 
-It's important for instances in the same high availability set to have the same resources. PGO lets you adjust CPU and memory within the `resources` sections of the `postgresclusters.postgres-operator.crunchydata.com` custom resource. These include:
+It's important for instances in the same high availability set to have the same resources.
+PGO lets you adjust CPU and memory within the `resources` sections of the `postgresclusters.postgres-operator.crunchydata.com` custom resource. These include:
 
-- `spec.instances.resources` section, which sets the resource values for the PostgreSQL container, as well as any init containers in the associated pod and containers created by the `pgDataVolume` and `pgWALVolume` [data migration jobs]({{< relref "guides/data-migration.md" >}}).
-- `spec.instances.sidecars.replicacertcopy.resources` section, which sets the resources for the `replica-cert-copy` sidecar container.
+- `spec.instances.resources` section, which sets the resource values for the PostgreSQL container,
+  as well as any init containers in the associated pod and containers created by the `pgDataVolume` and `pgWALVolume` [data migration jobs]({{< relref "guides/data-migration.md" >}}).
+- `spec.instances.sidecars.replicaCertCopy.resources` section, which sets the resources for the `replica-cert-copy` sidecar container.
 - `spec.monitoring.pgmonitor.exporter.resources` section, which sets the resources for the `exporter` sidecar container.
-- `spec.backups.pgbackrest.repoHost.resources` section, which sets the resources for the pgBackRest repo host container, as well as any init containers in the associated pod and containers created by the `pgBackRestVolume` [data migration job]({{< relref "guides/data-migration.md" >}}).
+- `spec.backups.pgbackrest.repoHost.resources` section, which sets the resources for the pgBackRest repo host container,
+  as well as any init containers in the associated pod and containers created by the `pgBackRestVolume` [data migration job]({{< relref "guides/data-migration.md" >}}).
 - `spec.backups.pgbackrest.sidecars.pgbackrest.resources` section, which sets the resources for the `pgbackrest` sidecar container.
 - `spec.backups.pgbackrest.jobs.resources` section, which sets the resources for any pgBackRest backup job.
 - `spec.backups.pgbackrest.restore.resources` section, which sets the resources for manual pgBackRest restore jobs.
 - `spec.dataSource.postgresCluster.resources` section, which sets the resources for pgBackRest restore jobs created during the [cloning]({{< relref "./disaster-recovery.md" >}}) process.
 - `spec.proxy.pgBouncer.resources` section, which sets the resources for the `pgbouncer` container.
-- `spec.proxy.pgBouncer.sidecars.pgbouncerconfig.resources` section, which sets the resources for the `pgbouncer-config` sidecar container.
+- `spec.proxy.pgBouncer.sidecars.pgbouncerConfig.resources` section, which sets the resources for the `pgbouncer-config` sidecar container.
 
 The layout of these `resources` sections should be familiar: they follow the same pattern as the standard Kubernetes structure for setting [container resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/). Note that these settings also allow for the configuration of [QoS classes](https://kubernetes.io/docs/tasks/configure-pod-container/quality-service-pod/).
 
