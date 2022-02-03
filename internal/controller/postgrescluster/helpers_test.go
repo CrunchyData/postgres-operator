@@ -208,35 +208,6 @@ func testCluster() *v1beta1.PostgresCluster {
 	return cluster.DeepCopy()
 }
 
-// setupTestEnv configures and starts an EnvTest instance of etcd and the Kubernetes API server
-// for test usage, as well as creates a new client instance.
-//
-// Deprecated: use setupKubernetes instead.
-func setupTestEnv(t *testing.T,
-	_ string) (*envtest.Environment, client.Client, *rest.Config) {
-
-	testEnv := &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-	}
-	cfg, err := testEnv.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log("DEPRECATED: Use setupKubernetes instead of setupTestEnv.")
-	t.Log("Test environment started")
-
-	pgoScheme, err := runtime.CreatePostgresOperatorScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	client, err := client.New(cfg, client.Options{Scheme: pgoScheme})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return testEnv, client, cfg
-}
-
 // setupManager creates the runtime manager used during controller testing
 func setupManager(t *testing.T, cfg *rest.Config,
 	contollerSetup func(mgr manager.Manager)) (context.Context, context.CancelFunc) {
@@ -257,15 +228,6 @@ func setupManager(t *testing.T, cfg *rest.Config,
 	t.Log("Manager started")
 
 	return ctx, cancel
-}
-
-// teardownTestEnv stops the test environment when the tests
-// have completed
-func teardownTestEnv(t *testing.T, testEnv *envtest.Environment) {
-	if err := testEnv.Stop(); err != nil {
-		t.Error(err)
-	}
-	t.Log("Test environment stopped")
 }
 
 // teardownManager stops the runtime manager when the tests
