@@ -179,7 +179,7 @@ func AddConfigToRepoPod(
 // for the restore job of cluster to pod. The pgBackRest containers must
 // already be in pod.
 func AddConfigToRestorePod(
-	cluster *v1beta1.PostgresCluster, pod *corev1.PodSpec,
+	cluster *v1beta1.PostgresCluster, sourceCluster *v1beta1.PostgresCluster, pod *corev1.PodSpec,
 ) {
 	configmap := corev1.VolumeProjection{ConfigMap: &corev1.ConfigMapProjection{}}
 	configmap.ConfigMap.Name = naming.PGBackRestConfig(cluster).Name
@@ -210,6 +210,12 @@ func AddConfigToRestorePod(
 		cluster.Spec.DataSource.PGBackRest != nil &&
 		cluster.Spec.DataSource.PGBackRest.Configuration != nil {
 		sources = append(sources, cluster.Spec.DataSource.PGBackRest.Configuration...)
+	}
+
+	// For a PostgresCluster restore, append all pgBackRest configuration from
+	// the source cluster for the restore
+	if sourceCluster != nil {
+		sources = append(sources, sourceCluster.Spec.Backups.PGBackRest.Configuration...)
 	}
 
 	addConfigVolumeAndMounts(pod, append(sources, configmap, secret))

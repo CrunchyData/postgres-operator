@@ -421,8 +421,16 @@ func TestAddConfigToRestorePod(t *testing.T) {
 			{ConfigMap: &custom},
 		}
 
+		custom2 := corev1.SecretProjection{}
+		custom2.Name = "source-custom-secret"
+
+		sourceCluster := cluster.DeepCopy()
+		sourceCluster.Spec.Backups.PGBackRest.Configuration = []corev1.VolumeProjection{
+			{Secret: &custom2},
+		}
+
 		out := pod.DeepCopy()
-		AddConfigToRestorePod(cluster, out)
+		AddConfigToRestorePod(cluster, sourceCluster, out)
 		alwaysExpect(t, out)
 
 		// Instance configuration files and optional client certificates
@@ -433,6 +441,8 @@ func TestAddConfigToRestorePod(t *testing.T) {
     sources:
     - configMap:
         name: custom-configmap
+    - secret:
+        name: source-custom-secret
     - configMap:
         items:
         - key: pgbackrest_instance.conf
@@ -464,7 +474,7 @@ func TestAddConfigToRestorePod(t *testing.T) {
 		}
 
 		out := pod.DeepCopy()
-		AddConfigToRestorePod(cluster, out)
+		AddConfigToRestorePod(cluster, nil, out)
 		alwaysExpect(t, out)
 
 		// Instance configuration files and optional client certificates

@@ -177,6 +177,12 @@ const (
 	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
 	// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
 	sshSecretNameSuffix = "%s-ssh"
+
+	// RestoreConfigCopySuffix is the suffix used for ConfigMap or Secret configuration
+	// resources needed when restoring from a PostgresCluster data source. If, for
+	// example, a Secret is named 'mysecret' and is the first item in the configuration
+	// slice, the copied Secret will be named 'mysecret-restorecopy-0'
+	RestoreConfigCopySuffix = "%s-restorecopy-%d"
 )
 
 // AsObjectKey converts the ObjectMeta API type to a client.ObjectKey.

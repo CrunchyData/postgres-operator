@@ -220,7 +220,8 @@ func PGBackRestRestoreConfigSelector(clusterName string) labels.Selector {
 	return PGBackRestRestoreConfigLabels(clusterName).AsSelector()
 }
 
-// PGBackRestRestoreJobLabels provides labels for pgBackRest restore Jobs.
+// PGBackRestRestoreJobLabels provides labels for pgBackRest restore Jobs and
+// associated configuration ConfigMaps and Secrets.
 func PGBackRestRestoreJobLabels(clusterName string) labels.Set {
 	commonLabels := PGBackRestLabels(clusterName)
 	jobLabels := map[string]string{

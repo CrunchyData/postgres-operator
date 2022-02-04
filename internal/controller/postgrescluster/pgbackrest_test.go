@@ -2217,6 +2217,254 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 	}
 }
 
+func TestCopyConfigurationResources(t *testing.T) {
+	_, tClient := setupKubernetes(t)
+	ctx := context.Background()
+	require.ParallelCapacity(t, 2)
+
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+
+	ns1 := setupNamespace(t, tClient)
+	ns2 := setupNamespace(t, tClient)
+
+	secret := func(testNum string) *corev1.Secret {
+		return &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "source-secret" + testNum,
+				Namespace: ns1.Name,
+			},
+		}
+	}
+
+	configMap := func(testNum string) *corev1.ConfigMap {
+		return &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "source-configmap" + testNum,
+				Namespace: ns1.Name,
+			},
+		}
+	}
+
+	clusterUID := "hippouid"
+
+	sourceCluster := func(testNum string) *v1beta1.PostgresCluster {
+		return &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "source-cluster" + testNum,
+				Namespace: ns1.Name,
+				UID:       types.UID(clusterUID),
+			},
+			Spec: v1beta1.PostgresClusterSpec{
+				PostgresVersion: 13,
+				Image:           "example.com/crunchy-postgres-ha:test",
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+					Name: "instance1",
+					DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						},
+					},
+				}},
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Configuration: []corev1.VolumeProjection{{
+							Secret: &corev1.SecretProjection{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "source-secret" + testNum,
+								},
+							}}, {
+							ConfigMap: &corev1.ConfigMapProjection{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "source-configmap" + testNum,
+								},
+							}},
+						},
+						Image: "example.com/crunchy-pgbackrest:test",
+						Repos: []v1beta1.PGBackRestRepo{{
+							Name: "repo1",
+						}},
+					},
+				},
+			},
+		}
+	}
+
+	cluster := func(testNum, scName, scNamespace string) *v1beta1.PostgresCluster {
+		return &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "new-cluster" + testNum,
+				Namespace: ns2.Name,
+				UID:       types.UID(clusterUID),
+			},
+			Spec: v1beta1.PostgresClusterSpec{
+				PostgresVersion: 13,
+				Image:           "example.com/crunchy-postgres-ha:test",
+				DataSource: &v1beta1.DataSource{
+					PostgresCluster: &v1beta1.PostgresClusterDataSource{
+						ClusterName:      scName,
+						ClusterNamespace: scNamespace,
+						RepoName:         "repo1",
+					},
+				},
+				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
+					Name: "instance1",
+					DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						},
+					},
+				}},
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Image: "example.com/crunchy-pgbackrest:test",
+						Repos: []v1beta1.PGBackRestRepo{{
+							Name: "repo1",
+						}},
+					},
+				},
+			},
+		}
+	}
+
+	checkSecret := func(secretName, nsName string) error {
+		secretCopy := &corev1.Secret{}
+		err := tClient.Get(ctx, types.NamespacedName{
+			Name:      secretName,
+			Namespace: nsName,
+		}, secretCopy)
+		return err
+	}
+
+	checkConfigMap := func(configMapName, nsName string) error {
+		configMapCopy := &corev1.ConfigMap{}
+		err := tClient.Get(ctx, types.NamespacedName{
+			Name:      configMapName,
+			Namespace: nsName,
+		}, configMapCopy)
+		return err
+	}
+
+	t.Run("No Secret or ConfigMap", func(t *testing.T) {
+		sc := sourceCluster("0")
+
+		assert.Check(t, apierrors.IsNotFound(
+			r.copyConfigurationResources(ctx, cluster("0", sc.Name, sc.Namespace), sc)))
+	})
+	t.Run("Only Secret", func(t *testing.T) {
+		secret := secret("1")
+		if err := tClient.Create(ctx, secret); err != nil {
+			t.Fatal(err)
+		}
+		assert.NilError(t, checkSecret(secret.Name, ns1.Name))
+
+		sc := sourceCluster("1")
+
+		assert.Check(t, apierrors.IsNotFound(
+			r.copyConfigurationResources(ctx, cluster("1", sc.Name, sc.Namespace), sc)))
+	})
+	t.Run("Only ConfigMap", func(t *testing.T) {
+		configMap := configMap("2")
+		if err := tClient.Create(ctx, configMap); err != nil {
+			t.Fatal(err)
+		}
+		assert.NilError(t, checkConfigMap(configMap.Name, ns1.Name))
+
+		sc := sourceCluster("2")
+
+		assert.Check(t, apierrors.IsNotFound(
+			r.copyConfigurationResources(ctx, cluster("2", sc.Name, sc.Namespace), sc)))
+	})
+	t.Run("Secret and ConfigMap, neither optional", func(t *testing.T) {
+		secret := secret("3")
+		if err := tClient.Create(ctx, secret); err != nil {
+			t.Fatal(err)
+		}
+		assert.NilError(t, checkSecret(secret.Name, ns1.Name))
+
+		configMap := configMap("3")
+		if err := tClient.Create(ctx, configMap); err != nil {
+			t.Fatal(err)
+		}
+		assert.NilError(t, checkConfigMap(configMap.Name, ns1.Name))
+
+		sc := sourceCluster("3")
+		nc := cluster("3", sc.Name, sc.Namespace)
+		if err := tClient.Create(ctx, nc); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.NilError(t, r.copyConfigurationResources(ctx, nc, sc))
+
+		assert.NilError(t, checkSecret(secret.Name+"-restorecopy-0", ns2.Name))
+		assert.NilError(t, checkConfigMap(configMap.Name+"-restorecopy-1", ns2.Name))
+	})
+	t.Run("Secret and ConfigMap configured, Secret missing but optional", func(t *testing.T) {
+		secret := secret("4")
+		configMap := configMap("4")
+		if err := tClient.Create(ctx, configMap); err != nil {
+			t.Fatal(err)
+		}
+		assert.NilError(t, checkConfigMap(configMap.Name, ns1.Name))
+
+		sc := sourceCluster("4")
+		sc.Spec.Backups.PGBackRest.Configuration[0].Secret.Optional = initialize.Bool(true)
+
+		nc := cluster("4", sc.Name, sc.Namespace)
+		if err := tClient.Create(ctx, nc); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.NilError(t, r.copyConfigurationResources(ctx, nc, sc))
+
+		assert.Check(t, apierrors.IsNotFound(checkSecret(secret.Name+"-restorecopy-0", ns2.Name)))
+		assert.NilError(t, checkConfigMap(configMap.Name+"-restorecopy-1", ns2.Name))
+	})
+	t.Run("Secret and ConfigMap configured, ConfigMap missing but optional", func(t *testing.T) {
+		secret := secret("5")
+		configMap := configMap("5")
+		if err := tClient.Create(ctx, secret); err != nil {
+			t.Fatal(err)
+		}
+		assert.NilError(t, checkSecret(secret.Name, ns1.Name))
+
+		sc := sourceCluster("5")
+		sc.Spec.Backups.PGBackRest.Configuration[1].ConfigMap.Optional = initialize.Bool(true)
+
+		nc := cluster("5", sc.Name, sc.Namespace)
+		if err := tClient.Create(ctx, nc); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.NilError(t, r.copyConfigurationResources(ctx, nc, sc))
+
+		assert.NilError(t, checkSecret(secret.Name+"-restorecopy-0", ns2.Name))
+		assert.Check(t, apierrors.IsNotFound(checkConfigMap(configMap.Name+"-restorecopy-1", ns2.Name)))
+	})
+	t.Run("Secret and ConfigMap configured, both optional", func(t *testing.T) {
+		secret := secret("6")
+		configMap := configMap("6")
+		sc := sourceCluster("6")
+		sc.Spec.Backups.PGBackRest.Configuration[0].Secret.Optional = initialize.Bool(true)
+		sc.Spec.Backups.PGBackRest.Configuration[1].ConfigMap.Optional = initialize.Bool(true)
+
+		nc := cluster("6", sc.Name, sc.Namespace)
+		if err := tClient.Create(ctx, nc); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.NilError(t, r.copyConfigurationResources(ctx, nc, sc))
+
+		assert.Assert(t, apierrors.IsNotFound(checkSecret(secret.Name+"-restorecopy-0", ns2.Name)))
+		assert.Assert(t, apierrors.IsNotFound(checkConfigMap(configMap.Name+"-restorecopy-1", ns2.Name)))
+	})
+}
+
 func TestGenerateBackupJobIntent(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		spec, err := generateBackupJobSpecIntent(
