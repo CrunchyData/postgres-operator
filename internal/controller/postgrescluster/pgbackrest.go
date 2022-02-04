@@ -37,6 +37,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -318,7 +319,8 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			// When a cluster is prepared for restore, the system identifier is removed from status
 			// and the cluster is therefore no longer bootstrapped.  Only once the restore Job is
 			// complete will the cluster then be bootstrapped again, which means by the time we
-			// detect a restore Job here and a bootstrapped cluster, the Job can be safely removed.
+			// detect a restore Job here and a bootstrapped cluster, the Job and any associated
+			// configuration resources can be safely removed.
 			if !patroni.ClusterBootstrapped(postgresCluster) {
 				ownedNoDelete = append(ownedNoDelete, owned)
 				delete = false
@@ -1003,7 +1005,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 // reconcileRestoreJob is responsible for reconciling a Job that performs a pgBackRest restore in
 // order to populate a PGDATA directory.
 func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
-	cluster *v1beta1.PostgresCluster,
+	cluster *v1beta1.PostgresCluster, sourceCluster *v1beta1.PostgresCluster,
 	pgdataVolume, pgwalVolume *corev1.PersistentVolumeClaim,
 	dataSource *v1beta1.PostgresClusterDataSource,
 	instanceName, instanceSetName, configHash, stanzaName string) error {
@@ -1119,7 +1121,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	}
 
 	// add pgBackRest configs to template
-	pgbackrest.AddConfigToRestorePod(cluster, &restoreJob.Spec.Template.Spec)
+	pgbackrest.AddConfigToRestorePod(cluster, sourceCluster, &restoreJob.Spec.Template.Spec)
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest restore
 	// container
@@ -1507,8 +1509,8 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	}
 
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory
-	if err := r.reconcileRestoreJob(ctx, cluster, pgdata, pgwal, dataSource,
-		instanceName, instanceSetName, configHash, pgbackrest.DefaultStanzaName); err != nil {
+	if err := r.reconcileRestoreJob(ctx, cluster, sourceCluster, pgdata, pgwal,
+		dataSource, instanceName, instanceSetName, configHash, pgbackrest.DefaultStanzaName); err != nil {
 		return errors.WithStack(err)
 	}
 
@@ -1608,7 +1610,8 @@ func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 	}
 
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory
-	if err := r.reconcileRestoreJob(ctx, cluster, pgdata, pgwal, tmpDataSource,
+	// Note that the 'source cluster' is nil as this is not used by this restore type.
+	if err := r.reconcileRestoreJob(ctx, cluster, nil, pgdata, pgwal, tmpDataSource,
 		instanceName, instanceSetName, configHash, dataSource.Stanza); err != nil {
 		return errors.WithStack(err)
 	}
@@ -1707,10 +1710,139 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 		err = errors.WithStack(r.apply(ctx, secret))
 	}
 
+	// copy any needed projected Secrets or ConfigMaps
+	if err == nil {
+		err = r.copyConfigurationResources(ctx, cluster, sourceCluster)
+	}
+
 	return err
 }
 
-// reconcilePGBackRestConfig is responsible for reconciling the pgBackRest ConfigMaps
+// copyConfigurationResources copies all pgBackRest configuration ConfigMaps and
+// Secrets used by the source cluster when bootstrapping the new cluster using
+// pgBackRest restore. This ensures those configuration resources mounted as
+// VolumeProjections by the source cluster can be used by the new cluster during
+// bootstrapping.
+func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
+	sourceCluster *v1beta1.PostgresCluster) error {
+
+	for i := range sourceCluster.Spec.Backups.PGBackRest.Configuration {
+		// While all volume projections from .Configuration will be carried over to
+		// the pgBackRest restore Job, we only explicitly copy the relevant ConfigMaps
+		// and Secrets. Any DownwardAPI or ServiceAccountToken projections will need
+		// to be handled manually.
+		// - https://kubernetes.io/docs/concepts/storage/projected-volumes/
+		if sourceCluster.Spec.Backups.PGBackRest.Configuration[i].Secret != nil {
+			secretProjection := sourceCluster.Spec.Backups.PGBackRest.Configuration[i].Secret
+			secretCopy := &corev1.Secret{}
+			secretName := types.NamespacedName{
+				Name:      secretProjection.Name,
+				Namespace: sourceCluster.Namespace,
+			}
+			// Get the existing Secret for the copy, if it exists. It **must**
+			// exist if not configured as optional.
+			if secretProjection.Optional != nil && *secretProjection.Optional {
+				if err := errors.WithStack(r.Client.Get(ctx, secretName,
+					secretCopy)); apierrors.IsNotFound(err) {
+					continue
+				} else {
+					return err
+				}
+			} else {
+				if err := errors.WithStack(
+					r.Client.Get(ctx, secretName, secretCopy)); err != nil {
+					return err
+				}
+			}
+			// Set a unique name for the Secret copy using the original Secret
+			// name and the Secret projection index number.
+			secretCopyName := fmt.Sprintf(naming.RestoreConfigCopySuffix, secretProjection.Name, i)
+
+			// set the new name and namespace
+			secretCopy.ObjectMeta = metav1.ObjectMeta{
+				Name:      secretCopyName,
+				Namespace: cluster.Namespace,
+			}
+			secretCopy.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
+			secretCopy.Annotations = naming.Merge(
+				cluster.Spec.Metadata.GetAnnotationsOrNil(),
+				cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil(),
+			)
+			secretCopy.Labels = naming.Merge(
+				cluster.Spec.Metadata.GetLabelsOrNil(),
+				cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+				// this label allows for cleanup when the restore completes
+				naming.PGBackRestRestoreJobLabels(cluster.Name),
+			)
+			if err := r.setControllerReference(cluster, secretCopy); err != nil {
+				return err
+			}
+
+			if err := errors.WithStack(r.apply(ctx, secretCopy)); err != nil {
+				return err
+			}
+			// update the copy of the source PostgresCluster to add the new Secret
+			// projection(s) to the restore Job
+			sourceCluster.Spec.Backups.PGBackRest.Configuration[i].Secret.Name = secretCopyName
+		}
+
+		if sourceCluster.Spec.Backups.PGBackRest.Configuration[i].ConfigMap != nil {
+			configMapProjection := sourceCluster.Spec.Backups.PGBackRest.Configuration[i].ConfigMap
+			configMapCopy := &corev1.ConfigMap{}
+			configMapName := types.NamespacedName{
+				Name:      configMapProjection.Name,
+				Namespace: sourceCluster.Namespace,
+			}
+			// Get the existing ConfigMap for the copy, if it exists. It **must**
+			// exist if not configured as optional.
+			if configMapProjection.Optional != nil && *configMapProjection.Optional {
+				if err := errors.WithStack(r.Client.Get(ctx, configMapName,
+					configMapCopy)); apierrors.IsNotFound(err) {
+					continue
+				} else {
+					return err
+				}
+			} else {
+				if err := errors.WithStack(
+					r.Client.Get(ctx, configMapName, configMapCopy)); err != nil {
+					return err
+				}
+			}
+			// Set a unique name for the ConfigMap copy using the original ConfigMap
+			// name and the ConfigMap projection index number.
+			configMapCopyName := fmt.Sprintf(naming.RestoreConfigCopySuffix, configMapProjection.Name, i)
+
+			// set the new name and namespace
+			configMapCopy.ObjectMeta = metav1.ObjectMeta{
+				Name:      configMapCopyName,
+				Namespace: cluster.Namespace,
+			}
+			configMapCopy.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
+			configMapCopy.Annotations = naming.Merge(
+				cluster.Spec.Metadata.GetAnnotationsOrNil(),
+				cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil(),
+			)
+			configMapCopy.Labels = naming.Merge(
+				cluster.Spec.Metadata.GetLabelsOrNil(),
+				cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+				// this label allows for cleanup when the restore completes
+				naming.PGBackRestRestoreJobLabels(cluster.Name),
+			)
+			if err := r.setControllerReference(cluster, configMapCopy); err != nil {
+				return err
+			}
+			if err := errors.WithStack(r.apply(ctx, configMapCopy)); err != nil {
+				return err
+			}
+			// update the copy of the source PostgresCluster to add the new ConfigMap
+			// projection(s) to the restore Job
+			sourceCluster.Spec.Backups.PGBackRest.Configuration[i].ConfigMap.Name = configMapCopyName
+		}
+	}
+	return nil
+}
+
+// reconcilePGBackRestConfig is responsible for reconciling the pgBackRest ConfigMaps and Secrets.
 func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
