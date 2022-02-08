@@ -258,21 +258,13 @@ func TestAddDevSHM(t *testing.T) {
 
 func TestAddNSSWrapper(t *testing.T) {
 
-	databaseBackrestContainerCount := func(template *corev1.PodTemplateSpec) int {
-		var count int
-		for _, c := range template.Spec.Containers {
-			switch c.Name {
-			case naming.ContainerDatabase:
-				count++
-			case naming.PGBackRestRepoContainerName:
-				count++
-			}
-		}
-		return count
-	}
-
 	image := "test-image"
 	imagePullPolicy := corev1.PullAlways
+
+	expectedResources := corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU: resource.MustParse("200m"),
+		}}
 
 	expectedEnv := []corev1.EnvVar{
 		{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
@@ -284,83 +276,97 @@ func TestAddNSSWrapper(t *testing.T) {
 		`CRUNCHY_NSS_USER_DESC="postgres" /opt/crunchy/bin/nss_wrapper.sh`
 
 	testCases := []struct {
-		tcName      string
-		podTemplate *corev1.PodTemplateSpec
+		tcName                        string
+		podTemplate                   *corev1.PodTemplateSpec
+		expectedUpdatedContainerCount int
 	}{{
-		tcName: "database and pgbackrest containers",
+		tcName: "database container with pgbackrest sidecar",
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
-				{Name: "database"}, {Name: "pgbackrest"}, {Name: "dontmodify"},
+				{Name: naming.ContainerDatabase, Resources: expectedResources},
+				{Name: naming.PGBackRestRepoContainerName, Resources: expectedResources},
+				{Name: "dontmodify"},
 			}}},
+		expectedUpdatedContainerCount: 2,
 	}, {
 		tcName: "database container only",
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
-			Containers: []corev1.Container{{Name: "database"}, {Name: "dontmodify"}}}},
+			Containers: []corev1.Container{
+				{Name: naming.ContainerDatabase, Resources: expectedResources},
+				{Name: "dontmodify"}}}},
+		expectedUpdatedContainerCount: 1,
 	}, {
 		tcName: "pgbackest container only",
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
-			Containers: []corev1.Container{{Name: "dontmodify"}, {Name: "pgbackrest"}}}},
+			Containers: []corev1.Container{
+				{Name: naming.PGBackRestRepoContainerName, Resources: expectedResources},
+				{Name: "dontmodify"},
+			}}},
+		expectedUpdatedContainerCount: 1,
 	}, {
-		tcName: "other containers",
+		tcName: "upgrade container only",
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
-				{Name: "dontmodify1"}, {Name: "dontmodify2"}}}},
+				{Name: naming.ContainerPGUpgrade, Resources: expectedResources},
+				{Name: "dontmodify"},
+			}}},
+		expectedUpdatedContainerCount: 1,
 	}, {
-		tcName: "custom container resources",
+		tcName: "restore container only",
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
-				{Name: "database",
-					Resources: corev1.ResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceCPU: resource.MustParse("200m"),
-						}}}}}},
+				{Name: naming.PGBackRestRestoreContainerName, Resources: expectedResources},
+				{Name: "dontmodify"},
+			}}},
+		expectedUpdatedContainerCount: 1,
 	}}
 
 	for _, tc := range testCases {
 		t.Run(tc.tcName, func(t *testing.T) {
 
 			template := tc.podTemplate
-
-			beforeAddNSS := template.Spec.Containers
+			beforeAddNSS := template.DeepCopy().Spec.Containers
 
 			addNSSWrapper(image, imagePullPolicy, template)
 
-			// verify proper nss_wrapper env vars
-			var expectedContainerUpdateCount int
-			for i, c := range template.Spec.Containers {
-				if c.Name == "database" || c.Name == "pgbackrest" {
-					assert.DeepEqual(t, expectedEnv, c.Env)
-					expectedContainerUpdateCount++
-				} else {
-					assert.DeepEqual(t, beforeAddNSS[i], c)
-				}
-			}
-
-			// verify database and/or pgbackrest containers updated
-			assert.Equal(t, expectedContainerUpdateCount,
-				databaseBackrestContainerCount(template))
-
-			var foundInitContainer bool
-			// verify init container command, image & name
-			for _, c := range template.Spec.InitContainers {
-				if c.Name == naming.ContainerNSSWrapperInit {
-					assert.Equal(t, expectedCmd, c.Command[2]) // ignore "bash -c"
-					assert.Assert(t, c.Image == image)
-					assert.Assert(t, c.ImagePullPolicy == imagePullPolicy)
-					assert.Assert(t, c.SecurityContext != &corev1.SecurityContext{})
-
-					for i, c := range template.Spec.Containers {
-						if c.Name == "database" || c.Name == "pgbackrest" {
-							assert.DeepEqual(t, c.Resources.Requests,
-								template.Spec.Containers[i].Resources.Requests)
-						}
+			t.Run("container-updated", func(t *testing.T) {
+				// Each container that requires the nss_wrapper envs should be updated
+				var actualUpdatedContainerCount int
+				for i, c := range template.Spec.Containers {
+					if c.Name == naming.ContainerDatabase ||
+						c.Name == naming.PGBackRestRepoContainerName ||
+						c.Name == naming.ContainerPGUpgrade ||
+						c.Name == naming.PGBackRestRestoreContainerName {
+						assert.DeepEqual(t, expectedEnv, c.Env)
+						actualUpdatedContainerCount++
+					} else {
+						assert.DeepEqual(t, beforeAddNSS[i], c)
 					}
-					foundInitContainer = true
-					break
 				}
-			}
-			// verify init container is present
-			assert.Assert(t, foundInitContainer)
+
+				// verify database and/or pgbackrest containers updated
+				assert.Equal(t, actualUpdatedContainerCount,
+					tc.expectedUpdatedContainerCount)
+			})
+
+			t.Run("init-container-added", func(t *testing.T) {
+				var foundInitContainer bool
+				// verify init container command, image & name
+				for _, c := range template.Spec.InitContainers {
+					if c.Name == naming.ContainerNSSWrapperInit {
+						assert.Equal(t, expectedCmd, c.Command[2]) // ignore "bash -c"
+						assert.Assert(t, c.Image == image)
+						assert.Assert(t, c.ImagePullPolicy == imagePullPolicy)
+						assert.Assert(t, c.SecurityContext != &corev1.SecurityContext{})
+						assert.DeepEqual(t, c.Resources, expectedResources)
+
+						foundInitContainer = true
+						break
+					}
+				}
+				// verify init container is present
+				assert.Assert(t, foundInitContainer)
+			})
 		})
 	}
 }
