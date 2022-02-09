@@ -28,7 +28,6 @@ const (
 	// both the '/tmp' mount path and '/etc/httpd/run' mount path
 	// mount the 'tmp' volume
 	tmpVolume    = "tmp"
-	tmpMountPath = "/tmp"
 	runMountPath = "/etc/httpd/run"
 
 	// log volume and path where the pgadmin4.log is located
