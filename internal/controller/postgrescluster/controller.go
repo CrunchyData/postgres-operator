@@ -19,6 +19,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -52,9 +54,6 @@ import (
 const (
 	// ControllerName is the name of the PostgresCluster controller
 	ControllerName = "postgrescluster-controller"
-
-	// workerCount defines the number of worker queues for the PostgresCluster controller
-	workerCount = 2
 )
 
 // Reconciler holds resources for the PostgresCluster reconciler
@@ -407,11 +406,24 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		}
 	}
 
+	var opts controller.Options
+
+	// TODO(cbandy): Move this to main with controller-runtime v0.9+
+	// - https://github.com/kubernetes-sigs/controller-runtime/commit/82fc2564cf
+	if s := os.Getenv("PGO_WORKERS"); s != "" {
+		if i, err := strconv.Atoi(s); err == nil && i > 0 {
+			opts.MaxConcurrentReconciles = i
+		} else {
+			mgr.GetLogger().Error(err, "PGO_WORKERS must be a positive number")
+		}
+	}
+	if opts.MaxConcurrentReconciles == 0 {
+		opts.MaxConcurrentReconciles = 2
+	}
+
 	return builder.ControllerManagedBy(mgr).
 		For(&v1beta1.PostgresCluster{}).
-		WithOptions(controller.Options{
-			MaxConcurrentReconciles: workerCount,
-		}).
+		WithOptions(opts).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Endpoints{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
