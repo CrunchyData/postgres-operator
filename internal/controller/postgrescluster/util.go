@@ -38,9 +38,14 @@ const (
 	devSHMDir = "/dev/shm"
 	// nssWrapperDir is the directory in a container for the nss_wrapper passwd and group files
 	nssWrapperDir = "/tmp/nss_wrapper/%s/%s"
-	// uidCommand is the command for setting up nss_wrapper in the container
-	nssWrapperCmd = `NSS_WRAPPER_SUBDIR=postgres CRUNCHY_NSS_USERNAME=postgres ` +
+	// postgresNSSWrapperCmd is the command for setting up nss_wrapper in the
+	// container when using the 'postgres' user
+	postgresNSSWrapperCmd = `NSS_WRAPPER_SUBDIR=postgres CRUNCHY_NSS_USERNAME=postgres ` +
 		`CRUNCHY_NSS_USER_DESC="postgres" /opt/crunchy/bin/nss_wrapper.sh`
+	// pgAdminNSSWrapperCmd is the command for setting up nss_wrapper in the
+	// container when using the 'pgadmin' user
+	pgAdminNSSWrapperCmd = `NSS_WRAPPER_SUBDIR=pgadmin CRUNCHY_NSS_USERNAME=pgadmin ` +
+		`CRUNCHY_NSS_USER_DESC="pgadmin" /opt/crunchy/bin/nss_wrapper.sh`
 )
 
 // addDevSHM adds the shared memory "directory" to a Pod, which is needed by
@@ -112,12 +117,22 @@ func addTMPEmptyDir(template *corev1.PodTemplateSpec) {
 // compatibility with OpenShift: https://access.redhat.com/articles/4859371.
 func addNSSWrapper(image string, imagePullPolicy corev1.PullPolicy, template *corev1.PodTemplateSpec) {
 
+	nssWrapperCmd := postgresNSSWrapperCmd
 	for i, c := range template.Spec.Containers {
 		switch c.Name {
 		case naming.ContainerDatabase, naming.PGBackRestRepoContainerName,
 			naming.PGBackRestRestoreContainerName, naming.ContainerPGUpgrade:
 			passwd := fmt.Sprintf(nssWrapperDir, "postgres", "passwd")
 			group := fmt.Sprintf(nssWrapperDir, "postgres", "group")
+			template.Spec.Containers[i].Env = append(template.Spec.Containers[i].Env, []corev1.EnvVar{
+				{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
+				{Name: "NSS_WRAPPER_PASSWD", Value: passwd},
+				{Name: "NSS_WRAPPER_GROUP", Value: group},
+			}...)
+		case naming.ContainerPGAdmin:
+			nssWrapperCmd = pgAdminNSSWrapperCmd
+			passwd := fmt.Sprintf(nssWrapperDir, "pgadmin", "passwd")
+			group := fmt.Sprintf(nssWrapperDir, "pgadmin", "group")
 			template.Spec.Containers[i].Env = append(template.Spec.Containers[i].Env, []corev1.EnvVar{
 				{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
 				{Name: "NSS_WRAPPER_PASSWD", Value: passwd},
@@ -134,31 +149,46 @@ func addNSSWrapper(image string, imagePullPolicy corev1.PullPolicy, template *co
 		SecurityContext: initialize.RestrictedSecurityContext(),
 	}
 
-	// Here we set the NSS wrapper container resources to the 'database' or
-	// 'pgbackrest' container configuration, as appropriate.
-	// Because the instance Pod has both a 'database' and 'pgbackrest' container,
-	// we'll first check for the 'database' container and use those resource
-	// settings for any instance pods.
-	containsDatabase := false
+	// Here we set the NSS wrapper container resources to the 'database', 'pgadmin'
+	// or 'pgbackrest' container configuration, as appropriate.
+
+	// First, we'll set the NSS wrapper container configuration for any pgAdmin
+	// containers because pgAdmin Pods won't contain any other containers
+	containsPGAdmin := false
 	for i, c := range template.Spec.Containers {
-		if c.Name == naming.ContainerDatabase ||
-			c.Name == naming.ContainerPGUpgrade {
-			containsDatabase = true
+		if c.Name == naming.ContainerPGAdmin {
+			containsPGAdmin = true
 			container.Resources = template.Spec.Containers[i].Resources
 			break
 		}
 	}
-	// If 'database' is not found, we need to use the 'pgbackrest' resource
-	// configuration settings instead
-	if !containsDatabase {
+
+	// If this was a pgAdmin Pod, we don't need to check anything else.
+	if !containsPGAdmin {
+		// Because the instance Pod has both a 'database' and 'pgbackrest' container,
+		// we'll first check for the 'database' container and use those resource
+		// settings for any instance pods.
+		containsDatabase := false
 		for i, c := range template.Spec.Containers {
-			if c.Name == naming.PGBackRestRepoContainerName {
+			if c.Name == naming.ContainerDatabase ||
+				c.Name == naming.ContainerPGUpgrade {
+				containsDatabase = true
 				container.Resources = template.Spec.Containers[i].Resources
 				break
 			}
 			if c.Name == naming.PGBackRestRestoreContainerName {
 				container.Resources = template.Spec.Containers[i].Resources
 				break
+			}
+		}
+		// If 'database' is not found, we need to use the 'pgbackrest' resource
+		// configuration settings instead
+		if !containsDatabase {
+			for i, c := range template.Spec.Containers {
+				if c.Name == naming.PGBackRestRepoContainerName {
+					container.Resources = template.Spec.Containers[i].Resources
+					break
+				}
 			}
 		}
 	}

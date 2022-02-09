@@ -29,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func TestSafeHash32(t *testing.T) {
@@ -272,12 +273,23 @@ func TestAddNSSWrapper(t *testing.T) {
 		{Name: "NSS_WRAPPER_GROUP", Value: "/tmp/nss_wrapper/postgres/group"},
 	}
 
+	expectedPGAdminEnv := []corev1.EnvVar{
+		{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
+		{Name: "NSS_WRAPPER_PASSWD", Value: "/tmp/nss_wrapper/pgadmin/passwd"},
+		{Name: "NSS_WRAPPER_GROUP", Value: "/tmp/nss_wrapper/pgadmin/group"},
+	}
+
 	expectedCmd := `NSS_WRAPPER_SUBDIR=postgres CRUNCHY_NSS_USERNAME=postgres ` +
 		`CRUNCHY_NSS_USER_DESC="postgres" /opt/crunchy/bin/nss_wrapper.sh`
+
+	expectedPGAdminCmd := `NSS_WRAPPER_SUBDIR=pgadmin CRUNCHY_NSS_USERNAME=pgadmin ` +
+		`CRUNCHY_NSS_USER_DESC="pgadmin" /opt/crunchy/bin/nss_wrapper.sh`
 
 	testCases := []struct {
 		tcName                        string
 		podTemplate                   *corev1.PodTemplateSpec
+		pgadmin                       bool
+		resourceProvider              string
 		expectedUpdatedContainerCount int
 	}{{
 		tcName: "database container with pgbackrest sidecar",
@@ -312,12 +324,60 @@ func TestAddNSSWrapper(t *testing.T) {
 			}}},
 		expectedUpdatedContainerCount: 1,
 	}, {
+		tcName: "pgadmin container only",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{Name: "dontmodify"}, {Name: "pgadmin"}}}},
+		pgadmin:                       true,
+		expectedUpdatedContainerCount: 1,
+	}, {
+		tcName: "other containers",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: naming.ContainerPGUpgrade, Resources: expectedResources},
+				{Name: "dontmodify"},
+			}}},
+		expectedUpdatedContainerCount: 1,
+	}, {
 		tcName: "restore container only",
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
 				{Name: naming.PGBackRestRestoreContainerName, Resources: expectedResources},
 				{Name: "dontmodify"},
 			}}},
+		expectedUpdatedContainerCount: 1,
+	}, {
+		tcName: "custom database container resources",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "database",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("200m"),
+						}}}}}},
+		resourceProvider:              "database",
+		expectedUpdatedContainerCount: 1,
+	}, {
+		tcName: "custom pgbackrest container resources",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "pgbackrest",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("300m"),
+						}}}}}},
+		resourceProvider:              "pgbackrest",
+		expectedUpdatedContainerCount: 1,
+	}, {
+		tcName: "custom pgadmin container resources",
+		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "pgadmin",
+					Resources: corev1.ResourceRequirements{
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("400m"),
+						}}}}}},
+		pgadmin:                       true,
+		resourceProvider:              "pgadmin",
 		expectedUpdatedContainerCount: 1,
 	}}
 
@@ -339,6 +399,9 @@ func TestAddNSSWrapper(t *testing.T) {
 						c.Name == naming.PGBackRestRestoreContainerName {
 						assert.DeepEqual(t, expectedEnv, c.Env)
 						actualUpdatedContainerCount++
+					} else if c.Name == "pgadmin" {
+						assert.DeepEqual(t, expectedPGAdminEnv, c.Env)
+						actualUpdatedContainerCount++
 					} else {
 						assert.DeepEqual(t, beforeAddNSS[i], c)
 					}
@@ -347,25 +410,37 @@ func TestAddNSSWrapper(t *testing.T) {
 				// verify database and/or pgbackrest containers updated
 				assert.Equal(t, actualUpdatedContainerCount,
 					tc.expectedUpdatedContainerCount)
-			})
 
-			t.Run("init-container-added", func(t *testing.T) {
-				var foundInitContainer bool
-				// verify init container command, image & name
-				for _, c := range template.Spec.InitContainers {
-					if c.Name == naming.ContainerNSSWrapperInit {
-						assert.Equal(t, expectedCmd, c.Command[2]) // ignore "bash -c"
-						assert.Assert(t, c.Image == image)
-						assert.Assert(t, c.ImagePullPolicy == imagePullPolicy)
-						assert.Assert(t, c.SecurityContext != &corev1.SecurityContext{})
-						assert.DeepEqual(t, c.Resources, expectedResources)
+				t.Run("init-container-added", func(t *testing.T) {
+					var foundInitContainer bool
+					// verify init container command, image & name
+					for _, ic := range template.Spec.InitContainers {
+						if ic.Name == naming.ContainerNSSWrapperInit {
+							if tc.pgadmin {
+								assert.Equal(t, expectedPGAdminCmd, ic.Command[2]) // ignore "bash -c"
+							} else {
+								assert.Equal(t, expectedCmd, ic.Command[2]) // ignore "bash -c"
+							}
+							assert.Assert(t, ic.Image == image)
+							assert.Assert(t, ic.ImagePullPolicy == imagePullPolicy)
+							assert.Assert(t, !cmp.DeepEqual(ic.SecurityContext,
+								&corev1.SecurityContext{})().Success())
 
-						foundInitContainer = true
-						break
+							if tc.resourceProvider != "" {
+								for _, c := range template.Spec.Containers {
+									if c.Name == tc.resourceProvider {
+										assert.DeepEqual(t, ic.Resources.Requests,
+											c.Resources.Requests)
+									}
+								}
+							}
+							foundInitContainer = true
+							break
+						}
 					}
-				}
-				// verify init container is present
-				assert.Assert(t, foundInitContainer)
+					// verify init container is present
+					assert.Assert(t, foundInitContainer)
+				})
 			})
 		})
 	}

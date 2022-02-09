@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -302,16 +303,24 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	// set the image pull secrets, if any exist
 	sts.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
 
-	err := errors.WithStack(r.setControllerReference(cluster, sts))
-
-	if err == nil {
-		pgadmin.Pod(cluster, configmap, &sts.Spec.Template.Spec, dataVolume)
-	}
-	if err == nil {
-		err = errors.WithStack(r.apply(ctx, sts))
+	if err := errors.WithStack(r.setControllerReference(cluster, sts)); err != nil {
+		return err
 	}
 
-	return err
+	pgadmin.Pod(cluster, configmap, &sts.Spec.Template.Spec, dataVolume)
+
+	// add nss_wrapper init container and add nss_wrapper env vars to the pgAdmin
+	// container
+	addNSSWrapper(
+		config.PGAdminContainerImage(cluster),
+		cluster.Spec.ImagePullPolicy,
+		&sts.Spec.Template)
+
+	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp'
+	// volume mount to all containers included within that spec
+	addTMPEmptyDir(&sts.Spec.Template)
+
+	return errors.WithStack(r.apply(ctx, sts))
 }
 
 // +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
