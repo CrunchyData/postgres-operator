@@ -3,6 +3,9 @@ title: "FAQ"
 date:
 draft: false
 weight: 105
+
+aliases:
+ - /contributing
 ---
 
 ## Project FAQ
