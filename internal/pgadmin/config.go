@@ -27,7 +27,9 @@ const (
 	// tmp volume to hold the nss_wrapper, process and socket files
 	// both the '/tmp' mount path and '/etc/httpd/run' mount path
 	// mount the 'tmp' volume
-	tmpVolume    = "tmp"
+	tmpVolume = "tmp"
+
+	// runMountPath holds the pgAdmin run path, which mounts the 'tmp' volume
 	runMountPath = "/etc/httpd/run"
 
 	// log volume and path where the pgadmin4.log is located
