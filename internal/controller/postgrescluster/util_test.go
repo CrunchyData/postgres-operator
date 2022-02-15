@@ -279,12 +279,6 @@ func TestAddNSSWrapper(t *testing.T) {
 		{Name: "NSS_WRAPPER_GROUP", Value: "/tmp/nss_wrapper/pgadmin/group"},
 	}
 
-	expectedCmd := `NSS_WRAPPER_SUBDIR=postgres CRUNCHY_NSS_USERNAME=postgres ` +
-		`CRUNCHY_NSS_USER_DESC="postgres" /opt/crunchy/bin/nss_wrapper.sh`
-
-	expectedPGAdminCmd := `NSS_WRAPPER_SUBDIR=pgadmin CRUNCHY_NSS_USERNAME=pgadmin ` +
-		`CRUNCHY_NSS_USER_DESC="pgadmin" /opt/crunchy/bin/nss_wrapper.sh`
-
 	testCases := []struct {
 		tcName                        string
 		podTemplate                   *corev1.PodTemplateSpec
@@ -406,41 +400,40 @@ func TestAddNSSWrapper(t *testing.T) {
 						assert.DeepEqual(t, beforeAddNSS[i], c)
 					}
 				}
-
 				// verify database and/or pgbackrest containers updated
 				assert.Equal(t, actualUpdatedContainerCount,
 					tc.expectedUpdatedContainerCount)
+			})
 
-				t.Run("init-container-added", func(t *testing.T) {
-					var foundInitContainer bool
-					// verify init container command, image & name
-					for _, ic := range template.Spec.InitContainers {
-						if ic.Name == naming.ContainerNSSWrapperInit {
-							if tc.pgadmin {
-								assert.Equal(t, expectedPGAdminCmd, ic.Command[2]) // ignore "bash -c"
-							} else {
-								assert.Equal(t, expectedCmd, ic.Command[2]) // ignore "bash -c"
-							}
-							assert.Assert(t, ic.Image == image)
-							assert.Assert(t, ic.ImagePullPolicy == imagePullPolicy)
-							assert.Assert(t, !cmp.DeepEqual(ic.SecurityContext,
-								&corev1.SecurityContext{})().Success())
+			t.Run("init-container-added", func(t *testing.T) {
+				var foundInitContainer bool
+				// verify init container command, image & name
+				for _, ic := range template.Spec.InitContainers {
+					if ic.Name == naming.ContainerNSSWrapperInit {
+						if tc.pgadmin {
+							assert.Equal(t, pgAdminNSSWrapperPrefix+nssWrapperScript, ic.Command[2]) // ignore "bash -c"
+						} else {
+							assert.Equal(t, postgresNSSWrapperPrefix+nssWrapperScript, ic.Command[2]) // ignore "bash -c"
+						}
+						assert.Assert(t, ic.Image == image)
+						assert.Assert(t, ic.ImagePullPolicy == imagePullPolicy)
+						assert.Assert(t, !cmp.DeepEqual(ic.SecurityContext,
+							&corev1.SecurityContext{})().Success())
 
-							if tc.resourceProvider != "" {
-								for _, c := range template.Spec.Containers {
-									if c.Name == tc.resourceProvider {
-										assert.DeepEqual(t, ic.Resources.Requests,
-											c.Resources.Requests)
-									}
+						if tc.resourceProvider != "" {
+							for _, c := range template.Spec.Containers {
+								if c.Name == tc.resourceProvider {
+									assert.DeepEqual(t, ic.Resources.Requests,
+										c.Resources.Requests)
 								}
 							}
-							foundInitContainer = true
-							break
 						}
+						foundInitContainer = true
+						break
 					}
-					// verify init container is present
-					assert.Assert(t, foundInitContainer)
-				})
+				}
+				// verify init container is present
+				assert.Assert(t, foundInitContainer)
 			})
 		})
 	}
