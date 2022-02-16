@@ -21,6 +21,10 @@ import (
 
 // PGAdminConfiguration represents pgAdmin configuration files.
 type PGAdminConfiguration struct {
+	// Files allows the user to mount projected volumes into the pgAdmin
+	// container so that files can be referenced by pgAdmin as needed.
+	Files []corev1.VolumeProjection `json:"files,omitempty"`
+
 	// Settings for the pgAdmin server process. Keys should be uppercase and
 	// values must be constants.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html
