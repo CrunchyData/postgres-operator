@@ -1,3 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-cm
+data:
+  configMap: config
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-secret
+type: Opaque
+stringData:
+  password: myPassword
 ---
 # Create a cluster with a configured pgAdmin UI.
 apiVersion: postgres-operator.crunchydata.com/v1beta1
@@ -21,6 +35,11 @@ spec:
     pgAdmin:
       dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
       config:
+        files:
+          - secret:
+              name: test-secret
+          - configMap:
+              name: test-cm
         settings:
           SHOW_GRAVATAR_IMAGE: False
           LOGIN_BANNER: |

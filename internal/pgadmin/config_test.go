@@ -18,8 +18,24 @@ import (
 func TestPodConfigFiles(t *testing.T) {
 	configmap := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "some-cm"}}
 
-	projections := podConfigFiles(configmap)
+	spec := v1beta1.PGAdminPodSpec{
+		Config: v1beta1.PGAdminConfiguration{Files: []corev1.VolumeProjection{{
+			Secret: &corev1.SecretProjection{LocalObjectReference: corev1.LocalObjectReference{
+				Name: "test-secret",
+			}},
+		}, {
+			ConfigMap: &corev1.ConfigMapProjection{LocalObjectReference: corev1.LocalObjectReference{
+				Name: "test-cm",
+			}},
+		}}},
+	}
+
+	projections := podConfigFiles(configmap, spec)
 	assert.Assert(t, cmp.MarshalMatches(projections, `
+- secret:
+    name: test-secret
+- configMap:
+    name: test-cm
 - configMap:
     items:
     - key: pgadmin-settings.json

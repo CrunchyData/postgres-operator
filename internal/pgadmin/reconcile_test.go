@@ -207,6 +207,11 @@ volumes:
 		cluster.Spec.UserInterface.PGAdmin.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
 		}
+		cluster.Spec.UserInterface.PGAdmin.Config.Files = []corev1.VolumeProjection{{
+			Secret: &corev1.SecretProjection{LocalObjectReference: corev1.LocalObjectReference{
+				Name: "test",
+			}},
+		}}
 
 		call()
 
@@ -301,6 +306,8 @@ volumes:
 - name: pgadmin-config
   projected:
     sources:
+    - secret:
+        name: test
     - configMap:
         items:
         - key: pgadmin-settings.json
