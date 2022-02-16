@@ -24,3 +24,33 @@ commands:
         echo "${SETTINGS}"
         exit 1
       }
+
+  - script: |
+      CONTENTS=$(
+        kubectl exec --namespace "${NAMESPACE}" statefulset.apps/interfaced-pgadmin \
+          -- cat /etc/pgadmin/conf.d/configMap
+      )
+
+      contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+      {
+        contains "${CONTENTS}" 'config'
+      } || {
+        echo >&2 'Wrong settings!'
+        echo "${CONTENTS}"
+        exit 1
+      }
+
+  - script: |
+      CONTENTS=$(
+        kubectl exec --namespace "${NAMESPACE}" statefulset.apps/interfaced-pgadmin \
+          -- cat /etc/pgadmin/conf.d/password
+      )
+
+      contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+      {
+        contains "${CONTENTS}" 'myPassword'
+      } || {
+        echo >&2 'Wrong settings!'
+        echo "${CONTENTS}"
+        exit 1
+      }

@@ -72,22 +72,23 @@ const (
 
 // podConfigFiles returns projections of pgAdmin's configuration files to
 // include in the configuration volume.
-func podConfigFiles(configmap *corev1.ConfigMap) []corev1.VolumeProjection {
-	return []corev1.VolumeProjection{
-		{
-			ConfigMap: &corev1.ConfigMapProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: configmap.Name,
-				},
-				Items: []corev1.KeyToPath{
-					{
-						Key:  settingsConfigMapKey,
-						Path: settingsProjectionPath,
+func podConfigFiles(configmap *corev1.ConfigMap, spec v1beta1.PGAdminPodSpec) []corev1.VolumeProjection {
+	return append(append([]corev1.VolumeProjection{}, spec.Config.Files...),
+		[]corev1.VolumeProjection{
+			{
+				ConfigMap: &corev1.ConfigMapProjection{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: configmap.Name,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  settingsConfigMapKey,
+							Path: settingsProjectionPath,
+						},
 					},
 				},
 			},
-		},
-	}
+		}...)
 }
 
 // startupCommand returns an entrypoint that prepares the filesystem for pgAdmin.

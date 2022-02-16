@@ -97,7 +97,7 @@ func Pod(
 	}
 	configVolume := corev1.Volume{Name: configVolumeMount.Name}
 	configVolume.Projected = &corev1.ProjectedVolumeSource{
-		Sources: podConfigFiles(inConfigMap),
+		Sources: podConfigFiles(inConfigMap, *inCluster.Spec.UserInterface.PGAdmin),
 	}
 
 	startupVolumeMount := corev1.VolumeMount{
@@ -198,4 +198,5 @@ func Pod(
 	outPod.Containers = []corev1.Container{container}
 	outPod.InitContainers = []corev1.Container{startup}
 	outPod.Volumes = []corev1.Volume{tmp, pgAdminLog, pgAdminData, configVolume, startupVolume}
+
 }
