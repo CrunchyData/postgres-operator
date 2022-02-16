@@ -12745,9 +12745,379 @@ Configuration settings for the pgAdmin process. Changes to any of these values w
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindex">files</a></b></td>
+        <td>[]object</td>
+        <td>Files allows the user to mount projected volumes into the pgAdmin container so that files can be referenced by pgAdmin as needed.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>settings</b></td>
         <td>object</td>
         <td>Settings for the pgAdmin server process. Keys should be uppercase and values must be constants. More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindex">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfig">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Projection that may be projected along with other supported volume types
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexconfigmap">configMap</a></b></td>
+        <td>object</td>
+        <td>information about the configMap data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapi">downwardAPI</a></b></td>
+        <td>object</td>
+        <td>information about the downwardAPI data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexsecret">secret</a></b></td>
+        <td>object</td>
+        <td>information about the secret data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexserviceaccounttoken">serviceAccountToken</a></b></td>
+        <td>object</td>
+        <td>information about the serviceAccountToken data to project</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexconfigmap">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].configMap
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the configMap data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexconfigmapitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexconfigmapitemsindex">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].configMap.items[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexconfigmap">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key to project.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapi">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].downwardAPI
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the downwardAPI data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>Items is a list of DownwardAPIVolume file</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindex">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].downwardAPI.items[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapi">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
+        <td>object</td>
+        <td>Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindexresourcefieldref">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindexfieldref">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].downwardAPI.items[index].fieldRef
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>Path of the field to select in the specified API version.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>Version of the schema the FieldPath is written in terms of, defaults to "v1".</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindexresourcefieldref">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].downwardAPI.items[index].resourceFieldRef
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>Required: resource to select</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>Container name: required for volumes, optional for env vars</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>Specifies the output format of the exposed resources, defaults to "1"</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexsecret">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].secret
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the secret data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexsecretitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the Secret or its key must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexsecretitemsindex">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].secret.items[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexsecret">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key to project.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigfilesindexserviceaccounttoken">
+  PostgresCluster.spec.userInterface.pgAdmin.config.files[index].serviceAccountToken
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+information about the serviceAccountToken data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>Path is the path relative to the mount point of the file to project the token into.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>audience</b></td>
+        <td>string</td>
+        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>expirationSeconds</b></td>
+        <td>integer</td>
+        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
         <td>false</td>
       </tr></tbody>
 </table>
