@@ -87,6 +87,42 @@ field. For example, set `SHOW_GRAVATAR_IMAGE` to `False` to disable automatic pr
           SHOW_GRAVATAR_IMAGE: False
 ```
 
+You can also add a Secret containing the pgAdmin `LDAP_BIND_PASSWORD` through the
+[`userInterface.pgAdmin.config.ldapBindPassword`]
+({{< relref "/references/crd#postgresclusterspecuserinterfacepgadminconfigldapbindpassword" >}})
+field. This is one of the configuration settings needed to enable LDAP authentication
+for pgAdmin and is handled separately from the other pgAdmin settings to allow for
+proper storage of the sensitive value in a Secret rather than a ConfigMap.
+
+```yaml
+  userInterface:
+    pgAdmin:
+      config:
+        ldapBindPassword:
+          name: ldappass
+          key: mypw
+```
+
+Lastly, you can also use Secrets and ConfigMaps to mount required files to your
+pgAdmin container through the
+[`userInterface.pgAdmin.config.files`]
+({{< relref "/references/crd#postgresclusterspecuserinterfacepgadminconfigfilesindex" >}})
+field. The contents of the Secrets and ConfigMaps defined here are mounted at
+`/etc/pgadmin/conf.d` and can be referenced from various pgAdmin configuration
+settings as needed.
+
+```yaml
+  userInterface:
+    pgAdmin:
+      config:
+        files:
+          - secret:
+              name: mysecret
+          - configMap:
+              name: myconfigmap
+              optional: false
+```
+
 ## Deleting pgAdmin 4
 
 You can remove the pgAdmin 4 deployment by removing the `userInterface` field from the spec.
