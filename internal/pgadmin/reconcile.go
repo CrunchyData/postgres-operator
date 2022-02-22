@@ -301,8 +301,9 @@ func Pod(
 	// The startup container is the only one allowed to write to the startup volume.
 	startup.VolumeMounts[0].ReadOnly = false
 
-	outPod.Containers = []corev1.Container{container}
 	outPod.InitContainers = []corev1.Container{startup}
 	// add all volumes other than 'tmp' as that is added later
 	outPod.Volumes = []corev1.Volume{pgAdminLog, pgAdminData, configVolume, startupVolume}
+
+	outPod.Containers = []corev1.Container{container}
 }

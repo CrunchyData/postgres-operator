@@ -8632,6 +8632,26 @@ spec:
                                   type: object
                               type: object
                             type: array
+                          ldapBindPassword:
+                            description: 'A Secret containing the value for the LDAP_BIND_PASSWORD
+                              setting. More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html'
+                            properties:
+                              key:
+                                description: The key of the secret to select from.  Must
+                                  be a valid secret key.
+                                type: string
+                              name:
+                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                                  TODO: Add other useful fields. apiVersion, kind,
+                                  uid?'
+                                type: string
+                              optional:
+                                description: Specify whether the Secret or its key
+                                  must be defined
+                                type: boolean
+                            required:
+                            - key
+                            type: object
                           settings:
                             description: 'Settings for the pgAdmin server process.
                               Keys should be uppercase and values must be constants.
