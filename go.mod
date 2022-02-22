@@ -13,6 +13,7 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.3.2
 	github.com/xdg/stringprep v1.0.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0
 	go.opentelemetry.io/otel v0.13.0
@@ -20,6 +21,7 @@ require (
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.13.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/tools v0.0.0-20210106214847-113979e3529a
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.21.0
 	k8s.io/apimachinery v0.21.0
