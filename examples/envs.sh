@@ -20,7 +20,7 @@ export PGO_CONF_DIR=$PGOROOT/installers/ansible/roles/pgo-operator/files
 # the version of the Operator you run is set by these vars
 export PGO_IMAGE_PREFIX=registry.developers.crunchydata.com/crunchydata
 export PGO_BASEOS=centos8
-export PGO_VERSION=4.7.4
+export PGO_VERSION=4.7.5
 export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
 
 # for setting the pgo apiserver port, disabling TLS or not verifying TLS
