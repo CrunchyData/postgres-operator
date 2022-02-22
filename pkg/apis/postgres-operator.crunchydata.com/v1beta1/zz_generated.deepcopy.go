@@ -271,6 +271,11 @@ func (in *PGAdminConfiguration) DeepCopyInto(out *PGAdminConfiguration) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.LDAPBindPassword != nil {
+		in, out := &in.LDAPBindPassword, &out.LDAPBindPassword
+		*out = new(v1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
 	in.Settings.DeepCopyInto(&out.Settings)
 }
 

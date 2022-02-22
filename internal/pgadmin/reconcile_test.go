@@ -258,12 +258,15 @@ initContainers:
   - (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
   - startup
   - |
-    import glob, json, re
+    import glob, json, re, os
     DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin.json') as _f:
         _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+    if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
+        with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
+            LDAP_BIND_PASSWORD = _f.read()
   name: pgadmin-startup
   resources: {}
   securityContext:
@@ -314,6 +317,12 @@ volumes:
 				Name: "test",
 			}},
 		}}
+		cluster.Spec.UserInterface.PGAdmin.Config.LDAPBindPassword = &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: "podtest",
+			},
+			Key: "podtestpw",
+		}
 
 		call()
 
@@ -477,12 +486,15 @@ initContainers:
   - (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
   - startup
   - |
-    import glob, json, re
+    import glob, json, re, os
     DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin.json') as _f:
         _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+    if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
+        with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
+            LDAP_BIND_PASSWORD = _f.read()
   image: new-image
   imagePullPolicy: Always
   name: pgadmin-startup
@@ -516,6 +528,11 @@ volumes:
         items:
         - key: pgadmin-settings.json
           path: ~postgres-operator/pgadmin.json
+    - secret:
+        items:
+        - key: podtestpw
+          path: ~postgres-operator/ldap-bind-password
+        name: podtest
 - emptyDir:
     medium: Memory
     sizeLimit: 32Ki

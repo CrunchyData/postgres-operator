@@ -12750,6 +12750,11 @@ Configuration settings for the pgAdmin process. Changes to any of these values w
         <td>Files allows the user to mount projected volumes into the pgAdmin container so that files can be referenced by pgAdmin as needed.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigldapbindpassword">ldapBindPassword</a></b></td>
+        <td>object</td>
+        <td>A Secret containing the value for the LDAP_BIND_PASSWORD setting. More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>settings</b></td>
         <td>object</td>
         <td>Settings for the pgAdmin server process. Keys should be uppercase and values must be constants. More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html</td>
@@ -13118,6 +13123,43 @@ information about the serviceAccountToken data to project
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
         <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminconfigldapbindpassword">
+  PostgresCluster.spec.userInterface.pgAdmin.config.ldapBindPassword
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminconfig">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A Secret containing the value for the LDAP_BIND_PASSWORD setting. More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key of the secret to select from.  Must be a valid secret key.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
