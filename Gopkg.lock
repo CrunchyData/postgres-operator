@@ -80,6 +80,14 @@
   version = "v1.9.0"
 
 [[projects]]
+  digest = "1:db78764ccd0698098e746bd1288916950bf875463915672051f1bdfef120e442"
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "466b39d216616549a37ee93c7c47775f6a010790"
+  version = "v1.5.1"
+
+[[projects]]
   digest = "1:ed15647db08b6d63666bf9755d337725960c302bbfa5e23754b4b915a4797e42"
   name = "github.com/go-openapi/jsonpointer"
   packages = ["."]
@@ -198,6 +206,25 @@
   version = "v0.5.4"
 
 [[projects]]
+  digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
+  name = "github.com/hashicorp/hcl"
+  packages = [
+    ".",
+    "hcl/ast",
+    "hcl/parser",
+    "hcl/printer",
+    "hcl/scanner",
+    "hcl/strconv",
+    "hcl/token",
+    "json/parser",
+    "json/scanner",
+    "json/token",
+  ]
+  pruneopts = "UT"
+  revision = "8cb6e5b959231cc1119e43259c4a608f9c51a241"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:1a7059d684f8972987e4b6f0703083f207d63f63da0ea19610ef2e6bb73db059"
   name = "github.com/imdario/mergo"
   packages = ["."]
@@ -230,6 +257,14 @@
   version = "v1.0.2"
 
 [[projects]]
+  digest = "1:fa6d7a5a592ad4052351be50fe4a66f9974a203eff6b675841ab64d99d17bb8e"
+  name = "github.com/magiconair/properties"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "869a5592420f4ff6ebf74500b5c658b29d973172"
+  version = "v1.8.6"
+
+[[projects]]
   digest = "1:7bbccd3dd7998f2a180264ec1d12e362ed8e02f55ea7b82ac0d0f48ffa2d8888"
   name = "github.com/mailru/easyjson"
   packages = [
@@ -258,6 +293,14 @@
   version = "v0.0.12"
 
 [[projects]]
+  digest = "1:408df21d45d59142857b4a5bb565aa75df89043f235987143ea1128cb8589000"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b9b99d7d59762a5b2a43df840adc318b2fa229ee"
+  version = "v1.4.3"
+
+[[projects]]
   digest = "1:33422d238f147d247752996a26574ac48dcf472976eda7f5134015f06bf16563"
   name = "github.com/modern-go/concurrent"
   packages = ["."]
@@ -280,6 +323,14 @@
   pruneopts = "UT"
   revision = "d7acddb4babdf3329ad415cc02b605a239011b4b"
   version = "v1.0.8"
+
+[[projects]]
+  digest = "1:fc865e52c574a92a628aee6cc4fb6b78f2bd2becf121881a1d6d1cfc6fb86b33"
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b8ba995eaaba4be30c8a8090bdfb4aa61af52054"
+  version = "v1.9.4"
 
 [[projects]]
   digest = "1:9e1d37b58d17113ec3cb5608ac0382313c5b59470b94ed97d0976e69c7022314"
@@ -314,6 +365,25 @@
   version = "v1.5.0"
 
 [[projects]]
+  digest = "1:0211c1b1e8d4b8945e2712854ebd76832fae02647b4c39fcfd219f10ad341566"
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem",
+  ]
+  pruneopts = "UT"
+  revision = "450b30f2bfc09acd88c31d66c28cb814a14b192b"
+  version = "v1.8.1"
+
+[[projects]]
+  digest = "1:df641e58f425436baeeb55d7a65a18f6a109591cd485a9b90d974a8fe4340eb4"
+  name = "github.com/spf13/cast"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "88075729b052bca4b8b6c31bf198db2fe6c9da93"
+  version = "v1.4.1"
+
+[[projects]]
   digest = "1:abe9f3f23399646a6263682cacc9e86969f6c7e768f0ef036449926aa24cbbef"
   name = "github.com/spf13/cobra"
   packages = [
@@ -325,12 +395,43 @@
   version = "v0.0.5"
 
 [[projects]]
+  digest = "1:1b753ec16506f5864d26a28b43703c58831255059644351bbcb019b843950900"
+  name = "github.com/spf13/jwalterweatherman"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "94f6ae3ed3bceceafa716478c5fbf8d29ca601a1"
+  version = "v1.1.0"
+
+[[projects]]
   digest = "1:524b71991fc7d9246cc7dc2d9e0886ccb97648091c63e30eef619e6862c955dd"
   name = "github.com/spf13/pflag"
   packages = ["."]
   pruneopts = "UT"
   revision = "2e9d26c8c37aae03e3f9d4e90b7116f5accb7cab"
   version = "v1.0.5"
+
+[[projects]]
+  digest = "1:f8ae93995f7b68f2aeba036bd6c9e0881c8c6edd67d6120f092eafa4c5a040f0"
+  name = "github.com/spf13/viper"
+  packages = [
+    ".",
+    "internal/encoding",
+    "internal/encoding/hcl",
+    "internal/encoding/json",
+    "internal/encoding/toml",
+    "internal/encoding/yaml",
+  ]
+  pruneopts = "UT"
+  revision = "f646c50b184a0bec644dd1147d6b0e57be17c7aa"
+  version = "v1.10.1"
+
+[[projects]]
+  digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
+  name = "github.com/subosito/gotenv"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:577b99fc55ee19cbf1ffd072808c91ced78cd732bd9d0517bec9b90e532069cb"
@@ -342,23 +443,23 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:17da86687c09ab43a342bf91c2b2e5feba1dda6b7cce9626d64201fbf0113264"
+  digest = "1:2590655047facf8013ec25a0390c74c5eaf4aabcf817ff3d6e134b9975a29ed2"
   name = "golang.org/x/crypto"
   packages = [
     "blowfish",
     "chacha20",
     "curve25519",
+    "curve25519/internal/field",
     "ed25519",
-    "ed25519/internal/edwards25519",
+    "internal/poly1305",
     "internal/subtle",
     "pbkdf2",
-    "poly1305",
     "ssh",
     "ssh/internal/bcrypt_pbkdf",
     "ssh/terminal",
   ]
   pruneopts = "UT"
-  revision = "0ec3e9974c59449edd84298612e9f16fa13368e8"
+  revision = "86341886e2925764dc890ad96c141a1bc76043af"
 
 [[projects]]
   digest = "1:467bb8fb8fa786448b8d486cd0bb7c1a5577dcd7310441aa02a20110cd9f727d"
@@ -410,15 +511,24 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3dcef1d66750aa78c2c57361b88e715b70a2486ab2a9f6c70a7cfb5e0712e9c3"
+  digest = "1:e1351da01125b2ed0ef635fbccc9a89a1df4a936ac668e8b106ce19366e32836"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
+    "plan9",
     "unix",
     "windows",
   ]
   pruneopts = "UT"
   revision = "c3d80250170dec19bf61949c81233cede5ddaf61"
+
+[[projects]]
+  branch = "master"
+  digest = "1:91489886d519064782c699ea27906e2a5922bf05b31c6a46b74d4962b3657004"
+  name = "golang.org/x/term"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "03fcf44c2211dcd5eb77510b5f7c1fb02d6ded50"
 
 [[projects]]
   digest = "1:66a2f252a58b4fbbad0e4e180e1d85a83c222b6bce09c3dcdef3dc87c72eda7c"
@@ -456,7 +566,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f09beeb593a009d70c55af474c713e5fdc13c0843896396db9e063c73fe572e4"
+  digest = "1:2ca7efcc164a3ee0b598bcc27e76563c362ba15d1fe14bda47f5a8e475b5f539"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -465,6 +575,7 @@
     "internal/gocommand",
     "internal/gopathwalk",
     "internal/imports",
+    "internal/testenv",
   ]
   pruneopts = "UT"
   revision = "69646383afec4980001de1c52d6a3a6f3073ff6a"
@@ -539,6 +650,14 @@
   pruneopts = "UT"
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
   version = "v0.9.1"
+
+[[projects]]
+  digest = "1:e56a0b2f3d01f2a98d2ace2171b4217ca8c08f8ef5f416bb11461064867c6ad4"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "39f9e49bca3bbb9e67f361e9dd883912bb09a1b0"
+  version = "v1.66.4"
 
 [[projects]]
   digest = "1:55b110c99c5fdc4f14930747326acce56b52cfce60b24b1c03ef686ac0e46bb1"
@@ -995,10 +1114,12 @@
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
     "github.com/spf13/pflag",
+    "github.com/spf13/viper",
     "github.com/xdg/stringprep",
     "golang.org/x/crypto/pbkdf2",
     "golang.org/x/crypto/ssh",
     "golang.org/x/sync/semaphore",
+    "golang.org/x/tools/internal/testenv",
     "k8s.io/api/apps/v1",
     "k8s.io/api/authorization/v1",
     "k8s.io/api/batch/v1",
