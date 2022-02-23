@@ -3,6 +3,7 @@
 linters:
   disable:
     - errchkjson
+    - gci
     - gofumpt
     - scopelint
   enable:
