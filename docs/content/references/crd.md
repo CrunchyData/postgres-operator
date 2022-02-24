@@ -7365,7 +7365,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -7577,7 +7577,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -12831,7 +12831,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -13043,7 +13043,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
@@ -13154,7 +13154,7 @@ A Secret containing the value for the LDAP_BIND_PASSWORD setting. More info: htt
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr><tr>
         <td><b>optional</b></td>
