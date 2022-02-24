@@ -20,6 +20,7 @@ jobs:
             BEGIN { print "::add-matcher::.github/actions/awk-matcher.json" }
 
             /[[:space:]]$/ { errors++; print FILENAME ":" FNR " error: Trailing space" }
+            /TODO/ { errors++; print FILENAME ":" FNR " error: Found TODO. Try running hack/create-todo-patch.sh" }
 
             END { print "::remove-matcher owner=awk::" }
             END { exit errors != 0 }
