@@ -57,10 +57,6 @@ There are other components that go into a PGO Postgres cluster. These include pg
 
 Applying software updates for the other components in a Postgres cluster works similarly to the above. As pgBackRest and PgBouncer are Kubernetes [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/), Kubernetes will help manage the rolling update to minimize disruption.
 
-## Major Postgres Version Upgrades
-
-Want to take advantage of the latest and greatest features of PostgreSQL? You can do so by performing a [Postgres major version upgrade]({{< relref "guides/major-postgres-version-upgrade.md" >}}). Doing so is not in the scope of this tutorial, but you can read our guide on how to [upgrade your version Postgres]({{< relref "guides/major-postgres-version-upgrade.md" >}}).
-
 ## Next Steps
 
 Now that we know how to update our software components, let's look at how PGO handles [disaster recovery]({{< relref "./backups.md" >}})!
