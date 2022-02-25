@@ -76,21 +76,21 @@ The container tags follow one of two patterns:
 
 For example, if pulling from the [customer portal](https://access.crunchydata.com/), the following would all be valid tags to reference the PgBouncer container:
 
-- `ubi8-1.16-1`
-- `ubi8-5.1.0-0`
-- `centos8-1.16-1`
-- `centos8-5.1.0-0`
+- `{{< param PGBouncerComponentTagUbi8 >}}`
+- `{{< param PGBouncerTagUbi8 >}}`
+- `{{< param PGBouncerComponentTagCentos8 >}}`
+- `{{< param PGBouncerTagCentos8 >}}`
 
 The [developer portal](https://www.crunchydata.com/developers/download-postgres/containers) provides CentOS based images. For example, PgBouncer would use this tag:
 
-- `centos8-1.16-1`
+- `{{< param PGBouncerComponentTagCentos8 >}}`
 
 PostGIS enabled containers have both the Postgres and PostGIS software versions included. For example, Postgres 14 with PostGIS 3.1 would use the following tags:
 
-- `ubi8-14.1-3.1-1`
-- `ubi8-14.1-3.1-5.1.0-0`
-- `centos8-14.1-3.1-1`
-- `centos8-14.1-3.1-5.1.0-0`
+- `{{< param postgres14GIS31ComponentTagUbi8 >}}`
+- `{{< param postgres14GIS31TagUbi8 >}}`
+- `{{< param postgres14GIS31ComponentTagCentos8 >}}`
+- `{{< param postgres14GIS31TagCentos8 >}}`
 
 ## Extensions Compatibility
 
