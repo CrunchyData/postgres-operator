@@ -80,13 +80,13 @@ tools/$(SYSTEM)/kubectl:
 tools: tools/$(SYSTEM)/operator-sdk
 tools/$(SYSTEM)/operator-sdk:
 	install -d '$(dir $@)'
-	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-sdk/releases/download/v1.9.0/operator-sdk_$(OS_KERNEL)_$(OS_MACHINE)'
+	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-sdk/releases/download/v1.18.0/operator-sdk_$(OS_KERNEL)_$(OS_MACHINE)'
 	chmod u+x '$@'
 
 tools: tools/$(SYSTEM)/opm
 tools/$(SYSTEM)/opm:
 	install -d '$(dir $@)'
-	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-registry/releases/download/v1.17.5/$(OS_KERNEL)-$(OS_MACHINE)-opm'
+	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-registry/releases/download/v1.20.0/$(OS_KERNEL)-$(OS_MACHINE)-opm'
 	chmod u+x '$@'
 
 tools/$(SYSTEM)/venv:
