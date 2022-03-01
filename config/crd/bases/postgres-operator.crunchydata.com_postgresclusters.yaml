@@ -8794,13 +8794,6 @@ spec:
                               type: string
                             type: object
                         type: object
-                      port:
-                        default: 5050
-                        description: Port on which pgAdmin should listen for client
-                          connections. Changing this value causes pgAdmin to restart.
-                        format: int32
-                        minimum: 1024
-                        type: integer
                       priorityClassName:
                         description: 'Priority class name for the pgAdmin pod. Changing
                           this value causes pgAdmin to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/'

@@ -159,9 +159,7 @@ namespace: my-ns
 	})
 
 	cluster.Spec.UserInterface = &v1beta1.UserInterfaceSpec{
-		PGAdmin: &v1beta1.PGAdminPodSpec{
-			Port: initialize.Int32(5050),
-		},
+		PGAdmin: &v1beta1.PGAdminPodSpec{},
 	}
 
 	alwaysExpect := func(t testing.TB, service *corev1.Service) {
@@ -289,9 +287,7 @@ func TestReconcilePGAdminService(t *testing.T) {
 	})
 
 	cluster.Spec.UserInterface = &v1beta1.UserInterfaceSpec{
-		PGAdmin: &v1beta1.PGAdminPodSpec{
-			Port: initialize.Int32(5050),
-		},
+		PGAdmin: &v1beta1.PGAdminPodSpec{},
 	}
 
 	t.Run("NoServiceSpec", func(t *testing.T) {
@@ -759,7 +755,6 @@ func pgAdminTestCluster(ns corev1.Namespace) *v1beta1.PostgresCluster {
 			},
 			UserInterface: &v1beta1.UserInterfaceSpec{
 				PGAdmin: &v1beta1.PGAdminPodSpec{
-					Port:  initialize.Int32(5050),
 					Image: "test-image",
 					DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},

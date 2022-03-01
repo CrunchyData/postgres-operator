@@ -11601,11 +11601,6 @@ Defines a pgAdmin user interface.
         <td>Metadata contains metadata for PostgresCluster resources</td>
         <td>false</td>
       </tr><tr>
-        <td><b>port</b></td>
-        <td>integer</td>
-        <td>Port on which pgAdmin should listen for client connections. Changing this value causes pgAdmin to restart.</td>
-        <td>false</td>
-      </tr><tr>
         <td><b>priorityClassName</b></td>
         <td>string</td>
         <td>Priority class name for the pgAdmin pod. Changing this value causes pgAdmin to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
