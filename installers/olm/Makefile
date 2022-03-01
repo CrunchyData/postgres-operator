@@ -35,8 +35,10 @@ bundles/redhat:
 	./generate.sh redhat
 	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
 
+# The 'marketplace' configuration is currently identical to the 'redhat', so we just copy it here.
 .PHONY: bundles/marketplace
 bundles/marketplace:
+	cp -r ./config/redhat/ ./config/marketplace
 	./generate.sh marketplace
 	env operator-sdk bundle validate $@ --select-optional='suite=operatorframework'
 
