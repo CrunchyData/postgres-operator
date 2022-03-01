@@ -160,11 +160,10 @@ func (r *Reconciler) generatePGAdminService(
 	// which can happen during a rolling update.
 	//
 	// TODO(tjmoore4): A custom service port is not currently supported as this
-	// requires updates to the pgAdmin service configuration, but the spec
-	// structures are in place to facilitate further enhancement.
+	// requires updates to the pgAdmin service configuration.
 	service.Spec.Ports = []corev1.ServicePort{{
 		Name:       naming.PortPGAdmin,
-		Port:       *cluster.Spec.UserInterface.PGAdmin.Port,
+		Port:       *initialize.Int32(5050),
 		Protocol:   corev1.ProtocolTCP,
 		TargetPort: intstr.FromString(naming.PortPGAdmin),
 	}}

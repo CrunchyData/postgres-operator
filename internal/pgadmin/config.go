@@ -54,7 +54,7 @@ const (
 	loginPassword = "admin"
 
 	// default pgAdmin port
-	defaultPort = 5050
+	pgAdminPort = 5050
 
 	// configMountPath is where to mount configuration files, secrets, etc.
 	configMountPath = "/etc/pgadmin/conf.d"

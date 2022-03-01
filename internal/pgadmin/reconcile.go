@@ -176,12 +176,6 @@ func Pod(
 		return
 	}
 
-	// if a pgAdmin port is configured, use that. Otherwise, use the default
-	pgAdminPort := defaultPort
-	if inCluster.Spec.UserInterface.PGAdmin.Port != nil {
-		pgAdminPort = int(*inCluster.Spec.UserInterface.PGAdmin.Port)
-	}
-
 	// create the pgAdmin Pod volumes
 	tmp := corev1.Volume{Name: tmpVolume}
 	tmp.EmptyDir = &corev1.EmptyDirVolumeSource{

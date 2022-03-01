@@ -304,11 +304,6 @@ func (in *PGAdminPodSpec) DeepCopyInto(out *PGAdminPodSpec) {
 	}
 	in.Config.DeepCopyInto(&out.Config)
 	in.DataVolumeClaimSpec.DeepCopyInto(&out.DataVolumeClaimSpec)
-	if in.Port != nil {
-		in, out := &in.Port, &out.Port
-		*out = new(int32)
-		**out = **in
-	}
 	if in.PriorityClassName != nil {
 		in, out := &in.PriorityClassName, &out.PriorityClassName
 		*out = new(string)

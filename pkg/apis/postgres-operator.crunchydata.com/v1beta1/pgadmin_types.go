@@ -69,13 +69,6 @@ type PGAdminPodSpec struct {
 	// +optional
 	Image string `json:"image,omitempty"`
 
-	// Port on which pgAdmin should listen for client connections. Changing
-	// this value causes pgAdmin to restart.
-	// +optional
-	// +kubebuilder:default=5050
-	// +kubebuilder:validation:Minimum=1024
-	Port *int32 `json:"port,omitempty"`
-
 	// Priority class name for the pgAdmin pod. Changing this value causes pgAdmin
 	// to restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
@@ -113,11 +106,6 @@ type PGAdminPodSpec struct {
 
 // Default sets the port and replica count for pgAdmin if not set
 func (s *PGAdminPodSpec) Default() {
-	if s.Port == nil {
-		s.Port = new(int32)
-		*s.Port = 5050
-	}
-
 	if s.Replicas == nil {
 		s.Replicas = new(int32)
 		*s.Replicas = 1
