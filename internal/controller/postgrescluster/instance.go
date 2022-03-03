@@ -353,16 +353,15 @@ func (r *Reconciler) observeInstances(
 	cluster.Status.InstanceSets = cluster.Status.InstanceSets[:0]
 	for _, name := range observed.setNames.List() {
 		status := v1beta1.PostgresInstanceSetStatus{Name: name}
+
 		for _, instance := range observed.bySet[name] {
+			status.Replicas += int32(len(instance.Pods))
+
 			if ready, known := instance.IsReady(); known && ready {
 				status.ReadyReplicas++
 			}
-			if terminating, known := instance.IsTerminating(); known && !terminating {
-				status.Replicas++
-
-				if matches, known := instance.PodMatchesPodTemplate(); known && matches {
-					status.UpdatedReplicas++
-				}
+			if matches, known := instance.PodMatchesPodTemplate(); known && matches {
+				status.UpdatedReplicas++
 			}
 		}
 

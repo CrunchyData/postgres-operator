@@ -9151,12 +9151,11 @@ spec:
                       format: int32
                       type: integer
                     replicas:
-                      description: Total number of non-terminated pods.
+                      description: Total number of pods.
                       format: int32
                       type: integer
                     updatedReplicas:
-                      description: Total number of non-terminated pods that have the
-                        desired specification.
+                      description: Total number of pods that have the desired specification.
                       format: int32
                       type: integer
                   required:

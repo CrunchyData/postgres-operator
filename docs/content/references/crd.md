@@ -13658,12 +13658,12 @@ Condition contains details for one aspect of the current state of this API Resou
       </tr><tr>
         <td><b>replicas</b></td>
         <td>integer</td>
-        <td>Total number of non-terminated pods.</td>
+        <td>Total number of pods.</td>
         <td>false</td>
       </tr><tr>
         <td><b>updatedReplicas</b></td>
         <td>integer</td>
-        <td>Total number of non-terminated pods that have the desired specification.</td>
+        <td>Total number of pods that have the desired specification.</td>
         <td>false</td>
       </tr></tbody>
 </table>
