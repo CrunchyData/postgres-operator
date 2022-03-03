@@ -493,11 +493,11 @@ type PostgresInstanceSetStatus struct {
 	// +optional
 	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
 
-	// Total number of non-terminated pods.
+	// Total number of pods.
 	// +optional
 	Replicas int32 `json:"replicas,omitempty"`
 
-	// Total number of non-terminated pods that have the desired specification.
+	// Total number of pods that have the desired specification.
 	// +optional
 	UpdatedReplicas int32 `json:"updatedReplicas,omitempty"`
 }
