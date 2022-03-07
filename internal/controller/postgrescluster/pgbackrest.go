@@ -2572,25 +2572,15 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 			naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
-	condition := meta.FindStatusCondition(postgresCluster.Status.Conditions,
-		ConditionPGBackRestPostPGUpgrade)
-	stanzaUpgrade := (condition != nil && condition.Status == metav1.ConditionTrue)
-
+	// Always attempt to create pgBackRest stanza first
 	configHashMismatch, err := pgbackrest.Executor(exec).StanzaCreateOrUpgrade(ctx, configHash,
-		stanzaUpgrade)
+		false)
 	if err != nil {
 		// record and log any errors resulting from running the stanza-create command
 		r.Recorder.Event(postgresCluster, corev1.EventTypeWarning, EventUnableToCreateStanzas,
 			err.Error())
 
 		return false, errors.WithStack(err)
-	} else if stanzaUpgrade {
-		// once a "stanza-upgrade" is successful, all pgBackRest post-major PG upgrade tasks
-		// are complete, and the "PGBackRestPostPGUpgrade" condition can therefore be removed.
-		if len(postgresCluster.Status.Conditions) > 0 {
-			meta.RemoveStatusCondition(&postgresCluster.Status.Conditions,
-				ConditionPGBackRestPostPGUpgrade)
-		}
 	}
 	// Don't record event or return an error if configHashMismatch is true, since this just means
 	// configuration changes in ConfigMaps/Secrets have not yet propagated to the container.
