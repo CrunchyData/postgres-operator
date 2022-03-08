@@ -14,7 +14,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: openssl
-          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+          image: ${KUTTL_PSQL_IMAGE}
           env:
             - name: PGHOST
               valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-host } }

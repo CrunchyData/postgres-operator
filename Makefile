@@ -217,34 +217,18 @@ check-kuttl:
 	${PGO_KUBE_CLIENT} ${KUTTL_TEST} \
 		--config testing/kuttl/kuttl-test.yaml
 
-# Set reasonable default for KUTTL_ env vars for templating
-KUTTL_PG_VERSION ?= 14
-KUTTL_PG_UPGRADE_FROM_VERSION ?= 13
-KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
-
-# TODO: When I attempted to loop through the directories and find the yaml files,
-# due to how makefile expands variables, each file would end up in each directory.
-# So this implementation loops through to create the folders under generated
-# and then loops through all the yaml files, using a `sed` substition to place them
-# For safety, this removes the `testing/kuttl/generated` folder if it exists
 .PHONY: generate-kuttl
+generate-kuttl: export KUTTL_PG_VERSION ?= 14
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
 generate-kuttl:
-	[ ! -d testing/kuttl/generated ] || rm -r testing/kuttl/generated
-	for SRCDIR in $(shell ls testing/kuttl/source); do \
-		mkdir -p testing/kuttl/generated/$${SRCDIR}; \
-	done;
-	for FILEPATH in $(wildcard testing/kuttl/source/*/*.yaml); do \
-		NEW_FILEPATH=`echo $${FILEPATH} | sed 's/source/generated/'`; \
-		KUTTL_PG_VERSION=$(KUTTL_PG_VERSION) \
-			KUTTL_PG_UPGRADE_FROM_VERSION=$(KUTTL_PG_UPGRADE_FROM_VERSION) \
-			KUTTL_PSQL_IMAGE=$(KUTTL_PSQL_IMAGE) \
-			envsubst < $${FILEPATH} > $${NEW_FILEPATH}; \
-	done
-
-.PHONY: check-generated-kuttl
-check-generated-kuttl: generate-kuttl
-	${PGO_KUBE_CLIENT} ${KUTTL_TEST} \
-		--config testing/kuttl/kuttl-test-generated.yaml
+	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
+	bash -ceu ' \
+	render() { envsubst '"'"'$$KUTTL_PG_VERSION $$KUTTL_PSQL_IMAGE'"'"'; }; \
+	while [ $$# -gt 0 ]; do \
+		source="$${1}" target="$${1/e2e/e2e-generated}"; \
+		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
+		shift; \
+	done' - $(wildcard testing/kuttl/e2e/*/*.yaml)
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy generate-rbac
