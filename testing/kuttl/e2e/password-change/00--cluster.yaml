@@ -3,7 +3,7 @@ kind: PostgresCluster
 metadata:
   name: password-change
 spec:
-  postgresVersion: 14
+  postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - name: instance1
       dataVolumeClaimSpec:

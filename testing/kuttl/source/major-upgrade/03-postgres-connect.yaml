@@ -1,5 +1,0 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestStep
-commands:
-# When the cluster comes back up, check that the Postgres major version has changed
-- script: CLUSTER=major-upgrade ../../scripts/postgres-version-check.sh "${KUTTL_PG_VERSION}"

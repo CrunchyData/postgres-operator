@@ -6,7 +6,7 @@ metadata:
   name: original
   labels: { postgres-operator-test: kuttl }
 spec:
-  postgresVersion: 14
+  postgresVersion: ${KUTTL_PG_VERSION}
   patroni:
     dynamicConfiguration:
       postgresql:

@@ -9,12 +9,12 @@ spec:
       restartPolicy: "OnFailure"
       containers:
         - name: psql
-          image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+          image: ${KUTTL_PSQL_IMAGE}
           command:
             # https://www.postgresql.org/docs/current/plpgsql-errors-and-messages.html#PLPGSQL-STATEMENTS-ASSERT
             # If run on a non-replica, this assertion fails, resulting in the pod erroring
-            # Note: the `$$$$` is reduced to `$$` by kuttl
-            # - https://kuttl.dev/docs/testing/steps.html#running-commands
+            # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+            # - https://kubernetes.io/docs/tasks/inject-data-application/
             - psql
             - -qc
             - |

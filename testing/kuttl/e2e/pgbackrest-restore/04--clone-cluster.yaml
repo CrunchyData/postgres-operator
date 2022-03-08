@@ -11,7 +11,7 @@ spec:
       clusterName: original
       repoName: repo1
 
-  postgresVersion: 14
+  postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
   backups:
