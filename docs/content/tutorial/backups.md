@@ -126,7 +126,8 @@ If you are using MinIO, you may need to set the URI style to use `path` mode. Yo
 spec:
   backups:
     pgbackrest:
-      repo1-s3-uri-style: path
+      global:
+        repo1-s3-uri-style: path
 ```
 
 When your configuration is saved, you can deploy your cluster:
