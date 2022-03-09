@@ -229,6 +229,19 @@ func Pod(
 				Name:  "PGADMIN_SETUP_PASSWORD",
 				Value: loginPassword,
 			},
+			// Setting the KRB5_CONFIG for kerberos
+			// - https://web.mit.edu/kerberos/krb5-current/doc/admin/conf_files/krb5_conf.html
+			{
+				Name:  "KRB5_CONFIG",
+				Value: configMountPath + "/krb5.conf",
+			},
+			// In testing it was determined that we need to set this env var for the replay cache
+			// otherwise it defaults to the read-only location `/var/tmp/`
+			// - https://web.mit.edu/kerberos/krb5-current/doc/basic/rcache_def.html#replay-cache-types
+			{
+				Name:  "KRB5RCACHEDIR",
+				Value: "/tmp",
+			},
 		},
 		Command:         []string{"bash", "-c", startupScript},
 		Image:           config.PGAdminContainerImage(inCluster),

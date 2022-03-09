@@ -216,6 +216,10 @@ containers:
     value: admin
   - name: PGADMIN_SETUP_PASSWORD
     value: admin
+  - name: KRB5_CONFIG
+    value: /etc/pgadmin/conf.d/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   livenessProbe:
     initialDelaySeconds: 15
     periodSeconds: 20
@@ -440,6 +444,10 @@ containers:
     value: admin
   - name: PGADMIN_SETUP_PASSWORD
     value: admin
+  - name: KRB5_CONFIG
+    value: /etc/pgadmin/conf.d/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   image: new-image
   imagePullPolicy: Always
   livenessProbe:
