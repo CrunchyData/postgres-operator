@@ -190,7 +190,7 @@ func addNSSWrapper(image string, imagePullPolicy corev1.PullPolicy, template *co
 	for i, c := range template.Spec.Containers {
 		switch c.Name {
 		case naming.ContainerDatabase, naming.PGBackRestRepoContainerName,
-			naming.PGBackRestRestoreContainerName, naming.ContainerPGUpgrade:
+			naming.PGBackRestRestoreContainerName:
 			passwd := fmt.Sprintf(nssWrapperDir, "postgres", "passwd")
 			group := fmt.Sprintf(nssWrapperDir, "postgres", "group")
 			template.Spec.Containers[i].Env = append(template.Spec.Containers[i].Env, []corev1.EnvVar{
@@ -239,8 +239,7 @@ func addNSSWrapper(image string, imagePullPolicy corev1.PullPolicy, template *co
 		// settings for any instance pods.
 		containsDatabase := false
 		for i, c := range template.Spec.Containers {
-			if c.Name == naming.ContainerDatabase ||
-				c.Name == naming.ContainerPGUpgrade {
+			if c.Name == naming.ContainerDatabase {
 				containsDatabase = true
 				container.Resources = template.Spec.Containers[i].Resources
 				break

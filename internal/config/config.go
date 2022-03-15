@@ -80,16 +80,6 @@ func PGExporterContainerImage(cluster *v1beta1.PostgresCluster) string {
 	return defaultFromEnv(image, "RELATED_IMAGE_PGEXPORTER")
 }
 
-// PGUpgradeContainerImage returns the container image to use for pg_upgrade.
-func PGUpgradeContainerImage(cluster *v1beta1.PostgresCluster) string {
-	var image string
-	if cluster.Spec.Upgrade != nil &&
-		cluster.Spec.Upgrade.Image != nil {
-		image = *cluster.Spec.Upgrade.Image
-	}
-	return defaultFromEnv(image, "RELATED_IMAGE_PGUPGRADE")
-}
-
 // PostgresContainerImage returns the container image to use for PostgreSQL.
 func PostgresContainerImage(cluster *v1beta1.PostgresCluster) string {
 	image := cluster.Spec.Image
