@@ -94,8 +94,16 @@ deletenamespaces:
 	$(PGO_KUBE_CLIENT) delete -k ./config/namespace
 
 # Install the postgrescluster CRD
+# Note: using `--server-side --force-conflicts` when applying the K8s objects in order to 
+# A) remove the `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it 
+# was violating the limit on size of `metadata.annotations`
+# - https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L36
+# B) overriding conflicts around managed fields during subsequent applies;
+# the fields that were erroring in a local k3s cluster were `.status.conditions`,
+# `.status.acceptedNames.kind`, and `.status.acceptedNames.plural`, which were managed by 
+# `k3s` rather than by `kubectl`
 install:
-	$(PGO_KUBE_CLIENT) apply -k ./config/crd
+	$(PGO_KUBE_CLIENT) apply --server-side --force-conflicts -k ./config/crd
 
 # Delete the postgrescluster CRD
 uninstall:
@@ -106,12 +114,16 @@ deploy:
 	$(PGO_KUBE_CLIENT) apply -k ./config/default
 
 # Deploy the PostgreSQL Operator locally
-# Note: using `--server-side=true --force-conflicts` when applying the K8s objects in order to remove the
-# `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it was violating the limit
-# on size of `metadata.annotations`
+# Note: using `--server-side --force-conflicts` when applying the K8s objects in order to 
+# A) remove the `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it 
+# was violating the limit on size of `metadata.annotations`
 # - https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L36
+# B) overriding conflicts around managed fields during subsequent applies;
+# the fields that were erroring in a local k3s cluster were `.status.conditions`,
+# `.status.acceptedNames.kind`, and `.status.acceptedNames.plural`, which were managed by 
+# `k3s` rather than by `kubectl`
 deploy-dev: build-postgres-operator createnamespaces
-	$(PGO_KUBE_CLIENT) apply --server-side=true --force-conflicts -k ./config/dev
+	$(PGO_KUBE_CLIENT) apply --server-side --force-conflicts -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
 		CRUNCHY_DEBUG=true \
@@ -201,13 +213,17 @@ check-envtest: hack/tools/envtest
 	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -tags=envtest ./...
 
 # - PGO_TEST_TIMEOUT_SCALE=1
-# Note: using `--server-side=true --force-conflicts` when applying the K8s objects in order to remove the
-# `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it was violating the limit
-# on size of `metadata.annotations`
+# Note: using `--server-side --force-conflicts` when applying the K8s objects in order to 
+# A) remove the `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it 
+# was violating the limit on size of `metadata.annotations`
 # - https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L36
+# B) overriding conflicts around managed fields during subsequent applies;
+# the fields that were erroring in a local k3s cluster were `.status.conditions`,
+# `.status.acceptedNames.kind`, and `.status.acceptedNames.plural`, which were managed by 
+# `k3s` rather than by `kubectl`
 .PHONY: check-envtest-existing
 check-envtest-existing: createnamespaces
-	${PGO_KUBE_CLIENT} apply --server-side=true --force-conflicts -k ./config/dev
+	${PGO_KUBE_CLIENT} apply --server-side --force-conflicts -k ./config/dev
 	USE_EXISTING_CLUSTER=true PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
 	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
