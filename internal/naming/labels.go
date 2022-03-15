@@ -85,9 +85,6 @@ const (
 	// support discovery by Prometheus according to pgMonitor configuration
 	LabelPGMonitorDiscovery = labelPrefix + "crunchy-postgres-exporter"
 
-	// LabelPGUpgrade is used to indicate a PostgreSQL major upgrade Job
-	LabelPGUpgrade = labelPrefix + "pgupgrade"
-
 	// LabelPostgresUser identifies the PostgreSQL user an object is for or about.
 	LabelPostgresUser = labelPrefix + "pguser"
 
@@ -175,14 +172,6 @@ func PGBackRestLabels(clusterName string) labels.Set {
 	}
 }
 
-// PGUpgradeLabels provides labels for PostgreSQL major upgrade Jobs.
-func PGUpgradeJobLabels(clusterName string) labels.Set {
-	return map[string]string{
-		LabelCluster:   clusterName,
-		LabelPGUpgrade: "",
-	}
-}
-
 // PGBackRestBackupJobLabels provides labels for pgBackRest backup Jobs.
 func PGBackRestBackupJobLabels(clusterName, repoName string,
 	backupType BackupJobType) labels.Set {
@@ -233,11 +222,6 @@ func PGBackRestRestoreJobLabels(clusterName string) labels.Set {
 // PGBackRestRestoreJobSelector provides selector for querying pgBackRest restore Jobs.
 func PGBackRestRestoreJobSelector(clusterName string) labels.Selector {
 	return PGBackRestRestoreJobLabels(clusterName).AsSelector()
-}
-
-// PGUpgradeJobSelector provides selector for querying pg_upgrade Jobs.
-func PGUpgradeJobSelector(clusterName string) labels.Selector {
-	return PGUpgradeJobLabels(clusterName).AsSelector()
 }
 
 // PGBackRestRepoLabels provides common labels for pgBackRest repository

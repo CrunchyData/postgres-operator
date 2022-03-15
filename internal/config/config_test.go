@@ -121,24 +121,6 @@ func TestPGExporterContainerImage(t *testing.T) {
 	assert.Equal(t, PGExporterContainerImage(cluster), "spec-image")
 }
 
-func TestPGUpgradeContainerImage(t *testing.T) {
-	cluster := &v1beta1.PostgresCluster{}
-
-	unsetEnv(t, "RELATED_IMAGE_PGUPGRADE")
-	assert.Equal(t, PGUpgradeContainerImage(cluster), "")
-
-	setEnv(t, "RELATED_IMAGE_PGUPGRADE", "")
-	assert.Equal(t, PGUpgradeContainerImage(cluster), "")
-
-	setEnv(t, "RELATED_IMAGE_PGUPGRADE", "env-var-pgupgrade")
-	assert.Equal(t, PGUpgradeContainerImage(cluster), "env-var-pgupgrade")
-
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
-		upgrade: { image: spec-image },
-	}`), &cluster.Spec))
-	assert.Equal(t, PGUpgradeContainerImage(cluster), "spec-image")
-}
-
 func TestPostgresContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Spec.PostgresVersion = 12

@@ -310,26 +310,10 @@ func TestAddNSSWrapper(t *testing.T) {
 			}}},
 		expectedUpdatedContainerCount: 1,
 	}, {
-		tcName: "upgrade container only",
-		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{Name: naming.ContainerPGUpgrade, Resources: expectedResources},
-				{Name: "dontmodify"},
-			}}},
-		expectedUpdatedContainerCount: 1,
-	}, {
 		tcName: "pgadmin container only",
 		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
 			Containers: []corev1.Container{{Name: "dontmodify"}, {Name: "pgadmin"}}}},
 		pgadmin:                       true,
-		expectedUpdatedContainerCount: 1,
-	}, {
-		tcName: "other containers",
-		podTemplate: &corev1.PodTemplateSpec{Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{Name: naming.ContainerPGUpgrade, Resources: expectedResources},
-				{Name: "dontmodify"},
-			}}},
 		expectedUpdatedContainerCount: 1,
 	}, {
 		tcName: "restore container only",
@@ -389,7 +373,6 @@ func TestAddNSSWrapper(t *testing.T) {
 				for i, c := range template.Spec.Containers {
 					if c.Name == naming.ContainerDatabase ||
 						c.Name == naming.PGBackRestRepoContainerName ||
-						c.Name == naming.ContainerPGUpgrade ||
 						c.Name == naming.PGBackRestRestoreContainerName {
 						assert.DeepEqual(t, expectedEnv, c.Env)
 						actualUpdatedContainerCount++

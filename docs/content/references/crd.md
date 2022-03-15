@@ -200,11 +200,6 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td>A list of group IDs applied to the process of a container. These can be useful when accessing shared file systems with constrained permissions. More info: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterspecupgrade">upgrade</a></b></td>
-        <td>object</td>
-        <td>PostgreSQL major upgrade configuration</td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterface">userInterface</a></b></td>
         <td>object</td>
         <td>The specification of a user interface that connects to PostgreSQL.</td>
@@ -11456,80 +11451,6 @@ Run this cluster as a read-only copy of an existing cluster or archive.
 </table>
 
 
-<h3 id="postgresclusterspecupgrade">
-  PostgresCluster.spec.upgrade
-  <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-PostgreSQL major upgrade configuration
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>fromPostgresVersion</b></td>
-        <td>integer</td>
-        <td>The major version of PostgreSQL before the upgrade.</td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>enabled</b></td>
-        <td>boolean</td>
-        <td>Whether or not major upgrades are enabled for this PostgresCluster.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>image</b></td>
-        <td>string</td>
-        <td>The image name of the pg_upgrade container.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#postgresclusterspecupgrademetadata">metadata</a></b></td>
-        <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterspecupgrademetadata">
-  PostgresCluster.spec.upgrade.metadata
-  <sup><sup><a href="#postgresclusterspecupgrade">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Metadata contains metadata for PostgresCluster resources
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>annotations</b></td>
-        <td>map[string]string</td>
-        <td></td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>labels</b></td>
-        <td>map[string]string</td>
-        <td></td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
 <h3 id="postgresclusterspecuserinterface">
   PostgresCluster.spec.userInterface
   <sup><sup><a href="#postgresclusterspec">↩ Parent</a></sup></sup>
@@ -13532,11 +13453,6 @@ PostgresClusterStatus defines the observed state of PostgresCluster
         <td></td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#postgresclusterstatuspgupgrade">pgUpgrade</a></b></td>
-        <td>object</td>
-        <td>Status information for pgUpgrade</td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#postgresclusterstatuspgbackrest">pgbackrest</a></b></td>
         <td>object</td>
         <td>Status information for pgBackRest</td>
@@ -13544,7 +13460,7 @@ PostgresClusterStatus defines the observed state of PostgresCluster
       </tr><tr>
         <td><b>postgresVersion</b></td>
         <td>integer</td>
-        <td>Stores the current PostgreSQL major version.  This field is updated following a successful major PostgreSQL upgrade in order to track the PostgresCluster's PostgreSQL version across multiple major upgrades.</td>
+        <td>Stores the current PostgreSQL major version following a successful major PostgreSQL upgrade.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterstatusproxy">proxy</a></b></td>
@@ -13723,58 +13639,6 @@ Current state of PostgreSQL cluster monitoring tool configuration
         <td><b>systemIdentifier</b></td>
         <td>string</td>
         <td>The PostgreSQL system identifier reported by Patroni.</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="postgresclusterstatuspgupgrade">
-  PostgresCluster.status.pgUpgrade
-  <sup><sup><a href="#postgresclusterstatus">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Status information for pgUpgrade
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>finished</b></td>
-        <td>boolean</td>
-        <td>Specifies whether or not the Job is finished executing (does not indicate success or failure).</td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>active</b></td>
-        <td>integer</td>
-        <td>The number of actively running upgrade Pods.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>completionTime</b></td>
-        <td>string</td>
-        <td>Represents the time the upgrade Job was determined by the Job controller to be completed.  This field is only set if the backup completed successfully. Additionally, it is represented in RFC3339 form and is in UTC.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>failed</b></td>
-        <td>integer</td>
-        <td>The number of Pods for the upgrade Job that reached the "Failed" phase.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>startTime</b></td>
-        <td>string</td>
-        <td>Represents the time the upgrade Job was acknowledged by the Job controller. It is represented in RFC3339 form and is in UTC.</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>succeeded</b></td>
-        <td>integer</td>
-        <td>The number of Pods for the upgrade Job that reached the "Succeeded" phase.</td>
         <td>false</td>
       </tr></tbody>
 </table>
