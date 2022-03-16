@@ -25,10 +25,6 @@ COPY licenses /licenses
 
 RUN ${PACKAGER} -y update && ${PACKAGER} -y clean all
 
-RUN if [ "$BASEOS" = "centos8" ]; then \
-    ${PACKAGER} -qy module disable postgresql ; \
-fi
-
 # Create module file to disable postgres module, microdnf cannot do this with the current version
 RUN if [ "$BASEOS" = "ubi8" ] ; then \
     echo "[postgresql]"  >> /etc/dnf/modules.d/postgresql.module \
