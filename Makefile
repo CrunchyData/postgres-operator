@@ -1,15 +1,13 @@
 
 # Default values if not already set
 PGOROOT ?= $(CURDIR)
-PGO_BASEOS ?= centos8
-BASE_IMAGE_OS ?= $(PGO_BASEOS)
+PGO_BASEOS ?= ubi8
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= $(shell git describe --tags)
 PGO_PG_VERSION ?= 13
 PGO_PG_FULLVERSION ?= 13.4
 PGO_KUBE_CLIENT ?= kubectl
-PACKAGER ?= yum
 
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
 RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz
@@ -30,7 +28,6 @@ ifneq ("$(IMG_ROOTLESS_BUILD)", "true")
 	IMGCMDSUDO=sudo --preserve-env
 endif
 IMGCMDSTEM=$(IMGCMDSUDO) buildah bud --layers $(SQUASH)
-DFSET=$(PGO_BASEOS)
 
 # Default the buildah format to docker to ensure it is possible to pull the images from a docker
 # repository using docker (otherwise the images may not be recognized)
@@ -46,15 +43,8 @@ DOCKERBASEREGISTRY=
 BASE_IMAGE_OS=
 ifeq ("$(PGO_BASEOS)", "ubi8")
     BASE_IMAGE_OS=ubi8-minimal
-    DFSET=rhel
     DOCKERBASEREGISTRY=registry.access.redhat.com/
     PACKAGER=microdnf
-endif
-ifeq ("$(PGO_BASEOS)", "centos8")
-    BASE_IMAGE_OS=centos8
-    DFSET=centos
-    DOCKERBASEREGISTRY=centos:
-    PACKAGER=dnf
 endif
 
 DEBUG_BUILD ?= false
@@ -163,7 +153,6 @@ $(PGOROOT)/build/%/Dockerfile:
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg BASEVER=$(PGO_VERSION) \
-		--build-arg DFSET=$(DFSET) \
 		--build-arg PACKAGER=$(PACKAGER) \
 		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \

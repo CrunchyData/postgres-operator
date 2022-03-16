@@ -6,7 +6,6 @@ FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 ARG BASEOS
 ARG PGVERSION
 ARG PACKAGER
-ARG DFSET
 
 LABEL name="crunchy-postgres-exporter" \
 	summary="Metrics exporter for PostgreSQL" \
@@ -14,14 +13,6 @@ LABEL name="crunchy-postgres-exporter" \
 	io.k8s.description="Crunchy PostgreSQL Exporter" \
 	io.k8s.display-name="Crunchy PostgreSQL Exporter" \
 	io.openshift.tags="postgresql,postgres,monitoring,database,crunchy"
-
-RUN if [ "$DFSET" = "centos" ] ; then \
-	${PACKAGER} -y install epel-release \
-    && ${PACKAGER} install -y \
-        --setopt=skip_missing_names_on_install=False \
-        postgresql${PGVERSION} \
-    && ${PACKAGER} -y clean all ; \
-fi
 
 RUN if [ "$BASEOS" = "ubi8" ] ; then \
 	${PACKAGER} install -y \
