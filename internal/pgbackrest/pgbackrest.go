@@ -77,7 +77,6 @@ fi
 		script, "-", configHash, DefaultStanzaName, errMsgConfigHashMismatch,
 		fmt.Sprintf("stanza-%s", stanzaCmd)); err != nil {
 
-		// Read the err out of the stderr buffer to use multiple times
 		errReturn := stderr.String()
 
 		// if the config hashes didn't match, return true and don't return an error since this is
@@ -94,7 +93,7 @@ fi
 		}
 
 		// if none of the above errors, return the err
-		return false, errors.WithStack(fmt.Errorf("%w: %v", err, stderr.String()))
+		return false, errors.WithStack(fmt.Errorf("%w: %v", err, errReturn))
 	}
 
 	return false, nil
