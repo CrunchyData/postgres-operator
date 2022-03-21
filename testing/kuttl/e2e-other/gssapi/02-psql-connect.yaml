@@ -8,7 +8,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: psql
-        image: us.gcr.io/container-suite/crunchy-postgres:centos8-14.1-5.1.0-rc.1-0
+        image: ${KUTTL_PSQL_IMAGE}
         command:
         - bash
         - -c
