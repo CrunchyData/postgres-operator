@@ -19,7 +19,7 @@ spec:
           krb_server_keyfile: /etc/postgres/krb5.keytab
   users:
   - name: postgres
-  postgresVersion: 14
+  postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - name: instance1
       dataVolumeClaimSpec:
