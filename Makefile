@@ -235,16 +235,18 @@ check-kuttl:
 
 .PHONY: generate-kuttl
 generate-kuttl: export KUTTL_PG_VERSION ?= 14
-generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-0
+generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.1
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.2-0
 generate-kuttl:
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
+	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	bash -ceu ' \
-	render() { envsubst '"'"'$$KUTTL_PG_VERSION $$KUTTL_PSQL_IMAGE'"'"'; }; \
+	render() { envsubst '"'"'$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE'"'"'; }; \
 	while [ $$# -gt 0 ]; do \
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
 		shift; \
-	done' - $(wildcard testing/kuttl/e2e/*/*.yaml)
+	done' - $(wildcard testing/kuttl/e2e/*/*.yaml) $(wildcard testing/kuttl/e2e-other/*/*.yaml)
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy generate-rbac
@@ -255,7 +257,8 @@ check-generate: generate-crd generate-deepcopy generate-rbac
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f config/rbac/role.yaml
-	[ ! -d testing/kuttl/generated ] || rm -r testing/kuttl/generated
+	[ ! -d testing/kuttl/generated ] || rm -r testing/kuttl/e2e-generated
+	[ ! -d testing/kuttl/generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	[ ! -d build/crd/generated ] || rm -r build/crd/generated
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*

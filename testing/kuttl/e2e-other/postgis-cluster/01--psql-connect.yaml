@@ -1,0 +1,116 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-postgis-connect
+spec:
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: "OnFailure"
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+          - name: PGHOST
+            valueFrom: { secretKeyRef: { name: postgis-pguser-postgis, key: host } }
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: postgis-pguser-postgis, key: port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: postgis-pguser-postgis, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: postgis-pguser-postgis, key: user } }
+          - name: PGPASSWORD
+            valueFrom: { secretKeyRef: { name: postgis-pguser-postgis, key: password } }
+          - { name: GIS_VERSION, value: "${KUTTL_POSTGIS_VERSION}" }
+          # Do not wait indefinitely.
+          - { name: PGCONNECT_TIMEOUT, value: '5' }
+          command:
+            - bash
+            - -c
+            - |
+              # Ensure PostGIS version is set
+              GIS_VERSION = ${GIS_VERSION:-notset}
+
+              # check version
+              RESULT=$(psql -c "DO \$\$
+              DECLARE
+               result boolean;
+              BEGIN
+               SELECT postgis_version() LIKE '%${GIS_VERSION}%' INTO result;
+               ASSERT result = 't', 'PostGIS version incorrect';
+              END \$\$;" 2>&1)
+              
+              if [[ "$RESULT" == *"ERROR"* ]]; then
+                  echo "$RESULT"
+                  exit 1
+              fi
+              
+              # check full version
+              RESULT=$(psql -c "DO \$\$
+              DECLARE
+               result boolean;
+              BEGIN
+               SELECT postgis_full_version() LIKE 'POSTGIS=\"%${GIS_VERSION}%' INTO result;
+               ASSERT result = 't', 'PostGIS full version incorrect';
+              END \$\$;" 2>&1)
+              
+              if [[ "$RESULT" == *"ERROR"* ]]; then
+                  echo "$RESULT"
+                  exit 1
+              fi
+              
+              # check expected schemas (tiger, tiger_data and topology)
+              # - https://www.postgresql.org/docs/current/catalog-pg-namespace.html
+              RESULT=$(psql -c "DO \$\$
+              DECLARE
+               result text;
+              BEGIN
+               SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname='tiger' INTO result;
+               ASSERT result = 'tiger', 'PostGIS tiger schema missing';
+              END \$\$;" 2>&1)
+              
+              if [[ "$RESULT" == *"ERROR"* ]]; then
+                  echo "$RESULT"
+                  exit 1
+              fi
+              
+              RESULT=$(psql -c "DO \$\$
+              DECLARE
+               result text;
+              BEGIN
+               SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname='tiger_data' INTO result;
+               ASSERT result = 'tiger_data', 'PostGIS tiger_data schema missing';
+              END \$\$;" 2>&1)
+              
+              if [[ "$RESULT" == *"ERROR"* ]]; then
+                  echo "$RESULT"
+                  exit 1
+              fi
+              
+              RESULT=$(psql -c "DO \$\$
+              DECLARE
+               result text;
+              BEGIN
+               SELECT nspname FROM pg_catalog.pg_namespace WHERE nspname='topology' INTO result;
+               ASSERT result = 'topology', 'PostGIS topology schema missing';
+              END \$\$;" 2>&1)
+              
+              if [[ "$RESULT" == *"ERROR"* ]]; then
+                  echo "$RESULT"
+                  exit 1
+              fi
+              
+              # check point creation
+              RESULT=$(psql -c "DO \$\$
+              DECLARE
+               result text;
+              BEGIN
+               SELECT pg_typeof(ST_MakePoint(28.385200,-81.563900)) INTO result;
+               ASSERT result = 'geometry', 'Unable to create PostGIS point';
+              END \$\$;" 2>&1)
+              
+              if [[ "$RESULT" == *"ERROR"* ]]; then
+                  echo "$RESULT"
+                  exit 1
+              fi

@@ -2,3 +2,4 @@
 /vendor/
 tools
 /testing/kuttl/e2e-generated/
+/testing/kuttl/e2e-generated-other/
