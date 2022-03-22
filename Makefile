@@ -127,6 +127,7 @@ deploy-dev: build-postgres-operator createnamespaces
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
 		CRUNCHY_DEBUG=true \
+		CHECK_FOR_UPGRADES=false \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		$(shell $(PGO_KUBE_CLIENT) kustomize ./config/dev | \
 			sed -ne '/^kind: Deployment/,/^---/ { \
