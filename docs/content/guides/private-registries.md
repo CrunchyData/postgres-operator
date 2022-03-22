@@ -36,7 +36,7 @@ For example, to set up an image pull secret using the [Kustomize install method]
 ```yaml
 images:
 - name: postgres-operator
-  newName: {{< param repositoryPrivate >}}/postgres-operator
+  newName: {{< param operatorRepositoryPrivate >}}
   newTag: {{< param postgresOperatorTag >}}
 
 patchesJson6902:
@@ -74,7 +74,7 @@ and modify the manifest to be the following:
 ```yaml
 images:
 - name: postgres-operator
-  newName: {{< param repositoryPrivate >}}/postgres-operator
+  newName: {{< param operatorRepositoryPrivate >}}
   newTag: {{< param postgresOperatorTag >}}
 
 patchesJson6902:

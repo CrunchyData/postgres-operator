@@ -38,7 +38,7 @@ For instance, it might be necessary to customize the image tags that are utilize
 
 ```yaml
 image:
-  image: {{< param repository >}}/postgres-operartor:{{< param postgresOperatorTag >}}
+  image: {{< param operatorRepository >}}:{{< param postgresOperatorTag >}}
 ```
 
 Please note that the `values.yaml` file is located in `helm/install`.
