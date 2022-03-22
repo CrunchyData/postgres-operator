@@ -389,10 +389,10 @@ For more information on how to use PGO v5, we recommend reading through the [PGO
 ## Additional Considerations
 
 Upgrading to PGO v5 may result in a base image upgrade from EL-7 (UBI / CentOS) to EL-8
-(UBI / CentOS). Based on the contents of your Postgres database, you may need to perform
+(UBI). Based on the contents of your Postgres database, you may need to perform
 additional steps.
 
-Due to changes in the GNU C library (`glibc`) in EL-8, you may need to reindex certain indexes in
+Due to changes in the GNU C library `glibc` in EL-8, you may need to reindex certain indexes in
 your Postgres cluster. For more information, please read the
 [PostgreSQL Wiki on Locale Data Changes](https://wiki.postgresql.org/wiki/Locale_data_changes), how
 you can determine if your indexes are affected, and how to fix them.

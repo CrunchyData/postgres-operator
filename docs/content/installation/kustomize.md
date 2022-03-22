@@ -38,7 +38,7 @@ in the `kustomize/install/bases/kustomization.yaml` file can be modified:
 ```yaml
 images:
 - name: postgres-operator
-  newName: {{< param repository >}}
+  newName: {{< param operatorRepository >}}
   newTag: {{< param postgresOperatorTag >}}
 ```
 
