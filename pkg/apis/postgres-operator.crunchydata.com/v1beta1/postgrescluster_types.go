@@ -393,13 +393,24 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
-	// This value goes into the name of an appsv1.StatefulSet and the hostname
-	// of a corev1.Pod. The pattern below is IsDNS1123Label wrapped in "()?" to
-	// accommodate the empty default.
+	// This value goes into the name of an appsv1.StatefulSet, the hostname of
+	// a corev1.Pod, and label values. The pattern below is IsDNS1123Label
+	// wrapped in "()?" to accommodate the empty default.
+	//
+	// The Pods created by a StatefulSet have a "controller-revision-hash" label
+	// comprised of the StatefulSet name, a dash, and a 10-character hash.
+	// The length below is derived from limitations on label values:
+	//
+	//   63 (max) ≥ len(cluster) + 1 (dash)
+	//                + len(set) + 1 (dash) + 4 (id)
+	//                + 1 (dash) + 10 (hash)
+	//
+	// See: https://issue.k8s.io/64023
 
 	// Name that associates this set of PostgreSQL pods. This field is optional
 	// when only one instance set is defined. Each instance set in a cluster
-	// must have a unique name.
+	// must have a unique name. The combined length of this and the cluster name
+	// must be 46 characters or less.
 	// +optional
 	// +kubebuilder:default=""
 	// +kubebuilder:validation:Pattern=`^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$`

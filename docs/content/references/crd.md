@@ -3723,7 +3723,7 @@ Resource requirements for a sidecar container
       </tr><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name that associates this set of PostgreSQL pods. This field is optional when only one instance set is defined. Each instance set in a cluster must have a unique name.</td>
+        <td>Name that associates this set of PostgreSQL pods. This field is optional when only one instance set is defined. Each instance set in a cluster must have a unique name. The combined length of this and the cluster name must be 46 characters or less.</td>
         <td>false</td>
       </tr><tr>
         <td><b>priorityClassName</b></td>
