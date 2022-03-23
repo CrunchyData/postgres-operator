@@ -5631,7 +5631,9 @@ spec:
                       default: ""
                       description: Name that associates this set of PostgreSQL pods.
                         This field is optional when only one instance set is defined.
-                        Each instance set in a cluster must have a unique name.
+                        Each instance set in a cluster must have a unique name. The
+                        combined length of this and the cluster name must be 46 characters
+                        or less.
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$
                       type: string
                     priorityClassName:
