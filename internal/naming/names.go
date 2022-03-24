@@ -418,7 +418,7 @@ func PGBackRestBackupJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 func PGBackRestCronJob(cluster *v1beta1.PostgresCluster, backuptype, repoName string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.GetNamespace(),
-		Name:      cluster.Name + "-pgbackrest-" + repoName + "-" + backuptype,
+		Name:      cluster.Name + "-" + repoName + "-" + backuptype,
 	}
 }
 
