@@ -29,7 +29,6 @@ cd postgres-operator-examples
 
 The PGO installation project is located in the `kustomize/install` directory.
 
-
 ## Configuration
 
 While the default Kustomize install should work in most Kubernetes environments, it may be
