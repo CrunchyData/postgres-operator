@@ -26,7 +26,7 @@ few environmental setups:
 - An external storage system, using one of the following:
   - S3, or an external storage system that uses the S3 protocol
   - GCS
-  - Azure Blog Storage
+  - Azure Blob Storage
   - A Kubernetes storage system that can span multiple clusters
 
 At a high-level, the PostgreSQL Operator follows the "active-standby" data
