@@ -97,7 +97,7 @@ RoleBinding is created instead.
 
 The installation of the necessary resources for a cluster-wide or a namespace-limited
 operator is done automatically by Kustomize, as described below in the Install section.
-The only potential change you may need to make is to the Namespace resource and the 
+The only potential change you may need to make is to the Namespace resource and the
 `namespace` field if using a namespace other than the default `postgres-operator`.
 
 ## Install
@@ -109,7 +109,7 @@ be installed using `kubectl` and Kustomize.  To create the target namespace, run
 kubectl apply -k kustomize/install/namespace
 ```
 
-This will create the default `postgres-operator` namespace, unless you have edited the 
+This will create the default `postgres-operator` namespace, unless you have edited the
 `kustomize/install/namespace/namespace.yaml` resource. That `Namespace` resource should have the
 same value as the `namespace` field in the `kustomization.yaml` file (located either at
 `kustomize/install/default` or `kustomize/install/singlenamespace`, depending on whether you
