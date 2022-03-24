@@ -9,6 +9,8 @@ weight: 10
 
 This section provides instructions for installing and configuring PGO using Kustomize.
 
+If you are deploying using the installer from the [Crunchy Data Customer Portal](https://access.crunchydata.com/), please refer to the guide there for alternative setup information.
+
 ## Prerequisites
 
 First, go to GitHub and [fork the Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork)
@@ -27,13 +29,14 @@ cd postgres-operator-examples
 
 The PGO installation project is located in the `kustomize/install` directory.
 
+
 ## Configuration
 
 While the default Kustomize install should work in most Kubernetes environments, it may be
 necessary to further customize the Kustomize project(s) according to your specific needs.
 
 For instance, to customize the image tags utilized for the PGO Deployment, the `images` setting
-in the `kustomize/install/bases/kustomization.yaml` file can be modified:
+in the `kustomize/install/default/kustomization.yaml` file can be modified:
 
 ```yaml
 images:
@@ -46,7 +49,7 @@ If you are deploying using the images from the [Crunchy Data Customer Portal](ht
 
 Please note that the Kustomize install project will also create a namespace for PGO
 by default (though it is possible to install without creating the namespace, as shown below).  To
-modify the name of namespace created by the installer, the `kustomize/install/namespace.yaml`
+modify the name of namespace created by the installer, the `kustomize/install/namespace/namespace.yaml`
 should be modified:
 
 ```yaml
@@ -56,14 +59,14 @@ metadata:
   name: custom-namespace
 ```
 
-The `namespace` setting in  `kustomize/install/bases/kustomization.yaml` should be
+The `namespace` setting in  `kustomize/install/default/kustomization.yaml` should be
 modified accordingly.
 
 ```yaml
 namespace: custom-namespace
 ```
 
-By default, PGO deploys with debug logging turned on. If you wish to disable this, you need to set the `CRUNCHY_DEBUG` environmental variable to `"false"` that is found in the `kustomize/install/bases/manager/manager.yaml` file. You can add the following to your kustomization to disable debug logging:
+By default, PGO deploys with debug logging turned on. If you wish to disable this, you need to set the `CRUNCHY_DEBUG` environmental variable to `"false"` that is found in the `kustomize/install/manager/manager.yaml` file. Alternatively, you can add the following to your `kustomize/install/manager/kustomization.yaml` to disable debug logging:
 
 ```yaml
 patchesStrategicMerge:
@@ -93,51 +96,40 @@ the permissions it requires to properly manage PostgreSQL clusters across all na
 when PGO is configured to manage PostgreSQL clusters within a single namespace only, a Role and
 RoleBinding is created instead.
 
-By default, the Kustomize installer will configure PGO to manage PostgreSQL clusters in all
-namespaces, which means a ClusterRole and ClusterRoleBinding will also be created by default.
-To instead configure PGO to manage PostgreSQL clusters in only a single namespace, simply modify
-the `bases` section of the `kustomize/install/bases/kustomization.yaml` file as follows:
-
-```yaml
-bases:
-- crd
-- rbac/namespace
-- manager
-```
-
-Note that `rbac/cluster` has been changed to `rbac/namespace`.
-
-Add the PGO_TARGET_NAMESPACE environment variable to the env section of the `kustomize/install/bases/manager/manager.yaml` file to facilitate the ability to specify the single namespace as follows:
-
-```yaml
-        env:
-        - name: PGO_TARGET_NAMESPACE
-          valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.namespace } }
-```
-
-With these configuration changes, PGO will create a Role and RoleBinding, and will therefore only manage PostgreSQL clusters created within the namespace defined using the `namespace` setting in the
-`kustomize/install/bases/kustomization.yaml` file:
-
-```yaml
-namespace: postgres-operator
-```
+The installation of the necessary resources for a cluster-wide or a namespace-limited
+operator is done automatically by Kustomize, as described below in the Install section.
+The only potential change you may need to make is to the Namespace resource and the 
+`namespace` field if using a namespace other than the default `postgres-operator`.
 
 ## Install
 
 Once the Kustomize project has been modified according to your specific needs, PGO can then
-be installed using `kubectl` and Kustomize.  To create both the target namespace for PGO and
-then install PGO itself, the following command can be utilized:
+be installed using `kubectl` and Kustomize.  To create the target namespace, run the following:
 
 ```shell
-kubectl apply -k kustomize/install
+kubectl apply -k kustomize/install/namespace
 ```
 
-However, if the namespace has already been created, the following command can be utilized to
-install PGO only:
+This will create the default `postgres-operator` namespace, unless you have edited the 
+`kustomize/install/namespace/namespace.yaml` resource. That `Namespace` resource should have the
+same value as the `namespace` field in the `kustomization.yaml` file (located either at
+`kustomize/install/default` or `kustomize/install/singlenamespace`, depending on whether you
+are deploying the operator with cluster-wide or namespace-limited permissions).
+
+To install PGO itself in cluster-wide mode, apply the kustomization file in the `default` folder:
 
 ```shell
-kubectl apply -k kustomize/install/bases
+kubectl apply -k kustomize/install/default
 ```
+
+To install PGO itself in namespace-limited mode, apply the kustomization file in the
+`singlenamespace` folder:
+
+```shell
+kubectl apply -k kustomize/install/singlenamespace
+```
+
+The `kustomization.yaml` files in those folders take care of applying the appropriate permissions.
 
 ### Automated Upgrade Checks
 
@@ -148,17 +140,21 @@ PGO will check for updates upon startup and once every 24 hours. Any errors in c
 ## Uninstall
 
 Once PGO has been installed, it can also be uninstalled using `kubectl` and Kustomize.
-To uninstall PGO and then also delete the namespace it had been deployed into (assuming the
-namespace was previously created using the Kustomize installer as described above), the
-following command can be utilized:
+To uninstall PGO (assuming it was installed in cluster-wide mode), the following command can be
+utilized:
 
 ```shell
-kubectl delete -k kustomize/install
+kubectl delete -k kustomize/install/default
 ```
 
-To uninstall PGO only (e.g. if Kustomize was not initially utilized to create the PGO namespace),
-the following command can be utilized:
+To uninstall PGO installed with only namespace permissions, use:
 
 ```shell
-kubectl delete -k kustomize/install/bases
+kubectl delete -k kustomize/install/singlenamespace
+```
+
+The namespace created with this installation can likewise be cleaned up with:
+
+```shell
+kubectl delete -k kustomize/install/namespace
 ```
