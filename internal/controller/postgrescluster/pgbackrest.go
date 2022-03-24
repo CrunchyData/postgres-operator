@@ -1332,7 +1332,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
 	}
 	// reconcile the pgBackRest backup CronJobs
-	requeue := r.reconcileScheduledBackups(ctx, postgresCluster, sa)
+	requeue := r.reconcileScheduledBackups(ctx, postgresCluster, sa, repoResources.cronjobs)
 	// If the pgBackRest backup CronJob reconciliation function has encountered an error, requeue
 	// after 10 seconds. The error will not bubble up to allow the reconcile loop to continue.
 	// An error is not logged because an event was already created.
@@ -2748,6 +2748,7 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.
 // schedules configured in the cluster definition
 func (r *Reconciler) reconcileScheduledBackups(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, sa *corev1.ServiceAccount,
+	cronjobs []*batchv1beta1.CronJob,
 ) bool {
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoCronJob")
 	// requeue if there is an error during creation
@@ -2760,21 +2761,21 @@ func (r *Reconciler) reconcileScheduledBackups(
 			// next if the repo level schedule is not nil, create the CronJob.
 			if repo.BackupSchedules.Full != nil {
 				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
-					full, repo.BackupSchedules.Full, sa); err != nil {
+					full, repo.BackupSchedules.Full, sa, cronjobs); err != nil {
 					log.Error(err, "unable to reconcile Full backup for "+repo.Name)
 					requeue = true
 				}
 			}
 			if repo.BackupSchedules.Differential != nil {
 				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
-					differential, repo.BackupSchedules.Differential, sa); err != nil {
+					differential, repo.BackupSchedules.Differential, sa, cronjobs); err != nil {
 					log.Error(err, "unable to reconcile Differential backup for "+repo.Name)
 					requeue = true
 				}
 			}
 			if repo.BackupSchedules.Incremental != nil {
 				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
-					incremental, repo.BackupSchedules.Incremental, sa); err != nil {
+					incremental, repo.BackupSchedules.Incremental, sa, cronjobs); err != nil {
 					log.Error(err, "unable to reconcile Incremental backup for "+repo.Name)
 					requeue = true
 				}
@@ -2791,6 +2792,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 func (r *Reconciler) reconcilePGBackRestCronJob(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, repo v1beta1.PGBackRestRepo,
 	backupType string, schedule *string, serviceAccount *corev1.ServiceAccount,
+	cronjobs []*batchv1beta1.CronJob,
 ) error {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoCronJob")
@@ -2804,6 +2806,25 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 		naming.PGBackRestCronJobLabels(cluster.Name, repo.Name, backupType),
 	)
 	objectmeta := naming.PGBackRestCronJob(cluster, backupType, repo.Name)
+
+	// Look for an existing CronJob by the associated Labels. If one exists,
+	// update the ObjectMeta accordingly.
+	for _, cronjob := range cronjobs {
+		// ignore CronJobs that are terminating
+		if cronjob.GetDeletionTimestamp() != nil {
+			continue
+		}
+
+		if cronjob.GetLabels()[naming.LabelCluster] == cluster.Name &&
+			cronjob.GetLabels()[naming.LabelPGBackRestCronJob] == backupType &&
+			cronjob.GetLabels()[naming.LabelPGBackRestRepo] == repo.Name {
+			objectmeta = metav1.ObjectMeta{
+				Namespace: cluster.GetNamespace(),
+				Name:      cronjob.Name,
+			}
+		}
+	}
+
 	objectmeta.Labels = labels
 	objectmeta.Annotations = annotations
 

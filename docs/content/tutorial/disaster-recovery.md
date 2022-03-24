@@ -315,7 +315,7 @@ NAME                             READY   AGE
 statefulset.apps/hippo-00-lwgx   0/0     1h
 
 NAME                                        SCHEDULE   SUSPEND   ACTIVE
-cronjob.batch/hippo-pgbackrest-repo1-full   @daily     True      0
+cronjob.batch/hippo-repo1-full   @daily     True      0
 ```
 
 We can then promote the standby cluster by removing or disabling its
