@@ -80,7 +80,7 @@ github; our CI runner will generate and test the files from scratch.)
 Please note, `make check-kuttl` does not run the `e2e-other` tests.  To run the `postgis-cluster`
 test, you can use:
 
-`kubectl kuttl test testing/kuttl/e2e-generated-other/ --test postgis-cluster`
+`kubectl kuttl test testing/kuttl/e2e-generated-other/ --timeout=180 --test postgis-cluster`
 
 To run the `gssapi` test, please see testing/kuttl/e2e-other/gssapi/README.md.
 
