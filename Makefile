@@ -257,8 +257,8 @@ check-generate: generate-crd generate-deepcopy generate-rbac
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f config/rbac/role.yaml
-	[ ! -d testing/kuttl/generated ] || rm -r testing/kuttl/e2e-generated
-	[ ! -d testing/kuttl/generated-other ] || rm -r testing/kuttl/e2e-generated-other
+	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
+	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	[ ! -d build/crd/generated ] || rm -r build/crd/generated
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
