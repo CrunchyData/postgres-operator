@@ -1,0 +1,21 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Ensure that the metrics endpoint is available from inside the exporter container
+  - script: |
+      name=$(kubectl -n ${NAMESPACE} get pods --no-headers -o custom-columns="name:{metadata.name}" \
+        --selector='postgres-operator.crunchydata.com/cluster=exporter,postgres-operator.crunchydata.com/instance-set=instance1')
+      kubectl -n ${NAMESPACE} exec $name -it -c exporter -- curl http://localhost:9187/metrics
+  # Ensure that the ccp_monitoring user exits in the database
+  - script: |
+      name=$(kubectl -n ${NAMESPACE} get pods --no-headers -o custom-columns="name:{metadata.name}" \
+        --selector='postgres-operator.crunchydata.com/cluster=exporter,postgres-operator.crunchydata.com/instance-set=instance1')
+      kubectl -n ${NAMESPACE} exec $name -it -c database -- \
+        psql -c "DO \$\$
+        DECLARE
+          result boolean;
+        BEGIN
+          SELECT 1 from pg_roles where rolname='ccp_monitoring' INTO result;
+          ASSERT result = 't', 'ccp_monitor not found';
+        END \$\$;"
