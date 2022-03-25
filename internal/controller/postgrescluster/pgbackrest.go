@@ -566,11 +566,8 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
 	repo.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyAlways
 
-	// The pgBackRest TLS server handles client connections in detached/orphaned
-	// child processes which it expects to be reaped by an init system (PID 1).
 	// When ShareProcessNamespace is enabled, Kubernetes' pause process becomes
 	// PID 1 and reaps those processes when they complete.
-	// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/command/server/server.c#L51
 	// - https://github.com/kubernetes/kubernetes/commit/81d27aa23969b77f
 	//
 	// The pgBackRest TLS server must be signaled when its configuration or

@@ -93,7 +93,7 @@ func clientCertificates() []corev1.KeyToPath {
 
 			// pgBackRest requires that certificate keys not be readable by any
 			// other user.
-			// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/common/io/tls/common.c#L128
+			// - https://github.com/pgbackrest/pgbackrest/blob/release/2.38/src/common/io/tls/common.c#L128
 			Mode: initialize.Int32(0o600),
 		},
 	}
@@ -125,7 +125,7 @@ func instanceServerCertificates() []corev1.KeyToPath {
 
 			// pgBackRest requires that certificate keys not be readable by any
 			// other user.
-			// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/common/io/tls/common.c#L128
+			// - https://github.com/pgbackrest/pgbackrest/blob/release/2.38/src/common/io/tls/common.c#L128
 			Mode: initialize.Int32(0o600),
 		},
 	}
@@ -145,7 +145,7 @@ func repositoryServerCertificates() []corev1.KeyToPath {
 
 			// pgBackRest requires that certificate keys not be readable by any
 			// other user.
-			// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/common/io/tls/common.c#L128
+			// - https://github.com/pgbackrest/pgbackrest/blob/release/2.38/src/common/io/tls/common.c#L128
 			Mode: initialize.Int32(0o600),
 		},
 	}
