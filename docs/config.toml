@@ -27,6 +27,7 @@ highlightClientSide = false # set true to use highlight.pack.js instead of the d
 menushortcutsnewtab = true # set true to open shortcuts links to a new tab/window
 enableGitInfo = true
 operatorVersion = "5.1.0"
+operatorVersionLatestRel5_0 = "5.0.5"
 centosBase = "centos8"
 imageCrunchyPostgres = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.1-1"
 imageCrunchyPostgresPrivate = "registry.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.1-1"
