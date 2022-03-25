@@ -393,12 +393,12 @@ func reloadCommand(name string) []string {
 	// volume and configuration file. When either changes, signal pgBackRest
 	// and print the observed timestamp.
 	//
-	// We send SIGTERM because the TLS server in pgBackRest 2.36 must be
-	// restarted to change. We filter by parent process to ignore the forked
-	// connection handlers. Their parent process is one because they are
-	// detached/orphaned from the server. The server parent process is zero
-	// because it is started by Kubernetes.
-	//
+	// We send SIGHUP because this allows the TLS server configuration to be
+	// reloaded starting in pgBackRest 2.37. We filter by parent process to ignore
+	// the forked connection handlers. The server parent process is zero because
+	// it is started by Kubernetes.
+	// - https://github.com/pgbackrest/pgbackrest/commit/7b3ea883c7c010aafbeb14d150d073a113b703e4
+
 	// Coreutils `sleep` uses a lot of memory, so the following opens a file
 	// descriptor and uses the timeout of the builtin `read` to wait. That same
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check
@@ -409,7 +409,7 @@ exec {fd}<> <(:)
 until read -r -t 5 -u "${fd}"; do
   if
     [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
-    pkill --exact --parent=0 pgbackrest
+    pkill -HUP --exact --parent=0 pgbackrest
   then
     exec {fd}>&- && exec {fd}<> <(:)
     stat --dereference --format='Loaded configuration dated %y' "${filename}"
@@ -417,7 +417,7 @@ until read -r -t 5 -u "${fd}"; do
     { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
       [ "${authority}" -nt "/proc/self/fd/${fd}" ]
     } &&
-    pkill --exact --parent=0 pgbackrest
+    pkill -HUP --exact --parent=0 pgbackrest
   then
     exec {fd}>&- && exec {fd}<> <(:)
     stat --format='Loaded certificates dated %y' "${directory}"
@@ -472,7 +472,7 @@ func serverConfig(cluster *v1beta1.PostgresCluster) iniSectionSet {
 	//
 	// The "trace" level shows when a connection is accepted, but nothing about
 	// the remote address or what commands it might send.
-	// - https://github.com/pgbackrest/pgbackrest/blob/release/2.36/src/command/server/server.c#L47-L48
+	// - https://github.com/pgbackrest/pgbackrest/blob/release/2.38/src/command/server/server.c#L158-L159
 	// - https://pgbackrest.org/configuration.html#section-log
 	server.Set("log-level-console", "detail")
 	server.Set("log-level-stderr", "error")
@@ -480,7 +480,7 @@ func serverConfig(cluster *v1beta1.PostgresCluster) iniSectionSet {
 	server.Set("log-timestamp", "n")
 
 	return iniSectionSet{
-		"global":              global,
-		"global:server-start": server,
+		"global":        global,
+		"global:server": server,
 	}
 }

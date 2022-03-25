@@ -337,7 +337,7 @@ tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
 tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt
 tls-server-key-file = /etc/pgbackrest/server/server-tls.key
 
-[global:server-start]
+[global:server]
 log-level-console = detail
 log-level-file = off
 log-level-stderr = error
