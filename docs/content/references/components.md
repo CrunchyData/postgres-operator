@@ -28,7 +28,8 @@ Note that for the 5.0.3 release and beyond, the Postgres containers were renamed
 
 | Component | Version | PGO Version Min. | PGO Version Max. |
 |-----------|---------|------------------|------------------|
-| `crunchy-pgbackrest` | 2.36 | 5.0.4 | {{< param operatorVersion >}} |
+| `crunchy-pgbackrest` | 2.38 | 5.1.0 | {{< param operatorVersion >}} |
+| `crunchy-pgbackrest` | 2.36 | 5.0.4 | {{< param operatorVersionLatestRel5_0 >}} |
 | `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
 | `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
 | `crunchy-pgbouncer` | 1.16.1 | 5.0.4 | {{< param operatorVersion >}} |
