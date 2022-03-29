@@ -16,7 +16,7 @@ commands:
           --file=- <<'SQL'
         DO $$
         BEGIN
-          ASSERT pg_is_in_recovery(), 'expected replica';
-          ASSERT current_setting('primary_conninfo') <> '', 'expected streaming';
+          PERFORM * FROM pg_stat_wal_receiver WHERE status = 'streaming';
+          ASSERT FOUND, 'expected streaming replication';
         END $$
       SQL
