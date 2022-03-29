@@ -43,9 +43,9 @@ import (
 var (
 	//TODO(tjmoore4): With the new RELATED_IMAGES defaulting behavior, tests could be refactored
 	// to reference those environment variables instead of hard coded image values
-	CrunchyPostgresHAImage = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-13.5-0"
-	CrunchyPGBackRestImage = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:centos8-2.36-0"
-	CrunchyPGBouncerImage  = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-1.16-0"
+	CrunchyPostgresHAImage = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-13.6-1"
+	CrunchyPGBackRestImage = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.38-0"
+	CrunchyPGBouncerImage  = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.16-2"
 )
 
 // Scale extends d according to PGO_TEST_TIMEOUT_SCALE.
