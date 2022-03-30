@@ -11,7 +11,13 @@ bundle_directory="bundles/${DISTRIBUTION}"
 project_directory="projects/${DISTRIBUTION}"
 go_api_directory=$(cd ../../pkg/apis && pwd)
 
+# TODO(tjmoore4): package_name and project_name are kept separate to maintain
+# expected names in all projects. This could be consolidated in the future.
 package_name='postgresql'
+# Per OLM guidance, the filename for the clusterserviceversion.yaml must be prefixed
+# with the Operator's package name for the 'redhat' and 'marketplace' bundles.
+# https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/troubleshooting.md#get-supported-versions
+project_name='postgresoperator'
 case "${DISTRIBUTION}" in
 	# https://redhat-connect.gitbook.io/certified-operator-guide/appendix/what-if-ive-already-published-a-community-operator
 	'redhat') package_name='crunchy-postgres-operator' ;;
@@ -30,7 +36,7 @@ operator_roles=$(yq <<< "${operator_yamls}" --slurp --yaml-roundtrip 'map(select
 install -d "${project_directory}"
 (
 	cd "${project_directory}"
-	operator-sdk init --fetch-deps='false' --project-name='postgresoperator'
+	operator-sdk init --fetch-deps='false' --project-name=${project_name}
 	rm ./*.go go.*
 
 	# Generate CRD descriptions from Go markers.
@@ -61,11 +67,25 @@ kubectl kustomize "${project_directory}/config/scorecard" \
 	> "${bundle_directory}/tests/scorecard/config.yaml"
 
 # Render bundle annotations and strip comments.
+# Per Red Hat we should not include the org.opencontainers annotations in the
+# 'redhat' & 'marketplace' annotations.yaml file, so only add them for 'community'.
+# - https://coreos.slack.com/team/UP1LZCC1Y
+if [ ${DISTRIBUTION} == 'community' ]; then
+yq --yaml-roundtrip < bundle.annotations.yaml > "${bundle_directory}/metadata/annotations.yaml" \
+	--arg package "${package_name}" \
+'
+	.annotations["operators.operatorframework.io.bundle.package.v1"] = $package |
+	.annotations["org.opencontainers.image.authors"] = "info@crunchydata.com" |
+	.annotations["org.opencontainers.image.url"] = "https://crunchydata.com" |
+	.annotations["org.opencontainers.image.vendor"] = "Crunchy Data" |
+.'
+else
 yq --yaml-roundtrip < bundle.annotations.yaml > "${bundle_directory}/metadata/annotations.yaml" \
 	--arg package "${package_name}" \
 '
 	.annotations["operators.operatorframework.io.bundle.package.v1"] = $package |
 .'
+fi
 
 # Copy annotations into Dockerfile LABELs.
 labels=$(yq --raw-output < "${bundle_directory}/metadata/annotations.yaml" \
@@ -94,8 +114,17 @@ yq > /dev/null <<< "${operator_roles}" --exit-status 'length == 1' ||
 # Render bundle CSV and strip comments.
 
 csv_stem=$(yq --raw-output '.projectName' "${project_directory}/PROJECT")
+
+# marketplace and redhat require different naming patters than community
+if [ ${DISTRIBUTION} == 'marketplace' ] || [ ${DISTRIBUTION} == 'redhat' ]; then
+	mv "${project_directory}/config/manifests/bases/${project_name}.clusterserviceversion.yaml" \
+	"${project_directory}/config/manifests/bases/${package_name}.clusterserviceversion.yaml" 
+	
+	csv_stem=${package_name}
+fi
+
 crd_descriptions=$(yq '.spec.customresourcedefinitions.owned' \
-	"${project_directory}/config/manifests/bases/${csv_stem}.clusterserviceversion.yaml")
+"${project_directory}/config/manifests/bases/${csv_stem}.clusterserviceversion.yaml")
 
 crd_gvks=$(yq <<< "${operator_crds}" 'map({
 	group: .spec.group, kind: .spec.names.kind, version: .spec.versions[].name
@@ -141,6 +170,10 @@ case "${DISTRIBUTION}" in
 			.metadata.annotations.certified = "true" |
 		.' \
 			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
+
+  		# Finally, add related images. NOTE: SHA values will need to be updated
+		# -https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/troubleshooting.md#digest-pinning
+		cat bundle.relatedImages.yaml >> "${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
 		;;
 	'marketplace')
 		# Annotations needed when targeting Red Hat Marketplace
@@ -154,6 +187,10 @@ case "${DISTRIBUTION}" in
 						"\($package_url)/support?utm_source=openshift_console" |
 		.' \
 			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
+
+  		# Finally, add related images. NOTE: SHA values will need to be updated
+		# -https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/troubleshooting.md#digest-pinning
+		cat bundle.relatedImages.yaml >> "${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
 		;;
 esac
 

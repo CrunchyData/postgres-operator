@@ -35,8 +35,4 @@ annotations:
   com.redhat.delivery.operator.bundle: true
   com.redhat.openshift.versions: 'v4.6-v4.9'
 
-  # https://github.com/opencontainers/image-spec/blob/master/annotations.md
-  org.opencontainers.image.authors: info@crunchydata.com
-  org.opencontainers.image.url: https://crunchydata.com
-  org.opencontainers.image.vendor: Crunchy Data
 ...
