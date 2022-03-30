@@ -32,7 +32,7 @@ Backup schedules are stored in the `spec.backups.pgbackrest.repos.schedules` sec
 accepts a [cron-formatted](https://docs.k8s.io/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax) string
 that dictates the backup schedule.
 
-Let's say that our backup policy is to take a full backup once a day at 1am and take incremental backups every four hours.
+Let's say that our backup policy is to take a full backup weekly on Sunday at 1am and take differential backups daily at 1am on every day except Sunday.
 We would want to add configuration to our spec that looks similar to:
 
 ```
@@ -42,8 +42,8 @@ spec:
       repos:
       - name: repo1
         schedules:
-          full: "0 1 * * *"
-          incremental: "0 */4 * * *"
+          full: "0 1 * * 0"
+          differential: "0 1 * * 1-6"
 ```
 
 To manage scheduled backups, PGO will create several Kubernetes [CronJobs](https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/)
