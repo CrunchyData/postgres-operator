@@ -1,0 +1,25 @@
+  relatedImages:
+    - name: PGBACKREST
+      image: registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:<update_SHA_value>
+    - name: PGBOUNCER
+      image: registry.connect.redhat.com/crunchydata/crunchy-pgbouncer@sha256:<update_SHA_value>
+    - name: PGEXPORTER
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-exporter@sha256:<update_SHA_value>
+    - name: POSTGRES_12
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:<update_SHA_value>
+    - name: POSTGRES_13
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:<update_SHA_value>
+    - name: POSTGRES_14
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:<update_SHA_value>
+    - name: POSTGRES_12_GIS_2.5
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>
+    - name: POSTGRES_12_GIS_3.0
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>
+    - name: POSTGRES_13_GIS_3.0
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>
+    - name: POSTGRES_13_GIS_3.1
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>
+    - name: POSTGRES_14_GIS_3.1
+      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>
+    - name: postgres-operator
+      image: registry.connect.redhat.com/crunchydata/postgres-operator@sha256:<update_SHA_value>
