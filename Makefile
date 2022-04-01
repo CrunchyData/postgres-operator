@@ -83,8 +83,8 @@ createnamespaces:
 deletenamespaces:
 	$(PGO_KUBE_CLIENT) delete -k ./config/namespace
 
-# Install the postgrescluster CRD
-# Note: using `--server-side --force-conflicts` when applying the K8s objects in order to 
+# Note: For 'install', 'deploy' and 'deploy-dev' below
+# Using `--server-side --force-conflicts` when applying the K8s objects in order to 
 # A) remove the `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it 
 # was violating the limit on size of `metadata.annotations`
 # - https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L36
@@ -92,6 +92,8 @@ deletenamespaces:
 # the fields that were erroring in a local k3s cluster were `.status.conditions`,
 # `.status.acceptedNames.kind`, and `.status.acceptedNames.plural`, which were managed by 
 # `k3s` rather than by `kubectl`
+
+# Install the postgrescluster CRD
 install:
 	$(PGO_KUBE_CLIENT) apply --server-side --force-conflicts -k ./config/crd
 
@@ -101,17 +103,9 @@ uninstall:
 
 # Deploy the PostgreSQL Operator (enables the postgrescluster controller)
 deploy:
-	$(PGO_KUBE_CLIENT) apply -k ./config/default
+	$(PGO_KUBE_CLIENT) apply --server-side --force-conflicts -k ./config/default
 
 # Deploy the PostgreSQL Operator locally
-# Note: using `--server-side --force-conflicts` when applying the K8s objects in order to 
-# A) remove the `kubectl.kubernetes.io/last-applied-configuration` from the CRD since it 
-# was violating the limit on size of `metadata.annotations`
-# - https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L36
-# B) overriding conflicts around managed fields during subsequent applies;
-# the fields that were erroring in a local k3s cluster were `.status.conditions`,
-# `.status.acceptedNames.kind`, and `.status.acceptedNames.plural`, which were managed by 
-# `k3s` rather than by `kubectl`
 deploy-dev: build-postgres-operator createnamespaces
 	$(PGO_KUBE_CLIENT) apply --server-side --force-conflicts -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
