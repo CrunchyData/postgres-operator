@@ -1,0 +1,6 @@
+# Remove the zero status field included by controller-gen@v0.8.0. These zero
+# values conflict with the CRD controller in Kubernetes before v1.22.
+# - https://github.com/kubernetes-sigs/controller-tools/pull/630
+# - https://pr.k8s.io/100970
+- op: remove
+  path: /status
