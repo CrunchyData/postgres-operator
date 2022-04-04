@@ -38,7 +38,7 @@ Then, once both the Deployment and ServiceAccount have been deleted, proceed wit
 by applying the new version of the Kustomize installer:
 
 ```bash
-kubectl apply -k kustomize/install/bases
+kubectl apply --server-side -k kustomize/install/default
 ```
 
 ## Upgrading from PGO v5.0.2 and Below

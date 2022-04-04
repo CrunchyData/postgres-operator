@@ -118,14 +118,14 @@ are deploying the operator with cluster-wide or namespace-limited permissions).
 To install PGO itself in cluster-wide mode, apply the kustomization file in the `default` folder:
 
 ```shell
-kubectl apply -k kustomize/install/default
+kubectl apply --server-side -k kustomize/install/default
 ```
 
 To install PGO itself in namespace-limited mode, apply the kustomization file in the
 `singlenamespace` folder:
 
 ```shell
-kubectl apply -k kustomize/install/singlenamespace
+kubectl apply --server-side -k kustomize/install/singlenamespace
 ```
 
 The `kustomization.yaml` files in those folders take care of applying the appropriate permissions.

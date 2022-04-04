@@ -35,7 +35,7 @@ You can install PGO, the Postgres Operator from Crunchy Data, using the command 
 
 ```
 kubectl apply -k kustomize/install/namespace
-kubectl apply -k kustomize/install/default
+kubectl apply --server-side -k kustomize/install/default
 ```
 
 This will create a namespace called `postgres-operator` and create all of the objects required to deploy PGO.

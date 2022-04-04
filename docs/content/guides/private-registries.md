@@ -100,7 +100,7 @@ patchesJson6902:
 You can then install PGO from the private registry using the standard installation procedure, e.g.:
 
 ```shell
-kubectl apply -k kustomize/install
+kubectl apply --server-side -k kustomize/install/default
 ```
 
 ## Deploy a Postgres cluster from a Private Registry
