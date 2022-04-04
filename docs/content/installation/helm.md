@@ -34,11 +34,11 @@ PGO. The default `values.yaml` settings should work in most Kubernetes environme
 require some customization depending on your specific environment and needs.
 
 For instance, it might be necessary to customize the image tags that are utilized using the
-`image` setting:
+`controllerImages` setting:
 
 ```yaml
-image:
-  image: {{< param operatorRepository >}}:{{< param postgresOperatorTag >}}
+controllerImages:
+  cluster: {{< param operatorRepository >}}:{{< param postgresOperatorTag >}}
 ```
 
 Please note that the `values.yaml` file is located in `helm/install`.
