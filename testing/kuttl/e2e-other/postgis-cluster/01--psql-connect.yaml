@@ -30,7 +30,8 @@ spec:
             - -c
             - |
               # Ensure PostGIS version is set
-              GIS_VERSION = ${GIS_VERSION:-notset}
+              GIS_VERSION=${KUTTL_POSTGIS_VERSION}
+              GIS_VERSION=${GIS_VERSION:-notset}
 
               # check version
               RESULT=$(psql -c "DO \$\$
