@@ -87,12 +87,66 @@ field. For example, set `SHOW_GRAVATAR_IMAGE` to `False` to disable automatic pr
           SHOW_GRAVATAR_IMAGE: False
 ```
 
-You can also add a Secret containing the pgAdmin `LDAP_BIND_PASSWORD` through the
-[`userInterface.pgAdmin.config.ldapBindPassword`]
-({{< relref "/references/crd#postgresclusterspecuserinterfacepgadminconfigldapbindpassword" >}})
-field. This is one of the configuration settings needed to enable LDAP authentication
-for pgAdmin and is handled separately from the other pgAdmin settings to allow for
-proper storage of the sensitive value in a Secret rather than a ConfigMap.
+You can also mount files to `/etc/pgadmin/conf.d` inside the pgAdmin container using
+[projected volumes](https://kubernetes.io/docs/concepts/storage/projected-volumes/).
+The following mounts `useful.txt` of Secret `mysecret` to `/etc/pgadmin/conf.d/useful.txt`:
+
+```yaml
+  userInterface:
+    pgAdmin:
+      config:
+        files:
+        - secret:
+            name: mysecret
+            items:
+            - key: useful.txt
+        - configMap:
+            name: myconfigmap
+            optional: false
+```
+
+### Kerberos Configuration
+
+You can configure pgAdmin to [authenticate its users using Kerberos](https://www.pgadmin.org/docs/pgadmin4/latest/kerberos.html)
+SPNEGO. In addition to setting `AUTHENTICATION_SOURCES` and `KRB_APP_HOST_NAME`, you need to
+enable `KERBEROS_AUTO_CREATE_USER` and mount a `krb5.conf` and a keytab file:
+
+```yaml
+  userInterface:
+    pgAdmin:
+      config:
+        settings:
+          AUTHENTICATION_SOURCES: ['kerberos']
+          KERBEROS_AUTO_CREATE_USER: True
+          KRB_APP_HOST_NAME: my.service.principal.name.local # without HTTP class
+          KRB_KTNAME: /etc/pgadmin/conf.d/krb5.keytab
+        files:
+        - secret:
+            name: mysecret
+            items:
+            - key: krb5.conf
+            - key: krb5.keytab
+```
+
+### LDAP Configuration
+
+You can configure pgAdmin to [authenticate its users using LDAP](https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html)
+passwords. In addition to setting `AUTHENTICATION_SOURCES` and `LDAP_SERVER_URI`, you need to
+enable `LDAP_AUTO_CREATE_USER`:
+
+```yaml
+  userInterface:
+    pgAdmin:
+      config:
+        settings:
+          AUTHENTICATION_SOURCES: ['ldap']
+          LDAP_AUTO_CREATE_USER: True
+          LDAP_SERVER_URI: ldaps://my.ds.example.com
+```
+
+When using a dedicated user to bind, you can store the `LDAP_BIND_PASSWORD` setting in a Secret and
+reference it through the [`ldapBindPassword`]({{< relref "/references/crd#postgresclusterspecuserinterfacepgadminconfigldapbindpassword" >}})
+field:
 
 ```yaml
   userInterface:
@@ -101,26 +155,6 @@ proper storage of the sensitive value in a Secret rather than a ConfigMap.
         ldapBindPassword:
           name: ldappass
           key: mypw
-```
-
-Lastly, you can also use Secrets and ConfigMaps to mount required files to your
-pgAdmin container through the
-[`userInterface.pgAdmin.config.files`]
-({{< relref "/references/crd#postgresclusterspecuserinterfacepgadminconfigfilesindex" >}})
-field. The contents of the Secrets and ConfigMaps defined here are mounted at
-`/etc/pgadmin/conf.d` and can be referenced from various pgAdmin configuration
-settings as needed.
-
-```yaml
-  userInterface:
-    pgAdmin:
-      config:
-        files:
-          - secret:
-              name: mysecret
-          - configMap:
-              name: myconfigmap
-              optional: false
 ```
 
 ## Deleting pgAdmin 4
