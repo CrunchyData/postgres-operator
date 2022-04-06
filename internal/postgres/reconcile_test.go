@@ -221,6 +221,7 @@ initContainers:
     [ "${postgres_data_version}" = "${expected_major_version}" ]
     safelink "${pgwal_directory}" "${postgres_data_directory}/pg_wal"
     results 'wal directory' "$(realpath "${postgres_data_directory}/pg_wal")"
+    rm -f "${postgres_data_directory}/recovery.signal"
   - startup
   - "11"
   - /pgdata/pg11_wal

@@ -410,6 +410,13 @@ func ReplicaCreateCommand(
 			"--stanza=" + DefaultStanzaName,
 			"--repo=" + strings.TrimPrefix(repoName, "repo"),
 			"--link-map=pg_wal=" + postgres.WALDirectory(cluster, instance),
+
+			// Do not create a recovery signal file on PostgreSQL v12 or later;
+			// Patroni creates a standby signal file which takes precedence.
+			// Patroni manages recovery.conf prior to PostgreSQL v12.
+			// - https://github.com/pgbackrest/pgbackrest/blob/release/2.38/src/command/restore/restore.c#L1824
+			// - https://www.postgresql.org/docs/12/runtime-config-wal.html
+			"--type=standby",
 		}
 	}
 

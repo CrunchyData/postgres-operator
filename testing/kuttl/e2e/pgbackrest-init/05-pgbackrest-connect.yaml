@@ -1,0 +1,25 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+- script: |
+    # Assumes the cluster only has a single replica
+    NEW_REPLICA=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=init-pgbackrest,
+            postgres-operator.crunchydata.com/role=replica'
+      )
+
+    LIST=$(
+    kubectl exec --namespace "${NAMESPACE}" "${NEW_REPLICA}" -- \
+      ls /pgdata/pg${KUTTL_PG_VERSION}/
+    )
+
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    {
+      !(contains "${LIST}" 'recovery.signal')
+    } || {
+      echo >&2 'Signal file(s) found'
+      echo "${LIST}"
+      exit 1
+    }
