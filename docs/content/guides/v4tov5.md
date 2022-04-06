@@ -121,7 +121,8 @@ spec:
       pgBackRestVolume:
         pvcName: hippo-pgbr-repo
         directory: "hippo-backrest-shared-repo"
-      # only specify external WAL PVC if enabled in PGO v4 cluster
+      # Only specify external WAL PVC if enabled in PGO v4 cluster. If enabled
+      # in v4, a WAL volume must be defined for the v5 cluster as well.
       # pgWALVolume:
       #  pvcName: hippo-jgut-wal
 ```
