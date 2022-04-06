@@ -803,7 +803,7 @@ func TestReplicaCreateCommand(t *testing.T) {
 
 		assert.DeepEqual(t, ReplicaCreateCommand(cluster, instance), []string{
 			"pgbackrest", "restore", "--delta", "--stanza=db", "--repo=2",
-			"--link-map=pg_wal=/pgdata/pg0_wal",
+			"--link-map=pg_wal=/pgdata/pg0_wal", "--type=standby",
 		})
 	})
 
@@ -816,7 +816,7 @@ func TestReplicaCreateCommand(t *testing.T) {
 
 		assert.DeepEqual(t, ReplicaCreateCommand(cluster, instance), []string{
 			"pgbackrest", "restore", "--delta", "--stanza=db", "--repo=7",
-			"--link-map=pg_wal=/pgdata/pg0_wal",
+			"--link-map=pg_wal=/pgdata/pg0_wal", "--type=standby",
 		})
 	})
 }
