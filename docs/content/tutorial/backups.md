@@ -9,7 +9,7 @@ An important part of a healthy Postgres cluster is maintaining backups. PGO opti
 
 - Setting automatic backup schedules and retention policies
 - Backing data up to multiple locations
-  - Support for backup storage in Kubernetes, AWS S3 (or S3-compatible systems like MinIO), Google Cloud Storage (GCS), and Azure Blog Storage
+  - Support for backup storage in Kubernetes, AWS S3 (or S3-compatible systems like MinIO), Google Cloud Storage (GCS), and Azure Blob Storage
 - Taking one-off / ad hoc backups
 - Performing a "point-in-time-recovery"
 - Cloning data to a new instance
