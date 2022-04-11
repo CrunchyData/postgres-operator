@@ -41,7 +41,7 @@ set an image pull secret on the installation manifest.
 
 For example, to set up an image pull secret using the [Kustomize install method]({{< relref "installation/_index.md" >}})
 to install PGO from the [Crunchy Data Customer Portal](https://access.crunchydata.com/), you can set
-the following in the `install/bases/kustomization.yaml` manifest:
+the following in the `kustomize/install/default/kustomization.yaml` manifest:
 
 ```yaml
 images:
