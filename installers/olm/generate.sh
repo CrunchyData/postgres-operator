@@ -11,18 +11,29 @@ bundle_directory="bundles/${DISTRIBUTION}"
 project_directory="projects/${DISTRIBUTION}"
 go_api_directory=$(cd ../../pkg/apis && pwd)
 
-# TODO(tjmoore4): package_name and project_name are kept separate to maintain
-# expected names in all projects. This could be consolidated in the future.
+# The 'operators.operatorframework.io.bundle.package.v1' package name for each
+# bundle (updated for the 'certified' and 'marketplace' bundles).
 package_name='postgresql'
+
+# The project name used by operator-sdk for initial bundle generation.
+project_name='postgresoperator'
+
+# The prefix for the 'clusterserviceversion.yaml' file.
 # Per OLM guidance, the filename for the clusterserviceversion.yaml must be prefixed
 # with the Operator's package name for the 'redhat' and 'marketplace' bundles.
 # https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/troubleshooting.md#get-supported-versions
-project_name='postgresoperator'
+file_name='postgresoperator'
 case "${DISTRIBUTION}" in
 	# https://redhat-connect.gitbook.io/certified-operator-guide/appendix/what-if-ive-already-published-a-community-operator
-	'redhat') package_name='crunchy-postgres-operator' ;;
+	'redhat') 
+		file_name='crunchy-postgres-operator'
+		package_name='crunchy-postgres-operator'
+		;;
 	# https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#bundle-structure
-	'marketplace') package_name='crunchy-postgres-operator-rhmp' ;;
+	'marketplace') 
+		file_name='crunchy-postgres-operator-rhmp'
+		package_name='crunchy-postgres-operator-rhmp'
+		;;
 esac
 
 operator_yamls=$(kubectl kustomize "config/${DISTRIBUTION}")
@@ -115,14 +126,6 @@ yq > /dev/null <<< "${operator_roles}" --exit-status 'length == 1' ||
 
 csv_stem=$(yq --raw-output '.projectName' "${project_directory}/PROJECT")
 
-# marketplace and redhat require different naming patters than community
-if [ ${DISTRIBUTION} == 'marketplace' ] || [ ${DISTRIBUTION} == 'redhat' ]; then
-	mv "${project_directory}/config/manifests/bases/${project_name}.clusterserviceversion.yaml" \
-	"${project_directory}/config/manifests/bases/${package_name}.clusterserviceversion.yaml" 
-	
-	csv_stem=${package_name}
-fi
-
 crd_descriptions=$(yq '.spec.customresourcedefinitions.owned' \
 "${project_directory}/config/manifests/bases/${csv_stem}.clusterserviceversion.yaml")
 
@@ -135,7 +138,7 @@ crd_examples=$(yq <<< "${operator_yamls}" --slurp --argjson gvks "${crd_gvks}" '
 	IN({ apiVersion, kind }; $gvks | .[])
 ))')
 
-yq --yaml-roundtrip < bundle.csv.yaml > "${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml" \
+yq --yaml-roundtrip < bundle.csv.yaml > "${bundle_directory}/manifests/${file_name}.clusterserviceversion.yaml" \
 	--argjson deployment "$(yq <<< "${operator_deployments}" 'first')" \
 	--argjson account "$(yq <<< "${operator_accounts}" 'first | .metadata.name')" \
 	--argjson rules "$(yq <<< "${operator_roles}" 'first | .rules')" \
@@ -168,29 +171,32 @@ case "${DISTRIBUTION}" in
 		yq --in-place --yaml-roundtrip \
 		'
 			.metadata.annotations.certified = "true" |
+			.metadata.annotations["containerImage"] = "registry.connect.redhat.com/crunchydata/postgres-operator@sha256:<update_SHA_value>" |
+			.metadata.annotations["containerImage"] = "registry.connect.redhat.com/crunchydata/postgres-operator@sha256:<update_SHA_value>" |
 		.' \
-			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
+			"${bundle_directory}/manifests/${file_name}.clusterserviceversion.yaml"
 
   		# Finally, add related images. NOTE: SHA values will need to be updated
 		# -https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/troubleshooting.md#digest-pinning
-		cat bundle.relatedImages.yaml >> "${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
+		cat bundle.relatedImages.yaml >> "${bundle_directory}/manifests/${file_name}.clusterserviceversion.yaml"
 		;;
 	'marketplace')
 		# Annotations needed when targeting Red Hat Marketplace
 		# https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/ci-pipeline.md#bundle-structure
 		yq --in-place --yaml-roundtrip \
-				--arg package_url "https://marketplace.redhat.com/en-us/operators/${package_name}" \
+				--arg package_url "https://marketplace.redhat.com/en-us/operators/${file_name}" \
 		'
+				.metadata.annotations["containerImage"] = "registry.connect.redhat.com/crunchydata/postgres-operator@sha256:<update_SHA_value>" |
 				.metadata.annotations["marketplace.openshift.io/remote-workflow"] =
 						"\($package_url)/pricing?utm_source=openshift_console" |
 				.metadata.annotations["marketplace.openshift.io/support-workflow"] =
 						"\($package_url)/support?utm_source=openshift_console" |
 		.' \
-			"${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
+			"${bundle_directory}/manifests/${file_name}.clusterserviceversion.yaml"
 
   		# Finally, add related images. NOTE: SHA values will need to be updated
 		# -https://github.com/redhat-openshift-ecosystem/certification-releases/blob/main/4.9/ga/troubleshooting.md#digest-pinning
-		cat bundle.relatedImages.yaml >> "${bundle_directory}/manifests/${csv_stem}.clusterserviceversion.yaml"
+		cat bundle.relatedImages.yaml >> "${bundle_directory}/manifests/${file_name}.clusterserviceversion.yaml"
 		;;
 esac
 

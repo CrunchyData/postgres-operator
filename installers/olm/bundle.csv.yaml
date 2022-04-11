@@ -55,7 +55,8 @@ spec:
       email: info@crunchydata.com
 
   # https://olm.operatorframework.io/docs/best-practices/common/
-  minKubeVersion: 1.18.0
+  # Note: The minKubeVersion must correspond to the lowest supported OCP version
+  minKubeVersion: 1.19.0
   maturity: stable
   # https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.18.2/doc/design/how-to-update-operators.md#replaces--channels
   replaces: '' # generate.sh
