@@ -19,6 +19,62 @@ tests. Consult the [technical requirements][hub-contrib] when making changes.
 
 <!-- registry.connect.redhat.com/crunchydata/postgres-operator-bundle -->
 
+## Notes
+
+### v5 Versions per Repository
+
+Community: https://github.com/k8s-operatorhub/community-operators/tree/main/operators/postgresql
+
+5.0.2
+5.0.3
+5.0.4
+5.0.5
+5.1.0
+
+Community Prod: https://github.com/redhat-openshift-ecosystem/community-operators-prod/tree/main/operators/postgresql
+
+5.0.2
+5.0.3
+5.0.4
+5.0.5
+5.1.0
+
+Certified: https://github.com/redhat-openshift-ecosystem/certified-operators/tree/main/operators/crunchy-postgres-operator
+
+5.0.4
+5.0.5
+5.1.0
+
+Marketplace: https://github.com/redhat-openshift-ecosystem/redhat-marketplace-operators/tree/main/operators/crunchy-postgres-operator-rhmp
+
+5.0.4
+5.0.5
+5.1.0
+
+### Issues Encountered
+
+We hit various issues with 5.1.0 where the 'replaces' name, set in the clusterserviceversion.yaml, didn't match the
+expected names found for all indexes. Previously, we set the 'com.redhat.openshift.versions' annotation to "v4.6-v4.9".
+The goal for this setting was to limit the upper bound of supported versions for a particulary PGO release.
+The problem with this was, at the time of the 5.1.0 release, OCP 4.10 had been just been released. This meant that the
+5.0.5 bundle did not exist in the OCP 4.10 index. The solution presented by Red Hat was to use the 'skips' clause for
+the 5.1.0 release to remedy the immediate problem, but then go back to using an unbounded setting for subsequent
+releases.
+
+For the certified, marketplace and community repositories, this strategy of using 'skips' instead of replaces worked as
+expected. However, for the production community operator bundle, we were seeing a failure that required adding an
+additional 'replaces' value of 5.0.4 in addition to the 5.0.5 'skips' value. While this allowed the PR to merge, it
+seems at odds with the behavior at the other repos.
+
+For more information on the use of 'skips' and 'replaces', please see:
+https://olm.operatorframework.io/docs/concepts/olm-architecture/operator-catalog/creating-an-update-graph/
+
+
+Another version issue encountered was related to our attempt to both support OCP v4.6 (which is an Extended Update
+Support (EUS) release) while also limiting Kubernetes to 1.20+. The issue with this is that OCP 4.6 utilizes k8s 1.19
+and the kube minversion validation was in fact limiting the OCP version as well. Our hope was that those setting would
+be treated independently, but that was unfortunately not the case. The fix for this was to move this kube version to the
+1.19, despite its being released 3rd quarter of 2020 with 1 year of patch support.
 
 ## Testing
 
@@ -52,3 +108,11 @@ docker push "$INDEX_IMAGE"
 operator-sdk cleanup postgresql --namespace="$NAMESPACE"
 kubectl -n "$NAMESPACE" delete operatorgroup olm-operator-group
 ```
+
+### Post Bundle Generation
+
+After generating and testing the OLM bundles, there are two manual steps.
+
+1. Update the image SHA values (denoted with '<update_SHA_value>', required for both the Red Hat 'Certified' and
+'Marketplace' bundles)
+2. Update the 'description.md' file to indicate which OCP versions this release of PGO was tested against.
