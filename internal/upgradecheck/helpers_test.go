@@ -140,6 +140,9 @@ func setupLogCapture(ctx context.Context) (context.Context, *[]string) {
 }
 
 // setupNamespace creates a namespace that will be deleted by t.Cleanup.
+// For upgradechecking, this namespace is set to `postgres-operator`,
+// which sometimes is created by other parts of the testing apparatus,
+// cf., the createnamespace call in `make check-envtest-existing`.
 // When creation fails, it calls t.Fatal. The caller may delete the namespace
 // at any time.
 func setupNamespace(t testing.TB, cc crclient.Client) {
@@ -149,6 +152,12 @@ func setupNamespace(t testing.TB, cc crclient.Client) {
 	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
 
 	ctx := context.Background()
+	exists := &corev1.Namespace{}
+	assert.NilError(t, crclient.IgnoreNotFound(
+		cc.Get(ctx, crclient.ObjectKeyFromObject(ns), exists)))
+	if exists.Name != "" {
+		return
+	}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, crclient.IgnoreNotFound(cc.Delete(ctx, ns))) })
 }
