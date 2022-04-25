@@ -1,0 +1,25 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+labels:
+    postgres-operator.crunchydata.com/cluster: delete-not-running
+---
+apiVersion: apps/v1
+kind: StatefulSet
+labels:
+    postgres-operator.crunchydata.com/cluster: delete-not-running
+---
+apiVersion: v1
+kind: Pod
+labels:
+    postgres-operator.crunchydata.com/cluster: delete-not-running
+---
+apiVersion: v1
+kind: Service
+labels:
+    postgres-operator.crunchydata.com/cluster: delete-not-running
+---
+apiVersion: v1
+kind: Secret
+labels:
+    postgres-operator.crunchydata.com/cluster: delete-not-running
