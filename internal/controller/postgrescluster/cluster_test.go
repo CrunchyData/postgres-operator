@@ -20,10 +20,7 @@ package postgrescluster
 
 import (
 	"context"
-	"os"
-	"strings"
 	"testing"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -36,7 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -598,83 +594,6 @@ func TestCustomAnnotations(t *testing.T) {
 			}
 		}
 	})
-}
-
-func TestContainerSecurityContext(t *testing.T) {
-	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.Skip("Test requires pods to be created")
-	}
-
-	ctx := context.Background()
-	env, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 1)
-
-	reconciler := &Reconciler{
-		Client:   cc,
-		Owner:    client.FieldOwner(t.Name()),
-		Recorder: new(record.FakeRecorder),
-		Tracer:   otel.Tracer(t.Name()),
-	}
-
-	var err error
-	reconciler.PodExec, err = newPodExecutor(env.Config)
-	assert.NilError(t, err)
-
-	cluster := testCluster()
-	cluster.Namespace = setupNamespace(t, cc).Name
-
-	assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
-	t.Cleanup(func() {
-		// Remove finalizers, if any, so the namespace can terminate.
-		assert.Check(t, client.IgnoreNotFound(
-			reconciler.Client.Patch(ctx, cluster, client.RawPatch(
-				client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
-	})
-
-	pods := &corev1.PodList{}
-	assert.NilError(t, wait.Poll(time.Second, Scale(2*time.Minute), func() (bool, error) {
-		// Reconcile the cluster
-		result, err := reconciler.Reconcile(ctx, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(cluster),
-		})
-		if err != nil {
-			return false, err
-		}
-		if result.Requeue {
-			return false, nil
-		}
-
-		err = reconciler.Client.List(ctx, pods,
-			client.InNamespace(cluster.Namespace),
-			client.MatchingLabels{
-				naming.LabelCluster: cluster.Name,
-			})
-		if err != nil {
-			return false, err
-		}
-
-		// Can expect 4 pods from a cluster
-		// instance, repo-host, pgbouncer, backup(s)
-		if len(pods.Items) < 4 {
-			return false, nil
-		}
-		return true, nil
-	}))
-
-	// Once we have a pod list with pods of each type, check that the
-	// pods containers have the expected Security Context options
-	for _, pod := range pods.Items {
-		for _, container := range pod.Spec.Containers {
-			assert.Equal(t, *container.SecurityContext.Privileged, false)
-			assert.Equal(t, *container.SecurityContext.ReadOnlyRootFilesystem, true)
-			assert.Equal(t, *container.SecurityContext.AllowPrivilegeEscalation, false)
-		}
-		for _, initContainer := range pod.Spec.InitContainers {
-			assert.Equal(t, *initContainer.SecurityContext.Privileged, false)
-			assert.Equal(t, *initContainer.SecurityContext.ReadOnlyRootFilesystem, true)
-			assert.Equal(t, *initContainer.SecurityContext.AllowPrivilegeEscalation, false)
-		}
-	}
 }
 
 func TestGenerateClusterPrimaryService(t *testing.T) {
