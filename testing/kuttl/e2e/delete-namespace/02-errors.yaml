@@ -1,30 +1,36 @@
 ---
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
+namespace: kuttl-test-delete-namespace
 labels:
     postgres-operator.crunchydata.com/cluster: delete
 ---
 apiVersion: apps/v1
 kind: StatefulSet
+namespace: kuttl-test-delete-namespace
 labels:
     postgres-operator.crunchydata.com/cluster: delete
 ---
 apiVersion: v1
 kind: Pod
+namespace: kuttl-test-delete-namespace
 labels:
     postgres-operator.crunchydata.com/cluster: delete
 ---
 apiVersion: v1
 kind: Service
+namespace: kuttl-test-delete-namespace
 labels:
     postgres-operator.crunchydata.com/cluster: delete
 ---
 apiVersion: v1
 kind: Secret
+namespace: kuttl-test-delete-namespace
 labels:
     postgres-operator.crunchydata.com/cluster: delete
 ---
 apiVersion: v1
 kind: ConfigMap
+namespace: kuttl-test-delete-namespace
 labels:
     postgres-operator.crunchydata.com/cluster: delete

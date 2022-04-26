@@ -23,3 +23,8 @@ apiVersion: v1
 kind: Secret
 labels:
     postgres-operator.crunchydata.com/cluster: delete-not-running
+---
+apiVersion: v1
+kind: ConfigMap
+labels:
+    postgres-operator.crunchydata.com/cluster: delete-not-running
