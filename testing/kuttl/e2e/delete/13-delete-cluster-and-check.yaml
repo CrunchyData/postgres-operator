@@ -1,0 +1,36 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Get the names of the current primary and replica
+  # Delete the cluster
+  # Get the delete event for the pods
+  # Verify that the replica delete event is greater than the primary delete event
+  - script: |
+      PRIMARY=$(
+        kubectl get pods --namespace="${NAMESPACE}" \
+          --selector='postgres-operator.crunchydata.com/role=master' \
+          --output=jsonpath={.items..metadata.name}
+      )
+
+      REPLICA=$(
+        kubectl get pods --namespace="${NAMESPACE}" \
+          --selector='postgres-operator.crunchydata.com/role=replica' \
+          --output=jsonpath={.items..metadata.name}
+      )
+
+      kubectl delete postgrescluster -n "${NAMESPACE}" delete-switchover
+
+      KILLING_PRIMARY_TIMESTAMP=$(
+        kubectl get events --namespace="${NAMESPACE}" \
+          --field-selector reason="Killing",involvedObject.fieldPath="spec.containers{database}",involvedObject.name="${PRIMARY}" \
+          --output=jsonpath={.items..firstTimestamp}
+      )
+      
+      KILLING_REPLICA_TIMESTAMP=$(
+        kubectl get events --namespace="${NAMESPACE}" \
+          --field-selector reason="Killing",involvedObject.fieldPath="spec.containers{database}",involvedObject.name="${REPLICA}" \
+          --output=jsonpath={.items..firstTimestamp}
+      )
+
+      if [[ "${KILLING_PRIMARY_TIMESTAMP}" < "${KILLING_REPLICA_TIMESTAMP}" ]]; then exit 1; fi
