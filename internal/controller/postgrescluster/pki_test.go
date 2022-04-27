@@ -25,16 +25,13 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -43,6 +40,11 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// TestReconcileCerts tests the proper reconciliation of the root ca certificate
+// secret, leaf certificate secrets and the updates that occur when updates are
+// made to the cluster certificates generally. For the removal of ownership
+// references and deletion of the root CA cert secret, a separate Kuttl test is
+// used due to the need for proper garbage collection.
 func TestReconcileCerts(t *testing.T) {
 	// Garbage collector cleans up test resources before the test completes
 	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
@@ -137,38 +139,6 @@ func TestReconcileCerts(t *testing.T) {
 			}
 		})
 
-		t.Run("remove owner references after deleting first cluster", func(t *testing.T) {
-
-			if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-				t.Skip("requires a running garbage collection controller")
-			}
-
-			err = tClient.Get(ctx, client.ObjectKeyFromObject(cluster1), cluster1)
-			assert.NilError(t, err)
-
-			err = tClient.Delete(ctx, cluster1)
-			assert.NilError(t, err)
-
-			err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
-				err := tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
-				return len(rootSecret.ObjectMeta.OwnerReferences) == 1, err
-			})
-			assert.NilError(t, err)
-
-			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 1, "owner reference not removed")
-
-			expectedOR := metav1.OwnerReference{
-				APIVersion: "postgres-operator.crunchydata.com/v1beta1",
-				Kind:       "PostgresCluster",
-				Name:       "hippocluster2",
-				UID:        cluster2.UID,
-			}
-
-			if len(rootSecret.ObjectMeta.OwnerReferences) > 0 {
-				assert.Equal(t, rootSecret.ObjectMeta.OwnerReferences[0], expectedOR)
-			}
-		})
-
 		t.Run("root certificate is returned correctly", func(t *testing.T) {
 
 			fromSecret, err := getCertFromSecret(ctx, tClient, naming.RootCertSecret, namespace, "root.crt")
@@ -200,28 +170,6 @@ func TestReconcileCerts(t *testing.T) {
 
 			// check that the returned cert matches the cert from the secret
 			assert.DeepEqual(t, fromSecret, returnedRoot.Certificate)
-		})
-
-		t.Run("root CA secret is deleted after final cluster is deleted", func(t *testing.T) {
-
-			if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-				t.Skip("requires a running garbage collection controller")
-			}
-
-			err = tClient.Get(ctx, client.ObjectKeyFromObject(cluster2), cluster2)
-			assert.NilError(t, err)
-
-			err = tClient.Delete(ctx, cluster2)
-			assert.NilError(t, err)
-
-			err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
-				if err := tClient.Get(ctx,
-					client.ObjectKeyFromObject(rootSecret), rootSecret); apierrors.ReasonForError(err) == metav1.StatusReasonNotFound {
-					return true, err
-				}
-				return false, nil
-			})
-			assert.Assert(t, apierrors.IsNotFound(err))
 		})
 
 	})
