@@ -1,0 +1,22 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: delete-namespace
+  namespace: kuttl-test-delete-namespace
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 2
+      replicas: 2
+      updatedReplicas: 2
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  namespace: kuttl-test-delete-namespace
+  labels:
+    postgres-operator.crunchydata.com/cluster: delete-namespace
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+status:
+  succeeded: 1
