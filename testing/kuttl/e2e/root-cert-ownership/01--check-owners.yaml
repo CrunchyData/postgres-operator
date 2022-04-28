@@ -1,0 +1,18 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Get a list of the current owners of the root ca cert secret and verify that
+  # both owners are listed.
+  - script: |
+      for i in {1..5}; do
+          sleep 1 # this sleep allows time for the owner reference list to be updated
+          CURRENT_OWNERS=$(kubectl --namespace="${NAMESPACE}" get secret \
+            pgo-root-cacert -o jsonpath='{.metadata.ownerReferences[*].name}')
+          # If owner1 and owner2 are both listed, exit successfully
+          if [[ "$CURRENT_OWNERS" == *"owner1"* ]] && [[ "$CURRENT_OWNERS" == *"owner2"* ]]; then
+              exit 0
+          fi
+      done
+      # proper ownership references were not found, so the test fails
+      exit 1
