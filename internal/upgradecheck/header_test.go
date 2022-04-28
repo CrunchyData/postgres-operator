@@ -1,3 +1,6 @@
+//go:build envtest
+// +build envtest
+
 package upgradecheck
 
 /*
@@ -18,146 +21,32 @@ package upgradecheck
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
-	"github.com/wojas/genericr"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/discovery"
 
 	// Google Kubernetes Engine / Google Cloud Platform authentication provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-type fakeClientWithError struct {
-	crclient.Client
-	errorType string
-}
-
-func (f *fakeClientWithError) Get(ctx context.Context, key types.NamespacedName, obj crclient.Object) error {
-	switch f.errorType {
-	case "get error":
-		return fmt.Errorf("get error")
-	default:
-		return f.Client.Get(ctx, key, obj)
-	}
-}
-
-// TODO: PatchType is not supported currently by fake
-// - https://github.com/kubernetes/client-go/issues/970
-// Once that gets fixed, we can test without envtest
-func (f *fakeClientWithError) Patch(ctx context.Context, obj crclient.Object,
-	patch crclient.Patch, opts ...crclient.PatchOption) error {
-	switch {
-	case f.errorType == "patch error":
-		return fmt.Errorf("patch error")
-	default:
-		return f.Client.Patch(ctx, obj, patch, opts...)
-	}
-}
-
-func (f *fakeClientWithError) List(ctx context.Context, objList crclient.ObjectList,
-	opts ...crclient.ListOption) error {
-	switch f.errorType {
-	case "list error":
-		return fmt.Errorf("list error")
-	default:
-		return f.Client.List(ctx, objList, opts...)
-	}
-}
-
-func setupDeploymentID(t *testing.T) string {
-	t.Helper()
-	deploymentID = string(uuid.NewUUID())
-	return deploymentID
-}
-
-func setupFakeClientWithPGOScheme(t *testing.T, includeCluster bool) crclient.Client {
-	t.Helper()
-	pgoScheme, err := runtime.CreatePostgresOperatorScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if includeCluster {
-		pc := &v1beta1.PostgresClusterList{
-			Items: []v1beta1.PostgresCluster{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "hippo",
-					},
-				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "elephant",
-					},
-				},
-			},
-		}
-		return fake.NewClientBuilder().WithScheme(pgoScheme).WithLists(pc).Build()
-	}
-	return fake.NewClientBuilder().WithScheme(pgoScheme).Build()
-}
-
-func setupVersionServer(t *testing.T, works bool) (version.Info, *httptest.Server) {
-	t.Helper()
-	expect := version.Info{
-		Major:     "1",
-		Minor:     "22",
-		GitCommit: "v1.22.2",
-	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
-		req *http.Request) {
-		if works {
-			output, _ := json.Marshal(expect)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			// We don't need to check the error output from this
-			_, _ = w.Write(output)
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	return expect, server
-}
-
-func setupLogCapture(ctx context.Context) (context.Context, *[]string) {
-	calls := []string{}
-	testlog := genericr.New(func(input genericr.Entry) {
-		calls = append(calls, input.Message)
-	})
-	return logging.NewContext(ctx, testlog), &calls
-}
-
 func TestGenerateHeader(t *testing.T) {
-	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.Skip("Server-Side Apply required")
-	}
 	setupDeploymentID(t)
 	ctx := context.Background()
 	env := &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
 	}
 	cfg, err := env.Start()
 	assert.NilError(t, err)
@@ -167,6 +56,8 @@ func TestGenerateHeader(t *testing.T) {
 	assert.NilError(t, err)
 	cc, err := crclient.New(cfg, crclient.Options{Scheme: pgoScheme})
 	assert.NilError(t, err)
+
+	setupNamespace(t, cc)
 
 	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
 	assert.NilError(t, err)
@@ -248,9 +139,6 @@ func TestGenerateHeader(t *testing.T) {
 }
 
 func TestEnsureID(t *testing.T) {
-	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.Skip("Server-Side Apply required")
-	}
 	ctx := context.Background()
 	env := &envtest.Environment{}
 	config, err := env.Start()
@@ -259,6 +147,8 @@ func TestEnsureID(t *testing.T) {
 
 	cc, err := crclient.New(config, crclient.Options{})
 	assert.NilError(t, err)
+
+	setupNamespace(t, cc)
 
 	t.Run("success, no id set in mem or configmap", func(t *testing.T) {
 		deploymentID = ""
@@ -392,9 +282,6 @@ func TestEnsureID(t *testing.T) {
 }
 
 func TestManageUpgradeCheckConfigMap(t *testing.T) {
-	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.Skip("Server-Side Apply required")
-	}
 	ctx := context.Background()
 	env := &envtest.Environment{}
 	config, err := env.Start()
@@ -403,6 +290,8 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 
 	cc, err := crclient.New(config, crclient.Options{})
 	assert.NilError(t, err)
+
+	setupNamespace(t, cc)
 
 	t.Run("no namespace given", func(t *testing.T) {
 		ctx, calls := setupLogCapture(ctx)
@@ -526,9 +415,6 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 }
 
 func TestApplyConfigMap(t *testing.T) {
-	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.Skip("Server-Side Apply required")
-	}
 	ctx := context.Background()
 	env := &envtest.Environment{}
 	config, err := env.Start()
@@ -537,6 +423,8 @@ func TestApplyConfigMap(t *testing.T) {
 
 	cc, err := crclient.New(config, crclient.Options{})
 	assert.NilError(t, err)
+
+	setupNamespace(t, cc)
 
 	t.Run("successful create", func(t *testing.T) {
 		cmRetrieved := &corev1.ConfigMap{}
