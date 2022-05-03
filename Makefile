@@ -131,15 +131,29 @@ build-crunchy-postgres-exporter:
 $(PGOROOT)/build/%/Dockerfile:
 	$(error No Dockerfile found for $* naming pattern: [$@])
 
-%-img-build: pgo-base-$(IMGBUILDER) build-% $(PGOROOT)/build/%/Dockerfile
+crunchy-postgres-exporter-img-build: pgo-base-$(IMGBUILDER) build-crunchy-postgres-exporter $(PGOROOT)/build/crunchy-postgres-exporter/Dockerfile
 	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/build/$*/Dockerfile \
-		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
+		-f $(PGOROOT)/build/crunchy-postgres-exporter/Dockerfile \
+		-t $(PGO_IMAGE_PREFIX)/crunchy-postgres-exporter:$(PGO_IMAGE_TAG) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg BASEVER=$(PGO_VERSION) \
 		--build-arg PACKAGER=$(PACKAGER) \
 		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
+		$(PGOROOT)
+
+postgres-operator-img-build: build-postgres-operator $(PGOROOT)/build/postgres-operator/Dockerfile
+	$(IMGCMDSTEM) \
+		-f $(PGOROOT)/build/postgres-operator/Dockerfile \
+		-t $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) \
+		--build-arg BASE_IMAGE_OS=$(BASE_IMAGE_OS) \
+		--build-arg PACKAGER=$(PACKAGER) \
+		--build-arg PGVERSION=$(PGO_PG_VERSION) \
+		--build-arg RELVER=$(PGO_VERSION) \
+		--build-arg DOCKERBASEREGISTRY=$(DOCKERBASEREGISTRY) \
+		--build-arg PACKAGER=$(PACKAGER) \
+		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
+		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		$(PGOROOT)
 
 %-img-buildah: %-img-build ;
