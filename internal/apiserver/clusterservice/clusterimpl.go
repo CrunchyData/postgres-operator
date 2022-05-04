@@ -41,6 +41,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
@@ -2328,6 +2329,10 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 	}
 	for i := range pods.Items {
 		p := &pods.Items[i]
+		// Filter out Evicted Pods, which have Status.Phase=Failed and Status.Reason=Evicted
+		if p.Status.Phase == "Failed" && p.Status.Reason == "Evicted" {
+			continue
+		}
 		d := msgs.ShowClusterPod{}
 		d.Name = p.Name
 		d.Phase = string(p.Status.Phase)
@@ -2351,6 +2356,10 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 	}
 	for i := range pods.Items {
 		p := &pods.Items[i]
+		// Filter out Evicted Pods, which have Status.Phase=Failed and Status.Reason=Evicted
+		if p.Status.Phase == "Failed" && p.Status.Reason == "Evicted" {
+			continue
+		}
 		d := msgs.ShowClusterPod{}
 		d.Name = p.Name
 		d.Phase = string(p.Status.Phase)
