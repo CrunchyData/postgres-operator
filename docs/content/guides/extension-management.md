@@ -39,7 +39,7 @@ where and how the DownwardAPI is mounted.
 
 ### `pgnodemx` Configuration
 
-To enable the `pdnodemx` extension, we need to set certain configurations. Luckily,
+To enable the `pgnodemx` extension, we need to set certain configurations. Luckily,
 this can all be done directly through the spec:
 
 ```yaml
