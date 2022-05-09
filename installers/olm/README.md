@@ -12,22 +12,4 @@ tests. Consult the [technical requirements][hub-contrib] when making changes.
 [OLM]: https://github.com/operator-framework/operator-lifecycle-manager
 [scorecard]: https://sdk.operatorframework.io/docs/scorecard/
 
-## Testing
-
-### Setup
-
-```
-make docker-package docker-verify
-```
-
-```
-pip3 install yq
-```
-
-### Testing
-
-```
-make install-olm # install OLM framework
-make package # build OLM package
-make verify # verify OLM package
-```
+**_NOTE:_** Removed make commands from this file because they no longer function as stated, but left the above info which contains historical and relevant information.

@@ -4,6 +4,7 @@ kind: ClusterServiceVersion
 metadata:
   name: 'postgresoperator.v${PGO_VERSION}'
   annotations:
+    operatorhub.io/ui-metadata-max-k8s-version: "1.21"
     certified: 'false'
     support: crunchydata.com
 
