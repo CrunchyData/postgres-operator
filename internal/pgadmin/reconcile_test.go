@@ -241,6 +241,8 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-startup
@@ -278,6 +280,8 @@ initContainers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-startup
@@ -473,6 +477,8 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-startup
@@ -514,6 +520,8 @@ initContainers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-startup

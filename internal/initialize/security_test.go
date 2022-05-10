@@ -97,8 +97,11 @@ func TestRestrictedSecurityContext(t *testing.T) {
 				"Containers must be required to run as non-root users.")
 		}
 
-		assert.Assert(t, sc.SeccompProfile == nil,
-			"The RuntimeDefault seccomp profile must be required, or allow specific additional profiles.")
+		if assert.Check(t, sc.SeccompProfile != nil) {
+			assert.Assert(t, sc.SeccompProfile.Type == "RuntimeDefault",
+				"Seccomp profile must be explicitly set to one of the allowed values.")
+		}
+
 	})
 
 	if assert.Check(t, sc.ReadOnlyRootFilesystem != nil) {
