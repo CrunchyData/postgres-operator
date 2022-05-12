@@ -44,9 +44,10 @@ to the Service, which follows the pattern `<clusterName>-pgadmin`, to port `5050
 kubectl port-forward svc/hippo-pgadmin 5050:5050
 ```
 
-Point your browser at `http://localhost:5050` and use your database username and
-password to log in. Access your username and password by getting the values from
-your user secret. In our case, the secret will be `hippo-pguser-hippo`:
+Point your browser at `http://localhost:5050` and you will be prompted to log in.
+Use your database username with `@pgo` appended and your database password.
+In our case, the pgAdmin username is `hippo@pgo` and the password is found in the
+user secret, `hippo-pguser-hippo`:
 
 ```
 PG_CLUSTER_USER_SECRET_NAME=hippo-pguser-hippo
@@ -54,8 +55,6 @@ PG_CLUSTER_USER_SECRET_NAME=hippo-pguser-hippo
 PGPASSWORD=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o go-template='{{.data.password | base64decode}}')
 PGUSER=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o go-template='{{.data.user | base64decode}}')
 ```
-
-Though the prompt says "email address", using your PostgreSQL username will work.
 
 ![pgAdmin 4 Login Page](/images/pgadmin4-login.png)
 
