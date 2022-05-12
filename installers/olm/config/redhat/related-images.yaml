@@ -25,3 +25,4 @@ spec:
             - { name: RELATED_IMAGE_POSTGRES_13_GIS_3.0, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>' }
             - { name: RELATED_IMAGE_POSTGRES_13_GIS_3.1, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>' }
             - { name: RELATED_IMAGE_POSTGRES_14_GIS_3.1, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>' }
+            - { name: RELATED_IMAGE_POSTGRES_14_GIS_3.2, value: 'registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_SHA_value>' }
