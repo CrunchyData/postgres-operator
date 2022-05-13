@@ -1,21 +1,9 @@
 ---
-title: "Upgrade"
+title: "Upgrading PGO v5 Using Kustomize"
 date:
 draft: false
 weight: 50
 ---
-
-# Overview
-
-Upgrading to a new version of PGO is typically as simple as following the various installation
-guides defined within the PGO documentation:
-
-- [PGO Kustomize Install]({{< relref "./kustomize.md" >}})
-- [PGO Helm Install]({{< relref "./helm.md" >}})
-
-However, when upgrading to or from certain versions of PGO, extra steps may be required in order
-to ensure a clean and successful upgrade.  This page will therefore document any additional
-steps that must be completed when upgrading PGO.
 
 ## Upgrading from PGO v5.0.0 Using Kustomize
 
@@ -63,7 +51,7 @@ Additionally, please be sure to update and apply all PostgresCluster custom reso
 with any applicable spec changes described in the
 [PGO v5.0.3 release notes]({{< relref "../releases/5.0.3.md" >}}).
 
-## Upgrading from PGO v5.0 to v5.1
+## Upgrading from PGO v5.0.x to v5.1.x
 
 Starting in PGO v5.1, new pgBackRest features available in version 2.38 are used
 that impact both the `crunchy-postgres` and `crunchy-pgbackrest` images. For any

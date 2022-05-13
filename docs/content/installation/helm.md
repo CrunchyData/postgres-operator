@@ -88,36 +88,7 @@ By default, PGO will automatically check for updates to itself and software comp
 
 PGO will check for updates upon startup and once every 24 hours. Any errors in checking will have no impact on PGO's operation. To disable the upgrade check, you can set the `disable_check_for_upgrades` value in the Helm chart to `true`.
 
-## Upgrade and Uninstall
-
-Once PGO has been installed, it can then be upgraded using the `helm upgrade` command.
-However, before running the `upgrade` command, any CustomResourceDefinitions (CRDs) must first be
-manually updated (this is specifically due to a [design decision in Helm v3][helm-crd-limits],
-in which any CRDs in the Helm chart are only applied when using the `helm install` command).
-
-[helm-crd-limits]: https://helm.sh/docs/topics/charts/#limitations-on-crds
-
-If you would like, before upgrading the CRDs, you can review the changes with
-`kubectl diff`. They can be verbose, so a pager like `less` may be useful:
-
-```shell
-kubectl diff -f helm/install/crds | less
-```
-
-Use the following command to update the CRDs using
-[server-side apply](https://kubernetes.io/docs/reference/using-api/server-side-apply/)
-_before_ running `helm upgrade`. The `--force-conflicts` flag tells Kubernetes that you recognize
-Helm created the CRDs during `helm install`.
-
-```shell
-kubectl apply --server-side --force-conflicts -f helm/install/crds
-```
-
-Then, perform the upgrade using Helm:
-
-```shell
-helm upgrade <name> -n <namespace> helm/install
-```
+## Uninstall
 
 To uninstall PGO, remove all your PostgresCluster objects, then use the `helm uninstall` command:
 
