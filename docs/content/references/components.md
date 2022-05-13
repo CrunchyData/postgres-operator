@@ -30,7 +30,8 @@ Note that for the 5.0.3 release and beyond, the Postgres containers were renamed
 |-----------|---------|------------------|------------------|
 | `crunchy-pgadmin4` | 4.30 | 5.1.0 | {{< param operatorVersion >}} |
 | `crunchy-pgbackrest` | 2.38 | 5.1.0 | {{< param operatorVersion >}} |
-| `crunchy-pgbackrest` | 2.36 | 5.0.4 | {{< param operatorVersionLatestRel5_0 >}} |
+| `crunchy-pgbackrest` | 2.38 | 5.0.5 | {{< param operatorVersionLatestRel5_0 >}} |
+| `crunchy-pgbackrest` | 2.36 | 5.0.4 | 5.0.5 |
 | `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
 | `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
 | `crunchy-pgbouncer` | 1.16.2 | 5.1.0 | {{< param operatorVersion >}} |
@@ -101,23 +102,29 @@ The table also lists the initial PGO version that the version of the extension i
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
 | `pgAudit` | 1.6.2 | 14  | 5.1.0 |
+| `pgAudit` | 1.6.2 | 14  | 5.0.6 |
 | `pgAudit` | 1.6.1 | 14  | 5.0.4 |
 | `pgAudit` | 1.6.0 | 14  | 5.0.3 |
 | `pgAudit` | 1.5.2 | 13  | 5.1.0 |
+| `pgAudit` | 1.5.2 | 13  | 5.0.6 |
 | `pgAudit` | 1.5.0 | 13  | 5.0.0 |
 | `pgAudit` | 1.4.3 | 12  | 5.1.0 |
 | `pgAudit` | 1.4.1 | 12  | 5.0.0 |
 | `pgAudit` | 1.3.4 | 11  | 5.1.0 |
+| `pgAudit` | 1.3.4 | 11  | 5.0.6 |
 | `pgAudit` | 1.3.2 | 11  | 5.0.0 |
 | `pgAudit` | 1.2.4 | 10  | 5.1.0 |
+| `pgAudit` | 1.2.4 | 10  | 5.0.6 |
 | `pgAudit` | 1.2.2 | 10  | 5.0.0 |
 | `pgAudit Analyze` | 1.0.8 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgAudit Analyze` | 1.0.7 | 13, 12, 11, 10  | 5.0.0 |
 | `pg_cron` | 1.3.1 | 14, 13, 12, 11, 10  | 5.0.0 |
 | `pg_partman` | 4.6.1 | 14, 13, 12, 11, 10  | 5.1.1 |
+| `pg_partman` | 4.6.1 | 14, 13, 12, 11, 10  | 5.0.6 |
 | `pg_partman` | 4.6.0 | 14, 13, 12, 11, 10  | 5.0.4 |
 | `pg_partman` | 4.5.1 | 13, 12, 11, 10  | 5.0.0 |
 | `pgnodemx` | 1.3.0 | 14, 13, 12, 11, 10  | 5.1.0 |
+| `pgnodemx` | 1.3.0 | 14, 13, 12, 11, 10  | 5.0.6 |
 | `pgnodemx` | 1.2.0 | 14, 13, 12, 11, 10  | 5.0.4 |
 | `pgnodemx` | 1.0.5 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgnodemx` | 1.0.4 | 13, 12, 11, 10  | 5.0.0 |
@@ -125,6 +132,7 @@ The table also lists the initial PGO version that the version of the extension i
 | `set_user` | 2.0.1 | 13, 12, 11, 10  | 5.0.2 |
 | `set_user` | 2.0.0 | 13, 12, 11, 10  | 5.0.0 |
 | `TimescaleDB` | 2.6.1 | 14, 13, 12  | 5.1.1 |
+| `TimescaleDB` | 2.6.1 | 14, 13, 12  | 5.0.6 |
 | `TimescaleDB` | 2.6.0 | 14, 13, 12  | 5.1.0 |
 | `TimescaleDB` | 2.5.0 | 14, 13, 12  | 5.0.3 |
 | `TimescaleDB` | 2.4.2 | 13, 12  | 5.0.3 |
@@ -141,6 +149,7 @@ The following extensions are available in the geospatially aware containers (`cr
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
 | `PostGIS` | 3.2 | 14  | 5.1.1 |
+| `PostGIS` | 3.2 | 14  | 5.0.6 |
 | `PostGIS` | 3.1 | 14, 13  | 5.0.0 |
 | `PostGIS` | 3.0 | 13, 12  | 5.0.0 |
 | `PostGIS` | 2.5 | 12, 11  | 5.0.0 |
