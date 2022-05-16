@@ -29,7 +29,7 @@ Please provide the following details:
 
 - Platform: (`Kubernetes`, `OpenShift`, `Rancher`, `GKE`, `EKS`, `AKS` etc.)
 - Platform Version: (e.g. `1.20.3`, `4.7.0`)
-- PGO Image Tag: (e.g. `ubi8-5.1.0-0`)
+- PGO Image Tag: (e.g. `ubi8-5.1.1-0`)
 - Postgres Version (e.g. `14`)
 - Storage: (e.g. `hostpath`, `nfs`, or the name of your storage class)
 
