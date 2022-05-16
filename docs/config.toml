@@ -35,6 +35,7 @@ imageCrunchyPGBackrestPrivate     = "registry.crunchydata.com/crunchydata/crunch
 imageCrunchyPGBouncer  = "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.16-3"
 imageCrunchyExporter   = "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.1.1-0"
 imageCrunchyPGAdmin    = "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-1"
+imageCrunchyPGUpgrade  = ""
 operatorRepository     = "registry.developers.crunchydata.com/crunchydata/postgres-operator"
 operatorRepositoryPrivate         = "registry.crunchydata.com/crunchydata/postgres-operator"
 postgresOperatorTag = "ubi8-5.1.1-0"
