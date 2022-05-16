@@ -563,6 +563,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server
@@ -610,6 +612,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server
@@ -665,6 +669,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server
@@ -712,6 +718,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server
