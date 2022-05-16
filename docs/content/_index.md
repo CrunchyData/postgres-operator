@@ -33,7 +33,8 @@ PGO, the Postgres Operator from Crunchy Data, is tested on the following platfor
 - VMware Tanzu
 
 This list only includes the platforms that the Postgres Operator is specifically
-tested on as part of the release process: PGO works on other Kubernetes
-distributions as well, such as Rancher.
+tested on as part of the release process. PGO works on other
+[CNCF Certified Kubernetes](https://www.cncf.io/certification/software-conformance/)
+distributions as well.
 
 The PGO Postgres Operator project source code is available subject to the [Apache 2.0 license](https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/LICENSE.md) with the PGO logo and branding assets covered by [our trademark guidelines](/logos/TRADEMARKS.md).
