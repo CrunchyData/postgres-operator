@@ -14,7 +14,7 @@ guides defined within the PGO documentation:
 - [PGO Helm Install]({{< relref "./helm.md" >}})
 
 However, when upgrading to or from certain versions of PGO, extra steps may be required in order
-to ensure a clean and successful upgrade. 
+to ensure a clean and successful upgrade.
 
 This section provides detailed instructions for upgrading PGO 5.x using Kustomize or Helm, along with information for upgrading from PGO v4 to PGO v5.
 
