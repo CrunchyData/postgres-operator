@@ -136,6 +136,8 @@ By default, PGO will automatically check for updates to itself and software comp
 
 PGO will check for updates upon startup and once every 24 hours. Any errors in checking will have no impact on PGO's operation. To disable the upgrade check, you can set the `CHECK_FOR_UPGRADES` environmental variable on the `pgo` Deployment to `"false"`.
 
+For more information about collected data, see the Crunchy Data [collection notice](https://www.crunchydata.com/developers/data-collection-notice).
+
 ## Uninstall
 
 Once PGO has been installed, it can also be uninstalled using `kubectl` and Kustomize.
