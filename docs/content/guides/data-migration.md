@@ -54,11 +54,11 @@ With the above configuration in place, your existing PVC will be used when creat
 
 ## Considerations
 
-### Removing legacy labels
+### Removing PGO v4 labels
 
-When migrating data volumes from v4 to v5, PGO will add new required labels to the PVCs, but **it will not remove existing labels**. The result is that a PVC might have labels that identify it as both a v4 and a v5 product, which can lead to unintended behavior.
+When migrating data volumes from v4 to v5, PGO relabels all volumes for PGO v5, but **will not remove existing PGO v4 labels**. This results in PVCs that are labeled for both PGO v4 and v5, which can lead to unintended behavior.
 
-To avoid that, you must manually remove the `pg-cluster` and `vendor` labels, which you can do with a `kubectl` command. For instance, given a cluster named `hippo` with a dedicated pgBackRest repo, the PVC will be `hippo-pgbr-repo`, and the legacy labels can be remove with the below command:
+To avoid that, you must manually remove the `pg-cluster` and `vendor` labels, which you can do with a `kubectl` command. For instance, given a cluster named `hippo` with a dedicated pgBackRest repo, the PVC will be `hippo-pgbr-repo`, and the PGO v4 labels can be removed with the below command:
 
 ```
 kubectl label pvc hippo-pgbr-repo \
