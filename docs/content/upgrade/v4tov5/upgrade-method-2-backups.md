@@ -132,7 +132,6 @@ kubectl apply -k examples/postgrescluster
 
 If you wish to protect against this, first remove the reference to the pgBackRest PVC in the PostgresCluster spec:
 
-
 ```
 kubectl patch postgrescluster hippo-pgbr-repo --type='json' -p='[{"op": "remove", "path": "/spec/dataSource/volumes"}]'
 ```
