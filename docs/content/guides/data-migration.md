@@ -54,7 +54,26 @@ With the above configuration in place, your existing PVC will be used when creat
 
 ## Considerations
 
-- Additional steps are required to set proper file permissions when using certain storage options, such as NFS and HostPath storage due to a known issue with how fsGroups are applied. When migrating from PGO v4, this will require the user to manually set the group value of the pgBackRest repo directory, and all subdirectories, to `26` to match the `postgres` group used in PGO v5. Please see [here](https://github.com/kubernetes/examples/issues/260) for more information.
+### Removing legacy labels
+
+When migrating data volumes from v4 to v5, PGO will add new required labels to the PVCs, but **it will not remove existing labels**. The result is that a PVC might have labels that identify it as both a v4 and a v5 product, which can lead to unintended behavior.
+
+To avoid that, you must manually remove the `pg-cluster` and `vendor` labels, which you can do with a `kubectl` command. For instance, given a cluster named `hippo` with a dedicated pgBackRest repo, the PVC will be `hippo-pgbr-repo`, and the legacy labels can be remove with the below command:
+
+```
+kubectl label pvc hippo-pgbr-repo \
+  pg-cluster- \
+  vendor-
+```
+
+### Proper file permissions for certain storage options
+
+Additional steps are required to set proper file permissions when using certain storage options, such as NFS and HostPath storage due to a known issue with how fsGroups are applied.
+
+When migrating from PGO v4, this will require the user to manually set the group value of the pgBackRest repo directory, and all subdirectories, to `26` to match the `postgres` group used in PGO v5. Please see [here](https://github.com/kubernetes/examples/issues/260) for more information.
+
+### Additional Considerations
+
 - An existing pg_wal volume is not required when the pg_wal directory is located on the same PVC as the pgData directory.
 - When using existing pg_wal volumes, an existing pgData volume **must** also be defined to ensure consistent naming and proper bootstrapping.
 - When migrating from PGO v4 volumes, it is recommended to use the most recently available version of PGO v4.
