@@ -16,6 +16,7 @@
 package initialize_test
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -72,8 +73,10 @@ func TestRestrictedSecurityContext(t *testing.T) {
 				"Privileged Pods disable most security mechanisms and must be disallowed.")
 		}
 
-		assert.Assert(t, sc.Capabilities == nil,
-			"Adding additional capabilities beyond the default set must be disallowed.")
+		if assert.Check(t, sc.Capabilities != nil) {
+			assert.Assert(t, sc.Capabilities.Add == nil,
+				"Adding additional capabilities … must be disallowed.")
+		}
 
 		assert.Assert(t, sc.SELinuxOptions == nil,
 			"Setting custom SELinux options should be disallowed.")
@@ -90,6 +93,11 @@ func TestRestrictedSecurityContext(t *testing.T) {
 		if assert.Check(t, sc.AllowPrivilegeEscalation != nil) {
 			assert.Assert(t, *sc.AllowPrivilegeEscalation == false,
 				"Privilege escalation (such as via set-user-ID or set-group-ID file mode) should not be allowed.")
+		}
+
+		if assert.Check(t, sc.Capabilities != nil) {
+			assert.Assert(t, fmt.Sprint(sc.Capabilities.Drop) == `[ALL]`,
+				"Containers must drop ALL capabilities, and are only permitted to add back the NET_BIND_SERVICE capability.")
 		}
 
 		if assert.Check(t, sc.RunAsNonRoot != nil) {

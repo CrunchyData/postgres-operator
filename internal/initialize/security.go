@@ -35,6 +35,13 @@ func RestrictedSecurityContext() *corev1.SecurityContext {
 		// Prevent any container processes from gaining privileges.
 		AllowPrivilegeEscalation: Bool(false),
 
+		// Drop any capabilities granted by the container runtime.
+		// This must be uppercase to pass Pod Security Admission.
+		// - https://releases.k8s.io/v1.24.0/staging/src/k8s.io/pod-security-admission/policy/check_capabilities_restricted.go
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+
 		// Processes in privileged containers are essentially root on the host.
 		Privileged: Bool(false),
 

@@ -560,6 +560,9 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   resources: {}
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -607,6 +610,9 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   resources: {}
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -662,6 +668,9 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
       cpu: 5m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -709,6 +718,9 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   resources: {}
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true

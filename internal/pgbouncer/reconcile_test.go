@@ -138,6 +138,9 @@ containers:
   resources: {}
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -166,6 +169,9 @@ containers:
   resources: {}
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -242,6 +248,9 @@ containers:
       cpu: 100m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -275,6 +284,9 @@ containers:
       memory: 16Mi
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -342,6 +354,9 @@ containers:
       cpu: 100m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -374,6 +389,9 @@ containers:
       cpu: 200m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
