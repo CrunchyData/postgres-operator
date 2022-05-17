@@ -23,16 +23,11 @@ commands:
         -- psql -qb original --set ON_ERROR_STOP=1 \
           --command 'DROP TABLE important' \
           --command "SELECT pg_stat_reset_shared('archiver')" \
-          --command '
-            DO $$
-            BEGIN
-              LOOP
-                PERFORM pg_switch_wal() FROM pg_stat_archiver WHERE archived_count = 0;
-                EXIT WHEN NOT FOUND;
-                PERFORM pg_sleep(1); -- seconds
-                ROLLBACK; -- fresh stats
-              END LOOP;
-            END $$'
+          --command 'SELECT pg_switch_wal()'
+
+      while [ 0 = "$(
+        kubectl exec "${NAMESPACE}" "${PRIMARY}" -- psql -qAt -c 'SELECT archived_count FROM pg_stat_archiver'
+      )" ]; do sleep 1; done
 
   # The replica should also need to be restored.
   - script: |

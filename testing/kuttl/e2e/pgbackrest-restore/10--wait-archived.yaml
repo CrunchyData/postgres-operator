@@ -12,15 +12,7 @@ commands:
 
       # Wait for the data to be sent to the WAL archive. A prior step reset the
       # "pg_stat_archiver" counters, so anything more than zero should suffice.
-      kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
-        -- psql -qb --set ON_ERROR_STOP=1 --command '
-          DO $$
-          BEGIN
-            PERFORM pg_switch_wal(); -- at least once
-            LOOP
-              PERFORM pg_switch_wal() FROM pg_stat_archiver WHERE archived_count = 0;
-              EXIT WHEN NOT FOUND;
-              PERFORM pg_sleep(1); -- seconds
-              ROLLBACK; -- fresh stats
-            END LOOP;
-          END $$'
+      kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -c 'SELECT pg_switch_wal()'
+      while [ 0 = "$(
+        kubectl exec "${NAMESPACE}" "${PRIMARY}" -- psql -qAt -c 'SELECT archived_count FROM pg_stat_archiver'
+      )" ]; do sleep 1; done
