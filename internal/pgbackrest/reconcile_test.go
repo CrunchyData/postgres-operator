@@ -567,6 +567,9 @@ func TestAddServerToInstancePod(t *testing.T) {
       cpu: 5m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -613,6 +616,9 @@ func TestAddServerToInstancePod(t *testing.T) {
       cpu: 17m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -697,6 +703,9 @@ func TestAddServerToRepoPod(t *testing.T) {
       cpu: 5m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -739,6 +748,9 @@ func TestAddServerToRepoPod(t *testing.T) {
       cpu: 19m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true

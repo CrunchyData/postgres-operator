@@ -775,6 +775,9 @@ containers:
       cpu: 1m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -828,6 +831,9 @@ containers:
       cpu: 1m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
@@ -883,6 +889,9 @@ containers:
       cpu: 1m
   securityContext:
     allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true

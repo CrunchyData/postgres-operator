@@ -96,6 +96,9 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		assert.Equal(t, container.ImagePullPolicy, corev1.PullAlways)
 		assert.DeepEqual(t, container.Resources, resources)
 		assert.DeepEqual(t, container.Command, []string{"/opt/cpm/bin/start.sh"})
+		assert.DeepEqual(t, container.SecurityContext.Capabilities, &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		})
 		assert.Equal(t, *container.SecurityContext.Privileged, false)
 		assert.Equal(t, *container.SecurityContext.ReadOnlyRootFilesystem, true)
 		assert.Equal(t, *container.SecurityContext.AllowPrivilegeEscalation, false)
