@@ -1,5 +1,5 @@
 ---
-# After switchover, a former replica should now be the primary.
+# Wait for switchover to finish. A former replica should now be the primary.
 apiVersion: v1
 kind: Pod
 metadata:

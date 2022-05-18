@@ -2,7 +2,8 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 commands:
-  # Label instance pods with their current role for assert
+  # Label instance pods with their current role. These labels will stick around
+  # because switchover does not recreate any pods.
   - script: |
       kubectl label --namespace="${NAMESPACE}" pods \
         --selector='postgres-operator.crunchydata.com/role=master' \
