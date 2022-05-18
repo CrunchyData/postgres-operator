@@ -4,7 +4,7 @@
   <img width="150" src="../../../docs/static/logos/pgo.svg" alt="Crunchy Data"/>
 </p>
 
-Latest Release: 4.7.5
+Latest Release: 4.7.6
 
 ## General
 

@@ -125,6 +125,6 @@ PostgreSQL Operator Monitoring infrastructure:
 | Name | Default | Required | Description |
 |------|---------|----------|-------------|
 | `pgo_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used by the `pgo-deployer` container |
-| `pgo_image_tag` | {{< param centosBase >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag used by the `pgo-deployer` container |
+| `pgo_image_tag` | {{< param ubiBase >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag used by the `pgo-deployer` container |
 
 [k8s-service-type]: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
