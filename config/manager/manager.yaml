@@ -20,10 +20,14 @@ spec:
           value: "true"
         - name: RELATED_IMAGE_POSTGRES_13
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-13.7-0"
+        - name: RELATED_IMAGE_POSTGRES_13_GIS_3.0
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-13.7-3.0-0"
         - name: RELATED_IMAGE_POSTGRES_13_GIS_3.1
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-13.7-3.1-0"
         - name: RELATED_IMAGE_POSTGRES_14
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.3-0"
+        - name: RELATED_IMAGE_POSTGRES_14_GIS_3.1
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.3-3.1-0"
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.2
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.3-3.2-0"
         - name: RELATED_IMAGE_PGADMIN
