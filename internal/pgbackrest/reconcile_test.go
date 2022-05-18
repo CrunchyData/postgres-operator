@@ -571,8 +571,6 @@ func TestAddServerToInstancePod(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server
@@ -619,8 +617,6 @@ func TestAddServerToInstancePod(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server
@@ -705,8 +701,6 @@ func TestAddServerToRepoPod(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server
@@ -749,8 +743,6 @@ func TestAddServerToRepoPod(t *testing.T) {
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/server
     name: pgbackrest-server

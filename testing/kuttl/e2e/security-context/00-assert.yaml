@@ -35,8 +35,6 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
 ---
 # instance
 apiVersion: v1
@@ -56,40 +54,30 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: replication-cert-copy
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: pgbackrest
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: pgbackrest-config
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: exporter
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   initContainers:
   - name: postgres-startup
     securityContext:
@@ -97,16 +85,12 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: nss-wrapper-init
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
 ---
 # pgAdmin
 apiVersion: v1
@@ -126,8 +110,6 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   initContainers:
   - name: pgadmin-startup
     securityContext:
@@ -135,16 +117,12 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: nss-wrapper-init
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
 ---
 # pgBouncer
 apiVersion: v1
@@ -161,16 +139,12 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: pgbouncer-config
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
 ---
 # pgBackRest repo
 apiVersion: v1
@@ -191,16 +165,12 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: pgbackrest-config
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   initContainers:
   - name: pgbackrest-log-dir
     securityContext:
@@ -208,13 +178,9 @@ spec:
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault
   - name: nss-wrapper-init
     securityContext:
       allowPrivilegeEscalation: false
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
-      seccompProfile:
-        type: RuntimeDefault

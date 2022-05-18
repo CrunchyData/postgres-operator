@@ -141,8 +141,6 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
@@ -171,8 +169,6 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
@@ -249,8 +245,6 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
@@ -284,8 +278,6 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
@@ -353,8 +345,6 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
@@ -387,8 +377,6 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config

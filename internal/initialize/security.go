@@ -20,9 +20,6 @@ import (
 )
 
 // RestrictedPodSecurityContext returns a v1.PodSecurityContext with safe defaults.
-// Note: All current containers have security context set by `RestrictedSecurityContext`
-// which has recommended limits; if more pods/containers are added
-// make sure to set the SC on the container
 // See https://docs.k8s.io/concepts/security/pod-security-standards/
 func RestrictedPodSecurityContext() *corev1.PodSecurityContext {
 	return &corev1.PodSecurityContext{
@@ -46,12 +43,5 @@ func RestrictedSecurityContext() *corev1.SecurityContext {
 
 		// Fail to start the container if its image runs as UID 0 (root).
 		RunAsNonRoot: Bool(true),
-
-		// Restrict syscalls with RuntimeDefault seccomp.
-		// Set this on the container-level to avoid interfering
-		// with sidecars and injected containers.
-		SeccompProfile: &corev1.SeccompProfile{
-			Type: corev1.SeccompProfileTypeRuntimeDefault,
-		},
 	}
 }
