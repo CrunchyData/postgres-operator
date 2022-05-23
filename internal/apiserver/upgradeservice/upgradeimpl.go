@@ -230,44 +230,61 @@ func supportedOperatorVersion(version string) bool {
 // upgradeTagValid compares and validates the PostgreSQL version values stored
 // in the image tag of the existing pgcluster CR against the values set in the
 // Postgres Operator's configuration
+// A typical example tag is `ubi8-12.9-4.7.4`, so we want to extract and
+// compare that `12.9` to make sure that we are only allowing minor upgrades.
+// For major upgrades, see PGOv5.1.
 func upgradeTagValid(upgradeFrom, upgradeTo string) bool {
 	log.Debugf("Validating upgrade from %s to %s", upgradeFrom, upgradeTo)
 
-	versionRegex := regexp.MustCompile(`-(\d+)\.(\d+)(\.\d+)?-`)
+	versionRegex := regexp.MustCompile(`-(\d+)\.(\d+)\.?(\d+)?-`)
 
 	// get the PostgreSQL version values
 	upgradeFromValue := versionRegex.FindStringSubmatch(upgradeFrom)
 	upgradeToValue := versionRegex.FindStringSubmatch(upgradeTo)
 
 	// if this regex passes, the returned array should always contain
-	// 4 values. At 0, the full match, then 1-3 are the three defined groups
-	// If this is not true, the upgrade cannot continue (and we won't want to
-	// reference potentially missing array items).
+	// 4 values:
+	// 	-At 0, the full match;
+	// 	-At 1, the major version of PG;
+	//	-At 2, the minor version of PG, which needs to be compared as ints;
+	// 	-At 3, the patch version, which can be null, but if not, should be compared as ints;
+	// (Note the `?` in the regex after the last capture group.)
 	if len(upgradeFromValue) != 4 || len(upgradeToValue) != 4 {
 		return false
 	}
 
-	// if the first group does not match (PG version 9, 10, 11, 12 etc), or if a value is
+	// if the first group does not match (i.e., the PG major version), or if a value is
 	// missing, then the upgrade cannot continue
 	if upgradeFromValue[1] != upgradeToValue[1] && upgradeToValue[1] != "" {
 		return false
 	}
 
-	// if the above check passed, and there is no fourth value, then the PG
-	// version has only two digits (e.g. PG 10, 11 or 12), meaning this is a minor upgrade.
+	// if the above check passed, and there is no patch version value, then the PG
+	// version has only two digits (e.g. PG 12.6, 12.10), meaning this is a minor upgrade.
 	// After validating the second value is at least equal (this is to allow for multiple executions of the
 	// upgrade in case an error occurs), the upgrade can continue
-	if upgradeFromValue[3] == "" && upgradeToValue[3] == "" && upgradeFromValue[2] <= upgradeToValue[2] {
+	// In order to compare correctly, these values have to be ints.
+	// Note: thanks to the regex capture, we know these second values consist of digits,
+	// so we can skip testing the error.
+
+	upgradeFromInt, _ := strconv.Atoi(upgradeFromValue[2])
+	upgradeToInt, _ := strconv.Atoi(upgradeToValue[2])
+	if upgradeFromValue[3] == "" && upgradeToValue[3] == "" && upgradeFromInt <= upgradeToInt {
 		return true
 	}
 
 	// finally, if the second group matches and is not empty, then, based on the
 	// possibilities remaining for Operator container image tags, this is either PG 9.5 or 9.6.
-	// if the second group value matches, and the third group was already validated as not
-	// empty, check that the third value is at least equal (this is to allow for multiple executions of the
+	// if the second group value matches, check that the third value is not empty and
+	// at least equal (this is to allow for multiple executions of the
 	// upgrade in case an error occurs). If so, the upgrade can continue.
-	if upgradeFromValue[2] == upgradeToValue[2] && upgradeToValue[2] != "" && upgradeFromValue[3] <= upgradeToValue[3] {
-		return true
+	if upgradeFromValue[2] == upgradeToValue[2] && upgradeToValue[2] != "" &&
+		upgradeFromValue[3] != "" && upgradeToValue[3] != "" {
+		upgradeFromInt, _ = strconv.Atoi(upgradeFromValue[3])
+		upgradeToInt, _ = strconv.Atoi(upgradeToValue[3])
+		if upgradeFromInt <= upgradeToInt {
+			return true
+		}
 	}
 
 	// if none of the above conditions are met, a two digit Major version upgrade is likely being
