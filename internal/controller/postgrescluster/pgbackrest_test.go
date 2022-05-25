@@ -426,7 +426,7 @@ topologySpreadConstraints:
 				"involvedObject.kind":      "PostgresCluster",
 				"involvedObject.name":      clusterName,
 				"involvedObject.namespace": ns.Name,
-				"involvedObject.uid":       string(clusterUID),
+				"involvedObject.uid":       clusterUID,
 				"reason":                   "RepoHostCreated",
 			}); err != nil {
 				return false, err
@@ -739,7 +739,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 			"involvedObject.kind":      "PostgresCluster",
 			"involvedObject.name":      clusterName,
 			"involvedObject.namespace": ns.Name,
-			"involvedObject.uid":       string(clusterUID),
+			"involvedObject.uid":       clusterUID,
 			"reason":                   "StanzasCreated",
 		}); err != nil {
 			return false, err
@@ -783,7 +783,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 			"involvedObject.kind":      "PostgresCluster",
 			"involvedObject.name":      clusterName,
 			"involvedObject.namespace": ns.Name,
-			"involvedObject.uid":       string(clusterUID),
+			"involvedObject.uid":       clusterUID,
 			"reason":                   "UnableToCreateStanzas",
 		}); err != nil {
 			return false, err

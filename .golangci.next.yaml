@@ -23,7 +23,6 @@ linters:
     - tenv
     - thelper
     - tparallel
-    - unconvert
     - wastedassign
 
 issues:

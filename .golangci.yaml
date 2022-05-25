@@ -12,6 +12,7 @@ linters:
     - gosimple
     - importas
     - misspell
+    - unconvert
   presets:
     - bugs
     - format
