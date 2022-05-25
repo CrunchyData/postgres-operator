@@ -89,7 +89,7 @@ fi
 		// if the err returned from pgbackrest command is about a version mismatch
 		// then we should run upgrade rather than create
 		if strings.Contains(errReturn, errMsgBackupDbMismatch) {
-			return Executor(exec).StanzaCreateOrUpgrade(ctx, configHash, true)
+			return exec.StanzaCreateOrUpgrade(ctx, configHash, true)
 		}
 
 		// if none of the above errors, return the err

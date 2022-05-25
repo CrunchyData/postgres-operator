@@ -554,14 +554,14 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	// In the default case we will be using SwitchoverAndWait. This API call uses
 	// a Patronictl switchover to move to the target instance.
 	action := func(ctx context.Context, exec patroni.Executor, next string) (bool, error) {
-		success, err := patroni.Executor(exec).SwitchoverAndWait(ctx, next)
+		success, err := exec.SwitchoverAndWait(ctx, next)
 		return success, errors.WithStack(err)
 	}
 
 	if spec.Type == v1beta1.PatroniSwitchoverTypeFailover {
 		// When a failover has been requested we use FailoverAndWait to change the primary.
 		action = func(ctx context.Context, exec patroni.Executor, next string) (bool, error) {
-			success, err := patroni.Executor(exec).FailoverAndWait(ctx, next)
+			success, err := exec.FailoverAndWait(ctx, next)
 			return success, errors.WithStack(err)
 		}
 	}
