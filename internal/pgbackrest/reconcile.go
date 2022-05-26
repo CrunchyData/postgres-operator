@@ -496,13 +496,16 @@ func Secret(ctx context.Context,
 		// option can stay the same when PostgreSQL instances and repository
 		// hosts are added or removed.
 		leaf := &pki.LeafCertificate{}
-		_ = leaf.Certificate.UnmarshalText(inSecret.Data[certClientSecretKey])
-		_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certClientPrivateKeySecretKey])
-
 		commonName := clientCommonName(inCluster)
 		dnsNames := []string{commonName}
 
 		if err == nil {
+			// Unmarshal and validate the stored leaf. These first errors can
+			// be ignored because they result in an invalid leaf which is then
+			// correctly regenerated.
+			_ = leaf.Certificate.UnmarshalText(inSecret.Data[certClientSecretKey])
+			_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certClientPrivateKeySecretKey])
+
 			leaf, err = inRoot.RegenerateLeafWhenNecessary(leaf, commonName, dnsNames)
 			err = errors.WithStack(err)
 		}
@@ -523,13 +526,16 @@ func Secret(ctx context.Context,
 		// The client verifies the "pg-host" or "repo-host" option it used is
 		// present in the DNS names of the server certificate.
 		leaf := &pki.LeafCertificate{}
-		_ = leaf.Certificate.UnmarshalText(inSecret.Data[certRepoSecretKey])
-		_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certRepoPrivateKeySecretKey])
-
 		dnsNames := naming.RepoHostPodDNSNames(ctx, inRepoHost)
 		commonName := dnsNames[0] // FQDN
 
 		if err == nil {
+			// Unmarshal and validate the stored leaf. These first errors can
+			// be ignored because they result in an invalid leaf which is then
+			// correctly regenerated.
+			_ = leaf.Certificate.UnmarshalText(inSecret.Data[certRepoSecretKey])
+			_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certRepoPrivateKeySecretKey])
+
 			leaf, err = inRoot.RegenerateLeafWhenNecessary(leaf, commonName, dnsNames)
 			err = errors.WithStack(err)
 		}
