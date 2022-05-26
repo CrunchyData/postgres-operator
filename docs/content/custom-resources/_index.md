@@ -168,7 +168,7 @@ spec:
   backrestS3VerifyTLS: ""
   ccpimage: crunchy-postgres-ha
   ccpimageprefix: registry.developers.crunchydata.com/crunchydata
-  ccpimagetag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+  ccpimagetag: {{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   clustername: ${pgo_cluster_name}
   customconfig: ""
   database: ${pgo_cluster_name}
@@ -359,7 +359,7 @@ spec:
   backrestS3VerifyTLS: ""
   ccpimage: crunchy-postgres-ha
   ccpimageprefix: registry.developers.crunchydata.com/crunchydata
-  ccpimagetag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+  ccpimagetag: {{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   clustername: ${pgo_cluster_name}
   customconfig: ""
   database: ${pgo_cluster_name}
@@ -678,7 +678,7 @@ make changes, as described below.
 | BackrestStorage | `create` | A specification that gives information about the storage attributes for the pgBackRest repository, which stores backups and archives, of the PostgreSQL cluster. For details, please see the `Storage Specification` section below. This is required. |
 | CCPImage | `create` | The name of the PostgreSQL container image to use, e.g. `crunchy-postgres-ha` or `crunchy-postgres-ha-gis`. |
 | CCPImagePrefix | `create` | If provided, the image prefix (or registry) of the PostgreSQL container image, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
-| CCPImageTag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. |
+| CCPImageTag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. |
 | CollectSecretName | `create` | An optional attribute unless `crunchy-postgres-exporter` is specified in the `UserLabels`; contains the name of a Kubernetes Secret that contains the credentials for a PostgreSQL user that is used for metrics collection, and is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
 | CustomConfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |

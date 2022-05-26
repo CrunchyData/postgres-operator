@@ -116,7 +116,7 @@ PGPASSWORD=randompassword psql -h localhost -p 5432 -U pgbouncer pgbouncer
 You should see something similar to this:
 
 ```
-psql (12.10, server 1.14.0/bouncer)
+psql (12.11, server 1.14.0/bouncer)
 Type "help" for help.
 
 pgbouncer=#
