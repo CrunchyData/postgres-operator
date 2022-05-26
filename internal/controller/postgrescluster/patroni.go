@@ -353,13 +353,16 @@ func (r *Reconciler) reconcileReplicationSecret(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	leaf := &pki.LeafCertificate{}
-	_ = leaf.Certificate.UnmarshalText(existing.Data[naming.ReplicationCert])
-	_ = leaf.PrivateKey.UnmarshalText(existing.Data[naming.ReplicationPrivateKey])
-
 	commonName := postgres.ReplicationUser
 	dnsNames := []string{commonName}
 
 	if err == nil {
+		// Unmarshal and validate the stored leaf. These first errors can
+		// be ignored because they result in an invalid leaf which is then
+		// correctly regenerated.
+		_ = leaf.Certificate.UnmarshalText(existing.Data[naming.ReplicationCert])
+		_ = leaf.PrivateKey.UnmarshalText(existing.Data[naming.ReplicationPrivateKey])
+
 		leaf, err = root.RegenerateLeafWhenNecessary(leaf, commonName, dnsNames)
 		err = errors.WithStack(err)
 	}

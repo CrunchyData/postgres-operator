@@ -83,13 +83,16 @@ func Secret(ctx context.Context,
 
 	if inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret == nil {
 		leaf := &pki.LeafCertificate{}
-		_ = leaf.Certificate.UnmarshalText(inSecret.Data[certFrontendSecretKey])
-		_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certFrontendPrivateKeySecretKey])
-
 		dnsNames := naming.ServiceDNSNames(ctx, inService)
 		dnsFQDN := dnsNames[0]
 
 		if err == nil {
+			// Unmarshal and validate the stored leaf. These first errors can
+			// be ignored because they result in an invalid leaf which is then
+			// correctly regenerated.
+			_ = leaf.Certificate.UnmarshalText(inSecret.Data[certFrontendSecretKey])
+			_ = leaf.PrivateKey.UnmarshalText(inSecret.Data[certFrontendPrivateKeySecretKey])
+
 			leaf, err = inRoot.RegenerateLeafWhenNecessary(leaf, dnsFQDN, dnsNames)
 			err = errors.WithStack(err)
 		}

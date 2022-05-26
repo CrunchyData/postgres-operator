@@ -56,12 +56,18 @@ func (r *Reconciler) reconcileRootCertificate(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	root := &pki.RootCertificateAuthority{}
-	_ = root.Certificate.UnmarshalText(existing.Data[keyCertificate])
-	_ = root.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
 
-	if err == nil && !pki.RootIsValid(root) {
-		root, err = pki.NewRootCertificateAuthority()
-		err = errors.WithStack(err)
+	if err == nil {
+		// Unmarshal and validate the stored root. These first errors can
+		// be ignored because they result in an invalid root which is then
+		// correctly regenerated.
+		_ = root.Certificate.UnmarshalText(existing.Data[keyCertificate])
+		_ = root.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
+
+		if !pki.RootIsValid(root) {
+			root, err = pki.NewRootCertificateAuthority()
+			err = errors.WithStack(err)
+		}
 	}
 
 	intent := &corev1.Secret{}
@@ -127,13 +133,16 @@ func (r *Reconciler) reconcileClusterCertificate(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	leaf := &pki.LeafCertificate{}
-	_ = leaf.Certificate.UnmarshalText(existing.Data[keyCertificate])
-	_ = leaf.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
-
 	dnsNames := naming.ServiceDNSNames(ctx, primaryService)
 	dnsFQDN := dnsNames[0]
 
 	if err == nil {
+		// Unmarshal and validate the stored leaf. These first errors can
+		// be ignored because they result in an invalid leaf which is then
+		// correctly regenerated.
+		_ = leaf.Certificate.UnmarshalText(existing.Data[keyCertificate])
+		_ = leaf.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
+
 		leaf, err = root.RegenerateLeafWhenNecessary(leaf, dnsFQDN, dnsNames)
 		err = errors.WithStack(err)
 	}
@@ -200,8 +209,6 @@ func (*Reconciler) instanceCertificate(
 	const keyCertificate, keyPrivateKey = "dns.crt", "dns.key"
 
 	leaf := &pki.LeafCertificate{}
-	_ = leaf.Certificate.UnmarshalText(existing.Data[keyCertificate])
-	_ = leaf.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
 
 	// RFC 2818 states that the certificate DNS names must be used to verify
 	// HTTPS identity.
@@ -209,6 +216,12 @@ func (*Reconciler) instanceCertificate(
 	dnsFQDN := dnsNames[0]
 
 	if err == nil {
+		// Unmarshal and validate the stored leaf. These first errors can
+		// be ignored because they result in an invalid leaf which is then
+		// correctly regenerated.
+		_ = leaf.Certificate.UnmarshalText(existing.Data[keyCertificate])
+		_ = leaf.PrivateKey.UnmarshalText(existing.Data[keyPrivateKey])
+
 		leaf, err = root.RegenerateLeafWhenNecessary(leaf, dnsFQDN, dnsNames)
 		err = errors.WithStack(err)
 	}
