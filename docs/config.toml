@@ -25,14 +25,14 @@ disableNavChevron = false # set true to hide next/prev chevron, default is false
 highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
 menushortcutsnewtab = true # set true to open shortcuts links to a new tab/window
 enableGitInfo = true
-operatorVersion = "4.6.6"
-postgresVersion = "13.6"
-postgresVersion13 = "13.6"
-postgresVersion12 = "12.10"
-postgresVersion11 = "11.15"
-postgresVersion10 = "10.20"
+operatorVersion = "4.6.7"
+postgresVersion = "13.7"
+postgresVersion13 = "13.7"
+postgresVersion12 = "12.11"
+postgresVersion11 = "11.16"
+postgresVersion10 = "10.21"
 postgisVersion = "3.0"
-centosBase = "centos8"
+ubiBase = "ubi8"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]

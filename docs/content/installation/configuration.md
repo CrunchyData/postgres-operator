@@ -31,7 +31,7 @@ Operator.
 | `ccp_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used when creating containers from Crunchy Container Suite. |
 | `ccp_image_pull_secret` |  |  | Name of a Secret containing credentials for container image registries. |
 | `ccp_image_pull_secret_manifest` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
-| `ccp_image_tag` | {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag (version) used when creating containers from Crunchy Container Suite. |
+| `ccp_image_tag` | {{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag (version) used when creating containers from Crunchy Container Suite. |
 | `create_rbac` | true | **Required** | Set to true if the installer should create the RBAC resources required to run the PostgreSQL Operator. |
 | `crunchy_debug` | false |  | Set to configure Operator to use debugging mode. Note: this can cause sensitive data such as passwords to appear in Operator logs. |
 | `db_name` |  |  | Set to a value to configure the default database name on all newly created clusters. By default, the PostgreSQL Operator will set it to the name of the cluster that is being created. |
@@ -69,7 +69,7 @@ Operator.
 | `pgo_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc). |
 | `pgo_image_pull_secret` |  |  | Name of a Secret containing credentials for container image registries. |
 | `pgo_image_pull_secret_manifest` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
-| `pgo_image_tag` | {{< param centosBase >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc) |
+| `pgo_image_tag` | {{< param ubiBase >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc) |
 | `pgo_installation_name` | devtest | **Required** | The name of the PGO installation. |
 | `pgo_noauth_routes` |  |  | Configures URL routes with mTLS and HTTP BasicAuth disabled. |
 | `pgo_operator_namespace` | pgo | **Required** | Set to configure the namespace where Operator will be deployed. |

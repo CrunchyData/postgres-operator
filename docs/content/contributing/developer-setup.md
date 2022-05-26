@@ -12,7 +12,7 @@ This guide is intended for those wanting to build the Operator from source or co
 
 # Prerequisites
 
-The target development host for these instructions is a CentOS 8 or RHEL 8 host. Others operating systems
+The target development host for these instructions is a RHEL 8 host. Others operating systems
 are possible, however we do not support building or running the Operator on others at this time.
 
 ## Environment Variables
