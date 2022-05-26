@@ -35,10 +35,30 @@ To turn a Postgres cluster that is shut down back on, you can set `spec.shutdown
 
 Credentials should be invalidated and replaced (rotated) as often as possible
 to minimize the risk of their misuse. Unlike passwords, every TLS certificate
-has an expiration, so replacing them is inevitable. When you use your own TLS
-certificates with PGO, you are responsible for replacing them appropriately.
-Here's how.
+has an expiration, so replacing them is inevitable.
 
+In fact, PGO automatically rotates the client certificates that it manages *before*
+the expiration date on the certificate. A new client certificate will be generated
+after 2/3rds of its working duration; so, for instance, a PGO-created certificate
+with an expiration date 12 months in the future will be replaced by PGO around the
+eight month mark. This is done so that you do not have to worry about running into
+problems or interruptions of service with an expired certificate.
+
+### Manually Triggering a Certificate Rotation
+
+If you want to rotate a single client certificate, you can regenerate the certificate
+of an existing cluster by deleting the `tls.key` field from its certificate Secret.
+
+If you want to rotate all the client certificates for all the cluster, you can do so by
+deleting the root certificate Secret `pgo-root-cacert` or by deleting the `root.crt` field
+from that secret. Once PGO goes through a reconcile loop, it will regenerate that Secret
+and use that Secret's certificate to generate new client certificates. If following this
+procedure, it may be necessary to trigger a reconcile loop by adding an annotation to a cluster.
+
+### Rotating Custom TLS Certificates
+
+When you use your own TLS certificates with PGO, you are responsible for replacing them appropriately.
+Here's how.
 
 PGO automatically detects and loads changes to the contents of PostgreSQL server
 and replication Secrets without downtime. You or your certificate manager need
@@ -55,7 +75,7 @@ When changing the PostgreSQL certificate authority, make sure to update
 PGO automatically notifies PgBouncer when there are changes to the contents of
 PgBouncer certificate Secrets. Recent PgBouncer versions load those changes
 without downtime, but versions prior to 1.16.0 need to be restarted manually.
-There are a few ways to do it:
+There are a few ways to restart PgBouncer if necessary to reload Secrets:
 
 1. Store the new certificates in a new Secret. Edit the PostgresCluster object
    to refer to the new Secret, and PGO will perform a rolling restart of PgBouncer.

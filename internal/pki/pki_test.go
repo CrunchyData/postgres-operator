@@ -390,6 +390,23 @@ func TestLeafIsInvalid(t *testing.T) {
 		assert.Assert(t, !root.leafIsValid(leaf))
 	})
 
+	t.Run("PastRenewalTime", func(t *testing.T) {
+		// Generate a cert with the default valid times,
+		// e.g., 1 hour before now until 1 year from now
+		leaf, err := root.GenerateLeafCertificate("", nil)
+		assert.NilError(t, err)
+
+		// set the time now to be over 2/3rds of a year for checking
+		original := currentTime
+		t.Cleanup(func() { currentTime = original })
+
+		currentTime = func() time.Time {
+			return time.Now().Add(time.Hour * 24 * 330)
+		}
+
+		assert.Assert(t, !root.leafIsValid(leaf))
+	})
+
 	t.Run("Expired", func(t *testing.T) {
 		original := currentTime
 		t.Cleanup(func() { currentTime = original })
@@ -403,6 +420,16 @@ func TestLeafIsInvalid(t *testing.T) {
 
 		assert.Assert(t, !root.leafIsValid(leaf))
 	})
+}
+
+func TestIsBeforeRenewalTime(t *testing.T) {
+	oneHourAgo := time.Now().Add(-1 * time.Hour)
+	twoHoursInTheFuture := time.Now().Add(2 * time.Hour)
+
+	assert.Assert(t, isBeforeRenewalTime(oneHourAgo, twoHoursInTheFuture))
+
+	sixHoursAgo := time.Now().Add(-6 * time.Hour)
+	assert.Assert(t, !isBeforeRenewalTime(sixHoursAgo, twoHoursInTheFuture))
 }
 
 func TestRegenerateLeaf(t *testing.T) {
