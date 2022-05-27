@@ -141,7 +141,7 @@ pgo upgrade mycluster
 
 If you are using the PostGIS-enabled image (i.e. `crunchy-postgres-gis-ha`) or any other custom images, you will need to add the `--ccp-image-tag`:
 ```    
-pgo upgrade --ccp-image-tag={{< param centosBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}} mygiscluster
+pgo upgrade --ccp-image-tag={{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}} mygiscluster
 ```
 Where `{{< param postgresVersion >}}` is the PostgreSQL version, `{{< param postgisVersion >}}` is the PostGIS version and `{{< param operatorVersion >}}` is the PostgreSQL Operator version.
 Please note, no tag validation will be performed and additional steps may be required to upgrade your PostGIS extension implementation. For more information on PostGIS upgrade considerations, please see

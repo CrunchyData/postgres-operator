@@ -13,7 +13,7 @@ There are a few options available for community support of the [PGO: the Postgre
 In all cases, please be sure to provide as many details as possible in regards to your issue, including:
 
 - Your Platform (e.g. Kubernetes vX.YY.Z)
-- Operator Version (e.g. {{< param centosBase >}}-{{< param operatorVersion >}})
+- Operator Version (e.g. {{< param ubiBase >}}-{{< param operatorVersion >}})
 - A detailed description of the issue, as well as steps you took that lead up to the issue
 - Any relevant logs
 - Any additional information you can provide that you may find helpful
