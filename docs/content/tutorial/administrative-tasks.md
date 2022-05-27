@@ -52,7 +52,7 @@ of an existing cluster by deleting the `tls.key` field from its certificate Secr
 If you want to rotate all the client certificates for all the cluster, you can do so by
 deleting the root certificate Secret `pgo-root-cacert` or by deleting the `root.crt` field
 from that secret. Once PGO goes through a reconcile loop, it will regenerate that Secret
-and use that Secret's certificate to generate new client certificates. If following this
+and use that Secret's certificate to generate new client certificates. When following this
 procedure, it may be necessary to trigger a reconcile loop by adding an annotation to a cluster.
 
 ### Rotating Custom TLS Certificates
@@ -75,7 +75,7 @@ When changing the PostgreSQL certificate authority, make sure to update
 PGO automatically notifies PgBouncer when there are changes to the contents of
 PgBouncer certificate Secrets. Recent PgBouncer versions load those changes
 without downtime, but versions prior to 1.16.0 need to be restarted manually.
-There are a few ways to restart PgBouncer if necessary to reload Secrets:
+There are a few ways to restart an older version PgBouncer to reload Secrets:
 
 1. Store the new certificates in a new Secret. Edit the PostgresCluster object
    to refer to the new Secret, and PGO will perform a rolling restart of PgBouncer.
