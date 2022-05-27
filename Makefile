@@ -4,14 +4,14 @@ GOBIN ?= $(GOPATH)/bin
 # Default values if not already set
 ANSIBLE_VERSION ?= 2.9.*
 PGOROOT ?= $(GOPATH)/src/github.com/crunchydata/postgres-operator
-PGO_BASEOS ?= centos8
+PGO_BASEOS ?= ubi8
 PGO_CMD ?= kubectl
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_OPERATOR_NAMESPACE ?= pgo
-PGO_VERSION ?= 4.5.6
+PGO_VERSION ?= 4.5.7
 PGO_PG_VERSION ?= 12
-PGO_PG_FULLVERSION ?= 12.10
+PGO_PG_FULLVERSION ?= 12.11
 PGO_BACKREST_VERSION ?= 2.29
 PACKAGER ?= yum
 

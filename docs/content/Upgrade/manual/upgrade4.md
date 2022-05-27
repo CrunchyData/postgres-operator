@@ -19,7 +19,7 @@ A major change to this container is that the PostgreSQL process is now managed b
 When creating your new clusters using version {{< param operatorVersion >}} of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name and image tag, as with the command:
 
 ```
-pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis-ha --ccp-image-tag={{< param centosBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}}
+pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis-ha --ccp-image-tag={{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}}
 ```
 Where `{{< param postgresVersion >}}` is the PostgreSQL version, `{{< param postgisVersion >}}` is the PostGIS version and `{{< param operatorVersion >}}` is the PostgreSQL Operator version.
 Please note, no tag validation will be performed and additional steps may be required to upgrade your PostGIS extension implementation. For more information on PostGIS upgrade considerations, please see
@@ -58,7 +58,7 @@ For example, given the following output:
 ```
 $ pgo show cluster mycluster
 
-cluster : mycluster (crunchy-postgres:centos8-11.5-2.4.2)
+cluster : mycluster (crunchy-postgres:ubi8-11.5-2.4.2)
         pod : mycluster-7bbf54d785-pk5dq (Running) on kubernetes1 (1/1) (replica)
         pvc : mycluster
         pod : mycluster-ypvq-5b9b8d645-nvlb6 (Running) on kubernetes1 (1/1) (primary)

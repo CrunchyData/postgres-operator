@@ -107,7 +107,7 @@ which yields output similar to:
 BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
-  CCPImageTag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+  CCPImageTag: {{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   Policies: ""
   Metrics: false
   Badger: false
@@ -136,7 +136,7 @@ Cluster:
 Pgo:
   Audit: false
   PGOImagePrefix: crunchydata
-  PGOImageTag: {{< param centosBase >}}-{{< param operatorVersion >}}
+  PGOImageTag: {{< param ubiBase >}}-{{< param operatorVersion >}}
 PrimaryStorage: nfsstorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
@@ -253,7 +253,7 @@ example below, the cluster will use PostgreSQL {{< param postgresVersion >}} and
 ```shell
 pgo create cluster hagiscluster \
   --ccp-image=crunchy-postgres-gis-ha \
-  --ccp-image-tag={{< param centosBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}}
+  --ccp-image-tag={{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}}
 ```
 
 #### Create a PostgreSQL Cluster with a Tablespace
@@ -378,7 +378,7 @@ pgo show cluster hacluster
 which will yield output similar to:
 
 ```
-cluster : hacluster (crunchy-postgres-ha:{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}})
+cluster : hacluster (crunchy-postgres-ha:{{< param ubiBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}})
 	pod : hacluster-6dc6cfcfb9-f9knq (Running) on node01 (1/1) (primary)
 	pvc : hacluster
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
