@@ -17,7 +17,10 @@ package postgrescluster
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -499,6 +502,44 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 			stdout, stderr, command...)
 	}
 
+	// TODO(benjb): A replica may return an out-of-date timeline from this command;
+	// patroni uses a different command for its status --
+	// 	`SELECT CASE WHEN pg_catalog.pg_is_in_recovery() THEN 0
+	//	ELSE ('x' || pg_catalog.substr(pg_catalog.pg_walfile_name(
+	//	pg_catalog.pg_current_wal_lsn()), 1, 8))::bit(32)::int END;;`
+	// That command makes sure a replica returns 0 since only a primary can be relied on.
+	// Unfortunately, I don't think we can rely on a master being present/being the pod chosen.
+	// This might be guarded against by using `patronictl list` to grab the TL for the `Leader`
+	// which should retrieve that information from the DCS for patroni.
+	stdout, _, err := postgres.Executor(exec).Exec(ctx,
+		strings.NewReader(`SELECT timeline_id FROM pg_control_checkpoint();`),
+		map[string]string{"tuples-only": ""},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	timeline := strings.TrimSpace(stdout)
+	match, _ := regexp.MatchString(`\d+`, timeline)
+
+	if !match {
+		return fmt.Errorf("error getting and parsing current timeline, got %s", stdout)
+	}
+
+	statusTimeline := cluster.Status.Patroni.ExpectedTimeline
+
+	if statusTimeline == nil || (statusTimeline != nil && *statusTimeline == "") {
+		log.V(1).Info("Setting ExpectedTimeline to current timeline")
+		cluster.Status.Patroni.ExpectedTimeline = &timeline
+		return err
+	}
+
+	if statusTimeline != nil && *statusTimeline != timeline {
+		log.V(1).Info("ExpectedTimeline does not match current timeline, assuming already completed switchover")
+		return err
+	}
+
 	// We have the pod executor, now we need to figure out which API call to use
 	// In the default case we will be using SwitchoverAndWait. This API call uses
 	// a Patronictl switchover to move to the target instance.
@@ -527,6 +568,7 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	}
 	if err == nil {
 		cluster.Status.Patroni.Switchover = initialize.String(annotation)
+		cluster.Status.Patroni.ExpectedTimeline = initialize.String("")
 	}
 
 	return err

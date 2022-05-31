@@ -9150,6 +9150,9 @@ spec:
                 type: integer
               patroni:
                 properties:
+                  expectedTimeline:
+                    description: Tracks the current timeline during switchovers
+                    type: string
                   switchover:
                     description: Tracks the execution of the switchover requests.
                     type: string
