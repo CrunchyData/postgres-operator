@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -140,6 +141,23 @@ func (r *Reconciler) Reconcile(
 			log.Info("deleting", "result", fmt.Sprintf("%+v", *result))
 		}
 		return *result, nil
+	}
+
+	// Perform initial validation on a cluster
+	// TODO: Move this to a defaulting (mutating admission) webhook
+	// to leverage regular validation.
+	if cluster.Spec.Standby != nil &&
+		cluster.Spec.Standby.Enabled &&
+		cluster.Spec.Standby.Host == "" &&
+		cluster.Spec.Standby.RepoName == "" {
+		// When a standby cluster is requested but a repoName or host is not provided
+		// the cluster will be created as a non-standby. Reject any clusters with
+		// this configuration and provide an event
+		path := field.NewPath("spec", "standby")
+		err := field.Invalid(path, cluster.Name, "Standby requires a host or repoName to be enabled")
+		r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidStandbyConfiguration",
+			err.Error())
+		return result, err
 	}
 
 	var (

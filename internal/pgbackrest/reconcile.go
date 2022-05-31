@@ -419,7 +419,7 @@ func ReplicaCreateCommand(
 		}
 	}
 
-	if cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled {
+	if cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled && cluster.Spec.Standby.RepoName != "" {
 		// Patroni initializes standby clusters using the same command it uses
 		// for any replica. Assume the repository in the spec has a stanza
 		// and can be used to restore. The repository name is validated by the
