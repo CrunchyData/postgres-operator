@@ -10656,16 +10656,24 @@ spec:
                   enabled:
                     default: true
                     description: Whether or not the PostgreSQL cluster should be read-only.
-                      When this is true, WAL files are applied from the pgBackRest
-                      repository.
+                      When this is true, WAL files are applied from a pgBackRest repository
+                      or another PostgreSQL server.
                     type: boolean
+                  host:
+                    description: Network address of the PostgreSQL server to follow
+                      via streaming replication.
+                    type: string
+                  port:
+                    description: Network port of the PostgreSQL server to follow via
+                      streaming replication.
+                    format: int32
+                    minimum: 1024
+                    type: integer
                   repoName:
                     description: The name of the pgBackRest repository to follow for
                       WAL files.
                     pattern: ^repo[1-4]
                     type: string
-                required:
-                - repoName
                 type: object
               supplementalGroups:
                 description: 'A list of group IDs applied to the process of a container.

@@ -34,6 +34,7 @@ const (
 )
 
 const (
+	basebackupCreateReplicaMethod = "basebackup"
 	pgBackRestCreateReplicaMethod = "pgbackrest"
 )
 
@@ -280,16 +281,31 @@ func DynamicConfiguration(
 			}
 		}
 
-		// NOTE(cbandy): pgBackRest is the only supported standby source.
+		// Unset any previous value for restore_command - we will set it later if needed
+		delete(standby, "restore_command")
 
-		// Do not fallback to other methods when creating the standby leader.
-		standby["create_replica_methods"] = []string{pgBackRestCreateReplicaMethod}
+		// Populate replica creation methods based on options provided in the standby spec:
+		methods := []string{}
+		if cluster.Spec.Standby.Host != "" {
+			standby["host"] = cluster.Spec.Standby.Host
+			if cluster.Spec.Standby.Port != nil {
+				standby["port"] = *cluster.Spec.Standby.Port
+			}
 
-		// Populate the standby leader by shipping logs through pgBackRest.
-		// This also overrides the "restore_command" used by standby replicas.
-		// - https://www.postgresql.org/docs/current/warm-standby.html
-		standby["restore_command"] = pgParameters.Mandatory.Value("restore_command")
+			methods = append([]string{basebackupCreateReplicaMethod}, methods...)
+		}
 
+		if cluster.Spec.Standby.RepoName != "" {
+			// Append pgbackrest as the first choice when creating the standby
+			methods = append([]string{pgBackRestCreateReplicaMethod}, methods...)
+
+			// Populate the standby leader by shipping logs through pgBackRest.
+			// This also overrides the "restore_command" used by standby replicas.
+			// - https://www.postgresql.org/docs/current/warm-standby.html
+			standby["restore_command"] = pgParameters.Mandatory.Value("restore_command")
+		}
+
+		standby["create_replica_methods"] = methods
 		root["standby_cluster"] = standby
 	}
 

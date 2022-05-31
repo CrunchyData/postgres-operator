@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
@@ -562,11 +563,12 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "standby_cluster: spec overrides input",
+			name: "standby_cluster: repo only",
 			cluster: &v1beta1.PostgresCluster{
 				Spec: v1beta1.PostgresClusterSpec{
 					Standby: &v1beta1.PostgresStandbySpec{
-						Enabled: true,
+						Enabled:  true,
+						RepoName: "repo",
 					},
 				},
 			},
@@ -594,6 +596,94 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 				"standby_cluster": map[string]interface{}{
 					"create_replica_methods": []string{"pgbackrest"},
+					"restore_command":        "mandatory",
+					"unrelated":              "input",
+				},
+			},
+		},
+		{
+			name: "standby_cluster: basebackup for streaming",
+			cluster: &v1beta1.PostgresCluster{
+				Spec: v1beta1.PostgresClusterSpec{
+					Standby: &v1beta1.PostgresStandbySpec{
+						Enabled: true,
+						Host:    "0.0.0.0",
+						Port:    initialize.Int32(5432),
+					},
+				},
+			},
+			input: map[string]interface{}{
+				"standby_cluster": map[string]interface{}{
+					"host":            "overridden",
+					"port":            int32(0000),
+					"restore_command": "overridden",
+					"unrelated":       "input",
+				},
+			},
+			params: postgres.Parameters{
+				Mandatory: parameters(map[string]string{
+					"restore_command": "mandatory",
+				}),
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"restore_command": "mandatory",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+				"standby_cluster": map[string]interface{}{
+					"create_replica_methods": []string{"basebackup"},
+					"host":                   "0.0.0.0",
+					"port":                   int32(5432),
+					"unrelated":              "input",
+				},
+			},
+		},
+		{
+			name: "standby_cluster: both repo and streaming",
+			cluster: &v1beta1.PostgresCluster{
+				Spec: v1beta1.PostgresClusterSpec{
+					Standby: &v1beta1.PostgresStandbySpec{
+						Enabled:  true,
+						Host:     "0.0.0.0",
+						Port:     initialize.Int32(5432),
+						RepoName: "repo",
+					},
+				},
+			},
+			input: map[string]interface{}{
+				"standby_cluster": map[string]interface{}{
+					"host":            "overridden",
+					"port":            int32(9999),
+					"restore_command": "overridden",
+					"unrelated":       "input",
+				},
+			},
+			params: postgres.Parameters{
+				Mandatory: parameters(map[string]string{
+					"restore_command": "mandatory",
+				}),
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"restore_command": "mandatory",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+				"standby_cluster": map[string]interface{}{
+					"create_replica_methods": []string{"pgbackrest", "basebackup"},
+					"host":                   "0.0.0.0",
+					"port":                   int32(5432),
 					"restore_command":        "mandatory",
 					"unrelated":              "input",
 				},

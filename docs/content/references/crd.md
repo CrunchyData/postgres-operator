@@ -16042,14 +16042,24 @@ Run this cluster as a read-only copy of an existing cluster or archive.
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>enabled</b></td>
+        <td>boolean</td>
+        <td>Whether or not the PostgreSQL cluster should be read-only. When this is true, WAL files are applied from a pgBackRest repository or another PostgreSQL server.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>host</b></td>
+        <td>string</td>
+        <td>Network address of the PostgreSQL server to follow via streaming replication.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>Network port of the PostgreSQL server to follow via streaming replication.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>repoName</b></td>
         <td>string</td>
         <td>The name of the pgBackRest repository to follow for WAL files.</td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>enabled</b></td>
-        <td>boolean</td>
-        <td>Whether or not the PostgreSQL cluster should be read-only. When this is true, WAL files are applied from the pgBackRest repository.</td>
         <td>false</td>
       </tr></tbody>
 </table>

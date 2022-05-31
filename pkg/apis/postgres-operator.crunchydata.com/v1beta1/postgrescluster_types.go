@@ -536,15 +536,25 @@ type PostgresProxyStatus struct {
 // PostgresStandbySpec defines if/how the cluster should be a hot standby.
 type PostgresStandbySpec struct {
 	// Whether or not the PostgreSQL cluster should be read-only. When this is
-	// true, WAL files are applied from the pgBackRest repository.
+	// true, WAL files are applied from a pgBackRest repository or another
+	// PostgreSQL server.
 	// +optional
 	// +kubebuilder:default=true
 	Enabled bool `json:"enabled"`
 
 	// The name of the pgBackRest repository to follow for WAL files.
-	// +kubebuilder:validation:Required
+	// +optional
 	// +kubebuilder:validation:Pattern=^repo[1-4]
-	RepoName string `json:"repoName"`
+	RepoName string `json:"repoName,omitempty"`
+
+	// Network address of the PostgreSQL server to follow via streaming replication.
+	// +optional
+	Host string `json:"host,omitempty"`
+
+	// Network port of the PostgreSQL server to follow via streaming replication.
+	// +optional
+	// +kubebuilder:validation:Minimum=1024
+	Port *int32 `json:"port,omitempty"`
 }
 
 // UserInterfaceSpec is a union of the supported PostgreSQL user interfaces.

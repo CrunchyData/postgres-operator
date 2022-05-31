@@ -27,7 +27,21 @@ kubectl patch postgrescluster/hippo -n postgres-operator --type merge \
   --patch '{"spec":{"shutdown": true}}'
 ```
 
-Shutting down a cluster will terminate all of the active Pods. Any Statefulsets or Deployments are scaled to `0`.
+The effect of this is that all the Kubernetes workloads for this cluster are
+scaled to 0. You can verify this with the following command:
+
+```
+kubectl get deploy,sts,cronjob --selector=postgres-operator.crunchydata.com/cluster=hippo
+
+NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/hippo-pgbouncer   0/0     0            0           1h
+
+NAME                             READY   AGE
+statefulset.apps/hippo-00-lwgx   0/0     1h
+
+NAME                             SCHEDULE   SUSPEND   ACTIVE
+cronjob.batch/hippo-repo1-full   @daily     True      0
+```
 
 To turn a Postgres cluster that is shut down back on, you can set `spec.shutdown` to `false`.
 

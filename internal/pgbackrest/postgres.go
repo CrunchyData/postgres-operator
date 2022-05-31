@@ -63,7 +63,7 @@ func PostgreSQL(
 	restore := `pgbackrest --stanza=` + DefaultStanzaName + ` archive-get %f "%p"`
 	outParameters.Mandatory.Add("restore_command", restore)
 
-	if inCluster.Spec.Standby != nil && inCluster.Spec.Standby.Enabled {
+	if inCluster.Spec.Standby != nil && inCluster.Spec.Standby.Enabled && inCluster.Spec.Standby.RepoName != "" {
 
 		// Fetch WAL files from the designated repository. The repository name
 		// is validated by the Kubernetes API, so it does not need to be quoted

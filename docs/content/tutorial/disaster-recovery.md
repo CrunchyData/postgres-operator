@@ -234,30 +234,27 @@ Please review the pgBackRest documentation on the [limitations on restoring indi
 
 ## Standby Cluster
 
-Advanced high-availability and disaster recovery strategies involve spreading
-your database clusters across multiple data centers to help maximize uptime.
-In Kubernetes, this technique is known as "[federation](https://en.wikipedia.org/wiki/Federation_(information_technology))".
-Federated Kubernetes clusters are able to communicate with each other,
-coordinate changes, and provide resiliency for applications that have high
-uptime requirements.
+Advanced high-availability and disaster recovery strategies involve spreading your database clusters
+across data centers to help maximize uptime. PGO provides ways to deploy postgresclusters that can
+span multiple Kubernetes clusters using an external storage system or PostgreSQL streaming replication.
+The [disaster recovery architecture]({{< relref "architecture/disaster-recovery.md" >}}) documentation
+provides a high-level overview of standby clusters with PGO can be found in the [disaster recovery
+architecture] documentation.
 
-As of this writing, federation in Kubernetes is still in ongoing development.
-In the meantime, PGO provides a way to deploy Postgres clusters that can span
-multiple Kubernetes clusters using an external storage system:
+### Creating a standby Cluster
 
-- Amazon S3, or a system that uses the S3 protocol,
-- Azure Blob Storage, or
-- Google Cloud Storage
+This tutorial section will describe how to create three different types of standby clusters, one
+using an external storage system, one that is streaming data directly from the primary, and one that
+takes advantage of both external storage and streaming. These example clusters can be created in the
+same Kubernetes cluster, using a single PGO instance, or spread across different Kubernetes clusters
+and PGO instances with the correct storage and networking configurations.
 
-Standby Postgres clusters are managed just like any other Postgres cluster in PGO.
-For example, adding replicas to a standby cluster is a matter of increasing the
-`spec.instances.replicas` value. The main difference is that PostgreSQL data in
-the cluster is read-only: one PostgreSQL instance is reading in the database
-changes from an external repository while the other instances are replicas of it.
-This is known as [cascading replication](https://www.postgresql.org/docs/current/warm-standby.html#CASCADING-REPLICATION).
+#### Repo-based Standby
 
-The following manifest defines a Postgres cluster that recovers from WAL files
-stored in an S3 bucket:
+A repo-based standby will recover from WAL files a pgBackRest repo stored in external storage. The
+primary cluster should be created with a cloud-based [backup configuration]({{< relref "tutorial/backups.md" >}}).
+The following manifest defines a Postgrescluster with `standby.enabled` set to true and `repoName`
+configured to point to the `s3` repo configured in the primary:
 
 ```
 apiVersion: postgres-operator.crunchydata.com/v1beta1
@@ -268,12 +265,7 @@ spec:
   image: {{< param imageCrunchyPostgres >}}
   postgresVersion: {{< param postgresVersion >}}
   instances:
-    - dataVolumeClaimSpec:
-        accessModes:
-        - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: 1Gi
+    - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
   backups:
     pgbackrest:
       image: {{< param imageCrunchyPGBackrest >}}
@@ -288,37 +280,88 @@ spec:
     repoName: repo1
 ```
 
-There comes a time where a standby cluster needs to be promoted to an active
-cluster. Promoting a standby cluster means that a PostgreSQL instance within
-it will start accepting both reads and writes. This has the net effect of
-pushing WAL (transaction archives) to the pgBackRest repository, so we need to
-take a few steps first to ensure we don't accidentally create a split-brain scenario.
+#### Streaming Standby
 
-First, if this is not a disaster scenario, you will want to "shutdown" the
-active PostgreSQL cluster. This can be done with the `spec.shutdown` attribute:
+A streaming standby relies on an authenticated connection to the primary over the network. The primary
+cluster should be accessible via the network and allow TLS authentication (TLS is enabled by default).
+In the following manifest, we have `standby.enabled` set to `true` and have provided both the `host`
+and `port` that point to the primary cluster. We have also defined `customTLSSecret` and
+`customReplicationTLSSecret` to provide certs that allow the standby to authenticate to the primary.
+For this type of standby, you must use [custom TLS]({{< relref "tutorial/customize-cluster.md" >}}#customize-tls):
 
 ```
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo-standby
 spec:
-  shutdown: true
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
+  instances:
+    - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  customTLSSecret:
+    name: cluster-cert
+  customReplicationTLSSecret:
+    name: replication-cert
+  standby:
+    enabled: true
+    host: "<primary-ip>"
+    port: "<primary-port>"
 ```
 
-The effect of this is that all the Kubernetes workloads for this cluster are
-scaled to 0. You can verify this with the following command:
+#### Streaming Standby with an External Repo
+
+Another option is to create a standby cluster using an external pgBackRest repo that streams from the
+primary. With this setup, the standby cluster will continue recovering from the pgBackRest repo if
+streaming replication falls behind. In this manifest, we have enabled the settings from both previous
+examples:
 
 ```
-kubectl get deploy,sts,cronjob --selector=postgres-operator.crunchydata.com/cluster=hippo
-
-NAME                              READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/hippo-pgbouncer   0/0     0            0           1h
-
-NAME                             READY   AGE
-statefulset.apps/hippo-00-lwgx   0/0     1h
-
-NAME                                        SCHEDULE   SUSPEND   ACTIVE
-cronjob.batch/hippo-repo1-full   @daily     True      0
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo-standby
+spec:
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
+  instances:
+    - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  backups:
+    pgbackrest:
+      image: {{< param imageCrunchyPGBackrest >}}
+      repos:
+      - name: repo1
+        s3:
+          bucket: "my-bucket"
+          endpoint: "s3.ca-central-1.amazonaws.com"
+          region: "ca-central-1"
+  customTLSSecret:
+    name: cluster-cert
+  customReplicationTLSSecret:
+    name: replication-cert
+  standby:
+    enabled: true
+    repoName: repo1
+    host: "<primary-ip>"
+    port: "<primary-port>"
 ```
 
-We can then promote the standby cluster by removing or disabling its
+## Promoting a Standby Cluster
+
+At some point, you will want to promote the standby to start accepting both reads and writes.
+This has the net effect of pushing WAL (transaction archives) to the pgBackRest repository, so we
+need to ensure we don't accidentally create a split-brain scenario. Split-brain can happen if two
+primary instances attempt to write to the same repository. If the primary cluster is still active,
+make sure you [shutdown]({{< relref "tutorial/administrative-tasks.md" >}}#shutdown) the primary
+before trying to promote the standby cluster.
+
+Once the primary is inactive, we can promote the standby cluster by removing or disabling its
 `spec.standby` section:
 
 ```
@@ -328,7 +371,7 @@ spec:
 ```
 
 This change triggers the promotion of the standby leader to a primary PostgreSQL
-instance, and the cluster begins accepting writes.
+instance and the cluster begins accepting writes.
 
 ## Clone From Backups Stored in S3 / GCS / Azure Blob Storage {#cloud-based-data-source}
 
