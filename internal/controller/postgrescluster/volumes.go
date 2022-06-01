@@ -75,7 +75,26 @@ func (r *Reconciler) observePersistentVolumeClaims(
 		for _, condition := range pvc.Status.Conditions {
 			switch condition.Type {
 			case
+				// When the resize controller sees `spec.resources != status.capacity`,
+				// it sets a "Resizing" condition and invokes the storage provider.
+				// NOTE: The oldest KEP talks about "ResizeStarted", but that
+				// changed to "Resizing" during the merge to Kubernetes v1.8.
+				// - https://git.k8s.io/enhancements/keps/sig-storage/284-enable-volume-expansion
+				// - https://pr.k8s.io/49727#discussion_r136678508
 				corev1.PersistentVolumeClaimResizing,
+
+				// Kubernetes v1.10 added the "FileSystemResizePending" condition
+				// to indicate when the storage provider has finished its work.
+				// When a CSI implementation indicates that it performed the
+				// *entire* resize, this condition does not appear.
+				// - https://git.k8s.io/enhancements/keps/sig-storage/556-csi-volume-resizing
+				// - https://pr.k8s.io/58415
+				//
+				// Kubernetes v1.15 ("ExpandInUsePersistentVolumes" feature gate)
+				// finishes the resize of mounted and writable PVCs that have
+				// the "FileSystemResizePending" condition. When the work is done,
+				// the condition is removed and `spec.resources == status.capacity`.
+				// - https://git.k8s.io/enhancements/keps/sig-storage/531-online-pv-resizing
 				corev1.PersistentVolumeClaimFileSystemResizePending:
 
 				// Initialize from the first condition.

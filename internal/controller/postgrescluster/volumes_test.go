@@ -21,453 +21,240 @@ package postgrescluster
 import (
 	"context"
 	"errors"
-	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"gotest.tools/v3/assert"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	storagev1 "k8s.io/api/storage/v1"
-	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-func TestPersistentVolumeClaimLimitations(t *testing.T) {
-	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.Skip("requires a running persistent volume controller")
-	}
+func TestHandlePersistentVolumeClaimError(t *testing.T) {
+	scheme, err := runtime.CreatePostgresOperatorScheme()
+	assert.NilError(t, err)
 
-	ctx := context.Background()
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 1)
-
-	ns := setupNamespace(t, cc)
-
-	// Stub to see that handlePersistentVolumeClaimError returns nil.
-	cluster := new(v1beta1.PostgresCluster)
+	recorder := events.NewRecorder(t, scheme)
 	reconciler := &Reconciler{
-		Recorder: new(record.FakeRecorder),
+		Recorder: recorder,
 	}
 
-	apiErrorStatus := func(t testing.TB, err error) metav1.Status {
-		t.Helper()
-		var status apierrors.APIStatus
-		assert.Assert(t, errors.As(err, &status))
-		return status.Status()
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Namespace = "ns1"
+	cluster.Name = "pg2"
+
+	reset := func() {
+		cluster.Status.Conditions = cluster.Status.Conditions[:0]
+		recorder.Events = recorder.Events[:0]
 	}
 
-	// NOTE(cbandy): use multiples of 1Gi below to stay compatible with AWS, GCP, etc.
+	// It returns any error it does not recognize completely.
+	t.Run("Unexpected", func(t *testing.T) {
+		t.Cleanup(reset)
 
-	// Statically provisioned volumes cannot be resized. The API response depends
-	// on the phase of the volume claim.
-	t.Run("StaticNoResize", func(t *testing.T) {
-		// A static PVC is one with a present-and-blank storage class.
-		// - https://docs.k8s.io/concepts/storage/persistent-volumes/#static
-		// - https://docs.k8s.io/concepts/storage/persistent-volumes/#class-1
-		base := &corev1.PersistentVolumeClaim{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
-			spec: {
-				storageClassName: "",
-				accessModes: [ReadWriteOnce],
-				selector: { matchLabels: { postgres-operator-test: static-no-resize } },
-				resources: { requests: { storage: 2Gi } },
-			},
-		}`), base))
-		base.Namespace = ns.Name
+		err := errors.New("whomp")
 
-		t.Run("Pending", func(t *testing.T) {
-			// No persistent volume for this claim.
-			pvc := base.DeepCopy()
-			pvc.Name = "static-pvc-pending"
-			assert.NilError(t, cc.Create(ctx, pvc))
-			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pvc)) })
+		assert.Equal(t, err, reconciler.handlePersistentVolumeClaimError(cluster, err))
+		assert.Assert(t, len(cluster.Status.Conditions) == 0)
+		assert.Assert(t, len(recorder.Events) == 0)
 
-			// Not able to shrink the storage request.
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("1Gi")
+		err = apierrors.NewInvalid(
+			corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim").GroupKind(),
+			"some-pvc",
+			field.ErrorList{
+				field.Forbidden(field.NewPath("metadata"), "dunno"),
+			})
 
-			err := cc.Update(ctx, pvc)
-			assert.Assert(t, apierrors.IsInvalid(err), "expected Invalid, got\n%#v", err)
-			assert.ErrorContains(t, err, "less than previous")
-			assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
+		assert.Equal(t, err, reconciler.handlePersistentVolumeClaimError(cluster, err))
+		assert.Assert(t, len(cluster.Status.Conditions) == 0)
+		assert.Assert(t, len(recorder.Events) == 0)
+	})
 
-			status := apiErrorStatus(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, len(status.Details.Causes) != 0)
-			assert.Equal(t, status.Details.Causes[0].Field, "spec")
-			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
+	// Neither statically nor dynamically provisioned claims can be resized
+	// before they are bound to a persistent volume. Kubernetes rejects such
+	// changes during PVC validation.
+	//
+	// A static PVC is one with a present-and-blank storage class. It is
+	// pending until a PV exists that matches its selector, requests, etc.
+	// - https://docs.k8s.io/concepts/storage/persistent-volumes/#static
+	// - https://docs.k8s.io/concepts/storage/persistent-volumes/#class-1
+	//
+	// A dynamic PVC is associated with a storage class. Storage classes that
+	// "WaitForFirstConsumer" do not bind a PV until there is a pod.
+	// - https://docs.k8s.io/concepts/storage/persistent-volumes/#dynamic
+	t.Run("Pending", func(t *testing.T) {
+		t.Run("Grow", func(t *testing.T) {
+			t.Cleanup(reset)
 
+			err := apierrors.NewInvalid(
+				corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim").GroupKind(),
+				"my-pending-pvc",
+				field.ErrorList{
+					// - https://releases.k8s.io/v1.24.0/pkg/apis/core/validation/validation.go#L2184
+					field.Forbidden(field.NewPath("spec"), "… immutable … bound claim …"),
+				})
+
+			// PVCs will bind eventually. This error should become an event without a condition.
 			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 
-			// Not able to grow the storage request.
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
+			assert.Check(t, len(cluster.Status.Conditions) == 0)
+			assert.Check(t, len(recorder.Events) > 0)
 
-			err = cc.Update(ctx, pvc)
-			assert.Assert(t, apierrors.IsInvalid(err), "expected Invalid, got\n%#v", err)
-			assert.ErrorContains(t, err, "bound claim")
-			assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
-
-			status = apiErrorStatus(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, len(status.Details.Causes) != 0)
-			assert.Equal(t, status.Details.Causes[0].Field, "spec")
-			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
-
-			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
+			for _, event := range recorder.Events {
+				assert.Equal(t, event.Type, "Warning")
+				assert.Equal(t, event.Reason, "PersistentVolumeError")
+				assert.Assert(t, cmp.Contains(event.Note, "PersistentVolumeClaim"))
+				assert.Assert(t, cmp.Contains(event.Note, "my-pending-pvc"))
+				assert.Assert(t, cmp.Contains(event.Note, "bound claim"))
+				assert.DeepEqual(t, event.Regarding, corev1.ObjectReference{
+					APIVersion: v1beta1.GroupVersion.Identifier(),
+					Kind:       "PostgresCluster",
+					Namespace:  "ns1", Name: "pg2",
+				})
+			}
 		})
 
-		t.Run("Bound", func(t *testing.T) {
-			// A persistent volume that will match the claim.
-			pv := &corev1.PersistentVolume{}
-			assert.NilError(t, yaml.Unmarshal([]byte(`{
-				metadata: {
-					generateName: postgres-operator-test-,
-					labels: { postgres-operator-test: static-no-resize },
-				},
-				spec: {
-					accessModes: [ReadWriteOnce],
-					capacity: { storage: 4Gi },
-					hostPath: { path: /tmp },
-					persistentVolumeReclaimPolicy: Delete,
-				},
-			}`), pv))
+		t.Run("Shrink", func(t *testing.T) {
+			t.Cleanup(reset)
 
-			assert.NilError(t, cc.Create(ctx, pv))
-			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pv)) })
+			// Requests to make a pending PVC smaller fail for multiple reasons.
+			err := apierrors.NewInvalid(
+				corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim").GroupKind(),
+				"my-pending-pvc",
+				field.ErrorList{
+					// - https://releases.k8s.io/v1.24.0/pkg/apis/core/validation/validation.go#L2184
+					field.Forbidden(field.NewPath("spec"), "… immutable … bound claim …"),
 
-			assert.NilError(t, wait.PollImmediate(time.Second, Scale(10*time.Second), func() (bool, error) {
-				err := cc.Get(ctx, client.ObjectKeyFromObject(pv), pv)
-				return pv.Status.Phase != corev1.VolumePending, err
-			}), "expected Available, got %#v", pv.Status)
+					// - https://releases.k8s.io/v1.24.0/pkg/apis/core/validation/validation.go#L2188
+					field.Forbidden(field.NewPath("spec", "resources", "requests", "storage"), "… not be less …"),
+				})
 
-			pvc := base.DeepCopy()
-			pvc.Name = "static-pvc-bound"
-			assert.NilError(t, cc.Create(ctx, pvc))
-			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pvc)) })
-
-			assert.NilError(t, wait.PollImmediate(time.Second, Scale(10*time.Second), func() (bool, error) {
-				err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
-				return pvc.Status.Phase != corev1.ClaimPending, err
-			}), "expected Bound, got %#v", pvc.Status)
-
-			// Not able to shrink the storage request.
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("1Gi")
-
-			err := cc.Update(ctx, pvc)
-			assert.Assert(t, apierrors.IsInvalid(err), "expected Invalid, got\n%#v", err)
-			assert.ErrorContains(t, err, "less than previous")
-			assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
-
-			status := apiErrorStatus(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, len(status.Details.Causes) != 0)
-			assert.Equal(t, status.Details.Causes[0].Field, "spec.resources.requests.storage")
-			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
-
+			// PVCs will bind eventually, but the size is rejected.
 			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 
-			// Not able to grow the storage request.
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
+			assert.Check(t, len(cluster.Status.Conditions) > 0)
+			assert.Check(t, len(recorder.Events) > 0)
 
-			err = cc.Update(ctx, pvc)
-			assert.Assert(t, apierrors.IsForbidden(err), "expected Forbidden, got\n%#v", err)
-			assert.ErrorContains(t, err, "only dynamic")
-			assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
+			for _, condition := range cluster.Status.Conditions {
+				assert.Equal(t, condition.Type, "PersistentVolumeResizing")
+				assert.Equal(t, condition.Status, metav1.ConditionFalse)
+				assert.Equal(t, condition.Reason, "Invalid")
+				assert.Assert(t, cmp.Contains(condition.Message, "cannot be resized"))
+			}
 
-			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
+			for _, event := range recorder.Events {
+				assert.Equal(t, event.Type, "Warning")
+				assert.Equal(t, event.Reason, "PersistentVolumeError")
+				assert.Assert(t, cmp.Contains(event.Note, "PersistentVolumeClaim"))
+				assert.Assert(t, cmp.Contains(event.Note, "my-pending-pvc"))
+				assert.Assert(t, cmp.Contains(event.Note, "bound claim"))
+				assert.Assert(t, cmp.Contains(event.Note, "not be less"))
+				assert.DeepEqual(t, event.Regarding, corev1.ObjectReference{
+					APIVersion: v1beta1.GroupVersion.Identifier(),
+					Kind:       "PostgresCluster",
+					Namespace:  "ns1", Name: "pg2",
+				})
+			}
 		})
 	})
 
-	// Dynamically provisioned volumes can be resized under certain conditions.
-	// The API response depends on the phase of the volume claim.
-	// - https://releases.k8s.io/v1.21.0/plugin/pkg/admission/storage/persistentvolume/resize/admission.go
-	t.Run("Dynamic", func(t *testing.T) {
-		// Create a claim without a storage class to detect the default.
-		find := &corev1.PersistentVolumeClaim{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
-			spec: {
-				accessModes: [ReadWriteOnce],
-				selector: { matchLabels: { postgres-operator-test: find-dynamic } },
-				resources: { requests: { storage: 1Gi } },
-			},
-		}`), find))
-		find.Namespace, find.Name = ns.Name, "find-dynamic"
+	// Statically provisioned claims cannot be resized. Kubernetes responds
+	// differently based on the size growing or shrinking.
+	//
+	// Dynamically provisioned claims of storage classes that do *not*
+	// "allowVolumeExpansion" behave the same way.
+	t.Run("NoExpansion", func(t *testing.T) {
+		t.Run("Grow", func(t *testing.T) {
+			t.Cleanup(reset)
 
-		assert.NilError(t, cc.Create(ctx, find))
-		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, find)) })
+			// - https://releases.k8s.io/v1.24.0/plugin/pkg/admission/storage/persistentvolume/resize/admission.go#L108
+			err := apierrors.NewForbidden(
+				corev1.Resource("persistentvolumeclaims"), "my-static-pvc",
+				errors.New("… only dynamically provisioned …"))
 
-		if find.Spec.StorageClassName == nil {
-			t.Skip("requires a default storage class and expansion controller")
-		}
+			// This PVC cannot resize. The error should become an event and condition.
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 
-		base := &storagev1.StorageClass{}
-		base.Name = *find.Spec.StorageClassName
+			assert.Check(t, len(cluster.Status.Conditions) > 0)
+			assert.Check(t, len(recorder.Events) > 0)
 
-		if err := cc.Get(ctx, client.ObjectKeyFromObject(base), base); err != nil {
-			t.Skipf("requires a default storage class, got\n%#v", err)
-		}
-
-		t.Run("Pending", func(t *testing.T) {
-			// A storage class that will not bind until there is a pod.
-			sc := base.DeepCopy()
-			sc.ObjectMeta = metav1.ObjectMeta{
-				GenerateName: "postgres-operator-test-",
-				Labels: map[string]string{
-					"postgres-operator-test": "pvc-limitations-pending",
-				},
+			for _, condition := range cluster.Status.Conditions {
+				assert.Equal(t, condition.Type, "PersistentVolumeResizing")
+				assert.Equal(t, condition.Status, metav1.ConditionFalse)
+				assert.Equal(t, condition.Reason, "Forbidden")
+				assert.Assert(t, cmp.Contains(condition.Message, "cannot be resized"))
 			}
-			sc.ReclaimPolicy = new(corev1.PersistentVolumeReclaimPolicy)
-			*sc.ReclaimPolicy = corev1.PersistentVolumeReclaimDelete
-			sc.VolumeBindingMode = new(storagev1.VolumeBindingMode)
-			*sc.VolumeBindingMode = storagev1.VolumeBindingWaitForFirstConsumer
 
-			assert.NilError(t, cc.Create(ctx, sc))
-			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, sc)) })
-
-			pvc := &corev1.PersistentVolumeClaim{}
-			assert.NilError(t, yaml.Unmarshal([]byte(`{
-				spec: {
-					accessModes: [ReadWriteOnce],
-					resources: { requests: { storage: 2Gi } },
-				},
-			}`), pvc))
-			pvc.Namespace, pvc.Name = ns.Name, "dynamic-pvc-pending"
-			pvc.Spec.StorageClassName = &sc.Name
-
-			assert.NilError(t, cc.Create(ctx, pvc))
-			t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pvc)) })
-
-			// Not able to shrink the storage request.
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("1Gi")
-
-			err := cc.Update(ctx, pvc)
-			assert.Assert(t, apierrors.IsInvalid(err), "expected Invalid, got\n%#v", err)
-			assert.ErrorContains(t, err, "less than previous")
-			assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
-
-			status := apiErrorStatus(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, len(status.Details.Causes) != 0)
-			assert.Equal(t, status.Details.Causes[0].Field, "spec")
-			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
-
-			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
-
-			// Not able to grow the storage request.
-			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
-
-			err = cc.Update(ctx, pvc)
-			assert.Assert(t, apierrors.IsInvalid(err), "expected Invalid, got\n%#v", err)
-			assert.ErrorContains(t, err, "bound claim")
-			assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
-
-			status = apiErrorStatus(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, len(status.Details.Causes) != 0)
-			assert.Equal(t, status.Details.Causes[0].Field, "spec")
-			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
-
-			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
+			for _, event := range recorder.Events {
+				assert.Equal(t, event.Type, "Warning")
+				assert.Equal(t, event.Reason, "PersistentVolumeError")
+				assert.Assert(t, cmp.Contains(event.Note, "persistentvolumeclaim"))
+				assert.Assert(t, cmp.Contains(event.Note, "my-static-pvc"))
+				assert.Assert(t, cmp.Contains(event.Note, "only dynamic"))
+				assert.DeepEqual(t, event.Regarding, corev1.ObjectReference{
+					APIVersion: v1beta1.GroupVersion.Identifier(),
+					Kind:       "PostgresCluster",
+					Namespace:  "ns1", Name: "pg2",
+				})
+			}
 		})
 
-		t.Run("Bound", func(t *testing.T) {
-			setup := func(t testing.TB, expansion bool) *corev1.PersistentVolumeClaim {
-				// A storage class that binds when there is a pod and deletes volumes.
-				sc := base.DeepCopy()
-				sc.ObjectMeta = metav1.ObjectMeta{
-					GenerateName: "postgres-operator-test-",
-					Labels: map[string]string{
-						"postgres-operator-test": "pvc-limitations-bound",
-					},
-				}
-				sc.AllowVolumeExpansion = &expansion
-				sc.ReclaimPolicy = new(corev1.PersistentVolumeReclaimPolicy)
-				*sc.ReclaimPolicy = corev1.PersistentVolumeReclaimDelete
+		// Dynamically provisioned claims of storage classes that *do*
+		// "allowVolumeExpansion" can grow but cannot shrink. Kubernetes
+		// rejects such changes during PVC validation, just like static claims.
+		//
+		// A future version of Kubernetes will allow `spec.resources` to shrink
+		// so long as it is greater than `status.capacity`.
+		// - https://git.k8s.io/enhancements/keps/sig-storage/1790-recover-resize-failure
+		t.Run("Shrink", func(t *testing.T) {
+			t.Cleanup(reset)
 
-				assert.NilError(t, cc.Create(ctx, sc))
-				t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, sc)) })
+			err := apierrors.NewInvalid(
+				corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim").GroupKind(),
+				"my-static-pvc",
+				field.ErrorList{
+					// - https://releases.k8s.io/v1.24.0/pkg/apis/core/validation/validation.go#L2188
+					field.Forbidden(field.NewPath("spec", "resources", "requests", "storage"), "… not be less …"),
+				})
 
-				pvc := &corev1.PersistentVolumeClaim{}
-				pvc.ObjectMeta = metav1.ObjectMeta{
-					Namespace:    ns.Name,
-					GenerateName: "postgres-operator-test-",
-					Labels: map[string]string{
-						"postgres-operator-test": "pvc-limitations-bound",
-					},
-				}
-				assert.NilError(t, yaml.Unmarshal([]byte(`{
-					spec: {
-						accessModes: [ReadWriteOnce],
-						resources: { requests: { storage: 2Gi } },
-					},
-				}`), pvc))
-				pvc.Spec.StorageClassName = &sc.Name
+			// The PVC size is rejected. This error should become an event and condition.
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 
-				assert.NilError(t, cc.Create(ctx, pvc))
-				t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pvc)) })
+			assert.Check(t, len(cluster.Status.Conditions) > 0)
+			assert.Check(t, len(recorder.Events) > 0)
 
-				pod := &corev1.Pod{}
-				pod.Namespace, pod.Name = ns.Name, pvc.Name
-				pod.Spec.Containers = []corev1.Container{{
-					Name:    "any",
-					Image:   CrunchyPostgresHAImage,
-					Command: []string{"true"},
-					VolumeMounts: []corev1.VolumeMount{{
-						MountPath: "/tmp", Name: "volume",
-					}},
-				}}
-				pod.Spec.Volumes = []corev1.Volume{{
-					Name: "volume",
-					VolumeSource: corev1.VolumeSource{
-						PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-							ClaimName: pvc.Name,
-						},
-					},
-				}}
-
-				assert.NilError(t, cc.Create(ctx, pod))
-				t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pod)) })
-
-				assert.NilError(t, wait.PollImmediate(time.Second, Scale(30*time.Second), func() (bool, error) {
-					err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
-					return pvc.Status.Phase != corev1.ClaimPending, err
-				}), "expected Bound, got %#v", pvc.Status)
-
-				return pvc
+			for _, condition := range cluster.Status.Conditions {
+				assert.Equal(t, condition.Type, "PersistentVolumeResizing")
+				assert.Equal(t, condition.Status, metav1.ConditionFalse)
+				assert.Equal(t, condition.Reason, "Invalid")
+				assert.Assert(t, cmp.Contains(condition.Message, "cannot be resized"))
 			}
 
-			t.Run("NoExpansionNoResize", func(t *testing.T) {
-				pvc := setup(t, false)
-
-				// Not able to shrink the storage request.
-				pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("1Gi")
-
-				err := cc.Update(ctx, pvc)
-				assert.Assert(t, apierrors.IsInvalid(err), "expected Invalid, got\n%#v", err)
-				assert.ErrorContains(t, err, "less than previous")
-				assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
-
-				status := apiErrorStatus(t, err)
-				assert.Assert(t, status.Details != nil)
-				assert.Assert(t, len(status.Details.Causes) != 0)
-				assert.Equal(t, status.Details.Causes[0].Field, "spec.resources.requests.storage")
-				assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
-
-				assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
-
-				// Not able to grow the storage request.
-				pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
-
-				err = cc.Update(ctx, pvc)
-				assert.Assert(t, apierrors.IsForbidden(err), "expected Forbidden, got\n%#v", err)
-				assert.ErrorContains(t, err, "only dynamic")
-				assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
-
-				assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
-			})
-
-			t.Run("ExpansionNoShrink", func(t *testing.T) {
-				if base.AllowVolumeExpansion == nil || !*base.AllowVolumeExpansion {
-					t.Skip("requires a default storage class that allows expansion")
-				}
-
-				// Not able to shrink the storage request.
-				pvc := setup(t, true)
-				pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("1Gi")
-
-				err := cc.Update(ctx, pvc)
-				assert.Assert(t, apierrors.IsInvalid(err), "expected Invalid, got\n%#v", err)
-				assert.ErrorContains(t, err, "less than previous")
-				assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
-
-				status := apiErrorStatus(t, err)
-				assert.Assert(t, status.Details != nil)
-				assert.Assert(t, len(status.Details.Causes) != 0)
-				assert.Equal(t, status.Details.Causes[0].Field, "spec.resources.requests.storage")
-				assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
-
-				assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
-			})
-
-			t.Run("ExpansionResizeConditions", func(t *testing.T) {
-				if base.AllowVolumeExpansion == nil || !*base.AllowVolumeExpansion {
-					t.Skip("requires a default storage class that allows expansion")
-				}
-
-				pvc := setup(t, true)
-				pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
-				assert.NilError(t, cc.Update(ctx, pvc))
-
-				var condition *corev1.PersistentVolumeClaimCondition
-
-				// When the resize controller sees that `spec.resources != status.capacity`,
-				// it sets a "Resizing" condition and invokes the storage provider.
-				// The provider could work very quickly and we miss the condition.
-				// NOTE(cbandy): The oldest KEP talks about "ResizeStarted", but
-				// that changed to "Resizing" during the merge to Kubernetes v1.8.
-				// - https://git.k8s.io/enhancements/keps/sig-storage/284-enable-volume-expansion
-				// - https://pr.k8s.io/49727#discussion_r136678508
-				assert.NilError(t, wait.PollImmediate(time.Second, Scale(10*time.Second), func() (bool, error) {
-					err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
-					for i := range pvc.Status.Conditions {
-						if pvc.Status.Conditions[i].Type == corev1.PersistentVolumeClaimResizing {
-							condition = &pvc.Status.Conditions[i]
-						}
-					}
-					return condition != nil ||
-						equality.Semantic.DeepEqual(pvc.Spec.Resources, pvc.Status.Capacity), err
-				}), "expected Resizing, got %+v", pvc.Status)
-
-				if condition != nil {
-					assert.Equal(t, condition.Status, corev1.ConditionTrue,
-						"expected Resizing, got %+v", condition)
-				}
-
-				// Kubernetes v1.10 added the "FileSystemResizePending" condition
-				// to indicate when the storage provider has finished its work.
-				// When a CSI implementation indicates that it performed the
-				// *entire* resize, this condition does not appear.
-				// - https://pr.k8s.io/58415
-				// - https://git.k8s.io/enhancements/keps/sig-storage/556-csi-volume-resizing
-				assert.NilError(t, wait.PollImmediate(time.Second, Scale(30*time.Second), func() (bool, error) {
-					err := cc.Get(ctx, client.ObjectKeyFromObject(pvc), pvc)
-					for i := range pvc.Status.Conditions {
-						if pvc.Status.Conditions[i].Type == corev1.PersistentVolumeClaimFileSystemResizePending {
-							condition = &pvc.Status.Conditions[i]
-						}
-					}
-					return condition != nil ||
-						equality.Semantic.DeepEqual(pvc.Spec.Resources, pvc.Status.Capacity), err
-				}), "expected FileSystemResizePending, got %+v", pvc.Status)
-
-				if condition != nil {
-					assert.Equal(t, condition.Status, corev1.ConditionTrue,
-						"expected FileSystemResizePending, got %+v", condition)
-				}
-
-				// Kubernetes v1.15 ("ExpandInUsePersistentVolumes" feature gate)
-				// will finish the resize of mounted and writable PVCs that have
-				// the "FileSystemResizePending" condition. When the work is done,
-				// the condition is removed and `spec.resources == status.capacity`.
-				// - https://git.k8s.io/enhancements/keps/sig-storage/531-online-pv-resizing
-
-				// A future version of Kubernetes will allow `spec.resources` to
-				// shrink so long as it is greater than `status.capacity`.
-				// - https://git.k8s.io/enhancements/keps/sig-storage/1790-recover-resize-failure
-			})
+			for _, event := range recorder.Events {
+				assert.Equal(t, event.Type, "Warning")
+				assert.Equal(t, event.Reason, "PersistentVolumeError")
+				assert.Assert(t, cmp.Contains(event.Note, "PersistentVolumeClaim"))
+				assert.Assert(t, cmp.Contains(event.Note, "my-static-pvc"))
+				assert.Assert(t, cmp.Contains(event.Note, "not be less"))
+				assert.DeepEqual(t, event.Regarding, corev1.ObjectReference{
+					APIVersion: v1beta1.GroupVersion.Identifier(),
+					Kind:       "PostgresCluster",
+					Namespace:  "ns1", Name: "pg2",
+				})
+			}
 		})
 	})
 }
