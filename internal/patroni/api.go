@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -176,4 +177,25 @@ func (exec Executor) RestartPendingMembers(ctx context.Context, role, scope stri
 	)
 
 	return err
+}
+
+// GetTimeline gets the patronictl status and returns the timeline,
+// currently the only information required by the postgres-operator.
+func (exec Executor) GetTimeline(ctx context.Context) (string, error) {
+	var stdout, stderr bytes.Buffer
+
+	// The following exits zero when it is able to read the DCS and communicate
+	// with the Patroni HTTP API. It prints the result of calling "GET /cluster"
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/ctl.py#L849
+	err := exec(ctx, nil, &stdout, &stderr,
+		"patronictl", "list")
+
+	regEx := regexp.MustCompile(`\|\s+Leader\s+\|\s+running\s+\|\s+(\d+)\s+\|`)
+	timeline := regEx.FindStringSubmatch(stdout.String())
+
+	if len(timeline) == 2 {
+		return timeline[1], err
+	}
+
+	return "", err
 }

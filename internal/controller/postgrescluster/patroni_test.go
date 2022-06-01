@@ -444,16 +444,23 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	var called, failover, callError, callFails bool
-	var timelineCallFails, timelineCall10 bool
+	var timelineCallFails, timelineCall bool
 	r := Reconciler{
 		Client: client,
 		PodExec: func(namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
 			called = true
 			switch {
-			case timelineCall10:
-				timelineCall10 = false
-				stdout.Write([]byte("10"))
+			case timelineCall:
+				timelineCall = false
+				stdout.Write([]byte(`
++------------------------+-----------------------------------+---------+---------+----+-----------+
+| Member                 | Host                              | Role    | State   | TL | Lag in MB |
++ Cluster: hippo-ha (7104097865992511580) -------------------+---------+---------+----+-----------+
+| hippo-instance1-2vht-0 | hippo-instance1-2vht-0.hippo-pods | Leader  | running |  4 |           |
+| hippo-instance1-hwwb-0 | hippo-instance1-hwwb-0.hippo-pods | Replica | running |  4 |         0 |
++------------------------+-----------------------------------+---------+---------+----+-----------+
+`))
 			case timelineCallFails:
 				stdout.Write([]byte("bang"))
 			case callError:
@@ -680,7 +687,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		timelineCall10, timelineCallFails = false, false
+		timelineCall, timelineCallFails = false, false
 		called, failover, callError, callFails = false, false, true, false
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
 		assert.Error(t, err, "boom")
@@ -703,10 +710,10 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		timelineCall10, timelineCallFails = false, true
+		timelineCall, timelineCallFails = false, true
 		called, failover, callError, callFails = false, false, false, false
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
-		assert.Error(t, err, "error getting and parsing current timeline, got bang")
+		assert.Error(t, err, "error getting and parsing current timeline")
 		assert.Assert(t, called)
 		assert.Assert(t, cluster.Status.Patroni.Switchover == nil)
 	})
@@ -726,12 +733,12 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		timelineCall10, timelineCallFails = true, false
+		timelineCall, timelineCallFails = true, false
 		called, failover, callError, callFails = false, false, false, false
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
 		assert.NilError(t, err)
 		assert.Assert(t, called)
-		assert.Assert(t, *cluster.Status.Patroni.ExpectedTimeline == "10")
+		assert.Assert(t, *cluster.Status.Patroni.ExpectedTimeline == "4")
 	})
 
 	t.Run("timeline mismatch, timeline not updated", func(t *testing.T) {
@@ -750,7 +757,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
 		cluster.Status.Patroni.ExpectedTimeline = initialize.String("11")
-		timelineCall10, timelineCallFails = true, false
+		timelineCall, timelineCallFails = true, false
 		called, failover, callError, callFails = false, false, false, false
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
 		assert.NilError(t, err)
@@ -773,8 +780,8 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		cluster.Status.Patroni.ExpectedTimeline = initialize.String("10")
-		timelineCall10, timelineCallFails = true, false
+		cluster.Status.Patroni.ExpectedTimeline = initialize.String("4")
+		timelineCall, timelineCallFails = true, false
 		called, failover, callError, callFails = false, false, false, true
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
 		assert.Error(t, err, "unable to switchover")
@@ -797,8 +804,8 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		cluster.Status.Patroni.ExpectedTimeline = initialize.String("10")
-		timelineCall10, timelineCallFails = true, false
+		cluster.Status.Patroni.ExpectedTimeline = initialize.String("4")
+		timelineCall, timelineCallFails = true, false
 		called, failover, callError, callFails = false, false, true, false
 		err := r.reconcilePatroniSwitchover(ctx, cluster, getObserved())
 		assert.Error(t, err, "boom")
@@ -821,12 +828,13 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		cluster.Status.Patroni.ExpectedTimeline = initialize.String("10")
-		timelineCall10, timelineCallFails = true, false
+		cluster.Status.Patroni.ExpectedTimeline = initialize.String("4")
+		timelineCall, timelineCallFails = true, false
 		called, failover, callError, callFails = false, false, false, false
 		assert.NilError(t, r.reconcilePatroniSwitchover(ctx, cluster, getObserved()))
 		assert.Assert(t, called)
 		assert.Equal(t, *cluster.Status.Patroni.Switchover, "trigger")
+		assert.Equal(t, *cluster.Status.Patroni.ExpectedTimeline, "")
 	})
 
 	t.Run("targeted switchover called", func(t *testing.T) {
@@ -845,12 +853,13 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		cluster.Status.Patroni.ExpectedTimeline = initialize.String("10")
-		timelineCall10, timelineCallFails = true, false
+		cluster.Status.Patroni.ExpectedTimeline = initialize.String("4")
+		timelineCall, timelineCallFails = true, false
 		called, failover, callError, callFails = false, false, false, false
 		assert.NilError(t, r.reconcilePatroniSwitchover(ctx, cluster, getObserved()))
 		assert.Assert(t, called)
 		assert.Equal(t, *cluster.Status.Patroni.Switchover, "trigger")
+		assert.Equal(t, *cluster.Status.Patroni.ExpectedTimeline, "")
 	})
 
 	t.Run("targeted failover called", func(t *testing.T) {
@@ -870,11 +879,12 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 			Replicas:            initialize.Int32(2),
 			DataVolumeClaimSpec: testVolumeClaimSpec(),
 		}}
-		cluster.Status.Patroni.ExpectedTimeline = initialize.String("10")
-		timelineCall10, timelineCallFails = true, false
+		cluster.Status.Patroni.ExpectedTimeline = initialize.String("4")
+		timelineCall, timelineCallFails = true, false
 		called, failover, callError, callFails = false, true, false, false
 		assert.NilError(t, r.reconcilePatroniSwitchover(ctx, cluster, getObserved()))
 		assert.Assert(t, called)
 		assert.Equal(t, *cluster.Status.Patroni.Switchover, "trigger")
+		assert.Equal(t, *cluster.Status.Patroni.ExpectedTimeline, "")
 	})
 }

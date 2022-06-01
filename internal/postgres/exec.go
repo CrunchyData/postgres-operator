@@ -34,14 +34,9 @@ type Executor func(
 func (exec Executor) Exec(
 	ctx context.Context, sql io.Reader, variables map[string]string,
 ) (string, string, error) {
-	flags := "-Xw"
 	// Convert variables into `psql` arguments.
 	args := make([]string, 0, len(variables))
 	for k, v := range variables {
-		if k == "tuples-only" {
-			flags = "-Xwt"
-			continue
-		}
 		args = append(args, "--set="+k+"="+v)
 	}
 
@@ -53,7 +48,7 @@ func (exec Executor) Exec(
 	// Execute `psql` without reading config files nor prompting for a password.
 	var stdout, stderr bytes.Buffer
 	err := exec(ctx, sql, &stdout, &stderr,
-		append([]string{"psql", flags, "--file=-"}, args...)...)
+		append([]string{"psql", "-Xw", "--file=-"}, args...)...)
 	return stdout.String(), stderr.String(), err
 }
 
