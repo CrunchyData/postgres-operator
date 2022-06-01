@@ -2,7 +2,7 @@ GOPATH ?= $(HOME)/odev/go
 GOBIN ?= $(GOPATH)/bin
 
 # Default values if not already set
-ANSIBLE_VERSION ?= 2.9.*
+ANSIBLE_VERSION ?= 2.12.*
 PGOROOT ?= $(GOPATH)/src/github.com/crunchydata/postgres-operator
 PGO_BASEOS ?= ubi8
 PGO_CMD ?= kubectl
