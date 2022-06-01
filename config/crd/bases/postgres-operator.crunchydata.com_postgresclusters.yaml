@@ -6375,6 +6375,10 @@ spec:
                     minimum: 1
                     type: integer
                 type: object
+              paused:
+                description: Suspends the rollout and reconciliation of changes made
+                  to the PostgresCluster spec.
+                type: boolean
               port:
                 default: 5432
                 description: The port on which PostgreSQL should listen.
@@ -9043,7 +9047,7 @@ spec:
               conditions:
                 description: 'conditions represent the observations of postgrescluster''s
                   current state. Known .status.conditions.type are: "PersistentVolumeResizing",
-                  "ProxyAvailable"'
+                  "Progressing", "ProxyAvailable"'
                 items:
                   description: Condition contains details for one aspect of the current
                     state of this API Resource.

@@ -31,6 +31,7 @@ import (
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -171,6 +172,25 @@ func (r *Reconciler) Reconcile(
 			log.V(1).Info("patched cluster status")
 		}
 		return result, err
+	}
+
+	// if the cluster is paused, set a condition and return
+	if cluster.Spec.Paused != nil && *cluster.Spec.Paused {
+		meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+			Type:    v1beta1.PostgresClusterProgressing,
+			Status:  metav1.ConditionFalse,
+			Reason:  "Paused",
+			Message: "No spec changes will be applied and no other statuses will be updated.",
+
+			ObservedGeneration: cluster.GetGeneration(),
+		})
+		return patchClusterStatus()
+	} else {
+		// Avoid a panic! Fixed in Kubernetes v1.21.0 and controller-runtime v0.9.0-alpha.0.
+		// - https://issue.k8s.io/99714
+		if len(cluster.Status.Conditions) > 0 {
+			meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.PostgresClusterProgressing)
+		}
 	}
 
 	pgHBAs := postgres.NewHBAs()

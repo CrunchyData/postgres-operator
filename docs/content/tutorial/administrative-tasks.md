@@ -20,7 +20,7 @@ Watch your hippo cluster: you will see the rolling update has been triggered and
 
 ## Shutdown
 
-You can shut down a Postgres cluster by setting the `spec.shutdown` attribute to `true`. You can do this by editing the manifest, or, in the case of the `hippo` cluster, executing a comand like the below:
+You can shut down a Postgres cluster by setting the `spec.shutdown` attribute to `true`. You can do this by editing the manifest, or, in the case of the `hippo` cluster, executing a command like the below:
 
 ```
 kubectl patch postgrescluster/hippo -n postgres-operator --type merge \
@@ -30,6 +30,25 @@ kubectl patch postgrescluster/hippo -n postgres-operator --type merge \
 Shutting down a cluster will terminate all of the active Pods. Any Statefulsets or Deployments are scaled to `0`.
 
 To turn a Postgres cluster that is shut down back on, you can set `spec.shutdown` to `false`.
+
+## Pausing Reconciliation and Rollout
+
+You can pause the Postgres cluster reconciliation process by setting the
+`spec.paused` attribute to `true`. You can do this by editing the manifest, or,
+in the case of the `hippo` cluster, executing a command like the below:
+
+```
+kubectl patch postgrescluster/hippo -n postgres-operator --type merge \
+  --patch '{"spec":{"paused": true}}'
+```
+
+Pausing a cluster will suspend any changes to the cluster’s current state until
+reconciliation is resumed. This allows you to fully control when changes to
+the PostgresCluster spec are rolled out to the Postgres cluster. While paused,
+no statuses are updated other than the "Progressing" condition.
+
+To resume reconciliation of a Postgres cluster, you can either set `spec.paused`
+to `false` or remove the setting from your manifest.
 
 ## Rotating TLS Certificates
 
