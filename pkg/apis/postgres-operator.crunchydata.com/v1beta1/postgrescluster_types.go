@@ -109,6 +109,11 @@ type PostgresClusterSpec struct {
 	// +optional
 	Patroni *PatroniSpec `json:"patroni,omitempty"`
 
+	// Suspends the rollout and reconciliation of changes made to the
+	// PostgresCluster spec.
+	// +optional
+	Paused *bool `json:"paused,omitempty"`
+
 	// The port on which PostgreSQL should listen.
 	// +optional
 	// +kubebuilder:default=5432
@@ -375,7 +380,7 @@ type PostgresClusterStatus struct {
 
 	// conditions represent the observations of postgrescluster's current state.
 	// Known .status.conditions.type are: "PersistentVolumeResizing",
-	// "ProxyAvailable"
+	// "Progressing", "ProxyAvailable"
 	// +optional
 	// +listType=map
 	// +listMapKey=type
@@ -385,8 +390,9 @@ type PostgresClusterStatus struct {
 
 // PostgresClusterStatus condition types.
 const (
-	PersistentVolumeResizing = "PersistentVolumeResizing"
-	ProxyAvailable           = "ProxyAvailable"
+	PersistentVolumeResizing   = "PersistentVolumeResizing"
+	PostgresClusterProgressing = "Progressing"
+	ProxyAvailable             = "ProxyAvailable"
 )
 
 type PostgresInstanceSetSpec struct {

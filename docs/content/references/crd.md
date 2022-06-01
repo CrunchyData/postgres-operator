@@ -165,6 +165,11 @@ PostgresClusterSpec defines the desired state of PostgresCluster
         <td></td>
         <td>false</td>
       </tr><tr>
+        <td><b>paused</b></td>
+        <td>boolean</td>
+        <td>Suspends the rollout and reconciliation of changes made to the PostgresCluster spec.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>port</b></td>
         <td>integer</td>
         <td>The port on which PostgreSQL should listen.</td>
@@ -13420,7 +13425,7 @@ PostgresClusterStatus defines the observed state of PostgresCluster
     <tbody><tr>
         <td><b><a href="#postgresclusterstatusconditionsindex">conditions</a></b></td>
         <td>[]object</td>
-        <td>conditions represent the observations of postgrescluster's current state. Known .status.conditions.type are: "PersistentVolumeResizing", "ProxyAvailable"</td>
+        <td>conditions represent the observations of postgrescluster's current state. Known .status.conditions.type are: "PersistentVolumeResizing", "Progressing", "ProxyAvailable"</td>
         <td>false</td>
       </tr><tr>
         <td><b>databaseInitSQL</b></td>

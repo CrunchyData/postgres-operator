@@ -1183,6 +1183,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(PatroniSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Paused != nil {
+		in, out := &in.Paused, &out.Paused
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port
 		*out = new(int32)
