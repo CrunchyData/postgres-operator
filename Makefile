@@ -1,6 +1,6 @@
 
 # Default values if not already set
-ANSIBLE_VERSION ?= 2.9.*
+ANSIBLE_VERSION ?= 2.12.*
 PGOROOT ?= $(CURDIR)
 PGO_BASEOS ?= ubi8
 BASE_IMAGE_OS ?= $(PGO_BASEOS)
