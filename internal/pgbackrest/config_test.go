@@ -264,14 +264,7 @@ func TestMakePGBackrestLogDir(t *testing.T) {
 }
 
 func TestReloadCommand(t *testing.T) {
-	shellcheck, err := exec.LookPath("shellcheck")
-	if err != nil {
-		t.Skip(`requires "shellcheck" executable`)
-	} else {
-		output, err := exec.Command(shellcheck, "--version").CombinedOutput()
-		assert.NilError(t, err)
-		t.Logf("using %q:\n%s", shellcheck, output)
-	}
+	shellcheck := require.ShellCheck(t)
 
 	command := reloadCommand("some-name")
 

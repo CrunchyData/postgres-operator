@@ -19,7 +19,10 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"math/big"
+	"time"
 )
+
+const renewalRatio = 3
 
 // Certificate represents an X.509 certificate that conforms to the Internet
 // PKI Profile, RFC 5280.
@@ -194,7 +197,22 @@ func (root *RootCertificateAuthority) leafIsValid(leaf *LeafCertificate) bool {
 		leaf.PrivateKey.ecdsa != nil &&
 		leaf.PrivateKey.ecdsa.PublicKey.Equal(leaf.Certificate.x509.PublicKey)
 
+	// It is not yet past the "renewal by" time,
+	// as defined by the before and after times of the certificate's expiration
+	// and the default ratio
+	ok = ok && isBeforeRenewalTime(leaf.Certificate.x509.NotBefore,
+		leaf.Certificate.x509.NotAfter)
+
 	return ok
+}
+
+// isBeforeRenewalTime checks if the result of `currentTime`
+// is after the default renewal time of
+// 1/3rds before the certificate's expiry
+func isBeforeRenewalTime(before, after time.Time) bool {
+	renewalDuration := after.Sub(before) / renewalRatio
+	renewalTime := after.Add(-1 * renewalDuration)
+	return currentTime().Before(renewalTime)
 }
 
 // RegenerateLeafWhenNecessary returns leaf when it is valid according to this
