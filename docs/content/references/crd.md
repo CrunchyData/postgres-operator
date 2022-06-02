@@ -13632,7 +13632,7 @@ Current state of PostgreSQL cluster monitoring tool configuration
     </thead>
     <tbody><tr>
         <td><b>expectedTimeline</b></td>
-        <td>string</td>
+        <td>integer</td>
         <td>Tracks the current timeline during switchovers</td>
         <td>false</td>
       </tr><tr>

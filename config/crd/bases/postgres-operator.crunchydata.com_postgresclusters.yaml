@@ -9152,7 +9152,8 @@ spec:
                 properties:
                   expectedTimeline:
                     description: Tracks the current timeline during switchovers
-                    type: string
+                    format: int32
+                    type: integer
                   switchover:
                     description: Tracks the execution of the switchover requests.
                     type: string

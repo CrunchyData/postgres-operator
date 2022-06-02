@@ -19,8 +19,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
-	"regexp"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -35,6 +35,12 @@ type API interface {
 
 	// ReplaceConfiguration replaces Patroni's entire dynamic configuration.
 	ReplaceConfiguration(ctx context.Context, configuration map[string]interface{}) error
+}
+
+type PatroniMember struct {
+	Role     string `json:"Role,omitempty"`
+	State    string `json:"State,omitempty"`
+	Timeline int32  `json:"TL,omitempty"`
 }
 
 // Executor implements API by calling "patronictl".
@@ -180,22 +186,37 @@ func (exec Executor) RestartPendingMembers(ctx context.Context, role, scope stri
 }
 
 // GetTimeline gets the patronictl status and returns the timeline,
-// currently the only information required by the postgres-operator.
-func (exec Executor) GetTimeline(ctx context.Context) (string, error) {
+// currently the only information required by PGO.
+// Returns `0` as the int32 if it runs into errors or cannot find
+// a running Leader pod to get the up-to-date timeline from
+func (exec Executor) GetTimeline(ctx context.Context) (int32, error) {
 	var stdout, stderr bytes.Buffer
 
 	// The following exits zero when it is able to read the DCS and communicate
 	// with the Patroni HTTP API. It prints the result of calling "GET /cluster"
 	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/ctl.py#L849
 	err := exec(ctx, nil, &stdout, &stderr,
-		"patronictl", "list")
-
-	regEx := regexp.MustCompile(`\|\s+Leader\s+\|\s+running\s+\|\s+(\d+)\s+\|`)
-	timeline := regEx.FindStringSubmatch(stdout.String())
-
-	if len(timeline) == 2 {
-		return timeline[1], err
+		"patronictl", "list", "-f", "json")
+	if err != nil {
+		return 0, err
 	}
 
-	return "", err
+	if stderr.String() != "" {
+		return 0, errors.New(stderr.String())
+	}
+
+	members := []PatroniMember{}
+	err = json.Unmarshal(stdout.Bytes(), &members)
+
+	if err != nil {
+		return 0, err
+	}
+
+	for _, member := range members {
+		if member.Role == "Leader" && member.State == "running" {
+			return member.Timeline, nil
+		}
+	}
+
+	return 0, err
 }
