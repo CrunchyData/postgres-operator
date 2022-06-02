@@ -765,7 +765,6 @@ func (r *Reconciler) handlePersistentVolumeClaimError(
 			Message: "One or more volumes cannot be resized",
 
 			ObservedGeneration: cluster.Generation,
-			LastTransitionTime: metav1.Now(),
 		})
 	}
 
