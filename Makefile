@@ -2,7 +2,6 @@ GOPATH ?= $(HOME)/odev/go
 GOBIN ?= $(GOPATH)/bin
 
 # Default values if not already set
-ANSIBLE_VERSION ?= 2.12.*
 PGOROOT ?= $(GOPATH)/src/github.com/crunchydata/postgres-operator
 PGO_BASEOS ?= ubi8
 PGO_CMD ?= kubectl
@@ -181,7 +180,6 @@ $(PGOROOT)/build/%/Dockerfile:
 		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
 		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		--build-arg BACKREST_VERSION=$(PGO_BACKREST_VERSION) \
-		--build-arg ANSIBLE_VERSION=$(ANSIBLE_VERSION) \
 		--build-arg DFSET=$(DFSET) \
 		--build-arg PACKAGER=$(PACKAGER) \
 		$(PGOROOT)

@@ -4,7 +4,6 @@ ARG PREFIX
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 ARG BASEOS
-ARG ANSIBLE_VERSION
 ARG PACKAGER
 ARG DFSET
 
@@ -19,7 +18,7 @@ RUN if [ "$DFSET" = "centos" ] ; then \
         && ${PACKAGER} -y install \
                 --setopt=skip_missing_names_on_install=False \
                 kubectl \
-                ansible-core-${ANSIBLE_VERSION} \
+                ansible \
                 which \
                 gettext \
         && ${PACKAGER} -y clean all ; \
@@ -32,7 +31,7 @@ RUN if [ "$BASEOS" = "rhel7" ] ; then \
                 --setopt=skip_missing_names_on_install=False \
                 --enablerepo='rhel-7-server-ose-4.4-rpms' \
                 openshift-clients \
-                ansible-core-${ANSIBLE_VERSION} \
+                ansible \
                 which \
                 gettext \
         && ${PACKAGER} -y clean all --enablerepo='rhel-7-server-ose-4.4-rpms' ; \
@@ -45,7 +44,7 @@ RUN if [ "$BASEOS" = "ubi7" ] ; then \
                 --setopt=skip_missing_names_on_install=False \
                 --enablerepo='rhel-7-server-ose-4.4-rpms' \
                 openshift-clients \
-                ansible-core-${ANSIBLE_VERSION} \
+                ansible \
                 which \
                 gettext \
 	&& ${PACKAGER} -y clean all --enablerepo='rhel-7-server-ose-4.4-rpms' ; \
@@ -58,7 +57,7 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
                 --setopt=skip_missing_names_on_install=False \
                 --enablerepo='rhocp-4.5-for-rhel-8-x86_64-rpms' \
                 openshift-clients \
-                ansible-core-${ANSIBLE_VERSION} \
+                ansible \
                 which \
                 gettext \
 	&& ${PACKAGER} -y clean all --enablerepo='rhocp-4.5-for-rhel-8-x86_64-rpms' ; \
