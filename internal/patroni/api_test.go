@@ -247,7 +247,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		}).GetTimeline(context.Background())
 
 		assert.Equal(t, expected, actual)
-		assert.Equal(t, tl, int32(0))
+		assert.Equal(t, tl, int64(0))
 	})
 
 	t.Run("Stderr", func(t *testing.T) {
@@ -259,7 +259,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		}).GetTimeline(context.Background())
 
 		assert.Error(t, actual, "no luck")
-		assert.Equal(t, tl, int32(0))
+		assert.Equal(t, tl, int64(0))
 	})
 
 	t.Run("BadJSON", func(t *testing.T) {
@@ -271,7 +271,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		}).GetTimeline(context.Background())
 
 		assert.Error(t, actual, "invalid character 'o' in literal null (expecting 'u')")
-		assert.Equal(t, tl, int32(0))
+		assert.Equal(t, tl, int64(0))
 	})
 
 	t.Run("NoLeader", func(t *testing.T) {
@@ -283,7 +283,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		}).GetTimeline(context.Background())
 
 		assert.NilError(t, actual)
-		assert.Equal(t, tl, int32(0))
+		assert.Equal(t, tl, int64(0))
 	})
 
 	t.Run("Success", func(t *testing.T) {
@@ -295,6 +295,6 @@ func TestExecutorGetTimeline(t *testing.T) {
 		}).GetTimeline(context.Background())
 
 		assert.NilError(t, actual)
-		assert.Equal(t, tl, int32(4))
+		assert.Equal(t, tl, int64(4))
 	})
 }

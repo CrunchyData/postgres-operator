@@ -124,5 +124,5 @@ type PatroniStatus struct {
 
 	// Tracks the current timeline during switchovers
 	// +optional
-	ExpectedTimeline *int32 `json:"expectedTimeline,omitempty"`
+	SwitchoverTimeline *int64 `json:"switchoverTimeline,omitempty"`
 }

@@ -976,9 +976,9 @@ func (in *PatroniStatus) DeepCopyInto(out *PatroniStatus) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.ExpectedTimeline != nil {
-		in, out := &in.ExpectedTimeline, &out.ExpectedTimeline
-		*out = new(int32)
+	if in.SwitchoverTimeline != nil {
+		in, out := &in.SwitchoverTimeline, &out.SwitchoverTimeline
+		*out = new(int64)
 		**out = **in
 	}
 }

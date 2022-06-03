@@ -439,7 +439,7 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 		cluster.Spec.Patroni.Switchover == nil ||
 		!cluster.Spec.Patroni.Switchover.Enabled {
 		cluster.Status.Patroni.Switchover = nil
-		cluster.Status.Patroni.ExpectedTimeline = nil
+		cluster.Status.Patroni.SwitchoverTimeline = nil
 		return nil
 	}
 
@@ -448,9 +448,9 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	status := cluster.Status.Patroni.Switchover
 
 	// If the status has been updated with the trigger annotation, the requested
-	// switchover has been successful, and the `ExpectedTimeline` field can be cleared
+	// switchover has been successful, and the `SwitchoverTimeline` field can be cleared
 	if annotation == "" || (status != nil && *status == annotation) {
-		cluster.Status.Patroni.ExpectedTimeline = nil
+		cluster.Status.Patroni.SwitchoverTimeline = nil
 		return nil
 	}
 
@@ -527,27 +527,27 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 		return errors.New("error getting and parsing current timeline")
 	}
 
-	statusTimeline := cluster.Status.Patroni.ExpectedTimeline
+	statusTimeline := cluster.Status.Patroni.SwitchoverTimeline
 
-	// If the `ExpectedTimeline` field is empty, this is the first reconcile after
+	// If the `SwitchoverTimeline` field is empty, this is the first reconcile after
 	// a switchover has been requested and we need to fill in the field with the current TL
 	// as reported by Patroni.
 	// We return from here without calling for an explicit requeue, but since we're updating
 	// the object, we will reconcile this again for the actual switchover/failover action.
 	if statusTimeline == nil || (statusTimeline != nil && *statusTimeline == 0) {
-		log.V(1).Info("Setting ExpectedTimeline to current timeline")
-		cluster.Status.Patroni.ExpectedTimeline = &timeline
-		return err
+		log.V(1).Info("Setting SwitchoverTimeline", "timeline", timeline)
+		cluster.Status.Patroni.SwitchoverTimeline = &timeline
+		return nil
 	}
 
-	// If the `ExpectedTimeline` field does not match the current timeline as reported by Patroni,
+	// If the `SwitchoverTimeline` field does not match the current timeline as reported by Patroni,
 	// then we assume a switchover has been completed, and we have reached this point because the
 	// cache does not yet have the updated `cluster.Status.Patroni.Switchover` field.
 	if statusTimeline != nil && *statusTimeline != timeline {
-		log.V(1).Info("ExpectedTimeline does not match current timeline, assuming already completed switchover")
+		log.V(1).Info("SwitchoverTimeline does not match current timeline, assuming already completed switchover")
 		cluster.Status.Patroni.Switchover = initialize.String(annotation)
-		cluster.Status.Patroni.ExpectedTimeline = nil
-		return err
+		cluster.Status.Patroni.SwitchoverTimeline = nil
+		return nil
 	}
 
 	// We have the pod executor, now we need to figure out which API call to use
@@ -581,7 +581,7 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	// and we set the status accordingly.
 	if err == nil {
 		cluster.Status.Patroni.Switchover = initialize.String(annotation)
-		cluster.Status.Patroni.ExpectedTimeline = nil
+		cluster.Status.Patroni.SwitchoverTimeline = nil
 	}
 
 	return err

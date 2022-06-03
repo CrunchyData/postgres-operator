@@ -37,12 +37,6 @@ type API interface {
 	ReplaceConfiguration(ctx context.Context, configuration map[string]interface{}) error
 }
 
-type PatroniMember struct {
-	Role     string `json:"Role,omitempty"`
-	State    string `json:"State,omitempty"`
-	Timeline int32  `json:"TL,omitempty"`
-}
-
 // Executor implements API by calling "patronictl".
 type Executor func(
 	ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
@@ -187,16 +181,16 @@ func (exec Executor) RestartPendingMembers(ctx context.Context, role, scope stri
 
 // GetTimeline gets the patronictl status and returns the timeline,
 // currently the only information required by PGO.
-// Returns `0` as the int32 if it runs into errors or cannot find
-// a running Leader pod to get the up-to-date timeline from
-func (exec Executor) GetTimeline(ctx context.Context) (int32, error) {
+// Returns zero if it runs into errors or cannot find a running Leader pod
+// to get the up-to-date timeline from.
+func (exec Executor) GetTimeline(ctx context.Context) (int64, error) {
 	var stdout, stderr bytes.Buffer
 
 	// The following exits zero when it is able to read the DCS and communicate
 	// with the Patroni HTTP API. It prints the result of calling "GET /cluster"
 	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/ctl.py#L849
 	err := exec(ctx, nil, &stdout, &stderr,
-		"patronictl", "list", "-f", "json")
+		"patronictl", "list", "--format", "json")
 	if err != nil {
 		return 0, err
 	}
@@ -205,9 +199,12 @@ func (exec Executor) GetTimeline(ctx context.Context) (int32, error) {
 		return 0, errors.New(stderr.String())
 	}
 
-	members := []PatroniMember{}
+	var members []struct {
+		Role     string
+		State    string
+		Timeline int64 `json:"TL"`
+	}
 	err = json.Unmarshal(stdout.Bytes(), &members)
-
 	if err != nil {
 		return 0, err
 	}
