@@ -30,6 +30,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
+	"github.com/crunchydata/postgres-operator/internal/util"
 )
 
 var versionString string
@@ -51,6 +52,10 @@ func initLogging() {
 }
 
 func main() {
+	// Set any supplied feature gates; panic on any unrecognized feature gate
+	err := util.AddAndSetFeatureGates(os.Getenv("PGO_FEATURE_GATES"))
+	assertNoError(err)
+
 	otelFlush, err := initOpenTelemetry()
 	assertNoError(err)
 	defer otelFlush()
