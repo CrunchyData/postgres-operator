@@ -355,6 +355,8 @@
         - name: Wait for PGO to finish deploying
           command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
           async: 600
+          vars:
+            ansible_async_dir: /tmp/.ansible_async
 
 - name: PGO Client
   tags:
