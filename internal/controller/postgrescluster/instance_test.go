@@ -21,7 +21,9 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -1095,6 +1097,10 @@ func TestPodsToKeep(t *testing.T) {
 }
 
 func TestDeleteInstance(t *testing.T) {
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("FLAKE: other controllers (PVC, STS) update objects causing conflicts when we deleteControlled")
+	}
+
 	ctx := context.Background()
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
