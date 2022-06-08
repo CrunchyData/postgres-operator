@@ -60,6 +60,7 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
                 ansible \
                 which \
                 gettext \
+                python38-jmespath \
 	&& ${PACKAGER} -y clean all --enablerepo='rhocp-4.5-for-rhel-8-x86_64-rpms' ; \
 fi
 

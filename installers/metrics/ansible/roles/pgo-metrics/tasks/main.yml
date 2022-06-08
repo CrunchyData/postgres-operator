@@ -137,6 +137,8 @@
       poll: 0
       loop: "{{ deployments }}"
       register: deployment_results
+      vars:
+        ansible_async_dir: /tmp/.ansible_async
 
     - name: Check Metrics Deployment Status
       async_status:
