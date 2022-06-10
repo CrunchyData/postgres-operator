@@ -36,6 +36,18 @@
   path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/imagePullSecrets/items/properties/name/description
 - op: copy
   from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/env/items/properties/valueFrom/properties/configMapKeyRef/properties/name/description
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/env/items/properties/valueFrom/properties/secretKeyRef/properties/name/description
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/envFrom/items/properties/configMapRef/properties/name/description
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/envFrom/items/properties/secretRef/properties/name/description
+- op: copy
+  from: /work
   path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/monitoring/properties/pgmonitor/properties/exporter/properties/configuration/items/properties/configMap/properties/name/description
 - op: copy
   from: /work
@@ -58,5 +70,25 @@
 - op: copy
   from: /work
   path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/userInterface/properties/pgAdmin/properties/config/properties/ldapBindPassword/properties/name/description
+- op: remove
+  path: /work
+- op: add
+  path: /work
+  value: TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/lifecycle/properties/postStart/properties/tcpSocket/description
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/lifecycle/properties/preStop/properties/tcpSocket/description
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/livenessProbe/properties/tcpSocket/description
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/readinessProbe/properties/tcpSocket/description
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/instances/items/properties/containers/items/properties/startupProbe/properties/tcpSocket/description
 - op: remove
   path: /work

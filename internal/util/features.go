@@ -22,17 +22,18 @@ import (
 )
 
 const (
-// Every feature gate should add a key here following this template:
-//
-// // Enables FeatureName...
-// FeatureName featuregate.Feature = "FeatureName"
-//
-// - https://releases.k8s.io/v1.20.0/pkg/features/kube_features.go#L27
-//
-// Feature gates should be listed in alphabetical, case-sensitive
-// (upper before any lower case character) order.
-//
-// TODO(tjmoore4): Features will start here
+	// Every feature gate should add a key here following this template:
+	//
+	// // Enables FeatureName...
+	// FeatureName featuregate.Feature = "FeatureName"
+	//
+	// - https://releases.k8s.io/v1.20.0/pkg/features/kube_features.go#L27
+	//
+	// Feature gates should be listed in alphabetical, case-sensitive
+	// (upper before any lower case character) order.
+	//
+	// Enables support of custom sidecars for PostgreSQL instance Pods
+	InstanceSidecars featuregate.Feature = "InstanceSidecars"
 )
 
 // pgoFeatures consists of all known PGO feature keys.
@@ -42,8 +43,9 @@ const (
 //   FeatureName: {Default: false, PreRelease: featuregate.Alpha},
 //
 // - https://releases.k8s.io/v1.20.0/pkg/features/kube_features.go#L729-732
-// TODO(tjmoore4): Features will be added to this map in upcoming commits
-var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{}
+var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{
+	InstanceSidecars: {Default: false, PreRelease: featuregate.Alpha},
+}
 
 // DefaultMutableFeatureGate is a mutable, shared global FeatureGate.
 // It is used to indicate whether a given feature is enabled or not.

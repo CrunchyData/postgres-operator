@@ -1306,6 +1306,13 @@ func (in *PostgresInstanceSetSpec) DeepCopyInto(out *PostgresInstanceSetSpec) {
 		*out = new(v1.Affinity)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Containers != nil {
+		in, out := &in.Containers, &out.Containers
+		*out = make([]v1.Container, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	in.DataVolumeClaimSpec.DeepCopyInto(&out.DataVolumeClaimSpec)
 	if in.PriorityClassName != nil {
 		in, out := &in.PriorityClassName, &out.PriorityClassName

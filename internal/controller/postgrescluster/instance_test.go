@@ -49,6 +49,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -1111,6 +1112,9 @@ func TestDeleteInstance(t *testing.T) {
 		Recorder: new(record.FakeRecorder),
 		Tracer:   otel.Tracer(t.Name()),
 	}
+
+	// Initialize the feature gate
+	assert.NilError(t, util.AddAndSetFeatureGates(""))
 
 	// Define, Create, and Reconcile a cluster to get an instance running in kube
 	cluster := testCluster()

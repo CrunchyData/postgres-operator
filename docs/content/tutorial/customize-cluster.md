@@ -198,6 +198,89 @@ spec:
 This volume can be removed later by removing the `walVolumeClaimSpec` section from the instance. Note that when changing the WAL directory, care is taken so as not to lose any WAL files. PGO only
 deletes the PVC once there are no longer any WAL files on the previously configured volume.
 
+## Custom Sidecar Containers for PostgreSQL Instance Pods
+
+PGO allows you to configure custom
+[sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/#how-pods-manage-multiple-containers)
+for any of your PostgreSQL instance Pods.
+
+To use this feature, currently in `Alpha`, you will need to enable it via the PGO
+[feature gate](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/).
+
+PGO feature gates are enabled by setting the `PGO_FEATURE_GATES` environment
+variable on the PGO Deployment. For the PostgreSQL instance sidecar container
+feature, that will be
+
+```
+PGO_FEATURE_GATES="InstanceSidecars=true"
+```
+
+Please note that, as new feature-gated features are added, it is possible to
+enable more than one feature as this variable accepts a comma delimited list,
+for example:
+
+```
+PGO_FEATURE_GATES="FeatureName=true,FeatureName2=true,FeatureName3=true..."
+```
+
+{{% notice warning %}}
+Any feature name added to `PGO_FEATURE_GATES` must be defined by PGO and must be
+set to true or false. Any misconfiguration will prevent PGO from deploying.
+{{% /notice %}}
+
+Once this feature is enabled, you can add your custom
+[Containers](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#container-v1-core)
+as an array to `spec.instances.containers`. As a simple example, consider
+
+```
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: sidecar-hippo
+spec:
+  image: {{< param imageCrunchyPostgres >}}
+  postgresVersion: {{< param postgresVersion >}}
+  instances:
+    - name: instance1
+      containers:
+      - name: testcontainer
+        image: mycontainer1:latest
+      - name: testcontainer2
+        image: mycontainer1:latest
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      image: {{< param imageCrunchyPGBackrest >}}
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+```
+
+In the above example, we've added two sidecar containers to the `instance1` Pod.
+These containers can be defined in the manifest at any time, but the containers
+will not be added to the instance Pod until the feature gate is enabled.
+
+### Considerations
+
+- Volume mounts and other Pod details are subject to change between releases.
+- Any sidecar Containers, as well as any settings included in their configuration,
+  are added and used at your own risk. Improperly configured sidecar Containers
+  could impact the health and/or security of your Postgres cluster.
+- When adding a sidecar container, we recommend adding a unique prefix to the
+  container name to avoid potential naming conflicts with the official PGO
+  containers.
+
 ## Database Initialization SQL
 
 PGO can run SQL for you as part of the cluster creation and initialization process. PGO runs the SQL using the psql client so you can use meta-commands to connect to different databases, change error handling, or set and use variables. Its capabilities are described in the [psql documentation](https://www.postgresql.org/docs/current/app-psql.html).

@@ -107,3 +107,14 @@ following message
 
 Also, the features must have boolean values, otherwise you will see
 `panic: unable to parse and store configured feature gates. invalid value`
+
+When dealing with tests that do not invoke `cmd/postgres-operator/main.go`, keep
+in mind that you will need to ensure that you invoke the `AddAndSetFeatureGates`
+function. Otherwise, any test that references the undefined feature gate will fail
+with a panic message similar to
+"feature "FeatureName" is not registered in FeatureGate"
+
+To correct for this, you simply need a line similar to
+```
+err := util.AddAndSetFeatureGates("")
+```
