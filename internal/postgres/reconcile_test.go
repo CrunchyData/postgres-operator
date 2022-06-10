@@ -25,6 +25,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -60,6 +61,9 @@ func TestDownwardAPIVolumeMount(t *testing.T) {
 
 func TestInstancePod(t *testing.T) {
 	ctx := context.Background()
+
+	// Initialize the feature gate
+	assert.NilError(t, util.AddAndSetFeatureGates(""))
 
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
@@ -450,6 +454,37 @@ volumes:
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
+	})
+
+	t.Run("WithCustomSidecarContainer", func(t *testing.T) {
+		sidecarInstance := new(v1beta1.PostgresInstanceSetSpec)
+		sidecarInstance.Containers = []corev1.Container{
+			{Name: "customsidecar1"},
+		}
+
+		t.Run("SidecarNotEnabled", func(t *testing.T) {
+			InstancePod(ctx, cluster, sidecarInstance,
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
+
+			assert.Equal(t, len(pod.Containers), 2, "expected 2 containers in Pod, got %d", len(pod.Containers))
+		})
+
+		t.Run("SidecarEnabled", func(t *testing.T) {
+			assert.NilError(t, util.AddAndSetFeatureGates(string(util.InstanceSidecars+"=true")))
+			InstancePod(ctx, cluster, sidecarInstance,
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
+
+			assert.Equal(t, len(pod.Containers), 3, "expected 3 containers in Pod, got %d", len(pod.Containers))
+
+			var found bool
+			for i := range pod.Containers {
+				if pod.Containers[i].Name == "customsidecar1" {
+					found = true
+					break
+				}
+			}
+			assert.Assert(t, found, "expected custom sidecar 'customsidecar1', but container not found")
+		})
 	})
 
 	t.Run("WithWALVolumeWithWALVolumeSpec", func(t *testing.T) {

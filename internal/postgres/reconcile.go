@@ -24,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -247,6 +248,14 @@ func InstancePod(ctx context.Context,
 	}
 
 	outInstancePod.Containers = []corev1.Container{container, reloader}
+
+	// If the InstanceSidecars feature gate is enabled and instance sidecars are
+	// defined, add the defined container to the Pod.
+	if util.DefaultMutableFeatureGate.Enabled(util.InstanceSidecars) &&
+		inInstanceSpec.Containers != nil {
+		outInstancePod.Containers = append(outInstancePod.Containers, inInstanceSpec.Containers...)
+	}
+
 	outInstancePod.InitContainers = []corev1.Container{startup}
 }
 

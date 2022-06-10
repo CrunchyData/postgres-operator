@@ -428,6 +428,10 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
+	// Defines custom sidecars for the PostgreSQL instance pods
+	// +optional
+	Containers []corev1.Container `json:"containers,omitempty"`
+
 	// Defines a PersistentVolumeClaim for PostgreSQL data.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// +kubebuilder:validation:Required
