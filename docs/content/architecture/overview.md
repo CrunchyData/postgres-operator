@@ -51,7 +51,7 @@ create a high-availability PostgreSQL cluster that has a single replica,
 supports having backups in both a local storage area and Amazon S3 and has
 built-in metrics and connection pooling, similar to:
 
-![PostgreSQL HA Cluster](/images/postgresql-cluster-ha-s3.png)
+![PostgreSQL HA Cluster](/images/crunchy-postgresql-operator-v5-architecture.png)
 
 This can be accomplished with a relatively simple manifest. Please refer to the [tutorial]({{< relref "tutorial/_index.md" >}}) for how to accomplish this, or see the [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repo.
 
