@@ -262,8 +262,14 @@ func DynamicConfiguration(
 	}
 	postgresql["pg_hba"] = hba
 
-	// TODO(cbandy): explain this.
-	postgresql["use_pg_rewind"] = true
+	// Enabling `pg_rewind` allows a former primary to automatically rejoin the
+	// cluster even if it has commits that were not sent to a replica. In other
+	// words, this favors availability over consistency.
+	//
+	// Recent versions of `pg_rewind` can run with limited permissions granted
+	// by Patroni to the user defined in "postgresql.authentication.rewind".
+	// PostgreSQL v10 and earlier require superuser access over the network.
+	postgresql["use_pg_rewind"] = cluster.Spec.PostgresVersion > 10
 
 	if cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled {
 		// Copy the "standby_cluster" section before making any changes.

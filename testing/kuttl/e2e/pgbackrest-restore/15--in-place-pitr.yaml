@@ -20,3 +20,35 @@ commands:
       # Annotate the cluster to trigger the restore.
       kubectl annotate --namespace="${NAMESPACE}" postgrescluster/original \
         'postgres-operator.crunchydata.com/pgbackrest-restore=one'
+      
+      # For PG10, we need to run a patronictl reinit for the replica when that is running
+      # Get the replica name--the replica will exist during the PITR process so we don't need to wait
+      if [[ ${KUTTL_PG_VERSION} == 10 ]]; then
+        REPLICA=$(kubectl get pods --namespace "${NAMESPACE}" \
+          --selector='
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/data=postgres,
+            postgres-operator.crunchydata.com/role!=master' \
+          --output=jsonpath={.items..metadata.name})
+
+        # Wait for the original replica to be terminated and restarted
+        TERMINATED=2
+        while [[ $TERMINATED == 2 ]]; do
+          TERMINATED=$(kubectl get events --namespace="${NAMESPACE}" \
+            --field-selector reason="Killing",involvedObject.fieldPath="spec.containers{database}",involvedObject.name="${REPLICA}" \
+            --output=jsonpath={.items} | awk '{print length}');
+          sleep 1;
+        done
+        
+        # Wait for the restarted replica to be started
+        NOT_RUNNING=""
+        while [[ "${NOT_RUNNING}" == "" ]]; do
+          kubectl get pods --namespace "${NAMESPACE}" "${REPLICA}" || (sleep 1 && continue)
+
+          NOT_RUNNING=$(kubectl get pods --namespace "${NAMESPACE}" "${REPLICA}" \
+            --output jsonpath="{.status.containerStatuses[?(@.name=='database')].state.running.startedAt}")
+          sleep 1;
+        done
+
+        kubectl exec --namespace "${NAMESPACE}" "${REPLICA}" -- patronictl reinit original-ha "${REPLICA}" --force
+      fi
