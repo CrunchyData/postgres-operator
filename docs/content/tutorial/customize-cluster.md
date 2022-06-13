@@ -189,7 +189,7 @@ spec:
     - name: instance
       walVolumeClaimSpec:
         accessModes:
-        - "ReadWriteMany"
+        - "ReadWriteOnce"
         resources:
           requests:
             storage: 1Gi
