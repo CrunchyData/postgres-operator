@@ -13641,6 +13641,11 @@ Current state of PostgreSQL cluster monitoring tool configuration
         <td>Tracks the execution of the switchover requests.</td>
         <td>false</td>
       </tr><tr>
+        <td><b>switchoverTimeline</b></td>
+        <td>integer</td>
+        <td>Tracks the current timeline during switchovers</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>systemIdentifier</b></td>
         <td>string</td>
         <td>The PostgreSQL system identifier reported by Patroni.</td>

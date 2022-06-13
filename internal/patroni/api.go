@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"strings"
 
@@ -176,4 +177,43 @@ func (exec Executor) RestartPendingMembers(ctx context.Context, role, scope stri
 	)
 
 	return err
+}
+
+// GetTimeline gets the patronictl status and returns the timeline,
+// currently the only information required by PGO.
+// Returns zero if it runs into errors or cannot find a running Leader pod
+// to get the up-to-date timeline from.
+func (exec Executor) GetTimeline(ctx context.Context) (int64, error) {
+	var stdout, stderr bytes.Buffer
+
+	// The following exits zero when it is able to read the DCS and communicate
+	// with the Patroni HTTP API. It prints the result of calling "GET /cluster"
+	// - https://github.com/zalando/patroni/blob/v2.1.1/patroni/ctl.py#L849
+	err := exec(ctx, nil, &stdout, &stderr,
+		"patronictl", "list", "--format", "json")
+	if err != nil {
+		return 0, err
+	}
+
+	if stderr.String() != "" {
+		return 0, errors.New(stderr.String())
+	}
+
+	var members []struct {
+		Role     string
+		State    string
+		Timeline int64 `json:"TL"`
+	}
+	err = json.Unmarshal(stdout.Bytes(), &members)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, member := range members {
+		if member.Role == "Leader" && member.State == "running" {
+			return member.Timeline, nil
+		}
+	}
+
+	return 0, err
 }

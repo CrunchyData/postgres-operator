@@ -430,9 +430,16 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, instances *observedInstances) error {
 	log := logging.FromContext(ctx)
 
-	if cluster.Spec.Patroni == nil || cluster.Spec.Patroni.Switchover == nil ||
+	// If switchover is not enabled, clear out the Patroni switchover status fields
+	// which might have been set by previous switchovers.
+	// This also gives the user a way to easily recover and try again: if the operator
+	// runs into a problem with a switchover, turning `cluster.Spec.Patroni.Switchover`
+	// to `false` will clear the fields before another attempt
+	if cluster.Spec.Patroni == nil ||
+		cluster.Spec.Patroni.Switchover == nil ||
 		!cluster.Spec.Patroni.Switchover.Enabled {
 		cluster.Status.Patroni.Switchover = nil
+		cluster.Status.Patroni.SwitchoverTimeline = nil
 		return nil
 	}
 
@@ -440,10 +447,16 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	spec := cluster.Spec.Patroni.Switchover
 	status := cluster.Status.Patroni.Switchover
 
+	// If the status has been updated with the trigger annotation, the requested
+	// switchover has been successful, and the `SwitchoverTimeline` field can be cleared
 	if annotation == "" || (status != nil && *status == annotation) {
+		cluster.Status.Patroni.SwitchoverTimeline = nil
 		return nil
 	}
 
+	// If we've reached this point, we assume a switchover request or in progress
+	// and need to make sure the prerequisites are met, e.g., more than one pod,
+	// a running instance to issue the switchover command to, etc.
 	if len(instances.forCluster) <= 1 {
 		// TODO: event
 		// TODO: Possible webhook validation
@@ -499,6 +512,44 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 			stdout, stderr, command...)
 	}
 
+	// To ensure idempotency, the operator verifies that the timeline reported by Patroni
+	// matches the timeline that was present when the switchover was first requested.
+	// TODO(benjb): consider pulling the timeline from the pod annotation; manual experiments
+	// have shown that the annotation on the Leader pod is up to date during a switchover, but
+	// missing from the Replica pods.
+	timeline, err := patroni.Executor(exec).GetTimeline(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if timeline == 0 {
+		return errors.New("error getting and parsing current timeline")
+	}
+
+	statusTimeline := cluster.Status.Patroni.SwitchoverTimeline
+
+	// If the `SwitchoverTimeline` field is empty, this is the first reconcile after
+	// a switchover has been requested and we need to fill in the field with the current TL
+	// as reported by Patroni.
+	// We return from here without calling for an explicit requeue, but since we're updating
+	// the object, we will reconcile this again for the actual switchover/failover action.
+	if statusTimeline == nil || (statusTimeline != nil && *statusTimeline == 0) {
+		log.V(1).Info("Setting SwitchoverTimeline", "timeline", timeline)
+		cluster.Status.Patroni.SwitchoverTimeline = &timeline
+		return nil
+	}
+
+	// If the `SwitchoverTimeline` field does not match the current timeline as reported by Patroni,
+	// then we assume a switchover has been completed, and we have reached this point because the
+	// cache does not yet have the updated `cluster.Status.Patroni.Switchover` field.
+	if statusTimeline != nil && *statusTimeline != timeline {
+		log.V(1).Info("SwitchoverTimeline does not match current timeline, assuming already completed switchover")
+		cluster.Status.Patroni.Switchover = initialize.String(annotation)
+		cluster.Status.Patroni.SwitchoverTimeline = nil
+		return nil
+	}
+
 	// We have the pod executor, now we need to figure out which API call to use
 	// In the default case we will be using SwitchoverAndWait. This API call uses
 	// a Patronictl switchover to move to the target instance.
@@ -525,8 +576,12 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	if err = errors.WithStack(err); err == nil && !success {
 		err = errors.New("unable to switchover")
 	}
+
+	// If we've reached this point, a switchover has successfully been triggered
+	// and we set the status accordingly.
 	if err == nil {
 		cluster.Status.Patroni.Switchover = initialize.String(annotation)
+		cluster.Status.Patroni.SwitchoverTimeline = nil
 	}
 
 	return err

@@ -121,4 +121,8 @@ type PatroniStatus struct {
 	// Tracks the execution of the switchover requests.
 	// +optional
 	Switchover *string `json:"switchover,omitempty"`
+
+	// Tracks the current timeline during switchovers
+	// +optional
+	SwitchoverTimeline *int64 `json:"switchoverTimeline,omitempty"`
 }

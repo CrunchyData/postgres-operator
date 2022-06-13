@@ -236,3 +236,65 @@ func TestExecutorRestartPendingMembers(t *testing.T) {
 
 	assert.Equal(t, expected, actual, "should call exec")
 }
+
+func TestExecutorGetTimeline(t *testing.T) {
+	t.Run("Error", func(t *testing.T) {
+		expected := errors.New("bang")
+		tl, actual := Executor(func(
+			context.Context, io.Reader, io.Writer, io.Writer, ...string,
+		) error {
+			return expected
+		}).GetTimeline(context.Background())
+
+		assert.Equal(t, expected, actual)
+		assert.Equal(t, tl, int64(0))
+	})
+
+	t.Run("Stderr", func(t *testing.T) {
+		tl, actual := Executor(func(
+			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			stderr.Write([]byte(`no luck`))
+			return nil
+		}).GetTimeline(context.Background())
+
+		assert.Error(t, actual, "no luck")
+		assert.Equal(t, tl, int64(0))
+	})
+
+	t.Run("BadJSON", func(t *testing.T) {
+		tl, actual := Executor(func(
+			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			stdout.Write([]byte(`no luck`))
+			return nil
+		}).GetTimeline(context.Background())
+
+		assert.Error(t, actual, "invalid character 'o' in literal null (expecting 'u')")
+		assert.Equal(t, tl, int64(0))
+	})
+
+	t.Run("NoLeader", func(t *testing.T) {
+		tl, actual := Executor(func(
+			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			stdout.Write([]byte(`[{"Cluster": "hippo-ha", "Member": "hippo-instance1-ltcf-0", "Host": "hippo-instance1-ltcf-0.hippo-pods", "Role": "Replica", "State": "running", "TL": 4, "Lag in MB": 0}]`))
+			return nil
+		}).GetTimeline(context.Background())
+
+		assert.NilError(t, actual)
+		assert.Equal(t, tl, int64(0))
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		tl, actual := Executor(func(
+			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			stdout.Write([]byte(`[{"Cluster": "hippo-ha", "Member": "hippo-instance1-67mc-0", "Host": "hippo-instance1-67mc-0.hippo-pods", "Role": "Leader", "State": "running", "TL": 4}, {"Cluster": "hippo-ha", "Member": "hippo-instance1-ltcf-0", "Host": "hippo-instance1-ltcf-0.hippo-pods", "Role": "Replica", "State": "running", "TL": 4, "Lag in MB": 0}]`))
+			return nil
+		}).GetTimeline(context.Background())
+
+		assert.NilError(t, actual)
+		assert.Equal(t, tl, int64(4))
+	})
+}

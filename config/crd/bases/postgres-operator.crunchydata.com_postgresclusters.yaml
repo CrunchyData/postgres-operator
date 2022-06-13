@@ -9157,6 +9157,10 @@ spec:
                   switchover:
                     description: Tracks the execution of the switchover requests.
                     type: string
+                  switchoverTimeline:
+                    description: Tracks the current timeline during switchovers
+                    format: int64
+                    type: integer
                   systemIdentifier:
                     description: The PostgreSQL system identifier reported by Patroni.
                     type: string
