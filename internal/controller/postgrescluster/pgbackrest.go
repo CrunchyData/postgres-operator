@@ -721,11 +721,14 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 		},
 	}
 
-	// set the priority class name, if it exists
-	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil &&
-		postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName != nil {
-		jobSpec.Template.Spec.PriorityClassName =
-			*postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName
+	// set the priority class name, tolerations, and affinity, if they exist
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
+		if postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName != nil {
+			jobSpec.Template.Spec.PriorityClassName =
+				*postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName
+		}
+		jobSpec.Template.Spec.Tolerations = postgresCluster.Spec.Backups.PGBackRest.Jobs.Tolerations
+		jobSpec.Template.Spec.Affinity = postgresCluster.Spec.Backups.PGBackRest.Jobs.Affinity
 	}
 
 	// Set the image pull secrets, if any exist.
