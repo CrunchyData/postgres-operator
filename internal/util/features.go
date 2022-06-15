@@ -34,6 +34,9 @@ const (
 	//
 	// Enables support of custom sidecars for PostgreSQL instance Pods
 	InstanceSidecars featuregate.Feature = "InstanceSidecars"
+	//
+	// Enables support of custom sidecars for pgBouncer Pods
+	PGBouncerSidecars featuregate.Feature = "PGBouncerSidecars"
 )
 
 // pgoFeatures consists of all known PGO feature keys.
@@ -44,7 +47,8 @@ const (
 //
 // - https://releases.k8s.io/v1.20.0/pkg/features/kube_features.go#L729-732
 var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{
-	InstanceSidecars: {Default: false, PreRelease: featuregate.Alpha},
+	InstanceSidecars:  {Default: false, PreRelease: featuregate.Alpha},
+	PGBouncerSidecars: {Default: false, PreRelease: featuregate.Alpha},
 }
 
 // DefaultMutableFeatureGate is a mutable, shared global FeatureGate.

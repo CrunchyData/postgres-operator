@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -187,6 +188,14 @@ func Pod(
 	}
 
 	outPod.Containers = []corev1.Container{container, reloader}
+
+	// If the PGBouncerSidecars feature gate is enabled and custom pgBouncer
+	// sidecars are defined, add the defined container to the Pod.
+	if util.DefaultMutableFeatureGate.Enabled(util.PGBouncerSidecars) &&
+		inCluster.Spec.Proxy.PGBouncer.Containers != nil {
+		outPod.Containers = append(outPod.Containers, inCluster.Spec.Proxy.PGBouncer.Containers...)
+	}
+
 	outPod.Volumes = []corev1.Volume{configVolume}
 }
 

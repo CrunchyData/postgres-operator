@@ -26,6 +26,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -101,6 +102,9 @@ func TestSecret(t *testing.T) {
 
 func TestPod(t *testing.T) {
 	t.Parallel()
+
+	// Initialize the feature gate
+	assert.NilError(t, util.AddAndSetFeatureGates(""))
 
 	cluster := new(v1beta1.PostgresCluster)
 	configMap := new(corev1.ConfigMap)
@@ -409,6 +413,34 @@ volumes:
         - key: ca.crt
           path: ~postgres-operator/backend-ca.crt
 		`))
+	})
+
+	t.Run("WithCustomSidecarContainer", func(t *testing.T) {
+		cluster.Spec.Proxy.PGBouncer.Containers = []corev1.Container{
+			{Name: "customsidecar1"},
+		}
+
+		t.Run("SidecarNotEnabled", func(t *testing.T) {
+
+			call()
+			assert.Equal(t, len(pod.Containers), 2, "expected 2 containers in Pod, got %d", len(pod.Containers))
+		})
+
+		t.Run("SidecarEnabled", func(t *testing.T) {
+			assert.NilError(t, util.AddAndSetFeatureGates(string(util.PGBouncerSidecars+"=true")))
+			call()
+
+			assert.Equal(t, len(pod.Containers), 3, "expected 3 containers in Pod, got %d", len(pod.Containers))
+
+			var found bool
+			for i := range pod.Containers {
+				if pod.Containers[i].Name == "customsidecar1" {
+					found = true
+					break
+				}
+			}
+			assert.Assert(t, found, "expected custom sidecar 'customsidecar1', but container not found")
+		})
 	})
 }
 

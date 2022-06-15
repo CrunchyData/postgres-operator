@@ -815,6 +815,13 @@ func (in *PGBouncerPodSpec) DeepCopyInto(out *PGBouncerPodSpec) {
 		(*in).DeepCopyInto(*out)
 	}
 	in.Config.DeepCopyInto(&out.Config)
+	if in.Containers != nil {
+		in, out := &in.Containers, &out.Containers
+		*out = make([]v1.Container, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	if in.CustomTLSSecret != nil {
 		in, out := &in.CustomTLSSecret, &out.CustomTLSSecret
 		*out = new(v1.SecretProjection)

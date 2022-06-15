@@ -73,6 +73,11 @@ type PGBouncerPodSpec struct {
 	// +optional
 	Config PGBouncerConfiguration `json:"config,omitempty"`
 
+	// Custom sidecars for a PgBouncer pod. Changing this value causes
+	// PgBouncer to restart.
+	// +optional
+	Containers []corev1.Container `json:"containers,omitempty"`
+
 	// A secret projection containing a certificate and key with which to encrypt
 	// connections to PgBouncer. The "tls.crt", "tls.key", and "ca.crt" paths must
 	// be PEM-encoded certificates and keys. Changing this value causes PgBouncer

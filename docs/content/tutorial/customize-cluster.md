@@ -198,26 +198,26 @@ spec:
 This volume can be removed later by removing the `walVolumeClaimSpec` section from the instance. Note that when changing the WAL directory, care is taken so as not to lose any WAL files. PGO only
 deletes the PVC once there are no longer any WAL files on the previously configured volume.
 
-## Custom Sidecar Containers for PostgreSQL Instance Pods
+## Custom Sidecar Containers
 
 PGO allows you to configure custom
 [sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/#how-pods-manage-multiple-containers)
-for any of your PostgreSQL instance Pods.
+for your PostgreSQL instance and pgBouncer Pods.
 
-To use this feature, currently in `Alpha`, you will need to enable it via the PGO
+To use the custom sidecar features, currently in `Alpha`, you will need to enable
+them via the PGO
 [feature gate](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/).
 
 PGO feature gates are enabled by setting the `PGO_FEATURE_GATES` environment
-variable on the PGO Deployment. For the PostgreSQL instance sidecar container
-feature, that will be
+variable on the PGO Deployment. For a feature named 'FeatureName', that would
+look like
 
 ```
-PGO_FEATURE_GATES="InstanceSidecars=true"
+PGO_FEATURE_GATES="FeatureName=true"
 ```
 
-Please note that, as new feature-gated features are added, it is possible to
-enable more than one feature as this variable accepts a comma delimited list,
-for example:
+Please note that it is possible to enable more than one feature at a time as
+this variable accepts a comma delimited list, for example:
 
 ```
 PGO_FEATURE_GATES="FeatureName=true,FeatureName2=true,FeatureName3=true..."
@@ -226,11 +226,48 @@ PGO_FEATURE_GATES="FeatureName=true,FeatureName2=true,FeatureName3=true..."
 {{% notice warning %}}
 Any feature name added to `PGO_FEATURE_GATES` must be defined by PGO and must be
 set to true or false. Any misconfiguration will prevent PGO from deploying.
+See the [considerations](#considerations) below for additional guidance.
 {{% /notice %}}
+
+### Custom Sidecar Containers for PostgreSQL Instance Pods
+
+To configure custom sidecar Containers for any of your PostgreSQL instance Pods
+you will need to enable that feature via the PGO feature gate.
+
+As mentioned above, PGO feature gates are enabled by setting the `PGO_FEATURE_GATES`
+environment variable on the PGO Deployment. For the PostgreSQL instance sidecar
+container feature, that will be
+
+```
+PGO_FEATURE_GATES="InstanceSidecars=true"
+```
 
 Once this feature is enabled, you can add your custom
 [Containers](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#container-v1-core)
-as an array to `spec.instances.containers`. As a simple example, consider
+as an array to `spec.instances.containers`. See the [custom sidecar example](#custom-sidecar-example)
+below for more information!
+
+### Custom Sidecar Containers for pgBouncer Pods
+
+Similar to your PostgreSQL instance Pods, to configure custom sidecar Containers
+for your pgBouncer Pods you will need to enable it via the PGO feature gate.
+
+As mentioned above, PGO feature gates are enabled by setting the `PGO_FEATURE_GATES`
+environment variable on the PGO Deployment. For the pgBouncer custom sidecar
+container feature, that will be
+
+```
+PGO_FEATURE_GATES="PGBouncerSidecars=true"
+```
+
+Once this feature is enabled, you can add your custom
+[Containers](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#container-v1-core)
+as an array to `spec.proxy.pgBouncer.containers`. See the [custom sidecar example](#custom-sidecar-example)
+below for more information!
+
+### Custom Sidecar Example
+
+As a simple example, consider
 
 ```
 apiVersion: postgres-operator.crunchydata.com/v1beta1
@@ -265,18 +302,26 @@ spec:
             resources:
               requests:
                 storage: 1Gi
+  proxy:
+    pgBouncer:
+      image: {{< param imageCrunchyPGBouncer >}}
+      containers:
+      - name: bouncertestcontainer1
+        image: mycontainer1:latest
 ```
 
-In the above example, we've added two sidecar containers to the `instance1` Pod.
-These containers can be defined in the manifest at any time, but the containers
-will not be added to the instance Pod until the feature gate is enabled.
+In the above example, we've added two sidecar Containers to the `instance1` Pod
+and one sidecar container to the `pgBouncer` Pod. These Containers can be
+defined in the manifest at any time, but the Containers will not be added to their
+respective Pods until the feature gate is enabled.
 
 ### Considerations
 
 - Volume mounts and other Pod details are subject to change between releases.
-- Any sidecar Containers, as well as any settings included in their configuration,
-  are added and used at your own risk. Improperly configured sidecar Containers
-  could impact the health and/or security of your Postgres cluster.
+- The custom sidecar features are currently in `Alpha`. Any sidecar Containers,
+  as well as any settings included in their configuration, are added and used at
+  your own risk. Improperly configured sidecar Containers could impact the health
+  and/or security of your PostgreSQL cluster!
 - When adding a sidecar container, we recommend adding a unique prefix to the
   container name to avoid potential naming conflicts with the official PGO
   containers.
