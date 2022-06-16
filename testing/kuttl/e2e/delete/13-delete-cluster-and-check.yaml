@@ -26,7 +26,7 @@ commands:
 
       kubectl delete postgrescluster -n "${NAMESPACE}" delete-switchover
       
-      kubectl wait pod/"${REPLICA}" --namespace "${NAMESPACE}" --for=delete --timeout=-1s
+      kubectl wait "pod/${REPLICA}" --namespace "${NAMESPACE}" --for=delete --timeout=180s
 
       KILLING_REPLICA_TIMESTAMP=$(
         kubectl get events --namespace="${NAMESPACE}" \
@@ -34,7 +34,7 @@ commands:
           --output=jsonpath={.items..firstTimestamp}
       )
 
-      kubectl wait pod/"${PRIMARY}" --namespace "${NAMESPACE}" --for=delete --timeout=-1s
+      kubectl wait "pod/${PRIMARY}" --namespace "${NAMESPACE}" --for=delete --timeout=180s
 
       KILLING_PRIMARY_TIMESTAMP=$(
         kubectl get events --namespace="${NAMESPACE}" \
