@@ -3718,7 +3718,7 @@ Resource requirements for a sidecar container
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindex">containers</a></b></td>
         <td>[]object</td>
-        <td>Defines custom sidecars for the PostgreSQL instance pods</td>
+        <td>Custom sidecars for PostgreSQL instance pods. Changing this value causes PostgreSQL to restart.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexmetadata">metadata</a></b></td>

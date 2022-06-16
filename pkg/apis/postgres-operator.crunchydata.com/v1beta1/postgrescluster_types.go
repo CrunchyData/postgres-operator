@@ -428,7 +428,8 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
-	// Defines custom sidecars for the PostgreSQL instance pods
+	// Custom sidecars for PostgreSQL instance pods. Changing this value causes
+	// PostgreSQL to restart.
 	// +optional
 	Containers []corev1.Container `json:"containers,omitempty"`
 
