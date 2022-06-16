@@ -5473,8 +5473,8 @@ spec:
                           type: object
                       type: object
                     containers:
-                      description: Defines custom sidecars for the PostgreSQL instance
-                        pods
+                      description: Custom sidecars for PostgreSQL instance pods. Changing
+                        this value causes PostgreSQL to restart.
                       items:
                         description: A single application container that you want
                           to run within a pod.
