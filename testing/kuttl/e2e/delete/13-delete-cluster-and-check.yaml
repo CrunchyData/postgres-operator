@@ -25,16 +25,20 @@ commands:
       if [ -z "$REPLICA" ]; then exit 1; fi
 
       kubectl delete postgrescluster -n "${NAMESPACE}" delete-switchover
+      
+      kubectl wait "pod/${REPLICA}" --namespace "${NAMESPACE}" --for=delete --timeout=180s
+
+      KILLING_REPLICA_TIMESTAMP=$(
+        kubectl get events --namespace="${NAMESPACE}" \
+          --field-selector reason="Killing",involvedObject.fieldPath="spec.containers{database}",involvedObject.name="${REPLICA}" \
+          --output=jsonpath={.items..firstTimestamp}
+      )
+
+      kubectl wait "pod/${PRIMARY}" --namespace "${NAMESPACE}" --for=delete --timeout=180s
 
       KILLING_PRIMARY_TIMESTAMP=$(
         kubectl get events --namespace="${NAMESPACE}" \
           --field-selector reason="Killing",involvedObject.fieldPath="spec.containers{database}",involvedObject.name="${PRIMARY}" \
-          --output=jsonpath={.items..firstTimestamp}
-      )
-      
-      KILLING_REPLICA_TIMESTAMP=$(
-        kubectl get events --namespace="${NAMESPACE}" \
-          --field-selector reason="Killing",involvedObject.fieldPath="spec.containers{database}",involvedObject.name="${REPLICA}" \
           --output=jsonpath={.items..firstTimestamp}
       )
 
