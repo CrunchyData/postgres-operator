@@ -2586,6 +2586,86 @@ volumes:
 		})
 	})
 
+	t.Run("Affinity", func(t *testing.T) {
+		affinity := &corev1.Affinity{
+			NodeAffinity: &corev1.NodeAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+					NodeSelectorTerms: []corev1.NodeSelectorTerm{{
+						MatchExpressions: []corev1.NodeSelectorRequirement{{
+							Key:      "key",
+							Operator: "Exist",
+						}},
+					}},
+				},
+			},
+		}
+
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Jobs: &v1beta1.BackupJobs{
+							Affinity: affinity,
+						},
+					},
+				},
+			},
+		}
+		job, err := generateBackupJobSpecIntent(
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+		assert.NilError(t, err)
+		assert.Equal(t, job.Template.Spec.Affinity, affinity)
+	})
+
+	t.Run("PriorityClassName", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Jobs: &v1beta1.BackupJobs{
+							PriorityClassName: initialize.String("some-priority-class"),
+						},
+					},
+				},
+			},
+		}
+		job, err := generateBackupJobSpecIntent(
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+		assert.NilError(t, err)
+		assert.Equal(t, job.Template.Spec.PriorityClassName, "some-priority-class")
+	})
+
+	t.Run("Tolerations", func(t *testing.T) {
+		tolerations := []corev1.Toleration{{
+			Key:      "key",
+			Operator: "Exist",
+		}}
+
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Jobs: &v1beta1.BackupJobs{
+							Tolerations: tolerations,
+						},
+					},
+				},
+			},
+		}
+		job, err := generateBackupJobSpecIntent(
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, job.Template.Spec.Tolerations, tolerations)
+	})
 }
 
 func TestGenerateRepoHostIntent(t *testing.T) {

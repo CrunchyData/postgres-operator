@@ -166,11 +166,20 @@ type BackupJobs struct {
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
-	// Priority class name for the pgBackRest backup Job pods. Changing this
-	// value causes PostgreSQL to restart.
+	// Priority class name for the pgBackRest backup Job pods.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
 	// +optional
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
+
+	// Scheduling constraints of pgBackRest backup Job pods.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// Tolerations of pgBackRest backup Job pods.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 // PGBackRestManualBackup contains information that is used for creating a
