@@ -34,9 +34,8 @@ Note that for the 5.0.3 release and beyond, the Postgres containers were renamed
 | `crunchy-pgbackrest` | 2.36 | 5.0.4 | 5.0.5 |
 | `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
 | `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
-| `crunchy-pgbouncer` | 1.16.2 | 5.1.0 | {{< param operatorVersion >}} |
-| `crunchy-pgbouncer` | 1.16.1 | 5.0.4 | {{< param operatorVersion >}} |
-| `crunchy-pgbouncer` | 1.15 | 5.0.0 | {{< param operatorVersion >}} |
+| `crunchy-pgbouncer` | 1.16 | 5.0.4 | {{< param operatorVersion >}} |
+| `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.3 |
 | `crunchy-postgres` | {{< param postgresVersion14 >}} | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres` | {{< param postgresVersion13 >}} | 5.0.3 | {{< param operatorVersion >}} |
 | `crunchy-postgres` | {{< param postgresVersion12 >}} | 5.0.3 | {{< param operatorVersion >}} |
