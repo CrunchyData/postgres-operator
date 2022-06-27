@@ -220,7 +220,7 @@ Watch your cluster: you will see that your backups and archives are now being st
 
 ## Using Azure Blob Storage
 
-Similar to the above, setting up backups in Azure Blob Storage requires a few additional modifications to your custom resource spec and the use of a Secret to protect your GCS credentials.
+Similar to the above, setting up backups in Azure Blob Storage requires a few additional modifications to your custom resource spec and the use of a Secret to protect your Azure Storage credentials.
 
 There is an example for creating a Postgres cluster that uses Azure for backups in the `kustomize/azure` directory in the [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repository. In this directory, there is a file called `azure.conf.example`. Copy this example file to `azure.conf`:
 
