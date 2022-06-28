@@ -108,6 +108,7 @@ jobs:
           retention-days: 1
 
   coverage-report:
+    if: ${{ success() || contains(needs.*.result, 'success') }}
     runs-on: ubuntu-latest
     needs:
       - kubernetes-api
@@ -120,8 +121,8 @@ jobs:
         with: { path: download }
 
       # Combine the coverage profiles by taking the mode line from any one file
-      # and the data from all files. Print a list of functions with less than
-      # 100% coverage, and upload a complete HTML report.
+      # and the data from all files. Write a list of functions with less than
+      # 100% coverage to the job summary, and upload a complete HTML report.
       - name: Generate report
         run: |
           gunzip --keep download/*/*.gz
@@ -129,8 +130,14 @@ jobs:
             tail -qn +2 download/*/*.coverage ) > total.coverage
           go tool cover --func total.coverage -o total-coverage.txt
           go tool cover --html total.coverage -o total-coverage.html
-          sed -e '/100.0%/d' -e "s,$(go list -m)/,," total-coverage.txt
-          awk 'END { print "::notice title=Total Coverage::" $3 " " $2 }' total-coverage.txt
+
+          awk < total-coverage.txt '
+            END { print "<details><summary>Total Coverage: <code>" $3 " " $2 "</code></summary>" }
+          ' >> "${GITHUB_STEP_SUMMARY}"
+
+          sed < total-coverage.txt -e '/100.0%/d' -e "s,$(go list -m)/,," | column -t | awk '
+            NR == 1 { print "\n\n```" } { print } END { if (NR > 0) print "```\n\n"; print "</details>" }
+          ' >> "${GITHUB_STEP_SUMMARY}"
 
       # Upload coverage to GitHub
       - run: gzip total-coverage.html
