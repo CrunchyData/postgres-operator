@@ -9,7 +9,7 @@ jobs:
   documentation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Some versions of Ubuntu have an awk that does not recognize POSIX classes.
       # Log the version of awk and abort when it cannot match space U+0020.
@@ -29,14 +29,12 @@ jobs:
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with: { go-version: 1.x }
 
-      - uses: golangci/golangci-lint-action@v2
+      - uses: golangci/golangci-lint-action@v3
         with:
-          # https://github.com/golangci/golangci-lint-action/issues/365
-          skip-go-installation: true
           version: latest
           args: --timeout=5m
 

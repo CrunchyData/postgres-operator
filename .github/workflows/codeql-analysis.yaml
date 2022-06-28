@@ -19,19 +19,19 @@ jobs:
     if: ${{ github.repository == 'CrunchyData/postgres-operator' }}
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with: { go-version: 1.x }
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v1
+        uses: github/codeql-action/init@v2
         with: { languages: go }
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v1
+        uses: github/codeql-action/autobuild@v2
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v1
+        uses: github/codeql-action/analyze@v2
         # This action calls `make` which runs our "all" target and tries to build
         # container images. 😖 That fails, but the action ignores it and proceeds.
         # See "CODEQL_EXTRACTOR_GO_BUILD_COMMAND" in https://github.com/github/codeql-go
