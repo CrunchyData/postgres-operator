@@ -98,7 +98,7 @@ Did someone drop the user table? You may want to perform a point-in-time-recover
 You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore) command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers the disaster recovery capabilities of PGO. You will need to set a few options on `spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
 
 - `--type=time`: This tells pgBackRest to perform a PITR.
-- `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11-04`.  The timezone specified here as -04 for EDT.  Please see the [pgBackRest documentation for other timezone options](https://pgbackrest.org/user-guide.html#pitr).
+- `--target`: Where to perform the PITR to. An example recovery target is `2021-06-09 14:15:11-04`.  The timezone specified here as -04 for EDT.  Please see the [pgBackRest documentation for other timezone options](https://pgbackrest.org/user-guide.html#pitr).
 - `--set` (optional): Choose which backup to start the PITR from.
 
 A few quick notes before we begin:
@@ -169,7 +169,7 @@ Similar to the PITR restore described above, you may want to perform a similar r
 You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore) command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers the disaster recovery capabilities of PGO. You will need to set a few options on `spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
 
 - `--type=time`: This tells pgBackRest to perform a PITR.
-- `--target`: Where to perform the PITR to. Any example recovery target is `2021-06-09 14:15:11-04`.
+- `--target`: Where to perform the PITR to. An example recovery target is `2021-06-09 14:15:11-04`.
 - `--set` (optional): Choose which backup to start the PITR from.
 
 A few quick notes before we begin:
