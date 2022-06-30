@@ -32,8 +32,11 @@ kubeconfig="${directory}/${namespace}/${account}"
 mkdir -p "${directory}/${namespace}"
 kubectl config view --minify --raw > "${kubeconfig}"
 
-# grab the service account token
-token=$(kubectl get secret -n "${namespace}" -o go-template='
+# Grab the service account token. If one has not already been generated,
+# create a secret to do so. See the LegacyServiceAccountTokenNoAutoGeneration
+# feature gate.
+for i in 1 2; do
+	token=$(kubectl get secret -n "${namespace}" -o go-template='
 {{- range .items }}
 	{{- if and (eq (or .type "") "kubernetes.io/service-account-token") .metadata.annotations }}
 	{{- if (eq (or (index .metadata.annotations "kubernetes.io/service-account.name") "") "'"${account}"'") }}
@@ -43,6 +46,18 @@ token=$(kubectl get secret -n "${namespace}" -o go-template='
 	{{- end }}
 	{{- end }}
 {{- end }}')
+
+	[[ -n "${token}" ]] && break
+
+	kubectl apply -n "${namespace}" --server-side --filename=- <<< "
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata: {
+	name: ${account}-token,
+	annotations: { kubernetes.io/service-account.name: ${account} }
+}"
+done
 kubectl config --kubeconfig="${kubeconfig}" set-credentials "${account}" --token="${token}"
 
 # remove any namespace setting, replace the username, and minify once more
