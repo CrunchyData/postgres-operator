@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    postgres-operator.crunchydata.com/cluster: delete-switchover
+    postgres-operator.crunchydata.com/cluster: delete-switchover-with-timestamp
     postgres-operator.crunchydata.com/data: postgres
     postgres-operator.crunchydata.com/role: master
     testing/role-before: replica
@@ -14,7 +14,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    postgres-operator.crunchydata.com/cluster: delete-switchover
+    postgres-operator.crunchydata.com/cluster: delete-switchover-with-timestamp
     postgres-operator.crunchydata.com/data: postgres
     postgres-operator.crunchydata.com/role: replica
     testing/role-before: master
@@ -23,7 +23,7 @@ metadata:
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: delete-switchover
+  name: delete-switchover-with-timestamp
 status:
   instances:
     - name: instance1

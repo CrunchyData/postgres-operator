@@ -15,5 +15,5 @@ commands:
 
   # Annotate the cluster to trigger a switchover.
   - script: |
-      kubectl annotate --namespace="${NAMESPACE}" postgrescluster/delete-switchover \
+      kubectl annotate --namespace="${NAMESPACE}" postgrescluster/delete-switchover-with-timestamp \
         "postgres-operator.crunchydata.com/trigger-switchover=$(date)"
