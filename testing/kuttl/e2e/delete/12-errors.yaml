@@ -1,36 +1,42 @@
 ---
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
-labels:
-    postgres-operator.crunchydata.com/cluster: delete-with-replica
+metadata:
+  name: delete-with-replica
 ---
 apiVersion: apps/v1
 kind: StatefulSet
-labels:
+metadata:
+  labels:
     postgres-operator.crunchydata.com/cluster: delete-with-replica
 ---
 # Patroni DCS objects are not owned by the PostgresCluster.
 apiVersion: v1
 kind: Endpoints
-labels:
+metadata:
+  labels:
     postgres-operator.crunchydata.com/cluster: delete-with-replica
 ---
 apiVersion: v1
 kind: Pod
-labels:
+metadata:
+  labels:
     postgres-operator.crunchydata.com/cluster: delete-with-replica
 ---
 apiVersion: v1
 kind: Service
-labels:
+metadata:
+  labels:
     postgres-operator.crunchydata.com/cluster: delete-with-replica
 ---
 apiVersion: v1
 kind: Secret
-labels:
+metadata:
+  labels:
     postgres-operator.crunchydata.com/cluster: delete-with-replica
 ---
 apiVersion: v1
 kind: ConfigMap
-labels:
+metadata:
+  labels:
     postgres-operator.crunchydata.com/cluster: delete-with-replica

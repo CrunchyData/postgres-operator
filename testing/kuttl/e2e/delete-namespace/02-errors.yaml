@@ -1,43 +1,49 @@
 ---
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
-namespace: kuttl-test-delete-namespace
-labels:
-    postgres-operator.crunchydata.com/cluster: delete
+metadata:
+  namespace: kuttl-test-delete-namespace
+  name: delete-namespace
 ---
 apiVersion: apps/v1
 kind: StatefulSet
-namespace: kuttl-test-delete-namespace
-labels:
-    postgres-operator.crunchydata.com/cluster: delete
+metadata:
+  namespace: kuttl-test-delete-namespace
+  labels:
+    postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 # Patroni DCS objects are not owned by the PostgresCluster.
 apiVersion: v1
 kind: Endpoints
-namespace: kuttl-test-delete-namespace
-labels:
-    postgres-operator.crunchydata.com/cluster: delete
+metadata:
+  namespace: kuttl-test-delete-namespace
+  labels:
+    postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: Pod
-namespace: kuttl-test-delete-namespace
-labels:
-    postgres-operator.crunchydata.com/cluster: delete
+metadata:
+  namespace: kuttl-test-delete-namespace
+  labels:
+    postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: Service
-namespace: kuttl-test-delete-namespace
-labels:
-    postgres-operator.crunchydata.com/cluster: delete
+metadata:
+  namespace: kuttl-test-delete-namespace
+  labels:
+    postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: Secret
-namespace: kuttl-test-delete-namespace
-labels:
-    postgres-operator.crunchydata.com/cluster: delete
+metadata:
+  namespace: kuttl-test-delete-namespace
+  labels:
+    postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: ConfigMap
-namespace: kuttl-test-delete-namespace
-labels:
-    postgres-operator.crunchydata.com/cluster: delete
+metadata:
+  namespace: kuttl-test-delete-namespace
+  labels:
+    postgres-operator.crunchydata.com/cluster: delete-namespace
