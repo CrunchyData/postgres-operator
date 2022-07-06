@@ -2,7 +2,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: delete-with-replica
+  name: delete-switchover-with-timestamp
 status:
   instances:
     - name: instance1
@@ -16,21 +16,21 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    postgres-operator.crunchydata.com/cluster: delete-with-replica
+    postgres-operator.crunchydata.com/cluster: delete-switchover-with-timestamp
     postgres-operator.crunchydata.com/role: master
 ---
 apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    postgres-operator.crunchydata.com/cluster: delete-with-replica
+    postgres-operator.crunchydata.com/cluster: delete-switchover-with-timestamp
     postgres-operator.crunchydata.com/role: replica
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
   labels:
-    postgres-operator.crunchydata.com/cluster: delete-with-replica
+    postgres-operator.crunchydata.com/cluster: delete-switchover-with-timestamp
     postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
 status:
   succeeded: 1

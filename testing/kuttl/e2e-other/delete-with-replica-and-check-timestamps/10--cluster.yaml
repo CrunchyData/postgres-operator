@@ -1,7 +1,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: delete-with-replica
+  name: delete-switchover-with-timestamp
 spec:
   postgresVersion: ${KUTTL_PG_VERSION}
   patroni:

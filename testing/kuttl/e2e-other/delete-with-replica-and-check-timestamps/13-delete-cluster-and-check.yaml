@@ -24,7 +24,7 @@ commands:
       if [ -z "$PRIMARY" ]; then exit 1; fi      
       if [ -z "$REPLICA" ]; then exit 1; fi
 
-      kubectl delete postgrescluster -n "${NAMESPACE}" delete-switchover
+      kubectl delete postgrescluster -n "${NAMESPACE}" delete-switchover-with-timestamp
       
       kubectl wait "pod/${REPLICA}" --namespace "${NAMESPACE}" --for=delete --timeout=180s
 
