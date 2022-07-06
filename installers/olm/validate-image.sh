@@ -86,13 +86,6 @@ validate_bundle_image() {
 	"${opm[@]}" alpha bundle validate --image-builder='none' \
 		--optional-validators='operatorhub,bundle-objects' \
 		--tag="${image}"
-
-	# Create an index database from the bundle image.
-	"${opm[@]}" index add --bundles="${image}" --generate
-
-	# drwxr-xr-x. 2 user user     22 database
-	# -rw-r--r--. 1 user user 286720 database/index.db
-	# -rw-r--r--. 1 user user    267 index.Dockerfile
 }
 
 validate_bundle_image "$@"

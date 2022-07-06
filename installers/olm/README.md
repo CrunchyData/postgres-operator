@@ -90,6 +90,22 @@ make tools
 make bundles validate-bundles
 ```
 
+Previously, the 'validate_bundle_image' function in validate-bundles.sh ended
+with the following command:
+
+```sh
+	# Create an index database from the bundle image.
+	"${opm[@]}" index add --bundles="${image}" --generate
+
+	# drwxr-xr-x. 2 user user     22 database
+	# -rw-r--r--. 1 user user 286720 database/index.db
+	# -rw-r--r--. 1 user user    267 index.Dockerfile
+```
+
+this command was used to generate the updated registry database, but this step
+is no longer required when validating the OLM bundles.
+- https://github.com/operator-framework/operator-registry/blob/master/docs/design/opm-tooling.md#add-1
+
 ```sh
 BUNDLE_DIRECTORY='bundles/community'
 BUNDLE_IMAGE='gcr.io/.../postgres-operator-bundle:latest'
@@ -116,3 +132,12 @@ After generating and testing the OLM bundles, there are two manual steps.
 1. Update the image SHA values (denoted with '<update_SHA_value>', required for both the Red Hat 'Certified' and
 'Marketplace' bundles)
 2. Update the 'description.md' file to indicate which OCP versions this release of PGO was tested against.
+
+### Troubleshooting
+
+If, when running `make validate-bundles` you encounter an error similar  to
+
+`cannot find Containerfile or Dockerfile in context directory: stat /mnt/Dockerfile: permission denied`
+
+the target command is likely being blocked by SELinux and you will need to adjust
+your settings accordingly.
