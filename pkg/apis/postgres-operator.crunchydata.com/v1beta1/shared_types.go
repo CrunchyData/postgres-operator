@@ -44,6 +44,13 @@ type ServiceSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
 	Type string `json:"type"`
+
+	// The port on which this service is exposed when type is NodePort or
+	// LoadBalancer. Value must be in-range and not in use or the operation will
+	// fail. If unspecified, a port will be allocated if this Service requires one.
+	// - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
+	// +optional
+	NodePort *int32 `json:"nodePort,omitempty"`
 }
 
 // Sidecar defines the configuration of a sidecar container

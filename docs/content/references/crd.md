@@ -15748,6 +15748,11 @@ Specification of the service that exposes PgBouncer.
         <td>enum</td>
         <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
         <td>true</td>
+      </tr><tr>
+        <td><b>nodePort</b></td>
+        <td>integer</td>
+        <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -16019,6 +16024,11 @@ Specification of the service that exposes the PostgreSQL primary instance.
         <td>enum</td>
         <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
         <td>true</td>
+      </tr><tr>
+        <td><b>nodePort</b></td>
+        <td>integer</td>
+        <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
@@ -17782,6 +17792,11 @@ Specification of the service that exposes pgAdmin.
         <td>enum</td>
         <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
         <td>true</td>
+      </tr><tr>
+        <td><b>nodePort</b></td>
+        <td>integer</td>
+        <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 

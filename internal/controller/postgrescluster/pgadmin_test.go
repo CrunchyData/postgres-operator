@@ -30,6 +30,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -133,7 +134,10 @@ func TestGeneratePGAdminService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{
+		Client:   cc,
+		Recorder: new(record.FakeRecorder),
+	}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "my-ns"
@@ -182,12 +186,6 @@ ownerReferences:
   name: my-cluster
   uid: ""
 		`))
-		assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgadmin
-  port: 5050
-  protocol: TCP
-  targetPort: pgadmin
-		`))
 
 		// Always gets a ClusterIP (never None).
 		assert.Equal(t, service.Spec.ClusterIP, "")
@@ -232,9 +230,14 @@ ownerReferences:
 		assert.NilError(t, err)
 		assert.Assert(t, specified)
 		alwaysExpect(t, service)
-
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
+		assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgadmin
+  port: 5050
+  protocol: TCP
+  targetPort: pgadmin
+`))
 	})
 
 	types := []struct {
@@ -262,6 +265,66 @@ ownerReferences:
 			assert.Assert(t, specified)
 			alwaysExpect(t, service)
 			test.Expect(t, service)
+			assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgadmin
+  port: 5050
+  protocol: TCP
+  targetPort: pgadmin
+`))
+		})
+	}
+
+	typesAndPort := []struct {
+		Description string
+		Type        string
+		NodePort    *int32
+		Expect      func(testing.TB, *corev1.Service, error)
+	}{
+		{Description: "ClusterIP with Port 32000", Type: "ClusterIP",
+			NodePort: initialize.Int32(32000), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.ErrorContains(t, err, "NodePort cannot be set with type ClusterIP on Service \"my-cluster-pgadmin\"")
+				assert.Assert(t, service == nil)
+			}},
+		{Description: "NodePort with Port 32001", Type: "NodePort",
+			NodePort: initialize.Int32(32001), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.NilError(t, err)
+				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
+				alwaysExpect(t, service)
+				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgadmin
+  nodePort: 32001
+  port: 5050
+  protocol: TCP
+  targetPort: pgadmin
+`))
+			}},
+		{Description: "LoadBalancer with Port 32002", Type: "LoadBalancer",
+			NodePort: initialize.Int32(32002), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.NilError(t, err)
+				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
+				alwaysExpect(t, service)
+				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgadmin
+  nodePort: 32002
+  port: 5050
+  protocol: TCP
+  targetPort: pgadmin
+`))
+			}},
+	}
+
+	for _, test := range typesAndPort {
+		t.Run(test.Description, func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.UserInterface.PGAdmin.Service =
+				&v1beta1.ServiceSpec{Type: test.Type, NodePort: test.NodePort}
+
+			service, specified, err := reconciler.generatePGAdminService(cluster)
+			test.Expect(t, service, err)
+			// whether or not an error is encountered, 'specified' is true because
+			// the service *should* exist
+			assert.Assert(t, specified)
+
 		})
 	}
 }

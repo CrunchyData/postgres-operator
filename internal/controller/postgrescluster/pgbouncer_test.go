@@ -28,6 +28,7 @@ import (
 	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -40,7 +41,10 @@ func TestGeneratePGBouncerService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{
+		Client:   cc,
+		Recorder: new(record.FakeRecorder),
+	}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns5"
@@ -91,12 +95,6 @@ ownerReferences:
   name: pg7
   uid: ""
 		`))
-		assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgbouncer
-  port: 9651
-  protocol: TCP
-  targetPort: pgbouncer
-		`))
 
 		// Always gets a ClusterIP (never None).
 		assert.Equal(t, service.Spec.ClusterIP, "")
@@ -141,9 +139,14 @@ ownerReferences:
 		assert.NilError(t, err)
 		assert.Assert(t, specified)
 		alwaysExpect(t, service)
-
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
+		assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgbouncer
+  port: 9651
+  protocol: TCP
+  targetPort: pgbouncer
+		`))
 	})
 
 	types := []struct {
@@ -171,6 +174,64 @@ ownerReferences:
 			assert.Assert(t, specified)
 			alwaysExpect(t, service)
 			test.Expect(t, service)
+			assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgbouncer
+  port: 9651
+  protocol: TCP
+  targetPort: pgbouncer
+		`))
+		})
+	}
+
+	typesAndPort := []struct {
+		Description string
+		Type        string
+		NodePort    *int32
+		Expect      func(testing.TB, *corev1.Service, error)
+	}{
+		{Description: "ClusterIP with Port 32000", Type: "ClusterIP",
+			NodePort: initialize.Int32(32000), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.ErrorContains(t, err, "NodePort cannot be set with type ClusterIP on Service \"pg7-pgbouncer\"")
+				assert.Assert(t, service == nil)
+			}},
+		{Description: "NodePort with Port 32001", Type: "NodePort",
+			NodePort: initialize.Int32(32001), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.NilError(t, err)
+				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
+				alwaysExpect(t, service)
+				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgbouncer
+  nodePort: 32001
+  port: 9651
+  protocol: TCP
+  targetPort: pgbouncer
+`))
+			}},
+		{Description: "LoadBalancer with Port 32002", Type: "LoadBalancer",
+			NodePort: initialize.Int32(32002), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.NilError(t, err)
+				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
+				alwaysExpect(t, service)
+				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: pgbouncer
+  nodePort: 32002
+  port: 9651
+  protocol: TCP
+  targetPort: pgbouncer
+`))
+			}},
+	}
+
+	for _, test := range typesAndPort {
+		t.Run(test.Type, func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.Proxy.PGBouncer.Service = &v1beta1.ServiceSpec{Type: test.Type, NodePort: test.NodePort}
+
+			service, specified, err := reconciler.generatePGBouncerService(cluster)
+			test.Expect(t, service, err)
+			// whether or not an error is encountered, 'specified' is true because
+			// the service *should* exist
+			assert.Assert(t, specified)
 		})
 	}
 }

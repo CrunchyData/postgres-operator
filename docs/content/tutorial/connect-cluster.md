@@ -42,22 +42,28 @@ All connections are over TLS. PGO provides its own certificate authority (CA) to
 
 ### Modifying Service Type
 
-By default, PGO deploys Services with the `ClusterIP` Service type. Based on how you want to expose your database, you may want to modify the Services to use a different [Service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types).
+By default, PGO deploys Services with the `ClusterIP` Service type. Based on how you want to expose your database,
+you may want to modify the Services to use a different
+[Service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types)
+and [NodePort value](https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport).
 
 You can modify the Services that PGO manages from the following attributes:
 
 - `spec.service` - this manages the Service for connecting to a Postgres primary.
 - `spec.proxy.pgBouncer.service` - this manages the Service for connecting to the PgBouncer connection pooler.
+- `spec.userInterface.pgAdmin.service` - this manages the Service for connecting to the pgAdmin management tool.
 
-For example, to set the Postgres primary to use a `NodePort` service, you would add the following to your manifest:
+For example, to set the Postgres primary to use a `NodePort` service and specific `nodePort` value, you would add the
+following to your manifest:
 
 ```yaml
 spec:
   service:
     type: NodePort
+    nodePort: 32000
 ```
 
-For our `hippo` cluster, you would see the Service type modification in the . For example:
+For our `hippo` cluster, you would see the Service type and nodePort modification. For example:
 
 ```
 kubectl -n postgres-operator get svc --selector=postgres-operator.crunchydata.com/cluster=hippo
@@ -66,15 +72,18 @@ kubectl -n postgres-operator get svc --selector=postgres-operator.crunchydata.co
 will yield something similar to:
 
 ```
-NAME              TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
-hippo-ha          NodePort    10.96.17.210   <none>        5432:32751/TCP   2m37s
-hippo-ha-config   ClusterIP   None           <none>        <none>           2m37s
-hippo-pods        ClusterIP   None           <none>        <none>           2m37s
-hippo-primary     ClusterIP   None           <none>        5432/TCP         2m37s
-hippo-replicas    ClusterIP   10.96.151.53   <none>        5432/TCP         2m37s
+NAME              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+hippo-ha          NodePort    10.105.57.191   <none>        5432:32000/TCP   48s
+hippo-ha-config   ClusterIP   None            <none>        <none>           48s
+hippo-pods        ClusterIP   None            <none>        <none>           48s
+hippo-primary     ClusterIP   None            <none>        5432/TCP         48s
+hippo-replicas    ClusterIP   10.106.18.99    <none>        5432/TCP         48s
 ```
 
-(Note that if you are exposing your Services externally and are relying on TLS verification, you will need to use the [custom TLS]({{< relref "tutorial/customize-cluster.md" >}}#customize-tls) features of PGO).
+Note that setting the `nodePort` value is not allowed when using the `ClusterIP` type, and it must be in-range and
+not otherwise in use or the operation will fail. Also, if you are exposing your Services externally and are relying on TLS
+verification, you will need to use the [custom TLS]({{< relref "tutorial/customize-cluster.md" >}}#customize-tls)
+features of PGO).
 
 ## Connect an Application
 

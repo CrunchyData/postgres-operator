@@ -35,6 +35,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -48,7 +49,10 @@ func TestGeneratePatroniLeaderLeaseService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{
+		Client:   cc,
+		Recorder: new(record.FakeRecorder),
+	}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns1"
@@ -75,12 +79,6 @@ ownerReferences:
   name: pg2
   uid: ""
 		`))
-		assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: postgres
-  port: 9876
-  protocol: TCP
-  targetPort: postgres
-		`))
 
 		// Always gets a ClusterIP (never None).
 		assert.Equal(t, service.Spec.ClusterIP, "")
@@ -92,9 +90,14 @@ ownerReferences:
 		service, err := reconciler.generatePatroniLeaderLeaseService(cluster)
 		assert.NilError(t, err)
 		alwaysExpect(t, service)
-
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
+		assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: postgres
+  port: 9876
+  protocol: TCP
+  targetPort: postgres
+		`))
 	})
 
 	t.Run("AnnotationsLabels", func(t *testing.T) {
@@ -148,6 +151,61 @@ ownerReferences:
 			assert.NilError(t, err)
 			alwaysExpect(t, service)
 			test.Expect(t, service)
+			assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: postgres
+  port: 9876
+  protocol: TCP
+  targetPort: postgres
+		`))
+		})
+	}
+
+	typesAndPort := []struct {
+		Description string
+		Type        string
+		NodePort    *int32
+		Expect      func(testing.TB, *corev1.Service, error)
+	}{
+		{Description: "ClusterIP with Port 32000", Type: "ClusterIP",
+			NodePort: initialize.Int32(32000), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.ErrorContains(t, err, "NodePort cannot be set with type ClusterIP on Service \"pg2-ha\"")
+				assert.Assert(t, service == nil)
+			}},
+		{Description: "NodePort with Port 32001", Type: "NodePort",
+			NodePort: initialize.Int32(32001), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.NilError(t, err)
+				alwaysExpect(t, service)
+				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
+				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: postgres
+  nodePort: 32001
+  port: 9876
+  protocol: TCP
+  targetPort: postgres
+`))
+			}},
+		{Description: "LoadBalancer with Port 32002", Type: "LoadBalancer",
+			NodePort: initialize.Int32(32002), Expect: func(t testing.TB, service *corev1.Service, err error) {
+				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
+				assert.NilError(t, err)
+				alwaysExpect(t, service)
+				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: postgres
+  nodePort: 32002
+  port: 9876
+  protocol: TCP
+  targetPort: postgres
+`))
+			}},
+	}
+
+	for _, test := range typesAndPort {
+		t.Run(test.Description, func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.Service = &v1beta1.ServiceSpec{Type: test.Type, NodePort: test.NodePort}
+
+			service, err := reconciler.generatePatroniLeaderLeaseService(cluster)
+			test.Expect(t, service, err)
 		})
 	}
 }
