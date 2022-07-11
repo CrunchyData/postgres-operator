@@ -276,21 +276,37 @@ func (r *Reconciler) generatePGBouncerService(
 		naming.LabelCluster: cluster.Name,
 		naming.LabelRole:    naming.RolePGBouncer,
 	}
-	if spec := cluster.Spec.Proxy.PGBouncer.Service; spec != nil {
-		service.Spec.Type = corev1.ServiceType(spec.Type)
-	} else {
-		service.Spec.Type = corev1.ServiceTypeClusterIP
-	}
 
 	// The TargetPort must be the name (not the number) of the PgBouncer
 	// ContainerPort. This name allows the port number to differ between Pods,
 	// which can happen during a rolling update.
-	service.Spec.Ports = []corev1.ServicePort{{
+	servicePort := corev1.ServicePort{
 		Name:       naming.PortPGBouncer,
 		Port:       *cluster.Spec.Proxy.PGBouncer.Port,
 		Protocol:   corev1.ProtocolTCP,
 		TargetPort: intstr.FromString(naming.PortPGBouncer),
-	}}
+	}
+
+	if spec := cluster.Spec.Proxy.PGBouncer.Service; spec == nil {
+		service.Spec.Type = corev1.ServiceTypeClusterIP
+	} else {
+		service.Spec.Type = corev1.ServiceType(spec.Type)
+		if spec.NodePort != nil {
+			if service.Spec.Type == corev1.ServiceTypeClusterIP {
+				// The NodePort can only be set when the Service type is NodePort or
+				// LoadBalancer. However, due to a known issue prior to Kubernetes
+				// 1.20, we clear these errors during our apply. To preserve the
+				// appropriate behavior, we log an Event and return an error.
+				// TODO(tjmoore4): Once Validation Rules are available, this check
+				// and event could potentially be removed in favor of that validation
+				r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "MisconfiguredClusterIP",
+					"NodePort cannot be set with type ClusterIP on Service %q", service.Name)
+				return nil, true, fmt.Errorf("NodePort cannot be set with type ClusterIP on Service %q", service.Name)
+			}
+			servicePort.NodePort = *spec.NodePort
+		}
+	}
+	service.Spec.Ports = []corev1.ServicePort{servicePort}
 
 	err := errors.WithStack(r.setControllerReference(cluster, service))
 

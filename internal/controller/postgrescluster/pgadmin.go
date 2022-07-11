@@ -149,11 +149,6 @@ func (r *Reconciler) generatePGAdminService(
 		naming.LabelCluster: cluster.Name,
 		naming.LabelRole:    naming.RolePGAdmin,
 	}
-	if spec := cluster.Spec.UserInterface.PGAdmin.Service; spec != nil {
-		service.Spec.Type = corev1.ServiceType(spec.Type)
-	} else {
-		service.Spec.Type = corev1.ServiceTypeClusterIP
-	}
 
 	// The TargetPort must be the name (not the number) of the pgAdmin
 	// ContainerPort. This name allows the port number to differ between Pods,
@@ -161,12 +156,33 @@ func (r *Reconciler) generatePGAdminService(
 	//
 	// TODO(tjmoore4): A custom service port is not currently supported as this
 	// requires updates to the pgAdmin service configuration.
-	service.Spec.Ports = []corev1.ServicePort{{
+	servicePort := corev1.ServicePort{
 		Name:       naming.PortPGAdmin,
 		Port:       *initialize.Int32(5050),
 		Protocol:   corev1.ProtocolTCP,
 		TargetPort: intstr.FromString(naming.PortPGAdmin),
-	}}
+	}
+
+	if spec := cluster.Spec.UserInterface.PGAdmin.Service; spec == nil {
+		service.Spec.Type = corev1.ServiceTypeClusterIP
+	} else {
+		service.Spec.Type = corev1.ServiceType(spec.Type)
+		if spec.NodePort != nil {
+			if service.Spec.Type == corev1.ServiceTypeClusterIP {
+				// The NodePort can only be set when the Service type is NodePort or
+				// LoadBalancer. However, due to a known issue prior to Kubernetes
+				// 1.20, we clear these errors during our apply. To preserve the
+				// appropriate behavior, we log an Event and return an error.
+				// TODO(tjmoore4): Once Validation Rules are available, this check
+				// and event could potentially be removed in favor of that validation
+				r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "MisconfiguredClusterIP",
+					"NodePort cannot be set with type ClusterIP on Service %q", service.Name)
+				return nil, true, fmt.Errorf("NodePort cannot be set with type ClusterIP on Service %q", service.Name)
+			}
+			servicePort.NodePort = *spec.NodePort
+		}
+	}
+	service.Spec.Ports = []corev1.ServicePort{servicePort}
 
 	err := errors.WithStack(r.setControllerReference(cluster, service))
 
