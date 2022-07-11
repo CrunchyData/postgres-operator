@@ -416,6 +416,7 @@ restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 		`))
@@ -536,6 +537,7 @@ restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 tolerations:

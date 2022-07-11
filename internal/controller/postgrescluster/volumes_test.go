@@ -795,6 +795,7 @@ restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
@@ -851,6 +852,7 @@ restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
@@ -909,6 +911,7 @@ restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:

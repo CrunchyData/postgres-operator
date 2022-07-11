@@ -2518,6 +2518,7 @@ containers:
 enableServiceLinks: false
 restartPolicy: Never
 securityContext:
+  fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 volumes:
 - name: pgbackrest-config
