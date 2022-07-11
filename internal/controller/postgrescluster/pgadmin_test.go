@@ -21,6 +21,7 @@ package postgrescluster
 import (
 	"context"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -407,7 +408,11 @@ labels:
   postgres-operator.crunchydata.com/data: pgadmin
   postgres-operator.crunchydata.com/role: pgadmin
 		`))
-		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
+
+		// TODO(benjaminjb)(issue sc-11672): after we update controller-runtime and
+		// are no longer testing in Github actions with K8s 1.19.2, reduce the following comparison
+		// to simply testing against a given, fixed string.
+		compare := `
 automountServiceAccountToken: false
 containers: null
 dnsPolicy: ClusterFirst
@@ -419,7 +424,22 @@ securityContext:
   fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
-		`))
+		`
+		if os.Getenv("ENVTEST_K8S_VERSION") == "1.19.2" {
+			compare = `
+automountServiceAccountToken: false
+containers: null
+dnsPolicy: ClusterFirst
+enableServiceLinks: false
+restartPolicy: Always
+schedulerName: default-scheduler
+securityContext:
+  fsGroup: 26
+  runAsNonRoot: true
+terminationGracePeriodSeconds: 30
+		`
+		}
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, compare))
 	})
 
 	t.Run("verify customized deployment", func(t *testing.T) {
@@ -519,7 +539,11 @@ labels:
   postgres-operator.crunchydata.com/data: pgadmin
   postgres-operator.crunchydata.com/role: pgadmin
 		`))
-		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
+
+		// TODO(benjaminjb)(issue sc-11672): after we update controller-runtime and
+		// are no longer testing in Github actions with K8s 1.19.2, reduce the following comparison
+		// to simply testing against a given, fixed string.
+		compare := `
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
@@ -554,7 +578,45 @@ topologySpreadConstraints:
   maxSkew: 1
   topologyKey: fakekey
   whenUnsatisfiable: ScheduleAnyway
-		`))
+`
+		if os.Getenv("ENVTEST_K8S_VERSION") == "1.19.2" {
+			compare = `
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: key
+          operator: Exists
+automountServiceAccountToken: false
+containers: null
+dnsPolicy: ClusterFirst
+enableServiceLinks: false
+imagePullSecrets:
+- name: myImagePullSecret
+restartPolicy: Always
+schedulerName: default-scheduler
+securityContext:
+  fsGroup: 26
+  runAsNonRoot: true
+terminationGracePeriodSeconds: 30
+tolerations:
+- key: sometoleration
+topologySpreadConstraints:
+- labelSelector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/cluster
+      operator: In
+      values:
+      - somename
+    - key: postgres-operator.crunchydata.com/data
+      operator: Exists
+  maxSkew: 1
+  topologyKey: fakekey
+  whenUnsatisfiable: ScheduleAnyway
+		`
+		}
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, compare))
 	})
 }
 
