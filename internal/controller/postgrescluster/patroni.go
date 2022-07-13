@@ -237,7 +237,17 @@ func (r *Reconciler) generatePatroniLeaderLeaseService(
 	service.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil())
 	service.Labels = naming.Merge(
-		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Metadata.GetLabelsOrNil())
+
+	if spec := cluster.Spec.Service; spec != nil {
+		service.Annotations = naming.Merge(service.Annotations,
+			spec.Metadata.GetAnnotationsOrNil())
+		service.Labels = naming.Merge(service.Labels,
+			spec.Metadata.GetLabelsOrNil())
+	}
+
+	// add our labels last so they aren't overwritten
+	service.Labels = naming.Merge(service.Labels,
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelPatroni: naming.PatroniScope(cluster),

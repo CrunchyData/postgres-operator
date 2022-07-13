@@ -40,7 +40,7 @@ When your Postgres cluster is initialized, PGO will bootstrap a database and Pos
 
 All connections are over TLS. PGO provides its own certificate authority (CA) to allow you to securely connect your applications to your Postgres clusters. This allows you to use the [`verify-full` "SSL mode"](https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS) of Postgres, which provides eavesdropping protection and prevents MITM attacks. You can also choose to bring your own CA, which is described later in this tutorial in the [Customize Cluster]({{< relref "./customize-cluster.md" >}}) section.
 
-### Modifying Service Type
+### Modifying Service Type, NodePort Value and Metadata
 
 By default, PGO deploys Services with the `ClusterIP` Service type. Based on how you want to expose your database,
 you may want to modify the Services to use a different
@@ -53,17 +53,23 @@ You can modify the Services that PGO manages from the following attributes:
 - `spec.proxy.pgBouncer.service` - this manages the Service for connecting to the PgBouncer connection pooler.
 - `spec.userInterface.pgAdmin.service` - this manages the Service for connecting to the pgAdmin management tool.
 
-For example, to set the Postgres primary to use a `NodePort` service and specific `nodePort` value, you would add the
-following to your manifest:
+For example, say you want to set the Postgres primary to use a `NodePort` service, a specific `nodePort` value, and set
+a specific annotation and label, you would add the following to your manifest:
 
 ```yaml
 spec:
   service:
+    metadata:
+      annotations:
+        my-annotation: value1
+      labels:
+        my-label: value2
     type: NodePort
     nodePort: 32000
 ```
 
-For our `hippo` cluster, you would see the Service type and nodePort modification. For example:
+For our `hippo` cluster, you would see the Service type and nodePort modification as well as the annotation and label.
+For example:
 
 ```
 kubectl -n postgres-operator get svc --selector=postgres-operator.crunchydata.com/cluster=hippo
@@ -80,8 +86,28 @@ hippo-primary     ClusterIP   None            <none>        5432/TCP         48s
 hippo-replicas    ClusterIP   10.106.18.99    <none>        5432/TCP         48s
 ```
 
-Note that setting the `nodePort` value is not allowed when using the `ClusterIP` type, and it must be in-range and
-not otherwise in use or the operation will fail. Also, if you are exposing your Services externally and are relying on TLS
+and the top of the output from running
+
+```
+kubectl -n postgres-operator describe svc hippo-ha
+```
+
+will show our custom annotation and label have been added:
+
+```
+Name:              hippo-ha
+Namespace:         postgres-operator
+Labels:            my-label=value2
+                   postgres-operator.crunchydata.com/cluster=hippo
+                   postgres-operator.crunchydata.com/patroni=hippo-ha
+Annotations:       my-annotation: value1
+```
+
+Note that setting the `nodePort` value is not allowed when using the (default) `ClusterIP` type, and it must be in-range
+and not otherwise in use or the operation will fail. Additionally, be aware that any annotations or labels provided here
+will win in case of conflicts with any annotations or labels a user configures elsewhere.
+
+Finally, if you are exposing your Services externally and are relying on TLS
 verification, you will need to use the [custom TLS]({{< relref "tutorial/customize-cluster.md" >}}#customize-tls)
 features of PGO).
 

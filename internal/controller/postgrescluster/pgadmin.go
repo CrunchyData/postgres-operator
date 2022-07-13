@@ -136,7 +136,17 @@ func (r *Reconciler) generatePGAdminService(
 		cluster.Spec.UserInterface.PGAdmin.Metadata.GetAnnotationsOrNil())
 	service.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
-		cluster.Spec.UserInterface.PGAdmin.Metadata.GetLabelsOrNil(),
+		cluster.Spec.UserInterface.PGAdmin.Metadata.GetLabelsOrNil())
+
+	if spec := cluster.Spec.UserInterface.PGAdmin.Service; spec != nil {
+		service.Annotations = naming.Merge(service.Annotations,
+			spec.Metadata.GetAnnotationsOrNil())
+		service.Labels = naming.Merge(service.Labels,
+			spec.Metadata.GetLabelsOrNil())
+	}
+
+	// add our labels last so they aren't overwritten
+	service.Labels = naming.Merge(service.Labels,
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGAdmin,

@@ -15744,14 +15744,51 @@ Specification of the service that exposes PgBouncer.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>type</b></td>
-        <td>enum</td>
-        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
-        <td>true</td>
+        <td><b><a href="#postgresclusterspecproxypgbouncerservicemetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>false</td>
       </tr><tr>
         <td><b>nodePort</b></td>
         <td>integer</td>
         <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbouncerservicemetadata">
+  PostgresCluster.spec.proxy.pgBouncer.service.metadata
+  <sup><sup><a href="#postgresclusterspecproxypgbouncerservice">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Metadata contains metadata for PostgresCluster resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td></td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -16020,14 +16057,51 @@ Specification of the service that exposes the PostgreSQL primary instance.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>type</b></td>
-        <td>enum</td>
-        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
-        <td>true</td>
+        <td><b><a href="#postgresclusterspecservicemetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>false</td>
       </tr><tr>
         <td><b>nodePort</b></td>
         <td>integer</td>
         <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecservicemetadata">
+  PostgresCluster.spec.service.metadata
+  <sup><sup><a href="#postgresclusterspecservice">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Metadata contains metadata for PostgresCluster resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td></td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17788,14 +17862,51 @@ Specification of the service that exposes pgAdmin.
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>type</b></td>
-        <td>enum</td>
-        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
-        <td>true</td>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminservicemetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>false</td>
       </tr><tr>
         <td><b>nodePort</b></td>
         <td>integer</td>
         <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminservicemetadata">
+  PostgresCluster.spec.userInterface.pgAdmin.service.metadata
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminservice">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Metadata contains metadata for PostgresCluster resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td></td>
         <td>false</td>
       </tr></tbody>
 </table>
