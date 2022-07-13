@@ -143,7 +143,7 @@ There are a few ways to restart an older version PgBouncer to reload Secrets:
      --patch '{"spec":{"proxy":{"pgBouncer":{"metadata":{"annotations":{"restarted":"'"$(date)"'"}}}}}}'
    ```
 
-### Root Certificate Rotation
+### Rotating the Root Certificate
 
 Is it time to rotate your PGO root certificate? PGO will enable you to do that easily!  PGO rolls out those changes seamlessly ensuring your app or access management tool continues to communicate to the Postgres cluster without having to update any configuration or deal with any downtime.
 
