@@ -39,11 +39,8 @@ func (in *SchemalessObject) DeepCopy() *SchemalessObject {
 }
 
 type ServiceSpec struct {
-	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-	//
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
-	Type string `json:"type"`
+	// +optional
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// The port on which this service is exposed when type is NodePort or
 	// LoadBalancer. Value must be in-range and not in use or the operation will
@@ -51,6 +48,13 @@ type ServiceSpec struct {
 	// - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
 	// +optional
 	NodePort *int32 `json:"nodePort,omitempty"`
+
+	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+	//
+	// +optional
+	// +kubebuilder:default=ClusterIP
+	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
+	Type string `json:"type"`
 }
 
 // Sidecar defines the configuration of a sidecar container

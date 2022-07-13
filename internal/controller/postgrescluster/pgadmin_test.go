@@ -223,6 +223,39 @@ ownerReferences:
 			"postgres-operator.crunchydata.com/cluster": "my-cluster",
 			"postgres-operator.crunchydata.com/role":    "pgadmin",
 		})
+
+		// Add metadata to individual service
+		cluster.Spec.UserInterface.PGAdmin.Service = &v1beta1.ServiceSpec{
+			Metadata: &v1beta1.Metadata{
+				Annotations: map[string]string{"c": "v3"},
+				Labels: map[string]string{"d": "v4",
+					"postgres-operator.crunchydata.com/cluster": "wrongName"},
+			},
+		}
+
+		service, specified, err = reconciler.generatePGAdminService(cluster)
+		assert.NilError(t, err)
+		assert.Assert(t, specified)
+
+		// Annotations present in the metadata.
+		assert.DeepEqual(t, service.ObjectMeta.Annotations, map[string]string{
+			"a": "v1",
+			"c": "v3",
+		})
+
+		// Labels present in the metadata.
+		assert.DeepEqual(t, service.ObjectMeta.Labels, map[string]string{
+			"b": "v2",
+			"d": "v4",
+			"postgres-operator.crunchydata.com/cluster": "my-cluster",
+			"postgres-operator.crunchydata.com/role":    "pgadmin",
+		})
+
+		// Labels not in the selector.
+		assert.DeepEqual(t, service.Spec.Selector, map[string]string{
+			"postgres-operator.crunchydata.com/cluster": "my-cluster",
+			"postgres-operator.crunchydata.com/role":    "pgadmin",
+		})
 	})
 
 	t.Run("NoServiceSpec", func(t *testing.T) {

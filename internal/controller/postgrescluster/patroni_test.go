@@ -125,6 +125,36 @@ ownerReferences:
 		// Labels not in the selector.
 		assert.Assert(t, service.Spec.Selector == nil,
 			"got %v", service.Spec.Selector)
+
+		// Add metadata to individual service
+		cluster.Spec.Service = &v1beta1.ServiceSpec{
+			Metadata: &v1beta1.Metadata{
+				Annotations: map[string]string{"c": "v3"},
+				Labels: map[string]string{"d": "v4",
+					"postgres-operator.crunchydata.com/cluster": "wrongName"},
+			},
+		}
+
+		service, err = reconciler.generatePatroniLeaderLeaseService(cluster)
+		assert.NilError(t, err)
+
+		// Annotations present in the metadata.
+		assert.DeepEqual(t, service.ObjectMeta.Annotations, map[string]string{
+			"a": "v1",
+			"c": "v3",
+		})
+
+		// Labels present in the metadata.
+		assert.DeepEqual(t, service.ObjectMeta.Labels, map[string]string{
+			"b": "v2",
+			"d": "v4",
+			"postgres-operator.crunchydata.com/cluster": "pg2",
+			"postgres-operator.crunchydata.com/patroni": "pg2-ha",
+		})
+
+		// Labels not in the selector.
+		assert.Assert(t, service.Spec.Selector == nil,
+			"got %v", service.Spec.Selector)
 	})
 
 	types := []struct {

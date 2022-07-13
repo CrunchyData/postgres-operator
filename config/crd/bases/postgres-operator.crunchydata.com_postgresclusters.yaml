@@ -10426,6 +10426,19 @@ spec:
                       service:
                         description: Specification of the service that exposes PgBouncer.
                         properties:
+                          metadata:
+                            description: Metadata contains metadata for PostgresCluster
+                              resources
+                            properties:
+                              annotations:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                              labels:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
                           nodePort:
                             description: The port on which this service is exposed
                               when type is NodePort or LoadBalancer. Value must be
@@ -10435,14 +10448,13 @@ spec:
                             format: int32
                             type: integer
                           type:
+                            default: ClusterIP
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types'
                             enum:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
                             type: string
-                        required:
-                        - type
                         type: object
                       sidecars:
                         description: Configuration for pgBouncer sidecar containers
@@ -10641,6 +10653,18 @@ spec:
                 description: Specification of the service that exposes the PostgreSQL
                   primary instance.
                 properties:
+                  metadata:
+                    description: Metadata contains metadata for PostgresCluster resources
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        type: object
+                    type: object
                   nodePort:
                     description: The port on which this service is exposed when type
                       is NodePort or LoadBalancer. Value must be in-range and not
@@ -10649,14 +10673,13 @@ spec:
                     format: int32
                     type: integer
                   type:
+                    default: ClusterIP
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types'
                     enum:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
                     type: string
-                required:
-                - type
                 type: object
               shutdown:
                 description: Whether or not the PostgreSQL cluster should be stopped.
@@ -11810,6 +11833,19 @@ spec:
                       service:
                         description: Specification of the service that exposes pgAdmin.
                         properties:
+                          metadata:
+                            description: Metadata contains metadata for PostgresCluster
+                              resources
+                            properties:
+                              annotations:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                              labels:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
                           nodePort:
                             description: The port on which this service is exposed
                               when type is NodePort or LoadBalancer. Value must be
@@ -11819,14 +11855,13 @@ spec:
                             format: int32
                             type: integer
                           type:
+                            default: ClusterIP
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types'
                             enum:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
                             type: string
-                        required:
-                        - type
                         type: object
                       tolerations:
                         description: 'Tolerations of a pgAdmin pod. Changing this
