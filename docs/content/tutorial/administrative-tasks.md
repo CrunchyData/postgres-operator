@@ -145,15 +145,15 @@ There are a few ways to restart an older version PgBouncer to reload Secrets:
 
 ### Rotating the Root Certificate
 
-Is it time to rotate your PGO root certificate? PGO will enable you to do that easily!  PGO rolls out those changes seamlessly ensuring your app or access management tool continues to communicate to the Postgres cluster without having to update any configuration or deal with any downtime.
-
-All you need to do is delete the pgo-root-cacert secret, PGO will regenerate it during reconciliation.
+Is it time to rotate your PGO root certificate? All you need to do is delete the `pgo-root-cacert` secret. PGO will regenerate it and roll it out seamlessly, ensuring your apps continue communicating with the Postgres cluster without having to update any configuration or deal with any downtime.
 
 ```yaml
 kubectl delete secret pgo-root-cacert
 ```
 
-During reconciliation, all of the relevant keys and certs that needed to be updated have been propagated to all the appropriate locations.  PGO will only update the secrets containing the root ca.crt which means it will not update any custom certificates. This update will not cause any downtime during its rollout and your apps and/or access management tool will stay connected to your postegres cluster as expected.
+{{% notice note %}}
+PGO only updates secrets containing the generated root certificate. It does not touch custom certificates.
+{{% /notice %}}
 
 ## Changing the Primary
 
