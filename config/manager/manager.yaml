@@ -40,6 +40,7 @@ spec:
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.1.2-0"
         securityContext:
           allowPrivilegeEscalation: false
+          capabilities: { drop: [ALL] }
           readOnlyRootFilesystem: true
           runAsNonRoot: true
       serviceAccountName: pgo
