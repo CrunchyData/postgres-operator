@@ -143,6 +143,18 @@ There are a few ways to restart an older version PgBouncer to reload Secrets:
      --patch '{"spec":{"proxy":{"pgBouncer":{"metadata":{"annotations":{"restarted":"'"$(date)"'"}}}}}}'
    ```
 
+### Rotating the Root Certificate
+
+Is it time to rotate your PGO root certificate? All you need to do is delete the `pgo-root-cacert` secret. PGO will regenerate it and roll it out seamlessly, ensuring your apps continue communicating with the Postgres cluster without having to update any configuration or deal with any downtime.
+
+```yaml
+kubectl delete secret pgo-root-cacert
+```
+
+{{% notice note %}}
+PGO only updates secrets containing the generated root certificate. It does not touch custom certificates.
+{{% /notice %}}
+
 ## Changing the Primary
 
 There may be times when you want to change the primary in your HA cluster. This can be done
