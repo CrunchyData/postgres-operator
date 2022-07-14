@@ -197,6 +197,9 @@ func RestoreCommand(pgdata string, args ...string) []string {
 	// - https://www.postgresql.org/docs/current/hot-standby.html
 	// - https://www.postgresql.org/docs/current/app-pgcontroldata.html
 
+	// The 'pg_ctl' timeout is set to a very large value (1 year) to ensure there
+	// are no timeouts when starting or stopping Postgres.
+
 	const restoreScript = `declare -r pgdata="$1" opts="$2"
 install --directory --mode=0700 "${pgdata}"
 eval "pgbackrest restore ${opts}"
@@ -226,7 +229,7 @@ read -r max_wals <<< "${control##*max_wal_senders setting:}"
 echo >> /tmp/postgres.restore.conf "max_wal_senders = '${max_wals}'"
 fi
 
-pg_ctl start --silent --wait --options='--config-file=/tmp/postgres.restore.conf'
+pg_ctl start --silent --timeout=31536000 --wait --options='--config-file=/tmp/postgres.restore.conf'
 fi
 
 recovery=$(psql -Atc "SELECT CASE
@@ -236,7 +239,7 @@ recovery=$(psql -Atc "SELECT CASE
 END recovery" && sleep 1) || true
 done
 
-pg_ctl stop --silent --wait
+pg_ctl stop --silent --wait --timeout=31536000
 mv "${pgdata}" "${pgdata}_bootstrap"`
 
 	return append([]string{"bash", "-ceu", "--", restoreScript, "-", pgdata}, args...)
