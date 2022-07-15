@@ -22,9 +22,14 @@ import (
 // RestrictedPodSecurityContext returns a v1.PodSecurityContext with safe defaults.
 // See https://docs.k8s.io/concepts/security/pod-security-standards/
 func RestrictedPodSecurityContext() *corev1.PodSecurityContext {
+	onRootMismatch := corev1.FSGroupChangeOnRootMismatch
 	return &corev1.PodSecurityContext{
 		// Fail to start a container if its image runs as UID 0 (root).
 		RunAsNonRoot: Bool(true),
+
+		// If set to "OnRootMismatch", if the root of the volume already has
+		// the correct permissions, the recursive permission change can be skipped
+		FSGroupChangePolicy: &onRootMismatch,
 	}
 }
 

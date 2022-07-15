@@ -469,6 +469,7 @@ containers: null
 enableServiceLinks: false
 restartPolicy: Always
 securityContext:
+  fsGroupChangePolicy: OnRootMismatch
   runAsNonRoot: true
 shareProcessNamespace: true
 topologySpreadConstraints:
