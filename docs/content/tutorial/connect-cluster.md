@@ -139,6 +139,7 @@ spec:
     spec:
       containers:
       - image: quay.io/keycloak/keycloak:latest
+        args: ["start-dev"]
         name: keycloak
         env:
         - name: DB_VENDOR
@@ -153,12 +154,12 @@ spec:
           valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: user } }
         - name: DB_PASSWORD
           valueFrom: { secretKeyRef: { name: hippo-pguser-hippo, key: password } }
-        - name: KEYCLOAK_USER
+        - name: KEYCLOAK_ADMIN
           value: "admin"
-        - name: KEYCLOAK_PASSWORD
+        - name: KEYCLOAK_ADMIN_PASSWORD
           value: "admin"
-        - name: PROXY_ADDRESS_FORWARDING
-          value: "true"
+        - name: KC_PROXY
+          value: "edge"
         ports:
         - name: http
           containerPort: 8080
@@ -166,7 +167,7 @@ spec:
           containerPort: 8443
         readinessProbe:
           httpGet:
-            path: /auth/realms/master
+            path: /realms/master
             port: 8080
       restartPolicy: Always
 EOF
