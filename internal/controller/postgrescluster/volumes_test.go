@@ -811,7 +811,6 @@ schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
   fsGroupChangePolicy: OnRootMismatch
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
 - name: postgres-data
@@ -860,7 +859,6 @@ restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
 - name: postgres-data
@@ -924,7 +922,6 @@ schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
   fsGroupChangePolicy: OnRootMismatch
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
 - name: postgres-wal
@@ -972,7 +969,6 @@ restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
 - name: postgres-wal
@@ -1038,7 +1034,6 @@ schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
   fsGroupChangePolicy: OnRootMismatch
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
 - name: pgbackrest-repo
@@ -1089,7 +1084,6 @@ restartPolicy: Never
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 volumes:
 - name: pgbackrest-repo

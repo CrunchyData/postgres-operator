@@ -528,7 +528,6 @@ schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
   fsGroupChangePolicy: OnRootMismatch
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 		`
 		if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
@@ -541,7 +540,6 @@ restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 		`
 		}
@@ -668,7 +666,6 @@ schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
   fsGroupChangePolicy: OnRootMismatch
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 tolerations:
 - key: sometoleration
@@ -704,7 +701,6 @@ restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
-  runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 tolerations:
 - key: sometoleration

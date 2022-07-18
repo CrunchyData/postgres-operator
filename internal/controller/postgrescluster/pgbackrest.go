@@ -715,7 +715,7 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 				// This will ensure the Job always has the latest configs mounted following a
 				// failure as needed to successfully verify config hashes and run the Job.
 				RestartPolicy:      corev1.RestartPolicyNever,
-				SecurityContext:    initialize.RestrictedPodSecurityContext(),
+				SecurityContext:    initialize.PodSecurityContext(),
 				ServiceAccountName: serviceAccountName,
 			},
 		},

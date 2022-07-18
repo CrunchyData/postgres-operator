@@ -447,7 +447,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	// Do not add environment variables describing services in this namespace.
 	deploy.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
 
-	deploy.Spec.Template.Spec.SecurityContext = initialize.RestrictedPodSecurityContext()
+	deploy.Spec.Template.Spec.SecurityContext = initialize.PodSecurityContext()
 
 	// set the image pull secrets, if any exist
 	deploy.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
