@@ -604,25 +604,21 @@ func TestPodSecurityContext(t *testing.T) {
 	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
 fsGroup: 26
 fsGroupChangePolicy: OnRootMismatch
-runAsNonRoot: true
 	`))
 
 	cluster.Spec.OpenShift = initialize.Bool(true)
 	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
 fsGroupChangePolicy: OnRootMismatch
-runAsNonRoot: true
 	`))
 
 	cluster.Spec.SupplementalGroups = []int64{}
 	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
 fsGroupChangePolicy: OnRootMismatch
-runAsNonRoot: true
 	`))
 
 	cluster.Spec.SupplementalGroups = []int64{999, 65000}
 	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
 fsGroupChangePolicy: OnRootMismatch
-runAsNonRoot: true
 supplementalGroups:
 - 999
 - 65000
@@ -632,7 +628,6 @@ supplementalGroups:
 	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
 fsGroup: 26
 fsGroupChangePolicy: OnRootMismatch
-runAsNonRoot: true
 supplementalGroups:
 - 999
 - 65000

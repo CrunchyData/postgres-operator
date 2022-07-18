@@ -24,8 +24,12 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 )
 
-func TestRestrictedPodSecurityContext(t *testing.T) {
-	psc := initialize.RestrictedPodSecurityContext()
+func TestPodSecurityContext(t *testing.T) {
+	psc := initialize.PodSecurityContext()
+
+	if assert.Check(t, psc.FSGroupChangePolicy != nil) {
+		assert.Equal(t, string(*psc.FSGroupChangePolicy), "OnRootMismatch")
+	}
 
 	// Kubernetes describes recommended security profiles:
 	// - https://docs.k8s.io/concepts/security/pod-security-standards/
@@ -47,9 +51,9 @@ func TestRestrictedPodSecurityContext(t *testing.T) {
 	// > operators and developers of security-critical applications, as well as
 	// > lower-trust users.
 	t.Run("Restricted", func(t *testing.T) {
-		if assert.Check(t, psc.RunAsNonRoot != nil) {
-			assert.Assert(t, *psc.RunAsNonRoot == true,
-				"Containers must be required to run as non-root users.")
+		if assert.Check(t, psc.RunAsNonRoot == nil) {
+			assert.Assert(t, initialize.RestrictedSecurityContext().RunAsNonRoot != nil,
+				`RunAsNonRoot should be delegated to the container-level v1.SecurityContext`)
 		}
 
 		assert.Assert(t, psc.SeccompProfile == nil,

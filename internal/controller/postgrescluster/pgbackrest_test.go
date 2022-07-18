@@ -344,7 +344,6 @@ restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
-  runAsNonRoot: true
 shareProcessNamespace: true
 terminationGracePeriodSeconds: 30
 tolerations:
@@ -2519,7 +2518,6 @@ enableServiceLinks: false
 restartPolicy: Never
 securityContext:
   fsGroupChangePolicy: OnRootMismatch
-  runAsNonRoot: true
 volumes:
 - name: pgbackrest-config
   projected:

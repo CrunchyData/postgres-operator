@@ -262,7 +262,7 @@ func InstancePod(ctx context.Context,
 // PodSecurityContext returns a v1.PodSecurityContext for cluster that can write
 // to PersistentVolumes.
 func PodSecurityContext(cluster *v1beta1.PostgresCluster) *corev1.PodSecurityContext {
-	podSecurityContext := initialize.RestrictedPodSecurityContext()
+	podSecurityContext := initialize.PodSecurityContext()
 
 	// Use the specified supplementary groups except for root. The CRD has
 	// similar validation, but we should never emit a PodSpec with that group.
