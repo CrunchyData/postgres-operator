@@ -3,10 +3,10 @@ kind: Job
 metadata:
   name: psql-replica-read
 spec:
-  backoffLimit: 3
+  backoffLimit: 6
   template:
     spec:
-      restartPolicy: "OnFailure"
+      restartPolicy: Never
       containers:
         - name: psql
           image: ${KUTTL_PSQL_IMAGE}

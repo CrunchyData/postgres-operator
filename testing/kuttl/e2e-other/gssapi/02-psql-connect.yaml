@@ -3,6 +3,7 @@ kind: Job
 metadata:
   name: psql-connect-gssapi
 spec:
+  backoffLimit: 6
   template:
     spec:
       restartPolicy: Never
