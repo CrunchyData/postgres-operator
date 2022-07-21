@@ -207,7 +207,7 @@ func RestoreCommand(pgdata string, args ...string) []string {
 	const restoreScript = `declare -r pgdata="$1" opts="$2"
 install --directory --mode=0700 "${pgdata}"
 rm -f "${pgdata}/postmaster.pid"
-eval "pgbackrest restore ${opts}"
+bash -xc "pgbackrest restore ${opts}"
 rm -f "${pgdata}/patroni.dynamic.json"
 export PGDATA="${pgdata}" PGHOST='/tmp'
 
