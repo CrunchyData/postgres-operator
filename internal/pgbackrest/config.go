@@ -197,11 +197,16 @@ func RestoreCommand(pgdata string, args ...string) []string {
 	// - https://www.postgresql.org/docs/current/hot-standby.html
 	// - https://www.postgresql.org/docs/current/app-pgcontroldata.html
 
+	// The postmaster.pid file is removed, if it exists, before attempting a restore.
+	// This allows the restore to be tried more than once without the causing an
+	// error due to the presence of the file in subsequent attempts.
+
 	// The 'pg_ctl' timeout is set to a very large value (1 year) to ensure there
 	// are no timeouts when starting or stopping Postgres.
 
 	const restoreScript = `declare -r pgdata="$1" opts="$2"
 install --directory --mode=0700 "${pgdata}"
+rm -f "${pgdata}/postmaster.pid"
 eval "pgbackrest restore ${opts}"
 rm -f "${pgdata}/patroni.dynamic.json"
 export PGDATA="${pgdata}" PGHOST='/tmp'
