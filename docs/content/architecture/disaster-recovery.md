@@ -71,14 +71,14 @@ A repo-based standby will connect to a pgBackRest repo stored in an external sto
 clusters). The standby cluster will receive WAL files from the repo and will apply those to the
 database.
 
-![PostgreSQL Operator High-Availability Overview](/images/postgresql-ha-multi-data-center.png)
+![PostgreSQL Operator Repo-based Standby](/images/repo-based-standby.png)
 
 #### Streaming Standby
 
 A streaming standby relies on an authenticated connection to the primary over the network. The
 standby will receive WAL records directly from the primary as they are generated.
 
-<!-- ![PostgreSQL Operator High-Availability Overview](/images/postgresql-ha-multi-data-center.png) -->
+![PostgreSQL Operator Streaming Standby](/images/streaming-standby.png)
 
 #### Streaming Standby with an External Repo
 
@@ -88,7 +88,7 @@ are pushed to the repo. The cluster will also directly connect to primary and re
 as they are generated. Using a repo while also streaming ensures that your cluster will still be up
 to date with the pgBackRest repo if streaming falls behind.
 
-<!-- ![PostgreSQL Operator High-Availability Overview](/images/postgresql-ha-multi-data-center.png) -->
+![PostgreSQL Operator Streaming Standby with External Repo](/images/streaming-standby-external-repo.png)
 
 For creating a standby Postgres cluster with PGO, please see the [disaster recovery tutorial]({{< relref "tutorial/disaster-recovery.md" >}}#standby-cluster)
 
