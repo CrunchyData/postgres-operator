@@ -29,3 +29,14 @@ patchesJson6902:
     kind: CustomResourceDefinition
     name: postgresclusters.postgres-operator.crunchydata.com
   path: validation.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: postgresclusters.postgres-operator.crunchydata.com
+  patch: |-
+    - op: add
+      path: "/metadata/labels"
+      value:
+        app.kubernetes.io/name: pgo
+        app.kubernetes.io/version: 5.1.2
