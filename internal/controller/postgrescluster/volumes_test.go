@@ -21,7 +21,6 @@ package postgrescluster
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -32,7 +31,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -651,8 +652,17 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 
 func TestReconcileMoveDirectories(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	env, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
+
+	dc, err := discovery.NewDiscoveryClientForConfig(env.Config)
+	assert.NilError(t, err)
+
+	server, err := dc.ServerVersion()
+	assert.NilError(t, err)
+
+	serverVersion, err := version.ParseGeneric(server.GitVersion)
+	assert.NilError(t, err)
 
 	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
@@ -809,7 +819,7 @@ volumes:
     claimName: testpgdata
 	`
 
-				if os.Getenv("ENVTEST_K8S_VERSION") == "1.19.2" {
+				if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
 					compare = `
 automountServiceAccountToken: false
 containers:
@@ -921,7 +931,7 @@ volumes:
   persistentVolumeClaim:
     claimName: testwal
 	`
-				if os.Getenv("ENVTEST_K8S_VERSION") == "1.19.2" {
+				if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
 					compare = `
 automountServiceAccountToken: false
 containers:
@@ -1036,7 +1046,7 @@ volumes:
     claimName: testrepo
 	`
 
-				if os.Getenv("ENVTEST_K8S_VERSION") == "1.19.2" {
+				if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
 					compare = `
 automountServiceAccountToken: false
 containers:
