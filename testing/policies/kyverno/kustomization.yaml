@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - https://github.com/kyverno/policies/pod-security/restricted
+
+resources:
+  # CVE-2020-14386: https://cloud.google.com/anthos/clusters/docs/security-bulletins#gcp-2020-012
+  # CVE-2021-22555: https://cloud.google.com/anthos/clusters/docs/security-bulletins#gcp-2021-015
+  - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/require_drop_all/require_drop_all.yaml
+  - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/require_ro_rootfs/require_ro_rootfs.yaml
+
+  # CVE-2020-8554: https://cloud.google.com/anthos/clusters/docs/security-bulletins#gcp-2020-015
+  - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/restrict-service-external-ips/restrict-service-external-ips.yaml
+
+patches:
+- target:
+    group: kyverno.io
+    kind: ClusterPolicy
+  patch: |-
+    # Ensure all policies "audit" rather than "enforce".
+    - { op: replace, path: /spec/validationFailureAction, value: audit }
+
+# Issue: [sc-11286]
+# OpenShift 4.10 forbids any/all seccomp profiles. Remove the policy for now.
+# - https://github.com/openshift/cluster-kube-apiserver-operator/issues/1325
+# - https://github.com/kyverno/policies/tree/main/pod-security/restricted/restrict-seccomp-strict
+- target:
+    group: kyverno.io
+    kind: ClusterPolicy
+    name: restrict-seccomp-strict
+  patch: |-
+    $patch: delete
+    apiVersion: kyverno.io/v1
+    kind: ClusterPolicy
+    metadata:
+      name: restrict-seccomp-strict
