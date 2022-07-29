@@ -21,7 +21,6 @@ package postgrescluster
 import (
 	"context"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -31,6 +30,8 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -451,8 +452,17 @@ func TestReconcilePGAdminService(t *testing.T) {
 
 func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	ctx := context.Background()
-	_, cc := setupKubernetes(t)
+	env, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
+
+	dc, err := discovery.NewDiscoveryClientForConfig(env.Config)
+	assert.NilError(t, err)
+
+	server, err := dc.ServerVersion()
+	assert.NilError(t, err)
+
+	serverVersion, err := version.ParseGeneric(server.GitVersion)
+	assert.NilError(t, err)
 
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
@@ -521,7 +531,7 @@ securityContext:
   runAsNonRoot: true
 terminationGracePeriodSeconds: 30
 		`
-		if os.Getenv("ENVTEST_K8S_VERSION") == "1.19.2" {
+		if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
 			compare = `
 automountServiceAccountToken: false
 containers: null
@@ -675,7 +685,7 @@ topologySpreadConstraints:
   topologyKey: fakekey
   whenUnsatisfiable: ScheduleAnyway
 `
-		if os.Getenv("ENVTEST_K8S_VERSION") == "1.19.2" {
+		if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
 			compare = `
 affinity:
   nodeAffinity:
