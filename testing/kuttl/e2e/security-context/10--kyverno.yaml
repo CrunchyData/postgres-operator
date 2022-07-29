@@ -1,0 +1,11 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      command -v kustomize || { echo Skipping... ; exit ; }
+      command -v kyverno || { echo Skipping... ; exit ; }
+
+      set -e
+      kustomize build ../../../../testing/policies/kyverno > policies.yaml
+      kyverno apply --cluster --namespace "${NAMESPACE}" policies.yaml
