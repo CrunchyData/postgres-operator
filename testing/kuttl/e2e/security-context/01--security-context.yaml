@@ -1,0 +1,48 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      # Check that every container has the correct capabilities.
+
+      # Capture every container name alongside its list of dropped capabilities.
+      CONTAINERS_DROP_CAPS=$(
+        kubectl --namespace "${NAMESPACE}" get pods --output "jsonpath={\
+          range .items[*].spec.containers[*]\
+        }{ @.name }{'\t\t'}{ @.securityContext.capabilities.drop }{'\n'}{\
+          end\
+        }"
+      ) || exit
+
+      WRONG=$( ! echo "${CONTAINERS_DROP_CAPS}" | grep -Fv '"ALL"' ) || {
+        echo 'Not all containers have dropped "ALL" capabilities!'
+        echo "${WRONG}"
+        exit 1
+      }
+
+  - script: |
+      # Check that every Pod is assigned to the "restricted" SecurityContextConstraint
+      # in OpenShift.
+
+      SCC=$(
+        kubectl api-resources --cached |
+        grep -F 'security.openshift.io/v1' |
+        grep -F 'SecurityContextConstraint'
+      )
+
+      # Skip this check when the API has no notion of SecurityContextConstraint.
+      [ -z "${SCC}" ] && exit
+
+      PODS_SCC=$(
+        kubectl --namespace "${NAMESPACE}" get pods --no-headers \
+          --output "custom-columns=\
+            NAME:.metadata.name,\
+            SCC:.metadata.annotations['openshift\.io/scc']\
+          "
+      ) || exit
+
+      WRONG=$( ! echo "${PODS_SCC}" | grep -Ev '\<restricted$' ) || {
+        echo 'Found pods not assigned to the restricted security context constraint!'
+        echo "${PODS_SCC}"
+        exit 1
+      }
