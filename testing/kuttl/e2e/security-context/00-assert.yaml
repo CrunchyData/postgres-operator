@@ -32,7 +32,6 @@ spec:
   - name: pgbackrest
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
@@ -52,35 +51,30 @@ spec:
   - name: database
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: replication-cert-copy
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: pgbackrest
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: pgbackrest-config
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: exporter
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
@@ -88,14 +82,12 @@ spec:
   - name: postgres-startup
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: nss-wrapper-init
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
@@ -115,7 +107,6 @@ spec:
   - name: pgadmin
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
@@ -123,14 +114,12 @@ spec:
   - name: pgadmin-startup
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: nss-wrapper-init
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
@@ -147,14 +136,12 @@ spec:
   - name: pgbouncer
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: pgbouncer-config
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
@@ -175,14 +162,12 @@ spec:
   - name: pgbackrest
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: pgbackrest-config
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
@@ -190,14 +175,12 @@ spec:
   - name: pgbackrest-log-dir
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
   - name: nss-wrapper-init
     securityContext:
       allowPrivilegeEscalation: false
-      capabilities: { drop: [ALL] }
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
