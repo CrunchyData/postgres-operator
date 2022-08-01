@@ -9,7 +9,7 @@ weight: 110
 
 PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
-- Kubernetes 1.20+
+- Kubernetes 1.21-1.24
 - OpenShift 4.6+
 - Rancher
 - Google Kubernetes Engine (GKE), including Anthos
@@ -29,11 +29,13 @@ Note that for the 5.0.3 release and beyond, the Postgres containers were renamed
 | Component | Version | PGO Version Min. | PGO Version Max. |
 |-----------|---------|------------------|------------------|
 | `crunchy-pgadmin4` | 4.30 | 5.1.0 | {{< param operatorVersion >}} |
-| `crunchy-pgbackrest` | 2.38 | 5.1.0 | {{< param operatorVersion >}} |
+| `crunchy-pgbackrest` | 2.40 | 5.0.8 | {{< param operatorVersion >}} |
+| `crunchy-pgbackrest` | 2.38 | 5.0.7 | {{< param operatorVersion >}} |
 | `crunchy-pgbackrest` | 2.38 | 5.0.5 | {{< param operatorVersionLatestRel5_0 >}} |
 | `crunchy-pgbackrest` | 2.36 | 5.0.4 | 5.0.5 |
 | `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
 | `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
+| `crunchy-pgbouncer` | 1.17 | 5.0.8 | {{< param operatorVersion >}} |
 | `crunchy-pgbouncer` | 1.16 | 5.0.4 | {{< param operatorVersion >}} |
 | `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.3 |
 | `crunchy-postgres` | {{< param postgresVersion14 >}} | 5.0.3 | {{< param operatorVersion >}} |
