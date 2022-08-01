@@ -6,7 +6,7 @@ PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= $(shell git describe --tags)
 PGO_PG_VERSION ?= 14
-PGO_PG_FULLVERSION ?= 14.4
+PGO_PG_FULLVERSION ?= 14.5
 PGO_KUBE_CLIENT ?= kubectl
 
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
