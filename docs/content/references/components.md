@@ -26,33 +26,19 @@ The listed versions of Postgres show the latest minor release (e.g. {{< param po
 
 Note that for the 5.0.3 release and beyond, the Postgres containers were renamed to `crunchy-postgres` and `crunchy-postgres-gis`.
 
-| Component | Version | PGO Version Min. | PGO Version Max. |
-|-----------|---------|------------------|------------------|
-| `crunchy-pgadmin4` | 4.30 | 5.1.0 | {{< param operatorVersion >}} |
-| `crunchy-pgbackrest` | 2.40 | 5.0.8 | {{< param operatorVersion >}} |
-| `crunchy-pgbackrest` | 2.38 | 5.0.7 | {{< param operatorVersion >}} |
-| `crunchy-pgbackrest` | 2.38 | 5.0.5 | {{< param operatorVersionLatestRel5_0 >}} |
-| `crunchy-pgbackrest` | 2.36 | 5.0.4 | 5.0.5 |
-| `crunchy-pgbackrest` | 2.35 | 5.0.3 | 5.0.3 |
-| `crunchy-pgbackrest` | 2.33 | 5.0.0 | 5.0.2 |
-| `crunchy-pgbouncer` | 1.17 | 5.0.8 | {{< param operatorVersion >}} |
-| `crunchy-pgbouncer` | 1.16 | 5.0.4 | {{< param operatorVersion >}} |
-| `crunchy-pgbouncer` | 1.15 | 5.0.0 | 5.0.3 |
-| `crunchy-postgres` | {{< param postgresVersion14 >}} | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres` | {{< param postgresVersion13 >}} | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres` | {{< param postgresVersion12 >}} | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres` | {{< param postgresVersion11 >}} | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres` | {{< param postgresVersion10 >}} | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion14 >}}-3.2 | 5.1.1 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion14 >}}-3.1 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion13 >}}-3.1 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion13 >}}-3.0 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion12 >}}-3.0 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion12 >}}-2.5 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion11 >}}-2.5 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion11 >}}-2.4 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion10 >}}-2.4 | 5.0.3 | {{< param operatorVersion >}} |
-| `crunchy-postgres-gis` | {{< param postgresVersion10 >}}-2.3 | 5.0.3 | {{< param operatorVersion >}} |
+| PGO | pgAdmin | pgBackRest | PgBouncer | Postgres | PostGIS |
+|-----|---------|------------|-----------|----------|---------|
+| `5.2.0` | `4.30` | `2.40` | `1.17` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
+| `5.1.3` | `4.30` | `2.40` | `1.17` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
+| `5.1.2` | `4.30` | `2.38` | `1.16` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
+| `5.1.1` | `4.30` | `2.38` | `1.16` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
+| `5.1.0` | `4.30` | `2.38` | `1.16` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
+| `5.0.8` | `n/a` | `2.40` | `1.17` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
+| `5.0.7` | `n/a` | `2.38` | `1.16` | `14,13,12,11,10` | `3,2,3.1,3.0,2.5,2.4,2.3` |
+| `5.0.6` | `n/a` | `2.38` | `1.16` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
+| `5.0.5` | `n/a` | `2.36` | `1.16` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
+| `5.0.4` | `n/a` | `2.36` | `1.16` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
+| `5.0.3` | `n/a` | `2.35` | `1.15` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
 
 The latest Postgres containers include Patroni 2.1.3.
 
@@ -102,6 +88,9 @@ The table also lists the initial PGO version that the version of the extension i
 
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
+| `oracfce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.2.0 |
+| `oracfce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.1.3 |
+| `oracfce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.0.8 |
 | `pgAudit` | 1.6.2 | 14  | 5.1.0 |
 | `pgAudit` | 1.6.2 | 14  | 5.0.6 |
 | `pgAudit` | 1.6.1 | 14  | 5.0.4 |
@@ -120,6 +109,9 @@ The table also lists the initial PGO version that the version of the extension i
 | `pgAudit Analyze` | 1.0.8 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgAudit Analyze` | 1.0.7 | 13, 12, 11, 10  | 5.0.0 |
 | `pg_cron` | 1.3.1 | 14, 13, 12, 11, 10  | 5.0.0 |
+| `pg_partman` | 4.6.2 | 14, 13, 12, 11, 10  | 5.2.0 |
+| `pg_partman` | 4.6.2 | 14, 13, 12, 11, 10  | 5.1.3 |
+| `pg_partman` | 4.6.2 | 14, 13, 12, 11, 10  | 5.0.8 |
 | `pg_partman` | 4.6.1 | 14, 13, 12, 11, 10  | 5.1.1 |
 | `pg_partman` | 4.6.1 | 14, 13, 12, 11, 10  | 5.0.6 |
 | `pg_partman` | 4.6.0 | 14, 13, 12, 11, 10  | 5.0.4 |
