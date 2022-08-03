@@ -101,7 +101,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: pgo-metrics-deploy
-          image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:ubi8-4.7.6
+          image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:ubi8-4.7.7
           imagePullPolicy: IfNotPresent
           env:
             - name: DEPLOY_ACTION

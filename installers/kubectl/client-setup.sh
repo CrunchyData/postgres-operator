@@ -14,7 +14,7 @@
 # This script should be run after the operator has been deployed
 PGO_OPERATOR_NAMESPACE="${PGO_OPERATOR_NAMESPACE:-pgo}"
 PGO_USER_ADMIN="${PGO_USER_ADMIN:-pgouser-admin}"
-PGO_CLIENT_VERSION="${PGO_CLIENT_VERSION:-v4.7.6}"
+PGO_CLIENT_VERSION="${PGO_CLIENT_VERSION:-v4.7.7}"
 PGO_CLIENT_URL="https://github.com/CrunchyData/postgres-operator/releases/download/${PGO_CLIENT_VERSION}"
 
 PGO_CMD="${PGO_CMD-kubectl}"
