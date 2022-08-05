@@ -93,17 +93,23 @@ The above is all you need to do to clone a Postgres cluster! PGO will work on cr
 
 ## Perform a Point-in-time-Recovery (PITR)
 
-Did someone drop the user table? You may want to perform a point-in-time-recovery (PITR) to revert your database back to a state before a change occurred. Fortunately, PGO can help you do that.
+Did someone drop the user table? You may want to perform a point-in-time-recovery (PITR)
+to revert your database back to a state before a change occurred. Fortunately, PGO can help you do that.
 
-You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore) command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers the disaster recovery capabilities of PGO. You will need to set a few options on `spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
+You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore)
+command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers
+the disaster recovery capabilities of PGO. You will need to set a few options on
+`spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
 
 - `--type=time`: This tells pgBackRest to perform a PITR.
-- `--target`: Where to perform the PITR to. An example recovery target is `2021-06-09 14:15:11-04`.  The timezone specified here as -04 for EDT.  Please see the [pgBackRest documentation for other timezone options](https://pgbackrest.org/user-guide.html#pitr).
+- `--target`: Where to perform the PITR to. An example recovery target is `2021-06-09 14:15:11-04`.
+  The timezone specified here as -04 for EDT. Please see the [pgBackRest documentation for other timezone options](https://pgbackrest.org/user-guide.html#pitr).
 - `--set` (optional): Choose which backup to start the PITR from.
 
 A few quick notes before we begin:
 
-- To perform a PITR, you must have a backup that is older than your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
+- To perform a PITR, you must have a backup that finished before your PITR time.
+  In other words, you can't perform a PITR back to a time where you do not have a backup!
 - All relevant WAL files must be successfully pushed for the restore to complete correctly.
 - Be sure to select the correct repository name containing the desired backup!
 
@@ -160,13 +166,20 @@ spec:
 
 Notice how we put in the options to specify where to make the PITR.
 
-Using the above manifest, PGO will go ahead and create a new Postgres cluster that recovers its data up until `2021-06-09 14:15:11-04`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
+Using the above manifest, PGO will go ahead and create a new Postgres cluster that recovers
+its data up until `2021-06-09 14:15:11-04`. At that point, the cluster is promoted and
+you can start accessing your database from that specific point in time!
 
 ## Perform an In-Place Point-in-time-Recovery (PITR)
 
-Similar to the PITR restore described above, you may want to perform a similar reversion back to a state before a change occurred, but without creating another PostgreSQL cluster. Fortunately, PGO can help you do this as well.
+Similar to the PITR restore described above, you may want to perform a similar reversion
+back to a state before a change occurred, but without creating another PostgreSQL cluster.
+Fortunately, PGO can help you do this as well.
 
-You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore) command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers the disaster recovery capabilities of PGO. You will need to set a few options on `spec.dataSource.postgresCluster.options` to perform a PITR. These options include:
+You can set up a PITR using the [restore](https://pgbackrest.org/command.html#command-restore)
+command of [pgBackRest](https://www.pgbackrest.org), the backup management tool that powers
+the disaster recovery capabilities of PGO. You will need to set a few options on
+`spec.backups.pgbackrest.restore.options` to perform a PITR. These options include:
 
 - `--type=time`: This tells pgBackRest to perform a PITR.
 - `--target`: Where to perform the PITR to. An example recovery target is `2021-06-09 14:15:11-04`.
@@ -174,7 +187,8 @@ You can set up a PITR using the [restore](https://pgbackrest.org/command.html#co
 
 A few quick notes before we begin:
 
-- To perform a PITR, you must have a backup that is older than your PITR time. In other words, you can't perform a PITR back to a time where you do not have a backup!
+- To perform a PITR, you must have a backup that finished before your PITR time.
+  In other words, you can't perform a PITR back to a time where you do not have a backup!
 - All relevant WAL files must be successfully pushed for the restore to complete correctly.
 - Be sure to select the correct repository name containing the desired backup!
 
@@ -211,7 +225,9 @@ spec:
 
 Notice how we put in the options to specify where to make the PITR.
 
-Using the above manifest, PGO will go ahead and re-create your Postgres cluster that will recover its data up until `2021-06-09 14:15:11-04`. At that point, the cluster is promoted and you can start accessing your database from that specific point in time!
+Using the above manifest, PGO will go ahead and re-create your Postgres cluster to recover
+its data up until `2021-06-09 14:15:11-04`. At that point, the cluster is promoted and
+you can start accessing your database from that specific point in time!
 
 ## Restore Individual Databases
 
