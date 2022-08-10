@@ -47,11 +47,11 @@ The main purpose of PGO is to create and update information
 around the structure of a Postgres Cluster, and to relay information about the
 overall status and health of a PostgreSQL cluster. The goal is to also simplify
 this process as much as possible for users. For example, let's say we want to
-create a high-availability PostgreSQL cluster that has a single replica,
+create a high-availability PostgreSQL cluster that has multiple replicas,
 supports having backups in both a local storage area and Amazon S3 and has
 built-in metrics and connection pooling, similar to:
 
-![PostgreSQL HA Cluster](/images/postgresql-cluster-ha-s3.png)
+![PostgreSQL Cluster Architecture](/images/postgresql-cluster-architecture.png)
 
 This can be accomplished with a relatively simple manifest. Please refer to the [tutorial]({{< relref "tutorial/_index.md" >}}) for how to accomplish this, or see the [Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repo.
 
