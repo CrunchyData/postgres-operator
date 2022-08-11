@@ -870,10 +870,11 @@ func (r *Reconciler) rolloutInstances(
 // scaleDownInstances removes extra instances from a cluster until it matches
 // the spec. This function can delete the primary instance and force the
 // cluster to failover under two conditions:
-// - If the instance set that contains the primary instance is removed from
-//   the spec
-// - If the instance set that contains the primary instance is updated to
-//   have 0 replicas
+//   - If the instance set that contains the primary instance is removed from
+//     the spec
+//   - If the instance set that contains the primary instance is updated to
+//     have 0 replicas
+//
 // If either of these conditions are met then the primary instance will be
 // marked for deletion and deleted after all other instances
 func (r *Reconciler) scaleDownInstances(

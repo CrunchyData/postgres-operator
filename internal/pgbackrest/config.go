@@ -168,14 +168,14 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 // RestoreCommand returns the command for performing a pgBackRest restore.  In addition to calling
 // the pgBackRest restore command with any pgBackRest options provided, the script also does the
 // following:
-// - Removes the patroni.dynamic.json file if present.  This ensures the configuration from the
-//   cluster being restored from is not utilized when bootstrapping a new cluster, and the
-//   configuration for the new cluster is utilized instead.
-// - Starts the database and allows recovery to complete.  A temporary postgresql.conf file
-//   with the minimum settings needed to safely start the database is created and utilized.
-// - Renames the data directory as needed to bootstrap the cluster using the restored database.
-//   This ensures compatibility with the "existing" bootstrap method that is included in the
-//   Patroni config when bootstrapping a cluster using an existing data directory.
+//   - Removes the patroni.dynamic.json file if present.  This ensures the configuration from the
+//     cluster being restored from is not utilized when bootstrapping a new cluster, and the
+//     configuration for the new cluster is utilized instead.
+//   - Starts the database and allows recovery to complete.  A temporary postgresql.conf file
+//     with the minimum settings needed to safely start the database is created and utilized.
+//   - Renames the data directory as needed to bootstrap the cluster using the restored database.
+//     This ensures compatibility with the "existing" bootstrap method that is included in the
+//     Patroni config when bootstrapping a cluster using an existing data directory.
 func RestoreCommand(pgdata string, args ...string) []string {
 
 	// After pgBackRest restores files, PostgreSQL starts in recovery to finish

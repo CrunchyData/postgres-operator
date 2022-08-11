@@ -61,7 +61,6 @@ func (*JSON6902) pointer(tokens ...string) string {
 // >
 // > o  If the target location specifies an object member that does exist,
 // >    that member's value is replaced.
-//
 func (patch *JSON6902) Add(path ...string) func(value interface{}) *JSON6902 {
 	i := len(*patch)
 	f := func(value interface{}) *JSON6902 {
@@ -83,7 +82,6 @@ func (patch *JSON6902) Add(path ...string) func(value interface{}) *JSON6902 {
 // > The "remove" operation removes the value at the target location.
 // >
 // > The target location MUST exist for the operation to be successful.
-//
 func (patch *JSON6902) Remove(path ...string) *JSON6902 {
 	*patch = append(*patch, map[string]interface{}{
 		"op":   "remove",
@@ -99,7 +97,6 @@ func (patch *JSON6902) Remove(path ...string) *JSON6902 {
 // > with a new value.
 // >
 // > The target location MUST exist for the operation to be successful.
-//
 func (patch *JSON6902) Replace(path ...string) func(value interface{}) *JSON6902 {
 	i := len(*patch)
 	f := func(value interface{}) *JSON6902 {
@@ -144,7 +141,6 @@ func NewMergePatch() *Merge7386 { return &Merge7386{} }
 // > contain the member, the value is replaced.  Null values in the merge
 // > patch are given special meaning to indicate the removal of existing
 // > values in the target.
-//
 func (patch *Merge7386) Add(path ...string) func(value interface{}) *Merge7386 {
 	position := *patch
 
