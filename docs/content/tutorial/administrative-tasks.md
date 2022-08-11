@@ -77,16 +77,20 @@ with an expiration date 12 months in the future will be replaced by PGO around t
 eight month mark. This is done so that you do not have to worry about running into
 problems or interruptions of service with an expired certificate.
 
-### Manually Triggering a Certificate Rotation
+### Triggering a Certificate Rotation
 
 If you want to rotate a single client certificate, you can regenerate the certificate
 of an existing cluster by deleting the `tls.key` field from its certificate Secret.
 
-If you want to rotate all the client certificates for all the cluster, you can do so by
-deleting the root certificate Secret `pgo-root-cacert` or by deleting the `root.crt` field
-from that secret. Once PGO goes through a reconcile loop, it will regenerate that Secret
-and use that Secret's certificate to generate new client certificates. When following this
-procedure, it may be necessary to trigger a reconcile loop by adding an annotation to a cluster.
+Is it time to rotate your PGO root certificate? All you need to do is delete the `pgo-root-cacert` secret. PGO will regenerate it and roll it out seamlessly, ensuring your apps continue communicating with the Postgres cluster without having to update any configuration or deal with any downtime.
+
+```yaml
+kubectl delete secret pgo-root-cacert
+```
+
+{{% notice note %}}
+PGO only updates secrets containing the generated root certificate. It does not touch custom certificates.
+{{% /notice %}}
 
 ### Rotating Custom TLS Certificates
 
@@ -142,18 +146,6 @@ There are a few ways to restart an older version PgBouncer to reload Secrets:
    kubectl patch postgrescluster/hippo --type merge \
      --patch '{"spec":{"proxy":{"pgBouncer":{"metadata":{"annotations":{"restarted":"'"$(date)"'"}}}}}}'
    ```
-
-### Rotating the Root Certificate
-
-Is it time to rotate your PGO root certificate? All you need to do is delete the `pgo-root-cacert` secret. PGO will regenerate it and roll it out seamlessly, ensuring your apps continue communicating with the Postgres cluster without having to update any configuration or deal with any downtime.
-
-```yaml
-kubectl delete secret pgo-root-cacert
-```
-
-{{% notice note %}}
-PGO only updates secrets containing the generated root certificate. It does not touch custom certificates.
-{{% /notice %}}
 
 ## Changing the Primary
 
