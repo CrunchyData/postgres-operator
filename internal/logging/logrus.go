@@ -29,9 +29,9 @@ import (
 
 // Logrus creates a function that writes genericr.Entry to out using a logrus
 // format. The resulting logrus.Level depends on Entry.Error and Entry.Level:
-//	- Entry.Error ≠ nil   → logrus.ErrorLevel
-//	- Entry.Level < debug → logrus.InfoLevel
-//	- Entry.Level ≥ debug → logrus.DebugLevel
+//   - Entry.Error ≠ nil   → logrus.ErrorLevel
+//   - Entry.Level < debug → logrus.InfoLevel
+//   - Entry.Level ≥ debug → logrus.DebugLevel
 func Logrus(out io.Writer, version string, debug int) genericr.LogFunc {
 	root := logrus.New()
 

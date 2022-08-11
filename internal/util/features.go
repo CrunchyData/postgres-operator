@@ -43,7 +43,7 @@ const (
 // To add a new feature, define a key for it above and add it here.
 // An example entry is as follows:
 //
-//   FeatureName: {Default: false, PreRelease: featuregate.Alpha},
+//	FeatureName: {Default: false, PreRelease: featuregate.Alpha},
 //
 // - https://releases.k8s.io/v1.20.0/pkg/features/kube_features.go#L729-732
 var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{

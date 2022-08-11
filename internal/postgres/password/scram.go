@@ -162,10 +162,10 @@ func (s *SCRAMPassword) isASCII() bool {
 // using SCRAM. It differs from RFC 4013 in that it returns the original,
 // unmodified password when:
 //
-//  - the input is not valid UTF-8
-//  - the output would be empty
-//  - the output would contain prohibited characters
-//  - the output would contain ambiguous bidirectional characters
+//   - the input is not valid UTF-8
+//   - the output would be empty
+//   - the output would contain prohibited characters
+//   - the output would contain ambiguous bidirectional characters
 //
 // See:
 //
