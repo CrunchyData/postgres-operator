@@ -84,7 +84,7 @@ of an existing cluster by deleting the `tls.key` field from its certificate Secr
 
 Is it time to rotate your PGO root certificate? All you need to do is delete the `pgo-root-cacert` secret. PGO will regenerate it and roll it out seamlessly, ensuring your apps continue communicating with the Postgres cluster without having to update any configuration or deal with any downtime.
 
-```yaml
+```bash
 kubectl delete secret pgo-root-cacert
 ```
 
