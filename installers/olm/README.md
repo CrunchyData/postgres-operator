@@ -129,7 +129,7 @@ kubectl -n "$NAMESPACE" delete operatorgroup olm-operator-group
 
 After generating and testing the OLM bundles, there are two manual steps.
 
-1. Update the image SHA values (denoted with '<update_SHA_value>', required for both the Red Hat 'Certified' and
+1. Update the image SHA values (denoted with '<update_(imagetype)_SHA_value>', required for both the Red Hat 'Certified' and
 'Marketplace' bundles)
 2. Update the 'description.md' file to indicate which OCP versions this release of PGO was tested against.
 
