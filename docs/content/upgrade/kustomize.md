@@ -51,13 +51,13 @@ Additionally, please be sure to update and apply all PostgresCluster custom reso
 with any applicable spec changes described in the
 [PGO v5.0.3 release notes]({{< relref "../releases/5.0.3.md" >}}).
 
-## Upgrading from PGO v5.0.x to v5.1.x
+## Upgrading from PGO v5.0.5 and Below
 
 Starting in PGO v5.1, new pgBackRest features available in version 2.38 are used
 that impact both the `crunchy-postgres` and `crunchy-pgbackrest` images. For any
-existing clusters, you will need to update these image values BEFORE upgrading to
-PGO 5.1. These changes will need to be made in one of two places, depending on
-your desired configuration.
+clusters created before v5.0.6, you will need to update these image values
+BEFORE upgrading to PGO {{< param operatorVersion >}}. These changes will need
+to be made in one of two places, depending on your desired configuration.
 
 If you are setting the image values on your `PostgresCluster` manifest,
 you would update the images value as shown (updating the `image` values as
@@ -80,7 +80,7 @@ spec:
 
 After updating these values, you will apply these changes to your PostgresCluster
 custom resources. After these changes are completed and the new images are in place,
-you may update PGO to 5.1.
+you may update PGO to {{< param operatorVersion >}}.
 
 Relatedly, if you are instead using the `RELATED_IMAGE` environment variables to
 set the image values, you would instead check and update these as needed before
@@ -88,7 +88,7 @@ redeploying PGO.
 
 For Kustomize installations, these can be found in the `manager` directory and
 `manager.yaml` file. Here you will note various key/value pairs, these will need
-to be updated before deploying PGO 5.1. Besides updating the
+to be updated before deploying PGO {{< param operatorVersion >}}. Besides updating the
 `RELATED_IMAGE_PGBACKREST` value, you will also need to update the relevant
 Postgres image for your environment. For example, if you are using PostgreSQL 14,
 you would update the value for `RELATED_IMAGE_POSTGRES_14`. If instead you are
@@ -100,4 +100,4 @@ file, found in the `install` directory. There you will note a `relatedImages`
 section, followed by similar values as mentioned above. Again, be sure to update
 `pgbackrest` as well as the appropriate `postgres` value for your clusters.
 
-Once there values have been properly verified, you may deploy PGO 5.1.
+Once there values have been properly verified, you may deploy PGO {{< param operatorVersion >}}.
