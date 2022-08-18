@@ -1,6 +1,6 @@
   relatedImages:
     - name: PGADMIN
-      image: registry.connect.redhat.com/crunchydata/crunchydata/crunchy-pgadmin4@sha256:<update_pgadmin_SHA_value>
+      image: registry.connect.redhat.com/crunchydata/crunchy-pgadmin4@sha256:<update_pgadmin_SHA_value>
     - name: PGBACKREST
       image: registry.connect.redhat.com/crunchydata/crunchy-pgbackrest@sha256:<update_pgbackrest_SHA_value>
     - name: PGBOUNCER
