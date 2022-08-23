@@ -39,6 +39,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -75,7 +76,7 @@ func TestGenerateHeader(t *testing.T) {
 		res := generateHeader(ctx, cfg, fakeClientWithOptionalError,
 			"1.2.3", reconciler.IsOpenShift)
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: could not apply configmap`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not apply configmap`))
 		assert.Equal(t, res.IsOpenShift, reconciler.IsOpenShift)
 		assert.Equal(t, deploymentID, res.DeploymentID)
 		pgoList := v1beta1.PostgresClusterList{}
@@ -95,7 +96,7 @@ func TestGenerateHeader(t *testing.T) {
 		res := generateHeader(ctx, cfg, fakeClientWithOptionalError,
 			"1.2.3", reconciler.IsOpenShift)
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: could not count postgres clusters`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not count postgres clusters`))
 		assert.Equal(t, res.IsOpenShift, reconciler.IsOpenShift)
 		assert.Equal(t, deploymentID, res.DeploymentID)
 		assert.Equal(t, 0, res.PGOClustersTotal)
@@ -110,7 +111,7 @@ func TestGenerateHeader(t *testing.T) {
 		res := generateHeader(ctx, badcfg, cc,
 			"1.2.3", reconciler.IsOpenShift)
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: could not retrieve server version`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not retrieve server version`))
 		assert.Equal(t, res.IsOpenShift, reconciler.IsOpenShift)
 		assert.Equal(t, deploymentID, res.DeploymentID)
 		pgoList := v1beta1.PostgresClusterList{}
@@ -239,7 +240,7 @@ func TestEnsureID(t *testing.T) {
 
 		newID := ensureDeploymentID(ctx, cc)
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: namespace not set`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: namespace not set`))
 		assert.Assert(t, newID == oldID)
 		assert.Assert(t, newID == deploymentID)
 		assert.Assert(t, deploymentID != cmRetrieved.Data["deployment_id"])
@@ -256,7 +257,7 @@ func TestEnsureID(t *testing.T) {
 
 		newID := ensureDeploymentID(ctx, fakeClientWithOptionalError)
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: error retrieving configmap`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: error retrieving configmap`))
 		assert.Assert(t, newID == oldID)
 		assert.Assert(t, newID == deploymentID)
 
@@ -275,7 +276,7 @@ func TestEnsureID(t *testing.T) {
 		ctx, calls := setupLogCapture(ctx)
 		newID := ensureDeploymentID(ctx, fakeClientWithOptionalError)
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: could not apply configmap`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not apply configmap`))
 		assert.Assert(t, newID == oldID)
 		assert.Assert(t, newID == deploymentID)
 	})
@@ -299,7 +300,7 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 
 		returnedCM := manageUpgradeCheckConfigMap(ctx, cc, "current-id")
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: namespace not set`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: namespace not set`))
 		assert.Assert(t, returnedCM.Data["deployment_id"] == "current-id")
 	})
 
@@ -327,7 +328,7 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 		returnedCM := manageUpgradeCheckConfigMap(ctx, fakeClientWithOptionalError,
 			"current-id")
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: error retrieving configmap`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: error retrieving configmap`))
 		assert.Assert(t, returnedCM.Data["deployment_id"] == "current-id")
 	})
 
@@ -409,7 +410,7 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 		returnedCM := manageUpgradeCheckConfigMap(ctx, fakeClientWithOptionalError,
 			"current-id")
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: could not apply configmap`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not apply configmap`))
 		assert.Assert(t, returnedCM.Data["deployment_id"] == "current-id")
 	})
 }
@@ -549,7 +550,7 @@ func TestGetManagedClusters(t *testing.T) {
 		ctx, calls := setupLogCapture(ctx)
 		count := getManagedClusters(ctx, fakeClientWithOptionalError)
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: could not count postgres clusters`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not count postgres clusters`))
 		assert.Assert(t, count == 0)
 	})
 }
@@ -574,7 +575,7 @@ func TestGetServerVersion(t *testing.T) {
 			Host: server.URL,
 		})
 		assert.Equal(t, len(*calls), 1)
-		assert.Equal(t, (*calls)[0], `upgrade check issue: could not retrieve server version`)
+		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not retrieve server version`))
 		assert.Equal(t, got, "")
 	})
 }

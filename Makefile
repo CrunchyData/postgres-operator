@@ -195,10 +195,15 @@ pgo-base-docker: pgo-base-build
 check:
 	PGO_NAMESPACE="postgres-operator" $(GO_TEST) -cover ./...
 
+# Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
 .PHONY: check-envtest
-check-envtest: hack/tools/envtest
-	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -tags=envtest ./...
+check-envtest: ENVTEST_USE = hack/tools/setup-envtest --bin-dir=$(CURDIR)/hack/tools/envtest use $(ENVTEST_K8S_VERSION)
+check-envtest: SHELL = bash
+check-envtest:
+	GOBIN='$(CURDIR)/hack/tools' $(GO) install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	@$(ENVTEST_USE) --print=overview && echo
+	source <($(ENVTEST_USE) --print=env) && PGO_NAMESPACE="postgres-operator" $(GO_TEST) -count=1 -cover -tags=envtest ./...
 
 # - PGO_TEST_TIMEOUT_SCALE=1
 .PHONY: check-envtest-existing
@@ -240,6 +245,8 @@ clean: clean-deprecated
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	[ ! -d build/crd/generated ] || rm -r build/crd/generated
+	[ ! -f hack/tools/setup-envtest ] || hack/tools/setup-envtest --bin-dir=hack/tools/envtest cleanup
+	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
 	[ ! -d hack/.kube ] || rm -r hack/.kube
@@ -281,7 +288,7 @@ generate-crd:
 	$(PGO_KUBE_CLIENT) kustomize ./build/crd > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 
 generate-crd-docs:
-	GOBIN='$(CURDIR)/hack/tools' go install fybrik.io/crdoc@v0.5.2
+	GOBIN='$(CURDIR)/hack/tools' $(GO) install fybrik.io/crdoc@v0.5.2
 	./hack/tools/crdoc \
 		--resources ./config/crd/bases \
 		--template ./hack/api-template.tmpl \
@@ -295,12 +302,6 @@ generate-deepcopy:
 generate-rbac:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/generate-rbac.sh \
 		'./internal/...' 'config/rbac'
-
-# Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
-# - ENVTEST_K8S_VERSION=1.19.2
-hack/tools/envtest: SHELL = bash
-hack/tools/envtest:
-	source '$(shell $(GO) list -f '{{ .Dir }}' -m 'sigs.k8s.io/controller-runtime')/hack/setup-envtest.sh' && fetch_envtest_tools $@
 
 .PHONY: license licenses
 license: licenses

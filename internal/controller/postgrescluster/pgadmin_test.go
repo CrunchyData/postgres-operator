@@ -30,8 +30,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/version"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -452,17 +450,8 @@ func TestReconcilePGAdminService(t *testing.T) {
 
 func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	ctx := context.Background()
-	env, cc := setupKubernetes(t)
+	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
-
-	dc, err := discovery.NewDiscoveryClientForConfig(env.Config)
-	assert.NilError(t, err)
-
-	server, err := dc.ServerVersion()
-	assert.NilError(t, err)
-
-	serverVersion, err := version.ParseGeneric(server.GitVersion)
-	assert.NilError(t, err)
 
 	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
 
@@ -515,9 +504,6 @@ labels:
   postgres-operator.crunchydata.com/role: pgadmin
 		`))
 
-		// TODO(benjaminjb)(issue sc-11672): after we update controller-runtime and
-		// are no longer testing in Github actions with K8s 1.19.2, reduce the following comparison
-		// to simply testing against a given, fixed string.
 		compare := `
 automountServiceAccountToken: false
 containers: null
@@ -530,19 +516,7 @@ securityContext:
   fsGroupChangePolicy: OnRootMismatch
 terminationGracePeriodSeconds: 30
 		`
-		if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
-			compare = `
-automountServiceAccountToken: false
-containers: null
-dnsPolicy: ClusterFirst
-enableServiceLinks: false
-restartPolicy: Always
-schedulerName: default-scheduler
-securityContext:
-  fsGroup: 26
-terminationGracePeriodSeconds: 30
-		`
-		}
+
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, compare))
 	})
 
@@ -644,9 +618,6 @@ labels:
   postgres-operator.crunchydata.com/role: pgadmin
 		`))
 
-		// TODO(benjaminjb)(issue sc-11672): after we update controller-runtime and
-		// are no longer testing in Github actions with K8s 1.19.2, reduce the following comparison
-		// to simply testing against a given, fixed string.
 		compare := `
 affinity:
   nodeAffinity:
@@ -682,42 +653,7 @@ topologySpreadConstraints:
   topologyKey: fakekey
   whenUnsatisfiable: ScheduleAnyway
 `
-		if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
-			compare = `
-affinity:
-  nodeAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      nodeSelectorTerms:
-      - matchExpressions:
-        - key: key
-          operator: Exists
-automountServiceAccountToken: false
-containers: null
-dnsPolicy: ClusterFirst
-enableServiceLinks: false
-imagePullSecrets:
-- name: myImagePullSecret
-restartPolicy: Always
-schedulerName: default-scheduler
-securityContext:
-  fsGroup: 26
-terminationGracePeriodSeconds: 30
-tolerations:
-- key: sometoleration
-topologySpreadConstraints:
-- labelSelector:
-    matchExpressions:
-    - key: postgres-operator.crunchydata.com/cluster
-      operator: In
-      values:
-      - somename
-    - key: postgres-operator.crunchydata.com/data
-      operator: Exists
-  maxSkew: 1
-  topologyKey: fakekey
-  whenUnsatisfiable: ScheduleAnyway
-		`
-		}
+
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, compare))
 	})
 }

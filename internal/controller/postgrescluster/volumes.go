@@ -137,13 +137,9 @@ func (r *Reconciler) observePersistentVolumeClaims(
 	if resizing.Status != "" {
 		meta.SetStatusCondition(&cluster.Status.Conditions, resizing)
 	} else {
-		// Avoid a panic! Fixed in Kubernetes v1.21.0 and controller-runtime v0.9.0-alpha.0.
-		// - https://issue.k8s.io/99714
-		if len(cluster.Status.Conditions) > 0 {
-			// NOTE(cbandy): This clears the condition, but it may immediately
-			// return with a new LastTransitionTime when a PVC spec is invalid.
-			meta.RemoveStatusCondition(&cluster.Status.Conditions, resizing.Type)
-		}
+		// NOTE(cbandy): This clears the condition, but it may immediately
+		// return with a new LastTransitionTime when a PVC spec is invalid.
+		meta.RemoveStatusCondition(&cluster.Status.Conditions, resizing.Type)
 	}
 
 	return volumes.Items, err

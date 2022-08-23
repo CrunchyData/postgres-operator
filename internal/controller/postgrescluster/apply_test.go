@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -143,6 +144,39 @@ func TestServerSideApply(t *testing.T) {
 				return regexp.MustCompile(`\(0x[^)]+\)`).ReplaceAllString(s, "()")
 			})),
 		)
+	})
+
+	t.Run("StatefulSetStatus", func(t *testing.T) {
+		constructor := func(name string) *appsv1.StatefulSet {
+			var sts appsv1.StatefulSet
+			sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
+			sts.Namespace, sts.Name = ns.Name, name
+			sts.Spec.Selector = &metav1.LabelSelector{
+				MatchLabels: map[string]string{"select": name},
+			}
+			sts.Spec.Template.Labels = map[string]string{"select": name}
+			return &sts
+		}
+
+		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+		upstream := constructor("status-upstream")
+
+		// The structs defined in "k8s.io/api/apps/v1" marshal empty status fields.
+		switch {
+		case serverVersion.LessThan(version.MustParseGeneric("1.22")):
+			assert.ErrorContains(t,
+				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership, reconciler.Owner),
+				"field not declared in schema",
+				"expected https://issue.k8s.io/109210")
+
+		default:
+			assert.NilError(t,
+				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership, reconciler.Owner))
+		}
+
+		// Our apply method generates the correct apply-patch.
+		again := constructor("status-local")
+		assert.NilError(t, reconciler.apply(ctx, again))
 	})
 
 	t.Run("ServiceSelector", func(t *testing.T) {

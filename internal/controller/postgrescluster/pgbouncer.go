@@ -489,11 +489,7 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 		}
 
 		if available == nil {
-			// Avoid a panic! Fixed in Kubernetes v1.21.0 and controller-runtime v0.9.0-alpha.0.
-			// - https://issue.k8s.io/99714
-			if len(cluster.Status.Conditions) > 0 {
-				meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.ProxyAvailable)
-			}
+			meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.ProxyAvailable)
 		} else {
 			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
 				Type:    v1beta1.ProxyAvailable,

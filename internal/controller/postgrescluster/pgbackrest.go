@@ -829,11 +829,8 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 				Reason:             "PGBackRestRestoreComplete",
 				Message:            "pgBackRest restore completed successfully",
 			})
-			// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
-			if len(cluster.Status.Conditions) > 0 {
-				meta.RemoveStatusCondition(&cluster.Status.Conditions,
-					ConditionPGBackRestRestoreProgressing)
-			}
+			meta.RemoveStatusCondition(&cluster.Status.Conditions,
+				ConditionPGBackRestRestoreProgressing)
 
 			// The clone process used to create resources that were used only
 			// by the restore job. Clean them up if they still exist.
@@ -969,10 +966,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 
 	// if everything is gone, proceed with re-bootstrapping the cluster via an in-place restore
 	if len(currentEndpoints) == 0 {
-		if len(cluster.Status.Conditions) > 0 {
-			// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
-			meta.RemoveStatusCondition(&cluster.Status.Conditions, ConditionPostgresDataInitialized)
-		}
+		meta.RemoveStatusCondition(&cluster.Status.Conditions, ConditionPostgresDataInitialized)
 		meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
 			ObservedGeneration: cluster.GetGeneration(),
 			Type:               ConditionPGBackRestRestoreProgressing,
@@ -1256,8 +1250,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 			return result, nil
 		}
 		repoHostName = repoHost.GetName()
-	} else if len(postgresCluster.Status.Conditions) > 0 {
-		// TODO: remove guard above with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
+	} else {
 		// remove the dedicated repo host status if a dedicated host is not enabled
 		meta.RemoveStatusCondition(&postgresCluster.Status.Conditions, ConditionRepoHostReady)
 	}
@@ -2138,13 +2131,11 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 		manualStatus = &v1beta1.PGBackRestJobStatus{
 			ID: manualAnnotation,
 		}
-		// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
-		if len(postgresCluster.Status.Conditions) > 0 {
-			// Remove an existing manual backup condition if present.  It will be
-			// created again as needed based on the newly reconciled backup Job.
-			meta.RemoveStatusCondition(&postgresCluster.Status.Conditions,
-				ConditionManualBackupSuccessful)
-		}
+		// Remove an existing manual backup condition if present.  It will be
+		// created again as needed based on the newly reconciled backup Job.
+		meta.RemoveStatusCondition(&postgresCluster.Status.Conditions,
+			ConditionManualBackupSuccessful)
+
 		postgresCluster.Status.PGBackRest.ManualBackup = manualStatus
 	}
 
