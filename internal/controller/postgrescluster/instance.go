@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -581,7 +581,7 @@ func (r *Reconciler) cleanupPodDisruptionBudgets(
 ) error {
 	selector, err := naming.AsSelector(naming.ClusterInstanceSets(cluster.Name))
 
-	pdbList := &policyv1beta1.PodDisruptionBudgetList{}
+	pdbList := &policyv1.PodDisruptionBudgetList{}
 	if err == nil {
 		err = r.Client.List(ctx, pdbList,
 			client.InNamespace(cluster.Namespace), client.MatchingLabelsSelector{

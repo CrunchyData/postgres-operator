@@ -33,7 +33,7 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1733,7 +1733,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		cluster *v1beta1.PostgresCluster,
 		spec *v1beta1.PostgresInstanceSetSpec,
 	) bool {
-		got := &policyv1beta1.PodDisruptionBudget{}
+		got := &policyv1.PodDisruptionBudget{}
 		err := r.Client.Get(ctx,
 			naming.AsObjectKey(naming.InstanceSet(cluster, spec)),
 			got)
@@ -1854,7 +1854,7 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 		cluster *v1beta1.PostgresCluster,
 		spec *v1beta1.PostgresInstanceSetSpec,
 		minAvailable *intstr.IntOrString,
-	) *policyv1beta1.PodDisruptionBudget {
+	) *policyv1.PodDisruptionBudget {
 		meta := naming.InstanceSet(cluster, spec)
 		meta.Labels = map[string]string{
 			naming.LabelCluster:     cluster.Name,
@@ -1871,17 +1871,17 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 	}
 
 	createPDB := func(
-		pdb *policyv1beta1.PodDisruptionBudget,
+		pdb *policyv1.PodDisruptionBudget,
 	) error {
 		return r.Client.Create(ctx, pdb)
 	}
 
 	foundPDB := func(
-		pdb *policyv1beta1.PodDisruptionBudget,
+		pdb *policyv1.PodDisruptionBudget,
 	) bool {
 		return !apierrors.IsNotFound(
 			r.Client.Get(ctx, client.ObjectKeyFromObject(pdb),
-				&policyv1beta1.PodDisruptionBudget{}))
+				&policyv1.PodDisruptionBudget{}))
 	}
 
 	t.Run("pdbs not found", func(t *testing.T) {
