@@ -33,7 +33,6 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -173,8 +172,8 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 	return postgresCluster
 }
 
-func fakeObservedCronJobs() []*batchv1beta1.CronJob {
-	return []*batchv1beta1.CronJob{
+func fakeObservedCronJobs() []*batchv1.CronJob {
+	return []*batchv1.CronJob{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "fake-cronjob",
@@ -517,7 +516,7 @@ topologySpreadConstraints:
 		requeue := r.reconcileScheduledBackups(ctx, postgresCluster, serviceAccount, fakeObservedCronJobs())
 		assert.Assert(t, !requeue)
 
-		returnedCronJob := &batchv1beta1.CronJob{}
+		returnedCronJob := &batchv1.CronJob{}
 		if err := tClient.Get(ctx, types.NamespacedName{
 			Name:      postgresCluster.Name + "-repo1-full",
 			Namespace: postgresCluster.GetNamespace(),
@@ -563,7 +562,7 @@ topologySpreadConstraints:
 
 	t.Run("pgbackrest schedule suspended status", func(t *testing.T) {
 
-		returnedCronJob := &batchv1beta1.CronJob{}
+		returnedCronJob := &batchv1.CronJob{}
 		if err := tClient.Get(ctx, types.NamespacedName{
 			Name:      postgresCluster.Name + "-repo1-full",
 			Namespace: postgresCluster.GetNamespace(),
@@ -3543,7 +3542,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 
 				var requeue bool
 				if tc.cronJobs {
-					existingCronJobs := []*batchv1beta1.CronJob{
+					existingCronJobs := []*batchv1.CronJob{
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "existingcronjob-repo1-full",
@@ -3618,7 +3617,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 							cronJobName = postgresCluster.Name + "-repo1-" + backupType
 						}
 
-						returnedCronJob := &batchv1beta1.CronJob{}
+						returnedCronJob := &batchv1.CronJob{}
 						if err := tClient.Get(ctx, types.NamespacedName{
 							Name:      cronJobName,
 							Namespace: postgresCluster.GetNamespace(),

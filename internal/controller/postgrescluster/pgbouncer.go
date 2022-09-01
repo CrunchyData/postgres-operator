@@ -23,7 +23,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -535,7 +535,7 @@ func (r *Reconciler) reconcilePGBouncerPodDisruptionBudget(
 	cluster *v1beta1.PostgresCluster,
 ) error {
 	deleteExistingPDB := func(cluster *v1beta1.PostgresCluster) error {
-		existing := &policyv1beta1.PodDisruptionBudget{ObjectMeta: naming.ClusterPGBouncer(cluster)}
+		existing := &policyv1.PodDisruptionBudget{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 		err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
@@ -573,7 +573,7 @@ func (r *Reconciler) reconcilePGBouncerPodDisruptionBudget(
 		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil())
 
 	selector := naming.ClusterPGBouncerSelector(cluster)
-	pdb := &policyv1beta1.PodDisruptionBudget{}
+	pdb := &policyv1.PodDisruptionBudget{}
 	if err == nil {
 		pdb, err = r.generatePodDisruptionBudget(cluster, meta, minAvailable, selector)
 	}

@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,8 +59,8 @@ var gvks = []schema.GroupVersionKind{{
 	Version: appsv1.SchemeGroupVersion.Version,
 	Kind:    "DeploymentList",
 }, {
-	Group:   batchv1beta1.SchemeGroupVersion.Group,
-	Version: batchv1beta1.SchemeGroupVersion.Version,
+	Group:   batchv1.SchemeGroupVersion.Group,
+	Version: batchv1.SchemeGroupVersion.Version,
 	Kind:    "CronJobList",
 }, {
 	Group:   corev1.SchemeGroupVersion.Group,
@@ -139,7 +138,7 @@ func TestCustomLabels(t *testing.T) {
 				labels["resource"] = resource.GetLabels()
 				labels["podTemplate"] = resource.Spec.Template.GetLabels()
 			case "CronJob":
-				var resource batchv1beta1.CronJob
+				var resource batchv1.CronJob
 				err = runtime.DefaultUnstructuredConverter.
 					FromUnstructured(u.UnstructuredContent(), &resource)
 				labels["resource"] = resource.GetLabels()
@@ -392,7 +391,7 @@ func TestCustomAnnotations(t *testing.T) {
 				annotations["resource"] = resource.GetAnnotations()
 				annotations["podTemplate"] = resource.Spec.Template.GetAnnotations()
 			case "CronJob":
-				var resource batchv1beta1.CronJob
+				var resource batchv1.CronJob
 				err = runtime.DefaultUnstructuredConverter.
 					FromUnstructured(u.UnstructuredContent(), &resource)
 				annotations["resource"] = resource.GetAnnotations()

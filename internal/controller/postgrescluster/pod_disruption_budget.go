@@ -22,7 +22,7 @@ package postgrescluster
 // https://kubernetes.io/docs/tasks/run-application/configure-pdb/#specifying-a-poddisruptionbudget
 import (
 	"github.com/pkg/errors"
-	policyv1beta1 "k8s.io/api/policy/v1beta1"
+	policyv1 "k8s.io/api/policy/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -37,15 +37,15 @@ func (r *Reconciler) generatePodDisruptionBudget(
 	meta metav1.ObjectMeta,
 	minAvailable *intstr.IntOrString,
 	selector metav1.LabelSelector,
-) (*policyv1beta1.PodDisruptionBudget, error) {
-	pdb := &policyv1beta1.PodDisruptionBudget{
+) (*policyv1.PodDisruptionBudget, error) {
+	pdb := &policyv1.PodDisruptionBudget{
 		ObjectMeta: meta,
-		Spec: policyv1beta1.PodDisruptionBudgetSpec{
+		Spec: policyv1.PodDisruptionBudgetSpec{
 			MinAvailable: minAvailable,
 			Selector:     &selector,
 		},
 	}
-	pdb.SetGroupVersionKind(policyv1beta1.SchemeGroupVersion.WithKind("PodDisruptionBudget"))
+	pdb.SetGroupVersionKind(policyv1.SchemeGroupVersion.WithKind("PodDisruptionBudget"))
 	err := errors.WithStack(r.setControllerReference(cluster, pdb))
 	return pdb, err
 }
