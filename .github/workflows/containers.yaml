@@ -1,0 +1,15 @@
+name: Python package
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 6 * * *" # Daily 6AM UTC build
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: make PGO_BASEOS=rocky8 PGO_IMAGE_PREFIX=ghcr.io/jelmer
