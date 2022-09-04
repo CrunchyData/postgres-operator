@@ -46,6 +46,11 @@ ifeq ("$(PGO_BASEOS)", "ubi8")
     DOCKERBASEREGISTRY=registry.access.redhat.com/
     PACKAGER=microdnf
 endif
+ifeq ("$(PGO_BASEOS)", "rocky8")
+    BASE_IMAGE_OS=8
+    DOCKERBASEREGISTRY=docker.io/rockylinux/rockylinux:
+    PACKAGER=dnf
+endif
 
 DEBUG_BUILD ?= false
 GO ?= go
