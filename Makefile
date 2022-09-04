@@ -51,6 +51,12 @@ ifeq ("$(PGO_BASEOS)", "rocky8")
     DOCKERBASEREGISTRY=docker.io/rockylinux/rockylinux:
     PACKAGER=dnf
 endif
+ifeq ("$(PGO_BASEOS)", "rocky9")
+    BASE_IMAGE_OS=9
+    DOCKERBASEREGISTRY=docker.io/rockylinux/rockylinux:
+    PACKAGER=dnf
+endif
+
 
 DEBUG_BUILD ?= false
 GO ?= go
