@@ -24,7 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/wojas/genericr"
+	"github.com/jelmer/genericr"
 )
 
 // Logrus creates a function that writes genericr.Entry to out using a logrus

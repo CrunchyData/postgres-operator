@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wojas/genericr"
+	"github.com/jelmer/genericr"
 	"gotest.tools/v3/assert"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"

@@ -19,21 +19,21 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/wojas/genericr"
+	"github.com/jelmer/genericr"
 	"go.opentelemetry.io/otel/trace"
 )
 
 var global = logr.Discard()
 
 // Discard returns a logr.Logger that discards all messages logged to it.
-func Discard() logr.Logger { return logr.DiscardLogger{} }
+func Discard() logr.Logger { return logr.Discard() }
 
 // SetLogFunc replaces the global logr.Logger with log that gets called when an
 // entry's level is at or below verbosity. (Only the most important entries are
 // passed when verbosity is zero.) Before this is called, the global logr.Logger
 // is a no-op.
 func SetLogFunc(verbosity int, log genericr.LogFunc) {
-	global = genericr.New(log).WithCaller(true).WithVerbosity(verbosity)
+	global = logr.New(genericr.New(log).WithCaller(true).WithVerbosity(verbosity))
 }
 
 // NewContext returns a copy of ctx containing logger. Retrieve it using FromContext.
@@ -44,9 +44,9 @@ func NewContext(ctx context.Context, logger logr.Logger) context.Context {
 // FromContext returns the global logr.Logger or the one stored by a prior call
 // to NewContext.
 func FromContext(ctx context.Context) logr.Logger {
-	var log logr.Logger
+	log, e := logr.FromContext(ctx)
 
-	if log = logr.FromContext(ctx); log == nil {
+	if ; e != nil {
 		log = global
 	}
 

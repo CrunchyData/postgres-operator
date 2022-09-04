@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"github.com/wojas/genericr"
+	"github.com/jelmer/genericr"
 )
 
 func assertLogrusContains(t testing.TB, actual, expected string) {

@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/wojas/genericr"
+	"github.com/jelmer/genericr"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"gotest.tools/v3/assert"
 )
