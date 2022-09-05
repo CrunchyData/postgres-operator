@@ -88,9 +88,9 @@ The table also lists the initial PGO version that the version of the extension i
 
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
-| `oracfce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.2.0 |
-| `oracfce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.1.3 |
-| `oracfce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.0.8 |
+| `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.2.0 |
+| `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.1.3 |
+| `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.0.8 |
 | `pgAudit` | 1.6.2 | 14  | 5.1.0 |
 | `pgAudit` | 1.6.2 | 14  | 5.0.6 |
 | `pgAudit` | 1.6.1 | 14  | 5.0.4 |
