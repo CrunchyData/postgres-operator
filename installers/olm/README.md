@@ -12,7 +12,7 @@ tests. Consult the [technical requirements][hub-contrib] when making changes.
 [hub-listing]: https://operatorhub.io/operator/postgresql
 [OLM]: https://github.com/operator-framework/operator-lifecycle-manager
 [olm-csv]: https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/building-your-csv.md
-[scorecard]: https://sdk.operatorframework.io/docs/advanced-topics/scorecard/
+[scorecard]: https://sdk.operatorframework.io/docs/testing-operators/scorecard/
 
 [Red Hat Container Certification]: https://redhat-connect.gitbook.io/partner-guide-for-red-hat-openshift-and-container/
 [Red Hat Operator Certification]: https://redhat-connect.gitbook.io/certified-operator-guide/
