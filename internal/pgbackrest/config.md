@@ -25,7 +25,7 @@ During initial cluster creation, four pgBackRest use cases are involved.
 These settings are configured in either the [global] or [stanza] sections of the 
 pgBackRest configuration based on their designation in the pgBackRest code.
 For more information on the above, and other settings, please see
-https://github.com/pgbackrest/pgbackrest/blob/master/src/config/parse.auto.c
+https://github.com/pgbackrest/pgbackrest/blob/release/2.38/src/config/parse.auto.c
 
 As shown, the settings with the `cfgSectionGlobal` designation are
 

@@ -119,7 +119,7 @@ Deploy PGO to watch Postgres clusters in all of your [namespaces][k8s-namespaces
 [disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/disaster-recovery/
 [high-availability]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/high-availability/
 [monitoring]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/monitoring/
-[multiple-cluster]: https://access.crunchydata.com/documentation/postgres-operator/v5/architecture/high-availability/multi-cluster-kubernetes/
+[multiple-cluster]: https://access.crunchydata.com/documentation/postgres-operator/v5/architecture/disaster-recovery/#standby-cluster-overview
 [pool]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/connection-pooling/
 [provisioning]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/create-cluster/
 [resize-cluster]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/resize-cluster/
@@ -170,13 +170,7 @@ In addition to the above, the geospatially enhanced PostgreSQL + PostGIS contain
 - [Grafana](https://github.com/grafana/grafana)
 - [Alertmanager](https://github.com/prometheus/alertmanager)
 
-Additional containers that are not directly integrated with the PostgreSQL Operator but can work alongside it include:
-
-- [pgPool II](https://access.crunchydata.com/documentation/crunchy-postgres-containers/latest/container-specifications/crunchy-pgpool/)
-- [pg_upgrade](https://access.crunchydata.com/documentation/crunchy-postgres-containers/latest/container-specifications/crunchy-upgrade/)
-- [pgBench](https://access.crunchydata.com/documentation/crunchy-postgres-containers/latest/container-specifications/crunchy-pgbench/)
-
-For more information about which versions of the PostgreSQL Operator include which components, please visit the [compatibility](https://access.crunchydata.com/documentation/postgres-operator/latest/configuration/compatibility/) section of the documentation.
+For more information about which versions of the PostgreSQL Operator include which components, please visit the [compatibility](https://access.crunchydata.com/documentation/postgres-operator/v5/references/components/) section of the documentation.
 
 ## Supported Platforms
 
@@ -240,10 +234,9 @@ When a PostgreSQL Operator general availability (GA) release occurs, the contain
 
 - [Crunchy Data Customer Portal](https://access.crunchydata.com/)
 - [Crunchy Data Developer Portal](https://www.crunchydata.com/developers)
-- [DockerHub](https://hub.docker.com/u/crunchydata)
 
 The image rollout can occur over the course of several days.
 
-To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers/newsletter). You can also [join the PGO project community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join)
+To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers#email). You can also [join the PGO project community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join)
 
 The PGO Postgres Operator project source code is available subject to the [Apache 2.0 license](LICENSE.md) with the PGO logo and branding assets covered by [our trademark guidelines](docs/static/logos/TRADEMARKS.md).
