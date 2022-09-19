@@ -437,7 +437,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 		podExecCalled:   false,
 		// Status was generated manually for this test case
 		// TODO jmckulk: add code to generate status
-		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "8b589fd65"},
+		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "5f599686cf"},
 		statusChangedAfterReconcile: false,
 	}} {
 		t.Run(test.name, func(t *testing.T) {
@@ -504,9 +504,9 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 
 			assert.NilError(t, reconciler.reconcilePGMonitorExporter(ctx,
 				cluster, observed, secret))
-			assert.Equal(t, called, test.podExecCalled)
 			assert.Assert(t, test.statusChangedAfterReconcile == (cluster.Status.Monitoring.ExporterConfiguration != test.status.ExporterConfiguration),
 				"got %v", cluster.Status.Monitoring.ExporterConfiguration)
+			assert.Equal(t, called, test.podExecCalled)
 		})
 	}
 }
