@@ -27,7 +27,11 @@ git clone --depth 1 "git@github.com:${YOUR_GITHUB_UN}/postgres-operator-examples
 cd postgres-operator-examples
 ```
 
-2. Run `kubectl apply -k kustomize/install`
+2. Run the following commands
+```sh
+kubectl apply -k kustomize/install/namespace
+kubectl apply --server-side -k kustomize/install/default
+```
 
 For more information please read the [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/v5/quickstart/) and [Tutorial](https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/).
 
