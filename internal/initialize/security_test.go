@@ -40,7 +40,7 @@ func TestPodSecurityContext(t *testing.T) {
 	// > non-critical applications.
 	t.Run("Baseline", func(t *testing.T) {
 		assert.Assert(t, psc.SELinuxOptions == nil,
-			`Setting custom SELinux options should be disallowed.`)
+			`Setting a custom SELinux user or role option is forbidden.`)
 
 		assert.Assert(t, psc.Sysctls == nil,
 			`Sysctls can disable security mechanisms or affect all containers on a host, and should be disallowed except for an allowed "safe" subset.`)
@@ -56,8 +56,12 @@ func TestPodSecurityContext(t *testing.T) {
 				`RunAsNonRoot should be delegated to the container-level v1.SecurityContext`)
 		}
 
+		assert.Assert(t, psc.RunAsUser == nil,
+			`Containers must not set runAsUser to 0`)
+
+		// TODO(cbandy): delegate to v1.SecurityContext
 		assert.Assert(t, psc.SeccompProfile == nil,
-			"The RuntimeDefault seccomp profile must be required, or allow specific additional profiles.")
+			`Seccomp profile must be explicitly set to one of the allowed values. Both the Unconfined profile and the absence of a profile are prohibited.`)
 	})
 }
 
@@ -83,7 +87,7 @@ func TestRestrictedSecurityContext(t *testing.T) {
 		}
 
 		assert.Assert(t, sc.SELinuxOptions == nil,
-			"Setting custom SELinux options should be disallowed.")
+			"Setting a custom SELinux user or role option is forbidden.")
 
 		assert.Assert(t, sc.ProcMount == nil,
 			"The default /proc masks are set up to reduce attack surface, and should be required.")
@@ -109,8 +113,16 @@ func TestRestrictedSecurityContext(t *testing.T) {
 				"Containers must be required to run as non-root users.")
 		}
 
+		assert.Assert(t, sc.RunAsUser == nil,
+			`Containers must not set runAsUser to 0`)
+
+		// NOTE: The "restricted" Security Context Constraint (SCC) of OpenShift 4.10
+		// and earlier does not allow any profile to be set. The "restricted-v2" SCC
+		// of OpenShift 4.11 uses the "runtime/default" profile.
+		// - https://docs.openshift.com/container-platform/4.10/security/seccomp-profiles.html
+		// - https://docs.openshift.com/container-platform/4.11/security/seccomp-profiles.html
 		assert.Assert(t, sc.SeccompProfile == nil,
-			"The RuntimeDefault seccomp profile must be required, or allow specific additional profiles.")
+			`Seccomp profile must be explicitly set to one of the allowed values. Both the Unconfined profile and the absence of a profile are prohibited.`)
 	})
 
 	if assert.Check(t, sc.ReadOnlyRootFilesystem != nil) {
