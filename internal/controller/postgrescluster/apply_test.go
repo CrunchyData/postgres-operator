@@ -28,7 +28,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -144,63 +143,6 @@ func TestServerSideApply(t *testing.T) {
 				return regexp.MustCompile(`\(0x[^)]+\)`).ReplaceAllString(s, "()")
 			})),
 		)
-	})
-
-	t.Run("StatefulSetPodTemplate", func(t *testing.T) {
-		constructor := func(name string) *appsv1.StatefulSet {
-			var sts appsv1.StatefulSet
-			sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
-			sts.Namespace, sts.Name = ns.Name, name
-			sts.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: map[string]string{"select": name},
-			}
-			sts.Spec.Template.Labels = map[string]string{"select": name}
-			return &sts
-		}
-
-		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
-
-		// Start with fields filled out.
-		intent := constructor("change-to-zero")
-		intent.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{
-			SupplementalGroups: []int64{1, 2, 3},
-		}
-
-		// Create the StatefulSet.
-		before := intent.DeepCopy()
-		assert.NilError(t,
-			cc.Patch(ctx, before, client.Apply, client.ForceOwnership, reconciler.Owner))
-
-		// Change fields to zero.
-		intent.Spec.Template.Spec.SecurityContext.SupplementalGroups = nil
-
-		// client.Apply cannot correct it in old versions of Kubernetes.
-		after := intent.DeepCopy()
-		assert.NilError(t,
-			cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
-
-		switch {
-		case serverVersion.LessThan(version.MustParseGeneric("1.18.19")):
-
-			// - https://pr.k8s.io/101179
-			assert.Assert(t, !equality.Semantic.DeepEqual(
-				after.Spec.Template.Spec.SecurityContext,
-				intent.Spec.Template.Spec.SecurityContext),
-				"expected https://issue.k8s.io/89273, got %v",
-				after.Spec.Template.Spec.SecurityContext)
-
-		default:
-			assert.DeepEqual(t,
-				after.Spec.Template.Spec.SecurityContext,
-				intent.Spec.Template.Spec.SecurityContext)
-		}
-
-		// Our apply method corrects it.
-		again := intent.DeepCopy()
-		assert.NilError(t, reconciler.apply(ctx, again))
-		assert.DeepEqual(t,
-			again.Spec.Template.Spec.SecurityContext,
-			intent.Spec.Template.Spec.SecurityContext)
 	})
 
 	t.Run("ServiceSelector", func(t *testing.T) {
