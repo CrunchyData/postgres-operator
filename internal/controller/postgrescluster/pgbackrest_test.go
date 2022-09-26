@@ -1334,7 +1334,6 @@ func TestReconcileManualBackup(t *testing.T) {
 				postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), "", dedicated)
 				postgresCluster.Spec.Backups.PGBackRest.Manual = tc.manual
 				postgresCluster.Annotations = map[string]string{naming.PGBackRestBackup: tc.backupId}
-
 				assert.NilError(t, tClient.Create(ctx, postgresCluster))
 
 				postgresCluster.Status = *tc.status
@@ -1342,15 +1341,8 @@ func TestReconcileManualBackup(t *testing.T) {
 					meta.SetStatusCondition(&postgresCluster.Status.Conditions, metav1.Condition{
 						Type: condition, Reason: "testing", Status: status})
 				}
-
-				t.Cleanup(func() {
-					// Remove finalizers, if any, so the namespace can terminate.
-					assert.Check(t, client.IgnoreNotFound(
-						tClient.Patch(ctx, postgresCluster, client.RawPatch(
-							client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
-				})
-
 				assert.NilError(t, tClient.Status().Update(ctx, postgresCluster))
+
 				currentJobs := []*batchv1.Job{}
 				if tc.createCurrentJob {
 					job := fakeJob(postgresCluster.GetName(), tc.manual.RepoName)
