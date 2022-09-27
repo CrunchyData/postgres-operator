@@ -545,27 +545,32 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
     <tbody><tr>
         <td><b>accessModes</b></td>
         <td>[]string</td>
-        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
-        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasource">dataSource</a></b></td>
         <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
+        <td>dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasourceref">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecselector">selector</a></b></td>
         <td>object</td>
-        <td>A label query over volumes to consider for binding.</td>
+        <td>selector is a label query over volumes to consider for binding.</td>
         <td>false</td>
       </tr><tr>
         <td><b>storageClassName</b></td>
         <td>string</td>
-        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
         <td>false</td>
       </tr><tr>
         <td><b>volumeMode</b></td>
@@ -575,7 +580,7 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
       </tr><tr>
         <td><b>volumeName</b></td>
         <td>string</td>
-        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>volumeName is the binding reference to the PersistentVolume backing this claim.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -588,7 +593,7 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
 
 
 
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
 
 <table>
     <thead>
@@ -602,12 +607,12 @@ Resources represents the minimum resources the volume should have. More info: ht
     <tbody><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>true</td>
       </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -620,7 +625,44 @@ Resources represents the minimum resources the volume should have. More info: ht
 
 
 
-This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
+dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspecdatasourceref">
+  PostgresCluster.spec.backups.pgbackrest.repos[index].volume.volumeClaimSpec.dataSourceRef
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestreposindexvolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 
 <table>
     <thead>
@@ -657,7 +699,7 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 
 
 
-A label query over volumes to consider for binding.
+selector is a label query over volumes to consider for binding.
 
 <table>
     <thead>
@@ -740,22 +782,22 @@ Projection that may be projected along with other supported volume types
     <tbody><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestconfigurationindexconfigmap">configMap</a></b></td>
         <td>object</td>
-        <td>information about the configMap data to project</td>
+        <td>configMap information about the configMap data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestconfigurationindexdownwardapi">downwardAPI</a></b></td>
         <td>object</td>
-        <td>information about the downwardAPI data to project</td>
+        <td>downwardAPI information about the downwardAPI data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestconfigurationindexsecret">secret</a></b></td>
         <td>object</td>
-        <td>information about the secret data to project</td>
+        <td>secret information about the secret data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestconfigurationindexserviceaccounttoken">serviceAccountToken</a></b></td>
         <td>object</td>
-        <td>information about the serviceAccountToken data to project</td>
+        <td>serviceAccountToken is information about the serviceAccountToken data to project</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -768,7 +810,7 @@ Projection that may be projected along with other supported volume types
 
 
 
-information about the configMap data to project
+configMap information about the configMap data to project
 
 <table>
     <thead>
@@ -782,7 +824,7 @@ information about the configMap data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestconfigurationindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -792,7 +834,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -819,17 +861,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -842,7 +884,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the downwardAPI data to project
+downwardAPI information about the downwardAPI data to project
 
 <table>
     <thead>
@@ -980,7 +1022,7 @@ Selects a resource of the container: only resources limits and requests (limits.
 
 
 
-information about the secret data to project
+secret information about the secret data to project
 
 <table>
     <thead>
@@ -994,7 +1036,7 @@ information about the secret data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestconfigurationindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -1004,7 +1046,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -1031,17 +1073,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -1054,7 +1096,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the serviceAccountToken data to project
+serviceAccountToken is information about the serviceAccountToken data to project
 
 <table>
     <thead>
@@ -1068,17 +1110,17 @@ information about the serviceAccountToken data to project
     <tbody><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>Path is the path relative to the mount point of the file to project the token into.</td>
+        <td>path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
       </tr><tr>
         <td><b>audience</b></td>
         <td>string</td>
-        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
         <td>false</td>
       </tr><tr>
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
-        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -1559,9 +1601,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -1636,6 +1683,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -1665,9 +1781,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -1708,6 +1829,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -1835,9 +2025,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -1912,6 +2107,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -1941,9 +2205,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -2018,6 +2287,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.jobs.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestjobsresources">
   PostgresCluster.spec.backups.pgbackrest.jobs.resources
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobs">↩ Parent</a></sup></sup>
@@ -2039,12 +2377,12 @@ Resource limits for backup jobs. Includes manual, scheduled and replica create b
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -2651,9 +2989,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -2728,6 +3071,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -2757,9 +3169,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -2800,6 +3217,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -2927,9 +3413,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3004,6 +3495,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -3033,9 +3593,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3110,6 +3675,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.repoHost.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohostaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestrepohostresources">
   PostgresCluster.spec.backups.pgbackrest.repoHost.resources
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrepohost">↩ Parent</a></sup></sup>
@@ -3131,12 +3765,12 @@ Resource requirements for a pgBackRest repository host
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3163,7 +3797,7 @@ ConfigMap containing custom SSH configuration. Deprecated: Repository hosts use 
     <tbody><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostsshconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -3173,7 +3807,7 @@ ConfigMap containing custom SSH configuration. Deprecated: Repository hosts use 
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3200,17 +3834,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3237,7 +3871,7 @@ Secret containing custom SSH keys. Deprecated: Repository hosts use mTLS for enc
     <tbody><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohostsshsecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -3247,7 +3881,7 @@ Secret containing custom SSH keys. Deprecated: Repository hosts use mTLS for enc
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3274,17 +3908,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3358,22 +3992,29 @@ TopologySpreadConstraint specifies how to spread matching pods among the given t
     <tbody><tr>
         <td><b>maxSkew</b></td>
         <td>integer</td>
-        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 1/1/0: | zone1 | zone2 | zone3 | |   P   |   P   |       | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
+        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. The global minimum is the minimum number of matching pods in an eligible domain or zero if the number of eligible domains is less than MinDomains. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 2/2/1: In this case, the global minimum is 1. | zone1 | zone2 | zone3 | |  P P  |  P P  |   P   | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 2/2/2; scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
         <td>true</td>
       </tr><tr>
         <td><b>topologyKey</b></td>
         <td>string</td>
-        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. It's a required field.</td>
+        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. We define a domain as a particular instance of a topology. Also, we define an eligible domain as a domain whose nodes match the node selector. e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology. And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b>whenUnsatisfiable</b></td>
         <td>string</td>
-        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assigment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
+        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assignment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohosttopologyspreadconstraintsindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>LabelSelector is used to find matching pods. Pods that match this label selector are counted to determine the number of pods in their corresponding topology domain.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>minDomains</b></td>
+        <td>integer</td>
+        <td>MinDomains indicates a minimum number of eligible domains. When the number of eligible domains with matching topology keys is less than minDomains, Pod Topology Spread treats "global minimum" as 0, and then the calculation of Skew is performed. And when the number of eligible domains with matching topology keys equals or greater than minDomains, this value has no effect on scheduling. As a result, when the number of eligible domains is less than minDomains, scheduler won't schedule more than maxSkew Pods to those domains. If value is nil, the constraint behaves as if MinDomains is equal to 1. Valid values are integers greater than 0. When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
+For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same labelSelector spread as 2/2/2: | zone1 | zone2 | zone3 | |  P P  |  P P  |  P P  | The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0. In this situation, new pod with the same labelSelector cannot be scheduled, because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones, it will violate MaxSkew.
+This is an alpha field and requires enabling MinDomainsInPodTopologySpread feature gate.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -3948,9 +4589,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4025,6 +4671,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -4054,9 +4769,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4097,6 +4817,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -4224,9 +5013,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4301,6 +5095,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -4330,9 +5193,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4407,6 +5275,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.backups.pgbackrest.restore.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestoreaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecbackupspgbackrestrestoreresources">
   PostgresCluster.spec.backups.pgbackrest.restore.resources
   <sup><sup><a href="#postgresclusterspecbackupspgbackrestrestore">↩ Parent</a></sup></sup>
@@ -4428,12 +5365,12 @@ Resource requirements for the pgBackRest restore Job.
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4566,12 +5503,12 @@ Resource requirements for a sidecar container
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4625,12 +5562,12 @@ Resource requirements for a sidecar container
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4744,27 +5681,32 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
     <tbody><tr>
         <td><b>accessModes</b></td>
         <td>[]string</td>
-        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
-        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecdatasource">dataSource</a></b></td>
         <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
+        <td>dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecdatasourceref">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexdatavolumeclaimspecselector">selector</a></b></td>
         <td>object</td>
-        <td>A label query over volumes to consider for binding.</td>
+        <td>selector is a label query over volumes to consider for binding.</td>
         <td>false</td>
       </tr><tr>
         <td><b>storageClassName</b></td>
         <td>string</td>
-        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
         <td>false</td>
       </tr><tr>
         <td><b>volumeMode</b></td>
@@ -4774,7 +5716,7 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
       </tr><tr>
         <td><b>volumeName</b></td>
         <td>string</td>
-        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>volumeName is the binding reference to the PersistentVolume backing this claim.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4787,7 +5729,7 @@ Defines a PersistentVolumeClaim for PostgreSQL data. More info: https://kubernet
 
 
 
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
 
 <table>
     <thead>
@@ -4801,12 +5743,12 @@ Resources represents the minimum resources the volume should have. More info: ht
     <tbody><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>true</td>
       </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -4819,7 +5761,44 @@ Resources represents the minimum resources the volume should have. More info: ht
 
 
 
-This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
+dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexdatavolumeclaimspecdatasourceref">
+  PostgresCluster.spec.instances[index].dataVolumeClaimSpec.dataSourceRef
+  <sup><sup><a href="#postgresclusterspecinstancesindexdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 
 <table>
     <thead>
@@ -4856,7 +5835,7 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 
 
 
-A label query over volumes to consider for binding.
+selector is a label query over volumes to consider for binding.
 
 <table>
     <thead>
@@ -5351,9 +6330,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -5428,6 +6412,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -5457,9 +6510,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -5500,6 +6558,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -5627,9 +6754,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -5704,6 +6836,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -5733,9 +6934,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -5810,6 +7016,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.instances[index].affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecinstancesindexaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecinstancesindexcontainersindex">
   PostgresCluster.spec.instances[index].containers[index]
   <sup><sup><a href="#postgresclusterspecinstancesindex">↩ Parent</a></sup></sup>
@@ -5836,12 +7111,12 @@ A single application container that you want to run within a pod.
       </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
-        <td>Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
+        <td>Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
         <td>false</td>
       </tr><tr>
         <td><b>command</b></td>
         <td>[]string</td>
-        <td>Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
+        <td>Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexenvindex">env</a></b></td>
@@ -5856,7 +7131,7 @@ A single application container that you want to run within a pod.
       </tr><tr>
         <td><b>image</b></td>
         <td>string</td>
-        <td>Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.</td>
+        <td>Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.</td>
         <td>false</td>
       </tr><tr>
         <td><b>imagePullPolicy</b></td>
@@ -5886,12 +7161,12 @@ A single application container that you want to run within a pod.
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexresources">resources</a></b></td>
         <td>object</td>
-        <td>Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexsecuritycontext">securityContext</a></b></td>
         <td>object</td>
-        <td>Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/</td>
+        <td>SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexstartupprobe">startupProbe</a></b></td>
@@ -5968,7 +7243,7 @@ EnvVar represents an environment variable present in a Container.
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
-        <td>Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".</td>
+        <td>Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexenvindexvaluefrom">valueFrom</a></b></td>
@@ -6291,7 +7566,7 @@ Actions that the management system should take in response to container lifecycl
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlifecycleprestop">preStop</a></b></td>
         <td>object</td>
-        <td>PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The reason for termination is passed to the handler. The Pod's termination grace period countdown begins before the PreStop hooked is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period. Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks</td>
+        <td>PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The Pod's termination grace period countdown begins before the PreStop hook is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period (unless delayed by finalizers). Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -6318,7 +7593,7 @@ PostStart is called immediately after a container is created. If the handler fai
     <tbody><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlifecyclepoststartexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlifecyclepoststarthttpget">httpGet</a></b></td>
@@ -6341,7 +7616,7 @@ PostStart is called immediately after a container is created. If the handler fai
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -6479,7 +7754,7 @@ TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
 
 
 
-PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The reason for termination is passed to the handler. The Pod's termination grace period countdown begins before the PreStop hooked is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period. Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
+PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The Pod's termination grace period countdown begins before the PreStop hook is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period (unless delayed by finalizers). Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
 
 <table>
     <thead>
@@ -6493,7 +7768,7 @@ PreStop is called immediately before a container is terminated due to an API req
     <tbody><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlifecycleprestopexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlifecycleprestophttpget">httpGet</a></b></td>
@@ -6516,7 +7791,7 @@ PreStop is called immediately before a container is terminated due to an API req
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -6668,12 +7943,17 @@ Periodic probe of container liveness. Container will be restarted if the probe f
     <tbody><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlivenessprobeexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b>failureThreshold</b></td>
         <td>integer</td>
         <td>Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlivenessprobegrpc">grpc</a></b></td>
+        <td>object</td>
+        <td>GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlivenessprobehttpget">httpGet</a></b></td>
@@ -6701,6 +7981,11 @@ Periodic probe of container liveness. Container will be restarted if the probe f
         <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
         <td>false</td>
       </tr><tr>
+        <td><b>terminationGracePeriodSeconds</b></td>
+        <td>integer</td>
+        <td>Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>timeoutSeconds</b></td>
         <td>integer</td>
         <td>Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
@@ -6716,7 +8001,7 @@ Periodic probe of container liveness. Container will be restarted if the probe f
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -6731,6 +8016,39 @@ One and only one of the following should be specified. Exec specifies the action
         <td><b>command</b></td>
         <td>[]string</td>
         <td>Command is the command line to execute inside the container, the working directory for the command  is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use a shell, you need to explicitly call out to that shell. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexcontainersindexlivenessprobegrpc">
+  PostgresCluster.spec.instances[index].containers[index].livenessProbe.grpc
+  <sup><sup><a href="#postgresclusterspecinstancesindexcontainersindexlivenessprobe">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>Port number of the gRPC service. Number must be in the range 1 to 65535.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>service</b></td>
+        <td>string</td>
+        <td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+If this is not specified, the default behavior is defined by gRPC.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -6915,12 +8233,17 @@ Periodic probe of container service readiness. Container will be removed from se
     <tbody><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexreadinessprobeexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b>failureThreshold</b></td>
         <td>integer</td>
         <td>Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexcontainersindexreadinessprobegrpc">grpc</a></b></td>
+        <td>object</td>
+        <td>GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexreadinessprobehttpget">httpGet</a></b></td>
@@ -6948,6 +8271,11 @@ Periodic probe of container service readiness. Container will be removed from se
         <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
         <td>false</td>
       </tr><tr>
+        <td><b>terminationGracePeriodSeconds</b></td>
+        <td>integer</td>
+        <td>Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>timeoutSeconds</b></td>
         <td>integer</td>
         <td>Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
@@ -6963,7 +8291,7 @@ Periodic probe of container service readiness. Container will be removed from se
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -6978,6 +8306,39 @@ One and only one of the following should be specified. Exec specifies the action
         <td><b>command</b></td>
         <td>[]string</td>
         <td>Command is the command line to execute inside the container, the working directory for the command  is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use a shell, you need to explicitly call out to that shell. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexcontainersindexreadinessprobegrpc">
+  PostgresCluster.spec.instances[index].containers[index].readinessProbe.grpc
+  <sup><sup><a href="#postgresclusterspecinstancesindexcontainersindexreadinessprobe">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>Port number of the gRPC service. Number must be in the range 1 to 65535.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>service</b></td>
+        <td>string</td>
+        <td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+If this is not specified, the default behavior is defined by gRPC.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7101,7 +8462,7 @@ TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
 
 
 
-Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 
 <table>
     <thead>
@@ -7115,12 +8476,12 @@ Compute Resources required by this container. Cannot be updated. More info: http
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7133,7 +8494,7 @@ Compute Resources required by this container. Cannot be updated. More info: http
 
 
 
-Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
 <table>
     <thead>
@@ -7147,32 +8508,32 @@ Security options the pod should run with. More info: https://kubernetes.io/docs/
     <tbody><tr>
         <td><b>allowPrivilegeEscalation</b></td>
         <td>boolean</td>
-        <td>AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN</td>
+        <td>AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexsecuritycontextcapabilities">capabilities</a></b></td>
         <td>object</td>
-        <td>The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime.</td>
+        <td>The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>privileged</b></td>
         <td>boolean</td>
-        <td>Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.</td>
+        <td>Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>procMount</b></td>
         <td>string</td>
-        <td>procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled.</td>
+        <td>procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>readOnlyRootFilesystem</b></td>
         <td>boolean</td>
-        <td>Whether this container has a read-only root filesystem. Default is false.</td>
+        <td>Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>runAsGroup</b></td>
         <td>integer</td>
-        <td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>runAsNonRoot</b></td>
@@ -7182,22 +8543,22 @@ Security options the pod should run with. More info: https://kubernetes.io/docs/
       </tr><tr>
         <td><b>runAsUser</b></td>
         <td>integer</td>
-        <td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexsecuritycontextselinuxoptions">seLinuxOptions</a></b></td>
         <td>object</td>
-        <td>The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexsecuritycontextseccompprofile">seccompProfile</a></b></td>
         <td>object</td>
-        <td>The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options.</td>
+        <td>The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexsecuritycontextwindowsoptions">windowsOptions</a></b></td>
         <td>object</td>
-        <td>The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7210,7 +8571,7 @@ Security options the pod should run with. More info: https://kubernetes.io/docs/
 
 
 
-The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime.
+The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows.
 
 <table>
     <thead>
@@ -7242,7 +8603,7 @@ The capabilities to add/drop when running containers. Defaults to the default se
 
 
 
-The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
+The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
 
 <table>
     <thead>
@@ -7284,7 +8645,7 @@ The SELinux context to be applied to the container. If unspecified, the containe
 
 
 
-The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options.
+The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
 
 <table>
     <thead>
@@ -7316,7 +8677,7 @@ The seccomp options to use by this container. If seccomp options are provided at
 
 
 
-The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
+The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.
 
 <table>
     <thead>
@@ -7336,6 +8697,11 @@ The Windows specific settings applied to all containers. If unspecified, the opt
         <td><b>gmsaCredentialSpecName</b></td>
         <td>string</td>
         <td>GMSACredentialSpecName is the name of the GMSA credential spec to use.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>hostProcess</b></td>
+        <td>boolean</td>
+        <td>HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.</td>
         <td>false</td>
       </tr><tr>
         <td><b>runAsUserName</b></td>
@@ -7367,12 +8733,17 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
     <tbody><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexstartupprobeexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b>failureThreshold</b></td>
         <td>integer</td>
         <td>Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexcontainersindexstartupprobegrpc">grpc</a></b></td>
+        <td>object</td>
+        <td>GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexstartupprobehttpget">httpGet</a></b></td>
@@ -7400,6 +8771,11 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
         <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
         <td>false</td>
       </tr><tr>
+        <td><b>terminationGracePeriodSeconds</b></td>
+        <td>integer</td>
+        <td>Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>timeoutSeconds</b></td>
         <td>integer</td>
         <td>Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
@@ -7415,7 +8791,7 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -7430,6 +8806,39 @@ One and only one of the following should be specified. Exec specifies the action
         <td><b>command</b></td>
         <td>[]string</td>
         <td>Command is the command line to execute inside the container, the working directory for the command  is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use a shell, you need to explicitly call out to that shell. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexcontainersindexstartupprobegrpc">
+  PostgresCluster.spec.instances[index].containers[index].startupProbe.grpc
+  <sup><sup><a href="#postgresclusterspecinstancesindexcontainersindexstartupprobe">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>Port number of the gRPC service. Number must be in the range 1 to 65535.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>service</b></td>
+        <td>string</td>
+        <td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+If this is not specified, the default behavior is defined by gRPC.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7683,12 +9092,12 @@ Compute resources of a PostgreSQL container.
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7769,12 +9178,12 @@ Resource requirements for a sidecar container
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7848,22 +9257,29 @@ TopologySpreadConstraint specifies how to spread matching pods among the given t
     <tbody><tr>
         <td><b>maxSkew</b></td>
         <td>integer</td>
-        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 1/1/0: | zone1 | zone2 | zone3 | |   P   |   P   |       | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
+        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. The global minimum is the minimum number of matching pods in an eligible domain or zero if the number of eligible domains is less than MinDomains. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 2/2/1: In this case, the global minimum is 1. | zone1 | zone2 | zone3 | |  P P  |  P P  |   P   | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 2/2/2; scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
         <td>true</td>
       </tr><tr>
         <td><b>topologyKey</b></td>
         <td>string</td>
-        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. It's a required field.</td>
+        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. We define a domain as a particular instance of a topology. Also, we define an eligible domain as a domain whose nodes match the node selector. e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology. And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b>whenUnsatisfiable</b></td>
         <td>string</td>
-        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assigment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
+        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assignment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindextopologyspreadconstraintsindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>LabelSelector is used to find matching pods. Pods that match this label selector are counted to determine the number of pods in their corresponding topology domain.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>minDomains</b></td>
+        <td>integer</td>
+        <td>MinDomains indicates a minimum number of eligible domains. When the number of eligible domains with matching topology keys is less than minDomains, Pod Topology Spread treats "global minimum" as 0, and then the calculation of Skew is performed. And when the number of eligible domains with matching topology keys equals or greater than minDomains, this value has no effect on scheduling. As a result, when the number of eligible domains is less than minDomains, scheduler won't schedule more than maxSkew Pods to those domains. If value is nil, the constraint behaves as if MinDomains is equal to 1. Valid values are integers greater than 0. When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
+For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same labelSelector spread as 2/2/2: | zone1 | zone2 | zone3 | |  P P  |  P P  |  P P  | The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0. In this situation, new pod with the same labelSelector cannot be scheduled, because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones, it will violate MaxSkew.
+This is an alpha field and requires enabling MinDomainsInPodTopologySpread feature gate.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7959,27 +9375,32 @@ Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More 
     <tbody><tr>
         <td><b>accessModes</b></td>
         <td>[]string</td>
-        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
-        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecdatasource">dataSource</a></b></td>
         <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
+        <td>dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecdatasourceref">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexwalvolumeclaimspecselector">selector</a></b></td>
         <td>object</td>
-        <td>A label query over volumes to consider for binding.</td>
+        <td>selector is a label query over volumes to consider for binding.</td>
         <td>false</td>
       </tr><tr>
         <td><b>storageClassName</b></td>
         <td>string</td>
-        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
         <td>false</td>
       </tr><tr>
         <td><b>volumeMode</b></td>
@@ -7989,7 +9410,7 @@ Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More 
       </tr><tr>
         <td><b>volumeName</b></td>
         <td>string</td>
-        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>volumeName is the binding reference to the PersistentVolume backing this claim.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8002,7 +9423,7 @@ Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log. More 
 
 
 
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
 
 <table>
     <thead>
@@ -8016,12 +9437,12 @@ Resources represents the minimum resources the volume should have. More info: ht
     <tbody><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>true</td>
       </tr><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8034,7 +9455,44 @@ Resources represents the minimum resources the volume should have. More info: ht
 
 
 
-This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
+dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecinstancesindexwalvolumeclaimspecdatasourceref">
+  PostgresCluster.spec.instances[index].walVolumeClaimSpec.dataSourceRef
+  <sup><sup><a href="#postgresclusterspecinstancesindexwalvolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 
 <table>
     <thead>
@@ -8071,7 +9529,7 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 
 
 
-A label query over volumes to consider for binding.
+selector is a label query over volumes to consider for binding.
 
 <table>
     <thead>
@@ -8181,22 +9639,22 @@ Projection that may be projected along with other supported volume types
     <tbody><tr>
         <td><b><a href="#postgresclusterspecconfigfilesindexconfigmap">configMap</a></b></td>
         <td>object</td>
-        <td>information about the configMap data to project</td>
+        <td>configMap information about the configMap data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecconfigfilesindexdownwardapi">downwardAPI</a></b></td>
         <td>object</td>
-        <td>information about the downwardAPI data to project</td>
+        <td>downwardAPI information about the downwardAPI data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecconfigfilesindexsecret">secret</a></b></td>
         <td>object</td>
-        <td>information about the secret data to project</td>
+        <td>secret information about the secret data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecconfigfilesindexserviceaccounttoken">serviceAccountToken</a></b></td>
         <td>object</td>
-        <td>information about the serviceAccountToken data to project</td>
+        <td>serviceAccountToken is information about the serviceAccountToken data to project</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8209,7 +9667,7 @@ Projection that may be projected along with other supported volume types
 
 
 
-information about the configMap data to project
+configMap information about the configMap data to project
 
 <table>
     <thead>
@@ -8223,7 +9681,7 @@ information about the configMap data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecconfigfilesindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -8233,7 +9691,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8260,17 +9718,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8283,7 +9741,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the downwardAPI data to project
+downwardAPI information about the downwardAPI data to project
 
 <table>
     <thead>
@@ -8421,7 +9879,7 @@ Selects a resource of the container: only resources limits and requests (limits.
 
 
 
-information about the secret data to project
+secret information about the secret data to project
 
 <table>
     <thead>
@@ -8435,7 +9893,7 @@ information about the secret data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecconfigfilesindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -8445,7 +9903,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8472,17 +9930,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8495,7 +9953,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the serviceAccountToken data to project
+serviceAccountToken is information about the serviceAccountToken data to project
 
 <table>
     <thead>
@@ -8509,17 +9967,17 @@ information about the serviceAccountToken data to project
     <tbody><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>Path is the path relative to the mount point of the file to project the token into.</td>
+        <td>path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
       </tr><tr>
         <td><b>audience</b></td>
         <td>string</td>
-        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
         <td>false</td>
       </tr><tr>
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
-        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8546,7 +10004,7 @@ The secret containing the replication client certificates and keys for secure co
     <tbody><tr>
         <td><b><a href="#postgresclusterspeccustomreplicationtlssecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -8556,7 +10014,7 @@ The secret containing the replication client certificates and keys for secure co
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8583,17 +10041,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8620,7 +10078,7 @@ The secret containing the Certificates and Keys to encrypt PostgreSQL traffic wi
     <tbody><tr>
         <td><b><a href="#postgresclusterspeccustomtlssecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -8630,7 +10088,7 @@ The secret containing the Certificates and Keys to encrypt PostgreSQL traffic wi
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -8657,17 +10115,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -9005,27 +10463,32 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
     <tbody><tr>
         <td><b>accessModes</b></td>
         <td>[]string</td>
-        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestrepovolumevolumeclaimspecdatasource">dataSource</a></b></td>
         <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
+        <td>dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestrepovolumevolumeclaimspecdatasourceref">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestrepovolumevolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
-        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestrepovolumevolumeclaimspecselector">selector</a></b></td>
         <td>object</td>
-        <td>A label query over volumes to consider for binding.</td>
+        <td>selector is a label query over volumes to consider for binding.</td>
         <td>false</td>
       </tr><tr>
         <td><b>storageClassName</b></td>
         <td>string</td>
-        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
         <td>false</td>
       </tr><tr>
         <td><b>volumeMode</b></td>
@@ -9035,7 +10498,7 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
       </tr><tr>
         <td><b>volumeName</b></td>
         <td>string</td>
-        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>volumeName is the binding reference to the PersistentVolume backing this claim.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -9048,7 +10511,44 @@ Defines a PersistentVolumeClaim spec used to create and/or bind a volume
 
 
 
-This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
+dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepgbackrestrepovolumevolumeclaimspecdatasourceref">
+  PostgresCluster.spec.dataSource.pgbackrest.repo.volume.volumeClaimSpec.dataSourceRef
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestrepovolumevolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 
 <table>
     <thead>
@@ -9085,7 +10585,7 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 
 
 
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
 
 <table>
     <thead>
@@ -9099,12 +10599,12 @@ Resources represents the minimum resources the volume should have. More info: ht
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -9117,7 +10617,7 @@ Resources represents the minimum resources the volume should have. More info: ht
 
 
 
-A label query over volumes to consider for binding.
+selector is a label query over volumes to consider for binding.
 
 <table>
     <thead>
@@ -9612,9 +11112,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -9689,6 +11194,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.dataSource.pgbackrest.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -9718,9 +11292,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -9761,6 +11340,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.dataSource.pgbackrest.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -9888,9 +11536,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -9965,6 +11618,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.dataSource.pgbackrest.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -9994,9 +11716,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10071,6 +11798,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.pgbackrest.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepgbackrestaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecdatasourcepgbackrestconfigurationindex">
   PostgresCluster.spec.dataSource.pgbackrest.configuration[index]
   <sup><sup><a href="#postgresclusterspecdatasourcepgbackrest">↩ Parent</a></sup></sup>
@@ -10092,22 +11888,22 @@ Projection that may be projected along with other supported volume types
     <tbody><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestconfigurationindexconfigmap">configMap</a></b></td>
         <td>object</td>
-        <td>information about the configMap data to project</td>
+        <td>configMap information about the configMap data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestconfigurationindexdownwardapi">downwardAPI</a></b></td>
         <td>object</td>
-        <td>information about the downwardAPI data to project</td>
+        <td>downwardAPI information about the downwardAPI data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestconfigurationindexsecret">secret</a></b></td>
         <td>object</td>
-        <td>information about the secret data to project</td>
+        <td>secret information about the secret data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestconfigurationindexserviceaccounttoken">serviceAccountToken</a></b></td>
         <td>object</td>
-        <td>information about the serviceAccountToken data to project</td>
+        <td>serviceAccountToken is information about the serviceAccountToken data to project</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10120,7 +11916,7 @@ Projection that may be projected along with other supported volume types
 
 
 
-information about the configMap data to project
+configMap information about the configMap data to project
 
 <table>
     <thead>
@@ -10134,7 +11930,7 @@ information about the configMap data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestconfigurationindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -10144,7 +11940,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10171,17 +11967,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10194,7 +11990,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the downwardAPI data to project
+downwardAPI information about the downwardAPI data to project
 
 <table>
     <thead>
@@ -10332,7 +12128,7 @@ Selects a resource of the container: only resources limits and requests (limits.
 
 
 
-information about the secret data to project
+secret information about the secret data to project
 
 <table>
     <thead>
@@ -10346,7 +12142,7 @@ information about the secret data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecdatasourcepgbackrestconfigurationindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -10356,7 +12152,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10383,17 +12179,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10406,7 +12202,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the serviceAccountToken data to project
+serviceAccountToken is information about the serviceAccountToken data to project
 
 <table>
     <thead>
@@ -10420,17 +12216,17 @@ information about the serviceAccountToken data to project
     <tbody><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>Path is the path relative to the mount point of the file to project the token into.</td>
+        <td>path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
       </tr><tr>
         <td><b>audience</b></td>
         <td>string</td>
-        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
         <td>false</td>
       </tr><tr>
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
-        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -10457,12 +12253,12 @@ Resource requirements for the pgBackRest restore Job.
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11010,9 +12806,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11087,6 +12888,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.dataSource.postgresCluster.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -11116,9 +12986,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11159,6 +13034,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.dataSource.postgresCluster.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -11286,9 +13230,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11363,6 +13312,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.dataSource.postgresCluster.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -11392,9 +13410,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11469,6 +13492,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.dataSource.postgresCluster.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecdatasourcepostgresclusteraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecdatasourcepostgresclusterresources">
   PostgresCluster.spec.dataSource.postgresCluster.resources
   <sup><sup><a href="#postgresclusterspecdatasourcepostgrescluster">↩ Parent</a></sup></sup>
@@ -11490,12 +13582,12 @@ Resource requirements for the pgBackRest restore Job.
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11884,22 +13976,22 @@ Projection that may be projected along with other supported volume types
     <tbody><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexconfigmap">configMap</a></b></td>
         <td>object</td>
-        <td>information about the configMap data to project</td>
+        <td>configMap information about the configMap data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexdownwardapi">downwardAPI</a></b></td>
         <td>object</td>
-        <td>information about the downwardAPI data to project</td>
+        <td>downwardAPI information about the downwardAPI data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexsecret">secret</a></b></td>
         <td>object</td>
-        <td>information about the secret data to project</td>
+        <td>secret information about the secret data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexserviceaccounttoken">serviceAccountToken</a></b></td>
         <td>object</td>
-        <td>information about the serviceAccountToken data to project</td>
+        <td>serviceAccountToken is information about the serviceAccountToken data to project</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11912,7 +14004,7 @@ Projection that may be projected along with other supported volume types
 
 
 
-information about the configMap data to project
+configMap information about the configMap data to project
 
 <table>
     <thead>
@@ -11926,7 +14018,7 @@ information about the configMap data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -11936,7 +14028,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11963,17 +14055,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -11986,7 +14078,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the downwardAPI data to project
+downwardAPI information about the downwardAPI data to project
 
 <table>
     <thead>
@@ -12124,7 +14216,7 @@ Selects a resource of the container: only resources limits and requests (limits.
 
 
 
-information about the secret data to project
+secret information about the secret data to project
 
 <table>
     <thead>
@@ -12138,7 +14230,7 @@ information about the secret data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -12148,7 +14240,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -12175,17 +14267,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -12198,7 +14290,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the serviceAccountToken data to project
+serviceAccountToken is information about the serviceAccountToken data to project
 
 <table>
     <thead>
@@ -12212,17 +14304,17 @@ information about the serviceAccountToken data to project
     <tbody><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>Path is the path relative to the mount point of the file to project the token into.</td>
+        <td>path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
       </tr><tr>
         <td><b>audience</b></td>
         <td>string</td>
-        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
         <td>false</td>
       </tr><tr>
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
-        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -12249,12 +14341,12 @@ Changing this value causes PostgreSQL and the exporter to restart. More info: ht
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -12901,9 +14993,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -12978,6 +15075,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -13007,9 +15173,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13050,6 +15221,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -13177,9 +15417,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13254,6 +15499,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -13283,9 +15597,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13326,6 +15645,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.proxy.pgBouncer.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecproxypgbounceraffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -13423,22 +15811,22 @@ Projection that may be projected along with other supported volume types
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncerconfigfilesindexconfigmap">configMap</a></b></td>
         <td>object</td>
-        <td>information about the configMap data to project</td>
+        <td>configMap information about the configMap data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncerconfigfilesindexdownwardapi">downwardAPI</a></b></td>
         <td>object</td>
-        <td>information about the downwardAPI data to project</td>
+        <td>downwardAPI information about the downwardAPI data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncerconfigfilesindexsecret">secret</a></b></td>
         <td>object</td>
-        <td>information about the secret data to project</td>
+        <td>secret information about the secret data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncerconfigfilesindexserviceaccounttoken">serviceAccountToken</a></b></td>
         <td>object</td>
-        <td>information about the serviceAccountToken data to project</td>
+        <td>serviceAccountToken is information about the serviceAccountToken data to project</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13451,7 +15839,7 @@ Projection that may be projected along with other supported volume types
 
 
 
-information about the configMap data to project
+configMap information about the configMap data to project
 
 <table>
     <thead>
@@ -13465,7 +15853,7 @@ information about the configMap data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncerconfigfilesindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -13475,7 +15863,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13502,17 +15890,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13525,7 +15913,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the downwardAPI data to project
+downwardAPI information about the downwardAPI data to project
 
 <table>
     <thead>
@@ -13663,7 +16051,7 @@ Selects a resource of the container: only resources limits and requests (limits.
 
 
 
-information about the secret data to project
+secret information about the secret data to project
 
 <table>
     <thead>
@@ -13677,7 +16065,7 @@ information about the secret data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncerconfigfilesindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -13687,7 +16075,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13714,17 +16102,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13737,7 +16125,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the serviceAccountToken data to project
+serviceAccountToken is information about the serviceAccountToken data to project
 
 <table>
     <thead>
@@ -13751,17 +16139,17 @@ information about the serviceAccountToken data to project
     <tbody><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>Path is the path relative to the mount point of the file to project the token into.</td>
+        <td>path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
       </tr><tr>
         <td><b>audience</b></td>
         <td>string</td>
-        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
         <td>false</td>
       </tr><tr>
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
-        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -13793,12 +16181,12 @@ A single application container that you want to run within a pod.
       </tr><tr>
         <td><b>args</b></td>
         <td>[]string</td>
-        <td>Arguments to the entrypoint. The docker image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
+        <td>Arguments to the entrypoint. The container image's CMD is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
         <td>false</td>
       </tr><tr>
         <td><b>command</b></td>
         <td>[]string</td>
-        <td>Entrypoint array. Not executed within a shell. The docker image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
+        <td>Entrypoint array. Not executed within a shell. The container image's ENTRYPOINT is used if this is not provided. Variable references $(VAR_NAME) are expanded using the container's environment. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-data-application/define-command-argument-container/#running-a-command-in-a-shell</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexenvindex">env</a></b></td>
@@ -13813,7 +16201,7 @@ A single application container that you want to run within a pod.
       </tr><tr>
         <td><b>image</b></td>
         <td>string</td>
-        <td>Docker image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.</td>
+        <td>Container image name. More info: https://kubernetes.io/docs/concepts/containers/images This field is optional to allow higher level config management to default or override container images in workload controllers like Deployments and StatefulSets.</td>
         <td>false</td>
       </tr><tr>
         <td><b>imagePullPolicy</b></td>
@@ -13843,12 +16231,12 @@ A single application container that you want to run within a pod.
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexresources">resources</a></b></td>
         <td>object</td>
-        <td>Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexsecuritycontext">securityContext</a></b></td>
         <td>object</td>
-        <td>Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/</td>
+        <td>SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexstartupprobe">startupProbe</a></b></td>
@@ -13925,7 +16313,7 @@ EnvVar represents an environment variable present in a Container.
       </tr><tr>
         <td><b>value</b></td>
         <td>string</td>
-        <td>Variable references $(VAR_NAME) are expanded using the previous defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie: $$(VAR_NAME). Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".</td>
+        <td>Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexenvindexvaluefrom">valueFrom</a></b></td>
@@ -14248,7 +16636,7 @@ Actions that the management system should take in response to container lifecycl
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlifecycleprestop">preStop</a></b></td>
         <td>object</td>
-        <td>PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The reason for termination is passed to the handler. The Pod's termination grace period countdown begins before the PreStop hooked is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period. Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks</td>
+        <td>PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The Pod's termination grace period countdown begins before the PreStop hook is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period (unless delayed by finalizers). Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -14275,7 +16663,7 @@ PostStart is called immediately after a container is created. If the handler fai
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlifecyclepoststartexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlifecyclepoststarthttpget">httpGet</a></b></td>
@@ -14298,7 +16686,7 @@ PostStart is called immediately after a container is created. If the handler fai
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -14436,7 +16824,7 @@ TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
 
 
 
-PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The reason for termination is passed to the handler. The Pod's termination grace period countdown begins before the PreStop hooked is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period. Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
+PreStop is called immediately before a container is terminated due to an API request or management event such as liveness/startup probe failure, preemption, resource contention, etc. The handler is not called if the container crashes or exits. The Pod's termination grace period countdown begins before the PreStop hook is executed. Regardless of the outcome of the handler, the container will eventually terminate within the Pod's termination grace period (unless delayed by finalizers). Other management of the container blocks until the hook completes or until the termination grace period is reached. More info: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#container-hooks
 
 <table>
     <thead>
@@ -14450,7 +16838,7 @@ PreStop is called immediately before a container is terminated due to an API req
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlifecycleprestopexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlifecycleprestophttpget">httpGet</a></b></td>
@@ -14473,7 +16861,7 @@ PreStop is called immediately before a container is terminated due to an API req
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -14625,12 +17013,17 @@ Periodic probe of container liveness. Container will be restarted if the probe f
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlivenessprobeexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b>failureThreshold</b></td>
         <td>integer</td>
         <td>Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlivenessprobegrpc">grpc</a></b></td>
+        <td>object</td>
+        <td>GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlivenessprobehttpget">httpGet</a></b></td>
@@ -14658,6 +17051,11 @@ Periodic probe of container liveness. Container will be restarted if the probe f
         <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
         <td>false</td>
       </tr><tr>
+        <td><b>terminationGracePeriodSeconds</b></td>
+        <td>integer</td>
+        <td>Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>timeoutSeconds</b></td>
         <td>integer</td>
         <td>Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
@@ -14673,7 +17071,7 @@ Periodic probe of container liveness. Container will be restarted if the probe f
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -14688,6 +17086,39 @@ One and only one of the following should be specified. Exec specifies the action
         <td><b>command</b></td>
         <td>[]string</td>
         <td>Command is the command line to execute inside the container, the working directory for the command  is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use a shell, you need to explicitly call out to that shell. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbouncercontainersindexlivenessprobegrpc">
+  PostgresCluster.spec.proxy.pgBouncer.containers[index].livenessProbe.grpc
+  <sup><sup><a href="#postgresclusterspecproxypgbouncercontainersindexlivenessprobe">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>Port number of the gRPC service. Number must be in the range 1 to 65535.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>service</b></td>
+        <td>string</td>
+        <td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+If this is not specified, the default behavior is defined by gRPC.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -14872,12 +17303,17 @@ Periodic probe of container service readiness. Container will be removed from se
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexreadinessprobeexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b>failureThreshold</b></td>
         <td>integer</td>
         <td>Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexreadinessprobegrpc">grpc</a></b></td>
+        <td>object</td>
+        <td>GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexreadinessprobehttpget">httpGet</a></b></td>
@@ -14905,6 +17341,11 @@ Periodic probe of container service readiness. Container will be removed from se
         <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
         <td>false</td>
       </tr><tr>
+        <td><b>terminationGracePeriodSeconds</b></td>
+        <td>integer</td>
+        <td>Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>timeoutSeconds</b></td>
         <td>integer</td>
         <td>Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
@@ -14920,7 +17361,7 @@ Periodic probe of container service readiness. Container will be removed from se
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -14935,6 +17376,39 @@ One and only one of the following should be specified. Exec specifies the action
         <td><b>command</b></td>
         <td>[]string</td>
         <td>Command is the command line to execute inside the container, the working directory for the command  is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use a shell, you need to explicitly call out to that shell. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbouncercontainersindexreadinessprobegrpc">
+  PostgresCluster.spec.proxy.pgBouncer.containers[index].readinessProbe.grpc
+  <sup><sup><a href="#postgresclusterspecproxypgbouncercontainersindexreadinessprobe">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>Port number of the gRPC service. Number must be in the range 1 to 65535.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>service</b></td>
+        <td>string</td>
+        <td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+If this is not specified, the default behavior is defined by gRPC.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15058,7 +17532,7 @@ TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
 
 
 
-Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
 
 <table>
     <thead>
@@ -15072,12 +17546,12 @@ Compute Resources required by this container. Cannot be updated. More info: http
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15090,7 +17564,7 @@ Compute Resources required by this container. Cannot be updated. More info: http
 
 
 
-Security options the pod should run with. More info: https://kubernetes.io/docs/concepts/policy/security-context/ More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+SecurityContext defines the security options the container should be run with. If set, the fields of SecurityContext override the equivalent fields of PodSecurityContext. More info: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
 <table>
     <thead>
@@ -15104,32 +17578,32 @@ Security options the pod should run with. More info: https://kubernetes.io/docs/
     <tbody><tr>
         <td><b>allowPrivilegeEscalation</b></td>
         <td>boolean</td>
-        <td>AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN</td>
+        <td>AllowPrivilegeEscalation controls whether a process can gain more privileges than its parent process. This bool directly controls if the no_new_privs flag will be set on the container process. AllowPrivilegeEscalation is true always when the container is: 1) run as Privileged 2) has CAP_SYS_ADMIN Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexsecuritycontextcapabilities">capabilities</a></b></td>
         <td>object</td>
-        <td>The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime.</td>
+        <td>The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>privileged</b></td>
         <td>boolean</td>
-        <td>Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false.</td>
+        <td>Run container in privileged mode. Processes in privileged containers are essentially equivalent to root on the host. Defaults to false. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>procMount</b></td>
         <td>string</td>
-        <td>procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled.</td>
+        <td>procMount denotes the type of proc mount to use for the containers. The default is DefaultProcMount which uses the container runtime defaults for readonly paths and masked paths. This requires the ProcMountType feature flag to be enabled. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>readOnlyRootFilesystem</b></td>
         <td>boolean</td>
-        <td>Whether this container has a read-only root filesystem. Default is false.</td>
+        <td>Whether this container has a read-only root filesystem. Default is false. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>runAsGroup</b></td>
         <td>integer</td>
-        <td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The GID to run the entrypoint of the container process. Uses runtime default if unset. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b>runAsNonRoot</b></td>
@@ -15139,22 +17613,22 @@ Security options the pod should run with. More info: https://kubernetes.io/docs/
       </tr><tr>
         <td><b>runAsUser</b></td>
         <td>integer</td>
-        <td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The UID to run the entrypoint of the container process. Defaults to user specified in image metadata if unspecified. May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexsecuritycontextselinuxoptions">seLinuxOptions</a></b></td>
         <td>object</td>
-        <td>The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexsecuritycontextseccompprofile">seccompProfile</a></b></td>
         <td>object</td>
-        <td>The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options.</td>
+        <td>The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexsecuritycontextwindowsoptions">windowsOptions</a></b></td>
         <td>object</td>
-        <td>The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.</td>
+        <td>The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15167,7 +17641,7 @@ Security options the pod should run with. More info: https://kubernetes.io/docs/
 
 
 
-The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime.
+The capabilities to add/drop when running containers. Defaults to the default set of capabilities granted by the container runtime. Note that this field cannot be set when spec.os.name is windows.
 
 <table>
     <thead>
@@ -15199,7 +17673,7 @@ The capabilities to add/drop when running containers. Defaults to the default se
 
 
 
-The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
+The SELinux context to be applied to the container. If unspecified, the container runtime will allocate a random SELinux context for each container.  May also be set in PodSecurityContext.  If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is windows.
 
 <table>
     <thead>
@@ -15241,7 +17715,7 @@ The SELinux context to be applied to the container. If unspecified, the containe
 
 
 
-The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options.
+The seccomp options to use by this container. If seccomp options are provided at both the pod & container level, the container options override the pod options. Note that this field cannot be set when spec.os.name is windows.
 
 <table>
     <thead>
@@ -15273,7 +17747,7 @@ The seccomp options to use by this container. If seccomp options are provided at
 
 
 
-The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence.
+The Windows specific settings applied to all containers. If unspecified, the options from the PodSecurityContext will be used. If set in both SecurityContext and PodSecurityContext, the value specified in SecurityContext takes precedence. Note that this field cannot be set when spec.os.name is linux.
 
 <table>
     <thead>
@@ -15293,6 +17767,11 @@ The Windows specific settings applied to all containers. If unspecified, the opt
         <td><b>gmsaCredentialSpecName</b></td>
         <td>string</td>
         <td>GMSACredentialSpecName is the name of the GMSA credential spec to use.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>hostProcess</b></td>
+        <td>boolean</td>
+        <td>HostProcess determines if a container should be run as a 'Host Process' container. This field is alpha-level and will only be honored by components that enable the WindowsHostProcessContainers feature flag. Setting this field without the feature flag will result in errors when validating the Pod. All of a Pod's containers must have the same effective HostProcess value (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).  In addition, if HostProcess is true then HostNetwork must also be set to true.</td>
         <td>false</td>
       </tr><tr>
         <td><b>runAsUserName</b></td>
@@ -15324,12 +17803,17 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexstartupprobeexec">exec</a></b></td>
         <td>object</td>
-        <td>One and only one of the following should be specified. Exec specifies the action to take.</td>
+        <td>Exec specifies the action to take.</td>
         <td>false</td>
       </tr><tr>
         <td><b>failureThreshold</b></td>
         <td>integer</td>
         <td>Minimum consecutive failures for the probe to be considered failed after having succeeded. Defaults to 3. Minimum value is 1.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexstartupprobegrpc">grpc</a></b></td>
+        <td>object</td>
+        <td>GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexstartupprobehttpget">httpGet</a></b></td>
@@ -15357,6 +17841,11 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
         <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
         <td>false</td>
       </tr><tr>
+        <td><b>terminationGracePeriodSeconds</b></td>
+        <td>integer</td>
+        <td>Optional duration in seconds the pod needs to terminate gracefully upon probe failure. The grace period is the duration in seconds after the processes running in the pod are sent a termination signal and the time when the processes are forcibly halted with a kill signal. Set this value longer than the expected cleanup time for your process. If this value is nil, the pod's terminationGracePeriodSeconds will be used. Otherwise, this value overrides the value provided by the pod spec. Value must be non-negative integer. The value zero indicates stop immediately via the kill signal (no opportunity to shut down). This is a beta field and requires enabling ProbeTerminationGracePeriod feature gate. Minimum value is 1. spec.terminationGracePeriodSeconds is used if unset.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>timeoutSeconds</b></td>
         <td>integer</td>
         <td>Number of seconds after which the probe times out. Defaults to 1 second. Minimum value is 1. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle#container-probes</td>
@@ -15372,7 +17861,7 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
 
 
 
-One and only one of the following should be specified. Exec specifies the action to take.
+Exec specifies the action to take.
 
 <table>
     <thead>
@@ -15387,6 +17876,39 @@ One and only one of the following should be specified. Exec specifies the action
         <td><b>command</b></td>
         <td>[]string</td>
         <td>Command is the command line to execute inside the container, the working directory for the command  is root ('/') in the container's filesystem. The command is simply exec'd, it is not run inside a shell, so traditional shell instructions ('|', etc) won't work. To use a shell, you need to explicitly call out to that shell. Exit status of 0 is treated as live/healthy and non-zero is unhealthy.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecproxypgbouncercontainersindexstartupprobegrpc">
+  PostgresCluster.spec.proxy.pgBouncer.containers[index].startupProbe.grpc
+  <sup><sup><a href="#postgresclusterspecproxypgbouncercontainersindexstartupprobe">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>port</b></td>
+        <td>integer</td>
+        <td>Port number of the gRPC service. Number must be in the range 1 to 65535.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>service</b></td>
+        <td>string</td>
+        <td>Service is the name of the service to place in the gRPC HealthCheckRequest (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
+If this is not specified, the default behavior is defined by gRPC.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15608,7 +18130,7 @@ A secret projection containing a certificate and key with which to encrypt conne
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercustomtlssecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -15618,7 +18140,7 @@ A secret projection containing a certificate and key with which to encrypt conne
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15645,17 +18167,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15714,12 +18236,12 @@ Compute resources of a PgBouncer container. Changing this value causes PgBouncer
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15869,12 +18391,12 @@ Resource requirements for a sidecar container
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -15948,22 +18470,29 @@ TopologySpreadConstraint specifies how to spread matching pods among the given t
     <tbody><tr>
         <td><b>maxSkew</b></td>
         <td>integer</td>
-        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 1/1/0: | zone1 | zone2 | zone3 | |   P   |   P   |       | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
+        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. The global minimum is the minimum number of matching pods in an eligible domain or zero if the number of eligible domains is less than MinDomains. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 2/2/1: In this case, the global minimum is 1. | zone1 | zone2 | zone3 | |  P P  |  P P  |   P   | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 2/2/2; scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
         <td>true</td>
       </tr><tr>
         <td><b>topologyKey</b></td>
         <td>string</td>
-        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. It's a required field.</td>
+        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. We define a domain as a particular instance of a topology. Also, we define an eligible domain as a domain whose nodes match the node selector. e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology. And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b>whenUnsatisfiable</b></td>
         <td>string</td>
-        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assigment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
+        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assignment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncertopologyspreadconstraintsindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>LabelSelector is used to find matching pods. Pods that match this label selector are counted to determine the number of pods in their corresponding topology domain.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>minDomains</b></td>
+        <td>integer</td>
+        <td>MinDomains indicates a minimum number of eligible domains. When the number of eligible domains with matching topology keys is less than minDomains, Pod Topology Spread treats "global minimum" as 0, and then the calculation of Skew is performed. And when the number of eligible domains with matching topology keys equals or greater than minDomains, this value has no effect on scheduling. As a result, when the number of eligible domains is less than minDomains, scheduler won't schedule more than maxSkew Pods to those domains. If value is nil, the constraint behaves as if MinDomains is equal to 1. Valid values are integers greater than 0. When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
+For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same labelSelector spread as 2/2/2: | zone1 | zone2 | zone3 | |  P P  |  P P  |  P P  | The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0. In this situation, new pod with the same labelSelector cannot be scheduled, because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones, it will violate MaxSkew.
+This is an alpha field and requires enabling MinDomainsInPodTopologySpread feature gate.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -16274,27 +18803,32 @@ Defines a PersistentVolumeClaim for pgAdmin data. More info: https://kubernetes.
     <tbody><tr>
         <td><b>accessModes</b></td>
         <td>[]string</td>
-        <td>AccessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadmindatavolumeclaimspecdatasource">dataSource</a></b></td>
         <td>object</td>
-        <td>This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.</td>
+        <td>dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadmindatavolumeclaimspecdatasourceref">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadmindatavolumeclaimspecresources">resources</a></b></td>
         <td>object</td>
-        <td>Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadmindatavolumeclaimspecselector">selector</a></b></td>
         <td>object</td>
-        <td>A label query over volumes to consider for binding.</td>
+        <td>selector is a label query over volumes to consider for binding.</td>
         <td>false</td>
       </tr><tr>
         <td><b>storageClassName</b></td>
         <td>string</td>
-        <td>Name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
         <td>false</td>
       </tr><tr>
         <td><b>volumeMode</b></td>
@@ -16304,7 +18838,7 @@ Defines a PersistentVolumeClaim for pgAdmin data. More info: https://kubernetes.
       </tr><tr>
         <td><b>volumeName</b></td>
         <td>string</td>
-        <td>VolumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>volumeName is the binding reference to the PersistentVolume backing this claim.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -16317,7 +18851,44 @@ Defines a PersistentVolumeClaim for pgAdmin data. More info: https://kubernetes.
 
 
 
-This field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) * An existing custom resource that implements data population (Alpha) In order to use custom resource types that implement data population, the AnyVolumeDataSource feature gate must be enabled. If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source.
+dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadmindatavolumeclaimspecdatasourceref">
+  PostgresCluster.spec.userInterface.pgAdmin.dataVolumeClaimSpec.dataSourceRef
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadmindatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
 
 <table>
     <thead>
@@ -16354,7 +18925,7 @@ This field can be used to specify either: * An existing VolumeSnapshot object (s
 
 
 
-Resources represents the minimum resources the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
 
 <table>
     <thead>
@@ -16368,12 +18939,12 @@ Resources represents the minimum resources the volume should have. More info: ht
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -16386,7 +18957,7 @@ Resources represents the minimum resources the volume should have. More info: ht
 
 
 
-A label query over volumes to consider for binding.
+selector is a label query over volumes to consider for binding.
 
 <table>
     <thead>
@@ -16881,9 +19452,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -16958,6 +19534,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.userInterface.pgAdmin.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinity">↩ Parent</a></sup></sup>
@@ -16987,9 +19632,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17030,6 +19680,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.userInterface.pgAdmin.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -17157,9 +19876,14 @@ Required. A pod affinity term, associated with the corresponding weight.
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17234,6 +19958,75 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
   PostgresCluster.spec.userInterface.pgAdmin.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
   <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinity">↩ Parent</a></sup></sup>
@@ -17263,9 +20056,14 @@ Defines a set of pods (namely those matching the labelSelector relative to the g
         <td>A label query over a set of resources, in this case pods.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>namespaces</b></td>
         <td>[]string</td>
-        <td>namespaces specifies which namespaces the labelSelector applies to (matches against); null or empty list means "this pod's namespace"</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17306,6 +20104,75 @@ A label query over a set of resources, in this case pods.
 <h3 id="postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
   PostgresCluster.spec.userInterface.pgAdmin.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
   <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PostgresCluster.spec.userInterface.pgAdmin.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#postgresclusterspecuserinterfacepgadminaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
 </h3>
 
 
@@ -17398,22 +20265,22 @@ Projection that may be projected along with other supported volume types
     <tbody><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexconfigmap">configMap</a></b></td>
         <td>object</td>
-        <td>information about the configMap data to project</td>
+        <td>configMap information about the configMap data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexdownwardapi">downwardAPI</a></b></td>
         <td>object</td>
-        <td>information about the downwardAPI data to project</td>
+        <td>downwardAPI information about the downwardAPI data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexsecret">secret</a></b></td>
         <td>object</td>
-        <td>information about the secret data to project</td>
+        <td>secret information about the secret data to project</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexserviceaccounttoken">serviceAccountToken</a></b></td>
         <td>object</td>
-        <td>information about the serviceAccountToken data to project</td>
+        <td>serviceAccountToken is information about the serviceAccountToken data to project</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17426,7 +20293,7 @@ Projection that may be projected along with other supported volume types
 
 
 
-information about the configMap data to project
+configMap information about the configMap data to project
 
 <table>
     <thead>
@@ -17440,7 +20307,7 @@ information about the configMap data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexconfigmapitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -17450,7 +20317,7 @@ information about the configMap data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the ConfigMap or its keys must be defined</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17477,17 +20344,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17500,7 +20367,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the downwardAPI data to project
+downwardAPI information about the downwardAPI data to project
 
 <table>
     <thead>
@@ -17638,7 +20505,7 @@ Selects a resource of the container: only resources limits and requests (limits.
 
 
 
-information about the secret data to project
+secret information about the secret data to project
 
 <table>
     <thead>
@@ -17652,7 +20519,7 @@ information about the secret data to project
     <tbody><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminconfigfilesindexsecretitemsindex">items</a></b></td>
         <td>[]object</td>
-        <td>If unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
         <td>false</td>
       </tr><tr>
         <td><b>name</b></td>
@@ -17662,7 +20529,7 @@ information about the secret data to project
       </tr><tr>
         <td><b>optional</b></td>
         <td>boolean</td>
-        <td>Specify whether the Secret or its key must be defined</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17689,17 +20556,17 @@ Maps a string key to a path within a volume.
     <tbody><tr>
         <td><b>key</b></td>
         <td>string</td>
-        <td>The key to project.</td>
+        <td>key is the key to project.</td>
         <td>true</td>
       </tr><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>The relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
         <td>true</td>
       </tr><tr>
         <td><b>mode</b></td>
         <td>integer</td>
-        <td>Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17712,7 +20579,7 @@ Maps a string key to a path within a volume.
 
 
 
-information about the serviceAccountToken data to project
+serviceAccountToken is information about the serviceAccountToken data to project
 
 <table>
     <thead>
@@ -17726,17 +20593,17 @@ information about the serviceAccountToken data to project
     <tbody><tr>
         <td><b>path</b></td>
         <td>string</td>
-        <td>Path is the path relative to the mount point of the file to project the token into.</td>
+        <td>path is the path relative to the mount point of the file to project the token into.</td>
         <td>true</td>
       </tr><tr>
         <td><b>audience</b></td>
         <td>string</td>
-        <td>Audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
         <td>false</td>
       </tr><tr>
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
-        <td>ExpirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17832,12 +20699,12 @@ Compute resources of a pgAdmin container. Changing this value causes pgAdmin to 
     <tbody><tr>
         <td><b>limits</b></td>
         <td>map[string]int or string</td>
-        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr><tr>
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
-        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -17980,22 +20847,29 @@ TopologySpreadConstraint specifies how to spread matching pods among the given t
     <tbody><tr>
         <td><b>maxSkew</b></td>
         <td>integer</td>
-        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 1/1/0: | zone1 | zone2 | zone3 | |   P   |   P   |       | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
+        <td>MaxSkew describes the degree to which pods may be unevenly distributed. When `whenUnsatisfiable=DoNotSchedule`, it is the maximum permitted difference between the number of matching pods in the target topology and the global minimum. The global minimum is the minimum number of matching pods in an eligible domain or zero if the number of eligible domains is less than MinDomains. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 2/2/1: In this case, the global minimum is 1. | zone1 | zone2 | zone3 | |  P P  |  P P  |   P   | - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to become 2/2/2; scheduling it onto zone1(zone2) would make the ActualSkew(3-1) on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming pod can be scheduled onto any zone. When `whenUnsatisfiable=ScheduleAnyway`, it is used to give higher precedence to topologies that satisfy it. It's a required field. Default value is 1 and 0 is not allowed.</td>
         <td>true</td>
       </tr><tr>
         <td><b>topologyKey</b></td>
         <td>string</td>
-        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. It's a required field.</td>
+        <td>TopologyKey is the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We consider each <key, value> as a "bucket", and try to put balanced number of pods into each bucket. We define a domain as a particular instance of a topology. Also, we define an eligible domain as a domain whose nodes match the node selector. e.g. If TopologyKey is "kubernetes.io/hostname", each Node is a domain of that topology. And, if TopologyKey is "topology.kubernetes.io/zone", each zone is a domain of that topology. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b>whenUnsatisfiable</b></td>
         <td>string</td>
-        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assigment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
+        <td>WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered "Unsatisfiable" for an incoming pod if and only if every possible node assignment for that pod would violate "MaxSkew" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.</td>
         <td>true</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadmintopologyspreadconstraintsindexlabelselector">labelSelector</a></b></td>
         <td>object</td>
         <td>LabelSelector is used to find matching pods. Pods that match this label selector are counted to determine the number of pods in their corresponding topology domain.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>minDomains</b></td>
+        <td>integer</td>
+        <td>MinDomains indicates a minimum number of eligible domains. When the number of eligible domains with matching topology keys is less than minDomains, Pod Topology Spread treats "global minimum" as 0, and then the calculation of Skew is performed. And when the number of eligible domains with matching topology keys equals or greater than minDomains, this value has no effect on scheduling. As a result, when the number of eligible domains is less than minDomains, scheduler won't schedule more than maxSkew Pods to those domains. If value is nil, the constraint behaves as if MinDomains is equal to 1. Valid values are integers greater than 0. When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
+For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same labelSelector spread as 2/2/2: | zone1 | zone2 | zone3 | |  P P  |  P P  |  P P  | The number of domains is less than 5(MinDomains), so "global minimum" is treated as 0. In this situation, new pod with the same labelSelector cannot be scheduled, because computed skew will be 3(3 - 0) if new Pod is scheduled to any of the three zones, it will violate MaxSkew.
+This is an alpha field and requires enabling MinDomainsInPodTopologySpread feature gate.</td>
         <td>false</td>
       </tr></tbody>
 </table>
