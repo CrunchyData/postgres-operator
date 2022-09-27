@@ -48,7 +48,7 @@ func initLogging() {
 	if strings.EqualFold(os.Getenv("CRUNCHY_DEBUG"), "true") {
 		verbosity = 1
 	}
-	logging.SetLogFunc(verbosity, logging.Logrus(os.Stdout, versionString, 1))
+	logging.SetLogSink(logging.Logrus(os.Stdout, versionString, 1, verbosity))
 }
 
 func main() {

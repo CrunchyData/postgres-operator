@@ -20,24 +20,23 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	"github.com/wojas/genericr"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"gotest.tools/v3/assert"
 )
 
 func TestDiscard(t *testing.T) {
-	assert.Equal(t, Discard(), logr.DiscardLogger{})
+	assert.Equal(t, Discard(), logr.Discard())
 }
 
 func TestFromContext(t *testing.T) {
-	global = logr.DiscardLogger{}
+	global = logr.Discard()
 
 	// Defaults to global.
 	log := FromContext(context.Background())
 	assert.Equal(t, log, global)
 
 	// Retrieves from NewContext.
-	double := struct{ logr.Logger }{logr.DiscardLogger{}}
+	double := logr.New(&sink{})
 	log = FromContext(NewContext(context.Background(), double))
 	assert.Equal(t, log, double)
 }
@@ -45,8 +44,14 @@ func TestFromContext(t *testing.T) {
 func TestFromContextTraceContext(t *testing.T) {
 	var calls []map[string]interface{}
 
-	SetLogFunc(0, func(input genericr.Entry) {
-		calls = append(calls, input.FieldsMap())
+	SetLogSink(&sink{
+		fnInfo: func(_ int, _ string, kv ...interface{}) {
+			m := make(map[string]interface{})
+			for i := 0; i < len(kv); i += 2 {
+				m[kv[i].(string)] = kv[i+1]
+			}
+			calls = append(calls, m)
+		},
 	})
 
 	ctx := context.Background()
@@ -65,11 +70,13 @@ func TestFromContextTraceContext(t *testing.T) {
 	assert.Equal(t, calls[1]["traceid"], span.SpanContext().TraceID())
 }
 
-func TestSetLogFunc(t *testing.T) {
+func TestSetLogSink(t *testing.T) {
 	var calls []string
 
-	SetLogFunc(0, func(input genericr.Entry) {
-		calls = append(calls, input.Message)
+	SetLogSink(&sink{
+		fnInfo: func(_ int, m string, _ ...interface{}) {
+			calls = append(calls, m)
+		},
 	})
 
 	global.Info("called")

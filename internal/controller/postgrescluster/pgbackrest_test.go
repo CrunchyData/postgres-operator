@@ -344,6 +344,7 @@ restartPolicy: Always
 schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
 shareProcessNamespace: true
 terminationGracePeriodSeconds: 30
 tolerations:
@@ -1332,19 +1333,14 @@ func TestReconcileManualBackup(t *testing.T) {
 
 				postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), "", dedicated)
 				postgresCluster.Spec.Backups.PGBackRest.Manual = tc.manual
-				postgresCluster.Status = *tc.status
 				postgresCluster.Annotations = map[string]string{naming.PGBackRestBackup: tc.backupId}
+				assert.NilError(t, tClient.Create(ctx, postgresCluster))
+
+				postgresCluster.Status = *tc.status
 				for condition, status := range tc.clusterConditions {
 					meta.SetStatusCondition(&postgresCluster.Status.Conditions, metav1.Condition{
 						Type: condition, Reason: "testing", Status: status})
 				}
-				assert.NilError(t, tClient.Create(ctx, postgresCluster))
-				t.Cleanup(func() {
-					// Remove finalizers, if any, so the namespace can terminate.
-					assert.Check(t, client.IgnoreNotFound(
-						tClient.Patch(ctx, postgresCluster, client.RawPatch(
-							client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
-				})
 				assert.NilError(t, tClient.Status().Update(ctx, postgresCluster))
 
 				currentJobs := []*batchv1.Job{}
@@ -3533,12 +3529,12 @@ func TestReconcileScheduledBackups(t *testing.T) {
 				ctx := context.Background()
 
 				postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), "", dedicated)
+				assert.NilError(t, tClient.Create(ctx, postgresCluster))
 				postgresCluster.Status = *tc.status
 				for condition, status := range tc.clusterConditions {
 					meta.SetStatusCondition(&postgresCluster.Status.Conditions, metav1.Condition{
 						Type: condition, Reason: "testing", Status: status})
 				}
-				assert.NilError(t, tClient.Create(ctx, postgresCluster))
 				assert.NilError(t, tClient.Status().Update(ctx, postgresCluster))
 
 				var requeue bool

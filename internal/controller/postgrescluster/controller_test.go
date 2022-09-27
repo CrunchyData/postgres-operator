@@ -482,7 +482,7 @@ spec:
 
 		It("resets Instance StatefulSet.Spec.Replicas", func() {
 			ctx := context.Background()
-			patch := client.MergeFrom(instance.DeepCopyObject())
+			patch := client.MergeFrom(instance.DeepCopy())
 			*instance.Spec.Replicas = 2
 
 			Expect(suite.Client.Patch(ctx, &instance, patch)).To(Succeed())

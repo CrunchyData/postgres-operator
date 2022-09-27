@@ -26,12 +26,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wojas/genericr"
+	"github.com/go-logr/logr/funcr"
 	"gotest.tools/v3/assert"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func init() {
@@ -193,8 +194,10 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 
 		// capture logs
 		var calls []string
-		ctx = logging.NewContext(ctx, genericr.New(func(input genericr.Entry) {
-			calls = append(calls, input.Message)
+		ctx = logging.NewContext(ctx, funcr.NewJSON(func(object string) {
+			calls = append(calls, object)
+		}, funcr.Options{
+			Verbosity: 1,
 		}))
 
 		// A panicking call
@@ -210,7 +213,7 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		// Sleeping leads to some non-deterministic results, but we expect at least 1 execution
 		// plus one log for the failure to apply the configmap
 		assert.Assert(t, len(calls) >= 2)
-		assert.Equal(t, calls[1], `could not complete upgrade check`)
+		assert.Assert(t, cmp.Contains(calls[1], `could not complete upgrade check`))
 	})
 
 	t.Run("cache sync fail leads to log and exit", func(t *testing.T) {
@@ -219,8 +222,10 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 
 		// capture logs
 		var calls []string
-		ctx = logging.NewContext(ctx, genericr.New(func(input genericr.Entry) {
-			calls = append(calls, input.Message)
+		ctx = logging.NewContext(ctx, funcr.NewJSON(func(object string) {
+			calls = append(calls, object)
+		}, funcr.Options{
+			Verbosity: 1,
 		}))
 
 		// Set loop time to 1s and sleep for 2s before sending the done signal -- though the cache sync
@@ -232,7 +237,7 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		cancel()
 
 		assert.Assert(t, len(calls) == 1)
-		assert.Equal(t, calls[0], `unable to sync cache for upgrade check`)
+		assert.Assert(t, cmp.Contains(calls[0], `unable to sync cache for upgrade check`))
 	})
 
 	t.Run("successful log each loop, ticker works", func(t *testing.T) {
@@ -241,8 +246,10 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 
 		// capture logs
 		var calls []string
-		ctx = logging.NewContext(ctx, genericr.New(func(input genericr.Entry) {
-			calls = append(calls, input.Message)
+		ctx = logging.NewContext(ctx, funcr.NewJSON(func(object string) {
+			calls = append(calls, object)
+		}, funcr.Options{
+			Verbosity: 1,
 		}))
 
 		// A successful call
@@ -264,7 +271,8 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		// Sleeping leads to some non-deterministic results, but we expect at least 2 executions
 		// plus one log for the failure to apply the configmap
 		assert.Assert(t, len(calls) >= 4)
-		assert.Equal(t, calls[1], `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
-		assert.Equal(t, calls[3], `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
+
+		assert.Assert(t, cmp.Contains(calls[1], `{\"pgo_versions\":[{\"tag\":\"v5.0.4\"},{\"tag\":\"v5.0.3\"},{\"tag\":\"v5.0.2\"},{\"tag\":\"v5.0.1\"},{\"tag\":\"v5.0.0\"}]}`))
+		assert.Assert(t, cmp.Contains(calls[3], `{\"pgo_versions\":[{\"tag\":\"v5.0.4\"},{\"tag\":\"v5.0.3\"},{\"tag\":\"v5.0.2\"},{\"tag\":\"v5.0.1\"},{\"tag\":\"v5.0.0\"}]}`))
 	})
 }

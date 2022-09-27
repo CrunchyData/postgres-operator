@@ -63,7 +63,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	logging.SetLogFunc(1, logging.Logrus(GinkgoWriter, "test", 1))
+	logging.SetLogSink(logging.Logrus(GinkgoWriter, "test", 1, 1))
 	log.SetLogger(logging.FromContext(context.Background()))
 
 	By("bootstrapping test environment")

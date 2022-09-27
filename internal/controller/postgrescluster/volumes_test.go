@@ -31,9 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -652,17 +650,8 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 
 func TestReconcileMoveDirectories(t *testing.T) {
 	ctx := context.Background()
-	env, tClient := setupKubernetes(t)
+	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
-
-	dc, err := discovery.NewDiscoveryClientForConfig(env.Config)
-	assert.NilError(t, err)
-
-	server, err := dc.ServerVersion()
-	assert.NilError(t, err)
-
-	serverVersion, err := version.ParseGeneric(server.GitVersion)
-	assert.NilError(t, err)
 
 	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
 
@@ -766,10 +755,6 @@ func TestReconcileMoveDirectories(t *testing.T) {
 
 		for i := range moveJobs.Items {
 			if moveJobs.Items[i].Name == "testcluster-move-pgdata-dir" {
-				// TODO(benjaminjb)(issue sc-11672): after we update controller-runtime and
-				// are no longer testing in Github actions with K8s 1.19.2, reduce the following comparison
-				// to simply testing against a given, fixed string.
-
 				compare := `
 automountServiceAccountToken: false
 containers:
@@ -817,55 +802,6 @@ volumes:
   persistentVolumeClaim:
     claimName: testpgdata
 	`
-
-				if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
-					compare = `
-automountServiceAccountToken: false
-containers:
-- command:
-  - bash
-  - -ceu
-  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pgdata_pvc=testpgdata\"\n
-    \   echo \"Current PG data directory volume contents:\" \n    ls -lh \"/pgdata\"\n
-    \   echo \"Now updating PG data directory...\"\n    [ -d \"/pgdata/testpgdatadir\"
-    ] && mv \"/pgdata/testpgdatadir\" \"/pgdata/pg13_bootstrap\"\n    rm -f \"/pgdata/pg13/patroni.dynamic.json\"\n
-    \   echo \"Updated PG data directory contents:\" \n    ls -lh \"/pgdata\"\n    echo
-    \"PG Data directory preparation complete\"\n    "
-  image: example.com/crunchy-postgres-ha:test
-  imagePullPolicy: Always
-  name: pgdata-move-job
-  resources:
-    requests:
-      cpu: 1m
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-      - ALL
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-  terminationMessagePath: /dev/termination-log
-  terminationMessagePolicy: File
-  volumeMounts:
-  - mountPath: /pgdata
-    name: postgres-data
-dnsPolicy: ClusterFirst
-enableServiceLinks: false
-imagePullSecrets:
-- name: test-secret
-priorityClassName: some-priority-class
-restartPolicy: Never
-schedulerName: default-scheduler
-securityContext:
-  fsGroup: 26
-terminationGracePeriodSeconds: 30
-volumes:
-- name: postgres-data
-  persistentVolumeClaim:
-    claimName: testpgdata
-	`
-				}
 
 				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
 			}
@@ -877,10 +813,6 @@ volumes:
 
 		for i := range moveJobs.Items {
 			if moveJobs.Items[i].Name == "testcluster-move-pgwal-dir" {
-				// TODO(benjaminjb)(issue sc-11672): after we update controller-runtime and
-				// are no longer testing in Github actions with K8s 1.19.2, reduce the following comparison
-				// to simply testing against a given, fixed string.
-
 				compare := `
 automountServiceAccountToken: false
 containers:
@@ -928,54 +860,7 @@ volumes:
   persistentVolumeClaim:
     claimName: testwal
 	`
-				if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
-					compare = `
-automountServiceAccountToken: false
-containers:
-- command:
-  - bash
-  - -ceu
-  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pg_wal_pvc=testwal\"\n
-    \   echo \"Current PG WAL directory volume contents:\"\n    ls -lh \"/pgwal\"\n
-    \   echo \"Now updating PG WAL directory...\"\n    [ -d \"/pgwal/testwaldir\"
-    ] && mv \"/pgwal/testwaldir\" \"/pgwal/testcluster-wal\"\n    echo \"Updated PG
-    WAL directory contents:\"\n    ls -lh \"/pgwal\"\n    echo \"PG WAL directory
-    preparation complete\"\n    "
-  image: example.com/crunchy-postgres-ha:test
-  imagePullPolicy: Always
-  name: pgwal-move-job
-  resources:
-    requests:
-      cpu: 1m
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-      - ALL
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-  terminationMessagePath: /dev/termination-log
-  terminationMessagePolicy: File
-  volumeMounts:
-  - mountPath: /pgwal
-    name: postgres-wal
-dnsPolicy: ClusterFirst
-enableServiceLinks: false
-imagePullSecrets:
-- name: test-secret
-priorityClassName: some-priority-class
-restartPolicy: Never
-schedulerName: default-scheduler
-securityContext:
-  fsGroup: 26
-terminationGracePeriodSeconds: 30
-volumes:
-- name: postgres-wal
-  persistentVolumeClaim:
-    claimName: testwal
-	`
-				}
+
 				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
 			}
 		}
@@ -986,11 +871,6 @@ volumes:
 
 		for i := range moveJobs.Items {
 			if moveJobs.Items[i].Name == "testcluster-move-pgbackrest-repo-dir" {
-
-				// TODO(benjaminjb)(issue sc-11672): after we update controller-runtime and
-				// are no longer testing in Github actions with K8s 1.19.2, reduce the following comparison
-				// to simply testing against a given, fixed string.
-
 				compare := `
 automountServiceAccountToken: false
 containers:
@@ -1040,57 +920,6 @@ volumes:
   persistentVolumeClaim:
     claimName: testrepo
 	`
-
-				if serverVersion.LessThan(version.MustParseGeneric("1.20")) {
-					compare = `
-automountServiceAccountToken: false
-containers:
-- command:
-  - bash
-  - -ceu
-  - "echo \"Preparing cluster testcluster pgBackRest repo volume for PGO v5.x\"\n
-    \   echo \"repo_pvc=testrepo\"\n    echo \"pgbackrest directory:\"\n    ls -lh
-    /pgbackrest\n    echo \"Current pgBackRest repo directory volume contents:\" \n
-    \   ls -lh \"/pgbackrest/testrepodir\"\n    echo \"Now updating repo directory...\"\n
-    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/archive\"\n
-    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/backup\"\n
-    \   echo \"Updated /pgbackrest directory contents:\"\n    ls -lh \"/pgbackrest\"\n
-    \   echo \"Repo directory preparation complete\"\n    "
-  image: example.com/crunchy-pgbackrest:test
-  imagePullPolicy: Always
-  name: repo-move-job
-  resources:
-    requests:
-      cpu: 1m
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-      - ALL
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-  terminationMessagePath: /dev/termination-log
-  terminationMessagePolicy: File
-  volumeMounts:
-  - mountPath: /pgbackrest
-    name: pgbackrest-repo
-dnsPolicy: ClusterFirst
-enableServiceLinks: false
-imagePullSecrets:
-- name: test-secret
-priorityClassName: some-priority-class
-restartPolicy: Never
-schedulerName: default-scheduler
-securityContext:
-  fsGroup: 26
-terminationGracePeriodSeconds: 30
-volumes:
-- name: pgbackrest-repo
-  persistentVolumeClaim:
-    claimName: testrepo
-	`
-				}
 				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
 			}
 		}

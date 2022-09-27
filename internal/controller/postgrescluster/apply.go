@@ -23,8 +23,6 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/pkg/errors"
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -58,16 +56,6 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 	// Some fields cannot be server-side applied correctly. When their outcome
 	// does not match the intent, send a json-patch to get really specific.
 	switch actual := object.(type) {
-	case *appsv1.StatefulSet:
-		applyPodTemplateSpec(patch,
-			actual.Spec.Template, intent.(*appsv1.StatefulSet).Spec.Template,
-			"spec", "template")
-
-	case *batchv1.Job:
-		applyPodTemplateSpec(patch,
-			actual.Spec.Template, intent.(*batchv1.Job).Spec.Template,
-			"spec", "template")
-
 	case *corev1.Service:
 		// Changing Service.Spec.Type requires a special apply-patch sometimes.
 		if err != nil {
@@ -129,37 +117,6 @@ func (r *Reconciler) handleServiceError(
 	}
 
 	return err
-}
-
-// applyPodSecurityContext is called by Reconciler.apply to work around issues
-// with server-side apply.
-func applyPodSecurityContext(
-	patch *kubeapi.JSON6902, actual, intent *corev1.PodSecurityContext, path ...string,
-) {
-	if intent == nil {
-		// This won't happen because we populate all PodSecurityContext.
-		return
-	}
-	if actual == nil {
-		patch.Replace(path...)(intent)
-		return
-	}
-	// Empty "omitempty" slices are ignored until Kubernetes 1.19.
-	// - https://issue.k8s.io/89273
-	if !equality.Semantic.DeepEqual(actual.SupplementalGroups, intent.SupplementalGroups) {
-		patch.Replace(append(path, "supplementalGroups")...)(intent.SupplementalGroups)
-	}
-}
-
-// applyPodTemplateSpec is called by Reconciler.apply to work around issues
-// with server-side apply.
-func applyPodTemplateSpec(
-	patch *kubeapi.JSON6902, actual, intent corev1.PodTemplateSpec, path ...string,
-) {
-	applyPodSecurityContext(patch,
-		actual.Spec.SecurityContext,
-		intent.Spec.SecurityContext,
-		append(path, "spec", "securityContext")...)
 }
 
 // applyServiceSpec is called by Reconciler.apply to work around issues

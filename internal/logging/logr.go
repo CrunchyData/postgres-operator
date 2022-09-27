@@ -19,22 +19,17 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	"github.com/wojas/genericr"
 	"go.opentelemetry.io/otel/trace"
 )
 
 var global = logr.Discard()
 
 // Discard returns a logr.Logger that discards all messages logged to it.
-func Discard() logr.Logger { return logr.DiscardLogger{} }
+func Discard() logr.Logger { return logr.Discard() }
 
-// SetLogFunc replaces the global logr.Logger with log that gets called when an
-// entry's level is at or below verbosity. (Only the most important entries are
-// passed when verbosity is zero.) Before this is called, the global logr.Logger
-// is a no-op.
-func SetLogFunc(verbosity int, log genericr.LogFunc) {
-	global = genericr.New(log).WithCaller(true).WithVerbosity(verbosity)
-}
+// SetLogSink replaces the global logr.Logger with sink. Before this is called,
+// the global logr.Logger is a no-op.
+func SetLogSink(sink logr.LogSink) { global = logr.New(sink) }
 
 // NewContext returns a copy of ctx containing logger. Retrieve it using FromContext.
 func NewContext(ctx context.Context, logger logr.Logger) context.Context {
@@ -44,9 +39,8 @@ func NewContext(ctx context.Context, logger logr.Logger) context.Context {
 // FromContext returns the global logr.Logger or the one stored by a prior call
 // to NewContext.
 func FromContext(ctx context.Context) logr.Logger {
-	var log logr.Logger
-
-	if log = logr.FromContext(ctx); log == nil {
+	log, err := logr.FromContext(ctx)
+	if err != nil {
 		log = global
 	}
 
@@ -58,4 +52,54 @@ func FromContext(ctx context.Context) logr.Logger {
 	}
 
 	return log
+}
+
+// sink implements logr.LogSink using two function pointers.
+type sink struct {
+	depth     int
+	verbosity int
+	names     []string
+	values    []interface{}
+
+	// TODO(cbandy): add names or frame to the functions below.
+
+	fnError func(error, string, ...interface{})
+	fnInfo  func(int, string, ...interface{})
+}
+
+var _ logr.LogSink = (*sink)(nil)
+
+func (s *sink) Enabled(level int) bool     { return level <= s.verbosity }
+func (s *sink) Init(info logr.RuntimeInfo) { s.depth = info.CallDepth }
+
+func (s sink) combineValues(kv ...interface{}) []interface{} {
+	if len(kv) == 0 {
+		return s.values
+	}
+	if n := len(s.values); n > 0 {
+		return append(s.values[:n:n], kv...)
+	}
+	return kv
+}
+
+func (s *sink) Error(err error, msg string, kv ...interface{}) {
+	s.fnError(err, msg, s.combineValues(kv...)...)
+}
+
+func (s *sink) Info(level int, msg string, kv ...interface{}) {
+	s.fnInfo(level, msg, s.combineValues(kv...)...)
+}
+
+func (s *sink) WithName(name string) logr.LogSink {
+	n := len(s.names)
+	out := *s
+	out.names = append(out.names[:n:n], name)
+	return &out
+}
+
+func (s *sink) WithValues(kv ...interface{}) logr.LogSink {
+	n := len(s.values)
+	out := *s
+	out.values = append(out.values[:n:n], kv...)
+	return &out
 }

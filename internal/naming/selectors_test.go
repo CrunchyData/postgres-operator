@@ -40,7 +40,7 @@ func TestCluster(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(Cluster("--whoa/yikes"))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterDataForPostgresAndPGBackRest(t *testing.T) {
@@ -52,7 +52,7 @@ func TestClusterDataForPostgresAndPGBackRest(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(ClusterDataForPostgresAndPGBackRest("--whoa/yikes"))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterInstance(t *testing.T) {
@@ -64,7 +64,7 @@ func TestClusterInstance(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(ClusterInstance("--whoa/son", "--whoa/yikes"))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterInstances(t *testing.T) {
@@ -76,7 +76,7 @@ func TestClusterInstances(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(ClusterInstances("--whoa/yikes"))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterInstanceSet(t *testing.T) {
@@ -88,7 +88,7 @@ func TestClusterInstanceSet(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(ClusterInstanceSet("--whoa/yikes", "ok"))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterInstanceSets(t *testing.T) {
@@ -100,7 +100,7 @@ func TestClusterInstanceSets(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(ClusterInstanceSets("--whoa/yikes"))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterPatronis(t *testing.T) {
@@ -116,7 +116,7 @@ func TestClusterPatronis(t *testing.T) {
 
 	cluster.Name = "--nope--"
 	_, err = AsSelector(ClusterPatronis(cluster))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterPGBouncerSelector(t *testing.T) {
@@ -132,7 +132,7 @@ func TestClusterPGBouncerSelector(t *testing.T) {
 
 	cluster.Name = "--bad--dog"
 	_, err = AsSelector(ClusterPGBouncerSelector(cluster))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterPostgresUsers(t *testing.T) {
@@ -144,7 +144,7 @@ func TestClusterPostgresUsers(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(ClusterPostgresUsers("--nope--"))
-	assert.ErrorContains(t, err, "invalid")
+	assert.ErrorContains(t, err, "Invalid")
 }
 
 func TestClusterPrimary(t *testing.T) {

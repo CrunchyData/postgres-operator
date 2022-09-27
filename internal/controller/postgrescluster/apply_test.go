@@ -146,7 +146,7 @@ func TestServerSideApply(t *testing.T) {
 		)
 	})
 
-	t.Run("StatefulSetPodTemplate", func(t *testing.T) {
+	t.Run("StatefulSetStatus", func(t *testing.T) {
 		constructor := func(name string) *appsv1.StatefulSet {
 			var sts appsv1.StatefulSet
 			sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
@@ -159,48 +159,24 @@ func TestServerSideApply(t *testing.T) {
 		}
 
 		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+		upstream := constructor("status-upstream")
 
-		// Start with fields filled out.
-		intent := constructor("change-to-zero")
-		intent.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{
-			SupplementalGroups: []int64{1, 2, 3},
-		}
-
-		// Create the StatefulSet.
-		before := intent.DeepCopy()
-		assert.NilError(t,
-			cc.Patch(ctx, before, client.Apply, client.ForceOwnership, reconciler.Owner))
-
-		// Change fields to zero.
-		intent.Spec.Template.Spec.SecurityContext.SupplementalGroups = nil
-
-		// client.Apply cannot correct it in old versions of Kubernetes.
-		after := intent.DeepCopy()
-		assert.NilError(t,
-			cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
-
+		// The structs defined in "k8s.io/api/apps/v1" marshal empty status fields.
 		switch {
-		case serverVersion.LessThan(version.MustParseGeneric("1.18.19")):
-
-			// - https://pr.k8s.io/101179
-			assert.Assert(t, !equality.Semantic.DeepEqual(
-				after.Spec.Template.Spec.SecurityContext,
-				intent.Spec.Template.Spec.SecurityContext),
-				"expected https://issue.k8s.io/89273, got %v",
-				after.Spec.Template.Spec.SecurityContext)
+		case serverVersion.LessThan(version.MustParseGeneric("1.22")):
+			assert.ErrorContains(t,
+				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership, reconciler.Owner),
+				"field not declared in schema",
+				"expected https://issue.k8s.io/109210")
 
 		default:
-			assert.DeepEqual(t,
-				after.Spec.Template.Spec.SecurityContext,
-				intent.Spec.Template.Spec.SecurityContext)
+			assert.NilError(t,
+				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership, reconciler.Owner))
 		}
 
-		// Our apply method corrects it.
-		again := intent.DeepCopy()
+		// Our apply method generates the correct apply-patch.
+		again := constructor("status-local")
 		assert.NilError(t, reconciler.apply(ctx, again))
-		assert.DeepEqual(t,
-			again.Spec.Template.Spec.SecurityContext,
-			intent.Spec.Template.Spec.SecurityContext)
 	})
 
 	t.Run("ServiceSelector", func(t *testing.T) {

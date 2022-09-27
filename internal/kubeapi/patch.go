@@ -18,9 +18,9 @@ package kubeapi
 import (
 	"strings"
 
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // escapeJSONPointer encodes '~' and '/' according to RFC 6901.
@@ -117,7 +117,7 @@ func (patch *JSON6902) Replace(path ...string) func(value interface{}) *JSON6902
 func (patch JSON6902) Bytes() ([]byte, error) { return patch.Data(nil) }
 
 // Data returns the JSON representation of patch.
-func (patch JSON6902) Data(runtime.Object) ([]byte, error) { return json.Marshal(patch) }
+func (patch JSON6902) Data(client.Object) ([]byte, error) { return json.Marshal(patch) }
 
 // IsEmpty returns true when patch has no operations.
 func (patch JSON6902) IsEmpty() bool { return len(patch) == 0 }
@@ -179,7 +179,7 @@ func (patch *Merge7386) Remove(path ...string) *Merge7386 {
 func (patch Merge7386) Bytes() ([]byte, error) { return patch.Data(nil) }
 
 // Data returns the JSON representation of patch.
-func (patch Merge7386) Data(runtime.Object) ([]byte, error) { return json.Marshal(patch) }
+func (patch Merge7386) Data(client.Object) ([]byte, error) { return json.Marshal(patch) }
 
 // IsEmpty returns true when patch has no modifications.
 func (patch Merge7386) IsEmpty() bool { return len(patch) == 0 }

@@ -24,7 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"github.com/wojas/genericr"
+	"gotest.tools/v3/assert"
 )
 
 func assertLogrusContains(t testing.TB, actual, expected string) {
@@ -39,77 +39,57 @@ func TestLogrus(t *testing.T) {
 	t.Parallel()
 
 	out := new(bytes.Buffer)
-	logrus := Logrus(out, "v1", 1)
+	logrus := Logrus(out, "v1", 1, 2)
+
+	// Configured verbosity discards.
+	assert.Assert(t, logrus.Enabled(1))
+	assert.Assert(t, logrus.Enabled(2))
+	assert.Assert(t, !logrus.Enabled(3))
 
 	// Default level is INFO.
 	// Version field is always present.
 	out.Reset()
-	logrus(genericr.Entry{})
+	logrus.Info(0, "")
 	assertLogrusContains(t, out.String(), `level=info version=v1`)
 
 	// Configured level or higher is DEBUG.
 	out.Reset()
-	logrus(genericr.Entry{Level: 1})
+	logrus.Info(1, "")
 	assertLogrusContains(t, out.String(), `level=debug`)
 	out.Reset()
-	logrus(genericr.Entry{Level: 2})
+	logrus.Info(2, "")
 	assertLogrusContains(t, out.String(), `level=debug`)
 
-	// Any error becomes ERROR level.
+	// Any error is ERROR level.
 	out.Reset()
-	logrus(genericr.Entry{Error: fmt.Errorf("%s", "dang")})
+	logrus.Error(fmt.Errorf("%s", "dang"), "")
 	assertLogrusContains(t, out.String(), `level=error error=dang`)
 
 	// A wrapped error includes one frame of its stack.
 	out.Reset()
 	_, _, baseline, _ := runtime.Caller(0)
-	logrus(genericr.Entry{Error: errors.New("dang")})
+	logrus.Error(errors.New("dang"), "")
 	assertLogrusContains(t, out.String(), fmt.Sprintf(`file="internal/logging/logrus_test.go:%d"`, baseline+1))
 	assertLogrusContains(t, out.String(), `func=logging.TestLogrus`)
 
 	out.Reset()
-	logrus(genericr.Entry{Fields: []interface{}{"k1", "str", "k2", 13, "k3", false}})
+	logrus.Info(0, "", "k1", "str", "k2", 13, "k3", false)
 	assertLogrusContains(t, out.String(), `k1=str k2=13 k3=false`)
 
 	out.Reset()
-	logrus(genericr.Entry{Message: "banana"})
+	logrus.Info(0, "banana")
 	assertLogrusContains(t, out.String(), `msg=banana`)
 
 	// Fields don't overwrite builtins.
 	out.Reset()
-	logrus(genericr.Entry{
-		Message: "banana",
-		Error:   errors.New("dang"),
-		Fields: []interface{}{
-			"error", "not-err",
-			"file", "not-file",
-			"func", "not-func",
-			"level", "not-lvl",
-			"msg", "not-msg",
-		},
-	})
+	logrus.Error(errors.New("dang"), "banana",
+		"error", "not-err",
+		"file", "not-file",
+		"func", "not-func",
+		"level", "not-lvl",
+		"msg", "not-msg",
+	)
 	assertLogrusContains(t, out.String(), `level=error msg=banana error=dang`)
 	assertLogrusContains(t, out.String(), `fields.error=not-err fields.file=not-file fields.func=not-func`)
 	assertLogrusContains(t, out.String(), `fields.level=not-lvl fields.msg=not-msg`)
-}
-
-func TestLogrusCaller(t *testing.T) {
-	t.Parallel()
-
-	out := new(bytes.Buffer)
-	log := genericr.New(Logrus(out, "v2", 2)).WithCaller(true)
-
-	// Details come from the line of the logr.Logger call.
-	_, _, baseline, _ := runtime.Caller(0)
-	log.Info("")
-	assertLogrusContains(t, out.String(), fmt.Sprintf(`file="internal/logging/logrus_test.go:%d"`, baseline+1))
-	assertLogrusContains(t, out.String(), `func=logging.TestLogrusCaller`)
-
-	// Fields don't overwrite builtins.
-	out.Reset()
-	_, _, baseline, _ = runtime.Caller(0)
-	log.Info("", "file", "not-file", "func", "not-func")
-	assertLogrusContains(t, out.String(), fmt.Sprintf(`file="internal/logging/logrus_test.go:%d"`, baseline+1))
-	assertLogrusContains(t, out.String(), `func=logging.TestLogrusCaller`)
-	assertLogrusContains(t, out.String(), `fields.file=not-file fields.func=not-func`)
 }
