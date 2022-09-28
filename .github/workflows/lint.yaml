@@ -16,10 +16,27 @@ jobs:
       # - https://bugs.launchpad.net/ubuntu/+source/mawk/+bug/69724
       - run: awk -W version && awk '{ exit 1 != match($0, /[[:space:]]/) }' <<< ' '
       - run: |
-          find docs/content -not -type d -print0 | xargs -0 awk '
+          find docs/content -not -type d -not -name crd.md -print0 | xargs -0 awk '
             BEGIN { print "::add-matcher::.github/actions/awk-matcher.json" }
 
             /[[:space:]]$/ { errors++; print FILENAME ":" FNR " error: Trailing space" }
+            /TODO/ { errors++; print FILENAME ":" FNR " error: Found TODO. Try running hack/create-todo-patch.sh" }
+
+            END { print "::remove-matcher owner=awk::" }
+            END { exit errors != 0 }
+          '
+
+  documentation-crd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # The `documentation-crd` job only checks the crd.md for `TODO`,
+      # as some of the upstream documentation has trailing spaces
+      - run: |
+          find docs/content -name crd.md -print0 | xargs -0 awk '
+            BEGIN { print "::add-matcher::.github/actions/awk-matcher.json" }
+
             /TODO/ { errors++; print FILENAME ":" FNR " error: Found TODO. Try running hack/create-todo-patch.sh" }
 
             END { print "::remove-matcher owner=awk::" }
