@@ -32,7 +32,7 @@ stack is made up of several open source components:
 
 - [pgMonitor](https://github.com/CrunchyData/pgmonitor), which provides the core
 of the monitoring infrastructure including the following components:
-  - [postgres_exporter](https://github.com/CrunchyData/pgmonitor/tree/master/exporter/postgres),
+  - [postgres_exporter](https://github.com/CrunchyData/pgmonitor/tree/main/postgres_exporter),
   which provides queries used to collect metrics information about a PostgreSQL
   instance.
   - [Prometheus](https://github.com/prometheus/prometheus), a time-series
