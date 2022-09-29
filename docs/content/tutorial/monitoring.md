@@ -40,6 +40,32 @@ PGO will detect the change and add the Exporter sidecar to all Postgres Pods tha
 cluster. PGO will also do the work to allow the Exporter to connect to the database and gather
 metrics that can be accessed using the [PGO Monitoring] stack.
 
+### Configuring TLS Encryption for the Exporter
+
+PGO allows you to configure the exporter sidecar to use TLS encryption. If you provide a custom TLS
+Secret via the exporter spec:
+
+```
+  monitoring:
+    pgmonitor:
+      exporter:
+        customTLSSecret:
+          name: hippo.tls
+```
+
+Like other custom TLS Secrets that can be configured with PGO, the Secret will need to be created in
+the same Namespace as your PostgresCluster. It should also contain the TLS key (`tls.key`) and TLS
+certificate (`tls.crt`) needed to enable encryption.
+
+```
+data:
+  tls.crt: <value>
+  tls.key: <value>
+```
+
+After you configure TLS for the exporter, you will need to update your Prometheus deployment to use
+TLS, and your connection to the exporter will be encrypted. Check out the [Prometheus] documentation
+for more information on configuring TLS for [Prometheus].
 
 ## Accessing the Metrics
 

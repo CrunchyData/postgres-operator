@@ -7,11 +7,14 @@ commands:
       PRIMARY=$(
         kubectl get pod --namespace "${NAMESPACE}" \
           --output name --selector '
-            postgres-operator.crunchydata.com/cluster=exporter,
+            postgres-operator.crunchydata.com/cluster=exporter-tls,
             postgres-operator.crunchydata.com/role=master'
       )
 
-      # Ensure that the metrics endpoint is available from inside the exporter container
+      # Wait some time so that the instance pod is redeployed
+      # TODO: automate this wait
+      sleep 30
+
       {
         METRICS=$(kubectl exec --namespace "${NAMESPACE}" \
           "${PRIMARY}" -c exporter \

@@ -17,7 +17,7 @@ directory=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 crd_build_dir="$directory"/../build/crd
 
 # Generate a Kustomize patch file for removing any TODOs we inherit from the Kubernetes API.
-# Right now there are one TODO in our CRD. This script focuses on removing the specific TODO
+# Right now there is one TODO in our CRD. This script focuses on removing the specific TODO
 # anywhere they are found in the CRD.
 
 # The TODO comes from the following:

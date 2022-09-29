@@ -13939,7 +13939,12 @@ PGMonitorSpec defines the desired state of the pgMonitor tool suite
     <tbody><tr>
         <td><b><a href="#postgresclusterspecmonitoringpgmonitorexporterconfigurationindex">configuration</a></b></td>
         <td>[]object</td>
-        <td>Projected volumes containing custom PostgreSQL Exporter configuration.  Currently supports the customization of PostgreSQL Exporter queries. If a "queries.yaml" file is detected in any volume projected using this field, it will be loaded using the "extend.query-path" flag: https://github.com/prometheus-community/postgres_exporter#flags Changing the values of field causes PostgreSQL and the exporter to restart.</td>
+        <td>Projected volumes containing custom PostgreSQL Exporter configuration.  Currently supports the customization of PostgreSQL Exporter queries. If a "queries.yml" file is detected in any volume projected using this field, it will be loaded using the "extend.query-path" flag: https://github.com/prometheus-community/postgres_exporter#flags Changing the values of field causes PostgreSQL and the exporter to restart.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexportercustomtlssecret">customTLSSecret</a></b></td>
+        <td>object</td>
+        <td>Projected secret containing custom TLS certificates to encrypt output from the exporter web server</td>
         <td>false</td>
       </tr><tr>
         <td><b>image</b></td>
@@ -14315,6 +14320,80 @@ serviceAccountToken is information about the serviceAccountToken data to project
         <td><b>expirationSeconds</b></td>
         <td>integer</td>
         <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexportercustomtlssecret">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.customTLSSecret
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexporter">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Projected secret containing custom TLS certificates to encrypt output from the exporter web server
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecmonitoringpgmonitorexportercustomtlssecretitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecmonitoringpgmonitorexportercustomtlssecretitemsindex">
+  PostgresCluster.spec.monitoring.pgmonitor.exporter.customTLSSecret.items[index]
+  <sup><sup><a href="#postgresclusterspecmonitoringpgmonitorexportercustomtlssecret">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the key to project.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
         <td>false</td>
       </tr></tbody>
 </table>

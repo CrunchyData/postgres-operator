@@ -239,6 +239,10 @@ sed -i \
   /tmp/queries.yml
 
 PG_OPTIONS="--extend.query-path=${QUERY_DIR?}/queries.yml  --web.listen-address=:${POSTGRES_EXPORTER_PORT}"
+if [[ -v WEB_CONFIG_DIR ]]; then
+    # TODO (jmckulk): define path not dir
+    PG_OPTIONS+=" --web.config.file=${WEB_CONFIG_DIR}/web-config.yml"
+fi
 
 echo_info "Starting postgres-exporter.."
 DATA_SOURCE_URI="${EXPORTER_PG_HOST}:${EXPORTER_PG_PORT}/${EXPORTER_PG_DATABASE}?${EXPORTER_PG_PARAMS}" DATA_SOURCE_USER="${EXPORTER_PG_USER}" DATA_SOURCE_PASS="${EXPORTER_PG_PASSWORD}" ${PG_EXP_HOME?}/postgres_exporter ${PG_OPTIONS?} >>/dev/stdout 2>&1 &
