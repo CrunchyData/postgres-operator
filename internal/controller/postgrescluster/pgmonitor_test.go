@@ -67,11 +67,8 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		template := &corev1.PodTemplateSpec{}
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template))
-		assert.DeepEqual(t, getContainerWithName(template.Spec.Containers,
-			naming.ContainerPGMonitorExporter), corev1.Container{})
-		assert.Equal(t, len(template.Spec.Volumes), 0)
-
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil))
+		assert.DeepEqual(t, template, &corev1.PodTemplateSpec{})
 	})
 
 	t.Run("ExporterEnabled", func(t *testing.T) {
@@ -90,7 +87,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 				}},
 			},
 		}
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil))
 		container := getContainerWithName(template.Spec.Containers, naming.ContainerPGMonitorExporter)
 		assert.Equal(t, container.Image, image)
 		assert.Equal(t, container.ImagePullPolicy, corev1.PullAlways)
@@ -154,7 +151,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 			},
 		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil))
 
 		var foundConfigVolume bool
 		for _, v := range template.Spec.Volumes {
@@ -185,6 +182,9 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 	})
 }
 
+// TestReconcilePGMonitorExporterSetupErrors tests how reconcilePGMonitorExporter
+// reacts when the kubernetes resources are in different states (e.g., checks
+// what happens when the database pod is terminating)
 func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 	for _, test := range []struct {
 		name          string
@@ -405,6 +405,9 @@ func TestReconcilePGMonitorExporter(t *testing.T) {
 	})
 }
 
+// TestReconcilePGMonitorExporterStatus checks that the exporter status is updated
+// when it should be. Because the status updated when we update the setup sql from
+// pgmonitor (by using podExec), we check if podExec is called when a change is needed.
 func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 	for _, test := range []struct {
 		name                        string
@@ -448,6 +451,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 				secret *corev1.Secret
 			)
 
+			// Create reconciler with mock PodExec function
 			reconciler := &Reconciler{
 				PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
 					stderr io.Writer, command ...string) error {
@@ -456,9 +460,12 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 				},
 			}
 
+			// Create the test cluster spec with the exporter status set
 			cluster := &v1beta1.PostgresCluster{}
 			cluster.Status.Monitoring.ExporterConfiguration = test.status.ExporterConfiguration
 
+			// Mock up an instances that will be defined in the cluster. The instances should
+			// have all necessary fields that will be needed to reconcile the exporter
 			instances := []*Instance{
 				{
 					Name: "daisy",
@@ -480,6 +487,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 			}
 
 			if test.exporterEnabled {
+				// When testing with exporter enabled update the spec with exporter fields
 				cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
 					PGMonitor: &v1beta1.PGMonitorSpec{
 						Exporter: &v1beta1.ExporterSpec{
@@ -488,6 +496,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 					},
 				}
 
+				// Update mock instances to include the exporter container
 				instances[0].Pods[0].Status.ContainerStatuses = append(
 					instances[0].Pods[0].Status.ContainerStatuses, corev1.ContainerStatus{
 						Name:    naming.ContainerPGMonitorExporter,
@@ -502,18 +511,25 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 				}
 			}
 
+			// Mock up observed instances based on our mock instances
 			observed := &observedInstances{forCluster: instances}
 
+			// Check that we can reconcile with the test resources
 			assert.NilError(t, reconciler.reconcilePGMonitorExporter(ctx,
 				cluster, observed, secret))
+			// Check that the exporter status changes when it needs to
 			assert.Assert(t, test.statusChangedAfterReconcile == (cluster.Status.Monitoring.ExporterConfiguration != test.status.ExporterConfiguration),
 				"got %v", cluster.Status.Monitoring.ExporterConfiguration)
+			// Check that pod exec is called correctly
 			assert.Equal(t, called, test.podExecCalled)
 		})
 	}
 }
 
-func TestReconcilePGMonitorSecret(t *testing.T) {
+// TestReconcileMonitoringSecret checks that the secret intent returned by reconcileMonitoringSecret
+// is correct. If exporter is enabled, the return shouldn't be nil. If the exporter is disabled, the
+// return should be nil.
+func TestReconcileMonitoringSecret(t *testing.T) {
 	// TODO jmckulk: debug test with existing cluster
 	// Seems to be an issue when running with other tests
 	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
@@ -521,6 +537,10 @@ func TestReconcilePGMonitorSecret(t *testing.T) {
 	}
 
 	ctx := context.Background()
+
+	// Kubernetes is required because reconcileMonitoringSecret
+	// (1) uses the client to get existing secrets
+	// (2) sets the controller reference on the new secret
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
@@ -559,6 +579,7 @@ func TestReconcilePGMonitorSecret(t *testing.T) {
 			err              error
 		)
 
+		// Enable monitoring in the test cluster spec
 		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
 			PGMonitor: &v1beta1.PGMonitorSpec{
 				Exporter: &v1beta1.ExporterSpec{
@@ -578,5 +599,123 @@ func TestReconcilePGMonitorSecret(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, bytes.Equal(actual.Data["password"], existing.Data["password"]))
 		})
+	})
+}
+
+// TestConfigureExporterTLS checks that tls settings are configured on a podTemplate.
+// When exporter is enabled with custom tls configureExporterTLS should add volumes,
+// volumeMounts, and an envVar to the template. Ensure that existing template configurations
+// are still present
+func TestConfigreExporterTLS(t *testing.T) {
+	// Define an existing template with values that could be overwritten
+	baseTemplate := &corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{{
+				Name: naming.ContainerPGMonitorExporter,
+				VolumeMounts: []corev1.VolumeMount{{
+					Name:      "existing-volume",
+					MountPath: "some-path",
+				}},
+				Env: []corev1.EnvVar{{
+					Name:  "existing-env",
+					Value: "existing-value",
+				}},
+			}},
+			Volumes: []corev1.Volume{{
+				Name: "existing-volume",
+				VolumeSource: corev1.VolumeSource{
+					EmptyDir: &corev1.EmptyDirVolumeSource{},
+				},
+			}},
+		},
+	}
+
+	t.Run("Exporter disabled", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{}
+		template := baseTemplate.DeepCopy()
+		configureExporterTLS(cluster, template, nil)
+		// Template shouldn't have changed
+		assert.DeepEqual(t, template, baseTemplate)
+	})
+
+	t.Run("Exporter enabled no tls", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Monitoring: &v1beta1.MonitoringSpec{
+					PGMonitor: &v1beta1.PGMonitorSpec{
+						Exporter: &v1beta1.ExporterSpec{},
+					},
+				},
+			},
+		}
+		template := baseTemplate.DeepCopy()
+		configureExporterTLS(cluster, template, nil)
+		// Template shouldn't have changed
+		assert.DeepEqual(t, template, baseTemplate)
+	})
+
+	t.Run("Custom TLS provided", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{Name: "test"},
+			Spec: v1beta1.PostgresClusterSpec{
+				Monitoring: &v1beta1.MonitoringSpec{
+					PGMonitor: &v1beta1.PGMonitorSpec{
+						Exporter: &v1beta1.ExporterSpec{
+							CustomTLSSecret: &corev1.SecretProjection{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "custom-exporter-certs",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		template := baseTemplate.DeepCopy()
+
+		testConfigMap := &corev1.ConfigMap{
+			ObjectMeta: naming.ExporterWebConfigMap(cluster),
+		}
+
+		// What happens if the template already includes volumes/Mounts and envs?
+		configureExporterTLS(cluster, template, testConfigMap)
+
+		// Did we configure the cert volume and the web config volume while leaving
+		// existing volumes in place?
+		assert.Assert(t, marshalMatches(template.Spec.Volumes, `
+- emptyDir: {}
+  name: existing-volume
+- name: exporter-certs
+  projected:
+    sources:
+    - secret:
+        name: custom-exporter-certs
+- configMap:
+    name: test-exporter-web-config
+  name: web-config
+		`))
+
+		// Is the exporter container in position 0?
+		assert.Assert(t, template.Spec.Containers[0].Name == naming.ContainerPGMonitorExporter)
+
+		// Did we configure the volume mounts on the container while leaving existing
+		// mounts in place?
+		assert.Assert(t, marshalMatches(template.Spec.Containers[0].VolumeMounts, `
+- mountPath: some-path
+  name: existing-volume
+- mountPath: /certs
+  name: exporter-certs
+- mountPath: /web-config
+  name: web-config
+		`))
+
+		// Did we set the `WEB_CONFIG_DIR` env var on the container while leaving
+		// existing vars in place?
+		assert.Assert(t, marshalMatches(template.Spec.Containers[0].Env, `
+- name: existing-env
+  value: existing-value
+- name: WEB_CONFIG_DIR
+  value: web-config/
+		`))
 	})
 }

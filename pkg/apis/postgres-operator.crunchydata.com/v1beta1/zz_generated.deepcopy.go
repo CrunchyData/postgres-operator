@@ -176,6 +176,11 @@ func (in *ExporterSpec) DeepCopyInto(out *ExporterSpec) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.CustomTLSSecret != nil {
+		in, out := &in.CustomTLSSecret, &out.CustomTLSSecret
+		*out = new(v1.SecretProjection)
+		(*in).DeepCopyInto(*out)
+	}
 	in.Resources.DeepCopyInto(&out.Resources)
 }
 

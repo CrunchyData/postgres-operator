@@ -171,6 +171,7 @@ func (r *Reconciler) Reconcile(
 		primaryService           *corev1.Service
 		rootCA                   *pki.RootCertificateAuthority
 		monitoringSecret         *corev1.Secret
+		exporterWebConfig        *corev1.ConfigMap
 		err                      error
 	)
 
@@ -305,10 +306,13 @@ func (r *Reconciler) Reconcile(
 		monitoringSecret, err = r.reconcileMonitoringSecret(ctx, cluster)
 	}
 	if err == nil {
+		exporterWebConfig, err = r.reconcileExporterWebConfig(ctx, cluster)
+	}
+	if err == nil {
 		err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount, instances,
-			patroniLeaderService, primaryCertificate, clusterVolumes)
+			patroniLeaderService, primaryCertificate, clusterVolumes, exporterWebConfig)
 	}
 
 	if err == nil {

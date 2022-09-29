@@ -343,6 +343,16 @@ func MonitoringUserSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// ExporterWebConfigMap returns ObjectMeta necessary to lookup and create the
+// exporter web configmap. This configmap is used to configure the exporter
+// web server.
+func ExporterWebConfigMap(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-exporter-web-config",
+	}
+}
+
 // ReplicationClientCertSecret returns ObjectMeta necessary to lookup the Secret
 // containing the Patroni client authentication certificate information.
 func ReplicationClientCertSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {

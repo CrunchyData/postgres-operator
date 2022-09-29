@@ -7,7 +7,7 @@ commands:
       PRIMARY=$(
         kubectl get pod --namespace "${NAMESPACE}" \
           --output name --selector '
-            postgres-operator.crunchydata.com/cluster=exporter,
+            postgres-operator.crunchydata.com/cluster=exporter-tls,
             postgres-operator.crunchydata.com/role=master'
       )
 
@@ -15,7 +15,7 @@ commands:
       {
         METRICS=$(kubectl exec --namespace "${NAMESPACE}" \
           "${PRIMARY}" -c exporter \
-          -- curl http://localhost:9187/metrics)
+          -- curl -k https://localhost:9187/metrics)
       } || {
         echo >&2 'curl metrics endpoint returned error'
         echo "${METRICS}"
@@ -25,9 +25,9 @@ commands:
       LOGS=$(kubectl logs --namespace "${NAMESPACE}" "${PRIMARY}" -c exporter)
       contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
       {
-        contains "${LOGS}" 'TLS is disabled'
+        contains "${LOGS}" 'TLS is enabled'
       } || {
-        echo >&2 'tls is enabled'
+        echo >&2 'tls not enabled'
         echo "${LOGS}"
         exit 1
       }
