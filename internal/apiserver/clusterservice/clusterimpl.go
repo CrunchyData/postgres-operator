@@ -377,8 +377,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 	log.Debugf("Total clusters found: %d", len(clusterList.Items))
 
 	// Iterate through each cluster and perform the various tests against them
-	for i := range clusterList.Items {
-		c := clusterList.Items[i]
+	for _, c := range clusterList.Items {
 		// Set up the object that will be appended to the response that
 		// indicates the availability of the endpoints / instances for this
 		// cluster
@@ -440,6 +439,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 			switch pod.Type {
 			default:
 				instance.InstanceType = msgs.ClusterTestInstanceTypeUnknown
+				instance.Available = false
 			case msgs.PodTypePrimary:
 				instance.InstanceType = msgs.ClusterTestInstanceTypePrimary
 			case msgs.PodTypeReplica:
@@ -469,7 +469,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 		}
 
 		// Iterate through the services and determine if they are reachable via
-		// their endpionts
+		// their endpoints
 		for _, service := range detail.Services {
 			//  prepare the endpoint request
 			endpointRequest := &kubeapi.GetEndpointRequest{
