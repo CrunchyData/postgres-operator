@@ -63,7 +63,7 @@ cluster = types.SimpleNamespace()
 		// packages expect to find themselves on the search path, so prepend
 		// that directory there (like pgAdmin does in its WSGI entrypoint).
 		// - https://pypi.org/project/pgadmin4/
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgAdmin4.wsgi;hb=REL-4_30#l18
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgAdmin4.wsgi#L18
 		`
 import importlib.util
 import os
@@ -99,7 +99,7 @@ with create_app().app_context():`,
 		// creates its configuration database. Clear that email and username
 		// so they cannot conflict with users we create, and deactivate the user
 		// so it cannot log in.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/migrations/versions/fdc58d9bd449_.py;hb=REL-4_30#l129
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/migrations/versions/fdc58d9bd449_.py#L129
 		`
     admin = db.session.query(User).filter_by(id=1).first()
     admin.active = False
@@ -116,12 +116,12 @@ with create_app().app_context():`,
 		// The "internal" authentication source requires that username and email
 		// be the same and be an email address. Append "@pgo" to the username
 		// to pass login validation.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/authenticate/internal.py;hb=REL-4_30#l88
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/utils/validation_utils.py;hb=REL-4_30#l13
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/authenticate/internal.py#L88
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/utils/validation_utils.py#L13
 		//
 		// The "auth_source" and "username" attributes are part of the User
 		// model since pgAdmin v4.21.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/model/__init__.py;hb=REL-4_30#l66
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/model/__init__.py#L66
 		`
     for line in sys.stdin:
         if not line.strip():
@@ -142,13 +142,13 @@ with create_app().app_context():`,
 		// After a user logs in, pgAdmin checks that the "master password" is
 		// set. It does not seem to use the value nor check that it is valid.
 		// We set it to "any" to satisfy the check.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/browser/__init__.py;hb=REL-4_30#l963
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/browser/__init__.py#L963
 		//
 		// The "verify_and_update_password" method hashes the plaintext password
 		// according to pgAdmin security settings. It is part of the User model
 		// since pgAdmin v4.19 and Flask-Security-Too v3.20.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=requirements.txt;hb=REL-4_30#l40
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/model/__init__.py;hb=REL-4_30#l66
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/requirements.txt#L40
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/model/__init__.py#L66
 		// - https://flask-security-too.readthedocs.io/en/stable/api.html#flask_security.UserMixin.verify_and_update_password
 		`
         if user.password:
@@ -166,8 +166,8 @@ with create_app().app_context():`,
 		// - https://www.pgadmin.org/docs/pgadmin4/latest/server_dialog.html
 		//
 		// We use a similar method to the import method when creating server connections
-		// - https://www.pgadmin.org/docs/pgadmin4/development/import_export_servers.html
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/setup.py;hb=REL-4_30#l294
+		// - https://www.pgadmin.org/docs/pgadmin4/latest/import_export_servers.html
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/setup.py#L294
 		`
         group = (
             db.session.query(ServerGroup).filter_by(
@@ -204,13 +204,13 @@ with create_app().app_context():`,
         server.ssl_mode = "prefer"`,
 
 		// Encrypt the Server password with the User's plaintext password.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/__init__.py;hb=REL-4_30#l601
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/utils/master_password.py;hb=REL-4_30#l21
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/browser/server_groups/servers/__init__.py;hb=REL-4_30#l1091
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/__init__.py#L601
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/utils/master_password.py#L21
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/browser/server_groups/servers/__init__.py#L1091
 		//
 		// The "save_password" attribute is part of the Server model since
 		// pgAdmin v4.21.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/model/__init__.py;hb=REL-4_30#l108
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/model/__init__.py#L108
 		`
         server.username = data['username']
         server.password = encrypt(data['password'], data['password'])
@@ -221,11 +221,11 @@ with create_app().app_context():`,
 		// need to delete it and add a new server connection in its place. This
 		// will require a refresh if pgAdmin web GUI is being used when the
 		// update takes place.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/browser/server_groups/servers/__init__.py;hb=REL-4_30#l772
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/pgadmin/browser/server_groups/servers/__init__.py#L772
 		//
 		// TODO(cbandy): We could possibly get the same effect by invalidating
 		// the user's sessions in pgAdmin v5.4 with Flask-Security-Too v4.
-		// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/pgadmin/model/__init__.py;hb=REL-5_4#l67
+		// - https://github.com/pgadmin-org/pgadmin4/blob/REL-5_4/web/pgadmin/model/__init__.py#L67
 		// - https://flask-security-too.readthedocs.io/en/stable/api.html#flask_security.UserDatastore.set_uniquifier
 		`
         if server.id and db.session.is_modified(server):
