@@ -71,7 +71,7 @@ const (
 	startupMountPath = "/etc/pgadmin"
 
 	// configSystemAbsolutePath is imported by pgAdmin after all other config files.
-	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=docs/en_US/config_py.rst;hb=REL-4_30
+	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/docs/en_US/config_py.rst
 	configSystemAbsolutePath = startupMountPath + "/config_system.py"
 )
 
@@ -125,13 +125,13 @@ func podConfigFiles(configmap *corev1.ConfigMap, spec v1beta1.PGAdminPodSpec) []
 func startupCommand() []string {
 	// pgAdmin reads from the following file by importing its public names.
 	// Make sure to assign only to variables that begin with underscore U+005F.
-	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/config.py;hb=REL-4_30#l669
+	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/config.py#L669
 	// - https://docs.python.org/3/reference/simple_stmts.html#import
 	//
 	// DEFAULT_BINARY_PATHS contains the paths to various client tools. The "pg"
 	// key is for PostgreSQL. Use the latest version found in "/usr" or fallback
 	// to the default of empty string.
-	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/config.py;hb=REL-4_30#l415
+	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/config.py#L415
 	//
 	//     Python 3.6.8 (default, Sep 10 2021, 09:13:53)
 	//     >>> sorted(['']+[]).pop()
@@ -177,7 +177,7 @@ func systemSettings(spec *v1beta1.PGAdminPodSpec) map[string]interface{} {
 	}
 
 	// SERVER_MODE must always be enabled when running on a webserver.
-	// - https://git.postgresql.org/gitweb/?p=pgadmin4.git;f=web/config.py;hb=REL-4_30#l105
+	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/config.py#L105
 	settings["SERVER_MODE"] = true
 
 	return settings
