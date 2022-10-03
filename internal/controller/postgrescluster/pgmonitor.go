@@ -78,16 +78,24 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 		writableInstance *Instance
 		writablePod      *corev1.Pod
 		setup            string
+		pgImageSHA       string
+		exporterImageSHA string
 	)
 
 	// Find the PostgreSQL instance that can execute SQL that writes to every
 	// database. When there is none, return early.
-
 	writablePod, writableInstance = instances.writablePod(naming.ContainerDatabase)
 	if writableInstance == nil || writablePod == nil {
 		return nil
 	}
 
+	// For the writableInstance found above
+	// 1) make sure the `exporter` container is running
+	// 2) get and save the imageIDs for the `exporter` and `database` containers, and
+	// 3) exit early if we can't get the ImageID of either of those containers.
+	// We use these ImageIDs in the hash we make to see if the operator needs to rerun
+	// the `EnableExporterInPostgreSQL` funcs; that way we are always running
+	// that function against an updated and running pod.
 	if pgmonitor.ExporterEnabled(cluster) {
 		running, known := writableInstance.IsRunning(naming.ContainerPGMonitorExporter)
 		if !running || !known {
@@ -97,11 +105,15 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 
 		for _, containerStatus := range writablePod.Status.ContainerStatuses {
 			if containerStatus.Name == naming.ContainerPGMonitorExporter {
-				setup = containerStatus.ImageID
+				exporterImageSHA = containerStatus.ImageID
+			}
+			if containerStatus.Name == naming.ContainerDatabase {
+				pgImageSHA = containerStatus.ImageID
 			}
 		}
-		if setup == "" {
-			// Could not get exporter container imageID
+
+		// Could not get container imageIDs
+		if exporterImageSHA == "" || pgImageSHA == "" {
 			return nil
 		}
 	}
@@ -127,11 +139,13 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 		) error {
 			_, err := io.Copy(hasher, stdin)
 			if err == nil {
-				_, err = fmt.Fprint(hasher, command)
+				// Use command and image tag in hash to execute hash on image update
+				_, err = fmt.Fprint(hasher, command, pgImageSHA, exporterImageSHA)
 			}
 			return err
 		})
 	})
+
 	if err != nil {
 		return err
 	}
@@ -149,7 +163,6 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 		}
 
 		// Apply the necessary SQL and record its hash in cluster.Status
-
 		if err == nil {
 			err = action(ctx, func(_ context.Context, stdin io.Reader,
 				stdout, stderr io.Writer, command ...string) error {

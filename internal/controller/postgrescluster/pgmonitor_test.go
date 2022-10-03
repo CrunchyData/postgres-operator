@@ -317,8 +317,9 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						ContainerStatuses: []corev1.ContainerStatus{{
-							Name:  naming.ContainerDatabase,
-							State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+							Name:    naming.ContainerDatabase,
+							State:   corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+							ImageID: "image@sha123",
 						}, {
 							Name:    naming.ContainerPGMonitorExporter,
 							State:   corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
@@ -437,7 +438,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 		podExecCalled:   false,
 		// Status was generated manually for this test case
 		// TODO jmckulk: add code to generate status
-		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "5f599686cf"},
+		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "5dbc557689"},
 		statusChangedAfterReconcile: false,
 	}} {
 		t.Run(test.name, func(t *testing.T) {
@@ -468,8 +469,9 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 						},
 						Status: corev1.PodStatus{
 							ContainerStatuses: []corev1.ContainerStatus{{
-								Name:  naming.ContainerDatabase,
-								State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+								Name:    naming.ContainerDatabase,
+								State:   corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+								ImageID: "image@sha123",
 							}},
 						},
 					}},

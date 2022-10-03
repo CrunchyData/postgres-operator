@@ -102,6 +102,9 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 			// Exporter expects that extension(s) to be installed in all databases
 			// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
 			"CREATE EXTENSION IF NOT EXISTS pg_stat_statements;",
+
+			// Run idempotent update
+			"ALTER EXTENSION pg_stat_statements UPDATE;",
 		}, "\n"),
 		map[string]string{
 			"ON_ERROR_STOP": "on", // Abort when any one statement fails.
@@ -129,6 +132,9 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 				// from pgMonitor configuration
 				// https://github.com/CrunchyData/pgmonitor/blob/master/postgres_exporter/common/queries_nodemx.yml
 				"CREATE EXTENSION IF NOT EXISTS pgnodemx WITH SCHEMA monitor;",
+
+				// Run idempotent update
+				"ALTER EXTENSION pgnodemx UPDATE;",
 
 				// ccp_monitoring user is created in Setup.sql without a
 				// password; update the password and ensure that the ROLE
