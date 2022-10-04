@@ -226,12 +226,6 @@ func TestLeafCertificate(t *testing.T) {
 		dnsNames   []string
 	}{
 		{
-			test: "NoNames",
-
-			// This is a valid certificate according to OpenSSL, in which name
-			// verification is entirely optional.
-		},
-		{
 			test: "OnlyCommonName", commonName: "some-cn",
 		},
 		{
