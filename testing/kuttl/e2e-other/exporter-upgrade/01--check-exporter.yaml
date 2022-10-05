@@ -1,0 +1,31 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=exporter,
+            postgres-operator.crunchydata.com/role=master'
+      )
+
+      # Ensure that the metrics endpoint is available from inside the exporter container
+      for i in {1..5}; do
+        kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -c exporter -- curl http://localhost:9187/metrics
+        sleep 2
+      done
+
+      # Ensure that the monitoring user exists and is configured.
+      kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" \
+        -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'
+        DO $$
+        DECLARE
+          result record;
+        BEGIN
+          SELECT * INTO result FROM pg_catalog.pg_roles WHERE rolname = 'ccp_monitoring';
+          ASSERT FOUND, 'user not found';
+          ASSERT result.rolconfig @> '{jit=off}', format('got config: %L', result.rolconfig);
+        END $$
+      SQL
