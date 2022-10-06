@@ -7603,7 +7603,7 @@ PostStart is called immediately after a container is created. If the handler fai
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlifecyclepoststarttcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7722,7 +7722,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.
 
 <table>
     <thead>
@@ -7778,7 +7778,7 @@ PreStop is called immediately before a container is terminated due to an API req
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlifecycleprestoptcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -7897,7 +7897,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.
 
 <table>
     <thead>
@@ -7978,7 +7978,7 @@ Periodic probe of container liveness. Container will be restarted if the probe f
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexlivenessprobetcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>TCPSocket specifies an action involving a TCP port.</td>
         <td>false</td>
       </tr><tr>
         <td><b>terminationGracePeriodSeconds</b></td>
@@ -8140,7 +8140,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+TCPSocket specifies an action involving a TCP port.
 
 <table>
     <thead>
@@ -8268,7 +8268,7 @@ Periodic probe of container service readiness. Container will be removed from se
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexreadinessprobetcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>TCPSocket specifies an action involving a TCP port.</td>
         <td>false</td>
       </tr><tr>
         <td><b>terminationGracePeriodSeconds</b></td>
@@ -8430,7 +8430,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+TCPSocket specifies an action involving a TCP port.
 
 <table>
     <thead>
@@ -8768,7 +8768,7 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexcontainersindexstartupprobetcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>TCPSocket specifies an action involving a TCP port.</td>
         <td>false</td>
       </tr><tr>
         <td><b>terminationGracePeriodSeconds</b></td>
@@ -8930,7 +8930,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+TCPSocket specifies an action involving a TCP port.
 
 <table>
     <thead>
@@ -16673,7 +16673,7 @@ PostStart is called immediately after a container is created. If the handler fai
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlifecyclepoststarttcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -16792,7 +16792,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.
 
 <table>
     <thead>
@@ -16848,7 +16848,7 @@ PreStop is called immediately before a container is terminated due to an API req
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlifecycleprestoptcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -16967,7 +16967,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+Deprecated. TCPSocket is NOT supported as a LifecycleHandler and kept for the backward compatibility. There are no validation of this field and lifecycle hooks will fail in runtime when tcp handler is specified.
 
 <table>
     <thead>
@@ -17048,7 +17048,7 @@ Periodic probe of container liveness. Container will be restarted if the probe f
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexlivenessprobetcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>TCPSocket specifies an action involving a TCP port.</td>
         <td>false</td>
       </tr><tr>
         <td><b>terminationGracePeriodSeconds</b></td>
@@ -17210,7 +17210,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+TCPSocket specifies an action involving a TCP port.
 
 <table>
     <thead>
@@ -17338,7 +17338,7 @@ Periodic probe of container service readiness. Container will be removed from se
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexreadinessprobetcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>TCPSocket specifies an action involving a TCP port.</td>
         <td>false</td>
       </tr><tr>
         <td><b>terminationGracePeriodSeconds</b></td>
@@ -17500,7 +17500,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+TCPSocket specifies an action involving a TCP port.
 
 <table>
     <thead>
@@ -17838,7 +17838,7 @@ StartupProbe indicates that the Pod has successfully initialized. If specified, 
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncercontainersindexstartupprobetcpsocket">tcpSocket</a></b></td>
         <td>object</td>
-        <td>TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported</td>
+        <td>TCPSocket specifies an action involving a TCP port.</td>
         <td>false</td>
       </tr><tr>
         <td><b>terminationGracePeriodSeconds</b></td>
@@ -18000,7 +18000,7 @@ HTTPHeader describes a custom header to be used in HTTP probes
 
 
 
-TCPSocket specifies an action involving a TCP port. TCP hooks not yet supported
+TCPSocket specifies an action involving a TCP port.
 
 <table>
     <thead>
