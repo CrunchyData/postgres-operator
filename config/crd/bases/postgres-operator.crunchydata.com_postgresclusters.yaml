@@ -8193,8 +8193,11 @@ spec:
                                     - port
                                     type: object
                                   tcpSocket:
-                                    description: TCPSocket specifies an action involving
-                                      a TCP port. TCP hooks not yet supported
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
                                     properties:
                                       host:
                                         description: 'Optional: Host name to connect
@@ -8293,8 +8296,11 @@ spec:
                                     - port
                                     type: object
                                   tcpSocket:
-                                    description: TCPSocket specifies an action involving
-                                      a TCP port. TCP hooks not yet supported
+                                    description: Deprecated. TCPSocket is NOT supported
+                                      as a LifecycleHandler and kept for the backward
+                                      compatibility. There are no validation of this
+                                      field and lifecycle hooks will fail in runtime
+                                      when tcp handler is specified.
                                     properties:
                                       host:
                                         description: 'Optional: Host name to connect
@@ -8427,7 +8433,7 @@ spec:
                                 type: integer
                               tcpSocket:
                                 description: TCPSocket specifies an action involving
-                                  a TCP port. TCP hooks not yet supported
+                                  a TCP port.
                                 properties:
                                   host:
                                     description: 'Optional: Host name to connect to,
@@ -8637,7 +8643,7 @@ spec:
                                 type: integer
                               tcpSocket:
                                 description: TCPSocket specifies an action involving
-                                  a TCP port. TCP hooks not yet supported
+                                  a TCP port.
                                 properties:
                                   host:
                                     description: 'Optional: Host name to connect to,
@@ -9008,7 +9014,7 @@ spec:
                                 type: integer
                               tcpSocket:
                                 description: TCPSocket specifies an action involving
-                                  a TCP port. TCP hooks not yet supported
+                                  a TCP port.
                                 properties:
                                   host:
                                     description: 'Optional: Host name to connect to,
@@ -11670,8 +11676,11 @@ spec:
                                       - port
                                       type: object
                                     tcpSocket:
-                                      description: TCPSocket specifies an action involving
-                                        a TCP port. TCP hooks not yet supported
+                                      description: Deprecated. TCPSocket is NOT supported
+                                        as a LifecycleHandler and kept for the backward
+                                        compatibility. There are no validation of
+                                        this field and lifecycle hooks will fail in
+                                        runtime when tcp handler is specified.
                                       properties:
                                         host:
                                           description: 'Optional: Host name to connect
@@ -11771,8 +11780,11 @@ spec:
                                       - port
                                       type: object
                                     tcpSocket:
-                                      description: TCPSocket specifies an action involving
-                                        a TCP port. TCP hooks not yet supported
+                                      description: Deprecated. TCPSocket is NOT supported
+                                        as a LifecycleHandler and kept for the backward
+                                        compatibility. There are no validation of
+                                        this field and lifecycle hooks will fail in
+                                        runtime when tcp handler is specified.
                                       properties:
                                         host:
                                           description: 'Optional: Host name to connect
@@ -11906,7 +11918,7 @@ spec:
                                   type: integer
                                 tcpSocket:
                                   description: TCPSocket specifies an action involving
-                                    a TCP port. TCP hooks not yet supported
+                                    a TCP port.
                                   properties:
                                     host:
                                       description: 'Optional: Host name to connect
@@ -12118,7 +12130,7 @@ spec:
                                   type: integer
                                 tcpSocket:
                                   description: TCPSocket specifies an action involving
-                                    a TCP port. TCP hooks not yet supported
+                                    a TCP port.
                                   properties:
                                     host:
                                       description: 'Optional: Host name to connect
@@ -12496,7 +12508,7 @@ spec:
                                   type: integer
                                 tcpSocket:
                                   description: TCPSocket specifies an action involving
-                                    a TCP port. TCP hooks not yet supported
+                                    a TCP port.
                                   properties:
                                     host:
                                       description: 'Optional: Host name to connect
