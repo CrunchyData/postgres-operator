@@ -1,0 +1,22 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=exporter,
+            postgres-operator.crunchydata.com/role=master'
+      )
+
+      # Get errors from the exporter
+      # See the README.md for a discussion of these errors
+      ERR=$(kubectl logs --namespace "${NAMESPACE}" "${PRIMARY}" -c exporter | grep -e "Error running query on database")
+      ERR_COUNT=$(echo "$ERR" | wc -l)
+
+      if [[ "$ERR_COUNT" -gt 2 ]]; then
+        echo "Errors in log from exporter: ${ERR}"
+        exit 1
+      fi
