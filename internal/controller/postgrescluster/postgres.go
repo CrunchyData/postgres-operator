@@ -117,16 +117,16 @@ func (r *Reconciler) generatePostgresUserSecret(
 			Path:   database,
 		}).String())
 
-		// Reference to the PostgreSQL JDBC URI:
-		// https://jdbc.postgresql.org/documentation/head/connect.html
-		jdbc_query := url.Values{}
-		jdbc_query.Set("user", username)
-		jdbc_query.Set("password", string(intent.Data["password"]))
+		// The JDBC driver requires a different URI scheme and query component.
+		// - https://jdbc.postgresql.org/documentation/use/#connection-parameters
+		query := url.Values{}
+		query.Set("user", username)
+		query.Set("password", string(intent.Data["password"]))
 		intent.Data["jdbc-uri"] = []byte((&url.URL{
 			Scheme:   "jdbc:postgresql",
 			Host:     net.JoinHostPort(hostname, port),
 			Path:     database,
-			RawQuery: jdbc_query.Encode(),
+			RawQuery: query.Encode(),
 		}).String())
 	}
 
@@ -149,21 +149,20 @@ func (r *Reconciler) generatePostgresUserSecret(
 				Path:   database,
 			}).String())
 
-			// Reference to the PostgreSQL JDBC URI:
-			// https://jdbc.postgresql.org/documentation/head/connect.html
-			jdbc_query := url.Values{}
-			jdbc_query.Set("user", username)
-			jdbc_query.Set("password", string(intent.Data["password"]))
-			// Prepared statements to be disabled to use transaction pooling. Speaking
-			// with JDBC maintainers, we can just set this to disabled in general when
-			// connecting to pgBouncer
-			// https://www.pgbouncer.org/faq.html#how-to-use-prepared-statements-with-transaction-pooling
-			jdbc_query.Set("prepareThreshold", "0")
+			// The JDBC driver requires a different URI scheme and query component.
+			// Disable prepared statements to be compatible with PgBouncer's
+			// transaction pooling.
+			// - https://jdbc.postgresql.org/documentation/use/#connection-parameters
+			// - https://www.pgbouncer.org/faq.html#how-to-use-prepared-statements-with-transaction-pooling
+			query := url.Values{}
+			query.Set("user", username)
+			query.Set("password", string(intent.Data["password"]))
+			query.Set("prepareThreshold", "0")
 			intent.Data["pgbouncer-jdbc-uri"] = []byte((&url.URL{
 				Scheme:   "jdbc:postgresql",
 				Host:     net.JoinHostPort(hostname, port),
 				Path:     database,
-				RawQuery: jdbc_query.Encode(),
+				RawQuery: query.Encode(),
 			}).String())
 		}
 	}
