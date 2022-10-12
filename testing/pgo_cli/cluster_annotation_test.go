@@ -216,6 +216,9 @@ func TestClusterAnnotation(t *testing.T) {
 						requirePgBouncerReady(t, namespace(), test.testName, (2 * time.Minute))
 					}
 
+					// Allow pods time to reach ready status before running update.
+					time.Sleep(time.Minute + 30*time.Second)
+
 					updateCMD := []string{"update", "cluster", test.testName, "-n", namespace(), "--no-prompt"}
 					updateCMD = append(updateCMD, test.addFlags...)
 					output, err = pgo(updateCMD...).Exec(t)
