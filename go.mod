@@ -1,6 +1,6 @@
 module github.com/crunchydata/postgres-operator
 
-go 1.17
+go 1.19
 
 require (
 	github.com/evanphx/json-patch/v5 v5.6.0
