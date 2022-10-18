@@ -738,7 +738,8 @@ func (r *Reconciler) reconcileDatabaseInitSQL(ctx context.Context,
 	// A writable pod executor has been found and we have the sql provided by
 	// the user. Setup a write function to execute the sql using the podExecutor
 	write := func(ctx context.Context, exec postgres.Executor) error {
-		_, _, err := exec.Exec(ctx, strings.NewReader(data), map[string]string{})
+		stdout, stderr, err := exec.Exec(ctx, strings.NewReader(data), map[string]string{})
+		log.V(1).Info("applied init SQL", "stdout", stdout, "stderr", stderr)
 		return err
 	}
 
