@@ -337,3 +337,26 @@ log-level-stderr = error
 log-timestamp = n
 `)
 }
+
+func TestServerConfigIPv6(t *testing.T) {
+	cluster := &v1beta1.PostgresCluster{}
+	cluster.UID = "shoe"
+	annotations := map[string]string{}
+	annotations[naming.PGBackRestIPVersion] = "IPv6"
+	cluster.ObjectMeta.Annotations = annotations
+
+	assert.Equal(t, serverConfig(cluster).String(), `
+[global]
+tls-server-address = ::
+tls-server-auth = pgbackrest@shoe=*
+tls-server-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+tls-server-cert-file = /etc/pgbackrest/server/server-tls.crt
+tls-server-key-file = /etc/pgbackrest/server/server-tls.key
+
+[global:server]
+log-level-console = detail
+log-level-file = off
+log-level-stderr = error
+log-timestamp = n
+`)
+}
