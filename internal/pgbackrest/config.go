@@ -18,6 +18,7 @@ package pgbackrest
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -464,6 +465,20 @@ func serverConfig(cluster *v1beta1.PostgresCluster) iniSectionSet {
 	// - https://releases.k8s.io/v1.18.0/pkg/kubelet/kubelet_pods.go#L327
 	// - https://releases.k8s.io/v1.23.0/pkg/kubelet/kubelet_pods.go#L345
 	global.Set("tls-server-address", "0.0.0.0")
+
+	// NOTE (dsessler7): As pointed out by Chris above, there is an issue in
+	// pgBackRest (#1841), where using a wildcard address to bind all addresses
+	// does not work in certain IPv6 environments. Until this is fixed, we are
+	// going to workaround the issue by allowing the user to add an annotation to
+	// enable IPv6. We will check for that annotation here and override the
+	// "tls-server-address" setting accordingly.
+	annotations := cluster.GetAnnotations()
+	if annotations != nil {
+		if ipVersion, exists := annotations[naming.PGBackRestIPVersion]; exists &&
+			strings.ToLower(ipVersion) == "ipv6" {
+			global.Set("tls-server-address", "::")
+		}
+	}
 
 	// The client certificate for this cluster is allowed to connect for any stanza.
 	// Without the wildcard "*", the "pgbackrest info" and "pgbackrest repo-ls"
