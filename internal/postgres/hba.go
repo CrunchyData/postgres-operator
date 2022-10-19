@@ -41,7 +41,7 @@ func NewHBAs() HBAs {
 			// authentication method automatically verifies passwords encrypted
 			// using either MD5 or SCRAM-SHA-256.
 			// - https://www.postgresql.org/docs/current/auth-password.html
-			*NewHBA().TLS().Method("md5"),
+			*NewHBA().TLS().Method("scram-sha-256"),
 		},
 	}
 }
