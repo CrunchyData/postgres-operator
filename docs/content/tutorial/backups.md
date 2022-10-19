@@ -379,6 +379,19 @@ The full list of [pgBackRest configuration options](https://pgbackrest.org/confi
 
 [https://pgbackrest.org/configuration.html](https://pgbackrest.org/configuration.html)
 
+## IPv6 Support
+
+If you are running your cluster in an IPv6-only environment, you will need to add an annotation to your PostgresCluster so that PGO knows to set pgBackRest's `tls-server-address` to an IPv6 address. Otherwise, `tls-server-address` will be set to `0.0.0.0`, making pgBackRest inaccessible, and backups will not run. The annotation should be added as shown below:
+
+```yaml
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+  annotations:
+    postgres-operator.crunchydata.com/pgbackrest-ip-version: IPv6
+```
+
 ## Next Steps
 
 We've now seen how to use PGO to get our backups and archives set up and safely stored. Now let's take a look at [backup management]({{< relref "./backup-management.md" >}}) and how we can do things such as set backup frequency, set retention policies, and even take one-off backups!
