@@ -341,9 +341,9 @@ log-timestamp = n
 func TestServerConfigIPv6(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.UID = "shoe"
-	annotations := map[string]string{}
-	annotations[naming.PGBackRestIPVersion] = "IPv6"
-	cluster.ObjectMeta.Annotations = annotations
+	cluster.Annotations = map[string]string{
+		naming.PGBackRestIPVersion: "IPv6",
+	}
 
 	assert.Equal(t, serverConfig(cluster).String(), `
 [global]
