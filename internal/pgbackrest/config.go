@@ -472,7 +472,7 @@ func serverConfig(cluster *v1beta1.PostgresCluster) iniSectionSet {
 	// going to workaround the issue by allowing the user to add an annotation to
 	// enable IPv6. We will check for that annotation here and override the
 	// "tls-server-address" setting accordingly.
-	if strings.ToLower(cluster.Annotations[naming.PGBackRestIPVersion]) == "ipv6" {
+	if strings.EqualFold(cluster.Annotations[naming.PGBackRestIPVersion], "ipv6") {
 		global.Set("tls-server-address", "::")
 	}
 
