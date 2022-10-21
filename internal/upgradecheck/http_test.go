@@ -113,24 +113,6 @@ func TestCheckForUpgrades(t *testing.T) {
 		checkData(t, header)
 	})
 
-	t.Run("recovers from panic", func(t *testing.T) {
-		var counter int
-		// A panicking call
-		funcFoo = func() (*http.Response, error) {
-			counter++
-			panic(fmt.Errorf("oh no!"))
-		}
-
-		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
-			fakeClient, cfg, false)
-		// One call because of panic
-		assert.Equal(t, counter, 1)
-		assert.Equal(t, res, "")
-		assert.Equal(t, err.Error(), `oh no!`)
-		// no http response returned, so don't perform full check
-		assert.Assert(t, header == "")
-	})
-
 	t.Run("total failure, bad StatusCode", func(t *testing.T) {
 		var counter int
 		// A call returning bad StatusCode
@@ -213,7 +195,7 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		// Sleeping leads to some non-deterministic results, but we expect at least 1 execution
 		// plus one log for the failure to apply the configmap
 		assert.Assert(t, len(calls) >= 2)
-		assert.Assert(t, cmp.Contains(calls[1], `could not complete upgrade check`))
+		assert.Assert(t, cmp.Contains(calls[1], `encountered panic in upgrade check`))
 	})
 
 	t.Run("cache sync fail leads to log and exit", func(t *testing.T) {
