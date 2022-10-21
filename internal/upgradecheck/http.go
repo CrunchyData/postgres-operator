@@ -1,5 +1,3 @@
-package upgradecheck
-
 /*
  Copyright 2017 - 2022 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +12,8 @@ package upgradecheck
  See the License for the specific language governing permissions and
  limitations under the License.
 */
+
+package upgradecheck
 
 import (
 	"context"
@@ -44,9 +44,14 @@ var (
 		Factor:   float64(2),
 		Steps:    4,
 	}
+)
 
+const (
 	// upgradeCheckURL can be set using the CHECK_FOR_UPGRADES_URL env var
-	upgradeCheckURL    = "https://operator-maestro.crunchydata.com/pgo-versions"
+	upgradeCheckURL = "https://operator-maestro.crunchydata.com/pgo-versions"
+)
+
+var (
 	upgradeCheckPeriod = 24 * time.Hour
 )
 
@@ -73,7 +78,7 @@ func init() {
 	}
 }
 
-func checkForUpgrades(ctx context.Context, versionString string, backoff wait.Backoff,
+func checkForUpgrades(ctx context.Context, url, versionString string, backoff wait.Backoff,
 	crclient crclient.Client, cfg *rest.Config,
 	isOpenShift bool) (message string, header string, err error) {
 	var headerPayloadStruct *clientUpgradeData
@@ -87,9 +92,7 @@ func checkForUpgrades(ctx context.Context, versionString string, backoff wait.Ba
 	}()
 
 	// Prep request
-	req, err := http.NewRequest("GET",
-		upgradeCheckURL,
-		nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err == nil {
 		// generateHeader always returns some sort of struct, using defaults/nil values
 		// in case some of the checks return errors
@@ -156,9 +159,8 @@ func CheckForUpgradesScheduler(ctx context.Context,
 		}
 	}()
 
-	// set the URL for the check for upgrades endpoint if provided
-	if url != "" {
-		upgradeCheckURL = url
+	if url == "" {
+		url = upgradeCheckURL
 	}
 
 	// Since we pass the client to this function before we start the manager
@@ -172,7 +174,7 @@ func CheckForUpgradesScheduler(ctx context.Context,
 		return
 	}
 
-	info, header, err := checkForUpgrades(ctx, versionString, backoff,
+	info, header, err := checkForUpgrades(ctx, url, versionString, backoff,
 		crclient, cfg, isOpenShift)
 	if err != nil {
 		log.V(1).Info("could not complete upgrade check",
@@ -185,7 +187,7 @@ func CheckForUpgradesScheduler(ctx context.Context,
 	for {
 		select {
 		case <-ticker.C:
-			info, header, err = checkForUpgrades(ctx, versionString, backoff,
+			info, header, err = checkForUpgrades(ctx, url, versionString, backoff,
 				crclient, cfg, isOpenShift)
 			if err != nil {
 				log.V(1).Info("could not complete scheduled upgrade check",

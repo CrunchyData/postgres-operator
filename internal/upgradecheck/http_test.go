@@ -1,5 +1,3 @@
-package upgradecheck
-
 /*
  Copyright 2021 - 2022 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +12,8 @@ package upgradecheck
  See the License for the specific language governing permissions and
  limitations under the License.
 */
+
+package upgradecheck
 
 import (
 	"context"
@@ -89,7 +89,7 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
 			fakeClient, cfg, false)
 		assert.NilError(t, err)
 		assert.Equal(t, res, `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
@@ -104,7 +104,7 @@ func TestCheckForUpgrades(t *testing.T) {
 			return &http.Response{}, errors.New("whoops")
 		}
 
-		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
 			fakeClient, cfg, false)
 		// Two failed calls because of env var
 		assert.Equal(t, counter, 2)
@@ -121,7 +121,7 @@ func TestCheckForUpgrades(t *testing.T) {
 			panic(fmt.Errorf("oh no!"))
 		}
 
-		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
 			fakeClient, cfg, false)
 		// One call because of panic
 		assert.Equal(t, counter, 1)
@@ -142,7 +142,7 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
 			fakeClient, cfg, false)
 		assert.Equal(t, res, "")
 		// Two failed calls because of env var
@@ -171,7 +171,7 @@ func TestCheckForUpgrades(t *testing.T) {
 			}, nil
 		}
 
-		res, header, err := checkForUpgrades(ctx, "4.7.3", backoff,
+		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
 			fakeClient, cfg, false)
 		assert.Equal(t, counter, 2)
 		assert.NilError(t, err)
