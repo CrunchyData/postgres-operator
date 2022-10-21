@@ -83,14 +83,6 @@ func checkForUpgrades(ctx context.Context, url, versionString string, backoff wa
 	isOpenShift bool) (message string, header string, err error) {
 	var headerPayloadStruct *clientUpgradeData
 
-	// Guard against panics within the checkForUpgrades function to allow the
-	// checkForUpgradesScheduler to reschedule a check
-	defer func() {
-		if panicErr := recover(); panicErr != nil {
-			err = fmt.Errorf("%s", panicErr)
-		}
-	}()
-
 	// Prep request
 	req, err := http.NewRequest("GET", url, nil)
 	if err == nil {
@@ -151,13 +143,6 @@ func CheckForUpgradesScheduler(ctx context.Context,
 	cacheClient CacheWithWait,
 ) {
 	log := logging.FromContext(ctx)
-	defer func() {
-		if err := recover(); err != nil {
-			log.V(1).Info("encountered panic in upgrade check",
-				"response", err,
-			)
-		}
-	}()
 
 	if url == "" {
 		url = upgradeCheckURL
@@ -174,30 +159,38 @@ func CheckForUpgradesScheduler(ctx context.Context,
 		return
 	}
 
-	info, header, err := checkForUpgrades(ctx, url, versionString, backoff,
-		crclient, cfg, isOpenShift)
-	if err != nil {
-		log.V(1).Info("could not complete upgrade check",
-			"response", err.Error())
-	} else {
-		log.Info(info, clientHeader, header)
-	}
+	check(ctx, versionString, url, crclient, cfg, isOpenShift)
 
 	ticker := time.NewTicker(upgradeCheckPeriod)
 	for {
 		select {
 		case <-ticker.C:
-			info, header, err = checkForUpgrades(ctx, url, versionString, backoff,
-				crclient, cfg, isOpenShift)
-			if err != nil {
-				log.V(1).Info("could not complete scheduled upgrade check",
-					"response", err.Error())
-			} else {
-				log.Info(info, clientHeader, header)
-			}
+			check(ctx, versionString, url, crclient, cfg, isOpenShift)
 		case <-ctx.Done():
 			ticker.Stop()
 			return
 		}
+	}
+}
+
+func check(ctx context.Context,
+	versionString, url string, crclient crclient.Client,
+	cfg *rest.Config, isOpenShift bool,
+) {
+	log := logging.FromContext(ctx)
+
+	defer func() {
+		if v := recover(); v != nil {
+			log.V(1).Info("encountered panic in upgrade check", "response", v)
+		}
+	}()
+
+	info, header, err := checkForUpgrades(ctx,
+		url, versionString, backoff, crclient, cfg, isOpenShift)
+
+	if err != nil {
+		log.V(1).Info("could not complete upgrade check", "response", err.Error())
+	} else {
+		log.Info(info, clientHeader, header)
 	}
 }
