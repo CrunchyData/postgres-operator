@@ -4,16 +4,16 @@ kind: TestStep
 commands:
   - script: |
       set -e
+      # Wait some time so that the instance pod is redeployed
+      # TODO: automate this wait
+      sleep 30
+      
       PRIMARY=$(
         kubectl get pod --namespace "${NAMESPACE}" \
           --output name --selector '
             postgres-operator.crunchydata.com/cluster=exporter-tls,
             postgres-operator.crunchydata.com/role=master'
       )
-
-      # Wait some time so that the instance pod is redeployed
-      # TODO: automate this wait
-      sleep 30
 
       {
         METRICS=$(kubectl exec --namespace "${NAMESPACE}" \
