@@ -1011,7 +1011,9 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	for _, opt := range options {
 		var msg string
 		switch {
-		case strings.Contains(opt, "--repo"):
+		// Since '--repo' can be set with or without an equals ('=') sign, we check for both
+		// usage patterns.
+		case strings.Contains(opt, "--repo=") || strings.Contains(opt, "--repo "):
 			msg = "Option '--repo' is not allowed: please use the 'repoName' field instead."
 		case strings.Contains(opt, "--stanza"):
 			msg = "Option '--stanza' is not allowed: the operator will automatically set this " +
@@ -2200,9 +2202,11 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	// and not using the "--repo" option in the "manual.options" field.  Therefore, record a
 	// warning event and return if a "--repo" option is found.  Reconciliation will then be
 	// reattempted when "--repo" is removed from "manual.options" and the spec is updated.
+	// Since '--repo' can be set with or without an equals ('=') sign, we check for both
+	// usage patterns.
 	backupOpts := postgresCluster.Spec.Backups.PGBackRest.Manual.Options
 	for _, opt := range backupOpts {
-		if strings.Contains(opt, "--repo") {
+		if strings.Contains(opt, "--repo=") || strings.Contains(opt, "--repo ") {
 			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "InvalidManualBackup",
 				"Option '--repo' is not allowed: please use the 'repoName' field instead.",
 				repoName)
