@@ -1831,13 +1831,27 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				expectedClusterCondition: nil,
 			},
 		}, {
-			desc: "invalid option: repo",
+			desc: "invalid option: --repo=",
 			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
-				ClusterName: "invalid-repo-option", RepoName: "repo1",
-				Options: []string{"--repo"},
+				ClusterName: "invalid-repo-option-equals", RepoName: "repo1",
+				Options: []string{"--repo="},
 			}},
 			clusterBootstrapped: false,
-			sourceClusterName:   "invalid-repo-option",
+			sourceClusterName:   "invalid-repo-option-equals",
+			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
+			result: testResult{
+				configCount: 1, jobCount: 0, pvcCount: 1,
+				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
+				expectedClusterCondition: nil,
+			},
+		}, {
+			desc: "invalid option: --repo ",
+			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
+				ClusterName: "invalid-repo-option-space", RepoName: "repo1",
+				Options: []string{"--repo "},
+			}},
+			clusterBootstrapped: false,
+			sourceClusterName:   "invalid-repo-option-space",
 			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 			result: testResult{
 				configCount: 1, jobCount: 0, pvcCount: 1,
