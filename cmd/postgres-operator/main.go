@@ -82,25 +82,24 @@ func main() {
 	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
 	assertNoError(err)
 
-	// add all PostgreSQL Operator controllers to the runtime manager
-	err = addControllersToManager(ctx, mgr)
-	assertNoError(err)
+	openshift := isOpenshift(ctx, cfg)
 
-	log.Info("starting controller runtime manager and will wait for signal to exit")
+	// add all PostgreSQL Operator controllers to the runtime manager
+	err = addControllersToManager(mgr, openshift)
+	assertNoError(err)
 
 	// Enable upgrade checking
 	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
 	if !upgradeCheckingDisabled {
 		log.Info("upgrade checking enabled")
 		// get the URL for the check for upgrades endpoint if set in the env
-		upgradeCheckURL := os.Getenv("CHECK_FOR_UPGRADES_URL")
-		go upgradecheck.CheckForUpgradesScheduler(ctx, versionString, upgradeCheckURL,
-			mgr.GetClient(), mgr.GetConfig(), isOpenshift(ctx, mgr.GetConfig()),
-			mgr.GetCache(),
-		)
+		assertNoError(upgradecheck.ManagedScheduler(mgr,
+			openshift, os.Getenv("CHECK_FOR_UPGRADES_URL"), versionString))
 	} else {
 		log.Info("upgrade checking disabled")
 	}
+
+	log.Info("starting controller runtime manager and will wait for signal to exit")
 
 	assertNoError(mgr.Start(ctx))
 	log.Info("signal received, exiting")
@@ -108,13 +107,13 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(ctx context.Context, mgr manager.Manager) error {
+func addControllersToManager(mgr manager.Manager, openshift bool) error {
 	r := &postgrescluster.Reconciler{
 		Client:      mgr.GetClient(),
 		Owner:       postgrescluster.ControllerName,
 		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
 		Tracer:      otel.Tracer(postgrescluster.ControllerName),
-		IsOpenShift: isOpenshift(ctx, mgr.GetConfig()),
+		IsOpenShift: openshift,
 	}
 	return r.SetupWithManager(mgr)
 }

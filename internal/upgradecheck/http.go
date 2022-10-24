@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/rest"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 )
@@ -49,10 +50,6 @@ var (
 const (
 	// upgradeCheckURL can be set using the CHECK_FOR_UPGRADES_URL env var
 	upgradeCheckURL = "https://operator-maestro.crunchydata.com/pgo-versions"
-)
-
-var (
-	upgradeCheckPeriod = 24 * time.Hour
 )
 
 type HTTPClient interface {
@@ -135,48 +132,53 @@ func checkForUpgrades(ctx context.Context, url, versionString string, backoff wa
 	return string(bodyBytes), req.Header.Get(clientHeader), err
 }
 
-// CheckForUpgradesScheduler invokes the check func when the operator starts
-// and then on the given period schedule. It stops when the context is cancelled.
-func CheckForUpgradesScheduler(ctx context.Context,
-	versionString, url string, crclient crclient.Client,
-	cfg *rest.Config, isOpenShift bool,
-	cacheClient CacheWithWait,
-) {
-	log := logging.FromContext(ctx)
+type CheckForUpgradesScheduler struct {
+	Client crclient.Client
+	Config *rest.Config
 
+	OpenShift    bool
+	Refresh      time.Duration
+	URL, Version string
+}
+
+// ManagedScheduler creates a [CheckForUpgradesScheduler] and adds it to m.
+func ManagedScheduler(m manager.Manager, openshift bool, url, version string) error {
 	if url == "" {
 		url = upgradeCheckURL
 	}
 
-	// Since we pass the client to this function before we start the manager
-	// in cmd/postgres-operator/main.go, we want to make sure cache is synced
-	// before using the client.
-	// If the cache fails to sync, that probably indicates a more serious problem
-	// with the manager starting, so we don't have to worry about restarting or retrying
-	// this process -- simply log and return
-	if synced := cacheClient.WaitForCacheSync(ctx); !synced {
-		log.V(1).Info("unable to sync cache for upgrade check")
-		return
-	}
+	return m.Add(&CheckForUpgradesScheduler{
+		Client:    m.GetClient(),
+		Config:    m.GetConfig(),
+		OpenShift: openshift,
+		Refresh:   24 * time.Hour,
+		URL:       url,
+		Version:   version,
+	})
+}
 
-	check(ctx, versionString, url, crclient, cfg, isOpenShift)
+// NeedLeaderElection returns true so that s runs only on the single
+// [manager.Manager] that is elected leader in the Kubernetes cluster.
+func (s *CheckForUpgradesScheduler) NeedLeaderElection() bool { return true }
 
-	ticker := time.NewTicker(upgradeCheckPeriod)
+// Start checks for upgrades periodically. It blocks until ctx is cancelled.
+func (s *CheckForUpgradesScheduler) Start(ctx context.Context) error {
+	s.check(ctx)
+
+	ticker := time.NewTicker(s.Refresh)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ticker.C:
-			check(ctx, versionString, url, crclient, cfg, isOpenShift)
+			s.check(ctx)
 		case <-ctx.Done():
-			ticker.Stop()
-			return
+			return ctx.Err()
 		}
 	}
 }
 
-func check(ctx context.Context,
-	versionString, url string, crclient crclient.Client,
-	cfg *rest.Config, isOpenShift bool,
-) {
+func (s *CheckForUpgradesScheduler) check(ctx context.Context) {
 	log := logging.FromContext(ctx)
 
 	defer func() {
@@ -186,7 +188,7 @@ func check(ctx context.Context,
 	}()
 
 	info, header, err := checkForUpgrades(ctx,
-		url, versionString, backoff, crclient, cfg, isOpenShift)
+		s.URL, s.Version, backoff, s.Client, s.Config, s.OpenShift)
 
 	if err != nil {
 		log.V(1).Info("could not complete upgrade check", "response", err.Error())
