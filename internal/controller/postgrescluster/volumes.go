@@ -358,6 +358,7 @@ func (r *Reconciler) reconcileDirMoveJobs(ctx context.Context,
 
 		moveJobs := &batchv1.JobList{}
 		if err := r.Client.List(ctx, moveJobs, &client.ListOptions{
+			Namespace:     cluster.Namespace,
 			LabelSelector: naming.DirectoryMoveJobLabels(cluster.Name).AsSelector(),
 		}); err != nil {
 			return false, errors.WithStack(err)

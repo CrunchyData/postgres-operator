@@ -747,6 +747,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 
 	moveJobs := &batchv1.JobList{}
 	err = r.Client.List(ctx, moveJobs, &client.ListOptions{
+		Namespace:     cluster.Namespace,
 		LabelSelector: naming.DirectoryMoveJobLabels(cluster.Name).AsSelector(),
 	})
 	assert.NilError(t, err)
