@@ -789,6 +789,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 
 	restoreJobs := &batchv1.JobList{}
 	if err := r.Client.List(ctx, restoreJobs, &client.ListOptions{
+		Namespace:     cluster.Namespace,
 		LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
 	}); err != nil {
 		return nil, nil, errors.WithStack(err)
@@ -836,8 +837,9 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 			selector := naming.PGBackRestRestoreConfigSelector(cluster.GetName())
 			restoreConfigMaps := &corev1.ConfigMapList{}
 			if err := r.Client.List(ctx, restoreConfigMaps, &client.ListOptions{
+				Namespace:     cluster.Namespace,
 				LabelSelector: selector,
-			}, client.InNamespace(cluster.Namespace)); err != nil {
+			}); err != nil {
 				return nil, nil, errors.WithStack(err)
 			}
 			for i := range restoreConfigMaps.Items {
@@ -847,8 +849,9 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 			}
 			restoreSecrets := &corev1.SecretList{}
 			if err := r.Client.List(ctx, restoreSecrets, &client.ListOptions{
+				Namespace:     cluster.Namespace,
 				LabelSelector: selector,
-			}, client.InNamespace(cluster.Namespace)); err != nil {
+			}); err != nil {
 				return nil, nil, errors.WithStack(err)
 			}
 			for i := range restoreSecrets.Items {

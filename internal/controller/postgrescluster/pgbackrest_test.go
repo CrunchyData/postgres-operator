@@ -1371,6 +1371,7 @@ func TestReconcileManualBackup(t *testing.T) {
 
 					jobs := &batchv1.JobList{}
 					err := tClient.List(ctx, jobs, &client.ListOptions{
+						Namespace: postgresCluster.Namespace,
 						LabelSelector: naming.PGBackRestBackupJobSelector(clusterName,
 							tc.manual.RepoName, naming.BackupManual),
 					})
@@ -1417,6 +1418,7 @@ func TestReconcileManualBackup(t *testing.T) {
 					// just use a pgbackrest selector to check for the existence of any job since
 					// we might not have a repo name for tests within a manual backup defined
 					err := tClient.List(ctx, jobs, &client.ListOptions{
+						Namespace:     postgresCluster.Namespace,
 						LabelSelector: naming.PGBackRestSelector(clusterName),
 					})
 					assert.NilError(t, err)
@@ -3365,6 +3367,7 @@ func TestPrepareForRestore(t *testing.T) {
 
 				restoreJobs := &batchv1.JobList{}
 				assert.NilError(t, r.Client.List(ctx, restoreJobs, &client.ListOptions{
+					Namespace:     cluster.Namespace,
 					LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
 				}))
 
