@@ -103,6 +103,7 @@ deploy-dev: build-postgres-operator createnamespaces
 		CRUNCHY_DEBUG=true \
 		CHECK_FOR_UPGRADES='$(if $(CHECK_FOR_UPGRADES),$(CHECK_FOR_UPGRADES),false)' \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
+		PGO_NAMESPACE='postgres-operator' \
 		$(shell $(PGO_KUBE_CLIENT) kustomize ./config/dev | \
 			sed -ne '/^kind: Deployment/,/^---/ { \
 				/RELATED_IMAGE_/ { N; s,.*\(RELATED_[^[:space:]]*\).*value:[[:space:]]*\([^[:space:]]*\),\1="\2",; p; }; \
@@ -193,7 +194,7 @@ pgo-base-docker: pgo-base-build
 #======== Utility =======
 .PHONY: check
 check:
-	PGO_NAMESPACE="postgres-operator" $(GO_TEST) -cover ./...
+	$(GO_TEST) -cover ./...
 
 # Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
