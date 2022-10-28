@@ -2879,6 +2879,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 		Spec: batchv1.CronJobSpec{
 			Schedule: *schedule,
 			Suspend:  &suspend,
+			ConcurrencyPolicy: batchv1.ForbidConcurrent,
 			JobTemplate: batchv1.JobTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: annotations,
