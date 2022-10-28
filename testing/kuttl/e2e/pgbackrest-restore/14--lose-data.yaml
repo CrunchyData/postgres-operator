@@ -21,7 +21,7 @@ commands:
       # A reason to restore. Wait for the change to be sent to the WAL archive.
       kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
         -- psql -qb original --set ON_ERROR_STOP=1 \
-          --command 'DROP TABLE important' \
+          --command 'DROP TABLE original.important' \
           --command "SELECT pg_stat_reset_shared('archiver')" \
           --command 'SELECT pg_switch_wal()'
 

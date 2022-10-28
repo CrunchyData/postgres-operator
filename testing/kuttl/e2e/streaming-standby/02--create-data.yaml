@@ -28,4 +28,5 @@ spec:
             - --set=ON_ERROR_STOP=1
             - --command
             - |
+              CREATE SCHEMA "primary-cluster";
               CREATE TABLE important (data) AS VALUES ('treasure');
