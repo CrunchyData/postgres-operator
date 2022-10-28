@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	"context"
 	"os"
 	"strings"
 
@@ -82,7 +81,10 @@ func main() {
 	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
 	assertNoError(err)
 
-	openshift := isOpenshift(ctx, cfg)
+	openshift := isOpenshift(cfg)
+	if openshift {
+		log.Info("detected OpenShift environment")
+	}
 
 	// add all PostgreSQL Operator controllers to the runtime manager
 	err = addControllersToManager(mgr, openshift)
@@ -118,9 +120,7 @@ func addControllersToManager(mgr manager.Manager, openshift bool) error {
 	return r.SetupWithManager(mgr)
 }
 
-func isOpenshift(ctx context.Context, cfg *rest.Config) bool {
-	log := logging.FromContext(ctx)
-
+func isOpenshift(cfg *rest.Config) bool {
 	const sccGroupName, sccKind = "security.openshift.io", "SecurityContextConstraints"
 
 	client, err := discovery.NewDiscoveryClientForConfig(cfg)
@@ -141,7 +141,6 @@ func isOpenshift(ctx context.Context, cfg *rest.Config) bool {
 			}
 			for _, r := range resourceList.APIResources {
 				if r.Kind == sccKind {
-					log.Info("detected OpenShift environment")
 					return true
 				}
 			}
