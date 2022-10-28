@@ -231,7 +231,7 @@ generate-kuttl:
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
 		shift; \
-	done' - $(wildcard testing/kuttl/e2e/*/*.yaml) $(wildcard testing/kuttl/e2e-other/*/*.yaml)
+	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e-other/*/*.yaml
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy generate-rbac
