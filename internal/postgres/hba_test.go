@@ -47,7 +47,7 @@ hostssl  "postgres"   "_crunchyrepl"  all   cert
 host     all          "_crunchyrepl"  all   reject
 	`))
 	assert.Assert(t, matches(hba.Default, `
-hostssl  all  all  all  scram-sha-256
+hostssl  all  all  all  md5
 	`))
 }
 
