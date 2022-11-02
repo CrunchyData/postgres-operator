@@ -163,7 +163,7 @@ In addition to the above, the geospatially enhanced PostgreSQL + PostGIS contain
 - [PostGIS](http://postgis.net/)
 - [pgRouting](https://pgrouting.org/)
 
-[PostgreSQL Operator Monitoring](https://crunchydata.github.io/postgres-operator/latest/architecture/monitoring/) uses the following components:
+[PostgreSQL Operator Monitoring](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/) uses the following components:
 
 - [pgMonitor](https://github.com/CrunchyData/pgmonitor)
 - [Prometheus](https://github.com/prometheus/prometheus)
@@ -218,11 +218,7 @@ For other information, please visit the [Support](https://access.crunchydata.com
 For additional information regarding the design, configuration, and operation of the
 PostgreSQL Operator, pleases see the [Official Project Documentation][documentation].
 
-If you are looking for the [nightly builds of the documentation](https://crunchydata.github.io/postgres-operator/latest/), you can view them at:
-
-https://crunchydata.github.io/postgres-operator/latest/
-
-[documentation]: https://access.crunchydata.com/documentation/postgres-operator/
+[documentation]: https://access.crunchydata.com/documentation/postgres-operator/latest/
 
 ## Past Versions
 
