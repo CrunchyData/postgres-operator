@@ -18,6 +18,9 @@ package bridge
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -174,4 +177,33 @@ func (c *Client) doWithRetry(
 	}
 
 	return response, err
+}
+
+func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
+	var result Installation
+
+	response, err := c.doWithRetry(ctx, "POST", "/vendor/operator/installations", nil, http.Header{
+		"Accept": []string{"application/json"},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+
+		var body bytes.Buffer
+		_, _ = io.Copy(&body, response.Body)
+
+		switch {
+		// 2xx, Successful
+		case 200 <= response.StatusCode && response.StatusCode < 300:
+			if err = json.Unmarshal(body.Bytes(), &result); err != nil {
+				err = fmt.Errorf("%w: %v", err, body.String())
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %v", response.Status, body.String())
+		}
+	}
+
+	return result, err
 }

@@ -404,3 +404,49 @@ func TestClientDoWithRetry(t *testing.T) {
 		}
 	})
 }
+
+func TestClientCreateInstallation(t *testing.T) {
+	t.Run("ErrorResponse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`any content, any format`))
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err := client.CreateInstallation(context.Background())
+		assert.ErrorContains(t, err, "404 Not Found")
+		assert.ErrorContains(t, err, "any content, any format")
+	})
+
+	t.Run("NoResponseBody", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err := client.CreateInstallation(context.Background())
+		assert.ErrorContains(t, err, "unexpected end")
+		assert.ErrorContains(t, err, "JSON")
+	})
+
+	t.Run("ResponseNotJSON", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`asdf`))
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err := client.CreateInstallation(context.Background())
+		assert.ErrorContains(t, err, "invalid")
+		assert.ErrorContains(t, err, "asdf")
+	})
+}
