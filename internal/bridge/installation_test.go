@@ -64,6 +64,17 @@ func TestExtractSecretContract(t *testing.T) {
 			assert.Equal(t, *extracted.Name, "s2")
 		}
 	})
+
+	t.Run("ResourceVersion", func(t *testing.T) {
+		versioned := &corev1.Secret{}
+		versioned.ResourceVersion = "asdf"
+
+		extracted, err := corev1apply.ExtractSecret(versioned, "")
+		assert.NilError(t, err)
+
+		// ResourceVersion is not copied from the original.
+		assert.Assert(t, extracted.ResourceVersion == nil)
+	})
 }
 
 func TestInstallationReconcile(t *testing.T) {

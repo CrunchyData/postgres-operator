@@ -22,6 +22,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -34,6 +35,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 )
 
@@ -123,6 +125,12 @@ func (r *InstallationReconciler) Reconcile(
 	// TODO: Check for corev1.NamespaceTerminatingCause after
 	// k8s.io/apimachinery@v0.25; see https://issue.k8s.io/108528.
 
+	// Write conflicts are returned as errors; log and retry with backoff.
+	if err != nil && apierrors.IsConflict(err) {
+		logging.FromContext(ctx).Info("Requeue", "reason", err)
+		err, result.Requeue, result.RequeueAfter = nil, true, 0
+	}
+
 	return result, err
 }
 
@@ -130,6 +138,12 @@ func (r *InstallationReconciler) reconcile(ctx context.Context, read *corev1.Sec
 	write, err := corev1apply.ExtractSecret(read, string(r.Owner))
 	if err != nil {
 		return err
+	}
+
+	// We GET-extract-PATCH the Secret and do not build it up from scratch.
+	// Send the ResourceVersion from the GET in the body of every PATCH.
+	if len(read.ResourceVersion) != 0 {
+		write.WithResourceVersion(read.ResourceVersion)
 	}
 
 	// Read the Installation from the Secret, if any.
