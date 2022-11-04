@@ -1,0 +1,8 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: non-crunchy-cluster
+status:
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1

@@ -1,0 +1,16 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      SAVED_DATA=$(
+        kubectl get configmap persistent-volume-reclaim-policy --namespace "${NAMESPACE}" \
+          --output=jsonpath="{.data..['ORIGINAL_POLICY','VOLUME_NAME']}"
+      )
+
+      IFS=' '
+      read ORIGINAL_POLICY VOLUME_NAME <<< "${SAVED_DATA}"
+      
+      kubectl patch pv "${VOLUME_NAME}" -p '{"spec":{"persistentVolumeReclaimPolicy":"'${ORIGINAL_POLICY}'"}}'
+

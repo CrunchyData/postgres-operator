@@ -1,0 +1,23 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      VOLUME_NAME=$(
+        kubectl get pvc --namespace "${NAMESPACE}" \
+          --output=jsonpath={.items..spec.volumeName}
+      )
+
+      ORIGINAL_POLICY=$(
+        kubectl get pv "${VOLUME_NAME}" \
+          --output=jsonpath={.spec.persistentVolumeReclaimPolicy}
+      )
+
+      kubectl create configmap persistent-volume-reclaim-policy --namespace "${NAMESPACE}" \
+        --from-literal=ORIGINAL_POLICY="${ORIGINAL_POLICY}" \
+        --from-literal=VOLUME_NAME="${VOLUME_NAME}"
+
+      kubectl patch pv "${VOLUME_NAME}" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+
+      kubectl label pv "${VOLUME_NAME}" postgres-operator-test=kuttl app.kubernetes.io/name=postgresql app.kubernetes.io/instance=non-crunchy-cluster test-namespace="${NAMESPACE}"

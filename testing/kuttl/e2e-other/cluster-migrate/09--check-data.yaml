@@ -1,0 +1,23 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=cluster-migrate,
+            postgres-operator.crunchydata.com/role=master'
+      )
+
+      TREASURE=$(
+        kubectl exec "${PRIMARY}" --namespace "${NAMESPACE}" \
+          --container database \
+          -- psql -U postgres -qt -c "select data from important"
+      )
+
+      if [[ "${TREASURE}" != " treasure" ]]; then
+        echo "Migration from 3rd-party PG pod failed, result from query: ${TREASURE}"
+        exit 1
+      fi
