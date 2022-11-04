@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"net/http"
 	"os"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	cruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -89,6 +91,16 @@ func main() {
 	// add all PostgreSQL Operator controllers to the runtime manager
 	err = addControllersToManager(mgr, openshift)
 	assertNoError(err)
+
+	if util.DefaultMutableFeatureGate.Enabled(util.BridgeIdentifiers) {
+		constructor := func() *bridge.Client {
+			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
+			client.Transport = otelTransportWrapper()(http.DefaultTransport)
+			return client
+		}
+
+		assertNoError(bridge.ManagedInstallationReconciler(mgr, constructor))
+	}
 
 	// Enable upgrade checking
 	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
