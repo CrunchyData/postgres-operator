@@ -18,6 +18,7 @@ package postgres
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -134,9 +135,75 @@ func TestBashPermissions(t *testing.T) {
 	stdout, err := cmd.Output()
 	assert.NilError(t, err)
 	assert.Assert(t, cmp.Regexp(``+
-		`drwxr-x--x \d+ \d+ [^ ]+/sub\n`+
-		`-rw--w-r-- \d+ \d+ [^ ]+/sub/fn\n`+
+		`drwxr-x--x\s+\d+\s+\d+\s+[^ ]+/sub\n`+
+		`-rw--w-r--\s+\d+\s+\d+\s+[^ ]+/sub/fn\n`+
 		`$`, string(stdout)))
+}
+
+func TestBashRecreateDirectory(t *testing.T) {
+	// macOS `stat` takes different arguments than BusyBox and GNU coreutils.
+	if output, err := exec.Command("stat", "--help").CombinedOutput(); err != nil {
+		t.Skip(`requires "stat" executable`)
+	} else if !strings.Contains(string(output), "%a") {
+		t.Skip(`requires "stat" with access format sequence`)
+	}
+
+	dir := t.TempDir()
+	assert.NilError(t, os.Mkdir(filepath.Join(dir, "d"), 0o755))
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, "d", ".hidden"), nil, 0o644)) // #nosec G306 OK permissions for a temp dir in a test
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, "d", "file"), nil, 0o644))    // #nosec G306 OK permissions for a temp dir in a test
+
+	stat := func(args ...string) string {
+		cmd := exec.Command("stat", "-c", "%i %#a %N")
+		cmd.Args = append(cmd.Args, args...)
+		out, err := cmd.CombinedOutput()
+
+		t.Helper()
+		assert.NilError(t, err, string(out))
+		return string(out)
+	}
+
+	var before, after struct{ d, f, dInode, dPerms string }
+
+	before.d = stat(filepath.Join(dir, "d"))
+	before.f = stat(
+		filepath.Join(dir, "d", ".hidden"),
+		filepath.Join(dir, "d", "file"),
+	)
+
+	cmd := exec.Command("bash")
+	cmd.Args = append(cmd.Args, "-ceu", "--",
+		bashRecreateDirectory+` recreate "$@"`, "-",
+		filepath.Join(dir, "d"), "0740")
+
+	output, err := cmd.CombinedOutput()
+	assert.NilError(t, err, string(output))
+	assert.Assert(t, cmp.Regexp(`^`+
+		`[+] chmod 0740 [^ ]+/tmp.[^ /]+\n`+
+		`[+] mv [^ ]+/d/.hidden [^ ]+/d/file [^ ]+/tmp.[^ /]+\n`+
+		`[+] rmdir [^ ]+/d\n`+
+		`[+] mv [^ ]+/tmp.[^ /]+ [^ ]+/d\n`+
+		`$`, string(output)))
+
+	after.d = stat(filepath.Join(dir, "d"))
+	after.f = stat(
+		filepath.Join(dir, "d", ".hidden"),
+		filepath.Join(dir, "d", "file"),
+	)
+
+	_, err = fmt.Sscan(before.d, &before.dInode, &before.dPerms)
+	assert.NilError(t, err)
+	_, err = fmt.Sscan(after.d, &after.dInode, &after.dPerms)
+	assert.NilError(t, err)
+
+	// New directory is new.
+	assert.Assert(t, after.dInode != before.dInode)
+
+	// New directory has the requested permissions.
+	assert.Equal(t, after.dPerms, "0740")
+
+	// Files are in the new directory and unchanged.
+	assert.DeepEqual(t, after.f, before.f)
 }
 
 func TestBashSafeLink(t *testing.T) {

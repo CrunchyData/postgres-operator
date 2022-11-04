@@ -38,6 +38,15 @@ const (
 		` stat -Lc '%A %4u %4g %n' "$@";` +
 		` }`
 
+	// bashRecreateDirectory is a Bash function that moves the contents of an
+	// existing directory into a newly created directory of the same name.
+	bashRecreateDirectory = `
+recreate() (
+  local tmp; tmp=$(mktemp -d -p "${1%/*}"); GLOBIGNORE='.:..'; set -x
+  chmod "$2" "${tmp}"; mv "$1"/* "${tmp}"; rmdir "$1"; mv "${tmp}" "$1"
+)
+`
+
 	// bashSafeLink is a Bash function that moves an existing file or directory
 	// and replaces it with a symbolic link.
 	bashSafeLink = `
@@ -205,7 +214,10 @@ func startupCommand(
 		// Function to log values in a basic structured format.
 		`results() { printf '::postgres-operator: %s::%s\n' "$@"; }`,
 
-		// Function to change a directory symlink while keeping the directory content.
+		// Function to change the owner of an existing directory.
+		strings.TrimSpace(bashRecreateDirectory),
+
+		// Function to change a directory symlink while keeping the directory contents.
 		strings.TrimSpace(bashSafeLink),
 
 		// Log the effective user ID and all the group IDs.
@@ -234,11 +246,27 @@ func startupCommand(
 
 		// PostgreSQL requires its directory to be writable by only itself.
 		// Pod "securityContext.fsGroup" sets g+w on directories for *some*
-		// storage providers.
+		// storage providers. Ensure the current user owns the directory, and
+		// remove group permissions.
 		// - https://www.postgresql.org/docs/current/creating-cluster.html
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_13_0#l319
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/postmaster/postmaster.c;hb=REL_10_0#l1522
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_14_0#l349
 		// - https://issue.k8s.io/93802#issuecomment-717646167
-		`install --directory --mode=0700 "${postgres_data_directory}" ||`,
+		//
+		// When the directory does not exist, create it with the correct permissions.
+		// When the directory has the correct owner, set the correct permissions.
+		`if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then`,
+		`install --directory --mode=0700 "${postgres_data_directory}"`,
+		//
+		// The directory exists but its owner is wrong. When it is writable,
+		// the set-group-ID bit indicates that "fsGroup" probably ran on its
+		// contents making them safe to use. In this case, we can make a new
+		// directory (owned by this user) and refill it.
+		`elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then`,
+		`recreate "${postgres_data_directory}" '0700'`,
+		//
+		// The directory exists, its owner is wrong, and it is not writable.
+		`else (halt Permissions!); fi ||`,
 		`halt "$(permissions "${postgres_data_directory}" ||:)"`,
 
 		// Create the pgBackRest log directory.

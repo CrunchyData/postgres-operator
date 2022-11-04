@@ -205,6 +205,10 @@ initContainers:
     permissions() { while [[ -n "$1" ]]; do set "${1%/*}" "$@"; done; shift; stat -Lc '%A %4u %4g %n' "$@"; }
     halt() { local rc=$?; >&2 echo "$@"; exit "${rc/#0/1}"; }
     results() { printf '::postgres-operator: %s::%s\n' "$@"; }
+    recreate() (
+      local tmp; tmp=$(mktemp -d -p "${1%/*}"); GLOBIGNORE='.:..'; set -x
+      chmod "$2" "${tmp}"; mv "$1"/* "${tmp}"; rmdir "$1"; mv "${tmp}" "$1"
+    )
     safelink() (
       local desired="$1" name="$2" current
       current=$(realpath "${name}")
@@ -226,7 +230,11 @@ initContainers:
     bootstrap_dir="${postgres_data_directory}_bootstrap"
     [ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"
     [ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"
-    install --directory --mode=0700 "${postgres_data_directory}" ||
+    if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then
+    install --directory --mode=0700 "${postgres_data_directory}"
+    elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then
+    recreate "${postgres_data_directory}" '0700'
+    else (halt Permissions!); fi ||
     halt "$(permissions "${postgres_data_directory}" ||:)"
     results 'pgBackRest log directory' "${pgbrLog_directory}"
     install --directory --mode=0775 "${pgbrLog_directory}" ||
