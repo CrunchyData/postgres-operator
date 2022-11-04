@@ -202,6 +202,8 @@ initContainers:
   - --
   - |-
     declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3"
+    permissions() { while [[ -n "$1" ]]; do set "${1%/*}" "$@"; done; shift; stat -Lc '%A %4u %4g %n' "$@"; }
+    halt() { local rc=$?; >&2 echo "$@"; exit "${rc/#0/1}"; }
     results() { printf '::postgres-operator: %s::%s\n' "$@"; }
     safelink() (
       local desired="$1" name="$2" current
@@ -214,21 +216,26 @@ initContainers:
     results 'uid' "$(id -u)" 'gid' "$(id -G)"
     results 'postgres path' "$(command -v postgres)"
     results 'postgres version' "${postgres_version:=$(postgres --version)}"
-    [[ "${postgres_version}" == *") ${expected_major_version}."* ]]
+    [[ "${postgres_version}" =~ ") ${expected_major_version}"($|[^0-9]) ]] ||
+    halt Expected PostgreSQL version "${expected_major_version}"
     results 'config directory' "${PGDATA:?}"
     postgres_data_directory=$([ -d "${PGDATA}" ] && postgres -C data_directory || echo "${PGDATA}")
     results 'data directory' "${postgres_data_directory}"
-    [ "${postgres_data_directory}" = "${PGDATA}" ]
+    [[ "${postgres_data_directory}" == "${PGDATA}" ]] ||
+    halt Expected matching config and data directories
     bootstrap_dir="${postgres_data_directory}_bootstrap"
     [ -d "${bootstrap_dir}" ] && results 'bootstrap directory' "${bootstrap_dir}"
     [ -d "${bootstrap_dir}" ] && postgres_data_directory="${bootstrap_dir}"
-    install --directory --mode=0700 "${postgres_data_directory}"
+    install --directory --mode=0700 "${postgres_data_directory}" ||
+    halt "$(permissions "${postgres_data_directory}" ||:)"
     results 'pgBackRest log directory' "${pgbrLog_directory}"
-    install --directory --mode=0775 "${pgbrLog_directory}"
+    install --directory --mode=0775 "${pgbrLog_directory}" ||
+    halt "$(permissions "${pgbrLog_directory}" ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
     [ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
-    [ "${postgres_data_version}" = "${expected_major_version}" ]
+    [[ "${postgres_data_version}" == "${expected_major_version}" ]] ||
+    halt Expected PostgreSQL data version "${expected_major_version}"
     safelink "${pgwal_directory}" "${postgres_data_directory}/pg_wal"
     results 'wal directory' "$(realpath "${postgres_data_directory}/pg_wal")"
     rm -f "${postgres_data_directory}/recovery.signal"
