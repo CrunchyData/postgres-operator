@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -31,6 +32,8 @@ import (
 )
 
 const defaultAPI = "https://api.crunchybridge.com"
+
+var errAuthentication = errors.New("authentication failed")
 
 type Client struct {
 	http.Client
@@ -179,6 +182,38 @@ func (c *Client) doWithRetry(
 	return response, err
 }
 
+func (c *Client) CreateAuthObject(ctx context.Context, authn AuthObject) (AuthObject, error) {
+	var result AuthObject
+
+	response, err := c.doWithRetry(ctx, "POST", "/vendor/operator/auth-objects", nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + authn.Secret},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		// 401, Unauthorized
+		case response.StatusCode == 401:
+			err = fmt.Errorf("%w: %s", errAuthentication, body)
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
 func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 	var result Installation
 
@@ -188,20 +223,18 @@ func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 
 	if err == nil {
 		defer response.Body.Close()
-
-		var body bytes.Buffer
-		_, _ = io.Copy(&body, response.Body)
+		body, _ := io.ReadAll(response.Body)
 
 		switch {
 		// 2xx, Successful
-		case 200 <= response.StatusCode && response.StatusCode < 300:
-			if err = json.Unmarshal(body.Bytes(), &result); err != nil {
-				err = fmt.Errorf("%w: %v", err, body.String())
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
 			}
 
 		default:
 			//nolint:goerr113 // This is intentionally dynamic.
-			err = fmt.Errorf("%v: %v", response.Status, body.String())
+			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
 
