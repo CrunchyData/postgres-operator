@@ -405,6 +405,87 @@ func TestClientDoWithRetry(t *testing.T) {
 	})
 }
 
+func TestClientCreateAuthObject(t *testing.T) {
+	t.Run("Arguments", func(t *testing.T) {
+		var requests []http.Request
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			assert.Equal(t, len(body), 0)
+			requests = append(requests, *r)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		ctx := context.Background()
+		_, _ = client.CreateAuthObject(ctx, AuthObject{Secret: "sesame"})
+
+		assert.Equal(t, len(requests), 1)
+		assert.Equal(t, requests[0].Header.Get("Authorization"), "Bearer sesame")
+	})
+
+	t.Run("Unauthorized", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte(`some info`))
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err := client.CreateAuthObject(context.Background(), AuthObject{})
+		assert.ErrorContains(t, err, "authentication")
+		assert.ErrorContains(t, err, "some info")
+		assert.ErrorIs(t, err, errAuthentication)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`some message`))
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err := client.CreateAuthObject(context.Background(), AuthObject{})
+		assert.ErrorContains(t, err, "404 Not Found")
+		assert.ErrorContains(t, err, "some message")
+	})
+
+	t.Run("NoResponseBody", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err := client.CreateAuthObject(context.Background(), AuthObject{})
+		assert.ErrorContains(t, err, "unexpected end")
+		assert.ErrorContains(t, err, "JSON")
+	})
+
+	t.Run("ResponseNotJSON", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`asdf`))
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err := client.CreateAuthObject(context.Background(), AuthObject{})
+		assert.ErrorContains(t, err, "invalid")
+		assert.ErrorContains(t, err, "asdf")
+	})
+}
+
 func TestClientCreateInstallation(t *testing.T) {
 	t.Run("ErrorResponse", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
