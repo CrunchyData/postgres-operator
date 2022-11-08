@@ -238,13 +238,13 @@ func (r *Reconciler) generateClusterReplicaService(
 // replica instances.
 func (r *Reconciler) reconcileClusterReplicaService(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) error {
+) (*corev1.Service, error) {
 	service, err := r.generateClusterReplicaService(cluster)
 
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, service))
 	}
-	return err
+	return service, err
 }
 
 // reconcileDataSource is responsible for reconciling the data source for a PostgreSQL cluster.

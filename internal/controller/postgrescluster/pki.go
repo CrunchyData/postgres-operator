@@ -118,6 +118,7 @@ func (r *Reconciler) reconcileRootCertificate(
 func (r *Reconciler) reconcileClusterCertificate(
 	ctx context.Context, root *pki.RootCertificateAuthority,
 	cluster *v1beta1.PostgresCluster, primaryService *corev1.Service,
+	replicaService *corev1.Service,
 ) (
 	*corev1.SecretProjection, error,
 ) {
@@ -133,7 +134,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	leaf := &pki.LeafCertificate{}
-	dnsNames := naming.ServiceDNSNames(ctx, primaryService)
+	dnsNames := append(naming.ServiceDNSNames(ctx, primaryService), naming.ServiceDNSNames(ctx, replicaService)...)
 	dnsFQDN := dnsNames[0]
 
 	if err == nil {

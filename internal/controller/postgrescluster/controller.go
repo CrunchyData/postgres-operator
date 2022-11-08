@@ -169,6 +169,7 @@ func (r *Reconciler) Reconcile(
 		patroniLeaderService     *corev1.Service
 		primaryCertificate       *corev1.SecretProjection
 		primaryService           *corev1.Service
+		replicaService           *corev1.Service
 		rootCA                   *pki.RootCertificateAuthority
 		monitoringSecret         *corev1.Secret
 		exporterWebConfig        *corev1.ConfigMap
@@ -291,10 +292,10 @@ func (r *Reconciler) Reconcile(
 		primaryService, err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
 	}
 	if err == nil {
-		err = r.reconcileClusterReplicaService(ctx, cluster)
+		replicaService, err = r.reconcileClusterReplicaService(ctx, cluster)
 	}
 	if err == nil {
-		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster, primaryService)
+		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster, primaryService, replicaService)
 	}
 	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
