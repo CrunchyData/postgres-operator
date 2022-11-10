@@ -35,13 +35,11 @@ const (
 // exporter to be accessible
 func PostgreSQLHBAs(inCluster *v1beta1.PostgresCluster, outHBAs *postgres.HBAs) {
 	if ExporterEnabled(inCluster) {
-		// Kubernetes does guarantee localhost resolves to loopback:
-		// https://kubernetes.io/docs/concepts/cluster-administration/networking/
-		// https://releases.k8s.io/v1.21.0/pkg/kubelet/kubelet_pods.go#L343
-		outHBAs.Mandatory = append(outHBAs.Mandatory, *postgres.NewHBA().TCP().
-			User(MonitoringUser).Network("127.0.0.0/8").Method("scram-sha-256"))
-		outHBAs.Mandatory = append(outHBAs.Mandatory, *postgres.NewHBA().TCP().
-			User(MonitoringUser).Network("::1/128").Method("scram-sha-256"))
+		// Limit the monitoring user to local connections using SCRAM.
+		outHBAs.Mandatory = append(outHBAs.Mandatory,
+			*postgres.NewHBA().TCP().User(MonitoringUser).Method("scram-sha-256").Network("127.0.0.0/8"),
+			*postgres.NewHBA().TCP().User(MonitoringUser).Method("scram-sha-256").Network("::1/128"),
+			*postgres.NewHBA().TCP().User(MonitoringUser).Method("reject"))
 	}
 }
 
