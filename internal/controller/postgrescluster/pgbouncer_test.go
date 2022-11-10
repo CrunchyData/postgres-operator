@@ -175,7 +175,8 @@ ownerReferences:
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
 		assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgbouncer
+- appProtocol: postgresql
+  name: pgbouncer
   port: 9651
   protocol: TCP
   targetPort: pgbouncer
@@ -208,7 +209,8 @@ ownerReferences:
 			alwaysExpect(t, service)
 			test.Expect(t, service)
 			assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgbouncer
+- appProtocol: postgresql
+  name: pgbouncer
   port: 9651
   protocol: TCP
   targetPort: pgbouncer
@@ -233,7 +235,8 @@ ownerReferences:
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
 				alwaysExpect(t, service)
 				assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgbouncer
+- appProtocol: postgresql
+  name: pgbouncer
   nodePort: 32001
   port: 9651
   protocol: TCP
@@ -246,7 +249,8 @@ ownerReferences:
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
 				alwaysExpect(t, service)
 				assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgbouncer
+- appProtocol: postgresql
+  name: pgbouncer
   nodePort: 32002
   port: 9651
   protocol: TCP

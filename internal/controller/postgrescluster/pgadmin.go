@@ -167,10 +167,11 @@ func (r *Reconciler) generatePGAdminService(
 	// TODO(tjmoore4): A custom service port is not currently supported as this
 	// requires updates to the pgAdmin service configuration.
 	servicePort := corev1.ServicePort{
-		Name:       naming.PortPGAdmin,
-		Port:       *initialize.Int32(5050),
-		Protocol:   corev1.ProtocolTCP,
-		TargetPort: intstr.FromString(naming.PortPGAdmin),
+		Name:        naming.PortPGAdmin,
+		Port:        *initialize.Int32(5050),
+		Protocol:    corev1.ProtocolTCP,
+		TargetPort:  intstr.FromString(naming.PortPGAdmin),
+		AppProtocol: initialize.String(naming.AppProtocolHTTP),
 	}
 
 	if spec := cluster.Spec.UserInterface.PGAdmin.Service; spec == nil {

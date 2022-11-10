@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -143,10 +144,11 @@ func (r *Reconciler) generateClusterPrimaryService(
 	service.Spec.Selector = nil
 
 	service.Spec.Ports = []corev1.ServicePort{{
-		Name:       naming.PortPostgreSQL,
-		Port:       *cluster.Spec.Port,
-		Protocol:   corev1.ProtocolTCP,
-		TargetPort: intstr.FromString(naming.PortPostgreSQL),
+		Name:        naming.PortPostgreSQL,
+		Port:        *cluster.Spec.Port,
+		Protocol:    corev1.ProtocolTCP,
+		TargetPort:  intstr.FromString(naming.PortPostgreSQL),
+		AppProtocol: initialize.String(postgres.IANAServiceName),
 	}}
 
 	// Resolve to the ClusterIP for which Patroni has configured the Endpoints.
@@ -158,9 +160,10 @@ func (r *Reconciler) generateClusterPrimaryService(
 	for _, sp := range service.Spec.Ports {
 		endpoints.Subsets[0].Ports = append(endpoints.Subsets[0].Ports,
 			corev1.EndpointPort{
-				Name:     sp.Name,
-				Port:     sp.Port,
-				Protocol: sp.Protocol,
+				Name:        sp.Name,
+				Port:        sp.Port,
+				Protocol:    sp.Protocol,
+				AppProtocol: sp.AppProtocol,
 			})
 	}
 
@@ -221,10 +224,11 @@ func (r *Reconciler) generateClusterReplicaService(
 	// ContainerPort. This name allows the port number to differ between Pods,
 	// which can happen during a rolling update.
 	service.Spec.Ports = []corev1.ServicePort{{
-		Name:       naming.PortPostgreSQL,
-		Port:       *cluster.Spec.Port,
-		Protocol:   corev1.ProtocolTCP,
-		TargetPort: intstr.FromString(naming.PortPostgreSQL),
+		Name:        naming.PortPostgreSQL,
+		Port:        *cluster.Spec.Port,
+		Protocol:    corev1.ProtocolTCP,
+		TargetPort:  intstr.FromString(naming.PortPostgreSQL),
+		AppProtocol: initialize.String(postgres.IANAServiceName),
 	}}
 
 	err := errors.WithStack(r.setControllerReference(cluster, service))
