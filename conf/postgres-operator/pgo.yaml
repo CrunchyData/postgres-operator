@@ -2,7 +2,7 @@ Cluster:
   CCPImagePrefix:  registry.developers.crunchydata.com/crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  ubi8-13.8-4.7.7
+  CCPImageTag:  ubi8-13.9-4.7.8
   Port:  5432
   PGBadgerPort: 10000
   ExporterPort: 9187
@@ -84,4 +84,4 @@ Storage:
 Pgo:
   Audit:  false
   PGOImagePrefix:  registry.developers.crunchydata.com/crunchydata
-  PGOImageTag:  ubi8-4.7.7
+  PGOImageTag:  ubi8-4.7.8
