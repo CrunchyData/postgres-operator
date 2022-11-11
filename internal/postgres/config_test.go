@@ -16,6 +16,9 @@
 package postgres
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,6 +29,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -55,6 +59,151 @@ func TestWALDirectory(t *testing.T) {
 	// with WAL volume
 	instance.WALVolumeClaimSpec = new(corev1.PersistentVolumeClaimSpec)
 	assert.Equal(t, WALDirectory(cluster, instance), "/pgwal/pg13_wal")
+}
+
+func TestBashHalt(t *testing.T) {
+	t.Run("NoPipeline", func(t *testing.T) {
+		cmd := exec.Command("bash")
+		cmd.Args = append(cmd.Args, "-c", "--", bashHalt+`; halt ab cd e`)
+
+		var exit *exec.ExitError
+		stdout, err := cmd.Output()
+		assert.Assert(t, errors.As(err, &exit))
+		assert.Equal(t, string(stdout), "", "expected no stdout")
+		assert.Equal(t, string(exit.Stderr), "ab cd e\n")
+		assert.Equal(t, exit.ExitCode(), 1)
+	})
+
+	t.Run("PipelineZeroStatus", func(t *testing.T) {
+		cmd := exec.Command("bash")
+		cmd.Args = append(cmd.Args, "-c", "--", bashHalt+`; true && halt message`)
+
+		var exit *exec.ExitError
+		stdout, err := cmd.Output()
+		assert.Assert(t, errors.As(err, &exit))
+		assert.Equal(t, string(stdout), "", "expected no stdout")
+		assert.Equal(t, string(exit.Stderr), "message\n")
+		assert.Equal(t, exit.ExitCode(), 1)
+	})
+
+	t.Run("PipelineNonZeroStatus", func(t *testing.T) {
+		cmd := exec.Command("bash")
+		cmd.Args = append(cmd.Args, "-c", "--", bashHalt+`; (exit 99) || halt $'multi\nline'`)
+
+		var exit *exec.ExitError
+		stdout, err := cmd.Output()
+		assert.Assert(t, errors.As(err, &exit))
+		assert.Equal(t, string(stdout), "", "expected no stdout")
+		assert.Equal(t, string(exit.Stderr), "multi\nline\n")
+		assert.Equal(t, exit.ExitCode(), 99)
+	})
+
+	t.Run("Subshell", func(t *testing.T) {
+		cmd := exec.Command("bash")
+		cmd.Args = append(cmd.Args, "-c", "--", bashHalt+`; (halt 'err') || echo 'after'`)
+
+		stderr := new(bytes.Buffer)
+		cmd.Stderr = stderr
+
+		stdout, err := cmd.Output()
+		assert.NilError(t, err)
+		assert.Equal(t, string(stdout), "after\n")
+		assert.Equal(t, stderr.String(), "err\n")
+		assert.Equal(t, cmd.ProcessState.ExitCode(), 0)
+	})
+}
+
+func TestBashPermissions(t *testing.T) {
+	// macOS `stat` takes different arguments than BusyBox and GNU coreutils.
+	if output, err := exec.Command("stat", "--help").CombinedOutput(); err != nil {
+		t.Skip(`requires "stat" executable`)
+	} else if !strings.Contains(string(output), "%A") {
+		t.Skip(`requires "stat" with access format sequence`)
+	}
+
+	dir := t.TempDir()
+	assert.NilError(t, os.Mkdir(filepath.Join(dir, "sub"), 0o751))
+	assert.NilError(t, os.Chmod(filepath.Join(dir, "sub"), 0o751))
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, "sub", "fn"), nil, 0o624)) // #nosec G306 OK permissions for a temp dir in a test
+	assert.NilError(t, os.Chmod(filepath.Join(dir, "sub", "fn"), 0o624))
+
+	cmd := exec.Command("bash")
+	cmd.Args = append(cmd.Args, "-c", "--",
+		bashPermissions+`; permissions "$@"`, "-",
+		filepath.Join(dir, "sub", "fn"))
+
+	stdout, err := cmd.Output()
+	assert.NilError(t, err)
+	assert.Assert(t, cmp.Regexp(``+
+		`drwxr-x--x\s+\d+\s+\d+\s+[^ ]+/sub\n`+
+		`-rw--w-r--\s+\d+\s+\d+\s+[^ ]+/sub/fn\n`+
+		`$`, string(stdout)))
+}
+
+func TestBashRecreateDirectory(t *testing.T) {
+	// macOS `stat` takes different arguments than BusyBox and GNU coreutils.
+	if output, err := exec.Command("stat", "--help").CombinedOutput(); err != nil {
+		t.Skip(`requires "stat" executable`)
+	} else if !strings.Contains(string(output), "%a") {
+		t.Skip(`requires "stat" with access format sequence`)
+	}
+
+	dir := t.TempDir()
+	assert.NilError(t, os.Mkdir(filepath.Join(dir, "d"), 0o755))
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, "d", ".hidden"), nil, 0o644)) // #nosec G306 OK permissions for a temp dir in a test
+	assert.NilError(t, os.WriteFile(filepath.Join(dir, "d", "file"), nil, 0o644))    // #nosec G306 OK permissions for a temp dir in a test
+
+	stat := func(args ...string) string {
+		cmd := exec.Command("stat", "-c", "%i %#a %N")
+		cmd.Args = append(cmd.Args, args...)
+		out, err := cmd.CombinedOutput()
+
+		t.Helper()
+		assert.NilError(t, err, string(out))
+		return string(out)
+	}
+
+	var before, after struct{ d, f, dInode, dPerms string }
+
+	before.d = stat(filepath.Join(dir, "d"))
+	before.f = stat(
+		filepath.Join(dir, "d", ".hidden"),
+		filepath.Join(dir, "d", "file"),
+	)
+
+	cmd := exec.Command("bash")
+	cmd.Args = append(cmd.Args, "-ceu", "--",
+		bashRecreateDirectory+` recreate "$@"`, "-",
+		filepath.Join(dir, "d"), "0740")
+
+	output, err := cmd.CombinedOutput()
+	assert.NilError(t, err, string(output))
+	assert.Assert(t, cmp.Regexp(`^`+
+		`[+] chmod 0740 [^ ]+/tmp.[^ /]+\n`+
+		`[+] mv [^ ]+/d/.hidden [^ ]+/d/file [^ ]+/tmp.[^ /]+\n`+
+		`[+] rmdir [^ ]+/d\n`+
+		`[+] mv [^ ]+/tmp.[^ /]+ [^ ]+/d\n`+
+		`$`, string(output)))
+
+	after.d = stat(filepath.Join(dir, "d"))
+	after.f = stat(
+		filepath.Join(dir, "d", ".hidden"),
+		filepath.Join(dir, "d", "file"),
+	)
+
+	_, err = fmt.Sscan(before.d, &before.dInode, &before.dPerms)
+	assert.NilError(t, err)
+	_, err = fmt.Sscan(after.d, &after.dInode, &after.dPerms)
+	assert.NilError(t, err)
+
+	// New directory is new.
+	assert.Assert(t, after.dInode != before.dInode)
+
+	// New directory has the requested permissions.
+	assert.Equal(t, after.dPerms, "0740")
+
+	// Files are in the new directory and unchanged.
+	assert.DeepEqual(t, after.f, before.f)
 }
 
 func TestBashSafeLink(t *testing.T) {
@@ -310,13 +459,6 @@ func TestBashSafeLink(t *testing.T) {
 	})
 }
 
-func TestBashSafeLinkPrettyYAML(t *testing.T) {
-	b, err := yaml.Marshal(bashSafeLink)
-	assert.NilError(t, err)
-	assert.Assert(t, strings.HasPrefix(string(b), `|`),
-		"expected literal block scalar, got:\n%s", b)
-}
-
 func TestStartupCommand(t *testing.T) {
 	shellcheck := require.ShellCheck(t)
 
@@ -329,14 +471,22 @@ func TestStartupCommand(t *testing.T) {
 	// Expect a bash command with an inline script.
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
 	assert.Assert(t, len(command) > 3)
+	script := command[3]
 
 	// Write out that inline script.
 	dir := t.TempDir()
 	file := filepath.Join(dir, "script.bash")
-	assert.NilError(t, os.WriteFile(file, []byte(command[3]), 0o600))
+	assert.NilError(t, os.WriteFile(file, []byte(script), 0o600))
 
 	// Expect shellcheck to be happy.
 	cmd := exec.Command(shellcheck, "--enable=all", file)
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+
+	t.Run("PrettyYAML", func(t *testing.T) {
+		b, err := yaml.Marshal(script)
+		assert.NilError(t, err)
+		assert.Assert(t, strings.HasPrefix(string(b), `|`),
+			"expected literal block scalar, got:\n%s", b)
+	})
 }

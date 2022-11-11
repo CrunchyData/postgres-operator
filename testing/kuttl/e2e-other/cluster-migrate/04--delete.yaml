@@ -1,0 +1,15 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+delete:
+- apiVersion: apps/v1
+  kind: StatefulSet
+  name: non-crunchy-cluster
+- apiVersion: v1
+  kind: Service
+  name: non-crunchy-cluster
+- apiVersion: v1
+  kind: Service
+  name: non-crunchy-cluster-hl
+- apiVersion: v1
+  kind: Secret
+  name: non-crunchy-cluster
