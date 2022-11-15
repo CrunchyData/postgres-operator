@@ -358,6 +358,15 @@ func ExporterWebConfigMap(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// OperatorConfigurationSecret returns the ObjectMeta necessary to lookup the
+// Secret containing PGO configuration.
+func OperatorConfigurationSecret() metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: config.PGONamespace(),
+		Name:      "pgo-config",
+	}
+}
+
 // ReplicationClientCertSecret returns ObjectMeta necessary to lookup the Secret
 // containing the Patroni client authentication certificate information.
 func ReplicationClientCertSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {

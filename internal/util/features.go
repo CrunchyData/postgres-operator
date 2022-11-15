@@ -32,6 +32,8 @@ const (
 	// Feature gates should be listed in alphabetical, case-sensitive
 	// (upper before any lower case character) order.
 	//
+	BridgeIdentifiers featuregate.Feature = "BridgeIdentifiers"
+	//
 	// Enables support of custom sidecars for PostgreSQL instance Pods
 	InstanceSidecars featuregate.Feature = "InstanceSidecars"
 	//
@@ -47,6 +49,7 @@ const (
 //
 // - https://releases.k8s.io/v1.20.0/pkg/features/kube_features.go#L729-732
 var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{
+	BridgeIdentifiers: {Default: false, PreRelease: featuregate.Alpha},
 	InstanceSidecars:  {Default: false, PreRelease: featuregate.Alpha},
 	PGBouncerSidecars: {Default: false, PreRelease: featuregate.Alpha},
 }

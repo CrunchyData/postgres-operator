@@ -1,6 +1,5 @@
 .DS_Store
 /vendor/
 tools
-/testing/kuttl/e2e-generated/
-/testing/kuttl/e2e-generated-other/
+/testing/kuttl/e2e-generated*/
 postgres_exporter.tar.gz

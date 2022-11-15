@@ -1,0 +1,23 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  - script: |
+      set -e
+      if [[ ${KUTTL_PG_VERSION} -ge 15 ]]; then
+        PRIMARY=
+        while [[ -z "${PRIMARY}" ]]; do
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=cluster-migrate,
+                postgres-operator.crunchydata.com/role=master'
+          )
+        done
+
+        # Ignore warnings about collation changes. This is DANGEROUS on real data!
+        # Only do this automatic step in test conditions; with real data, this may cause
+        # more problems as you may need to reindex.
+        kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -c database \
+            -- psql -qAt --command \
+            'ALTER DATABASE postgres REFRESH COLLATION VERSION; ALTER DATABASE template1 REFRESH COLLATION VERSION;'
+      fi

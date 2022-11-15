@@ -156,6 +156,13 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"MonitoringUserSecret", MonitoringUserSecret(cluster)},
 		})
 
+		// NOTE: This does not fail when a conflict is introduced. When adding a
+		// Secret, be sure to compare it to the function below.
+		t.Run("OperatorConfiguration", func(t *testing.T) {
+			other := OperatorConfigurationSecret().Name
+			assert.Assert(t, !names.Has(other), "%q defined already", other)
+		})
+
 		t.Run("PostgresUserSecret", func(t *testing.T) {
 			value := PostgresUserSecret(cluster, "some-user")
 
@@ -296,6 +303,14 @@ func TestGenerateStartupInstance(t *testing.T) {
 	instanceTwo := GenerateStartupInstance(cluster, set)
 	assert.DeepEqual(t, instanceOne, instanceTwo)
 
+}
+
+func TestOperatorConfigurationSecret(t *testing.T) {
+	t.Setenv("PGO_NAMESPACE", "cheese")
+
+	value := OperatorConfigurationSecret()
+	assert.Equal(t, value.Namespace, "cheese")
+	assert.Assert(t, nil == validation.IsDNS1123Label(value.Name))
 }
 
 func TestPortNamesUniqueAndValid(t *testing.T) {

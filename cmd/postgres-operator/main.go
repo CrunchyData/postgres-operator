@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import (
-	"context"
+	"net/http"
 	"os"
 	"strings"
 
@@ -26,6 +26,7 @@ import (
 	cruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -82,11 +83,24 @@ func main() {
 	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
 	assertNoError(err)
 
-	openshift := isOpenshift(ctx, cfg)
+	openshift := isOpenshift(cfg)
+	if openshift {
+		log.Info("detected OpenShift environment")
+	}
 
 	// add all PostgreSQL Operator controllers to the runtime manager
 	err = addControllersToManager(mgr, openshift)
 	assertNoError(err)
+
+	if util.DefaultMutableFeatureGate.Enabled(util.BridgeIdentifiers) {
+		constructor := func() *bridge.Client {
+			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
+			client.Transport = otelTransportWrapper()(http.DefaultTransport)
+			return client
+		}
+
+		assertNoError(bridge.ManagedInstallationReconciler(mgr, constructor))
+	}
 
 	// Enable upgrade checking
 	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
@@ -118,9 +132,7 @@ func addControllersToManager(mgr manager.Manager, openshift bool) error {
 	return r.SetupWithManager(mgr)
 }
 
-func isOpenshift(ctx context.Context, cfg *rest.Config) bool {
-	log := logging.FromContext(ctx)
-
+func isOpenshift(cfg *rest.Config) bool {
 	const sccGroupName, sccKind = "security.openshift.io", "SecurityContextConstraints"
 
 	client, err := discovery.NewDiscoveryClientForConfig(cfg)
@@ -141,7 +153,6 @@ func isOpenshift(ctx context.Context, cfg *rest.Config) bool {
 			}
 			for _, r := range resourceList.APIResources {
 				if r.Kind == sccKind {
-					log.Info("detected OpenShift environment")
 					return true
 				}
 			}

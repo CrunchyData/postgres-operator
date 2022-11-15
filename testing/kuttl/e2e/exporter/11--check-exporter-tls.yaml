@@ -15,7 +15,7 @@ commands:
       {
         METRICS=$(kubectl exec --namespace "${NAMESPACE}" \
           "${PRIMARY}" -c exporter \
-          -- curl -k https://localhost:9187/metrics)
+          -- curl --insecure --show-error --silent 'https://localhost:9187/metrics')
       } || {
         echo >&2 'curl metrics endpoint returned error'
         echo "${METRICS}"
