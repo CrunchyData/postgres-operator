@@ -528,6 +528,7 @@ topologySpreadConstraints:
 		// check returned cronjob matches set spec
 		assert.Equal(t, returnedCronJob.Name, "hippocluster-repo1-full")
 		assert.Equal(t, returnedCronJob.Spec.Schedule, testCronSchedule)
+		assert.Equal(t, returnedCronJob.Spec.ConcurrencyPolicy, batchv1.ForbidConcurrent)
 		assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Name,
 			"pgbackrest")
 		assert.Assert(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].SecurityContext != &corev1.SecurityContext{})
@@ -3641,6 +3642,7 @@ func TestReconcileScheduledBackups(t *testing.T) {
 						// check returned cronjob matches set spec
 						assert.Equal(t, returnedCronJob.Name, cronJobName)
 						assert.Equal(t, returnedCronJob.Spec.Schedule, testCronSchedule)
+						assert.Equal(t, returnedCronJob.Spec.ConcurrencyPolicy, batchv1.ForbidConcurrent)
 						assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.PriorityClassName, "some-priority-class")
 						assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Name,
 							"pgbackrest")
