@@ -46,8 +46,8 @@ func TestPostgreSQLHBA(t *testing.T) {
 		outHBAs := postgres.HBAs{}
 		PostgreSQLHBAs(inCluster, &outHBAs)
 
-		assert.Equal(t, outHBAs.Mandatory[0].String(), `host all "ccp_monitoring" "127.0.0.0/8" md5`)
-		assert.Equal(t, outHBAs.Mandatory[1].String(), `host all "ccp_monitoring" "::1/128" md5`)
+		assert.Equal(t, outHBAs.Mandatory[0].String(), `host all "ccp_monitoring" "127.0.0.0/8" scram-sha-256`)
+		assert.Equal(t, outHBAs.Mandatory[1].String(), `host all "ccp_monitoring" "::1/128" scram-sha-256`)
 	})
 }
 
