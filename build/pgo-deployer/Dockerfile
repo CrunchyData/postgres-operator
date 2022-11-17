@@ -17,7 +17,7 @@ RUN if [ "$DFSET" = "centos" ] ; then \
         ${PACKAGER} install -y epel-release \
         && ${PACKAGER} -y install \
                 --setopt=skip_missing_names_on_install=False \
-                kubectl \
+                kubectl-1.24* \
                 ansible \
                 which \
                 gettext \
