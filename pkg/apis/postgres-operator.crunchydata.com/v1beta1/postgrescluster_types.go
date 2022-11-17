@@ -629,33 +629,6 @@ func init() {
 	SchemeBuilder.Register(&PostgresCluster{}, &PostgresClusterList{})
 }
 
-// Metadata contains metadata for PostgresCluster resources
-type Metadata struct {
-	// +optional
-	Labels map[string]string `json:"labels,omitempty"`
-
-	// +optional
-	Annotations map[string]string `json:"annotations,omitempty"`
-}
-
-// GetLabelsOrNil gets labels from a Metadata pointer, if Metadata
-// hasn't been set return nil
-func (meta *Metadata) GetLabelsOrNil() map[string]string {
-	if meta == nil {
-		return nil
-	}
-	return meta.Labels
-}
-
-// GetAnnotationsOrNil gets annotations from a Metadata pointer, if Metadata
-// hasn't been set return nil
-func (meta *Metadata) GetAnnotationsOrNil() map[string]string {
-	if meta == nil {
-		return nil
-	}
-	return meta.Annotations
-}
-
 // MonitoringSpec is a union of the supported PostgreSQL Monitoring tools
 type MonitoringSpec struct {
 	// +optional

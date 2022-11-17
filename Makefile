@@ -289,11 +289,16 @@ generate-crd:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
-		output:dir='build/crd/generated' # build/crd/generated/{group}_{plural}.yaml
+		output:dir='build/crd/postgresclusters/generated' # build/crd/generated/{group}_{plural}.yaml
 	@
-	@# Kustomize returns lots of objects. The following only makes sense when there is one CRD.
-	[ "$$(ls -1 ./build/crd/generated)" = 'postgres-operator.crunchydata.com_postgresclusters.yaml' ]
-	$(PGO_KUBE_CLIENT) kustomize ./build/crd > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
+	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+		crd:crdVersions='v1' \
+		paths='./pkg/apis/...' \
+		output:dir='build/crd/pgupgrades/generated' # build/crd/generated/{group}_{plural}.yaml
+	@
+	$(PGO_KUBE_CLIENT) kustomize ./build/crd/postgresclusters > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
+	$(PGO_KUBE_CLIENT) kustomize ./build/crd/pgupgrades > ./config/crd/bases/postgres-operator.crunchydata.com_pgupgrades.yaml
+
 
 generate-crd-docs:
 	GOBIN='$(CURDIR)/hack/tools' $(GO) install fybrik.io/crdoc@v0.5.2
