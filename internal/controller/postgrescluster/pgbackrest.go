@@ -720,6 +720,10 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 		},
 	}
 
+	if jobs := postgresCluster.Spec.Backups.PGBackRest.Jobs; jobs != nil {
+		jobSpec.TTLSecondsAfterFinished = jobs.TTLSecondsAfterFinished
+	}
+
 	// set the priority class name, tolerations, and affinity, if they exist
 	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
 		if postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName != nil {

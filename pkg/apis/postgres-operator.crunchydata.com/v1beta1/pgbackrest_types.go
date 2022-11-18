@@ -180,6 +180,12 @@ type BackupJobs struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Limit the lifetime of a Job that has finished.
+	// More info: https://kubernetes.io/docs/concepts/workloads/controllers/job
+	// +optional
+	// +kubebuilder:validation:Minimum=60
+	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
 }
 
 // PGBackRestManualBackup contains information that is used for creating a
