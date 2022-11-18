@@ -2560,9 +2560,8 @@ volumes:
 	})
 
 	t.Run("Resources", func(t *testing.T) {
-		cluster := &v1beta1.PostgresCluster{
-			Spec: v1beta1.PostgresClusterSpec{},
-		}
+		cluster := &v1beta1.PostgresCluster{}
+
 		t.Run("Resources not defined in jobs", func(t *testing.T) {
 			cluster.Spec.Backups = v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{},
@@ -2635,16 +2634,9 @@ volumes:
 	})
 
 	t.Run("PriorityClassName", func(t *testing.T) {
-		cluster := &v1beta1.PostgresCluster{
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						Jobs: &v1beta1.BackupJobs{
-							PriorityClassName: initialize.String("some-priority-class"),
-						},
-					},
-				},
-			},
+		cluster := &v1beta1.PostgresCluster{}
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			PriorityClassName: initialize.String("some-priority-class"),
 		}
 		job, err := generateBackupJobSpecIntent(
 			cluster, v1beta1.PGBackRestRepo{},
@@ -2661,16 +2653,9 @@ volumes:
 			Operator: "Exist",
 		}}
 
-		cluster := &v1beta1.PostgresCluster{
-			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
-					PGBackRest: v1beta1.PGBackRestArchive{
-						Jobs: &v1beta1.BackupJobs{
-							Tolerations: tolerations,
-						},
-					},
-				},
-			},
+		cluster := &v1beta1.PostgresCluster{}
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Tolerations: tolerations,
 		}
 		job, err := generateBackupJobSpecIntent(
 			cluster, v1beta1.PGBackRestRepo{},
@@ -2679,6 +2664,56 @@ volumes:
 		)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, job.Template.Spec.Tolerations, tolerations)
+	})
+
+	t.Run("TTLSecondsAfterFinished", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{}
+
+		t.Run("Undefined", func(t *testing.T) {
+			cluster.Spec.Backups.PGBackRest.Jobs = nil
+
+			spec, err := generateBackupJobSpecIntent(
+				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
+			)
+			assert.NilError(t, err)
+			assert.Assert(t, spec.TTLSecondsAfterFinished == nil)
+
+			cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{}
+
+			spec, err = generateBackupJobSpecIntent(
+				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
+			)
+			assert.NilError(t, err)
+			assert.Assert(t, spec.TTLSecondsAfterFinished == nil)
+		})
+
+		t.Run("Zero", func(t *testing.T) {
+			cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+				TTLSecondsAfterFinished: initialize.Int32(0),
+			}
+
+			spec, err := generateBackupJobSpecIntent(
+				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
+			)
+			assert.NilError(t, err)
+			if assert.Check(t, spec.TTLSecondsAfterFinished != nil) {
+				assert.Equal(t, *spec.TTLSecondsAfterFinished, int32(0))
+			}
+		})
+
+		t.Run("Positive", func(t *testing.T) {
+			cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+				TTLSecondsAfterFinished: initialize.Int32(100),
+			}
+
+			spec, err := generateBackupJobSpecIntent(
+				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
+			)
+			assert.NilError(t, err)
+			if assert.Check(t, spec.TTLSecondsAfterFinished != nil) {
+				assert.Equal(t, *spec.TTLSecondsAfterFinished, int32(100))
+			}
+		})
 	})
 }
 

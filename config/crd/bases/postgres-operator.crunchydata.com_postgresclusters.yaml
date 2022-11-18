@@ -1325,6 +1325,12 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          ttlSecondsAfterFinished:
+                            description: 'Limit the lifetime of a Job that has finished.
+                              More info: https://kubernetes.io/docs/concepts/workloads/controllers/job'
+                            format: int32
+                            minimum: 60
+                            type: integer
                         type: object
                       manual:
                         description: Defines details for manual pgBackRest backup

@@ -2707,6 +2707,11 @@ Jobs field allows configuration for all backup jobs
         <td>[]object</td>
         <td>Tolerations of pgBackRest backup Job pods. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
         <td>false</td>
+      </tr><tr>
+        <td><b>ttlSecondsAfterFinished</b></td>
+        <td>integer</td>
+        <td>Limit the lifetime of a Job that has finished. More info: https://kubernetes.io/docs/concepts/workloads/controllers/job</td>
+        <td>false</td>
       </tr></tbody>
 </table>
 
