@@ -20,6 +20,10 @@ immediately have access to your databases.
 
 ## Deploying pgAdmin 4
 
+{{% notice warning %}}
+Unfortunately, pgAdmin 4 is not currently compatible with PostgreSQL 15.
+{{% /notice %}}
+
 If you've done the [quickstart]({{< relref "quickstart/_index.md" >}}), add the
 following fields to the spec and reapply; if you don't have any Postgres clusters
 running, add the fields to a spec, and apply.
