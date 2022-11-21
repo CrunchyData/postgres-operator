@@ -10,7 +10,7 @@ on:
 
 jobs:
   go-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -20,7 +20,7 @@ jobs:
       - run: make check-generate
 
   kubernetes-api:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [go-test]
     strategy:
       fail-fast: false
@@ -46,7 +46,7 @@ jobs:
 
   kubernetes-k3d:
     if: "${{ github.repository == 'CrunchyData/postgres-operator' }}"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     needs: [go-test]
     strategy:
       fail-fast: false
