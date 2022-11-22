@@ -283,10 +283,21 @@ func TestReconcilePatroniLeaderLease(t *testing.T) {
 	// CRD validation looks only at the new/incoming value of fields. Confirm
 	// that each ServiceType can change to any other ServiceType. Forbidding
 	// certain transitions requires a validating webhook.
+	serviceTypeChangeClusterCounter := 0
 	for _, beforeType := range serviceTypes {
 		for _, changeType := range serviceTypes {
 			t.Run(beforeType+"To"+changeType, func(t *testing.T) {
-				cluster := cluster.DeepCopy()
+				// Creating fresh clusters for these tests
+				cluster := testCluster()
+				cluster.Namespace = ns.Name
+
+				// Note (dsessler): Adding a number to each cluster name to make cluster/service
+				// names unique to work around an intermittent race condition where a service
+				// from a prior test has not been deleted yet when the next test runs, causing
+				// the test to fail due to non-matching IP addresses.
+				cluster.Name += "-" + strconv.Itoa(serviceTypeChangeClusterCounter)
+				assert.NilError(t, cc.Create(ctx, cluster))
+
 				cluster.Spec.Service = &v1beta1.ServiceSpec{Type: beforeType}
 
 				before, err := reconciler.reconcilePatroniLeaderLease(ctx, cluster)
@@ -309,6 +320,7 @@ func TestReconcilePatroniLeaderLease(t *testing.T) {
 				assert.NilError(t, err, "\n%#v", errors.Unwrap(err))
 				assert.Equal(t, after.Spec.ClusterIP, before.Spec.ClusterIP,
 					"expected to keep the same ClusterIP")
+				serviceTypeChangeClusterCounter++
 			})
 		}
 	}
