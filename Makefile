@@ -252,7 +252,7 @@ clean: clean-deprecated
 	rm -f config/rbac/role.yaml
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
-	[ ! -d build/crd/generated ] || rm -r build/crd/generated
+	rm -rf build/crd/generated build/crd/*/generated
 	[ ! -f hack/tools/setup-envtest ] || hack/tools/setup-envtest --bin-dir=hack/tools/envtest cleanup
 	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest

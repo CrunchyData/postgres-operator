@@ -14,7 +14,8 @@
 # limitations under the License.
 
 directory=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-crd_build_dir="$directory"/../build/crd
+clusters_dir="${directory}/../build/crd/postgresclusters"
+upgrades_dir="${directory}/../build/crd/pgupgrades"
 
 # Generate a Kustomize patch file for removing any TODOs we inherit from the Kubernetes API.
 # Right now there is one TODO in our CRD. This script focuses on removing the specific TODO
@@ -33,7 +34,7 @@ echo "Generating Kustomize patch file for removing Kube API TODOs"
 name_desc_with_todo=$(
   python3 -m yq -r \
     .spec.versions[0].schema.openAPIV3Schema.properties.spec.properties.customTLSSecret.properties.name.description \
-    "${crd_build_dir}/generated/postgres-operator.crunchydata.com_postgresclusters.yaml"
+    "${clusters_dir}/generated/postgres-operator.crunchydata.com_postgresclusters.yaml"
 )
 name_desc_without_todo=$(sed 's/ TODO.*//g' <<< "${name_desc_with_todo}")
 
@@ -43,4 +44,11 @@ python3 -m yq -y --arg old "${name_desc_with_todo}" --arg new "${name_desc_witho
 	[paths(select(. == $old)) | { op: "copy", from: "/work", path: "/\(map(tostring) | join("/"))" }] +
 	[{ op: "remove", path: "/work" }]
 ' \
-	"${crd_build_dir}/generated/postgres-operator.crunchydata.com_postgresclusters.yaml" > "${crd_build_dir}/todos.yaml"
+	"${clusters_dir}/generated/postgres-operator.crunchydata.com_postgresclusters.yaml" > "${clusters_dir}/todos.yaml"
+
+python3 -m yq -y --arg old "${name_desc_with_todo}" --arg new "${name_desc_without_todo}" '
+	[{ op: "add", path: "/work", value: $new }] +
+	[paths(select(. == $old)) | { op: "copy", from: "/work", path: "/\(map(tostring) | join("/"))" }] +
+	[{ op: "remove", path: "/work" }]
+' \
+	"${upgrades_dir}/generated/postgres-operator.crunchydata.com_pgupgrades.yaml" > "${upgrades_dir}/todos.yaml"

@@ -1359,7 +1359,7 @@ LocalObjectReference contains enough information to let you locate the reference
     <tbody><tr>
         <td><b>name</b></td>
         <td>string</td>
-        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
         <td>false</td>
       </tr></tbody>
 </table>

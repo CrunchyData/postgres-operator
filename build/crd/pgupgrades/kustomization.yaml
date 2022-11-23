@@ -22,6 +22,12 @@ patches:
     version: v1
     kind: CustomResourceDefinition
     name: pgupgrades.postgres-operator.crunchydata.com
+  path: todos.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: pgupgrades.postgres-operator.crunchydata.com
 # The version below should match the version on the PostgresCluster CRD
   patch: |-
     - op: add
