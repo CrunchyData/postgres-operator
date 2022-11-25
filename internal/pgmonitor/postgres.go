@@ -86,7 +86,7 @@ func DisableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor) er
 // EnableExporterInPostgreSQL runs SQL setup commands in `database` to enable
 // the exporter to retrieve metrics. pgMonitor objects are created and expected
 // extensions are installed. We also ensure that the monitoring user has the
-// current password, optimal config and can login.
+// current password and can login.
 func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 	monitoringSecret *corev1.Secret, database, setup string) error {
 	log := logging.FromContext(ctx)
@@ -138,12 +138,6 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 				// password; update the password and ensure that the ROLE
 				// can login to the database
 				`ALTER ROLE :"username" LOGIN PASSWORD :'verifier';`,
-
-				// disable JIT for only ccp_monitoring user's context to prevent:
-				// - slow executing due unnecessary inlining, optimization and emission
-				// - memory leak due to re-creating struct types during inlining
-				// and allow to enable JIT for other database users transparently
-				`ALTER ROLE :"username" SET jit = off;`,
 			}, "\n"),
 			map[string]string{
 				"database": database,
