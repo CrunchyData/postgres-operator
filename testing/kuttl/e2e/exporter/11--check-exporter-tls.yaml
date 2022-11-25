@@ -41,6 +41,5 @@ commands:
         BEGIN
           SELECT * INTO result FROM pg_catalog.pg_roles WHERE rolname = 'ccp_monitoring';
           ASSERT FOUND, 'user not found';
-          ASSERT result.rolconfig @> '{jit=off}', format('got config: %L', result.rolconfig);
         END $$
       SQL
