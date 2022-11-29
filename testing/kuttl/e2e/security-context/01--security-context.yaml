@@ -41,7 +41,7 @@ commands:
           "
       ) || exit
 
-      WRONG=$( ! echo "${PODS_SCC}" | grep -Ev '\<restricted$' ) || {
+      WRONG=$( ! echo "${PODS_SCC}" | grep -Ev -e '\<restricted$' -e '\<restricted-v2$' ) || {
         echo 'Found pods not assigned to the restricted security context constraint!'
         echo "${PODS_SCC}"
         exit 1
