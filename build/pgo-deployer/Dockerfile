@@ -63,7 +63,7 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
                 which \
                 gettext \
                 nss_wrapper \
-                python38-jmespath \
+                python39-jmespath \
 	&& ${PACKAGER} -y clean all --enablerepo='rhocp-4.5-for-rhel-8-x86_64-rpms' ; \
 fi
 
