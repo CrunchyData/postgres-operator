@@ -2715,6 +2715,19 @@ volumes:
 			}
 		})
 	})
+
+	t.Run("Command", func(t *testing.T) {
+		cmd := []string{"cmd", "blah"}
+		cluster := &v1beta1.PostgresCluster{}
+		cluster.Spec.Backups.PGBackRest.Command = cmd
+		job, err := generateBackupJobSpecIntent(
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, job.Template.Spec.Containers[0].Command, cmd)
+	})
 }
 
 func TestGenerateRepoHostIntent(t *testing.T) {
