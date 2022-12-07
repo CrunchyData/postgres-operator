@@ -9,8 +9,8 @@ weight: 110
 
 PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
-- Kubernetes 1.21-1.24
-- OpenShift 4.6+
+- Kubernetes 1.22-1.25
+- OpenShift 4.8-4.11
 - Rancher
 - Google Kubernetes Engine (GKE), including Anthos
 - Amazon EKS
@@ -26,19 +26,25 @@ The listed versions of Postgres show the latest minor release (e.g. {{< param po
 
 Note that for the 5.0.3 release and beyond, the Postgres containers were renamed to `crunchy-postgres` and `crunchy-postgres-gis`.
 
-| PGO | pgAdmin | pgBackRest | PgBouncer | Postgres | PostGIS |
+| PGO | pgAdmin* | pgBackRest | PgBouncer | Postgres | PostGIS |
 |-----|---------|------------|-----------|----------|---------|
+| `5.3.0` | `4.30` | `2.41` | `1.17` | `15,14,13,12,11` | `3.3,3.2,3.1,3.0,2.5,2.4` |
+| `5.2.1` | `4.30` | `2.41` | `1.17` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
 | `5.2.0` | `4.30` | `2.40` | `1.17` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
+| `5.1.4` | `4.30` | `2.41` | `1.17` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
 | `5.1.3` | `4.30` | `2.40` | `1.17` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
 | `5.1.2` | `4.30` | `2.38` | `1.16` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
 | `5.1.1` | `4.30` | `2.38` | `1.16` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
 | `5.1.0` | `4.30` | `2.38` | `1.16` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
+| `5.0.9` | `n/a` | `2.41` | `1.17` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
 | `5.0.8` | `n/a` | `2.40` | `1.17` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
 | `5.0.7` | `n/a` | `2.38` | `1.16` | `14,13,12,11,10` | `3,2,3.1,3.0,2.5,2.4,2.3` |
 | `5.0.6` | `n/a` | `2.38` | `1.16` | `14,13,12,11,10` | `3.2,3.1,3.0,2.5,2.4,2.3` |
 | `5.0.5` | `n/a` | `2.36` | `1.16` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
 | `5.0.4` | `n/a` | `2.36` | `1.16` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
 | `5.0.3` | `n/a` | `2.35` | `1.15` | `14,13,12,11,10` | `3.1,3.0,2.5,2.4,2.3` |
+
+_*pgAdmin 4.30 does not currently support Postgres 15._
 
 The latest Postgres containers include Patroni 2.1.3.
 
@@ -88,6 +94,7 @@ The table also lists the initial PGO version that the version of the extension i
 
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
+| `orafce` | 3.25.1 | 15, 14, 13, 12, 11  | 5.3.0 |
 | `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.2.0 |
 | `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.1.3 |
 | `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.0.8 |
@@ -109,6 +116,7 @@ The table also lists the initial PGO version that the version of the extension i
 | `pgAudit Analyze` | 1.0.8 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgAudit Analyze` | 1.0.7 | 13, 12, 11, 10  | 5.0.0 |
 | `pg_cron` | 1.3.1 | 14, 13, 12, 11, 10  | 5.0.0 |
+| `pg_partman` | 4.7.1 | 15, 14, 13, 12, 11  | 5.3.0 |
 | `pg_partman` | 4.6.2 | 14, 13, 12, 11, 10  | 5.2.0 |
 | `pg_partman` | 4.6.2 | 14, 13, 12, 11, 10  | 5.1.3 |
 | `pg_partman` | 4.6.2 | 14, 13, 12, 11, 10  | 5.0.8 |
@@ -124,6 +132,7 @@ The table also lists the initial PGO version that the version of the extension i
 | `set_user` | 3.0.0 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `set_user` | 2.0.1 | 13, 12, 11, 10  | 5.0.2 |
 | `set_user` | 2.0.0 | 13, 12, 11, 10  | 5.0.0 |
+| `TimescaleDB` | 2.8.1 | 14, 13, 12  | 5.3.0 |
 | `TimescaleDB` | 2.6.1 | 14, 13, 12  | 5.1.1 |
 | `TimescaleDB` | 2.6.1 | 14, 13, 12  | 5.0.6 |
 | `TimescaleDB` | 2.6.0 | 14, 13, 12  | 5.1.0 |

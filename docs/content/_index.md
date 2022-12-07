@@ -24,8 +24,8 @@ PGO is developed with many years of production experience in automating Postgres
 
 PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
-- Kubernetes 1.21-1.24
-- OpenShift 4.6+
+- Kubernetes 1.22-1.25
+- OpenShift 4.8-4.11
 - Rancher
 - Google Kubernetes Engine (GKE), including Anthos
 - Amazon EKS
