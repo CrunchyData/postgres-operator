@@ -29,10 +29,10 @@ annotations:
   operators.operatorframework.io.bundle.channels.v1: v5
   operators.operatorframework.io.bundle.channel.default.v1: v5
 
-  # OpenShift v4.6 is the first version to support CustomResourceDefinition v1.
+  # OpenShift v4.8 is the lowest version supported for v5.3.0+.
   # https://github.com/operator-framework/community-operators/blob/8a36a33/docs/packaging-required-criteria-ocp.md
   # https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/bundle-directory
   com.redhat.delivery.operator.bundle: true
-  com.redhat.openshift.versions: 'v4.6'
+  com.redhat.openshift.versions: 'v4.8'
 
 ...
