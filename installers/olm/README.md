@@ -76,6 +76,10 @@ and the kube minversion validation was in fact limiting the OCP version as well.
 be treated independently, but that was unfortunately not the case. The fix for this was to move this kube version to the
 1.19, despite its being released 3rd quarter of 2020 with 1 year of patch support.
 
+Following the lessons learned above, when bumping the Openshift supported version from v4.6 to v4.8, we will similarly
+keep the matching minimum Kubernetes version, i.e. 1.21.
+https://access.redhat.com/solutions/4870701
+
 ## Testing
 
 ### Setup
