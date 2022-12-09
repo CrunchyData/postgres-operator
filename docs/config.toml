@@ -52,6 +52,7 @@ postgresVersion14 = "14.6"
 postgresVersion13 = "13.9"
 postgresVersion12 = "12.13"
 postgresVersion11 = "11.18"
+operatorHelmRepository = "oci://registry.developers.crunchydata.com/crunchydata/pgo"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]

@@ -9,6 +9,12 @@ weight: 20
 
 This section provides instructions for installing and configuring PGO using Helm.
 
+There are two sources for the PGO Helm chart:
+* the Postgres Operator examples repo;
+* the Helm chart hosted on the Crunchy container registry, which supports direct Helm installs.
+
+# The Postgres Operator Examples repo
+
 ## Prerequisites
 
 First, go to GitHub and [fork the Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork)
@@ -103,3 +109,48 @@ Helm [leaves the CRDs][helm-crd-limits] in place. You can remove them with `kube
 ```shell
 kubectl delete -f helm/install/crds
 ```
+
+# The Crunchy Container Registry
+
+## Installing directly from the registry
+
+Crunchy Data hosts an OCI registry that `helm` can use directly.
+(Not all `helm` commands support OCI registries. For more information on
+which commands can be used, see [the Helm documentation](https://helm.sh/docs/topics/registries/).)
+
+You can install PGO directly from the registry using the `helm install` command:
+
+```
+helm install pgo {{< param operatorHelmRepository >}}
+```
+
+Or to see what values are set in the default `values.yaml` before installing, you could run a
+`helm show` command just as you would with any other registry:
+
+```
+helm show values {{< param operatorHelmRepository >}}
+```
+
+## Downloading from the registry
+
+Rather than deploying directly from the Crunchy registry, you can instead use the registry as the
+source for the Helm chart.
+
+To do so, download the Helm chart from the Crunchy Container Registry:
+
+```
+# To pull down the most recent Helm chart
+helm pull {{< param operatorHelmRepository >}}
+
+# To pull down a specific Helm chart
+helm pull {{< param operatorHelmRepository >}} --version {{< param operatorVersion >}}
+```
+
+Once the Helm chart has been downloaded, uncompress the bundle
+
+```
+tar -xvf pgo-{{< param operatorVersion >}}.tgz
+```
+
+And from there, you can follow the instructions above on setting the [Configuration](#configuration)
+and installing a local Helm chart.
