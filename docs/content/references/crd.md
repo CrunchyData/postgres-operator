@@ -124,7 +124,7 @@ PGUpgradeSpec defines the desired state of PGUpgrade
       </tr><tr>
         <td><b><a href="#pgupgradespecmetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b>priorityClassName</b></td>
@@ -1372,7 +1372,7 @@ LocalObjectReference contains enough information to let you locate the reference
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -1690,7 +1690,7 @@ PostgresClusterSpec defines the desired state of PostgresCluster
       </tr><tr>
         <td><b><a href="#postgresclusterspecmetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecmonitoring">monitoring</a></b></td>
@@ -1839,7 +1839,7 @@ pgBackRest archive configuration
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestmetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestrepohost">repoHost</a></b></td>
@@ -4022,7 +4022,7 @@ Defines details for manual pgBackRest backup Jobs
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -7157,7 +7157,7 @@ Resource requirements for a sidecar container
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindexmetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b>minAvailable</b></td>
@@ -10594,7 +10594,7 @@ VolumeMount describes a mounting of a Volume within a container.
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -15387,7 +15387,7 @@ LocalObjectReference contains enough information to let you locate the reference
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -16136,7 +16136,7 @@ Defines a PgBouncer proxy and connection pooler.
       </tr><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncermetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b>minAvailable</b></td>
@@ -19817,7 +19817,7 @@ Maps a string key to a path within a volume.
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -19895,7 +19895,7 @@ Specification of the service that exposes PgBouncer.
     <tbody><tr>
         <td><b><a href="#postgresclusterspecproxypgbouncerservicemetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b>nodePort</b></td>
@@ -19918,7 +19918,7 @@ Specification of the service that exposes PgBouncer.
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -20215,7 +20215,7 @@ Specification of the service that exposes the PostgreSQL primary instance.
     <tbody><tr>
         <td><b><a href="#postgresclusterspecservicemetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b>nodePort</b></td>
@@ -20238,7 +20238,7 @@ Specification of the service that exposes the PostgreSQL primary instance.
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -20373,7 +20373,7 @@ Defines a pgAdmin user interface.
       </tr><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminmetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b>priorityClassName</b></td>
@@ -22280,7 +22280,7 @@ A Secret containing the value for the LDAP_BIND_PASSWORD setting. More info: htt
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>
@@ -22358,7 +22358,7 @@ Specification of the service that exposes pgAdmin.
     <tbody><tr>
         <td><b><a href="#postgresclusterspecuserinterfacepgadminservicemetadata">metadata</a></b></td>
         <td>object</td>
-        <td>Metadata contains metadata for PostgresCluster resources</td>
+        <td>Metadata contains metadata for custom resources</td>
         <td>false</td>
       </tr><tr>
         <td><b>nodePort</b></td>
@@ -22381,7 +22381,7 @@ Specification of the service that exposes pgAdmin.
 
 
 
-Metadata contains metadata for PostgresCluster resources
+Metadata contains metadata for custom resources
 
 <table>
     <thead>

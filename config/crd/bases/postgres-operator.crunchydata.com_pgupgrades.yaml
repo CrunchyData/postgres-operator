@@ -885,7 +885,7 @@ spec:
                   type: object
                 type: array
               metadata:
-                description: Metadata contains metadata for PostgresCluster resources
+                description: Metadata contains metadata for custom resources
                 properties:
                   annotations:
                     additionalProperties:
