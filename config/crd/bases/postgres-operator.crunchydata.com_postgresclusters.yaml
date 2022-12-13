@@ -1351,8 +1351,7 @@ spec:
                         - repoName
                         type: object
                       metadata:
-                        description: Metadata contains metadata for PostgresCluster
-                          resources
+                        description: Metadata contains metadata for custom resources
                         properties:
                           annotations:
                             additionalProperties:
@@ -9356,8 +9355,7 @@ spec:
                       - resources
                       type: object
                     metadata:
-                      description: Metadata contains metadata for PostgresCluster
-                        resources
+                      description: Metadata contains metadata for custom resources
                       properties:
                         annotations:
                           additionalProperties:
@@ -9827,7 +9825,7 @@ spec:
                 - name
                 x-kubernetes-list-type: map
               metadata:
-                description: Metadata contains metadata for PostgresCluster resources
+                description: Metadata contains metadata for custom resources
                 properties:
                   annotations:
                     additionalProperties:
@@ -12794,8 +12792,7 @@ spec:
                           environment variable. More info: https://kubernetes.io/docs/concepts/containers/images'
                         type: string
                       metadata:
-                        description: Metadata contains metadata for PostgresCluster
-                          resources
+                        description: Metadata contains metadata for custom resources
                         properties:
                           annotations:
                             additionalProperties:
@@ -12864,8 +12861,7 @@ spec:
                         description: Specification of the service that exposes PgBouncer.
                         properties:
                           metadata:
-                            description: Metadata contains metadata for PostgresCluster
-                              resources
+                            description: Metadata contains metadata for custom resources
                             properties:
                               annotations:
                                 additionalProperties:
@@ -13128,7 +13124,7 @@ spec:
                   primary instance.
                 properties:
                   metadata:
-                    description: Metadata contains metadata for PostgresCluster resources
+                    description: Metadata contains metadata for custom resources
                     properties:
                       annotations:
                         additionalProperties:
@@ -14544,8 +14540,7 @@ spec:
                           variable. More info: https://kubernetes.io/docs/concepts/containers/images'
                         type: string
                       metadata:
-                        description: Metadata contains metadata for PostgresCluster
-                          resources
+                        description: Metadata contains metadata for custom resources
                         properties:
                           annotations:
                             additionalProperties:
@@ -14599,8 +14594,7 @@ spec:
                         description: Specification of the service that exposes pgAdmin.
                         properties:
                           metadata:
-                            description: Metadata contains metadata for PostgresCluster
-                              resources
+                            description: Metadata contains metadata for custom resources
                             properties:
                               annotations:
                                 additionalProperties:

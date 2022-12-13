@@ -64,7 +64,7 @@ type Sidecar struct {
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
 }
 
-// Metadata contains metadata for PostgresCluster resources
+// Metadata contains metadata for custom resources
 type Metadata struct {
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
