@@ -31,7 +31,7 @@ spec:
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.2
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.6-3.2-2"
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.3
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.6-3.3-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.6-3.3-2"
         - name: RELATED_IMAGE_POSTGRES_15
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.1-0"
         - name: RELATED_IMAGE_POSTGRES_15_GIS_3.3
