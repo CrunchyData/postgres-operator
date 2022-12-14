@@ -11,6 +11,13 @@ commands:
             postgres-operator.crunchydata.com/role=master'
       )
 
+      # TODO: We have no notion of exporter readiness.
+      for _ in $(seq 10); do
+        kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -c exporter \
+          -- curl --insecure --head --silent 'https://localhost:9187/metrics' && break
+        sleep 1
+      done
+
       # Ensure that the metrics endpoint is available from inside the exporter container
       {
         METRICS=$(kubectl exec --namespace "${NAMESPACE}" \
