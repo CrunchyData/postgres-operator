@@ -1,4 +1,3 @@
 .DS_Store
 /vendor/
-tools
 /testing/kuttl/e2e-generated*/
