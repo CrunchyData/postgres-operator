@@ -1,45 +1,28 @@
+PGO_IMAGE_NAME ?= postgres-operator
+PGO_IMAGE_MAINTAINER ?= Crunchy Data
+PGO_IMAGE_SUMMARY ?= Crunchy PostgreSQL Operator
+PGO_IMAGE_DESCRIPTION ?= $(PGO_IMAGE_SUMMARY)
+PGO_IMAGE_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes
+PGO_IMAGE_PREFIX ?= localhost
 
-# Default values if not already set
-PGOROOT ?= $(CURDIR)
-PGO_BASEOS ?= ubi8
-PGO_IMAGE_PREFIX ?= crunchydata
-PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-PGO_VERSION ?= $(shell git describe --tags)
-PGO_PG_VERSION ?= 14
-PGO_PG_FULLVERSION ?= 14.6
-PGO_KUBE_CLIENT ?= kubectl
+CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME ?= crunchy-postgres-exporter
+CRUNCHY_POSTGRES_EXPORTER_MAINTAINER ?= $(PGO_IMAGE_MAINTAINER)
+CRUNCHY_POSTGRES_EXPORTER_SUMMARY ?= Metrics exporter for PostgreSQL
+CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION ?= \
+	When run with the crunchy-postgres family of containers, crunchy-postgres-exporter reads the PostgreSQL data directory \
+	and has a SQL interface to a database to allow for metrics collection.
+CRUNCHY_POSTGRES_EXPORTER_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes
+CRUNCHY_POSTGRES_EXPORTER_IMAGE_PREFIX ?= $(PGO_IMAGE_PREFIX)
+CRUNCHY_POSTGRES_EXPORTER_PG_VERSION ?= 14
+CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 14.6
 
-# Valid values: buildah (default), docker
-IMGBUILDER ?= buildah
-# Determines whether or not rootless builds are enabled
-IMG_ROOTLESS_BUILD ?= false
-# Defines the sudo command that should be prepended to various build commands when rootless builds are
-# not enabled
-IMGCMDSUDO=
-ifneq ("$(IMG_ROOTLESS_BUILD)", "true")
-	IMGCMDSUDO=sudo --preserve-env
-endif
-IMGCMDSTEM=$(IMGCMDSUDO) buildah bud --layers $(SQUASH)
+PGMONITOR_DIR ?= hack/tools/pgmonitor
+PGMONITOR_VERSION ?= 'v4.8.0'
+POSTGRES_EXPORTER_VERSION ?= 0.10.1
+POSTGRES_EXPORTER_URL ?= https://github.com/prometheus-community/postgres_exporter/releases/download/v${POSTGRES_EXPORTER_VERSION}/postgres_exporter-${POSTGRES_EXPORTER_VERSION}.linux-amd64.tar.gz
+
 # Buildah's "build" used to be "bud". Use the alias to be compatible for a while.
 BUILDAH_BUILD ?= buildah bud
-
-# Default the buildah format to docker to ensure it is possible to pull the images from a docker
-# repository using docker (otherwise the images may not be recognized)
-export BUILDAH_FORMAT ?= docker
-
-# Allows simplification of IMGBUILDER switching
-ifeq ("$(IMGBUILDER)","docker")
-        IMGCMDSTEM=docker build
-endif
-
-# set the proper packager, registry and base image based on the PGO_BASEOS configured
-DOCKERBASEREGISTRY=
-BASE_IMAGE_OS=
-ifeq ("$(PGO_BASEOS)", "ubi8")
-    BASE_IMAGE_OS=ubi8-minimal
-    DOCKERBASEREGISTRY=registry.access.redhat.com/
-    PACKAGER=microdnf
-endif
 
 DEBUG_BUILD ?= false
 GO ?= go
@@ -78,8 +61,19 @@ all: build-crunchy-postgres-exporter-image
 
 .PHONY: setup
 setup: ## Run Setup needed to build images
-	PGOROOT='$(PGOROOT)' ./bin/get-deps.sh
-	./bin/check-deps.sh
+setup: get-pgmonitor
+setup: get-postgres-exporter
+
+.PHONY: get-pgmonitor
+get-pgmonitor:
+	git -C '$(dir $(PGMONITOR_DIR))' clone https://github.com/CrunchyData/pgmonitor.git || git -C '$(PGMONITOR_DIR)' fetch origin
+	@git -C '$(PGMONITOR_DIR)' checkout '$(PGMONITOR_VERSION)'
+	@git -C '$(PGMONITOR_DIR)' config pull.ff only
+
+.PHONY: get-postgres-exporter
+get-postgres-exporter:
+	[ ! -e hack/tools/postgres_exporter.tar.gz ] || (rm hack/tools/postgres_exporter.tar.gz && echo "Deleting old exporter")
+	wget -O hack/tools/postgres_exporter.tar.gz '$(POSTGRES_EXPORTER_URL)'
 
 .PHONY: clean
 clean: ## Clean resources
@@ -92,7 +86,8 @@ clean: clean-deprecated
 	[ ! -f hack/tools/setup-envtest ] || hack/tools/setup-envtest --bin-dir=hack/tools/envtest cleanup
 	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
-	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
+	[ ! -d hack/tools/pgmonitor ] || rm -rf hack/tools/pgmonitor
+	[ ! -n "$$(ls hack/tools)" ] || rm -r hack/tools/*
 	[ ! -d hack/.kube ] || rm -r hack/.kube
 
 .PHONY: clean-deprecated
@@ -113,40 +108,40 @@ clean-deprecated: ## Clean deprecated resources
 ##@ Deployment
 .PHONY: createnamespaces
 createnamespaces: ## Create operator and target namespaces
-	$(PGO_KUBE_CLIENT) apply -k ./config/namespace
+	kubectl apply -k ./config/namespace
 
 .PHONY: deletenamespaces
 deletenamespaces: ## Delete operator and target namespaces
-	$(PGO_KUBE_CLIENT) delete -k ./config/namespace
+	kubectl delete -k ./config/namespace
 
 .PHONY: install
 install: ## Install the postgrescluster CRD
-	$(PGO_KUBE_CLIENT) apply --server-side -k ./config/crd
+	kubectl apply --server-side -k ./config/crd
 
 .PHONY: uninstall
 uninstall: ## Delete the postgrescluster CRD
-	$(PGO_KUBE_CLIENT) delete -k ./config/crd
+	kubectl delete -k ./config/crd
 
 .PHONY: deploy
 deploy: ## Deploy the PostgreSQL Operator (enables the postgrescluster controller)
-	$(PGO_KUBE_CLIENT) apply --server-side -k ./config/default
+	kubectl apply --server-side -k ./config/default
 
 .PHONY: undeploy
 undeploy: ## Undeploy the PostgreSQL Operator
-	$(PGO_KUBE_CLIENT) delete -k ./config/default
+	kubectl delete -k ./config/default
 
 .PHONY: deploy-dev
 deploy-dev: ## Deploy the PostgreSQL Operator locally
 deploy-dev: build-postgres-operator
 deploy-dev: createnamespaces
-	$(PGO_KUBE_CLIENT) apply --server-side -k ./config/dev
+	kubectl apply --server-side -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
 		CRUNCHY_DEBUG=true \
 		CHECK_FOR_UPGRADES='$(if $(CHECK_FOR_UPGRADES),$(CHECK_FOR_UPGRADES),false)' \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		PGO_NAMESPACE='postgres-operator' \
-		$(shell $(PGO_KUBE_CLIENT) kustomize ./config/dev | \
+		$(shell kubectl kustomize ./config/dev | \
 			sed -ne '/^kind: Deployment/,/^---/ { \
 				/RELATED_IMAGE_/ { N; s,.*\(RELATED_[^[:space:]]*\).*value:[[:space:]]*\([^[:space:]]*\),\1="\2",; p; }; \
 			}') \
@@ -160,52 +155,81 @@ build-postgres-operator: ## Build the postgres-operator binary
 		-o bin/postgres-operator ./cmd/postgres-operator
 
 ##@ Build - Images
-.PHONY: build-pgo-base-image
-build-pgo-base-image: ## Build the pgo-base
-build-pgo-base-image: licenses
-build-pgo-base-image: $(PGOROOT)/build/pgo-base/Dockerfile
-	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/build/pgo-base/Dockerfile \
-		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
-		--build-arg BASE_IMAGE_OS=$(BASE_IMAGE_OS) \
-		--build-arg BASEOS=$(PGO_BASEOS) \
-		--build-arg RELVER=$(PGO_VERSION) \
-		--build-arg DOCKERBASEREGISTRY=$(DOCKERBASEREGISTRY) \
-		--build-arg PACKAGER=$(PACKAGER) \
-		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
-		--build-arg PGVERSION=$(PGO_PG_VERSION) \
-		$(PGOROOT)
-
 .PHONY: build-crunchy-postgres-exporter-image
 build-crunchy-postgres-exporter-image: ## Build the crunchy-postgres-exporter image
-build-crunchy-postgres-exporter-image: build-pgo-base-image
-build-crunchy-postgres-exporter-image: $(PGOROOT)/build/crunchy-postgres-exporter/Dockerfile
-	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/build/crunchy-postgres-exporter/Dockerfile \
-		-t $(PGO_IMAGE_PREFIX)/crunchy-postgres-exporter:$(PGO_IMAGE_TAG) \
-		--build-arg BASEOS=$(PGO_BASEOS) \
-		--build-arg BASEVER=$(PGO_VERSION) \
-		--build-arg PACKAGER=$(PACKAGER) \
-		--build-arg PGVERSION=$(PGO_PG_VERSION) \
-		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
-		$(PGOROOT)
+build-crunchy-postgres-exporter-image: CRUNCHY_POSTGRES_EXPORTER_IMAGE_REVISION := $(shell git rev-parse HEAD)
+build-crunchy-postgres-exporter-image: CRUNCHY_POSTGRES_EXPORTER_IMAGE_TIMESTAMP := $(shell date -u +%FT%TZ)
+build-crunchy-postgres-exporter-image: build/crunchy-postgres-exporter/Dockerfile
+	$(if $(shell (echo 'buildah version 1.24'; $(word 1,$(BUILDAH_BUILD)) --version) | sort -Vc 2>&1), \
+		$(warning WARNING: old buildah does not invalidate its cache for changed labels: \
+			https://github.com/containers/buildah/issues/3517))
+	$(if $(IMAGE_TAG),,	$(error missing IMAGE_TAG))
+	$(BUILDAH_BUILD) \
+		--tag $(BUILDAH_TRANSPORT)$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_PREFIX)/$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME):$(IMAGE_TAG) \
+		--build-arg PGVERSION=$(CRUNCHY_POSTGRES_EXPORTER_PG_VERSION) \
+		--label name='$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME)' \
+		--label build-date='$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_TIMESTAMP)' \
+		--label description='$(CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION)' \
+		--label maintainer='$(CRUNCHY_POSTGRES_EXPORTER_MAINTAINER)' \
+		--label summary='$(CRUNCHY_POSTGRES_EXPORTER_SUMMARY)' \
+		--label url='$(CRUNCHY_POSTGRES_EXPORTER_URL)' \
+		--label vcs-ref='$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_REVISION)' \
+		--label vendor='$(CRUNCHY_POSTGRES_EXPORTER_MAINTAINER)' \
+		--label postgres.version.major='$(CRUNCHY_POSTGRES_EXPORTER_PG_VERSION)' \
+		--label postgres.version='$(CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION)' \
+		--label io.k8s.display-name='$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME)' \
+		--label io.k8s.description='$(CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION)' \
+		--label io.openshift.tags="postgresql,postgres,monitoring,database,crunchy" \
+		--annotation org.opencontainers.image.authors='$(CRUNCHY_POSTGRES_EXPORTER_MAINTAINER)' \
+		--annotation org.opencontainers.image.vendor='$(CRUNCHY_POSTGRES_EXPORTER_MAINTAINER)' \
+		--annotation org.opencontainers.image.created='$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_TIMESTAMP)' \
+		--annotation org.opencontainers.image.description='$(CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION)' \
+		--annotation org.opencontainers.image.revision='$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_REVISION)' \
+		--annotation org.opencontainers.image.title='$(CRUNCHY_POSTGRES_EXPORTER_SUMMARY)' \
+		--annotation org.opencontainers.image.url='$(CRUNCHY_POSTGRES_EXPORTER_URL)' \
+		$(if $(PGO_VERSION),$(strip \
+			--label release='$(PGO_VERSION)' \
+			--label version='$(PGO_VERSION)' \
+			--annotation org.opencontainers.image.version='$(PGO_VERSION)' \
+		)) \
+		--file $< --format docker --layers .
 
 .PHONY: build-postgres-operator-image
 build-postgres-operator-image: ## Build the postgres-operator image
+build-postgres-operator-image: PGO_IMAGE_REVISION := $(shell git rev-parse HEAD)
+build-postgres-operator-image: PGO_IMAGE_TIMESTAMP := $(shell date -u +%FT%TZ)
 build-postgres-operator-image: build-postgres-operator
-build-postgres-operator-image: $(PGOROOT)/build/postgres-operator/Dockerfile
-	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/build/postgres-operator/Dockerfile \
-		-t $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) \
-		--build-arg BASE_IMAGE_OS=$(BASE_IMAGE_OS) \
-		--build-arg PACKAGER=$(PACKAGER) \
-		--build-arg PGVERSION=$(PGO_PG_VERSION) \
-		--build-arg RELVER=$(PGO_VERSION) \
-		--build-arg DOCKERBASEREGISTRY=$(DOCKERBASEREGISTRY) \
-		--build-arg PACKAGER=$(PACKAGER) \
-		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
-		--build-arg PGVERSION=$(PGO_PG_VERSION) \
-		$(PGOROOT)
+build-postgres-operator-image: build/postgres-operator/Dockerfile
+	$(if $(shell (echo 'buildah version 1.24'; $(word 1,$(BUILDAH_BUILD)) --version) | sort -Vc 2>&1), \
+		$(warning WARNING: old buildah does not invalidate its cache for changed labels: \
+			https://github.com/containers/buildah/issues/3517))
+	$(if $(IMAGE_TAG),,	$(error missing IMAGE_TAG))
+	$(BUILDAH_BUILD) \
+		--tag $(BUILDAH_TRANSPORT)$(PGO_IMAGE_PREFIX)/$(PGO_IMAGE_NAME):$(IMAGE_TAG) \
+		--label name='$(PGO_IMAGE_NAME)' \
+		--label build-date='$(PGO_IMAGE_TIMESTAMP)' \
+		--label description='$(PGO_IMAGE_DESCRIPTION)' \
+		--label maintainer='$(PGO_IMAGE_MAINTAINER)' \
+		--label summary='$(PGO_IMAGE_SUMMARY)' \
+		--label url='$(PGO_IMAGE_URL)' \
+		--label vcs-ref='$(PGO_IMAGE_REVISION)' \
+		--label vendor='$(PGO_IMAGE_MAINTAINER)' \
+		--label io.k8s.display-name='$(PGO_IMAGE_NAME)' \
+		--label io.k8s.description='$(PGO_IMAGE_DESCRIPTION)' \
+		--label io.openshift.tags="postgresql,postgres,sql,nosql,crunchy" \
+		--annotation org.opencontainers.image.authors='$(PGO_IMAGE_MAINTAINER)' \
+		--annotation org.opencontainers.image.vendor='$(PGO_IMAGE_MAINTAINER)' \
+		--annotation org.opencontainers.image.created='$(PGO_IMAGE_TIMESTAMP)' \
+		--annotation org.opencontainers.image.description='$(PGO_IMAGE_DESCRIPTION)' \
+		--annotation org.opencontainers.image.revision='$(PGO_IMAGE_REVISION)' \
+		--annotation org.opencontainers.image.title='$(PGO_IMAGE_SUMMARY)' \
+		--annotation org.opencontainers.image.url='$(PGO_IMAGE_URL)' \
+		$(if $(PGO_VERSION),$(strip \
+			--label release='$(PGO_VERSION)' \
+			--label version='$(PGO_VERSION)' \
+			--annotation org.opencontainers.image.version='$(PGO_VERSION)' \
+		)) \
+		--file $< --format docker --layers .
 
 ##@ Test
 .PHONY: check
@@ -295,8 +319,8 @@ generate-crd: ## Generate crd
 		paths='./pkg/apis/...' \
 		output:dir='build/crd/pgupgrades/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
 	@
-	$(PGO_KUBE_CLIENT) kustomize ./build/crd/postgresclusters > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
-	$(PGO_KUBE_CLIENT) kustomize ./build/crd/pgupgrades > ./config/crd/bases/postgres-operator.crunchydata.com_pgupgrades.yaml
+	kubectl kustomize ./build/crd/postgresclusters > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
+	kubectl kustomize ./build/crd/pgupgrades > ./config/crd/bases/postgres-operator.crunchydata.com_pgupgrades.yaml
 
 .PHONY: generate-crd-docs
 generate-crd-docs: ## Generate crd-docs
@@ -323,3 +347,27 @@ generate-rbac: ## Generate rbac
 license: licenses
 licenses: ## Aggregate license files
 	./bin/license_aggregator.sh ./cmd/...
+
+.PHONY: release-postgres-operator-image release-postgres-operator-image-labels
+release-postgres-operator-image: ## Build the postgres-operator image and all its prerequisites
+release-postgres-operator-image: release-postgres-operator-image-labels
+release-postgres-operator-image: licenses
+release-postgres-operator-image: build-postgres-operator-image
+release-postgres-operator-image-labels:
+	$(if $(PGO_IMAGE_DESCRIPTION),,	$(error missing PGO_IMAGE_DESCRIPTION))
+	$(if $(PGO_IMAGE_MAINTAINER),, 	$(error missing PGO_IMAGE_MAINTAINER))
+	$(if $(PGO_IMAGE_NAME),,       	$(error missing PGO_IMAGE_NAME))
+	$(if $(PGO_IMAGE_SUMMARY),,    	$(error missing PGO_IMAGE_SUMMARY))
+	$(if $(PGO_VERSION),,			$(error missing PGO_VERSION))
+
+.PHONY: release-crunchy-postgres-exporter-image release-crunchy-postgres-exporter-image-labels
+release-crunchy-postgres-exporter-image: ## Build the postgres-operator image and all its prerequisites
+release-crunchy-postgres-exporter-image: release-crunchy-postgres-exporter-image-labels
+release-crunchy-postgres-exporter-image: licenses
+release-crunchy-postgres-exporter-image: build-postgres-operator-image
+release-crunchy-postgres-exporter-image-labels:
+	$(if $(PGO_IMAGE_DESCRIPTION),,	$(error missing PGO_IMAGE_DESCRIPTION))
+	$(if $(PGO_IMAGE_MAINTAINER),, 	$(error missing PGO_IMAGE_MAINTAINER))
+	$(if $(PGO_IMAGE_NAME),,       	$(error missing PGO_IMAGE_NAME))
+	$(if $(PGO_IMAGE_SUMMARY),,    	$(error missing PGO_IMAGE_SUMMARY))
+	$(if $(PGO_VERSION),,			$(error missing PGO_VERSION))
