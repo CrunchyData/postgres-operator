@@ -222,7 +222,7 @@ check-kuttl:
 .PHONY: generate-kuttl
 generate-kuttl: export KUTTL_PG_VERSION ?= 14
 generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.1
-generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:centos8-14.2-0
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.6-2
 generate-kuttl:
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
