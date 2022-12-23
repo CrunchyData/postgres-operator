@@ -220,6 +220,7 @@ check-kuttl:
 		--config testing/kuttl/kuttl-test.yaml
 
 .PHONY: generate-kuttl
+generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 13
 generate-kuttl: export KUTTL_PG_VERSION ?= 14
 generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.1
 generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.6-2
@@ -234,7 +235,7 @@ generate-kuttl:
 	12 ) export KUTTL_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
 	11 ) export KUTTL_BITNAMI_IMAGE_TAG=11.17.0-debian-11-r39 ;; \
 	esac; \
-	render() { envsubst '"'"'$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE $$KUTTL_BITNAMI_IMAGE_TAG'"'"'; }; \
+	render() { envsubst '"'"'$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE $$KUTTL_BITNAMI_IMAGE_TAG'"'"'; }; \
 	while [ $$# -gt 0 ]; do \
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \

@@ -1,0 +1,31 @@
+---
+# Wait for the instances to be ready and the replica backup to complete
+# by waiting for the status to signal pods ready and pgbackrest stanza created
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: wal-pvc-pgupgrade
+spec:
+  postgresVersion: ${KUTTL_PG_UPGRADE_FROM_VERSION}
+status:
+  instances:
+    - name: '00'
+      replicas: 3
+      readyReplicas: 3
+      updatedReplicas: 3
+  pgbackrest:
+    repos:
+    - name: repo1
+      replicaCreateBackupComplete: true
+      stanzaCreated: true
+---
+# Even when the cluster exists, the pgupgrade is not progressing because the cluster is not shutdown
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGUpgrade
+metadata:
+  name: wal-pvc-pgupgrade-do-it
+status:
+  conditions:
+  - type:   "Progressing"
+    status: "False"
+    reason: "PGClusterNotShutdown"
