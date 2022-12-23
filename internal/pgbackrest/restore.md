@@ -19,7 +19,7 @@ The `--target-action` option of `pgbackrest restore` almost translates to the
 PostgreSQL `recovery_target_action` parameter but not exactly. The behavior of
 that parameter also depends on the PostgreSQL version and on other parameters.
 
-For PostgreSQL 9.5 through 14,
+For PostgreSQL 9.5 through 15,
 
  - The PostgreSQL documentation states that for `recovery_target_action`
    "the default is `pause`," but that is only the case when `hot_standby=on`.
@@ -35,7 +35,7 @@ For PostgreSQL 9.5 through 14,
 
 The default value of `hot_standby` is `off` prior to PostgreSQL 10 and `on` since.
 
-### PostgreSQL 14, 13, 12
+### PostgreSQL 15, 14, 13, 12
 
 [12]: https://www.postgresql.org/docs/12/runtime-config-wal.html
 [commit]: https://git.postgresql.org/gitweb/?p=postgresql.git;h=2dedf4d9a899b36d1a8ed29be5efbd1b31a8fe85
