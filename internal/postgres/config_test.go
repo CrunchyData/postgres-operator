@@ -175,7 +175,9 @@ func TestBashRecreateDirectory(t *testing.T) {
 	cmd.Args = append(cmd.Args, "-ceu", "--",
 		bashRecreateDirectory+` recreate "$@"`, "-",
 		filepath.Join(dir, "d"), "0740")
-
+	// The assertion below expects alphabetically sorted filenames.
+	// Set an empty environment to always use the default/standard locale.
+	cmd.Env = []string{}
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, string(output))
 	assert.Assert(t, cmp.Regexp(`^`+
