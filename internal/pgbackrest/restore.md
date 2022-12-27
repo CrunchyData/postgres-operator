@@ -28,11 +28,6 @@ For PostgreSQL 9.5 through 15,
    of `pause` will act the same as `shutdown`," but that cannot be configured
    through pgBackRest.
 
- - The pgBackRest documentation seems to state that `--target-action` has no
-   effect when `hot_standby=off`, but that is not the case.
-
-   See: https://github.com/pgbackrest/pgbackrest/issues/987
-
 The default value of `hot_standby` is `off` prior to PostgreSQL 10 and `on` since.
 
 ### PostgreSQL 15, 14, 13, 12
