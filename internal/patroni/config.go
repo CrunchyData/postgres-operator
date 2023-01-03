@@ -20,6 +20,8 @@ import (
 	"path"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
@@ -231,10 +233,34 @@ func DynamicConfiguration(
 			// shared_preload_libraries is a comma separated list that can have
 			// other values appended in addition to the mandatory values. Below,
 			// any values provided in the CRD are appended after the mandatory
-			// values.
+			// values unless unless a mandatory value appear in the other list.
+			// The order defined by the shared_preload_libraries list is preserved
+			// (and leading when there is intersection with the mandatory values.)
+			// for example:
+			// 		v = "lib1, lib2, lib3"
+			//      s = "lib4, lib5, lib6"
+			//           => "lib1, lib2, lib3, lib4, lib5, lib6"
+			// 		v = "lib1, lib2, lib3"
+			//      s = "lib4, lib1, lib6"
+			//           => "lib2, lib3, lib1, lib5, lib6"
+			// 		v = "lib1, lib2, lib3"
+			//      s = "lib3, lib1, lib2"
+			//           => "lib3, lib1, lib2"
+
 			s, ok := parameters[k].(string)
 			if k == "shared_preload_libraries" && ok {
-				parameters[k] = v + "," + s
+				mandatoryLibraries := strings.Split(strings.ReplaceAll(v, " ", ""), ",")
+				definedlibraries := strings.Split(strings.ReplaceAll(s, " ", ""), ",")
+			
+				nonDefinedMandatoryLibraries := make([]string, 0)
+			
+				for _, value := range mandatoryLibraries {
+					if !slices.Contains(definedlibraries, value) {
+						nonDefinedMandatoryLibraries = append(nonDefinedMandatoryLibraries, value)
+					}
+				}
+			
+				parameters[k] = strings.Join(append(nonDefinedMandatoryLibraries, definedlibraries...), ", ")
 			} else {
 				parameters[k] = v
 			}
