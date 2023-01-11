@@ -5,7 +5,7 @@ kind: PostgresCluster
 metadata:
   name: major-upgrade
 spec:
-  postgresVersion: ${KUTTL_PG_VERSION}
+  postgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
   instances:
     - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
   backups:

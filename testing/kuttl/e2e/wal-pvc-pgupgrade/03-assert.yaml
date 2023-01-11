@@ -19,4 +19,4 @@ kind: PostgresCluster
 metadata:
   name: wal-pvc-pgupgrade
 status:
-  postgresVersion: ${KUTTL_PG_VERSION}
+  postgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}

@@ -5,7 +5,7 @@ kind: PostgresCluster
 metadata:
   name: major-upgrade
 status:
-  postgresVersion: ${KUTTL_PG_VERSION}
+  postgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
   instances:
     - name: '00'
       replicas: 3

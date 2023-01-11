@@ -34,7 +34,7 @@ spec:
             - |
               DO $$$$
               BEGIN
-                ASSERT current_setting('server_version_num') LIKE '${KUTTL_PG_VERSION}%',
+                ASSERT current_setting('server_version_num') LIKE '${KUTTL_PG_UPGRADE_TO_VERSION}%',
                   format('got %L', current_setting('server_version_num'));
               END $$$$;
             - --command
@@ -94,7 +94,7 @@ spec:
             - |
               DO $$$$
               BEGIN
-                ASSERT current_setting('server_version_num') LIKE '${KUTTL_PG_VERSION}%',
+              ASSERT current_setting('server_version_num') LIKE '${KUTTL_PG_UPGRADE_TO_VERSION}%',
                   format('got %L', current_setting('server_version_num'));
               END $$$$;
             - --command

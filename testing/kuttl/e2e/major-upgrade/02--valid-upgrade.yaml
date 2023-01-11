@@ -6,5 +6,5 @@ metadata:
   name: major-upgrade-do-it
 spec:
   fromPostgresVersion: ${KUTTL_PG_UPGRADE_FROM_VERSION}
-  toPostgresVersion: ${KUTTL_PG_VERSION}
+  toPostgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
   postgresClusterName: major-upgrade
