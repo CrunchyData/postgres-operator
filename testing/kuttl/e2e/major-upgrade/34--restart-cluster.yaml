@@ -6,5 +6,5 @@ kind: PostgresCluster
 metadata:
   name: major-upgrade
 spec:
-  postgresVersion: ${KUTTL_PG_VERSION}
+  postgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
   shutdown: false

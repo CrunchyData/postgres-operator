@@ -24,5 +24,5 @@ metadata:
   name: wal-pvc-pgupgrade-do-it
 spec:
   fromPostgresVersion: ${KUTTL_PG_UPGRADE_FROM_VERSION}
-  toPostgresVersion: ${KUTTL_PG_VERSION}
+  toPostgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
   postgresClusterName: wal-pvc-pgupgrade
