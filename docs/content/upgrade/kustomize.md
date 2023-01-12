@@ -5,6 +5,21 @@ draft: false
 weight: 50
 ---
 
+## Upgrading to v5.4.0 from v5.3.x
+
+Apply the new version of the Kubernetes installer:
+
+```bash
+kubectl apply --server-side -k kustomize/install/default
+```
+
+PGO versions from 5.1.x through 5.3.x include a pgo-upgrade deployment, which
+is no longer needed after upgrading to v5.4.x. Delete the deployment:
+
+```bash
+kubectl delete deployment pgo-upgrade
+```
+
 ## Upgrading from PGO v5.0.0 Using Kustomize
 
 Starting with PGO v5.0.1, both the Deployment and ServiceAccount created when installing PGO via
