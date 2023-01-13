@@ -673,3 +673,9 @@ type ExporterSpec struct {
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 }
+
+func NewPostgresCluster() *PostgresCluster {
+	cluster := &PostgresCluster{}
+	cluster.SetGroupVersionKind(GroupVersion.WithKind("PostgresCluster"))
+	return cluster
+}

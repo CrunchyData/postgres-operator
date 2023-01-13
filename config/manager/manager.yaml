@@ -44,6 +44,8 @@ spec:
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.17-5"
         - name: RELATED_IMAGE_PGEXPORTER
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi8-5.3.0-0"
+        - name: RELATED_IMAGE_PGUPGRADE
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi8-5.3.0-0"        
         securityContext:
           allowPrivilegeEscalation: false
           capabilities: { drop: [ALL] }

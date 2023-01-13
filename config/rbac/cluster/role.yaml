@@ -102,24 +102,34 @@ rules:
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
-  - postgresclusters
+  - pgupgrades
   verbs:
   - get
   - list
-  - patch
   - watch
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
+  - pgupgrades/finalizers
   - postgresclusters/finalizers
   verbs:
   - update
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
+  - pgupgrades/status
   - postgresclusters/status
   verbs:
   - patch
+- apiGroups:
+  - postgres-operator.crunchydata.com
+  resources:
+  - postgresclusters
+  verbs:
+  - get
+  - list
+  - patch
+  - watch
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:
