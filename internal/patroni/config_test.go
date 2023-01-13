@@ -421,17 +421,17 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			{
-				name: "postgresql.parameters: mandatory shared_preload_libraries shared_preload_libraries first",
+				name: "postgresql.parameters: mandatory shared_preload_libraries containing a mandatory",
 				input: map[string]interface{}{
 					"postgresql": map[string]interface{}{
 						"parameters": map[string]interface{}{
-							"shared_preload_libraries": "given",
+							"shared_preload_libraries": "given1, mandatory1, given2",
 						},
 					},
 				},
 				params: postgres.Parameters{
 					Mandatory: parameters(map[string]string{
-						"shared_preload_libraries": "mandatory",
+						"shared_preload_libraries": "mandatory1, mandatory2, mandatory3",
 					}),
 				},
 				expected: map[string]interface{}{
@@ -439,7 +439,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					"ttl":       int32(30),
 					"postgresql": map[string]interface{}{
 						"parameters": map[string]interface{}{
-							"shared_preload_libraries": "given, mandatory",
+							"shared_preload_libraries": "mandatory2, mandatory3, given1, mandatory1, given2",
 						},
 						"pg_hba":        []string{},
 						"use_pg_rewind": true,
@@ -452,13 +452,13 @@ func TestDynamicConfiguration(t *testing.T) {
 				input: map[string]interface{}{
 					"postgresql": map[string]interface{}{
 						"parameters": map[string]interface{}{
-							"shared_preload_libraries": "mandatory2, given1, mandatory1, given2",
+							"shared_preload_libraries": "mandatory2, mandatory3, mandatory1",
 						},
 					},
 				},
 				params: postgres.Parameters{
 					Mandatory: parameters(map[string]string{
-						"shared_preload_libraries": "mandatory1, mandatory3, mandatory2",
+						"shared_preload_libraries": "mandatory1, mandatory2, mandatory3",
 					}),
 				},
 				expected: map[string]interface{}{
@@ -466,7 +466,7 @@ func TestDynamicConfiguration(t *testing.T) {
 					"ttl":       int32(30),
 					"postgresql": map[string]interface{}{
 						"parameters": map[string]interface{}{
-							"shared_preload_libraries": "mandatory2, given1, mandatory1, given2, mandatory3",
+							"shared_preload_libraries": "mandatory2, mandatory3, mandatory1",
 						},
 						"pg_hba":        []string{},
 						"use_pg_rewind": true,
