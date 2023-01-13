@@ -20,6 +20,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
@@ -27,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
+	"github.com/crunchydata/postgres-operator/internal/controller/pgupgrade"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -89,8 +91,7 @@ func main() {
 	}
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	err = addControllersToManager(mgr, openshift)
-	assertNoError(err)
+	addControllersToManager(mgr, openshift, log)
 
 	if util.DefaultMutableFeatureGate.Enabled(util.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -121,15 +122,30 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr manager.Manager, openshift bool) error {
-	r := &postgrescluster.Reconciler{
+func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger) {
+	pgReconciler := &postgrescluster.Reconciler{
 		Client:      mgr.GetClient(),
 		Owner:       postgrescluster.ControllerName,
 		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
 		Tracer:      otel.Tracer(postgrescluster.ControllerName),
 		IsOpenShift: openshift,
 	}
-	return r.SetupWithManager(mgr)
+
+	if err := pgReconciler.SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create PostgresCluster controller")
+		os.Exit(1)
+	}
+
+	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
+		Client: mgr.GetClient(),
+		Owner:  "pgupgrade-controller",
+		Scheme: mgr.GetScheme(),
+	}
+
+	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create PGUpgrade controller")
+		os.Exit(1)
+	}
 }
 
 func isOpenshift(cfg *rest.Config) bool {

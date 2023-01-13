@@ -1,0 +1,8 @@
+---
+# Annotate the cluster for an upgrade.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: wal-pvc-pgupgrade
+  annotations:
+    postgres-operator.crunchydata.com/allow-upgrade: wal-pvc-pgupgrade-do-it
