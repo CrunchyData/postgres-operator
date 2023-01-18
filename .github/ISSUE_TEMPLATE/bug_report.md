@@ -28,8 +28,8 @@ Add a concise description of what the bug is.
 Please provide the following details:
 
 - Platform: (`Kubernetes`, `OpenShift`, `Rancher`, `GKE`, `EKS`, `AKS` etc.)
-- Platform Version: (e.g. `1.20.3`, `4.7.8`)
-- PGO Image Tag: (e.g. `ubi8-4.7.8`)
+- Platform Version: (e.g. `1.20.3`, `4.7.9`)
+- PGO Image Tag: (e.g. `ubi8-4.7.9`)
 - Postgres Version (e.g. `13`)
 - Storage: (e.g. `hostpath`, `nfs`, or the name of your storage class)
 
