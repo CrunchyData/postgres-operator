@@ -10,7 +10,8 @@ commands:
           CURRENT_OWNERS=$(kubectl --namespace="${NAMESPACE}" get secret \
             pgo-root-cacert -o jsonpath='{.metadata.ownerReferences[*].name}')
           # If owner1 and owner2 are both listed, exit successfully
-          if [[ "$CURRENT_OWNERS" == *"owner1"* ]] && [[ "$CURRENT_OWNERS" == *"owner2"* ]]; then
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          if contains "${CURRENT_OWNERS}" "owner1" && contains "${CURRENT_OWNERS}" "owner2"; then
               exit 0
           fi
       done
