@@ -116,3 +116,17 @@ spec:
                   echo "$RESULT"
                   exit 1
               fi
+
+              # check GeoJSON function
+              RESULT=$(psql -c "DO \$\$
+              DECLARE
+               result text;
+              BEGIN
+               SELECT ST_AsText(ST_AsGeoJSON('SRID=4326;POINT(-118.4079 33.9434)'::geography)) INTO result;
+               ASSERT result = 'POINT(-118.4079 33.9434)', 'GeoJSON check failed';
+              END \$\$;" 2>&1)
+              
+              if [[ "$RESULT" == *"ERROR"* ]]; then
+                  echo "$RESULT"
+                  exit 1
+              fi
