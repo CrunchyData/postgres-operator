@@ -30,7 +30,6 @@ postgresVersion = "13.9"
 postgresVersion13 = "13.9"
 postgresVersion12 = "12.13"
 postgresVersion11 = "11.18"
-postgresVersion10 = "10.23"
 postgisVersion = "3.0"
 ubiBase = "ubi8"
 
