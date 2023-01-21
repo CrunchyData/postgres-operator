@@ -1,0 +1,49 @@
+# uses Trivy to scan every pull request, rejecting those with severe, fixable vulnerabilities
+# scans on PR to master and weekly with same behavior
+# cron scan is same as codeql-analysis job
+name: Trivy
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: '10 18 * * 2'
+
+jobs:
+  scan:
+    permissions:
+      # for github/codeql-action/upload-sarif to upload SARIF results
+      security-events: write 
+    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'CrunchyData/postgres-operator' }}
+
+    steps:
+      - uses: actions/checkout@v3
+      # - name: Log all detected vulnerabilities
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     scan-type: fs
+      #     hide-progress: true
+      #     # exit-code: 1
+
+      # Upload actionable results to the GitHub Security tab.
+      # Pull request checks fail according to repository settings.
+      # - https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
+      # - https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning
+      - name: Report actionable vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          hide-progress: true
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
