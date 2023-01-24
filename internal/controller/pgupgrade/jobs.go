@@ -24,8 +24,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/utils/pointer"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -162,7 +162,7 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 	job.Spec.Template.Spec.ImagePullSecrets = upgrade.Spec.ImagePullSecrets
 
 	// Attempt the upgrade exactly once.
-	job.Spec.BackoffLimit = pointer.Int32Ptr(0)
+	job.Spec.BackoffLimit = initialize.Int32(0)
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 
 	// Replace all containers with one that does the upgrade.
@@ -185,9 +185,8 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 
 	// The following will set these fields to null if not set in the spec
 	job.Spec.Template.Spec.Affinity = upgrade.Spec.Affinity
-	job.Spec.Template.Spec.PriorityClassName = pointer.StringPtrDerefOr(
-		upgrade.Spec.PriorityClassName,
-		"")
+	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(
+		upgrade.Spec.PriorityClassName)
 	job.Spec.Template.Spec.Tolerations = upgrade.Spec.Tolerations
 
 	r.setControllerReference(upgrade, job)
@@ -272,7 +271,7 @@ func (r *PGUpgradeReconciler) generateRemoveDataJob(
 	job.Spec.Template.Spec.ImagePullSecrets = upgrade.Spec.ImagePullSecrets
 
 	// Attempt the removal exactly once.
-	job.Spec.BackoffLimit = pointer.Int32Ptr(0)
+	job.Spec.BackoffLimit = initialize.Int32(0)
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 
 	// Replace all containers with one that removes the data.
@@ -296,9 +295,8 @@ func (r *PGUpgradeReconciler) generateRemoveDataJob(
 
 	// The following will set these fields to null if not set in the spec
 	job.Spec.Template.Spec.Affinity = upgrade.Spec.Affinity
-	job.Spec.Template.Spec.PriorityClassName = pointer.StringPtrDerefOr(
-		upgrade.Spec.PriorityClassName,
-		"")
+	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(
+		upgrade.Spec.PriorityClassName)
 	job.Spec.Template.Spec.Tolerations = upgrade.Spec.Tolerations
 
 	r.setControllerReference(upgrade, job)
