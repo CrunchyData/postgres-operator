@@ -25,11 +25,24 @@ func ByteMap(m *map[string][]byte) {
 	}
 }
 
+// FromPointer returns the value that p points to.
+// When p is nil, it returns the zero value of T.
+func FromPointer[T any](p *T) T {
+	var v T
+	if p != nil {
+		v = *p
+	}
+	return v
+}
+
 // Int32 returns a pointer to v.
 func Int32(v int32) *int32 { return &v }
 
 // Int64 returns a pointer to v.
 func Int64(v int64) *int64 { return &v }
+
+// Pointer returns a pointer to v.
+func Pointer[T any](v T) *T { return &v }
 
 // String returns a pointer to v.
 func String(v string) *string { return &v }
