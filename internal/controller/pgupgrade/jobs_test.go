@@ -24,9 +24,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/pointer"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -47,7 +47,7 @@ func TestGenerateUpgradeJob(t *testing.T) {
 	upgrade.Namespace = "ns1"
 	upgrade.Name = "pgu2"
 	upgrade.UID = "uid3"
-	upgrade.Spec.Image = pointer.StringPtr("img4")
+	upgrade.Spec.Image = initialize.Pointer("img4")
 	upgrade.Spec.PostgresClusterName = "pg5"
 	upgrade.Spec.FromPostgresVersion = 19
 	upgrade.Spec.ToPostgresVersion = 25
@@ -172,7 +172,7 @@ func TestGenerateRemoveDataJob(t *testing.T) {
 	upgrade.Namespace = "ns1"
 	upgrade.Name = "pgu2"
 	upgrade.UID = "uid3"
-	upgrade.Spec.Image = pointer.StringPtr("img4")
+	upgrade.Spec.Image = initialize.Pointer("img4")
 	upgrade.Spec.PostgresClusterName = "pg5"
 	upgrade.Spec.FromPostgresVersion = 19
 	upgrade.Spec.ToPostgresVersion = 25
