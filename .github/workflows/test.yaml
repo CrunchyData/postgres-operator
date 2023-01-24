@@ -19,6 +19,9 @@ jobs:
       - run: make check
       - run: make check-generate
 
+      - name: Ensure go.mod is tidy
+        run: go mod tidy && git diff --exit-code -- go.mod
+
   kubernetes-api:
     runs-on: ubuntu-20.04
     needs: [go-test]
