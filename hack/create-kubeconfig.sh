@@ -35,10 +35,10 @@ kubectl config view --minify --raw > "${kubeconfig}"
 # Grab the service account token. If one has not already been generated,
 # create a secret to do so. See the LegacyServiceAccountTokenNoAutoGeneration
 # feature gate.
-for i in 1 2; do
+for i in 1 2 3 4; do
 	token=$(kubectl get secret -n "${namespace}" -o go-template='
 {{- range .items }}
-	{{- if and (eq (or .type "") "kubernetes.io/service-account-token") .metadata.annotations }}
+	{{- if and (eq (or .type "") "kubernetes.io/service-account-token") .metadata.annotations .data }}
 	{{- if (eq (or (index .metadata.annotations "kubernetes.io/service-account.name") "") "'"${account}"'") }}
 	{{- if (ne (or (index .metadata.annotations "kubernetes.io/created-by") "") "openshift.io/create-dockercfg-secrets") }}
 	{{- .data.token | base64decode }}
@@ -57,6 +57,10 @@ metadata: {
 	name: ${account}-token,
 	annotations: { kubernetes.io/service-account.name: ${account} }
 }"
+	# If we are on our third or fourth loop, try sleeping to give kube time to create the token
+	if [ $i -gt 2 ]; then
+		sleep $(($i-2))
+	fi
 done
 kubectl config --kubeconfig="${kubeconfig}" set-credentials "${account}" --token="${token}"
 
