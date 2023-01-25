@@ -10,9 +10,8 @@ on:
     branches:
       - master
   # Scan schedule is same as codeql-analysis job.
-  # TODO(ben): change cron -- we're setting this to be active to check the notification setting
   schedule:
-    - cron: '0,30 22,23 * * *'
+    - cron: '10 18 * * 2'
 
 jobs:
   scan:
