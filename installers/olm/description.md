@@ -31,6 +31,7 @@ Kubernetes, providing a seamless cloud native Postgres solution to keep your dat
 - **Connection Pooling**: Advanced [connection pooling][pool] support using [pgBouncer][].
 - **Affinity and Tolerations**: Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference.
   Set your [pod anti-affinity][k8s-anti-affinity], node affinity, Pod tolerations and more rules to customize your deployment topology!
+- **PostgreSQL Major Version Upgrades**: Perform a [PostgreSQL major version upgrade][major-version-upgrade] declaratively.
 - **Full Customizability**: Crunchy PostgreSQL for Kubernetes makes it easy to get your own PostgreSQL-as-a-Service up and running
   and fully customize your deployments, including:
     - Choose the resources for your Postgres cluster: [container resources and storage size][resize-cluster]. [Resize at any time][resize-cluster] with minimal disruption.
@@ -44,6 +45,7 @@ and much more!
 [customize-cluster]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/customize-cluster/
 [disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/disaster-recovery/
 [high-availability]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/high-availability/
+[major-version-upgrade]: https://access.crunchydata.com/documentation/postgres-operator/v5/guides/major-postgres-version-upgrade/
 [monitoring]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/monitoring/
 [pool]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/connection-pooling/
 [provisioning]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/create-cluster/
