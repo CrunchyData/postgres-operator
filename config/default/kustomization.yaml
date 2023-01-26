@@ -1,6 +1,7 @@
 namespace: postgres-operator
 
 commonLabels:
+  # Note: this label differs from the label set in postgres-operator-examples
   postgres-operator.crunchydata.com/control-plane: postgres-operator
 
 bases:

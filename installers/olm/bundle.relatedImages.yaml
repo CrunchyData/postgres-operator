@@ -7,6 +7,8 @@
       image: registry.connect.redhat.com/crunchydata/crunchy-pgbouncer@sha256:<update_pgbouncer_SHA_value>
     - name: PGEXPORTER
       image: registry.connect.redhat.com/crunchydata/crunchy-postgres-exporter@sha256:<update_exporter_SHA_value>
+    - name: PGUPGRADE
+      image: registry.connect.redhat.com/crunchydata/crunchy-upgrade@sha256:<update_upgrade_SHA_value>
     - name: POSTGRES_13
       image: registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:<update_postgres13_SHA_value>
     - name: POSTGRES_14

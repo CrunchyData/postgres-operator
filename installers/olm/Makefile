@@ -2,8 +2,8 @@
 .SUFFIXES:
 
 CONTAINER ?= docker
-PGO_VERSION ?= 5.2.0
-REPLACES_VERSION ?= 5.1.3
+PGO_VERSION ?= 5.4.0
+REPLACES_VERSION ?= 5.3.0
 
 OS_KERNEL  ?= $(shell bash -c 'echo $${1,,}' - `uname -s`)
 OS_MACHINE ?= $(shell bash -c 'echo $${1/x86_/amd}' - `uname -m`)
@@ -45,7 +45,7 @@ bundles/marketplace:
 .PHONY: clean
 clean: clean-deprecated
 clean: ## Remove generated files and downloaded tools
-	rm -rf ./bundles ./projects ./tools
+	rm -rf ./bundles ./projects ./tools ./config/marketplace
 
 .PHONY: clean-deprecated
 clean-deprecated:
