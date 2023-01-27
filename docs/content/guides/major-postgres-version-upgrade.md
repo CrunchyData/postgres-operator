@@ -152,7 +152,7 @@ rm -rf '/pgdata/{{< param fromPostgresVersion >}}'
 
 When you are satisfied with the upgrade, you can execute this command to remove the old data directory. Do so at your discretion.
 
-If you have extensions installed you may need to upgrade those as well, for example, for the `pgaudit` extension we recommend the running the following to upgrade:
+If you have extensions installed you may need to upgrade those as well. For example, for the `pgaudit` extension we recommend the running the following to upgrade:
 
 ```sql
 DROP EXTENSION pgaudit;
