@@ -152,20 +152,16 @@ rm -rf '/pgdata/{{< param fromPostgresVersion >}}'
 
 When you are satisfied with the upgrade, you can execute this command to remove the old data directory. Do so at your discretion.
 
-`pg_upgrade` may also create a file called `update_extensions.sql` file created to facilitate any extension upgrades.
-
-For example, if you are using the `pgaudit` extension, you may see this in the file:
+If you have extensions installed you may need to upgrade those as well, for example, for the `pgaudit` extension we recommend the running the following to upgrade:
 
 ```sql
-\connect hippo
-ALTER EXTENSION "pgaudit" UPDATE;
-\connect postgres
-ALTER EXTENSION "pgaudit" UPDATE;
-\connect template1
-ALTER EXTENSION "pgaudit" UPDATE;
+DROP EXTENSION pgaudit;
+CREATE EXTENSION pgaudit;
 ```
 
-You can execute this script using `kubectl exec`, e.g.
+`pg_upgrade` may also create a file called `update_extensions.sql` to facilitate extension upgrades, be aware some of the recommeneded ways to upgrade may be outdated.
+
+Please carefully review the `update_extensions.sql` file before you run it and if you want to upgrade `pgaudit` via this file, update the file with the above commands for `pgaudit` prior to execution. After you update the file, you can execute this script using `kubectl exec`, e.g.  We recommend verify all extension updates from this file with the appropriate website and their recommendation for upgrading the extension prior to execution.
 
 ```
 $ kubectl -n postgres-operator exec -it -c database \
