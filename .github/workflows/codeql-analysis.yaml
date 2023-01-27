@@ -28,10 +28,8 @@ jobs:
         with: { languages: go }
 
       - name: Autobuild
+        # This action calls `make` which runs our "help" target.
         uses: github/codeql-action/autobuild@v2
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
-        # This action calls `make` which runs our "all" target and tries to build
-        # container images. 😖 That fails, but the action ignores it and proceeds.
-        # See "CODEQL_EXTRACTOR_GO_BUILD_COMMAND" in https://github.com/github/codeql-go
