@@ -161,7 +161,7 @@ CREATE EXTENSION pgaudit;
 
 `pg_upgrade` may also create a file called `update_extensions.sql` to facilitate extension upgrades. Be aware some of the recommended ways to upgrade may be outdated.
 
-Please carefully review the `update_extensions.sql` file before you run it and if you want to upgrade `pgaudit` via this file, update the file with the above commands for `pgaudit` prior to execution. After you update the file, you can execute this script using `kubectl exec`, e.g.  We recommend verify all extension updates from this file with the appropriate website and their recommendation for upgrading the extension prior to execution.
+Please carefully review the `update_extensions.sql` file before you run it and, if you want to upgrade `pgaudit` via this file, update the file with the above commands for `pgaudit` prior to execution. After you update the file, you can execute this script using `kubectl exec`, e.g.  We recommend that you verify all extension updates from this file with the appropriate website and their recommendation for upgrading the extension prior to execution.
 
 ```
 $ kubectl -n postgres-operator exec -it -c database \
