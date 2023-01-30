@@ -322,6 +322,21 @@ func startupCommand(
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/access/transam/xlog.c;hb=REL_12_0#l5318
 		// TODO(cbandy): Remove this after 5.0 is EOL.
 		`rm -f "${postgres_data_directory}/recovery.signal"`,
+
+		// # # # # # # # # # # # # # # # # # # # # # # # # #
+		// # The "initdb" tool uses settings defined in the shared "postgresql.conf.sample" file preventing "huge_pages" from getting configured properly.
+		// # Remove the "huge_pages" configuration from "postgresql.conf.sample" as it may or may not exist.
+		// # Add "huge_pages" to the bottom of the page turned off.
+		// # This will not prevent "huge_pages" from being passed in and configured as it only changes what "initdb" is doing.
+		`echo "initdb fix for huge_pages."`,
+		`CSAMPLE="$(find /usr/ -type d -name 'pgsql-*')/share/postgresql.conf.sample"`,
+		`echo "$CSAMPLE"`,
+		`echo "before..."`,
+		`cat "$CSAMPLE" | grep huge`,
+		`awk -i inplace '($1 ~ /huge_pages/ || $1 ~ /#huge_pages/ || $2 ~ /huge_pagescat $CSAMPLE | grep huge/ || $2 ~ /#huge_pages/) { next } { print } END { print "huge_pages = off" }' ${CSAMPLE}`,
+		`echo "after..."`,
+		`cat "$CSAMPLE" | grep huge`,
+		// # # # # # # # # # # # # # # # # # # # # # # # # #
 	}, "\n")
 
 	return append([]string{"bash", "-ceu", "--", script, "startup"}, args...)
