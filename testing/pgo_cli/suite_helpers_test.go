@@ -198,6 +198,37 @@ func requireClusterReady(t testing.TB, namespace, cluster string, timeout time.D
 	}
 }
 
+// requirePgAdminReady waits until all PgAdmin deployments for cluster are
+// ready. If timeout elapses or any error occurs, t will FailNow.
+func requirePgAdminReady(t testing.TB, namespace, cluster string, timeout time.Duration) {
+	t.Helper()
+
+	ready := func() bool {
+		deployments, err := TestContext.Kubernetes.ListDeployments(namespace, map[string]string{
+			"pg-cluster":      cluster,
+			"crunchy-pgadmin": "true",
+		})
+		require.NoError(t, err)
+
+		if len(deployments) == 0 {
+			return false
+		}
+		for _, deployment := range deployments {
+			if *deployment.Spec.Replicas < 1 ||
+				deployment.Status.ReadyReplicas != *deployment.Spec.Replicas ||
+				deployment.Status.UpdatedReplicas != *deployment.Spec.Replicas {
+				return false
+			}
+		}
+		return true
+	}
+
+	if !ready() {
+		requireWaitFor(t, ready, timeout, time.Second,
+			"timeout waiting for PgAdmin of %q in %q", cluster, namespace)
+	}
+}
+
 // requirePgBouncerReady waits until all PgBouncer deployments for cluster are
 // ready. If timeout elapses or any error occurs, t will FailNow.
 func requirePgBouncerReady(t testing.TB, namespace, cluster string, timeout time.Duration) {
