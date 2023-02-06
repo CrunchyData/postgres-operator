@@ -348,6 +348,9 @@ license: licenses
 licenses: ## Aggregate license files
 	./bin/license_aggregator.sh ./cmd/...
 
+prep-release: ## Update image tags and version numbers for release
+	hack/update-release-params.sh hack/release-prep.yaml
+
 .PHONY: release-postgres-operator-image release-postgres-operator-image-labels
 release-postgres-operator-image: ## Build the postgres-operator image and all its prerequisites
 release-postgres-operator-image: release-postgres-operator-image-labels

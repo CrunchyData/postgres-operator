@@ -1,0 +1,273 @@
+# The following file provides one place for updating tags during the release
+# process, in concert with hack/update-release-params.sh.
+#
+# The release-tags section is where tag updates are to be specified during
+# release prep. For example, the following key-value pair should be updated
+# whenever PGO bumps up a version: `pgo-latest-version: 5.3.0`.
+#
+# The files section specifies the file paths and rules for
+# updating tags. Ideally, this section will not have to be changed often.
+# The following describes a file to be updated:
+#
+# - file: Makefile
+#   updates:
+#     - base: "CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= "
+#       tag-type: image-tag
+#       regex: '\(.*\)'
+#       replacement: postgres-14-version
+#
+# The base and regex are used to compose the pattern-matching expression for sed.
+# The replacement value is a key into the release tag values, used along with
+# the base to compose the replacing expression for sed. The update above will
+# yield the following sed expression:
+#
+#   sed -i "s|CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= \(.*\)|CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 14.6|" Makefile
+#
+# The tag-type fields takes either version or image-tag values.
+# Version tags (e.g., 5.3.0) are distinguished from image tags, such as
+# someurl:ubi8-13.9-2, because their tokens lend themselves to different
+# find-and-replace strategies. The tag-type dictates whether operating systems
+# and architectures should be considered in the find-and-replace operation.
+#
+# In some cases, the value to be replaced will be quoted on the righthand side of
+# an assigment (e.g. postgresOperatorTag = "ubi8-5.3.0-0"). A style parameter
+# can be set to `style: double-quoted-rhs` to handle those cases.
+
+release-tags:
+  # Versions
+  crunchy-pgmonitor: '''v4.8.0'''
+  pgo-latest-version: 5.3.0
+  postgres-15-version: 15.1
+  postgres-14-version: 14.6
+  postgres-13-version: 13.9
+  postgres-12-version: 12.13
+  postgres-11-version: 11.18
+  crunchy-postgres-exporter-version: 0.10.1
+
+  # Image tags
+  crunchy-pgbackrest: -2.41-2
+  crunchy-pgbouncer: -1.17-5
+  crunchy-pgbouncer-component: -1.17-1
+  crunchy-pgadmin4: -4.30-8
+  crunchy-pgupgrade: -5.3.0-0
+  crunchy-postgres-exporter-tag: -5.3.0-0
+  crunchy-postgres-15: -15.1-0
+  crunchy-postgres-14: -14.6-2
+  crunchy-postgres-14-component: -14.6-3.1-2
+  crunchy-postgres-13: -13.9-2
+  crunchy-postgres-gis-14-32: -14.6-3.2-5.3.0-0
+  crunchy-postgres-gis-14-31: -14.6-3.1-5.3.0-0
+  crunchy-postgres-gis-component-15-33: -15.1-3.3-0
+  crunchy-postgres-gis-component-14-33: -14.6-3.3-2
+  crunchy-postgres-gis-component-14-32: -14.6-3.2-2
+  crunchy-postgres-gis-component-14-31: -14.6-3.1-2
+  crunchy-postgres-gis-component-13-31: -13.9-3.1-2
+  crunchy-postgres-gis-component-13-30: -13.9-3.0-2
+  pgo-latest-image-tag: -5.3.0-0
+
+files:
+  - file: Makefile
+    updates:
+      - base: "CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= "
+        tag-type: version
+        regex: '\(.*\)'
+        replacement: postgres-14-version
+      - base: 'PGMONITOR_VERSION ?= '
+        tag-type: version
+        regex: '''\(.*\)'''
+        replacement: crunchy-pgmonitor
+      - base: 'POSTGRES_EXPORTER_VERSION ?= '
+        tag-type: version
+        regex: '\(.*\)'
+        replacement: crunchy-postgres-exporter-version
+  - file: build/crd/pgupgrades/kustomization.yaml
+    updates:
+      - base: "app.kubernetes.io/version: "
+        tag-type: version
+        regex: .*$
+        replacement: pgo-latest-version
+  - file: build/crd/postgresclusters/kustomization.yaml
+    updates:
+      - base: "app.kubernetes.io/version: " 
+        tag-type: version
+        regex: .*$
+        replacement: pgo-latest-version
+  - file: config/crd/bases/postgres-operator.crunchydata.com_pgupgrades.yaml
+    updates:
+      - base: "app.kubernetes.io/version: "
+        tag-type: version
+        regex: .*$
+        replacement: pgo-latest-version
+  - file: config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
+    updates:
+      - base: "app.kubernetes.io/version: "
+        tag-type: version
+        regex: .*$
+        replacement: pgo-latest-version
+  - file: config/default/kustomization.yaml
+    updates:
+      - base: "newTag: "
+        tag-type: image-tag
+        regex: .*$
+        replacement: pgo-latest-image-tag
+  - file: config/manager/manager.yaml
+    updates:
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:"
+        tag-type: image-tag
+        regex: -13.[0-9]\+-[0-9]
+        replacement: crunchy-postgres-13
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:"
+        tag-type: image-tag
+        regex: -13.[0-9]\+-3.0-[0-9]
+        replacement: crunchy-postgres-gis-component-13-30
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:"
+        tag-type: image-tag
+        regex: -13.[0-9]\+-3.1-[0-9]
+        replacement: crunchy-postgres-gis-component-13-31
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:"
+        tag-type: image-tag
+        regex: -14.[0-9]\+-[0-9]
+        replacement: crunchy-postgres-14
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:"
+        tag-type: image-tag
+        regex: -14.[0-9]\+-3.1-[0-9]
+        replacement: crunchy-postgres-gis-component-14-31
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:"
+        tag-type: image-tag
+        regex: -14.[0-9]\+-3.2-[0-9]
+        replacement: crunchy-postgres-gis-component-14-32
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:"
+        tag-type: image-tag
+        regex: -14.[0-9]\+-3.3-[0-9]
+        replacement: crunchy-postgres-gis-component-14-33
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:"
+        tag-type: image-tag
+        regex: -15.[0-9]\+-[0-9]
+        replacement: crunchy-postgres-15
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:"
+        tag-type: image-tag
+        regex: -15.[0-9]\+-3.3-[0-9]
+        replacement: crunchy-postgres-gis-component-15-33
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:"
+        tag-type: image-tag
+        regex: -4.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgadmin4
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgbackrest
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgbouncer
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-postgres-exporter-tag
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgupgrade
+  - file: config/singlenamespace/kustomization.yaml
+    updates:
+      - base: "newTag: "
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: pgo-latest-image-tag
+  - file: docs/config.toml
+    updates:
+      - base: 'operatorVersion = ".*"'
+        tag-type: version
+        replacement: pgo-latest-version
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-postgres-14
+      - base: "registry.crunchydata.com/crunchydata/crunchy-postgres:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-postgres-14
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgbackrest
+      - base: "registry.crunchydata.com/crunchydata/crunchy-pgbackrest:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgbackrest
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgbouncer
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-postgres-exporter-tag
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgadmin4
+      - base: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:"
+        tag-type: image-tag
+        regex: -[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgupgrade
+      - base: 'postgresOperatorTag = '
+        tag-type: image-tag
+        style: "double-quoted-rhs"
+        regex: -[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: pgo-latest-image-tag
+      - base: 'PGBouncerComponentTagUbi8 = '
+        tag-type: image-tag
+        style: double-quoted-rhs
+        regex: -[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-pgbouncer-component
+      - base: 'PGBouncerTagUbi8 = '
+        tag-type: image-tag
+        style: double-quoted-rhs
+        regex: -[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: pgo-latest-image-tag
+      - base: 'postgres14GIS32ComponentTagUbi8 = '
+        tag-type: image-tag
+        style: double-quoted-rhs
+        regex: -14.[0-9]\+-3.2-[0-9]
+        replacement: crunchy-postgres-gis-component-14-32
+      - base: 'postgres14GIS32TagUbi8 = '
+        tag-type: image-tag
+        style: double-quoted-rhs
+        regex: -14.[0-9]\+-3.2-[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-postgres-gis-14-32
+      - base: 'postgres14GIS31ComponentTagUbi8 = '
+        tag-type: image-tag
+        style: double-quoted-rhs
+        regex: -14.[0-9]\+-3.1-[0-9]
+        replacement: crunchy-postgres-gis-component-14-31
+      - base: 'postgres14GIS31TagUbi8 = '
+        tag-type: image-tag
+        style: double-quoted-rhs
+        regex: -14.[0-9]\+-3.1-[0-9]\+.[0-9]\+.[0-9]\+-[0-9]\+
+        replacement: crunchy-postgres-gis-14-31
+      - base: 'postgresVersion15 = '
+        tag-type: version
+        style: double-quoted-rhs
+        regex: '\(.*\)'
+        replacement: postgres-15-version
+      - base: 'postgresVersion14 = '
+        tag-type: version
+        style: double-quoted-rhs
+        regex: '\(.*\)'
+        replacement: postgres-14-version
+      - base: 'postgresVersion13 = '
+        tag-type: version
+        style: double-quoted-rhs
+        regex: '\(.*\)'
+        replacement: postgres-13-version
+      - base: 'postgresVersion12 = '
+        tag-type: version
+        style: double-quoted-rhs
+        regex: '\(.*\)'
+        replacement: postgres-12-version
+      - base: 'postgresVersion11 = '
+        tag-type: version
+        style: double-quoted-rhs
+        regex: '\(.*\)'
+        replacement: postgres-11-version
