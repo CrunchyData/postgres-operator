@@ -1,3 +1,5 @@
+# Changes to this file should be made in hack/release-templates/Makefile.
+
 PGO_IMAGE_NAME ?= postgres-operator
 PGO_IMAGE_MAINTAINER ?= Crunchy Data
 PGO_IMAGE_SUMMARY ?= Crunchy PostgreSQL Operator
@@ -14,11 +16,11 @@ CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION ?= \
 CRUNCHY_POSTGRES_EXPORTER_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes
 CRUNCHY_POSTGRES_EXPORTER_IMAGE_PREFIX ?= $(PGO_IMAGE_PREFIX)
 CRUNCHY_POSTGRES_EXPORTER_PG_VERSION ?= 14
-CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 14.6
+CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= {{postgres_14_version}}
 
 PGMONITOR_DIR ?= hack/tools/pgmonitor
-PGMONITOR_VERSION ?= 'v4.8.0'
-POSTGRES_EXPORTER_VERSION ?= 0.10.1
+PGMONITOR_VERSION ?= '{{pgmonitor_version}}'
+POSTGRES_EXPORTER_VERSION ?= {{postgres_exporter_version}}
 POSTGRES_EXPORTER_URL ?= https://github.com/prometheus-community/postgres_exporter/releases/download/v${POSTGRES_EXPORTER_VERSION}/postgres_exporter-${POSTGRES_EXPORTER_VERSION}.linux-amd64.tar.gz
 
 # Buildah's "build" used to be "bud". Use the alias to be compatible for a while.

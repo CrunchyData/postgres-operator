@@ -1,0 +1,55 @@
+# Changes to this file should be made in hack/release-templates/config-manager-manager.yaml.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgo
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  template:
+    spec:
+      containers:
+      - name: operator
+        image: postgres-operator
+        env:
+        - name: PGO_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CRUNCHY_DEBUG
+          value: "true"
+        - name: RELATED_IMAGE_POSTGRES_13
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:{{ubi8_postgres_13_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_13_GIS_3.0
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_13_30_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_13_GIS_3.1
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_13_31_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_14
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:{{ubi8_postgres_14_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_14_GIS_3.1
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_14_31_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_14_GIS_3.2
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_14_32_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_14_GIS_3.3
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_14_33_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_15
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:{{ubi8_postgres_15_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_15_GIS_3.3
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_15_33_tag}}"
+        - name: RELATED_IMAGE_PGADMIN
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:{{ubi8_pgadmin4_tag}}"
+        - name: RELATED_IMAGE_PGBACKREST
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:{{ubi8_pgbackrest_tag}}"
+        - name: RELATED_IMAGE_PGBOUNCER
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:{{ubi8_pgbouncer_tag}}"
+        - name: RELATED_IMAGE_PGEXPORTER
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:{{ubi8_postgres_exporter_tag}}"
+        - name: RELATED_IMAGE_PGUPGRADE
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:{{ubi8_pgupgrade_tag}}"        
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: { drop: [ALL] }
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+      serviceAccountName: pgo

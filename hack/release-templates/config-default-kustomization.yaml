@@ -1,0 +1,16 @@
+# Changes to this file should be made in hack/release-templates/config-default-kustomization.yaml.
+namespace: postgres-operator
+
+commonLabels:
+  # Note: this label differs from the label set in postgres-operator-examples
+  postgres-operator.crunchydata.com/control-plane: postgres-operator
+
+bases:
+- ../crd
+- ../rbac/cluster
+- ../manager
+
+images:
+- name: postgres-operator
+  newName: registry.developers.crunchydata.com/crunchydata/postgres-operator
+  newTag: {{ubi8_pgo_latest_image_tag}}

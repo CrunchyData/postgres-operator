@@ -1,0 +1,43 @@
+# Changes to this file should be made in hack/release-templates/build-crd-postgresclusters-kustomization.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- generated/postgres-operator.crunchydata.com_postgresclusters.yaml
+
+patchesJson6902:
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: postgresclusters.postgres-operator.crunchydata.com
+  path: condition.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: postgresclusters.postgres-operator.crunchydata.com
+  path: status.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: postgresclusters.postgres-operator.crunchydata.com
+  path: todos.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: postgresclusters.postgres-operator.crunchydata.com
+  path: validation.yaml
+- target:
+    group: apiextensions.k8s.io
+    version: v1
+    kind: CustomResourceDefinition
+    name: postgresclusters.postgres-operator.crunchydata.com
+  patch: |-
+    - op: add
+      path: "/metadata/labels"
+      value:
+        app.kubernetes.io/name: pgo
+        app.kubernetes.io/version: {{pgo_latest_version}}
