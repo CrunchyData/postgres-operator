@@ -561,6 +561,78 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	return pvc, err
 }
 
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+
+// reconcileTablespaceVolumes writes the PersistentVolumeClaims for instance's
+// tablespace data volumes.
+func (r *Reconciler) reconcileTablespaceVolumes(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
+	clusterVolumes []corev1.PersistentVolumeClaim,
+) (tablespaceVolumes []*corev1.PersistentVolumeClaim, err error) {
+
+	if !util.DefaultMutableFeatureGate.Enabled(util.TablespaceVolumes) {
+		return
+	}
+
+	if instanceSpec.TablespaceVolumes == nil {
+		return
+	}
+
+	for _, vol := range instanceSpec.TablespaceVolumes {
+		labelMap := map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: instanceSpec.Name,
+			naming.LabelInstance:    instance.Name,
+			naming.LabelRole:        "tablespace",
+			naming.LabelData:        vol.Name,
+		}
+
+		var pvc *corev1.PersistentVolumeClaim
+		existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		if existingPVCName != "" {
+			pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
+				Namespace: cluster.GetNamespace(),
+				Name:      existingPVCName,
+			}}
+		} else {
+			pvc = &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstanceTablespaceDataVolume(instance, vol.Name)}
+		}
+
+		pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
+
+		err = errors.WithStack(r.setControllerReference(cluster, pvc))
+
+		pvc.Annotations = naming.Merge(
+			cluster.Spec.Metadata.GetAnnotationsOrNil(),
+			instanceSpec.Metadata.GetAnnotationsOrNil())
+
+		pvc.Labels = naming.Merge(
+			cluster.Spec.Metadata.GetLabelsOrNil(),
+			instanceSpec.Metadata.GetLabelsOrNil(),
+			labelMap,
+		)
+
+		pvc.Spec = vol.DataVolumeClaimSpec
+
+		if err == nil {
+			err = r.handlePersistentVolumeClaimError(cluster,
+				errors.WithStack(r.apply(ctx, pvc)))
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		tablespaceVolumes = append(tablespaceVolumes, pvc)
+	}
+
+	return
+}
+
 // +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get
 // +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;delete;patch
 

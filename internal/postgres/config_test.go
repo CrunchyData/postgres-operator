@@ -31,6 +31,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -464,6 +465,7 @@ func TestBashSafeLink(t *testing.T) {
 func TestStartupCommand(t *testing.T) {
 	shellcheck := require.ShellCheck(t)
 
+	assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=false")))
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Spec.PostgresVersion = 13
 	instance := new(v1beta1.PostgresInstanceSetSpec)

@@ -1071,6 +1071,7 @@ func (r *Reconciler) reconcileInstance(
 		instanceCertificates *corev1.Secret
 		postgresDataVolume   *corev1.PersistentVolumeClaim
 		postgresWALVolume    *corev1.PersistentVolumeClaim
+		tablespaceVolumes    []*corev1.PersistentVolumeClaim
 	)
 
 	if err == nil {
@@ -1087,10 +1088,13 @@ func (r *Reconciler) reconcileInstance(
 		postgresWALVolume, err = r.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, clusterVolumes)
 	}
 	if err == nil {
+		tablespaceVolumes, err = r.reconcileTablespaceVolumes(ctx, cluster, spec, instance, clusterVolumes)
+	}
+	if err == nil {
 		postgres.InstancePod(
 			ctx, cluster, spec,
 			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret),
-			postgresDataVolume, postgresWALVolume,
+			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
 			&instance.Spec.Template.Spec)
 
 		addPGBackRestToInstancePodSpec(

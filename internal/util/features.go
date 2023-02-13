@@ -39,6 +39,9 @@ const (
 	//
 	// Enables support of custom sidecars for pgBouncer Pods
 	PGBouncerSidecars featuregate.Feature = "PGBouncerSidecars"
+	//
+	// Enables support of tablespace volumes
+	TablespaceVolumes featuregate.Feature = "TablespaceVolumes"
 )
 
 // pgoFeatures consists of all known PGO feature keys.
@@ -52,6 +55,7 @@ var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{
 	BridgeIdentifiers: {Default: false, PreRelease: featuregate.Alpha},
 	InstanceSidecars:  {Default: false, PreRelease: featuregate.Alpha},
 	PGBouncerSidecars: {Default: false, PreRelease: featuregate.Alpha},
+	TablespaceVolumes: {Default: false, PreRelease: featuregate.Alpha},
 }
 
 // DefaultMutableFeatureGate is a mutable, shared global FeatureGate.

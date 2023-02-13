@@ -22,6 +22,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -61,6 +62,9 @@ safelink() (
 
 	// dataMountPath is where to mount the main data volume.
 	dataMountPath = "/pgdata"
+
+	// dataMountPath is where to mount the main data volume.
+	tablespaceMountPath = "/tablespaces"
 
 	// walMountPath is where to mount the optional WAL volume.
 	walMountPath = "/pgwal"
@@ -201,6 +205,47 @@ func startupCommand(
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
 	walDir := WALDirectory(cluster, instance)
 
+	// If the user requests tablespaces, we want to make sure the directories exist with the
+	// correct owner and permissions.
+	tablespaceCmd := ""
+	if util.DefaultMutableFeatureGate.Enabled(util.TablespaceVolumes) {
+		// This command checks if a dir exists and if not, creates it;
+		// if the dir does exist, then we `recreate` it to make sure the owner is correct;
+		// if the dir exists with the wrong owner and is not writeable, we error.
+		// This is the same behavior we use for the main PGDATA directory.
+		// Note: Postgres requires the tablespace directory to be "an existing, empty directory
+		// that is owned by the PostgreSQL operating system user."
+		// - https://www.postgresql.org/docs/current/manage-ag-tablespaces.html
+		// However, unlike the PGDATA directory, Postgres will _not_ error out
+		// if the permissions are wrong on the tablespace directory.
+		// Instead, when a tablespace is created in Postgres, Postgres will `chmod` the
+		// tablespace directory to match permissions on the PGDATA directory (either 700 or 750).
+		// Postgres setting the tablespace directory permissions:
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/commands/tablespace.c;hb=REL_14_0#l600
+		// Postgres choosing directory permissions:
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/common/file_perm.c;hb=REL_14_0#l27
+		// Note: This permission change seems to happen only when the tablespace is created in Postgres.
+		// If the user manually `chmod`'ed the directory after the creation of the tablespace, Postgres
+		// would not attempt to change the directory permissions.
+		// Note: as noted below, we mount the tablespace directory to the mountpoint `/tablespaces/NAME`,
+		// and so we add the subdirectory `data` in order to set the permissions.
+		checkInstallRecreateCmd := strings.Join([]string{
+			`if [[ ! -e "${tablespace_dir}" || -O "${tablespace_dir}" ]]; then`,
+			`install --directory --mode=0700 "${tablespace_dir}"`,
+			`elif [[ -w "${tablespace_dir}" && -g "${tablespace_dir}" ]]; then`,
+			`recreate "${tablespace_dir}" '0700'`,
+			`else (halt Permissions!); fi ||`,
+			`halt "$(permissions "${tablespace_dir}" ||:)"`,
+		}, "\n")
+
+		for _, tablespace := range instance.TablespaceVolumes {
+			// The path for tablespaces volumes is /tablespaces/NAME/data
+			// -- the `data` path is added so that we can arrange the permissions.
+			tablespaceCmd = tablespaceCmd + "\ntablespace_dir=/tablespaces/" + tablespace.Name + "/data" + "\n" +
+				checkInstallRecreateCmd
+		}
+	}
+
 	args := []string{version, walDir, naming.PGBackRestPGDataLogPath}
 	script := strings.Join([]string{
 		`declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3"`,
@@ -287,6 +332,7 @@ func startupCommand(
 			naming.ReplicationCert, naming.ReplicationPrivateKey,
 			naming.ReplicationCACert),
 
+		tablespaceCmd,
 		// When the data directory is empty, there's nothing more to do.
 		`[ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0`,
 

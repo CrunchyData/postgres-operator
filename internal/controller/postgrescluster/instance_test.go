@@ -418,6 +418,8 @@ func TestWritablePod(t *testing.T) {
 }
 
 func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
+	assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=false")))
+
 	cluster := v1beta1.PostgresCluster{}
 	cluster.Name = "hippo"
 	cluster.Default()
