@@ -209,9 +209,11 @@ func TestBashRecreateDirectory(t *testing.T) {
 }
 
 func TestBashSafeLink(t *testing.T) {
-	// macOS lacks `realpath` which is part of GNU coreutils.
-	if _, err := exec.LookPath("realpath"); err != nil {
-		t.Skip(`requires "realpath" executable`)
+	// macOS `mv` takes different arguments than GNU coreutils.
+	if output, err := exec.Command("mv", "--help").CombinedOutput(); err != nil {
+		t.Skip(`requires "mv" executable`)
+	} else if !strings.Contains(string(output), "no-target-directory") {
+		t.Skip(`requires "mv" that overwrites a directory symlink`)
 	}
 
 	// execute calls the bash function with args.
