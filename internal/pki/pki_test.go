@@ -491,6 +491,9 @@ func strictOpenSSLVerify(t *testing.T, openssl string, root, leaf Certificate) {
 	if !strings.Contains(string(output), "-x509_strict") {
 		t.Skip(`requires "-x509_strict" flag`)
 	}
+	if !strings.Contains(string(output), "-no-CAfile") {
+		t.Skip(`requires a flag to ignore system certificates`)
+	}
 
 	verify := func(t testing.TB, args ...string) {
 		t.Helper()
