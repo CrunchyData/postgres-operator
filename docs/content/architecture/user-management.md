@@ -45,7 +45,7 @@ While the above defaults may work for your application, there are certain cases 
 
 ## Custom Users and Databases
 
-Users and databases can be customized in the `spec.users` section of the custom resource. These can be adding during cluster creation and adjusted over time, but it's important to note the following:
+Users and databases can be customized in the [`spec.users`]({{< relref "/references/crd#postgresclusterspecusersindex" >}}) section of the custom resource. These can be adding during cluster creation and adjusted over time, but it's important to note the following:
 
 - If `spec.users` is set during cluster creation, PGO will **not** create any default users or databases except for `postgres`. If you want additional databases, you will need to specify them.
 - For any users added in `spec.users`, PGO will created a Secret of the format `<clusterName>-pguser-<userName>`. This will contain the user credentials.

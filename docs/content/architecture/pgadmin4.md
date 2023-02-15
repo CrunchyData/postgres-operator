@@ -72,8 +72,9 @@ Optionally, you can also set a [custom password]({{< relref "architecture/user-m
 
 ## User Synchronization
 
-The operator will synchronize users defined in the spec (e.g., in `spec.users`) with the pgAdmin 4
-deployment. Any user created in the database without being defined in the spec will not be
+The operator will synchronize users [defined in the spec]({{< relref "tutorial/user-management.md" >}})
+(e.g., in [`spec.users`]({{< relref "/references/crd#postgresclusterspecusersindex" >}}))
+with the pgAdmin 4 deployment. Any user created in the database without being defined in the spec will not be
 synchronized.
 
 ## Custom Configuration
