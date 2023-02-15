@@ -18,13 +18,13 @@ Let's look at how we can perform different types of restore operations. First, l
 As of v5.0.5, PGO offers the ability to restore from an existing PostgresCluster or a remote
 cloud-based data source, such as S3, GCS, etc. For more on that, see the [Clone From Backups Stored in S3 / GCS / Azure Blob Storage](#cloud-based-data-source) section.
 
-Note that you cannot use both a local PostgresCluster data source and a remote cloud-based data
+Note that you **cannot** use both a local PostgresCluster data source and a remote cloud-based data
 source at one time; if both the `dataSource.postgresCluster` and `dataSource.pgbackrest` fields
 are filled in, the local PostgresCluster data source will take precedence.
 
 {{% /notice %}}
 
-There are several attributes on the custom resource that are important to understand as part of the restore process. All of these attributes are grouped together in the `spec.dataSource.postgresCluster` section of the custom resource.
+There are several attributes on the custom resource that are important to understand as part of the restore process. All of these attributes are grouped together in the [`spec.dataSource.postgresCluster`]({{< relref "/references/crd#postgresclusterspecdatasourcepostgrescluster" >}}) section of the custom resource.
 
 Please review the table below to understand how each of these attributes work in the context of setting up a restore operation.
 
@@ -231,7 +231,19 @@ you can start accessing your database from that specific point in time!
 
 ## Restore Individual Databases
 
-You can restore individual databases using a spec similar to the following:
+You might need to restore specific databases from a cluster backup, for performance reasons
+or to move selected databases to a machine that does not have enough space to restore the
+entire cluster backup.
+
+pgBackRest supports this case, but it is important to make sure this is what you want.
+Restoring in this manner will restore the requested database from backup and making it
+accessible, but all of the other databases in the backup will **not** be accessible after restore.
+
+For example, if your backup includes databases `test1` and `test2`, and you request that `test2`
+be restored, the `test1` database will not be accessible. Please review the pgBackRest documentation
+on the [limitations on restoring individual databases](https://pgbackrest.org/user-guide.html#restore/option-db-include).
+
+You can restore individual databases from a backup using a spec similar to the following:
 
 ```yaml
 spec:
@@ -246,7 +258,6 @@ spec:
 
 where `--db-include=hippo` would restore only the contents of the `hippo` database.
 
-Please review the pgBackRest documentation on the [limitations on restoring individual databases](https://pgbackrest.org/user-guide.html#restore/option-db-include).
 
 ## Standby Cluster
 
