@@ -216,6 +216,9 @@ func (r *Reconciler) Reconcile(
 	pgbackrest.PostgreSQL(cluster, &pgParameters)
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
+	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
+	postgres.SetHugePages(cluster, &pgParameters)
+
 	if err == nil {
 		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
 	}
