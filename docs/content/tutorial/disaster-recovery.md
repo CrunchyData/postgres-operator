@@ -327,8 +327,8 @@ spec:
     name: replication-cert
   standby:
     enabled: true
-    host: "<primary-ip>"
-    port: "<primary-port>"
+    host: "192.0.2.2"
+    port: 5432
 ```
 
 #### Streaming Standby with an External Repo
@@ -364,8 +364,8 @@ spec:
   standby:
     enabled: true
     repoName: repo1
-    host: "<primary-ip>"
-    port: "<primary-port>"
+    host: "192.0.2.2"
+    port: 5432
 ```
 
 ## Promoting a Standby Cluster
