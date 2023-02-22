@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-const PGO_VERSION = "4.7.9"
+const PGO_VERSION = "4.7.10"
 
 // Ok status
 const Ok = "ok"

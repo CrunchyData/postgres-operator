@@ -20,5 +20,5 @@ serviceAccount:
 
 # the image prefix and tag to use for the 'pgo-deployer' container
 pgo_image_prefix: "registry.developers.crunchydata.com/crunchydata"
-pgo_image_tag: "ubi8-4.7.9"
+pgo_image_tag: "ubi8-4.7.10"
 
