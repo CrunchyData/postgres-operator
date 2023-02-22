@@ -5,12 +5,12 @@ inputs:
     default: latest
     required: true
     description: >
-      Git tag from https://github.com/rancher/k3d/releases or "latest"
+      Git tag from https://github.com/k3d-io/k3d/releases or "latest"
   k3s-channel:
     default: latest
     required: true
     description: >
-      https://rancher.com/docs/k3s/latest/en/upgrades/basic/#release-channels
+      https://docs.k3s.io/upgrades/manual#release-channels
   prefetch-images:
     required: true
     description: >
@@ -44,7 +44,7 @@ runs:
       env:
         K3D_TAG: ${{ inputs.k3d-tag }}
       run: |
-        curl --fail --silent https://raw.githubusercontent.com/rancher/k3d/main/install.sh |
+        curl --fail --silent https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh |
           TAG="${K3D_TAG#latest}" bash
         k3d version | awk '{ print "${tolower($1)}=${$3}" >> $GITHUB_OUTPUT }'
 
