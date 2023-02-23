@@ -291,8 +291,8 @@ func (observed *observedInstances) writablePod(container string) (*corev1.Pod, *
 	return nil, nil
 }
 
-// +kubebuilder:rbac:groups="",resources=pods,verbs=list
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
+// +kubebuilder:rbac:groups="",resources="pods",verbs={list}
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={list}
 
 // observeInstances populates cluster.Status.InstanceSets with observations and
 // builds an observedInstances by reading from the Kubernetes API.
@@ -342,8 +342,8 @@ func (r *Reconciler) observeInstances(
 	return observed, err
 }
 
-// +kubebuilder:rbac:groups="",resources=pods,verbs=list
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=patch
+// +kubebuilder:rbac:groups="",resources="pods",verbs={list}
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={patch}
 
 // deleteInstances gracefully stops instances of cluster to avoid failovers and
 // unclean shutdowns of PostgreSQL. It returns (nil, nil) when finished.
@@ -435,10 +435,10 @@ func (r *Reconciler) deleteInstances(
 	return &result, err
 }
 
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=delete;list
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=delete;list
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=delete;list
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete;list
+// +kubebuilder:rbac:groups="",resources="configmaps",verbs={delete,list}
+// +kubebuilder:rbac:groups="",resources="secrets",verbs={delete,list}
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={delete,list}
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={delete,list}
 
 // deleteInstance will delete all resources related to a single instance
 func (r *Reconciler) deleteInstance(
@@ -572,7 +572,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	return err
 }
 
-// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=list
+// +kubebuilder:rbac:groups="policy",resources="poddisruptionbudgets",verbs={list}
 
 // cleanupPodDisruptionBudgets removes pdbs that do not have an
 // associated Instance Set
@@ -672,7 +672,7 @@ func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
 	return availableInstanceNames
 }
 
-// +kubebuilder:rbac:groups="",resources=pods,verbs=delete
+// +kubebuilder:rbac:groups="",resources="pods",verbs={delete}
 
 // rolloutInstance redeploys the Pod of instance by deleting it. Its StatefulSet
 // will recreate it according to its current PodTemplate. When instance is the
@@ -958,7 +958,7 @@ func podsToKeep(instances []corev1.Pod, want map[string]int) []corev1.Pod {
 
 }
 
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={list}
 
 // scaleUpInstances updates the cluster until the number of instances matches
 // the cluster spec
@@ -1031,7 +1031,7 @@ func (r *Reconciler) scaleUpInstances(
 	return instances, err
 }
 
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=create;patch
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={create,patch}
 
 // reconcileInstance writes instance according to spec of cluster.
 // See Reconciler.reconcileInstanceSet.
@@ -1282,7 +1282,7 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 	pgbackrest.AddConfigToInstancePod(cluster, instancePod)
 }
 
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="configmaps",verbs={create,patch}
 
 // reconcileInstanceConfigMap writes the ConfigMap that contains generated
 // files (etc) that apply to instance of cluster.
@@ -1318,8 +1318,8 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 	return instanceConfigMap, err
 }
 
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="secrets",verbs={get}
+// +kubebuilder:rbac:groups="",resources="secrets",verbs={create,patch}
 
 // reconcileInstanceCertificates writes the Secret that contains certificates
 // and private keys for instance of cluster.
@@ -1381,7 +1381,7 @@ func (r *Reconciler) reconcileInstanceCertificates(
 	return instanceCerts, err
 }
 
-// +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=create;patch;get;delete
+// +kubebuilder:rbac:groups="policy",resources="poddisruptionbudgets",verbs={create,patch,get,delete}
 
 // reconcileInstanceSetPodDisruptionBudget creates a PDB for an instance set. A
 // PDB will be created when the minAvailable is determined to be greater than 0.

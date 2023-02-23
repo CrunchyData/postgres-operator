@@ -505,7 +505,7 @@ func (r *Reconciler) reconcilePostgresUsersInPostgreSQL(
 	return err
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,patch}
 
 // reconcilePostgresDataVolume writes the PersistentVolumeClaim for instance's
 // PostgreSQL data volume.
@@ -561,7 +561,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	return pvc, err
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,patch}
 
 // reconcileTablespaceVolumes writes the PersistentVolumeClaims for instance's
 // tablespace data volumes.
@@ -633,8 +633,8 @@ func (r *Reconciler) reconcileTablespaceVolumes(
 	return
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;delete;patch
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={get}
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,delete,patch}
 
 // reconcilePostgresWALVolume writes the PersistentVolumeClaim for instance's
 // PostgreSQL WAL volume.

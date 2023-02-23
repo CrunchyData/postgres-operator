@@ -39,9 +39,9 @@ func (r *Reconciler) reconcileRBACResources(
 	return r.reconcileInstanceRBAC(ctx, cluster)
 }
 
-// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;patch
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=create;patch
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="serviceaccounts",verbs={create,patch}
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="roles",verbs={create,patch}
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="rolebindings",verbs={create,patch}
 
 // reconcileInstanceRBAC writes the Role, RoleBinding, and ServiceAccount for
 // all instances of cluster.

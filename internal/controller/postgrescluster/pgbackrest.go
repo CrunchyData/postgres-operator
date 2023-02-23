@@ -147,7 +147,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 	return repo, nil
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,patch}
 
 // applyRepoVolumeIntent ensures the pgBackRest repository host deployment is synchronized with the
 // proper configuration according to the provided PostgresCluster custom resource.  This is done by
@@ -240,9 +240,9 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	return repoResources, nil
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=delete
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete
-// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=delete
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={delete}
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={delete}
+// +kubebuilder:rbac:groups="batch",resources="cronjobs",verbs={delete}
 
 // cleanupRepoResources cleans up pgBackRest repository resources that should no longer be
 // reconciled by deleting them.  This includes deleting repos (i.e. PersistentVolumeClaims) that
@@ -750,10 +750,10 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 	return jobSpec, nil
 }
 
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=list;delete
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=list;delete
-// +kubebuilder:rbac:groups="",resources=endpoints,verbs=get
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=list
+// +kubebuilder:rbac:groups="",resources="configmaps",verbs={delete,list}
+// +kubebuilder:rbac:groups="",resources="secrets",verbs={list,delete}
+// +kubebuilder:rbac:groups="",resources="endpoints",verbs={get}
+// +kubebuilder:rbac:groups="batch",resources="jobs",verbs={list}
 
 // observeRestoreEnv observes the current Kubernetes environment to obtain any resources applicable
 // to performing pgBackRest restores (e.g. when initializing a new cluster using an existing
@@ -877,9 +877,9 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	return currentEndpoints, restoreJob, nil
 }
 
-// +kubebuilder:rbac:groups="",resources=endpoints,verbs=delete
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=delete
+// +kubebuilder:rbac:groups="",resources="endpoints",verbs={delete}
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={delete}
+// +kubebuilder:rbac:groups="batch",resources="jobs",verbs={delete}
 
 // prepareForRestore is responsible for reconciling an in place restore for the PostgresCluster.
 // This includes setting a "PreparingForRestore" condition, and then removing all existing
@@ -1000,7 +1000,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 	return nil
 }
 
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=patch
+// +kubebuilder:rbac:groups="batch",resources="jobs",verbs={patch}
 
 // reconcileRestoreJob is responsible for reconciling a Job that performs a pgBackRest restore in
 // order to populate a PGDATA directory.
@@ -1379,8 +1379,8 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	return result, nil
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;delete
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,patch}
+// +kubebuilder:rbac:groups="batch",resources="jobs",verbs={create,patch,delete}
 
 // reconcilePostgresClusterDataSource is responsible for reconciling a PostgresCluster data source.
 // This is specifically done by running a pgBackRest restore to populate a PostgreSQL data volume
@@ -1539,8 +1539,8 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	return nil
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;delete
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,patch}
+// +kubebuilder:rbac:groups="batch",resources="jobs",verbs={create,patch,delete}
 
 // reconcileCloudBasedDataSource is responsible for reconciling a cloud-based PostgresCluster
 // data source, i.e., S3, etc.
@@ -1942,9 +1942,9 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 	return err
 }
 
-// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;patch
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=create;patch
-// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="serviceaccounts",verbs={create,patch}
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="roles",verbs={create,patch}
+// +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="rolebindings",verbs={create,patch}
 
 // reconcileInstanceRBAC reconciles the Role, RoleBinding, and ServiceAccount for
 // pgBackRest
@@ -2072,7 +2072,7 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	return repoHost, nil
 }
 
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;delete
+// +kubebuilder:rbac:groups="batch",resources="jobs",verbs={create,patch,delete}
 
 // reconcileManualBackup is responsible for reconciling pgBackRest backups that are initiated
 // manually by the end-user
@@ -2290,7 +2290,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	return nil
 }
 
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;delete
+// +kubebuilder:rbac:groups="batch",resources="jobs",verbs={create,patch,delete}
 
 // reconcileReplicaCreateBackup is responsible for reconciling a full pgBackRest backup for the
 // cluster as required to create replicas
@@ -2505,8 +2505,8 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	return replicaCreateRepo, utilerrors.NewAggregate(errors)
 }
 
-// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list
-// +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create
+// +kubebuilder:rbac:groups="",resources="pods",verbs={get,list}
+// +kubebuilder:rbac:groups="",resources="pods/exec",verbs={create}
 
 // reconcileStanzaCreate is responsible for ensuring stanzas are properly created for the
 // pgBackRest repositories configured for a PostgresCluster.  If the bool returned from this
@@ -2813,7 +2813,7 @@ func (r *Reconciler) reconcileScheduledBackups(
 	return requeue
 }
 
-// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=create;patch
+// +kubebuilder:rbac:groups="batch",resources="cronjobs",verbs={create,patch}
 
 // reconcilePGBackRestCronJob creates the CronJob for the given repo, pgBackRest
 // backup type and schedule

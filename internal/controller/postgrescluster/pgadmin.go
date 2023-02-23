@@ -225,8 +225,8 @@ func (r *Reconciler) reconcilePGAdminService(
 	return service, err
 }
 
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=create;delete;patch
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={get}
+// +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={create,delete,patch}
 
 // reconcilePGAdminStatefulSet writes the StatefulSet that runs pgAdmin.
 func (r *Reconciler) reconcilePGAdminStatefulSet(
@@ -348,7 +348,7 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	return errors.WithStack(r.apply(ctx, sts))
 }
 
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,patch}
 
 // reconcilePGAdminDataVolume writes the PersistentVolumeClaim for instance's
 // pgAdmin data volume.

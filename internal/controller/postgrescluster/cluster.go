@@ -32,7 +32,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="configmaps",verbs={create,patch}
 
 // reconcileClusterConfigMap writes the ConfigMap that contains generated
 // files (etc) that apply to the entire cluster.
@@ -62,7 +62,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 	return clusterConfigMap, err
 }
 
-// +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources="services",verbs={create,patch}
 
 // reconcileClusterPodService writes the Service that can provide stable DNS
 // names to Pods related to cluster.
