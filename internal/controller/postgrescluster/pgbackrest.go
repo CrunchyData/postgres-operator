@@ -1007,6 +1007,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, sourceCluster *v1beta1.PostgresCluster,
 	pgdataVolume, pgwalVolume *corev1.PersistentVolumeClaim,
+	pgtablespaceVolumes []*corev1.PersistentVolumeClaim,
 	dataSource *v1beta1.PostgresClusterDataSource,
 	instanceName, instanceSetName, configHash, stanzaName string) error {
 
@@ -1087,7 +1088,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 
 	// NOTE (andrewlecuyer): Forcing users to put each argument separately might prevent the need
 	// to do any escaping or use eval.
-	cmd := pgbackrest.RestoreCommand(pgdata, strings.Join(opts, " "))
+	cmd := pgbackrest.RestoreCommand(pgdata, pgtablespaceVolumes, strings.Join(opts, " "))
 
 	// create the volume resources required for the postgres data directory
 	dataVolumeMount := postgres.DataVolumeMount()
@@ -1114,6 +1115,21 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		}
 		volumes = append(volumes, walVolume)
 		volumeMounts = append(volumeMounts, walVolumeMount)
+	}
+
+	for _, pgtablespaceVolume := range pgtablespaceVolumes {
+		tablespaceVolumeMount := postgres.TablespaceVolumeMount(
+			pgtablespaceVolume.Labels[naming.LabelData])
+		tablespaceVolume := corev1.Volume{
+			Name: tablespaceVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pgtablespaceVolume.GetName(),
+				},
+			},
+		}
+		volumes = append(volumes, tablespaceVolume)
+		volumeMounts = append(volumeMounts, tablespaceVolumeMount)
 	}
 
 	restoreJob := &batchv1.Job{}
@@ -1509,8 +1525,13 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		return errors.WithStack(err)
 	}
 
+	pgtablespaces, err := r.reconcileTablespaceVolumes(ctx, cluster, instanceSet, fakeSTS, clusterVolumes)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory
-	if err := r.reconcileRestoreJob(ctx, cluster, sourceCluster, pgdata, pgwal,
+	if err := r.reconcileRestoreJob(ctx, cluster, sourceCluster, pgdata, pgwal, pgtablespaces,
 		dataSource, instanceName, instanceSetName, configHash, pgbackrest.DefaultStanzaName); err != nil {
 		return errors.WithStack(err)
 	}
@@ -1599,6 +1620,12 @@ func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 		return errors.WithStack(err)
 	}
 
+	// TODO(benjaminjb): do we really need this for cloud-based datasources?
+	pgtablespaces, err := r.reconcileTablespaceVolumes(ctx, cluster, instanceSet, fakeSTS, clusterVolumes)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	// The `reconcileRestoreJob` was originally designed to take a PostgresClusterDataSource
 	// and rather than reconfigure that func's signature, we translate the PGBackRestDataSource
 	tmpDataSource := &v1beta1.PostgresClusterDataSource{
@@ -1612,7 +1639,7 @@ func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory
 	// Note that the 'source cluster' is nil as this is not used by this restore type.
-	if err := r.reconcileRestoreJob(ctx, cluster, nil, pgdata, pgwal, tmpDataSource,
+	if err := r.reconcileRestoreJob(ctx, cluster, nil, pgdata, pgwal, pgtablespaces, tmpDataSource,
 		instanceName, instanceSetName, configHash, dataSource.Stanza); err != nil {
 		return errors.WithStack(err)
 	}

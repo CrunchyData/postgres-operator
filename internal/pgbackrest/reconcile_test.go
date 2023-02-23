@@ -30,6 +30,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -522,6 +523,7 @@ func TestAddServerToInstancePod(t *testing.T) {
 	}
 
 	t.Run("CustomResources", func(t *testing.T) {
+		assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=false")))
 		cluster := cluster.DeepCopy()
 		cluster.Spec.Backups.PGBackRest.Sidecars = &v1beta1.PGBackRestSidecars{
 			PGBackRest: &v1beta1.Sidecar{
@@ -645,6 +647,105 @@ func TestAddServerToInstancePod(t *testing.T) {
           mode: 384
           path: server-tls.key
         name: instance-secret-name
+		`))
+	})
+
+	t.Run("AddTablespaces", func(t *testing.T) {
+		assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=true")))
+		clusterWithTablespaces := cluster.DeepCopy()
+		clusterWithTablespaces.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{
+			{
+				TablespaceVolumes: []v1beta1.TablespaceVolume{
+					{Name: "trial"},
+					{Name: "castle"},
+				},
+			},
+		}
+
+		out := pod.DeepCopy()
+		out.Volumes = append(out.Volumes, corev1.Volume{Name: "tablespace-trial"}, corev1.Volume{Name: "tablespace-castle"})
+		AddServerToInstancePod(clusterWithTablespaces, out, "instance-secret-name")
+
+		// Only Containers and Volumes fields have changed.
+		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
+		assert.Assert(t, marshalMatches(out.Containers, `
+- name: database
+  resources: {}
+- name: other
+  resources: {}
+- command:
+  - pgbackrest
+  - server
+  livenessProbe:
+    exec:
+      command:
+      - pgbackrest
+      - server-ping
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
+  - mountPath: /pgdata
+    name: postgres-data
+  - mountPath: /pgwal
+    name: postgres-wal
+  - mountPath: /tablespaces/trial
+    name: tablespace-trial
+  - mountPath: /tablespaces/castle
+    name: tablespace-castle
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:)
+    until read -r -t 5 -u "${fd}"; do
+      if
+        [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+        pkill -HUP --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --dereference --format='Loaded configuration dated %y' "${filename}"
+      elif
+        { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
+          [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+        } &&
+        pkill -HUP --exact --parent=0 pgbackrest
+      then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded certificates dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbackrest-config
+  - /etc/pgbackrest/server
+  - /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
+  - /etc/pgbackrest/conf.d/~postgres-operator_server.conf
+  name: pgbackrest-config
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/server
+    name: pgbackrest-server
+    readOnly: true
 		`))
 	})
 }

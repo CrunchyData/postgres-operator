@@ -138,6 +138,7 @@ deploy-dev: createnamespaces
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
 		CRUNCHY_DEBUG=true \
+		PGO_FEATURE_GATES="TablespaceVolumes=true" \
 		CHECK_FOR_UPGRADES='$(if $(CHECK_FOR_UPGRADES),$(CHECK_FOR_UPGRADES),false)' \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		PGO_NAMESPACE='postgres-operator' \

@@ -59,6 +59,16 @@ func TestDownwardAPIVolumeMount(t *testing.T) {
 	})
 }
 
+func TestTablespaceVolumeMount(t *testing.T) {
+	mount := TablespaceVolumeMount("trial")
+
+	assert.DeepEqual(t, mount, corev1.VolumeMount{
+		Name:      "tablespace-trial",
+		MountPath: "/tablespaces/trial",
+		ReadOnly:  false,
+	})
+}
+
 func TestInstancePod(t *testing.T) {
 	ctx := context.Background()
 
@@ -118,7 +128,7 @@ func TestInstancePod(t *testing.T) {
 	// without WAL volume nor WAL volume spec
 	pod := new(corev1.PodSpec)
 	InstancePod(ctx, cluster, instance,
-		serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
+		serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
 	assert.Assert(t, marshalMatches(pod, `
 containers:
@@ -240,6 +250,7 @@ initContainers:
     install --directory --mode=0775 "${pgbrLog_directory}" ||
     halt "$(permissions "${pgbrLog_directory}" ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
+
     [ -f "${postgres_data_directory}/PG_VERSION" ] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
     [[ "${postgres_data_version}" == "${expected_major_version}" ]] ||
@@ -346,7 +357,7 @@ volumes:
 
 		pod := new(corev1.PodSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
 
 		assert.Assert(t, len(pod.Containers) > 0)
 		assert.Assert(t, len(pod.InitContainers) > 0)
@@ -453,7 +464,7 @@ volumes:
 
 		pod := new(corev1.PodSpec)
 		InstancePod(ctx, clusterWithConfig, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
 		assert.Assert(t, len(pod.Containers) > 0)
 		assert.Assert(t, len(pod.InitContainers) > 0)
@@ -490,7 +501,7 @@ volumes:
 
 		t.Run("SidecarNotEnabled", func(t *testing.T) {
 			InstancePod(ctx, cluster, sidecarInstance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
 			assert.Equal(t, len(pod.Containers), 2, "expected 2 containers in Pod, got %d", len(pod.Containers))
 		})
@@ -498,7 +509,7 @@ volumes:
 		t.Run("SidecarEnabled", func(t *testing.T) {
 			assert.NilError(t, util.AddAndSetFeatureGates(string(util.InstanceSidecars+"=true")))
 			InstancePod(ctx, cluster, sidecarInstance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, pod)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
 			assert.Equal(t, len(pod.Containers), 3, "expected 3 containers in Pod, got %d", len(pod.Containers))
 
@@ -513,6 +524,58 @@ volumes:
 		})
 	})
 
+	t.Run("WithTablespaces", func(t *testing.T) {
+
+		clusterWithTablespaces := cluster.DeepCopy()
+		clusterWithTablespaces.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{
+			{
+				TablespaceVolumes: []v1beta1.TablespaceVolume{
+					{Name: "trial"},
+					{Name: "castle"},
+				},
+			},
+		}
+
+		tablespaceVolume1 := new(corev1.PersistentVolumeClaim)
+		tablespaceVolume1.Labels = map[string]string{
+			"postgres-operator.crunchydata.com/data": "castle",
+		}
+		tablespaceVolume2 := new(corev1.PersistentVolumeClaim)
+		tablespaceVolume2.Labels = map[string]string{
+			"postgres-operator.crunchydata.com/data": "trial",
+		}
+		tablespaceVolumes := []*corev1.PersistentVolumeClaim{tablespaceVolume1, tablespaceVolume2}
+
+		InstancePod(ctx, cluster, instance,
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, tablespaceVolumes, pod)
+
+		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
+- mountPath: /pgdata
+  name: postgres-data
+- mountPath: /etc/database-containerinfo
+  name: database-containerinfo
+  readOnly: true
+- mountPath: /tablespaces/castle
+  name: tablespace-castle
+- mountPath: /tablespaces/trial
+  name: tablespace-trial`), "expected tablespace mount(s) in %q container", pod.Containers[0].Name)
+
+		// InitContainer has all mountPaths, except downwardAPI and additionalConfig
+		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+- mountPath: /pgconf/tls
+  name: cert-volume
+  readOnly: true
+- mountPath: /pgdata
+  name: postgres-data
+- mountPath: /tablespaces/castle
+  name: tablespace-castle
+- mountPath: /tablespaces/trial
+  name: tablespace-trial`), "expected tablespace mount(s) in %q container", pod.InitContainers[0].Name)
+	})
+
 	t.Run("WithWALVolumeWithWALVolumeSpec", func(t *testing.T) {
 		walVolume := new(corev1.PersistentVolumeClaim)
 		walVolume.Name = "walvol"
@@ -522,7 +585,7 @@ volumes:
 
 		pod := new(corev1.PodSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
 
 		assert.Assert(t, len(pod.Containers) > 0)
 		assert.Assert(t, len(pod.InitContainers) > 0)

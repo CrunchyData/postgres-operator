@@ -28,6 +28,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -301,6 +302,14 @@ func addServerContainerAndVolume(
 	postgresMounts := map[string]corev1.VolumeMount{
 		postgres.DataVolumeMount().Name: postgres.DataVolumeMount(),
 		postgres.WALVolumeMount().Name:  postgres.WALVolumeMount(),
+	}
+	if util.DefaultMutableFeatureGate.Enabled(util.TablespaceVolumes) {
+		for _, instance := range cluster.Spec.InstanceSets {
+			for _, vol := range instance.TablespaceVolumes {
+				tablespaceVolumeMount := postgres.TablespaceVolumeMount(vol.Name)
+				postgresMounts[tablespaceVolumeMount.Name] = tablespaceVolumeMount
+			}
+		}
 	}
 	for i := range pod.Volumes {
 		if mount, ok := postgresMounts[pod.Volumes[i].Name]; ok {

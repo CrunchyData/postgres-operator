@@ -177,7 +177,7 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 //   - Renames the data directory as needed to bootstrap the cluster using the restored database.
 //     This ensures compatibility with the "existing" bootstrap method that is included in the
 //     Patroni config when bootstrapping a cluster using an existing data directory.
-func RestoreCommand(pgdata string, args ...string) []string {
+func RestoreCommand(pgdata string, tablespaceVolumes []*corev1.PersistentVolumeClaim, args ...string) []string {
 
 	// After pgBackRest restores files, PostgreSQL starts in recovery to finish
 	// replaying WAL files. "hot_standby" is "on" (by default) so we can detect
@@ -205,8 +205,15 @@ func RestoreCommand(pgdata string, args ...string) []string {
 	// The 'pg_ctl' timeout is set to a very large value (1 year) to ensure there
 	// are no timeouts when starting or stopping Postgres.
 
-	const restoreScript = `declare -r pgdata="$1" opts="$2"
-install --directory --mode=0700 "${pgdata}"
+	tablespaceCmd := ""
+	for _, tablespaceVolume := range tablespaceVolumes {
+		tablespaceCmd = tablespaceCmd + fmt.Sprintf(
+			"\ninstall --directory --mode=0700 '/tablespaces/%s/data'",
+			tablespaceVolume.Labels[naming.LabelData])
+	}
+
+	restoreScript := `declare -r pgdata="$1" opts="$2"
+install --directory --mode=0700 "${pgdata}"` + tablespaceCmd + `
 rm -f "${pgdata}/postmaster.pid"
 bash -xc "pgbackrest restore ${opts}"
 rm -f "${pgdata}/patroni.dynamic.json"

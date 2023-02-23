@@ -325,6 +325,17 @@ func InstancePostgresDataVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta 
 	}
 }
 
+// InstanceTablespaceDataVolume returns the ObjectMeta for the tablespace data
+// volume for instance.
+func InstanceTablespaceDataVolume(instance *appsv1.StatefulSet, tablespaceName string) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: instance.GetNamespace(),
+		Name: instance.GetName() +
+			"-" + tablespaceName +
+			"-tablespace",
+	}
+}
+
 // InstancePostgresWALVolume returns the ObjectMeta for the PostgreSQL WAL
 // volume for instance.
 func InstancePostgresWALVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {

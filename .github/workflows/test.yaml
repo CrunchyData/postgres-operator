@@ -130,6 +130,7 @@ jobs:
             --env 'RELATED_IMAGE_POSTGRES_13_GIS_3.1=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-13.9-3.1-2' \
             --env 'RELATED_IMAGE_POSTGRES_14=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.6-2' \
             --env 'RELATED_IMAGE_POSTGRES_14_GIS_3.1=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.6-3.1-2' \
+            --env 'PGO_FEATURE_GATES=TablespaceVolumes=true' \
             --name 'postgres-operator' ubuntu \
             postgres-operator
       - name: Install kuttl
