@@ -27,7 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters,verbs=patch
+// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={patch}
 
 // handleDelete sets a finalizer on cluster and performs the finalization of
 // cluster when it is being deleted. It returns (nil, nil) when cluster is
