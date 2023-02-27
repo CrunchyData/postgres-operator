@@ -3,7 +3,6 @@ Crunchy PostgreSQL Operator API
 
 The Crunchy PostgreSQL Operator API defines HTTP(S) interactions with the Crunchy PostgreSQL Operator.
 
-
 ## Direct API Calls
 
 The API can also be accessed by interacting directly with the API server. This
@@ -14,7 +13,6 @@ will need to provide the username and password for the RBAC along with a header
 that includes the content type and the `--insecure` flag. These flags will be
 the same for all of your interactions with the API server and can be seen in the
 following examples.
-
 
 ###### Get API Server Version
 
@@ -53,14 +51,13 @@ cluster.
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 
-POST --data \
-    '{"ClientVersion":"4.6.9",
-    "Namespace":"pgouser1",
-    "Name":"mycluster",
+	POST --data \
+	    '{"ClientVersion":"4.6.10",
+	    "Namespace":"pgouser1",
+	    "Name":"mycluster",
+
 $PGO_APISERVER_URL/clusters
 ```
-
-
 
 ###### Show and Delete Cluster
 The last two examples show you how to `show` and `delete` a cluster. Notice
@@ -73,10 +70,11 @@ show all of the clusters that are in the given namespace.
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 
-POST --data \
-  '{"ClientVersion":"4.6.9",
-  "Namespace":"pgouser1",
-  "Clustername":"mycluster"}' \
+	POST --data \
+	  '{"ClientVersion":"4.6.10",
+	  "Namespace":"pgouser1",
+	  "Clustername":"mycluster"}' \
+
 $PGO_APISERVER_URL/showclusters
 ```
 
@@ -84,25 +82,26 @@ $PGO_APISERVER_URL/showclusters
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 
-POST --data \
-  '{"ClientVersion":"4.6.9",
-  "Namespace":"pgouser1",
-  "Clustername":"mycluster"}' \
+	POST --data \
+	  '{"ClientVersion":"4.6.10",
+	  "Namespace":"pgouser1",
+	  "Clustername":"mycluster"}' \
+
 $PGO_APISERVER_URL/clustersdelete
 ```
 
-  Schemes: http, https
-  BasePath: /
-  Version: 4.6.9
-  License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
-  Contact: Crunchy Data<info@crunchydata.com> https://www.crunchydata.com/
+	Schemes: http, https
+	BasePath: /
+	Version: 4.6.10
+	License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
+	Contact: Crunchy Data<info@crunchydata.com> https://www.crunchydata.com/
 
 
-        Consumes:
-        - application/json
+	      Consumes:
+	      - application/json
 
-        Produces:
-        - application/json
+	      Produces:
+	      - application/json
 
 swagger:meta
 */
