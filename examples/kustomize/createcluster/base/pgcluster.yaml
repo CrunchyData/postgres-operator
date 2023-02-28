@@ -10,7 +10,7 @@ metadata:
     deployment-name: hippo
     name: hippo
     pg-cluster: hippo
-    pgo-version: 4.6.7
+    pgo-version: 4.6.10
     pgouser: admin
   name: hippo
   namespace: pgo
@@ -46,7 +46,7 @@ spec:
     postgres: {}
   ccpimage: crunchy-postgres-ha
   ccpimageprefix: registry.developers.crunchydata.com/crunchydata
-  ccpimagetag: ubi8-13.7-4.6.7
+  ccpimagetag: ubi8-13.10-4.6.10
   clustername: hippo
   customconfig: ""
   database: hippo
@@ -69,4 +69,4 @@ spec:
   port: "5432"
   user: hippo
   userlabels:
-    pgo-version: 4.6.7
+    pgo-version: 4.6.10
