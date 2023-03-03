@@ -39,12 +39,6 @@ import (
 )
 
 func main() {
-	if flush, err := initOpenTelemetry(); err != nil {
-		log.Fatal(err)
-	} else {
-		defer flush()
-	}
-
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	// add logging configuration
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
@@ -58,18 +52,7 @@ func main() {
 	// give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
-	newKubernetesClient := func() (*kubeapi.Client, error) {
-		config, err := kubeapi.LoadClientConfig()
-		if err != nil {
-			return nil, err
-		}
-
-		config.Wrap(otelTransportWrapper())
-
-		return kubeapi.NewClientForConfig(config)
-	}
-
-	client, err := newKubernetesClient()
+	client, err := kubeapi.NewClient()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,8 +78,6 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Debug("controller manager created")
-
-	controllerManager.NewKubernetesClient = newKubernetesClient
 
 	// If not using the "disabled" namespace operating mode, start a real namespace controller
 	// that is able to resond to namespace events in the Kube cluster.  If using the "disabled"
