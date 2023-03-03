@@ -205,6 +205,7 @@ pgo-base-docker: pgo-base-build
 
 #======== Utility =======
 check:
+	rm -rf licenses/*/
 	PGOROOT=$(PGOROOT) go test ./...
 
 cli-docs:
@@ -216,6 +217,7 @@ cli-docs:
 	rm docs/content/pgo-client/reference/pgo.md
 
 clean: clean-deprecated
+	rm -rf licenses/*/
 	rm -f bin/apiserver
 	rm -f bin/postgres-operator
 	rm -f bin/pgo bin/pgo-mac bin/pgo.exe
