@@ -132,13 +132,14 @@ undeploy: ## Undeploy the PostgreSQL Operator
 
 .PHONY: deploy-dev
 deploy-dev: ## Deploy the PostgreSQL Operator locally
+deploy-dev: PGO_FEATURE_GATES ?= "TablespaceVolumes=true"
 deploy-dev: build-postgres-operator
 deploy-dev: createnamespaces
 	kubectl apply --server-side -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
 		CRUNCHY_DEBUG=true \
-		PGO_FEATURE_GATES="TablespaceVolumes=true" \
+		PGO_FEATURE_GATES="${PGO_FEATURE_GATES}" \
 		CHECK_FOR_UPGRADES='$(if $(CHECK_FOR_UPGRADES),$(CHECK_FOR_UPGRADES),false)' \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		PGO_NAMESPACE='postgres-operator' \

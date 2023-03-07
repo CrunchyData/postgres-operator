@@ -70,6 +70,9 @@ func main() {
 	log := logging.FromContext(ctx)
 	log.V(1).Info("debug flag set to true")
 
+	log.Info("feature gates enabled",
+		"PGO_FEATURE_GATES", os.Getenv("PGO_FEATURE_GATES"))
+
 	cruntime.SetLogger(log)
 
 	cfg, err := runtime.GetConfig()
