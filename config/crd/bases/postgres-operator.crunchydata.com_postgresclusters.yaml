@@ -9458,8 +9458,8 @@ spec:
                       type: object
                     tablespaceVolumes:
                       description: The list of tablespaces volumes to mount for this
-                        postgrescluster This function is currently in alpha as of
-                        PGO v5.4
+                        postgrescluster This field requires enabling TablespaceVolumes
+                        feature gate
                       items:
                         properties:
                           dataVolumeClaimSpec:

@@ -204,7 +204,7 @@ PGO allows you to configure custom
 [sidecar Containers](https://kubernetes.io/docs/concepts/workloads/pods/#how-pods-manage-multiple-containers)
 for your PostgreSQL instance and pgBouncer Pods.
 
-To use the custom sidecar features, currently in `Alpha`, you will need to enable
+To use the custom sidecar features, you will need to enable
 them via the PGO
 [feature gate](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/).
 
@@ -318,7 +318,7 @@ respective Pods until the feature gate is enabled.
 ### Considerations
 
 - Volume mounts and other Pod details are subject to change between releases.
-- The custom sidecar features are currently in `Alpha`. Any sidecar Containers,
+- The custom sidecar features are currently feature-gated. Any sidecar Containers,
   as well as any settings included in their configuration, are added and used at
   your own risk. Improperly configured sidecar Containers could impact the health
   and/or security of your PostgreSQL cluster!
