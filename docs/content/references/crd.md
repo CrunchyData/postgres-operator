@@ -7192,7 +7192,7 @@ Resource requirements for a sidecar container
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindextablespacevolumesindex">tablespaceVolumes</a></b></td>
         <td>[]object</td>
-        <td>The list of tablespaces volumes to mount for this postgrescluster This function is currently in alpha as of PGO v5.4</td>
+        <td>The list of tablespaces volumes to mount for this postgrescluster This field requires enabling TablespaceVolumes feature gate</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterspecinstancesindextolerationsindex">tolerations</a></b></td>

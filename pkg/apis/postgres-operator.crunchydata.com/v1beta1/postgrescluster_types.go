@@ -480,7 +480,7 @@ type PostgresInstanceSetSpec struct {
 	WALVolumeClaimSpec *corev1.PersistentVolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
 
 	// The list of tablespaces volumes to mount for this postgrescluster
-	// This function is currently in alpha as of PGO v5.4
+	// This field requires enabling TablespaceVolumes feature gate
 	// +listType=map
 	// +listMapKey=name
 	// +optional

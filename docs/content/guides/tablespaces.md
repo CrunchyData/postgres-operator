@@ -6,8 +6,8 @@ weight: 160
 ---
 
 {{% notice warning %}}
-PGO tablespaces is currently in `Alpha` and may interfere with other features.
-(See below for more details.)
+PGO tablespaces currently requires enabling the `TablespaceVolumes` feature gate
+and may interfere with other features. (See below for more details.)
 {{% /notice %}}
 
 A [Tablespace](https://www.postgresql.org/docs/current/manage-ag-tablespaces.html)
@@ -43,7 +43,7 @@ Postgres Operator adds many conveniences to make it easier to use tablespaces.
 
 ## Enabling TablespaceVolumes in PGO v5
 
-In PGO v5, tablespace support is currently in `Alpha`. If you want to use this
+In PGO v5, tablespace support is currently feature-gated. If you want to use this
 experimental feature, you will need to enable the feature via the PGO `TablespaceVolumes`
 [feature gate](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/).
 
