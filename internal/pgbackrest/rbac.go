@@ -22,8 +22,8 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// +kubebuilder:rbac:namespace=pgbackrest,groups="",resources=pods,verbs=list
-// +kubebuilder:rbac:namespace=pgbackrest,groups="",resources=pods/exec,verbs=create
+// +kubebuilder:rbac:namespace=pgbackrest,groups="",resources="pods",verbs={list}
+// +kubebuilder:rbac:namespace=pgbackrest,groups="",resources="pods/exec",verbs={create}
 
 // Permissions returns the RBAC rules pgBackRest needs for a cluster.
 func Permissions(cluster *v1beta1.PostgresCluster) []rbacv1.PolicyRule {

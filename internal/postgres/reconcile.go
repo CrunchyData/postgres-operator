@@ -38,6 +38,11 @@ func DataVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "postgres-data", MountPath: dataMountPath}
 }
 
+// TablespaceVolumeMount returns the name and mount path of the PostgreSQL tablespace data volume.
+func TablespaceVolumeMount(tablespaceName string) corev1.VolumeMount {
+	return corev1.VolumeMount{Name: "tablespace-" + tablespaceName, MountPath: tablespaceMountPath + "/" + tablespaceName}
+}
+
 // WALVolumeMount returns the name and mount path of the PostgreSQL WAL volume.
 func WALVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "postgres-wal", MountPath: walMountPath}
@@ -68,6 +73,7 @@ func InstancePod(ctx context.Context,
 	inInstanceSpec *v1beta1.PostgresInstanceSetSpec,
 	inClusterCertificates, inClientCertificates *corev1.SecretProjection,
 	inDataVolume, inWALVolume *corev1.PersistentVolumeClaim,
+	inTablespaceVolumes []*corev1.PersistentVolumeClaim,
 	outInstancePod *corev1.PodSpec,
 ) {
 	certVolumeMount := corev1.VolumeMount{
@@ -216,6 +222,25 @@ func InstancePod(ctx context.Context,
 		certVolume,
 		dataVolume,
 		downwardAPIVolume,
+	}
+
+	// If `TablespaceVolumes` FeatureGate is enabled, `inTablespaceVolumes` may not be nil.
+	// In that case, add any tablespace volumes to the pod, and
+	// add volumeMounts to the database and startup containers
+	for _, vol := range inTablespaceVolumes {
+		tablespaceVolumeMount := TablespaceVolumeMount(vol.Labels[naming.LabelData])
+		tablespaceVolume := corev1.Volume{
+			Name: tablespaceVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: vol.Name,
+					ReadOnly:  false,
+				},
+			},
+		}
+		outInstancePod.Volumes = append(outInstancePod.Volumes, tablespaceVolume)
+		container.VolumeMounts = append(container.VolumeMounts, tablespaceVolumeMount)
+		startup.VolumeMounts = append(startup.VolumeMounts, tablespaceVolumeMount)
 	}
 
 	if len(inCluster.Spec.Config.Files) != 0 {

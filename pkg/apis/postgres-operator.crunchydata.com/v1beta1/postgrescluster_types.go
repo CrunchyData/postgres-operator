@@ -478,6 +478,35 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// +optional
 	WALVolumeClaimSpec *corev1.PersistentVolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
+
+	// The list of tablespaces volumes to mount for this postgrescluster
+	// This field requires enabling TablespaceVolumes feature gate
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
+}
+
+type TablespaceVolume struct {
+	// This value goes into
+	// a. the name of a corev1.PersistentVolumeClaim,
+	// b. a label value, and
+	// c. a path name.
+	// So it must match both IsDNS1123Subdomain and IsValidLabelValue;
+	// and be valid as a file path.
+
+	// The name for the tablespace, used as the path name for the volume.
+	// Must be unique in the instance set since they become the directory names.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:Pattern=`^[a-z][a-z0-9]*$`
+	// +kubebuilder:validation:Type=string
+	Name string `json:"name"`
+
+	// Defines a PersistentVolumeClaim for a tablespace.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
+	// +kubebuilder:validation:Required
+	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
 }
 
 // InstanceSidecars defines the configuration for instance sidecar containers
