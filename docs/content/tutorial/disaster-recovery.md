@@ -240,7 +240,7 @@ pgBackRest supports this case, but it is important to make sure this is what you
 Restoring in this manner will restore the requested database from backup and make it
 accessible, but all of the other databases in the backup will NOT be accessible after restore.
 
-For example, if your backup includes databases `test1`, `test2` and `test3`, and you request that
+For example, if your backup includes databases `test1`, `test2`, and `test3`, and you request that
 `test2` be restored, the `test1` and `test3` databases will NOT be accessible after restore is completed.
 Please review the pgBackRest documentation on the
 [limitations on restoring individual databases](https://pgbackrest.org/user-guide.html#restore/option-db-include).
