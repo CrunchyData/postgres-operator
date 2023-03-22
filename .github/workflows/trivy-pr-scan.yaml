@@ -9,9 +9,6 @@ on:
   push:
     branches:
       - master
-  # Scan schedule is same as codeql-analysis job.
-  schedule:
-    - cron: '10 18 * * 2'
 
 jobs:
   scan:
