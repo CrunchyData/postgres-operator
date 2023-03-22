@@ -6,7 +6,7 @@ commands:
   # both owners are listed.
   - script: |
       for i in {1..5}; do
-          sleep 1 # this sleep allows time for the owner reference list to be updated
+          sleep 5 # this sleep allows time for the owner reference list to be updated
           CURRENT_OWNERS=$(kubectl --namespace="${NAMESPACE}" get secret \
             pgo-root-cacert -o jsonpath='{.metadata.ownerReferences[*].name}')
           # If owner1 and owner2 are both listed, exit successfully
