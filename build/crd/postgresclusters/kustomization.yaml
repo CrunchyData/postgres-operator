@@ -39,4 +39,4 @@ patchesJson6902:
       path: "/metadata/labels"
       value:
         app.kubernetes.io/name: pgo
-        app.kubernetes.io/version: 5.3.0
+        app.kubernetes.io/version: 5.3.1

@@ -4,5 +4,5 @@ metadata:
   name: example-upgrade
 spec:
   postgresClusterName: example
-  fromPostgresVersion: 13
-  toPostgresVersion: 14
+  fromPostgresVersion: 14
+  toPostgresVersion: 15

@@ -3,7 +3,7 @@ kind: PostgresCluster
 metadata:
   name: example
 spec:
-  postgresVersion: 13
+  postgresVersion: 15
   instances:
     - replicas: 1
       dataVolumeClaimSpec:
