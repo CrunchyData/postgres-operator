@@ -13,8 +13,8 @@ CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION ?= \
 	and has a SQL interface to a database to allow for metrics collection.
 CRUNCHY_POSTGRES_EXPORTER_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes
 CRUNCHY_POSTGRES_EXPORTER_IMAGE_PREFIX ?= $(PGO_IMAGE_PREFIX)
-CRUNCHY_POSTGRES_EXPORTER_PG_VERSION ?= 14
-CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 14.6
+CRUNCHY_POSTGRES_EXPORTER_PG_VERSION ?= 15
+CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 15.2
 
 PGMONITOR_DIR ?= hack/tools/pgmonitor
 PGMONITOR_VERSION ?= 'v4.8.0'
@@ -268,11 +268,11 @@ check-kuttl: ## example command: make check-kuttl KUTTL_TEST='
 		--config testing/kuttl/kuttl-test.yaml
 
 .PHONY: generate-kuttl
-generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 13
-generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 14
-generate-kuttl: export KUTTL_PG_VERSION ?= 14
-generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.1
-generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.6-2
+generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 14
+generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 15
+generate-kuttl: export KUTTL_PG_VERSION ?= 15
+generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.3
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.2-0
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
