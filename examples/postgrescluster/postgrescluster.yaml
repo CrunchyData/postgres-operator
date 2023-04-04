@@ -4,7 +4,7 @@ metadata:
   name: hippo
 spec:
   image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.2-0
-  postgresVersion: 14
+  postgresVersion: 15
   instances:
     - name: instance1
       dataVolumeClaimSpec:
