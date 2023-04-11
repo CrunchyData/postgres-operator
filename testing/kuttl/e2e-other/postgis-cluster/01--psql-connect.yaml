@@ -122,8 +122,8 @@ spec:
               DECLARE
                result text;
               BEGIN
-               SELECT ST_AsText(ST_AsGeoJSON('SRID=4326;POINT(-118.4079 33.9434)'::geography)) INTO result;
-               ASSERT result = 'POINT(-118.4079 33.9434)', 'GeoJSON check failed';
+               SELECT ST_AsGeoJSON('SRID=4326;POINT(-118.4079 33.9434)'::geography) INTO result;
+               ASSERT result = '{\"type\":\"Point\",\"coordinates\":[-118.4079,33.9434]}', FORMAT('GeoJSON check failed, got %L', result);
               END \$\$;" 2>&1)
               
               if [[ "$RESULT" == *"ERROR"* ]]; then
