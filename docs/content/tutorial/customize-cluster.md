@@ -99,11 +99,18 @@ If you want to use the TLS infrastructure that PGO provides, you can skip the re
 
 ### How to Customize TLS
 
-There are a few different TLS endpoints that can be customized for PGO, including those of the Postgres cluster and controlling how Postgres instances authenticate with each other. Let's look at how we can customize TLS.
+There are a few different TLS endpoints that can be customized for PGO, including those of the Postgres cluster and controlling how Postgres instances authenticate with each other. Let's look at how we can customize TLS by defining
 
-Your TLS certificate should have a Common Name (CN) setting that matches the primary Service name. This is the name of the cluster suffixed with `-primary`. For example, for our `hippo` cluster this would be `hippo-primary`.
+* a `spec.customTLSSecret`, used to both identify the cluster and encrypt communications; and
+* a `spec.customReplicationTLSSecret`, used for replication authentication.
 
-To customize the TLS for a Postgres cluster, you will need to create a Secret in the Namespace of your Postgres cluster that contains the TLS key (`tls.key`), TLS certificate (`tls.crt`) and the CA certificate (`ca.crt`) to use. The Secret should contain the following values:
+(For more information on the `spec.customTLSSecret` and `spec.customReplicationTLSSecret` fields, see the [`PostgresCluster CRD`]({{< relref "references/crd.md" >}}).)
+
+To customize the TLS for a Postgres cluster, you will need to create two Secrets in the Namespace of your Postgres cluster. One of these Secrets will be the `customTLSSecret` and the other will be the `customReplicationTLSSecret`. Both secrets contain a TLS key (`tls.key`), TLS certificate (`tls.crt`) and CA certificate (`ca.crt`) to use.
+
+Note: If `spec.customTLSSecret` is provided you **must** also provide `spec.customReplicationTLSSecret` and both must contain the same `ca.crt`.
+
+The custom TLS and custom replication TLS Secrets should contain the following fields (though see below for a workaround if you cannot control the field names of the Secret's `data`):
 
 ```
 data:
@@ -112,39 +119,62 @@ data:
   tls.key: <value>
 ```
 
-For example, if you have files named `ca.crt`, `hippo.key`, and `hippo.crt` stored on your local machine, you could run the following command:
+For example, if you have files named `ca.crt`, `hippo.key`, and `hippo.crt` stored on your local machine, you could run the following command to create a Secret from those files:
 
 ```
-kubectl create secret generic -n postgres-operator hippo.tls \
+kubectl create secret generic -n postgres-operator hippo-cluster.tls \
   --from-file=ca.crt=ca.crt \
   --from-file=tls.key=hippo.key \
   --from-file=tls.crt=hippo.crt
 ```
 
-You can specify the custom TLS Secret in the `spec.customTLSSecret.name` field in your `postgrescluster.postgres-operator.crunchydata.com` custom resource, e.g.:
+After you create the Secrets, you can specify the custom TLS Secret in your `postgrescluster.postgres-operator.crunchydata.com` custom resource. For example, if you created a `hippo-cluster.tls` Secret and a `hippo-replication.tls` Secret, you would add them to your Postgres cluster:
 
 ```
 spec:
   customTLSSecret:
-    name: hippo.tls
+    name: hippo-cluster.tls
+  customReplicationTLSSecret:
+    name: hippo-replication.tls
 ```
 
-If you're unable to control the key-value pairs in the Secret, you can create a mapping that looks similar to this:
+If you're unable to control the key-value pairs in the Secret, you can create a mapping to tell
+the Postgres Operator what key holds the expected value. That would look similar to this:
 
 ```
 spec:
   customTLSSecret:
     name: hippo.tls
     items:
-      - key: <tls.crt key>
+      - key: <tls.crt key in the referenced hippo.tls Secret>
         path: tls.crt
-      - key: <tls.key key>
+      - key: <tls.key key in the referenced hippo.tls Secret>
         path: tls.key
-      - key: <ca.crt key>
+      - key: <ca.crt key in the referenced hippo.tls Secret>
         path: ca.crt
 ```
 
-If `spec.customTLSSecret` is provided you **must** also provide `spec.customReplicationTLSSecret` and both must contain the same `ca.crt`.
+For instance, if the `hippo.tls` Secret had the `tls.crt` in a key named `hippo-tls.crt`, the
+`tls.key` in a key named `hippo-tls.key`, and the `ca.crt` in a key named `hippo-ca.crt`,
+then your mapping would look like:
+
+```
+spec:
+  customTLSSecret:
+    name: hippo.tls
+    items:
+      - key: hippo-tls.crt
+        path: tls.crt
+      - key: hippo-tls.key
+        path: tls.key
+      - key: hippo-ca.crt
+        path: ca.crt
+```
+
+Note: Although the custom TLS and custom replication TLS Secrets share the same `ca.crt`, they do not share the same `tls.crt`:
+
+* Your `spec.customTLSSecret` TLS certificate should have a Common Name (CN) setting that matches the primary Service name. This is the name of the cluster suffixed with `-primary`. For example, for our `hippo` cluster this would be `hippo-primary`.
+* Your `spec.customReplicationTLSSecret` TLS certificate should have a Common Name (CN) setting that matches `_crunchyrepl`, which is the preset replication user.
 
 As with the other changes, you can roll out the TLS customizations with `kubectl apply`.
 
