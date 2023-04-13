@@ -152,6 +152,8 @@ rm -rf '/pgdata/{{< param fromPostgresVersion >}}'
 
 When you are satisfied with the upgrade, you can execute this command to remove the old data directory. Do so at your discretion.
 
+The script does not delete old WAL-files so these must be deleted manually.
+
 If you have extensions installed you may need to upgrade those as well. For example, for the `pgaudit` extension we recommend running the following to upgrade:
 
 ```sql
