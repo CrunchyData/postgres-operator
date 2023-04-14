@@ -152,7 +152,7 @@ rm -rf '/pgdata/pg{{< param fromPostgresVersion >}}'
 
 When you are satisfied with the upgrade, you can execute this command to remove the old data directory. Do so at your discretion.
 
-The script does not delete old WAL-files so these must be deleted manually.
+Note that the `delete_old_cluster.sh` script does not delete the old WAL files. These are typically found in `/pgdata/pg{{< param fromPostgresVersion >}}_wal`, although they can be stored elsewhere. If you would like to delete these files, this must be done manually.
 
 If you have extensions installed you may need to upgrade those as well. For example, for the `pgaudit` extension we recommend running the following to upgrade:
 
