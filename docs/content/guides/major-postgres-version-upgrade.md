@@ -147,7 +147,7 @@ If you are unable to exec into the Pod, you can run `ANALYZE` directly on each o
 `pg_upgrade` may also create a script called `delete_old_cluster.sh`, which contains the equivalent of
 
 ```
-rm -rf '/pgdata/{{< param fromPostgresVersion >}}'
+rm -rf '/pgdata/pg{{< param fromPostgresVersion >}}'
 ```
 
 When you are satisfied with the upgrade, you can execute this command to remove the old data directory. Do so at your discretion.
