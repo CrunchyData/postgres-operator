@@ -55,6 +55,11 @@ type ServiceSpec struct {
 	// +kubebuilder:default=ClusterIP
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
 	Type string `json:"type"`
+
+	// +optional
+	SessionAffinity corev1.ServiceAffinity `json:"sessionAffinity"`
+	// +optional
+	SessionAffinityConfig *corev1.SessionAffinityConfig `json:"sessionAffinityConfig"`
 }
 
 // Sidecar defines the configuration of a sidecar container
