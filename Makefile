@@ -19,7 +19,8 @@ CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 15.2
 PGMONITOR_DIR ?= hack/tools/pgmonitor
 PGMONITOR_VERSION ?= 'v4.8.0'
 POSTGRES_EXPORTER_VERSION ?= 0.10.1
-POSTGRES_EXPORTER_URL ?= https://github.com/prometheus-community/postgres_exporter/releases/download/v${POSTGRES_EXPORTER_VERSION}/postgres_exporter-${POSTGRES_EXPORTER_VERSION}.linux-amd64.tar.gz
+POSTGRES_EXPORTER_ARCHITECTURE ?= amd64
+POSTGRES_EXPORTER_URL ?= https://github.com/prometheus-community/postgres_exporter/releases/download/v${POSTGRES_EXPORTER_VERSION}/postgres_exporter-${POSTGRES_EXPORTER_VERSION}.linux-${POSTGRES_EXPORTER_ARCHITECTURE}.tar.gz
 
 # Buildah's "build" used to be "bud". Use the alias to be compatible for a while.
 BUILDAH_BUILD ?= buildah bud
@@ -166,7 +167,7 @@ build-crunchy-postgres-exporter-image: build/crunchy-postgres-exporter/Dockerfil
 		$(warning WARNING: old buildah does not invalidate its cache for changed labels: \
 			https://github.com/containers/buildah/issues/3517))
 	$(if $(IMAGE_TAG),,	$(error missing IMAGE_TAG))
-	$(BUILDAH_BUILD) \
+	$(strip $(BUILDAH_BUILD)) \
 		--tag $(BUILDAH_TRANSPORT)$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_PREFIX)/$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME):$(IMAGE_TAG) \
 		--build-arg PGVERSION=$(CRUNCHY_POSTGRES_EXPORTER_PG_VERSION) \
 		--label name='$(CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME)' \
@@ -206,7 +207,7 @@ build-postgres-operator-image: build/postgres-operator/Dockerfile
 		$(warning WARNING: old buildah does not invalidate its cache for changed labels: \
 			https://github.com/containers/buildah/issues/3517))
 	$(if $(IMAGE_TAG),,	$(error missing IMAGE_TAG))
-	$(BUILDAH_BUILD) \
+	$(strip $(BUILDAH_BUILD)) \
 		--tag $(BUILDAH_TRANSPORT)$(PGO_IMAGE_PREFIX)/$(PGO_IMAGE_NAME):$(IMAGE_TAG) \
 		--label name='$(PGO_IMAGE_NAME)' \
 		--label build-date='$(PGO_IMAGE_TIMESTAMP)' \
