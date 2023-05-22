@@ -9,7 +9,7 @@ bases:
 - ../manager
 
 patches:
-- manager-target.yaml
+- path: manager-target.yaml
 
 images:
 - name: postgres-operator
