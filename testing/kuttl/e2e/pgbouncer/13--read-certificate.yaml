@@ -25,4 +25,4 @@ spec:
             - -ceu
             - |
               openssl s_client --connect '$(PGHOST):$(PGPORT)' --starttls postgres < /dev/null 2> /dev/null |
-              openssl x509 --noout --text
+              openssl x509 -noout -text
