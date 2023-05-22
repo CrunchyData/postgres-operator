@@ -5,4 +5,4 @@ bases:
 - ../default
 
 patches:
-- manager-dev.yaml
+- path: manager-dev.yaml
