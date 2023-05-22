@@ -7,8 +7,8 @@ bases:
 resources:
   # CVE-2020-14386: https://cloud.google.com/anthos/clusters/docs/security-bulletins#gcp-2020-012
   # CVE-2021-22555: https://cloud.google.com/anthos/clusters/docs/security-bulletins#gcp-2021-015
-  - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/require_drop_all/require_drop_all.yaml
-  - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/require_ro_rootfs/require_ro_rootfs.yaml
+  - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/require-drop-all/require-drop-all.yaml
+  - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/require-ro-rootfs/require-ro-rootfs.yaml
 
   # CVE-2020-8554: https://cloud.google.com/anthos/clusters/docs/security-bulletins#gcp-2020-015
   - https://raw.githubusercontent.com/kyverno/policies/main/best-practices/restrict-service-external-ips/restrict-service-external-ips.yaml
