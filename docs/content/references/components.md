@@ -95,9 +95,10 @@ The table also lists the initial PGO version that the version of the extension i
 | Extension | Version | Postgres Versions | Initial PGO Version |
 |-----------|---------|-------------------|---------------------|
 | `orafce` | 3.25.1 | 15, 14, 13, 12, 11  | 5.3.0 |
-| `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.2.0 |
-| `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.1.3 |
+| `orafce` | 3.25.1 | 14, 13, 12, 11, 10  | 5.2.1 |
+| `orafce` | 3.24.0 | 14, 13, 12, 11, 10  | 5.1.3 |
 | `orafce` | 3.22.0 | 14, 13, 12, 11, 10  | 5.0.8 |
+| `pgAudit` | 1.7.0 | 15  | 5.3.0 |
 | `pgAudit` | 1.6.2 | 14  | 5.1.0 |
 | `pgAudit` | 1.6.2 | 14  | 5.0.6 |
 | `pgAudit` | 1.6.1 | 14  | 5.0.4 |
@@ -115,6 +116,9 @@ The table also lists the initial PGO version that the version of the extension i
 | `pgAudit` | 1.2.2 | 10  | 5.0.0 |
 | `pgAudit Analyze` | 1.0.8 | 14, 13, 12, 11, 10  | 5.0.3 |
 | `pgAudit Analyze` | 1.0.7 | 13, 12, 11, 10  | 5.0.0 |
+| `pg_cron` | 1.4.2 | 15, 14, 13  | 5.3.0 |
+| `pg_cron` | 1.4.2 | 14, 13  | 5.2.1 |
+| `pg_cron` | 1.4.1 | 14, 13, 12, 11, 10  | 5.0.5 |
 | `pg_cron` | 1.3.1 | 14, 13, 12, 11, 10  | 5.0.0 |
 | `pg_partman` | 4.7.1 | 15, 14, 13, 12, 11  | 5.3.0 |
 | `pg_partman` | 4.6.2 | 14, 13, 12, 11, 10  | 5.2.0 |
@@ -157,6 +161,7 @@ The following extensions are available in the geospatially aware containers (`cr
 | `PostGIS` | 2.5 | 12, 11  | 5.0.0 |
 | `PostGIS` | 2.4 | 11, 10  | 5.0.0 |
 | `PostGIS` | 2.3 | 10  | 5.0.0 |
+| `pgrouting` | 3.1.4 | 14 | 5.0.4 |
 | `pgrouting` | 3.1.3 | 13 | 5.0.0 |
 | `pgrouting` | 3.0.5 | 13, 12 | 5.0.0 |
 | `pgrouting` | 2.6.3 | 12, 11, 10 | 5.0.0 |
