@@ -14,11 +14,11 @@ CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION ?= \
 CRUNCHY_POSTGRES_EXPORTER_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes
 CRUNCHY_POSTGRES_EXPORTER_IMAGE_PREFIX ?= $(PGO_IMAGE_PREFIX)
 CRUNCHY_POSTGRES_EXPORTER_PG_VERSION ?= 15
-CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 15.2
+CRUNCHY_POSTGRES_EXPORTER_PG_FULL_VERSION ?= 15.3
 
 PGMONITOR_DIR ?= hack/tools/pgmonitor
-PGMONITOR_VERSION ?= 'v4.8.0'
-POSTGRES_EXPORTER_VERSION ?= 0.10.1
+PGMONITOR_VERSION ?= v4.8.1
+POSTGRES_EXPORTER_VERSION ?= 0.12.0
 POSTGRES_EXPORTER_ARCHITECTURE ?= amd64
 POSTGRES_EXPORTER_URL ?= https://github.com/prometheus-community/postgres_exporter/releases/download/v${POSTGRES_EXPORTER_VERSION}/postgres_exporter-${POSTGRES_EXPORTER_VERSION}.linux-${POSTGRES_EXPORTER_ARCHITECTURE}.tar.gz
 
@@ -273,7 +273,7 @@ generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 14
 generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 15
 generate-kuttl: export KUTTL_PG_VERSION ?= 15
 generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.3
-generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.2-0
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.3-2
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other

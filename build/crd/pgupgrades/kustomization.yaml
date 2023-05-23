@@ -34,4 +34,4 @@ patches:
       path: "/metadata/labels"
       value:
         app.kubernetes.io/name: pgo
-        app.kubernetes.io/version: 5.3.1
+        app.kubernetes.io/version: latest

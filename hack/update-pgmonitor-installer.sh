@@ -19,7 +19,7 @@
 directory=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 # The pgMonitor tag to use to refresh the current monitoring installer
-pgmonitor_tag=v4.8.0
+pgmonitor_tag=v4.8.1
 
 # Set the directory for the monitoring Kustomize installer
 pgo_examples_monitoring_dir="${directory}/../../postgres-operator-examples/kustomize/monitoring"
