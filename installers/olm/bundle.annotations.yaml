@@ -33,6 +33,6 @@ annotations:
   # https://github.com/operator-framework/community-operators/blob/8a36a33/docs/packaging-required-criteria-ocp.md
   # https://redhat-connect.gitbook.io/certified-operator-guide/ocp-deployment/operator-metadata/bundle-directory
   com.redhat.delivery.operator.bundle: true
-  com.redhat.openshift.versions: 'v4.9'
+  com.redhat.openshift.versions: 'v4.10'
 
 ...

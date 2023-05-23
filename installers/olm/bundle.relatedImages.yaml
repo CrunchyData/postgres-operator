@@ -9,16 +9,10 @@
       image: registry.connect.redhat.com/crunchydata/crunchy-postgres-exporter@sha256:<update_exporter_SHA_value>
     - name: PGUPGRADE
       image: registry.connect.redhat.com/crunchydata/crunchy-upgrade@sha256:<update_upgrade_SHA_value>
-    - name: POSTGRES_13
-      image: registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:<update_postgres13_SHA_value>
     - name: POSTGRES_14
       image: registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:<update_postgres14_SHA_value>
     - name: POSTGRES_15
       image: registry.connect.redhat.com/crunchydata/crunchy-postgres@sha256:<update_postgres15_SHA_value>
-    - name: POSTGRES_13_GIS_3.0
-      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_postgres13gis30_SHA_value>
-    - name: POSTGRES_13_GIS_3.1
-      image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_postgres13gis31_SHA_value>
     - name: POSTGRES_14_GIS_3.1
       image: registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_postgres14gis31_SHA_value>
     - name: POSTGRES_14_GIS_3.2
