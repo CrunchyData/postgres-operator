@@ -18,7 +18,11 @@ When you enable Huge Pages in your Kube cluster, it is important to keep a few t
 2. How many pages were preallocated? Are there any other applications or processes that will be using these pages?
 3. Which nodes have Huge Pages enabled? Is it possible that more nodes will be added to the cluster? If so, will they also have Huge Pages enabled?
 
-Once Huge Pages are enabled on one or more nodes in your Kubernetes cluster, you can tell Postgres to start using them by adding some configuration to your PostgresCluster spec (Warning: setting/changing this setting will cause your database to restart):
+Once Huge Pages are enabled on one or more nodes in your Kubernetes cluster, you can tell Postgres to start using them by adding some configuration to your PostgresCluster spec:
+
+{{% notice warning %}}
+Warning: setting/changing this setting will cause your database to restart.
+{{% /notice %}}
 
 ```yaml
 apiVersion: postgres-operator.crunchydata.com/v1beta1
@@ -40,7 +44,11 @@ This is where it is important to know the size and the number of Huge Pages avai
 
 Note: In the `instances.#.resources` spec, there are `limits` and `requests`. If a request value is not specified (like in the example above), it is presumed to be equal to the limit value. For Huge Pages, the request value must always be equal to the limit value, therefore, it is perfectly acceptable to just specify it in the `limits` section.
 
-Note: Postgres uses the system default size by default. This means that if there are multiple sizes of Huge Pages available on the node(s) and you attempt to use a size in your PostgresCluster that is not the system default, it will fail. To use a non-default size you will need to tell Postgres the size to use with the `huge_page_size` variable, which can be set via dynamic configuration (Warning: setting/changing this parameter will cause your database to restart):
+Note: Postgres uses the system default size by default. This means that if there are multiple sizes of Huge Pages available on the node(s) and you attempt to use a size in your PostgresCluster that is not the system default, it will fail. To use a non-default size you will need to tell Postgres the size to use with the `huge_page_size` variable, which can be set via dynamic configuration:
+
+{{% notice warning %}}
+Warning: setting/changing this parameter will cause your database to restart.
+{{% /notice %}}
 
 ```yaml
 patroni:
@@ -60,7 +68,11 @@ The only dilemma that remains is that those whose PostgresClusters are not using
 
 1. Use Huge Pages! You're already running your Postgres containers on nodes that have Huge Pages enabled, why not use them in Postgres?
 2. Create nodes in your Kubernetes cluster that don't have Huge Pages enabled, and put your Postgres containers on those nodes.
-3. If for some reason you cannot use Huge Pages in Postgres, but you must run your Postgres containers on nodes that have Huge Pages enabled, you can manually set the `shared_buffers` parameter back to a good setting using dynamic configuration (Warning: setting/changing this parameter will cause your database to restart):
+3. If for some reason you cannot use Huge Pages in Postgres, but you must run your Postgres containers on nodes that have Huge Pages enabled, you can manually set the `shared_buffers` parameter back to a good setting using dynamic configuration:
+
+{{% notice warning %}}
+Warning: setting/changing this parameter will cause your database to restart.
+{{% /notice %}}
 
 ```yaml
 patroni:
