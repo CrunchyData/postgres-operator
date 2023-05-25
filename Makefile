@@ -366,11 +366,10 @@ release-postgres-operator-image-labels:
 .PHONY: release-crunchy-postgres-exporter-image release-crunchy-postgres-exporter-image-labels
 release-crunchy-postgres-exporter-image: ## Build the postgres-operator image and all its prerequisites
 release-crunchy-postgres-exporter-image: release-crunchy-postgres-exporter-image-labels
-release-crunchy-postgres-exporter-image: licenses
-release-crunchy-postgres-exporter-image: build-postgres-operator-image
+release-crunchy-postgres-exporter-image: build-crunchy-postgres-exporter-image
 release-crunchy-postgres-exporter-image-labels:
-	$(if $(PGO_IMAGE_DESCRIPTION),,	$(error missing PGO_IMAGE_DESCRIPTION))
-	$(if $(PGO_IMAGE_MAINTAINER),, 	$(error missing PGO_IMAGE_MAINTAINER))
-	$(if $(PGO_IMAGE_NAME),,       	$(error missing PGO_IMAGE_NAME))
-	$(if $(PGO_IMAGE_SUMMARY),,    	$(error missing PGO_IMAGE_SUMMARY))
-	$(if $(PGO_VERSION),,			$(error missing PGO_VERSION))
+	$(if $(CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION),,	$(error missing CRUNCHY_POSTGRES_EXPORTER_DESCRIPTION))
+	$(if $(CRUNCHY_POSTGRES_EXPORTER_MAINTAINER),, 	$(error missing CRUNCHY_POSTGRES_EXPORTER_MAINTAINER))
+	$(if $(CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME),,  $(error missing CRUNCHY_POSTGRES_EXPORTER_IMAGE_NAME))
+	$(if $(CRUNCHY_POSTGRES_EXPORTER_SUMMARY),,    	$(error missing CRUNCHY_POSTGRES_EXPORTER_SUMMARY))
+	$(if $(PGO_VERSION),,                           $(error missing PGO_VERSION))
