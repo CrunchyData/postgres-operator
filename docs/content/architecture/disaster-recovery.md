@@ -108,14 +108,6 @@ This process essentially removes the standby configuration from the Kubernetes c
 triggers the promotion of the current standby leader to a primary PostgreSQL instance. You can view
 this promotion in the PostgreSQL standby leader's (soon to be active leader's) logs.
 
-Once the standby cluster is promoted, the cluster with the original active
-PostgreSQL cluster can now be turned into a standby PostgreSQL cluster. This is
-done by deleting and recreating all PVCs for the cluster and reinitializing it
-as a standby using the backup repository. Being that this is a destructive action
-(i.e., data will only be retained if any Storage Classes and/or Persistent
-Volumes have the appropriate reclaim policy configured) a warning is shown
-when attempting to enable standby.
-
-The cluster will reinitialize from scratch as a standby, just
-like the original standby created above. Therefore any transactions
-written to the original standby should now replicate back to this cluster.
+Once the former standby cluster has been successfully promoted to an active PostgreSQL cluster,
+the original active PostgreSQL cluster can be safely [deleted]({{< relref "tutorial/delete-cluster.md" >}})
+and [recreated as a standby cluster]({{< relref "tutorial/disaster-recovery" >}}#standby-cluster).
