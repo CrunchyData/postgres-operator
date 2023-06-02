@@ -60,79 +60,13 @@ the availability of any of the PostgreSQL clusters that it manages, as the
 PostgreSQL Operator is only maintaining the definitions of what should be in the
 cluster (e.g. how many instances in the cluster, etc.).
 
-Each HA PostgreSQL cluster maintains its availability using concepts that come
-from the [Raft algorithm](https://raft.github.io/) to achieve distributed
-consensus. The Raft algorithm ("Reliable, Replicated, Redundant,
-Fault-Tolerant") was developed for systems that have one "leader" (i.e. a
-primary) and one-to-many followers (i.e. replicas) to provide the same fault
-tolerance and safety as the PAXOS algorithm while being easier to implement.
-
-For the PostgreSQL cluster group to achieve distributed consensus on who the
-primary (or leader) is, each PostgreSQL cluster leverages the distributed etcd
-key-value store that is bundled with Kubernetes. After it is elected as the
-leader, a primary will place a lock in the distributed etcd cluster to indicate
-that it is the leader. The "lock" serves as the method for the primary to
-provide a heartbeat: the primary will periodically update the lock with the
-latest time it was able to access the lock. As long as each replica sees that
-the lock was updated within the allowable automated failover time, the replicas
-will continue to follow the leader.
-
-The "log replication" portion that is defined in the Raft algorithm is handled
-by PostgreSQL in two ways. First, the primary instance will replicate changes to
-each replica based on the rules set up in the provisioning process. For
-PostgreSQL clusters that leverage "synchronous replication," a transaction is
-not considered complete until all changes from those transactions have been sent
-to all replicas that are subscribed to the primary.
-
-In the above section, note the key word that the transaction are sent to each
-replica: the replicas will acknowledge receipt of the transaction, but they may
-not be immediately replayed. We will address how we handle this further down in
-this section.
-
-During this process, each replica keeps track of how far along in the recovery
-process it is using a "log sequence number" (LSN), a built-in PostgreSQL serial
-representation of how many logs have been replayed on each replica. For the
-purposes of HA, there are two LSNs that need to be considered: the LSN for the
-last log received by the replica, and the LSN for the changes replayed for the
-replica. The LSN for the latest changes received can be compared amongst the
-replicas to determine which one has replayed the most changes, and an important
-part of the automated failover process.
-
-The replicas periodically check in on the lock to see if it has been updated by
-the primary within the allowable automated failover timeout. Each replica checks
-in at a randomly set interval, which is a key part of Raft algorithm that helps
-to ensure consensus during an election process. If a replica believes that the
-primary is unavailable, it becomes a candidate and initiates an election and
-votes for itself as the new primary. A candidate must receive a majority of
-votes in a cluster in order to be elected as the new primary.
-
-There are several cases for how the election can occur. If a replica believes
-that a primary is down and starts an election, but the primary is actually not
-down, the replica will not receive enough votes to become a new primary and will
-go back to following and replaying the changes from the primary.
-
-In the case where the primary is down, the first replica to notice this starts
-an election. Per the Raft algorithm, each available replica compares which one
-has the latest changes available, based upon the LSN of the latest logs
-received. The replica with the latest LSN wins and receives the vote of the
-other replica. The replica with the majority of the votes wins. In the event
-that two replicas' logs have the same LSN, the tie goes to the replica that
-initiated the voting request.
-
-Once an election is decided, the winning replica is immediately promoted to be a
-primary and takes a new lock in the distributed etcd cluster. If the new primary
-has not finished replaying all of its transactions logs, it must do so in order
-to reach the desired state based on the LSN. Once the logs are finished being
-replayed, the primary is able to accept new queries.
-
-At this point, any existing replicas are updated to follow the new primary.
-
-When the old primary tries to become available again, it realizes that it has
-been deposed as the leader and must be healed. The old primary determines what
-kind of replica it should be based upon the CRD, which allows it to set itself
-up with appropriate attributes.  It is then restored from the pgBackRest backup
-archive using the "delta restore" feature, which heals the instance and makes it
-ready to follow the new primary, which is known as "auto healing."
+Each HA PostgreSQL cluster maintains its availability by using Patroni to manage
+failover when the primary becomes compromised. Patroni stores the primary’s ID in
+annotations on a Kubernetes `Endpoints` object which acts as a lease. The primary
+must periodically renew the lease to signal that it’s healthy. If the primary
+misses its deadline, replicas compare their WAL positions to see who has the most
+up-to-date data. Instances with the latest data try to overwrite the ID on the lease.
+The first to succeed becomes the new primary, and all others follow the new primary.
 
 ## How The Crunchy PostgreSQL Operator Uses Pod Anti-Affinity
 
