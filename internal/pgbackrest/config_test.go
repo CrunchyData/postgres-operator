@@ -297,7 +297,7 @@ func TestRestoreCommand(t *testing.T) {
 	opts := []string{
 		"--stanza=" + DefaultStanzaName, "--pg1-path=" + pgdata,
 		"--repo=1"}
-	command := RestoreCommand(pgdata, nil, strings.Join(opts, " "))
+	command := RestoreCommand(pgdata, "try", nil, strings.Join(opts, " "))
 
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
 	assert.Assert(t, len(command) > 3)
@@ -312,7 +312,7 @@ func TestRestoreCommand(t *testing.T) {
 }
 
 func TestRestoreCommandPrettyYAML(t *testing.T) {
-	b, err := yaml.Marshal(RestoreCommand("/dir", nil, "--options"))
+	b, err := yaml.Marshal(RestoreCommand("/dir", "try", nil, "--options"))
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(string(b), "\n- |"),
 		"expected literal block scalar, got:\n%s", b)
