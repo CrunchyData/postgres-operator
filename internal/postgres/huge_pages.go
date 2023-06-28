@@ -28,7 +28,7 @@ import (
 // it sets the PostgreSQL parameter "huge_pages" to "try". If it doesn't find
 // one, it sets "huge_pages" to "off".
 func SetHugePages(cluster *v1beta1.PostgresCluster, pgParameters *Parameters) {
-	if hugePagesRequested(cluster) {
+	if HugePagesRequested(cluster) {
 		pgParameters.Default.Add("huge_pages", "try")
 	} else {
 		pgParameters.Default.Add("huge_pages", "off")
@@ -37,7 +37,7 @@ func SetHugePages(cluster *v1beta1.PostgresCluster, pgParameters *Parameters) {
 
 // This helper function checks to see if a huge_pages value greater than zero has
 // been set in any of the PostgresCluster's instances' resource specs
-func hugePagesRequested(cluster *v1beta1.PostgresCluster) bool {
+func HugePagesRequested(cluster *v1beta1.PostgresCluster) bool {
 	for _, instance := range cluster.Spec.InstanceSets {
 		for resourceName := range instance.Resources.Limits {
 			if strings.HasPrefix(resourceName.String(), corev1.ResourceHugePagesPrefix) {

@@ -177,7 +177,7 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 //   - Renames the data directory as needed to bootstrap the cluster using the restored database.
 //     This ensures compatibility with the "existing" bootstrap method that is included in the
 //     Patroni config when bootstrapping a cluster using an existing data directory.
-func RestoreCommand(pgdata string, tablespaceVolumes []*corev1.PersistentVolumeClaim, args ...string) []string {
+func RestoreCommand(pgdata, hugePagesSetting string, tablespaceVolumes []*corev1.PersistentVolumeClaim, args ...string) []string {
 
 	// After pgBackRest restores files, PostgreSQL starts in recovery to finish
 	// replaying WAL files. "hot_standby" is "on" (by default) so we can detect
@@ -236,6 +236,7 @@ max_locks_per_transaction = '${max_lock}'
 max_prepared_transactions = '${max_ptxn}'
 max_worker_processes = '${max_work}'
 unix_socket_directories = '/tmp'
+huge_pages = ` + hugePagesSetting + `
 EOF
 if [ "$(< "${pgdata}/PG_VERSION")" -ge 12 ]; then
 read -r max_wals <<< "${control##*max_wal_senders setting:}"
