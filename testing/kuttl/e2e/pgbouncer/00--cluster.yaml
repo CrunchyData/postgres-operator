@@ -18,3 +18,8 @@ spec:
   proxy:
     pgBouncer:
       replicas: 1
+      config:
+        # Set the pgBouncer verbosity level to debug to print connection logs
+        # --https://www.pgbouncer.org/config.html#log-settings
+        global:
+          verbose: '1'

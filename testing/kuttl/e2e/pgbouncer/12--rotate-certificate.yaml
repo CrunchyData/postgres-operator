@@ -10,9 +10,22 @@ commands:
         --patch '{"data":{"pgbouncer-frontend.crt":""}}'
 
       # Wait for the certificate to be regenerated then loaded.
-      until
+      # Changing this from "wait until timeout" to "try X times"
+      # so that we can get the logs before exiting 1 in case we cannot find the reload.
+      for _ in $(seq 120); do
         kubectl logs --namespace "${NAMESPACE}" deployment.apps/proxied-pgbouncer \
-          --container pgbouncer-config --since-time "${BEFORE}" | grep 'Loaded'
-      do
+          --container pgbouncer-config --since-time "${BEFORE}" | grep 'Loaded' && \
+          found=true && break
         sleep 1
       done
+
+      # This test has been flaky in the past, potentially around rotating/reloading the cert.
+      # To help debug, we set the pgBouncer verbosity to 1 (debug) and print the logs
+      kubectl logs --namespace "${NAMESPACE}" deployment.apps/proxied-pgbouncer \
+        --all-containers --prefix --timestamps
+
+      # If we haven't found the `Loaded` log statement, exit with an error
+      if [ -z "$found" ]; then 
+        echo "pgbouncer-config has failed to reload in time"
+        exit 1; 
+      fi
