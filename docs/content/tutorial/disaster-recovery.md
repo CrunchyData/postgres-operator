@@ -210,8 +210,9 @@ And to trigger the restore, you will then annotate the PostgresCluster as follow
 
 ```
 kubectl annotate -n postgres-operator postgrescluster hippo --overwrite \
-  postgres-operator.crunchydata.com/pgbackrest-restore=id1
+  postgres-operator.crunchydata.com/pgbackrest-restore="$(date)"
 ```
+Note: The annotation value has to be a unique identifier.
 
 And once the restore is complete, in-place restores can be disabled:
 
