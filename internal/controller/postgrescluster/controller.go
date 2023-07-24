@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
@@ -145,6 +146,13 @@ func (r *Reconciler) Reconcile(
 	// Perform initial validation on a cluster
 	// TODO: Move this to a defaulting (mutating admission) webhook
 	// to leverage regular validation.
+
+	if err := config.VerifyImageValues(cluster); err != nil {
+		r.Recorder.Event(cluster, corev1.EventTypeWarning, "MissingRequiredImage",
+			err.Error())
+		return result, err
+	}
+
 	if cluster.Spec.Standby != nil &&
 		cluster.Spec.Standby.Enabled &&
 		cluster.Spec.Standby.Host == "" &&

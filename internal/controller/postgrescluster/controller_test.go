@@ -173,6 +173,7 @@ metadata:
   name: carlos
 spec:
   postgresVersion: 13
+  image: postgres
   instances:
   - name: samba
     dataVolumeClaimSpec:
@@ -183,6 +184,7 @@ spec:
           storage: 1Gi
   backups:
     pgbackrest:
+      image: pgbackrest
       repos:
       - name: repo1
         volume:
@@ -376,6 +378,7 @@ metadata:
   name: carlos
 spec:
   postgresVersion: 13
+  image: postgres
   instances:
   - name: samba
     dataVolumeClaimSpec:
@@ -386,6 +389,7 @@ spec:
           storage: 1Gi
   backups:
     pgbackrest:
+      image: pgbackrest
       repos:
       - name: repo1
         volume:
