@@ -98,3 +98,43 @@ func PostgresContainerImage(cluster *v1beta1.PostgresCluster) string {
 func PGONamespace() string {
 	return os.Getenv("PGO_NAMESPACE")
 }
+
+// VerifyImageValues checks that all container images required by the
+// spec are defined. If any are undefined, a list is returned in an error.
+func VerifyImageValues(cluster *v1beta1.PostgresCluster) error {
+
+	var images []string
+
+	if PGBackRestContainerImage(cluster) == "" {
+		images = append(images, "crunchy-pgbackrest")
+	}
+	if PGAdminContainerImage(cluster) == "" &&
+		cluster.Spec.UserInterface != nil &&
+		cluster.Spec.UserInterface.PGAdmin != nil {
+		images = append(images, "crunchy-pgadmin4")
+	}
+	if PGBouncerContainerImage(cluster) == "" &&
+		cluster.Spec.Proxy != nil &&
+		cluster.Spec.Proxy.PGBouncer != nil {
+		images = append(images, "crunchy-pgbouncer")
+	}
+	if PGExporterContainerImage(cluster) == "" &&
+		cluster.Spec.Monitoring != nil &&
+		cluster.Spec.Monitoring.PGMonitor != nil &&
+		cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
+		images = append(images, "crunchy-postgres-exporter")
+	}
+	if PostgresContainerImage(cluster) == "" {
+		if cluster.Spec.PostGISVersion != "" {
+			images = append(images, "crunchy-postgres-gis")
+		} else {
+			images = append(images, "crunchy-postgres")
+		}
+	}
+
+	if len(images) > 0 {
+		return fmt.Errorf("Missing image(s): %s", images)
+	}
+
+	return nil
+}

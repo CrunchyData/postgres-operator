@@ -145,3 +145,56 @@ func TestPostgresContainerImage(t *testing.T) {
 	cluster.Spec.Image = "spec-image"
 	assert.Equal(t, PostgresContainerImage(cluster), "spec-image")
 }
+
+func TestVerifyImageValues(t *testing.T) {
+	cluster := &v1beta1.PostgresCluster{}
+
+	verifyImageCheck := func(t *testing.T, envVar, errString string, cluster *v1beta1.PostgresCluster) {
+		unsetEnv(t, envVar)
+		err := VerifyImageValues(cluster)
+		assert.ErrorContains(t, err, errString)
+	}
+
+	t.Run("crunchy-postgres", func(t *testing.T) {
+		cluster.Spec.PostgresVersion = 14
+		verifyImageCheck(t, "RELATED_IMAGE_POSTGRES_14", "crunchy-postgres", cluster)
+	})
+
+	t.Run("crunchy-postgres-gis", func(t *testing.T) {
+		cluster.Spec.PostGISVersion = "3.3"
+		verifyImageCheck(t, "RELATED_IMAGE_POSTGRES_14_GIS_3.3", "crunchy-postgres-gis", cluster)
+	})
+
+	t.Run("crunchy-pgbackrest", func(t *testing.T) {
+		verifyImageCheck(t, "RELATED_IMAGE_PGBACKREST", "crunchy-pgbackrest", cluster)
+	})
+
+	t.Run("crunchy-pgbouncer", func(t *testing.T) {
+		cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+		cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
+		verifyImageCheck(t, "RELATED_IMAGE_PGBOUNCER", "crunchy-pgbouncer", cluster)
+	})
+
+	t.Run("crunchy-pgadmin4", func(t *testing.T) {
+		cluster.Spec.UserInterface = new(v1beta1.UserInterfaceSpec)
+		cluster.Spec.UserInterface.PGAdmin = new(v1beta1.PGAdminPodSpec)
+		verifyImageCheck(t, "RELATED_IMAGE_PGADMIN", "crunchy-pgadmin4", cluster)
+	})
+
+	t.Run("crunchy-postgres-exporter", func(t *testing.T) {
+		cluster.Spec.Monitoring = new(v1beta1.MonitoringSpec)
+		cluster.Spec.Monitoring.PGMonitor = new(v1beta1.PGMonitorSpec)
+		cluster.Spec.Monitoring.PGMonitor.Exporter = new(v1beta1.ExporterSpec)
+		verifyImageCheck(t, "RELATED_IMAGE_PGEXPORTER", "crunchy-postgres-exporter", cluster)
+	})
+
+	t.Run("multiple images", func(t *testing.T) {
+		err := VerifyImageValues(cluster)
+		assert.ErrorContains(t, err, "crunchy-postgres-gis")
+		assert.ErrorContains(t, err, "crunchy-pgbackrest")
+		assert.ErrorContains(t, err, "crunchy-pgbouncer")
+		assert.ErrorContains(t, err, "crunchy-pgadmin4")
+		assert.ErrorContains(t, err, "crunchy-postgres-exporter")
+	})
+
+}
