@@ -274,6 +274,7 @@ generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 15
 generate-kuttl: export KUTTL_PG_VERSION ?= 15
 generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.3
 generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.3-2
+generate-kuttl: export KUTTL_TEST_DELETE_NAMESPACE ?= kuttl-test-delete-namespace
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
@@ -285,7 +286,10 @@ generate-kuttl: ## Generate kuttl tests
 	12 ) export KUTTL_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
 	11 ) export KUTTL_BITNAMI_IMAGE_TAG=11.17.0-debian-11-r39 ;; \
 	esac; \
-	render() { envsubst '"'"'$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION $$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE $$KUTTL_BITNAMI_IMAGE_TAG'"'"'; }; \
+	render() { envsubst '"'"' \
+		$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION \
+		$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE \
+		$$KUTTL_BITNAMI_IMAGE_TAG $$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \
 	while [ $$# -gt 0 ]; do \
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \

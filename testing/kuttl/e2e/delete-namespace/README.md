@@ -7,4 +7,5 @@
 
 Note: KUTTL provides a `$NAMESPACE` var that can be used in scripts/commands,
 but which cannot be used in object definition yamls (like `01--cluster.yaml`).
-Therefore, we use a given, non-random namespace: `kuttl-test-delete-namespace`.
+Therefore, we use a given, non-random namespace that is defined in the makefile
+and generated with `generate-kuttl`.

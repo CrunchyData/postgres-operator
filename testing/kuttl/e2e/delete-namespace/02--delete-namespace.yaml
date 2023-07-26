@@ -5,4 +5,4 @@ kind: TestStep
 delete:
   - apiVersion: v1
     kind: Namespace
-    name: kuttl-test-delete-namespace
+    name: ${KUTTL_TEST_DELETE_NAMESPACE}
