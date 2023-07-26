@@ -2,13 +2,13 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  namespace: kuttl-test-delete-namespace
+  namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
   name: delete-namespace
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  namespace: kuttl-test-delete-namespace
+  namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
   labels:
     postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
@@ -16,34 +16,34 @@ metadata:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  namespace: kuttl-test-delete-namespace
+  namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
   labels:
     postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: kuttl-test-delete-namespace
+  namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
   labels:
     postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  namespace: kuttl-test-delete-namespace
+  namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
   labels:
     postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  namespace: kuttl-test-delete-namespace
+  namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
   labels:
     postgres-operator.crunchydata.com/cluster: delete-namespace
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: kuttl-test-delete-namespace
+  namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
   labels:
     postgres-operator.crunchydata.com/cluster: delete-namespace
