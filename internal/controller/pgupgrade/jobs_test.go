@@ -16,6 +16,7 @@ package pgupgrade
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 
@@ -263,4 +264,58 @@ spec:
         name: vol2
 status: {}
 	`))
+}
+
+// saveEnv preserves environment variables so that any modifications needed for
+// the tests can be undone once completed.
+func saveEnv(t testing.TB, key string) {
+	t.Helper()
+	previous, ok := os.LookupEnv(key)
+	t.Cleanup(func() {
+		if ok {
+			os.Setenv(key, previous)
+		} else {
+			os.Unsetenv(key)
+		}
+	})
+}
+
+func setEnv(t testing.TB, key, value string) {
+	t.Helper()
+	saveEnv(t, key)
+	assert.NilError(t, os.Setenv(key, value))
+}
+
+func unsetEnv(t testing.TB, key string) {
+	t.Helper()
+	saveEnv(t, key)
+	assert.NilError(t, os.Unsetenv(key))
+}
+
+func TestPGUpgradeContainerImage(t *testing.T) {
+	upgrade := &v1beta1.PGUpgrade{}
+
+	unsetEnv(t, "RELATED_IMAGE_PGUPGRADE")
+	assert.Equal(t, pgUpgradeContainerImage(upgrade), "")
+
+	setEnv(t, "RELATED_IMAGE_PGUPGRADE", "")
+	assert.Equal(t, pgUpgradeContainerImage(upgrade), "")
+
+	setEnv(t, "RELATED_IMAGE_PGUPGRADE", "env-var-pgbackrest")
+	assert.Equal(t, pgUpgradeContainerImage(upgrade), "env-var-pgbackrest")
+
+	assert.NilError(t, yaml.Unmarshal(
+		[]byte(`{ image: spec-image }`), &upgrade.Spec))
+	assert.Equal(t, pgUpgradeContainerImage(upgrade), "spec-image")
+}
+
+func TestVerifyUpgradeImageValue(t *testing.T) {
+	upgrade := &v1beta1.PGUpgrade{}
+
+	t.Run("crunchy-postgres", func(t *testing.T) {
+		unsetEnv(t, "RELATED_IMAGE_PGUPGRADE")
+		err := verifyUpgradeImageValue(upgrade)
+		assert.ErrorContains(t, err, "crunchy-upgrade")
+	})
+
 }
