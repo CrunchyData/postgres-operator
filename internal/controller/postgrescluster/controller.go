@@ -147,10 +147,17 @@ func (r *Reconciler) Reconcile(
 	// TODO: Move this to a defaulting (mutating admission) webhook
 	// to leverage regular validation.
 
+	// verify all needed image values are defined
 	if err := config.VerifyImageValues(cluster); err != nil {
+		// warning event with missing image information
 		r.Recorder.Event(cluster, corev1.EventTypeWarning, "MissingRequiredImage",
 			err.Error())
-		return result, err
+		// specifically allow reconciliation if the cluster is shutdown to
+		// facilitate upgrades, otherwise return
+		if cluster.Spec.Shutdown == nil ||
+			(cluster.Spec.Shutdown != nil && !*cluster.Spec.Shutdown) {
+			return result, err
+		}
 	}
 
 	if cluster.Spec.Standby != nil &&

@@ -197,6 +197,19 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, nil
 	}
 
+	if err = verifyUpgradeImageValue(upgrade); err != nil {
+
+		meta.SetStatusCondition(&upgrade.Status.Conditions, metav1.Condition{
+			ObservedGeneration: upgrade.GetGeneration(),
+			Type:               ConditionPGUpgradeProgressing,
+			Status:             metav1.ConditionFalse,
+			Reason:             "PGUpgradeInvalid",
+			Message:            fmt.Sprintf("Error: %s", err),
+		})
+
+		return ctrl.Result{}, nil
+	}
+
 	setStatusToProgressingIfReasonWas("PGUpgradeInvalid", upgrade)
 
 	// Observations and cluster validation
@@ -317,7 +330,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	//
 	// Requiring the cluster be shutdown also provides some assurance that the
 	// user understands downtime requirement of upgrading
-	if !world.ClusterShutdown || world.ClusterPrimary == nil {
+	if !world.ClusterShutdown {
 		meta.SetStatusCondition(&upgrade.Status.Conditions, metav1.Condition{
 			ObservedGeneration: upgrade.Generation,
 			Type:               ConditionPGUpgradeProgressing,
@@ -330,6 +343,22 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	setStatusToProgressingIfReasonWas("PGClusterNotShutdown", upgrade)
+
+	// A separate check for primary identification allows for cases where the
+	// PostgresCluster may not have been initialized properly.
+	if world.ClusterPrimary == nil {
+		meta.SetStatusCondition(&upgrade.Status.Conditions, metav1.Condition{
+			ObservedGeneration: upgrade.Generation,
+			Type:               ConditionPGUpgradeProgressing,
+			Status:             metav1.ConditionFalse,
+			Reason:             "PGClusterPrimaryNotIdentified",
+			Message:            "PostgresCluster primary instance not identified",
+		})
+
+		return ctrl.Result{}, nil
+	}
+
+	setStatusToProgressingIfReasonWas("PGClusterPrimaryNotIdentified", upgrade)
 
 	if version != int64(upgrade.Spec.FromPostgresVersion) &&
 		statusVersion != int64(upgrade.Spec.ToPostgresVersion) {

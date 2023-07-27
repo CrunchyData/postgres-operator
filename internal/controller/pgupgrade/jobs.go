@@ -314,6 +314,15 @@ func pgUpgradeContainerImage(upgrade *v1beta1.PGUpgrade) string {
 	return defaultFromEnv(image, "RELATED_IMAGE_PGUPGRADE")
 }
 
+// verifyUpgradeImageValue checks that the upgrade container image required by the
+// spec is defined. If it is undefined, an error is returned.
+func verifyUpgradeImageValue(upgrade *v1beta1.PGUpgrade) error {
+	if pgUpgradeContainerImage(upgrade) == "" {
+		return fmt.Errorf("Missing crunchy-upgrade image")
+	}
+	return nil
+}
+
 // jobFailed returns "true" if the Job provided has failed.  Otherwise it returns "false".
 func jobFailed(job *batchv1.Job) bool {
 	conditions := job.Status.Conditions
