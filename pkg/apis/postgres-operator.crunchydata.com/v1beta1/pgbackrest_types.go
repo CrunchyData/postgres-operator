@@ -161,6 +161,10 @@ type PGBackRestSidecars struct {
 }
 
 type BackupJobs struct {
+	// Environment variables for backup jobs.
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
+	
 	// Resource limits for backup jobs. Includes manual, scheduled and replica
 	// create backups
 	// +optional

@@ -678,16 +678,22 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 	}
 	cmdOpts = append(cmdOpts, opts...)
 
+	env := []corev1.EnvVar{
+		{Name: "COMMAND", Value: "backup"},
+		{Name: "COMMAND_OPTS", Value: strings.Join(cmdOpts, " ")},
+		{Name: "COMPARE_HASH", Value: "true"},
+		{Name: "CONTAINER", Value: containerName},
+		{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
+		{Name: "SELECTOR", Value: selector.String()},
+	}
+
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
+		env = append(env, postgresCluster.Spec.Backups.PGBackRest.Jobs.Env...)
+	}
+	
 	container := corev1.Container{
 		Command: []string{"/opt/crunchy/bin/pgbackrest"},
-		Env: []corev1.EnvVar{
-			{Name: "COMMAND", Value: "backup"},
-			{Name: "COMMAND_OPTS", Value: strings.Join(cmdOpts, " ")},
-			{Name: "COMPARE_HASH", Value: "true"},
-			{Name: "CONTAINER", Value: containerName},
-			{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
-			{Name: "SELECTOR", Value: selector.String()},
-		},
+		Env:             env,
 		Image:           config.PGBackRestContainerImage(postgresCluster),
 		ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
 		Name:            naming.PGBackRestRepoContainerName,

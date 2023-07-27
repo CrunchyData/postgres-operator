@@ -2693,6 +2693,11 @@ Jobs field allows configuration for all backup jobs
         <td>Scheduling constraints of pgBackRest backup Job pods. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsenvindex">env</a></b></td>
+        <td>[]object</td>
+        <td>Environment variables for backup jobs.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b>priorityClassName</b></td>
         <td>string</td>
         <td>Priority class name for the pgBackRest backup Job pods. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
@@ -3899,6 +3904,228 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td><b>values</b></td>
         <td>[]string</td>
         <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsenvindex">
+  PostgresCluster.spec.backups.pgbackrest.jobs.env[index]
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobs">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+EnvVar represents an environment variable present in a Container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the environment variable. Must be a C_IDENTIFIER.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>Variable references $(VAR_NAME) are expanded using the previously defined environment variables in the container and any service environment variables. If a variable cannot be resolved, the reference in the input string will be unchanged. Double $$ are reduced to a single $, which allows for escaping the $(VAR_NAME) syntax: i.e. "$$(VAR_NAME)" will produce the string literal "$(VAR_NAME)". Escaped references will never be expanded, regardless of whether the variable exists or not. Defaults to "".</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefrom">valueFrom</a></b></td>
+        <td>object</td>
+        <td>Source for the environment variable's value. Cannot be used if value is not empty.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsenvindexvaluefrom">
+  PostgresCluster.spec.backups.pgbackrest.jobs.env[index].valueFrom
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsenvindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Source for the environment variable's value. Cannot be used if value is not empty.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefromconfigmapkeyref">configMapKeyRef</a></b></td>
+        <td>object</td>
+        <td>Selects a key of a ConfigMap.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefromfieldref">fieldRef</a></b></td>
+        <td>object</td>
+        <td>Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefromresourcefieldref">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefromsecretkeyref">secretKeyRef</a></b></td>
+        <td>object</td>
+        <td>Selects a key of a secret in the pod's namespace</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsenvindexvaluefromconfigmapkeyref">
+  PostgresCluster.spec.backups.pgbackrest.jobs.env[index].valueFrom.configMapKeyRef
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefrom">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Selects a key of a ConfigMap.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key to select.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the ConfigMap or its key must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsenvindexvaluefromfieldref">
+  PostgresCluster.spec.backups.pgbackrest.jobs.env[index].valueFrom.fieldRef
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefrom">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['<KEY>']`, `metadata.annotations['<KEY>']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>Path of the field to select in the specified API version.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>Version of the schema the FieldPath is written in terms of, defaults to "v1".</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsenvindexvaluefromresourcefieldref">
+  PostgresCluster.spec.backups.pgbackrest.jobs.env[index].valueFrom.resourceFieldRef
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefrom">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>Required: resource to select</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>Container name: required for volumes, optional for env vars</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>Specifies the output format of the exposed resources, defaults to "1"</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="postgresclusterspecbackupspgbackrestjobsenvindexvaluefromsecretkeyref">
+  PostgresCluster.spec.backups.pgbackrest.jobs.env[index].valueFrom.secretKeyRef
+  <sup><sup><a href="#postgresclusterspecbackupspgbackrestjobsenvindexvaluefrom">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Selects a key of a secret in the pod's namespace
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key of the secret to select from.  Must be a valid secret key.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the Secret or its key must be defined</td>
         <td>false</td>
       </tr></tbody>
 </table>
