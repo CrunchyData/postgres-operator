@@ -2693,6 +2693,11 @@ Jobs field allows configuration for all backup jobs
         <td>Scheduling constraints of pgBackRest backup Job pods. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
         <td>false</td>
       </tr><tr>
+        <td><b>command</b></td>
+        <td>[]string</td>
+        <td>Command for backup jobs</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#postgresclusterspecbackupspgbackrestjobsenvindex">env</a></b></td>
         <td>[]object</td>
         <td>Environment variables for backup jobs.</td>

@@ -690,9 +690,14 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
 		env = append(env, postgresCluster.Spec.Backups.PGBackRest.Jobs.Env...)
 	}
+
+	command := []string{"/opt/crunchy/bin/pgbackrest"}
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil  && len(postgresCluster.Spec.Backups.PGBackRest.Jobs.Command) > 0 {
+		command = postgresCluster.Spec.Backups.PGBackRest.Jobs.Command
+	}
 	
 	container := corev1.Container{
-		Command: []string{"/opt/crunchy/bin/pgbackrest"},
+		Command:         command,
 		Env:             env,
 		Image:           config.PGBackRestContainerImage(postgresCluster),
 		ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
@@ -700,7 +705,7 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 		SecurityContext: initialize.RestrictedSecurityContext(),
 	}
 
-	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil{
 		container.Resources = postgresCluster.Spec.Backups.PGBackRest.Jobs.Resources
 	}
 

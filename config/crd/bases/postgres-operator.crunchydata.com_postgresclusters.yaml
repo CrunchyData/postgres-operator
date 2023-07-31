@@ -1248,6 +1248,11 @@ spec:
                                     type: array
                                 type: object
                             type: object
+                          command:
+                            description: Command for backup jobs
+                            items:
+                              type: string
+                            type: array
                           env:
                             description: Environment variables for backup jobs.
                             items:

@@ -161,6 +161,11 @@ type PGBackRestSidecars struct {
 }
 
 type BackupJobs struct {
+
+	// Command for backup jobs
+	// +optional
+	Command []string `json:"command,omitempty"`
+	
 	// Environment variables for backup jobs.
 	// +optional
 	Env []corev1.EnvVar `json:"env,omitempty"`
