@@ -1,0 +1,16 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# Grab the exporter pod
+# Check that the postgres_exporter pid is running
+# Store the exporter pid as an annotation on the pod
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n $NAMESPACE \
+      -l postgres-operator.crunchydata.com/cluster=standby-cluster,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    pid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
+    kubectl annotate --overwrite -n ${NAMESPACE} ${pod} oldpid=${pid}

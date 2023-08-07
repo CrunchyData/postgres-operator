@@ -1,0 +1,27 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# Grab the exporter metrics output and check that there were no scrape errors
+# Store the exporter pid as an annotation on the pod
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n $NAMESPACE \
+      -l postgres-operator.crunchydata.com/cluster=exporter-password-change \
+      -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    scrape_metrics=$(kubectl exec ${pod} -c exporter -n ${NAMESPACE} -- \
+      curl --silent http://localhost:9187/metrics | grep "pg_exporter_last_scrape_error")
+    { contains "${scrape_metrics}" 'pg_exporter_last_scrape_error 0'; } || {
+      retry "${scrape_metrics}"
+      exit 1
+    }
+
+    pid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
+    kubectl annotate -n ${NAMESPACE} ${pod} oldpid=${pid}
+collectors:
+- type: pod
+  selector: "postgres-operator.crunchydata.com/cluster=exporter-password-change,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true"
+  container: exporter

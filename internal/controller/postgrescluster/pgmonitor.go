@@ -197,25 +197,33 @@ func (r *Reconciler) reconcileMonitoringSecret(
 
 	intent.Data = make(map[string][]byte)
 
-	if len(existing.Data["password"]) == 0 || len(existing.Data["verifier"]) == 0 {
+	// Copy existing password and verifier into the intent
+	if existing.Data != nil {
+		intent.Data["password"] = existing.Data["password"]
+		intent.Data["verifier"] = existing.Data["verifier"]
+	}
+
+	// When password is unset, generate a new one
+	if len(intent.Data["password"]) == 0 {
 		password, err := util.GenerateASCIIPassword(util.DefaultGeneratedPasswordLength)
 		if err != nil {
 			return nil, err
 		}
-
-		// Generate the SCRAM verifier now and store alongside the plaintext
-		// password so that later reconciles don't generate it repeatedly.
-		// NOTE(cbandy): We don't have a function to compare a plaintext password
-		// to a SCRAM verifier.
-		verifier, err := pgpassword.NewSCRAMPassword(password).Build()
-		if err != nil {
-			return nil, err
-		}
 		intent.Data["password"] = []byte(password)
+		// We generated a new password, unset the verifier so that it is regenerated
+		intent.Data["verifier"] = nil
+	}
+
+	// When a password has been generated or the verifier is empty,
+	// generate a verifier based on the current password.
+	// NOTE(cbandy): We don't have a function to compare a plaintext
+	// password to a SCRAM verifier.
+	if len(intent.Data["verifier"]) == 0 {
+		verifier, err := pgpassword.NewSCRAMPassword(string(intent.Data["password"])).Build()
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
 		intent.Data["verifier"] = []byte(verifier)
-	} else {
-		intent.Data["password"] = existing.Data["password"]
-		intent.Data["verifier"] = existing.Data["verifier"]
 	}
 
 	err = errors.WithStack(r.setControllerReference(cluster, intent))
@@ -267,19 +275,7 @@ func addPGMonitorExporterToInstancePodSpec(
 		Env: []corev1.EnvVar{
 			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("%s:%d/%s", pgmonitor.ExporterHost, *cluster.Spec.Port, pgmonitor.ExporterDB)},
 			{Name: "DATA_SOURCE_USER", Value: pgmonitor.MonitoringUser},
-			{Name: "DATA_SOURCE_PASS", ValueFrom: &corev1.EnvVarSource{
-				// Environment variables are not updated after a secret update.
-				// This could lead to a state where the exporter does not have
-				// the correct password and the container needs to restart.
-				// https://kubernetes.io/docs/concepts/configuration/secret/#environment-variables-are-not-updated-after-a-secret-update
-				// https://github.com/kubernetes/kubernetes/issues/29761
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: naming.MonitoringUserSecret(cluster).Name,
-					},
-					Key: "password",
-				},
-			}},
+			{Name: "DATA_SOURCE_PASS_FILE", Value: "/opt/crunchy/password"},
 		},
 		SecurityContext: securityContext,
 		// ContainerPort is needed to support proper target discovery by Prometheus for pgMonitor
@@ -293,12 +289,25 @@ func addPGMonitorExporterToInstancePodSpec(
 			Name: "exporter-config",
 			// this is the path for both custom and default queries files
 			MountPath: "/conf",
+		}, {
+			Name:      "monitoring-secret",
+			MountPath: "/opt/crunchy/",
 		}},
 	}
 
 	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
 
-	// add exporter config volume
+	passwordVolume := corev1.Volume{
+		Name: "monitoring-secret",
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName: naming.MonitoringUserSecret(cluster).Name,
+			},
+		},
+	}
+	template.Spec.Volumes = append(template.Spec.Volumes, passwordVolume)
+
+	// add custom exporter config volume
 	configVolume := corev1.Volume{
 		Name: "exporter-config",
 		VolumeSource: corev1.VolumeSource{

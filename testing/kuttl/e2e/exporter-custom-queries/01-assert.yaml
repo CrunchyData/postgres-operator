@@ -1,0 +1,33 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, check that all containers in the instance pod are ready
+# Then, check that the exporter pid has changed
+# Finally, check the contents of the queries to ensure queries.yml was generated correctly
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=exporter-custom-queries \
+      -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    oldPid=$(kubectl get ${pod} -n ${NAMESPACE} -o jsonpath="{.metadata.annotations.oldpid}")
+    newPid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
+    [ "${oldPid}" -eq "${newPid}" ] && retry "pid should have changed" && exit 1
+
+    master_queries_contents=$(
+      kubectl exec --namespace "${NAMESPACE}" "${pod}" -c exporter \
+        -- cat /tmp/queries.yml
+    )
+
+    {
+      contains "${master_queries_contents}" "# This is a different test." &&
+      !(contains "${master_queries_contents}" "ccp_postgresql_version")
+    } || {
+      echo >&2 'The master queries.yml file should only contain the contents of the custom queries.yml file. Instead it contains:'
+      echo "${master_queries_contents}"
+      exit 1
+    }

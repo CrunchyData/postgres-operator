@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/exporter-no-tls-cluster.yaml
+assert:
+- files/exporter-no-tls-cluster-checks.yaml

@@ -1,0 +1,34 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# Ensure that the password has been updated in the exporter and it can still access
+# Postgres. 
+# - Check that the exporter pid has changed meaning the current process should have the correct password
+# - Check that the DATA_SOURCE_PASS_FILE contains the expected password (`password`)
+# - Grab the scrape_error output from exporter metrics and check that there were no scrape errors
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@";}
+
+    pod=$(kubectl get pods -o name -n $NAMESPACE \
+      -l postgres-operator.crunchydata.com/cluster=exporter-password-change \
+      -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    oldPid=$(kubectl get ${pod} -n ${NAMESPACE} -o jsonpath="{.metadata.annotations.oldpid}")
+    newPid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
+    [ "${oldPid}" -eq "${newPid}" ] && retry "pid should have changed" && exit 1
+
+    password=$(kubectl exec -n ${NAMESPACE} ${pod} -c exporter -- bash -c 'cat /opt/crunchy/password')
+    { contains "${password}" "password"; } || {
+      retry "unexpected password: ${password}"
+      exit 1
+    }
+
+    scrape_metrics=$(kubectl exec ${pod} -c exporter -n ${NAMESPACE} -- \
+      curl --silent http://localhost:9187/metrics | grep "pg_exporter_last_scrape_error")
+    { contains "${scrape_metrics}" 'pg_exporter_last_scrape_error 0'; } || {
+      retry "${scrape_metrics}"
+      exit 1
+    }

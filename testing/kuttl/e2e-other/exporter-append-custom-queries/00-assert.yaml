@@ -1,0 +1,50 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, check that all containers in the instance pod are ready
+# Then, list the query files mounted to the exporter and check for expected files
+# Finally, check the contents of the queries to ensure queries.yml was generated correctly
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=exporter-append-queries \
+      -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+
+    queries_files=$(
+      kubectl exec --namespace "${NAMESPACE}" "${pod}" -c exporter \
+        -- ls /conf
+    )
+
+    {
+      contains "${queries_files}" "queries.yml" &&
+      contains "${queries_files}" "defaultQueries.yml"
+    } || {
+      echo >&2 'The /conf directory should contain queries.yml and defaultQueries.yml. Instead it has:'
+      echo "${queries_files}"
+      exit 1
+    }
+
+    master_queries_contents=$(
+      kubectl exec --namespace "${NAMESPACE}" "${pod}" -c exporter \
+        -- cat /tmp/queries.yml
+    )
+
+    {
+      contains "${master_queries_contents}" "# This is a test." &&
+      contains "${master_queries_contents}" "ccp_postgresql_version"
+    } || {
+      echo >&2 'The master queries.yml file should contain the contents of both defaultQueries.yml and the custom queries.yml file. Instead it contains:'
+      echo "${master_queries_contents}"
+      exit 1
+    }
