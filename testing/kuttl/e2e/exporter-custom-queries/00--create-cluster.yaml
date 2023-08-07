@@ -1,0 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/exporter-custom-queries-configmap.yaml
+- files/exporter-custom-queries-cluster.yaml
+assert:
+- files/exporter-custom-queries-cluster-checks.yaml

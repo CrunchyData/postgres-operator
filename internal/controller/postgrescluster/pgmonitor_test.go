@@ -121,14 +121,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		expectedENV := []corev1.EnvVar{
 			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("localhost:%d/postgres", *cluster.Spec.Port)},
 			{Name: "DATA_SOURCE_USER", Value: pgmonitor.MonitoringUser},
-			{Name: "DATA_SOURCE_PASS", ValueFrom: &corev1.EnvVarSource{
-				SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: naming.MonitoringUserSecret(cluster).Name,
-					},
-					Key: "password",
-				},
-			}}}
+			{Name: "DATA_SOURCE_PASS_FILE", Value: "/opt/crunchy/password"}}
 		assert.DeepEqual(t, container.Env, expectedENV)
 
 		assert.Assert(t, container.Ports[0].ContainerPort == int32(9187), "Exporter container port number not set to '9187'.")
@@ -555,7 +548,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 		podExecCalled:   false,
 		// Status was generated manually for this test case
 		// TODO jmckulk: add code to generate status
-		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "79b86d7d69"},
+		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "66c45b8cfd"},
 		statusChangedAfterReconcile: false,
 	}} {
 		t.Run(test.name, func(t *testing.T) {
@@ -666,6 +659,8 @@ func TestReconcileMonitoringSecret(t *testing.T) {
 	cluster.UID = types.UID("hippouid")
 	cluster.Namespace = setupNamespace(t, cc).Name
 
+	// If the exporter is disabled then the secret should not exist
+	// Existing secrets should be removed
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		t.Run("NotExisting", func(t *testing.T) {
 			secret, err := reconciler.reconcileMonitoringSecret(ctx, cluster)
@@ -688,6 +683,8 @@ func TestReconcileMonitoringSecret(t *testing.T) {
 		})
 	})
 
+	// If the exporter is enabled then a monitoring secret should exist
+	// It will need to be created or left in place with existing password
 	t.Run("ExporterEnabled", func(t *testing.T) {
 		var (
 			existing, actual *corev1.Secret

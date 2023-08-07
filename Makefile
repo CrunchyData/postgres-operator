@@ -6,7 +6,7 @@ PGO_IMAGE_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kub
 PGO_IMAGE_PREFIX ?= localhost
 
 PGMONITOR_DIR ?= hack/tools/pgmonitor
-PGMONITOR_VERSION ?= v4.8.1
+PGMONITOR_VERSION ?= v4.9.0
 QUERIES_CONFIG_DIR ?= hack/tools/queries
 
 # Buildah's "build" used to be "bud". Use the alias to be compatible for a while.
@@ -247,7 +247,7 @@ generate-kuttl: ## Generate kuttl tests
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
 		shift; \
-	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e-other/*/*.yaml
+	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e-other/*/*.yaml testing/kuttl/e2e/*/*/*.yaml testing/kuttl/e2e-other/*/*/*.yaml
 
 ##@ Generate
 

@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/exporter-replica-cluster.yaml
+assert:
+- files/exporter-replica-cluster-checks.yaml

@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/primary-cluster.yaml
+assert:
+- files/primary-cluster-checks.yaml

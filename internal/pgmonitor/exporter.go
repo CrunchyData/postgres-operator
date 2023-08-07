@@ -60,7 +60,7 @@ var DefaultValuesForQueries = map[string]string{
 func GenerateDefaultExporterQueries(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
 	log := logging.FromContext(ctx)
 	var queries string
-	baseQueries := []string{"backrest", "global", "per_db", "nodemx"}
+	baseQueries := []string{"backrest", "global", "global_dbsize", "per_db", "nodemx"}
 	queriesConfigDir := GetQueriesConfigDir(ctx)
 
 	// TODO: When we add pgbouncer support we will do something like the following:
@@ -141,9 +141,6 @@ func ExporterStartCommand(commandFlags []string) []string {
 		// run function to combine queries files and start postgres_exporter
 		`start_postgres_exporter "$@"`,
 
-		// set directory to watch
-		`declare -r directory=/conf`,
-
 		// Create a file descriptor with a no-op process that will not get
 		// cleaned up
 		`exec {fd}<> <(:)`,
@@ -152,17 +149,19 @@ func ExporterStartCommand(commandFlags []string) []string {
 		// which uses up a lot of memory
 		`while read -r -t 3 -u "${fd}" || true; do`,
 
-		// If the directory's modify time is newer than our file descriptor's,
+		// If either directories' modify time is newer than our file descriptor's,
 		// something must have changed, so kill the postgres_exporter and rerun
 		// the function to combine queries files and start postgres_exporter
-		`  if [ "${directory}" -nt "/proc/self/fd/${fd}" ] && echo "Something changed..." &&`,
-		`    kill $(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) && start_postgres_exporter "$@"`,
-
-		// We then want to get rid of the old file descriptor, get a fresh one
-		// and restart the loop
+		`  if ([ "/conf" -nt "/proc/self/fd/${fd}" ] || [ "/opt/crunchy/password" -nt "/proc/self/fd/${fd}" ]) \`,
+		`    && kill $(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) && start_postgres_exporter "$@";`,
 		`  then`,
+
+		// When something changes we want to get rid of the old file descriptor, get a fresh one
+		// and restart the loop
+		`    echo "Something changed..."`,
 		`    exec {fd}>&- && exec {fd}<> <(:)`,
-		`    stat --format='Latest queries file dated %%y' "${directory}"`,
+		`    stat --format='Latest queries file dated %y' "/conf"`,
+		`    stat --format='Latest password file dated %y' "/opt/crunchy/password"`,
 		`  fi`,
 		`done`,
 	}, "\n")

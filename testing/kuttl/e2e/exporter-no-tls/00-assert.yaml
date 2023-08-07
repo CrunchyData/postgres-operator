@@ -1,0 +1,47 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, check that all containers in the instance pod are ready
+# Then, check the exporter logs for the 'TLS is disabled' line
+# Then, grab the exporter metrics output and check that there were no scrape errors
+# Finally, ensure the monitoring user exists and is configured
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=exporter-no-tls \
+      -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+
+    logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}" -c exporter)
+    { contains "${logs}" 'TLS is disabled'; } || {
+      echo 'tls is not disabled - it should be'
+      exit 1
+    }
+
+    scrape_metrics=$(kubectl exec "${pod}" -c exporter -n "${NAMESPACE}" -- \
+      curl --silent http://localhost:9187/metrics | grep "pg_exporter_last_scrape_error")
+    { contains "${scrape_metrics}" 'pg_exporter_last_scrape_error 0'; } || {
+      retry "${scrape_metrics}"
+      exit 1
+    }
+    
+    kubectl exec --stdin "${pod}" --namespace "${NAMESPACE}" -c database \
+      -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'
+      DO $$
+      DECLARE
+        result record;
+      BEGIN
+        SELECT * INTO result FROM pg_catalog.pg_roles WHERE rolname = 'ccp_monitoring';
+        ASSERT FOUND, 'user not found';
+      END $$
+    SQL

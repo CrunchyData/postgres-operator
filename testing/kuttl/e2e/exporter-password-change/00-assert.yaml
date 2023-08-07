@@ -1,0 +1,22 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# Check that all containers in the instance pod are ready
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n $NAMESPACE \
+      -l postgres-operator.crunchydata.com/cluster=exporter-password-change \
+      -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get ${pod} -n ${NAMESPACE} -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=exporter-password-change,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true
