@@ -1,0 +1,12 @@
+---
+# The cluster is not running due to the missing image, not due to a proper
+# shutdown status.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGUpgrade
+metadata:
+  name: empty-image-upgrade
+status:
+  conditions:
+  - type:   "Progressing"
+    status: "False"
+    reason: "PGClusterNotShutdown"
