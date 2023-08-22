@@ -213,7 +213,7 @@ referencing an issue, please be sure to include the issue in your pull request
 
 If you believe you have found a bug or have a detailed feature request, please open a GitHub issue and follow the guidelines for submitting a bug.
 
-For general questions or community support, we welcome you to [join the PGO project community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) at [https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) and ask your question there.
+For general questions or community support, we welcome you to join our [community Discord](https://discord.gg/hSGBa6nn) or the PGO project [community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) and ask your questions there.
 
 For other information, please visit the [Support](https://access.crunchydata.com/documentation/postgres-operator/latest/support/) section of the documentation.
 
