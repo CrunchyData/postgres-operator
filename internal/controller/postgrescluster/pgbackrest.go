@@ -154,7 +154,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 // applying the PostgresCluster controller's fully specified intent for the PersistentVolumeClaim
 // representing a repository.
 func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, spec *corev1.PersistentVolumeClaimSpec,
+	postgresCluster *v1beta1.PostgresCluster, spec corev1.PersistentVolumeClaimSpec,
 	repoName string, repoResources *RepoResources) (*corev1.PersistentVolumeClaim, error) {
 
 	repo, err := r.generateRepoVolumeIntent(postgresCluster, spec, repoName, repoResources)
@@ -616,7 +616,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 }
 
 func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresCluster,
-	spec *corev1.PersistentVolumeClaimSpec, repoName string,
+	spec corev1.PersistentVolumeClaimSpec, repoName string,
 	repoResources *RepoResources) (*corev1.PersistentVolumeClaim, error) {
 
 	annotations := naming.Merge(
@@ -649,7 +649,7 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 			Kind:       "PersistentVolumeClaim",
 		},
 		ObjectMeta: meta,
-		Spec:       *spec,
+		Spec:       spec,
 	}
 
 	// set ownership references
@@ -2493,7 +2493,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 		if repo.Volume == nil {
 			continue
 		}
-		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, &repo.Volume.VolumeClaimSpec,
+		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, repo.Volume.VolumeClaimSpec,
 			repo.Name, repoResources)
 		if err != nil {
 			log.Error(err, errMsg)
