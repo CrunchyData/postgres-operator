@@ -3,5 +3,5 @@ kind: PostgresCluster
 metadata:
   name: exporter
 spec:
-  postgresVersion: 15
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.2-0
+  postgresVersion: 14
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.5-1

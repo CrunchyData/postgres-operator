@@ -42,6 +42,11 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+var (
+	exporterExtendQueryPathFlag  = "--extend.query-path=/opt/crunchy/conf/queries.yml"
+	exporterWebListenAddressFlag = fmt.Sprintf("--web.listen-address=:%d", 9187)
+)
+
 func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 	image := "test/image:tag"
 
@@ -67,7 +72,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		template := &corev1.PodTemplateSpec{}
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil, nil))
 		assert.DeepEqual(t, template, &corev1.PodTemplateSpec{})
 	})
 
@@ -87,12 +92,15 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 				}},
 			},
 		}
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil))
+		exporterQueriesConfig := &corev1.ConfigMap{
+			ObjectMeta: naming.ExporterQueriesConfigMap(cluster),
+		}
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, nil))
 		container := getContainerWithName(template.Spec.Containers, naming.ContainerPGMonitorExporter)
 		assert.Equal(t, container.Image, image)
 		assert.Equal(t, container.ImagePullPolicy, corev1.PullAlways)
 		assert.DeepEqual(t, container.Resources, resources)
-		assert.DeepEqual(t, container.Command, []string{"/opt/cpm/bin/start.sh"})
+		assert.DeepEqual(t, container.Command, []string{"postgres_exporter", exporterExtendQueryPathFlag, exporterWebListenAddressFlag})
 		assert.DeepEqual(t, container.SecurityContext.Capabilities, &corev1.Capabilities{
 			Drop: []corev1.Capability{"ALL"},
 		})
@@ -102,16 +110,9 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		assert.Equal(t, *container.Resources.Requests.Cpu(), resource.MustParse("100m"))
 
 		expectedENV := []corev1.EnvVar{
-			{Name: "CONFIG_DIR", Value: "/opt/cpm/conf"},
-			{Name: "POSTGRES_EXPORTER_PORT", Value: "9187"},
-			{Name: "PGBACKREST_INFO_THROTTLE_MINUTES", Value: "10"},
-			{Name: "PG_STAT_STATEMENTS_LIMIT", Value: "20"},
-			{Name: "PG_STAT_STATEMENTS_THROTTLE_MINUTES", Value: "-1"},
-			{Name: "EXPORTER_PG_HOST", Value: "localhost"},
-			{Name: "EXPORTER_PG_PORT", Value: fmt.Sprint(*cluster.Spec.Port)},
-			{Name: "EXPORTER_PG_DATABASE", Value: "postgres"},
-			{Name: "EXPORTER_PG_USER", Value: pgmonitor.MonitoringUser},
-			{Name: "EXPORTER_PG_PASSWORD", ValueFrom: &corev1.EnvVarSource{
+			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("localhost:%d/postgres", *cluster.Spec.Port)},
+			{Name: "DATA_SOURCE_USER", Value: pgmonitor.MonitoringUser},
+			{Name: "DATA_SOURCE_PASS", ValueFrom: &corev1.EnvVarSource{
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{
 						Name: naming.MonitoringUserSecret(cluster).Name,
@@ -121,11 +122,39 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 			}}}
 		assert.DeepEqual(t, container.Env, expectedENV)
 
-		assert.Assert(t, container.Ports[0].ContainerPort == int32(9187))
-		assert.Assert(t, container.Ports[0].Name == "exporter")
-		assert.Assert(t, container.Ports[0].Protocol == "TCP")
+		assert.Assert(t, container.Ports[0].ContainerPort == int32(9187), "Exporter container port number not set to '9187'.")
+		assert.Assert(t, container.Ports[0].Name == "exporter", "Exporter container port name not set to 'exporter'.")
+		assert.Assert(t, container.Ports[0].Protocol == "TCP", "Exporter container port protocol not set to 'TCP'.")
 
-		assert.Assert(t, template.Spec.Volumes != nil)
+		assert.Assert(t, template.Spec.Volumes != nil, "No volumes were found.")
+
+		var foundDefaultQueriesVolume bool
+		for _, v := range template.Spec.Volumes {
+			if v.Name == "exporter-queries" {
+				assert.DeepEqual(t, v, corev1.Volume{
+					Name: "exporter-queries",
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: exporterQueriesConfig.Name,
+							},
+						},
+					},
+				})
+				foundDefaultQueriesVolume = true
+				break
+			}
+		}
+		assert.Assert(t, foundDefaultQueriesVolume, "The default 'exporter-queries' volume was not found.")
+
+		var foundDefaultQueriesMount bool
+		for _, vm := range container.VolumeMounts {
+			if vm.Name == "exporter-queries" && vm.MountPath == "/opt/crunchy/conf" {
+				foundDefaultQueriesMount = true
+				break
+			}
+		}
+		assert.Assert(t, foundDefaultQueriesMount, "The default 'exporter-queries' volume mount was not found.")
 	})
 
 	t.Run("CustomConfig", func(t *testing.T) {
@@ -150,8 +179,11 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 				}},
 			},
 		}
+		exporterQueriesConfig := &corev1.ConfigMap{
+			ObjectMeta: naming.ExporterQueriesConfigMap(cluster),
+		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, nil))
 
 		var foundConfigVolume bool
 		for _, v := range template.Spec.Volumes {
@@ -168,7 +200,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 				break
 			}
 		}
-		assert.Assert(t, foundConfigVolume)
+		assert.Assert(t, foundConfigVolume, "The 'exporter-config' volume was not found.")
 
 		container := getContainerWithName(template.Spec.Containers, naming.ContainerPGMonitorExporter)
 		var foundConfigMount bool
@@ -178,7 +210,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 				break
 			}
 		}
-		assert.Assert(t, foundConfigMount)
+		assert.Assert(t, foundConfigMount, "The 'exporter-config' volume mount was not found.")
 	})
 }
 
@@ -348,6 +380,7 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 			}
 
 			cluster := &v1beta1.PostgresCluster{}
+			cluster.Spec.PostgresVersion = 15
 			cluster.Spec.Monitoring = test.monitoring
 			cluster.Status.Monitoring.ExporterConfiguration = test.status.ExporterConfiguration
 			observed := &observedInstances{forCluster: test.instances}
@@ -400,8 +433,8 @@ func TestReconcilePGMonitorExporter(t *testing.T) {
 		called = false
 		assert.NilError(t, reconciler.reconcilePGMonitorExporter(ctx,
 			cluster, observed, nil))
-		assert.Assert(t, called)
-		assert.Assert(t, cluster.Status.Monitoring.ExporterConfiguration != "")
+		assert.Assert(t, called, "PodExec was not called.")
+		assert.Assert(t, cluster.Status.Monitoring.ExporterConfiguration != "", "ExporterConfiguration was empty.")
 	})
 }
 
@@ -441,7 +474,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 		podExecCalled:   false,
 		// Status was generated manually for this test case
 		// TODO jmckulk: add code to generate status
-		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "74476b9895"},
+		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "79b86d7d69"},
 		statusChangedAfterReconcile: false,
 	}} {
 		t.Run(test.name, func(t *testing.T) {
@@ -462,6 +495,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 
 			// Create the test cluster spec with the exporter status set
 			cluster := &v1beta1.PostgresCluster{}
+			cluster.Spec.PostgresVersion = 15
 			cluster.Status.Monitoring.ExporterConfiguration = test.status.ExporterConfiguration
 
 			// Mock up an instances that will be defined in the cluster. The instances should
@@ -555,7 +589,7 @@ func TestReconcileMonitoringSecret(t *testing.T) {
 		t.Run("NotExisting", func(t *testing.T) {
 			secret, err := reconciler.reconcileMonitoringSecret(ctx, cluster)
 			assert.NilError(t, err)
-			assert.Assert(t, secret == nil)
+			assert.Assert(t, secret == nil, "Monitoring secret was not nil.")
 		})
 
 		t.Run("Existing", func(t *testing.T) {
@@ -569,7 +603,7 @@ func TestReconcileMonitoringSecret(t *testing.T) {
 			cluster.Spec.Monitoring = nil
 			actual, err := reconciler.reconcileMonitoringSecret(ctx, cluster)
 			assert.NilError(t, err)
-			assert.Assert(t, actual == nil)
+			assert.Assert(t, actual == nil, "Monitoring secret still exists after turning exporter off.")
 		})
 	})
 
@@ -591,34 +625,33 @@ func TestReconcileMonitoringSecret(t *testing.T) {
 		t.Run("NotExisting", func(t *testing.T) {
 			existing, err = reconciler.reconcileMonitoringSecret(ctx, cluster)
 			assert.NilError(t, err)
-			assert.Assert(t, existing != nil)
+			assert.Assert(t, existing != nil, "Monitoring secret does not exist.")
 		})
 
 		t.Run("Existing", func(t *testing.T) {
 			actual, err = reconciler.reconcileMonitoringSecret(ctx, cluster)
 			assert.NilError(t, err)
-			assert.Assert(t, bytes.Equal(actual.Data["password"], existing.Data["password"]))
+			assert.Assert(t, bytes.Equal(actual.Data["password"], existing.Data["password"]), "Passwords do not match.")
 		})
 	})
 }
 
 // TestConfigureExporterTLS checks that tls settings are configured on a podTemplate.
 // When exporter is enabled with custom tls configureExporterTLS should add volumes,
-// volumeMounts, and an envVar to the template. Ensure that existing template configurations
-// are still present
-func TestConfigreExporterTLS(t *testing.T) {
+// volumeMounts, and a flag to the Command. Ensure that existing template configurations
+// are still present.
+func TestConfigureExporterTLS(t *testing.T) {
 	// Define an existing template with values that could be overwritten
 	baseTemplate := &corev1.PodTemplateSpec{
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{{
 				Name: naming.ContainerPGMonitorExporter,
+				Command: []string{
+					"postgres_exporter", exporterExtendQueryPathFlag, exporterWebListenAddressFlag,
+				},
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "existing-volume",
 					MountPath: "some-path",
-				}},
-				Env: []corev1.EnvVar{{
-					Name:  "existing-env",
-					Value: "existing-value",
 				}},
 			}},
 			Volumes: []corev1.Volume{{
@@ -693,10 +726,11 @@ func TestConfigreExporterTLS(t *testing.T) {
 - configMap:
     name: test-exporter-web-config
   name: web-config
-		`))
+		`), "Volumes are not what they should be.")
 
 		// Is the exporter container in position 0?
-		assert.Assert(t, template.Spec.Containers[0].Name == naming.ContainerPGMonitorExporter)
+		assert.Assert(t, template.Spec.Containers[0].Name == naming.ContainerPGMonitorExporter,
+			"Exporter container is not in the zeroth position.")
 
 		// Did we configure the volume mounts on the container while leaving existing
 		// mounts in place?
@@ -707,15 +741,100 @@ func TestConfigreExporterTLS(t *testing.T) {
   name: exporter-certs
 - mountPath: /web-config
   name: web-config
-		`))
+		`), "Volume mounts are not what they should be.")
 
-		// Did we set the `WEB_CONFIG_DIR` env var on the container while leaving
-		// existing vars in place?
-		assert.Assert(t, marshalMatches(template.Spec.Containers[0].Env, `
-- name: existing-env
-  value: existing-value
-- name: WEB_CONFIG_DIR
-  value: web-config/
-		`))
+		// Did we add the "--web.config.file" flag to the command while leaving the
+		// rest intact?
+		assert.DeepEqual(t, template.Spec.Containers[0].Command, []string{"postgres_exporter",
+			exporterExtendQueryPathFlag, exporterWebListenAddressFlag, "--web.config.file=/web-config/web-config.yml"})
+	})
+}
+
+// TestReconcileExporterQueriesConfig checks that the ConfigMap intent returned by
+// reconcileExporterQueriesConfig is correct. If exporter is enabled, the return
+// shouldn't be nil. If the exporter is disabled, the return should be nil.
+func TestReconcileExporterQueriesConfig(t *testing.T) {
+	ctx := context.Background()
+
+	// Kubernetes is required because reconcileExporterQueriesConfig
+	// (1) uses the client to get existing ConfigMaps
+	// (2) sets the controller reference on the new ConfigMap
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
+
+	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+	cluster := testCluster()
+	cluster.Default()
+	cluster.UID = types.UID("hippouid")
+	cluster.Namespace = setupNamespace(t, cc).Name
+
+	t.Run("ExporterDisabled", func(t *testing.T) {
+		t.Run("NotExisting", func(t *testing.T) {
+			queriesConfig, err := reconciler.reconcileExporterQueriesConfig(ctx, cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, queriesConfig == nil, "Default queries ConfigMap is present.")
+		})
+
+		t.Run("Existing", func(t *testing.T) {
+			cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
+				PGMonitor: &v1beta1.PGMonitorSpec{
+					Exporter: &v1beta1.ExporterSpec{Image: "image"}}}
+			existing, err := reconciler.reconcileExporterQueriesConfig(ctx, cluster)
+			assert.NilError(t, err, "error in test; existing config not created")
+			assert.Assert(t, existing != nil, "error in test; existing config not created")
+
+			cluster.Spec.Monitoring = nil
+			actual, err := reconciler.reconcileExporterQueriesConfig(ctx, cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, actual == nil, "Default queries config still present after disabling exporter.")
+		})
+	})
+
+	t.Run("ExporterEnabled", func(t *testing.T) {
+		var (
+			existing, actual *corev1.ConfigMap
+			err              error
+		)
+
+		// Enable monitoring in the test cluster spec
+		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
+			PGMonitor: &v1beta1.PGMonitorSpec{
+				Exporter: &v1beta1.ExporterSpec{
+					Image: "image",
+				},
+			},
+		}
+
+		t.Run("NotExisting", func(t *testing.T) {
+			existing, err = reconciler.reconcileExporterQueriesConfig(ctx, cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, existing != nil, "Default queries config does not exist.")
+		})
+
+		t.Run("Existing", func(t *testing.T) {
+			actual, err = reconciler.reconcileExporterQueriesConfig(ctx, cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, actual.Data["queries.yml"] == existing.Data["queries.yml"], "Data does not align.")
+		})
+	})
+}
+
+func TestGenerateQueries(t *testing.T) {
+	ctx := context.Background()
+	cluster := &v1beta1.PostgresCluster{}
+
+	t.Run("PG<=11", func(t *testing.T) {
+		cluster.Spec.PostgresVersion = 11
+		queries := generateQueries(ctx, cluster)
+		assert.Assert(t, !strings.Contains(queries, "ccp_pg_stat_statements_reset"),
+			"Queries contain 'ccp_pg_stat_statements_reset' query when they should not.")
+	})
+
+	t.Run("PG>=12", func(t *testing.T) {
+		cluster.Spec.PostgresVersion = 12
+		queries := generateQueries(ctx, cluster)
+		assert.Assert(t, strings.Contains(queries, "ccp_pg_stat_statements_reset"),
+			"Queries do not contain 'ccp_pg_stat_statements_reset' query when they should.")
 	})
 }
