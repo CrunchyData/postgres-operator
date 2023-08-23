@@ -8,6 +8,9 @@ on:
     branches:
       - master
 
+env:
+  QUERIES_CONFIG_DIR: "${{ github.workspace }}/hack/tools/queries" 
+
 jobs:
   go-test:
     runs-on: ubuntu-20.04

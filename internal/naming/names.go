@@ -364,6 +364,16 @@ func ExporterWebConfigMap(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// ExporterQueriesConfigMap returns ObjectMeta necessary to lookup and create the
+// exporter queries configmap. This configmap is used to pass the default queries
+// to the exporter.
+func ExporterQueriesConfigMap(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-exporter-queries-config",
+	}
+}
+
 // OperatorConfigurationSecret returns the ObjectMeta necessary to lookup the
 // Secret containing PGO configuration.
 func OperatorConfigurationSecret() metav1.ObjectMeta {

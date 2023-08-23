@@ -13,4 +13,9 @@ status:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: exporter-exporter-queries-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: exporter-tls-exporter-web-config
