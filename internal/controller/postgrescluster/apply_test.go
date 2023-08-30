@@ -79,8 +79,19 @@ func TestServerSideApply(t *testing.T) {
 		after := constructor()
 		assert.NilError(t, cc.Patch(ctx, after, client.Apply, reconciler.Owner))
 		assert.Assert(t, after.GetResourceVersion() != "")
-		assert.Assert(t, after.GetResourceVersion() != before.GetResourceVersion(),
-			"expected https://github.com/kubernetes-sigs/controller-runtime/issues/1356")
+
+		switch {
+		// TODO(tjmoore4): The update currently impacts 1.28+ only, but may be
+		// backpatched in the future.
+		// - https://github.com/kubernetes/kubernetes/pull/116865
+		case serverVersion.LessThan(version.MustParseGeneric("1.28")):
+
+			assert.Assert(t, after.GetResourceVersion() != before.GetResourceVersion(),
+				"expected https://issue.k8s.io/116861")
+
+		default:
+			assert.Assert(t, after.GetResourceVersion() == before.GetResourceVersion())
+		}
 
 		// Our apply method generates the correct apply-patch.
 		again := constructor()
