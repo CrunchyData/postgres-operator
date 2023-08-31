@@ -37,30 +37,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-const (
-	exporterPort = int32(9187)
-
-	// TODO: With the current implementation of the crunchy-postgres-exporter
-	// it makes sense to hard-code the database. When moving away from the
-	// crunchy-postgres-exporter start.sh script we should re-evaluate always
-	// setting the exporter database to `postgres`.
-	exporterDB = "postgres"
-
-	// The exporter connects to all databases over loopback using a password.
-	// Kubernetes guarantees localhost resolves to loopback:
-	// https://kubernetes.io/docs/concepts/cluster-administration/networking/
-	// https://releases.k8s.io/v1.21.0/pkg/kubelet/kubelet_pods.go#L343
-	exporterHost = "localhost"
-)
-
-// Defaults for certain values used in queries.yml
-// TODO(dsessler7): make these values configurable via spec
-var defaultValuesForQueries = map[string]string{
-	"PGBACKREST_INFO_THROTTLE_MINUTES":    "10",
-	"PG_STAT_STATEMENTS_LIMIT":            "20",
-	"PG_STAT_STATEMENTS_THROTTLE_MINUTES": "-1",
-}
-
 // If pgMonitor is enabled the pgMonitor sidecar(s) have been added to the
 // instance pod. reconcilePGMonitor will update the database to
 // create the necessary objects for the tool to run
@@ -133,7 +109,7 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	// pgMonitor objects.
 
 	action := func(ctx context.Context, exec postgres.Executor) error {
-		return pgmonitor.EnableExporterInPostgreSQL(ctx, exec, monitoringSecret, exporterDB, setup)
+		return pgmonitor.EnableExporterInPostgreSQL(ctx, exec, monitoringSecret, pgmonitor.ExporterDB, setup)
 	}
 
 	if !pgmonitor.ExporterEnabled(cluster) {
@@ -279,22 +255,17 @@ func addPGMonitorExporterToInstancePodSpec(
 		return nil
 	}
 
-	var (
-		exporterExtendQueryPathFlag  = "--extend.query-path=/opt/crunchy/conf/queries.yml"
-		exporterWebListenAddressFlag = fmt.Sprintf("--web.listen-address=:%d", exporterPort)
-	)
-
 	securityContext := initialize.RestrictedSecurityContext()
 	exporterContainer := corev1.Container{
 		Name:            naming.ContainerPGMonitorExporter,
 		Image:           config.PGExporterContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Resources:       cluster.Spec.Monitoring.PGMonitor.Exporter.Resources,
-		Command: []string{
-			"postgres_exporter", exporterExtendQueryPathFlag, exporterWebListenAddressFlag,
-		},
+		Command: pgmonitor.ExporterStartCommand([]string{
+			pgmonitor.ExporterExtendQueryPathFlag, pgmonitor.ExporterWebListenAddressFlag,
+		}),
 		Env: []corev1.EnvVar{
-			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("%s:%d/%s", exporterHost, *cluster.Spec.Port, exporterDB)},
+			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("%s:%d/%s", pgmonitor.ExporterHost, *cluster.Spec.Port, pgmonitor.ExporterDB)},
 			{Name: "DATA_SOURCE_USER", Value: pgmonitor.MonitoringUser},
 			{Name: "DATA_SOURCE_PASS", ValueFrom: &corev1.EnvVarSource{
 				// Environment variables are not updated after a secret update.
@@ -314,24 +285,20 @@ func addPGMonitorExporterToInstancePodSpec(
 		// ContainerPort is needed to support proper target discovery by Prometheus for pgMonitor
 		// integration
 		Ports: []corev1.ContainerPort{{
-			ContainerPort: exporterPort,
+			ContainerPort: pgmonitor.ExporterPort,
 			Name:          naming.PortExporter,
 			Protocol:      corev1.ProtocolTCP,
 		}},
 		VolumeMounts: []corev1.VolumeMount{{
 			Name: "exporter-config",
-			// this is the path for custom config as defined in the start.sh script for the exporter container
+			// this is the path for both custom and default queries files
 			MountPath: "/conf",
-		}, {
-			Name: "exporter-queries",
-			// this is the path for the default config, which we generate and then mount via ConfigMap
-			MountPath: "/opt/crunchy/conf",
 		}},
 	}
 
 	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
 
-	// add custom exporter config volume
+	// add exporter config volume
 	configVolume := corev1.Volume{
 		Name: "exporter-config",
 		VolumeSource: corev1.VolumeSource{
@@ -342,14 +309,25 @@ func addPGMonitorExporterToInstancePodSpec(
 	}
 	template.Spec.Volumes = append(template.Spec.Volumes, configVolume)
 
-	// add default exporter queries config volume
-	queriesVolume := corev1.Volume{Name: "exporter-queries"}
-	queriesVolume.ConfigMap = &corev1.ConfigMapVolumeSource{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: exporterQueriesConfig.Name,
-		},
+	// The original "custom queries" ability allowed users to provide a file with custom queries;
+	// however, it would turn off the default queries. The new "custom queries" ability allows
+	// users to append custom queries to the default queries. This new behavior is feature gated.
+	// Therefore, we only want to add the default queries ConfigMap as a source for the
+	// "exporter-config" volume if the AppendCustomQueries feature gate is turned on OR if the
+	// user has not provided any custom configuration.
+	if util.DefaultMutableFeatureGate.Enabled(util.AppendCustomQueries) ||
+		cluster.Spec.Monitoring.PGMonitor.Exporter.Configuration == nil {
+
+		defaultConfigVolumeProjection := corev1.VolumeProjection{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: exporterQueriesConfig.Name,
+				},
+			},
+		}
+		configVolume.VolumeSource.Projected.Sources = append(configVolume.VolumeSource.Projected.Sources,
+			defaultConfigVolumeProjection)
 	}
-	template.Spec.Volumes = append(template.Spec.Volumes, queriesVolume)
 
 	if cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret != nil {
 		configureExporterTLS(cluster, template, exporterWebConfig)
@@ -414,7 +392,9 @@ func configureExporterTLS(cluster *v1beta1.PostgresCluster, template *corev1.Pod
 		}}
 
 		exporterContainer.VolumeMounts = append(exporterContainer.VolumeMounts, mounts...)
-		exporterContainer.Command = append(exporterContainer.Command, "--web.config.file=/web-config/web-config.yml")
+		exporterContainer.Command = pgmonitor.ExporterStartCommand([]string{
+			pgmonitor.ExporterExtendQueryPathFlag, pgmonitor.ExporterWebListenAddressFlag, pgmonitor.ExporterWebConfigFileFlag,
+		})
 	}
 }
 
@@ -475,6 +455,7 @@ tls_server_config:
 	return nil, err
 }
 
+// reconcileExporterQueriesConfig reconciles the configmap containing the default queries for exporter
 func (r *Reconciler) reconcileExporterQueriesConfig(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) (*corev1.ConfigMap, error) {
 
@@ -495,7 +476,7 @@ func (r *Reconciler) reconcileExporterQueriesConfig(ctx context.Context,
 
 	intent := &corev1.ConfigMap{
 		ObjectMeta: naming.ExporterQueriesConfigMap(cluster),
-		Data:       map[string]string{"queries.yml": generateQueries(ctx, cluster)},
+		Data:       map[string]string{"defaultQueries.yml": pgmonitor.GenerateDefaultExporterQueries(ctx, cluster)},
 	}
 
 	intent.Annotations = naming.Merge(
@@ -519,63 +500,4 @@ func (r *Reconciler) reconcileExporterQueriesConfig(ctx context.Context,
 	}
 
 	return nil, err
-}
-
-func generateQueries(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
-	log := logging.FromContext(ctx)
-	var queries string
-	baseQueries := []string{"backrest", "global", "per_db", "nodemx"}
-
-	// TODO: When we add pgbouncer support we will do something like the following:
-	// if pgbouncerEnabled() {
-	// 	baseQueries = append(baseQueries, "pgbouncer")
-	// }
-
-	for _, queryType := range baseQueries {
-		queriesContents, err := os.ReadFile(fmt.Sprintf("%s/queries_%s.yml", pgmonitor.GetQueriesConfigDir(ctx), queryType))
-		if err != nil {
-			// log an error, but continue to next iteration
-			log.Error(err, fmt.Sprintf("Query file queries_%s.yml does not exist (it should)...", queryType))
-			continue
-		}
-		queries += string(queriesContents) + "\n"
-	}
-
-	// Add general queries for specific postgres version
-	queriesGeneral, err := os.ReadFile(fmt.Sprintf("%s/pg%d/queries_general.yml", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
-	if err != nil {
-		// log an error, but continue
-		log.Error(err, fmt.Sprintf("Query file %s/pg%d/queries_general.yml does not exist (it should)...", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
-	} else {
-		queries += string(queriesGeneral) + "\n"
-	}
-
-	// Add pg_stat_statement queries for specific postgres version
-	queriesPgStatStatements, err := os.ReadFile(fmt.Sprintf("%s/pg%d/queries_pg_stat_statements.yml", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
-	if err != nil {
-		// log an error, but continue
-		log.Error(err, fmt.Sprintf("Query file %s/pg%d/queries_pg_stat_statements.yml not loaded.", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
-	} else {
-		queries += string(queriesPgStatStatements) + "\n"
-	}
-
-	// If postgres version >= 12, add pg_stat_statements_reset queries
-	if cluster.Spec.PostgresVersion >= 12 {
-		queriesPgStatStatementsReset, err := os.ReadFile(fmt.Sprintf("%s/pg%d/queries_pg_stat_statements_reset_info.yml", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
-		if err != nil {
-			// log an error, but continue
-			log.Error(err, fmt.Sprintf("Query file %s/pg%d/queries_pg_stat_statements_reset_info.yml not loaded.", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
-		} else {
-			queries += string(queriesPgStatStatementsReset) + "\n"
-		}
-	}
-
-	// Find and replace default values in queries
-	for k, v := range defaultValuesForQueries {
-		queries = strings.ReplaceAll(queries, fmt.Sprintf("#%s#", k), v)
-	}
-
-	// TODO: Add ability to exclude certain user-specified queries
-
-	return queries
 }
