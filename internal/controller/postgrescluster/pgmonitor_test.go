@@ -39,12 +39,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-)
-
-var (
-	exporterExtendQueryPathFlag  = "--extend.query-path=/opt/crunchy/conf/queries.yml"
-	exporterWebListenAddressFlag = fmt.Sprintf("--web.listen-address=:%d", 9187)
 )
 
 func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
@@ -100,7 +96,20 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 		assert.Equal(t, container.Image, image)
 		assert.Equal(t, container.ImagePullPolicy, corev1.PullAlways)
 		assert.DeepEqual(t, container.Resources, resources)
-		assert.DeepEqual(t, container.Command, []string{"postgres_exporter", exporterExtendQueryPathFlag, exporterWebListenAddressFlag})
+		assert.DeepEqual(t, container.Command[:3], []string{"bash", "-ceu", "--"})
+		assert.Assert(t, len(container.Command) > 3, "Command does not have enough arguments.")
+
+		commandStringsFound := make(map[string]bool)
+		for _, elem := range container.Command {
+			commandStringsFound[elem] = true
+		}
+		assert.Assert(t, commandStringsFound[pgmonitor.ExporterExtendQueryPathFlag],
+			"Command string does not contain the --extend.query-path flag.")
+		assert.Assert(t, commandStringsFound[pgmonitor.ExporterWebListenAddressFlag],
+			"Command string does not contain the --web.listen-address flag.")
+		assert.Assert(t, !commandStringsFound[pgmonitor.ExporterWebConfigFileFlag],
+			"Command string contains the --web.config.file flag when it shouldn't.")
+
 		assert.DeepEqual(t, container.SecurityContext.Capabilities, &corev1.Capabilities{
 			Drop: []corev1.Capability{"ALL"},
 		})
@@ -128,36 +137,41 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 
 		assert.Assert(t, template.Spec.Volumes != nil, "No volumes were found.")
 
-		var foundDefaultQueriesVolume bool
+		var foundExporterConfigVolume bool
 		for _, v := range template.Spec.Volumes {
-			if v.Name == "exporter-queries" {
+			if v.Name == "exporter-config" {
 				assert.DeepEqual(t, v, corev1.Volume{
-					Name: "exporter-queries",
+					Name: "exporter-config",
 					VolumeSource: corev1.VolumeSource{
-						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: exporterQueriesConfig.Name,
+						Projected: &corev1.ProjectedVolumeSource{
+							Sources: []corev1.VolumeProjection{{ConfigMap: &corev1.ConfigMapProjection{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: exporterQueriesConfig.Name,
+								},
+							}},
 							},
 						},
 					},
 				})
-				foundDefaultQueriesVolume = true
+				foundExporterConfigVolume = true
 				break
 			}
 		}
-		assert.Assert(t, foundDefaultQueriesVolume, "The default 'exporter-queries' volume was not found.")
+		assert.Assert(t, foundExporterConfigVolume, "The exporter-config volume was not found.")
 
-		var foundDefaultQueriesMount bool
+		var foundExporterConfigVolumeMount bool
 		for _, vm := range container.VolumeMounts {
-			if vm.Name == "exporter-queries" && vm.MountPath == "/opt/crunchy/conf" {
-				foundDefaultQueriesMount = true
+			if vm.Name == "exporter-config" && vm.MountPath == "/conf" {
+				foundExporterConfigVolumeMount = true
 				break
 			}
 		}
-		assert.Assert(t, foundDefaultQueriesMount, "The default 'exporter-queries' volume mount was not found.")
+		assert.Assert(t, foundExporterConfigVolumeMount, "The 'exporter-config' volume mount was not found.")
 	})
 
-	t.Run("CustomConfig", func(t *testing.T) {
+	t.Run("CustomConfigAppendCustomQueriesOff", func(t *testing.T) {
+		assert.NilError(t, util.AddAndSetFeatureGates(string(util.AppendCustomQueries+"=false")))
+
 		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
 			PGMonitor: &v1beta1.PGMonitorSpec{
 				Exporter: &v1beta1.ExporterSpec{
@@ -193,6 +207,73 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 					VolumeSource: corev1.VolumeSource{
 						Projected: &corev1.ProjectedVolumeSource{
 							Sources: cluster.Spec.Monitoring.PGMonitor.Exporter.Configuration,
+						},
+					},
+				})
+				foundConfigVolume = true
+				break
+			}
+		}
+		assert.Assert(t, foundConfigVolume, "The 'exporter-config' volume was not found.")
+
+		container := getContainerWithName(template.Spec.Containers, naming.ContainerPGMonitorExporter)
+		var foundConfigMount bool
+		for _, vm := range container.VolumeMounts {
+			if vm.Name == "exporter-config" && vm.MountPath == "/conf" {
+				foundConfigMount = true
+				break
+			}
+		}
+		assert.Assert(t, foundConfigMount, "The 'exporter-config' volume mount was not found.")
+	})
+
+	t.Run("CustomConfigAppendCustomQueriesOn", func(t *testing.T) {
+		assert.NilError(t, util.AddAndSetFeatureGates(string(util.AppendCustomQueries+"=true")))
+
+		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
+			PGMonitor: &v1beta1.PGMonitorSpec{
+				Exporter: &v1beta1.ExporterSpec{
+					Image:     image,
+					Resources: resources,
+					Configuration: []corev1.VolumeProjection{{ConfigMap: &corev1.ConfigMapProjection{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "exporter-custom-config-test",
+						},
+					}},
+					},
+				},
+			},
+		}
+		template := &corev1.PodTemplateSpec{
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{{
+					Name: naming.ContainerDatabase,
+				}},
+			},
+		}
+		exporterQueriesConfig := &corev1.ConfigMap{
+			ObjectMeta: naming.ExporterQueriesConfigMap(cluster),
+		}
+
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, nil))
+
+		var foundConfigVolume bool
+		for _, v := range template.Spec.Volumes {
+			if v.Name == "exporter-config" {
+				assert.DeepEqual(t, v, corev1.Volume{
+					Name: "exporter-config",
+					VolumeSource: corev1.VolumeSource{
+						Projected: &corev1.ProjectedVolumeSource{
+							Sources: []corev1.VolumeProjection{{ConfigMap: &corev1.ConfigMapProjection{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: "exporter-custom-config-test",
+								},
+							}}, {ConfigMap: &corev1.ConfigMapProjection{
+								LocalObjectReference: corev1.LocalObjectReference{
+									Name: exporterQueriesConfig.Name,
+								},
+							}},
+							},
 						},
 					},
 				})
@@ -646,9 +727,9 @@ func TestConfigureExporterTLS(t *testing.T) {
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{{
 				Name: naming.ContainerPGMonitorExporter,
-				Command: []string{
-					"postgres_exporter", exporterExtendQueryPathFlag, exporterWebListenAddressFlag,
-				},
+				Command: pgmonitor.ExporterStartCommand([]string{
+					pgmonitor.ExporterExtendQueryPathFlag, pgmonitor.ExporterWebListenAddressFlag,
+				}),
 				VolumeMounts: []corev1.VolumeMount{{
 					Name:      "existing-volume",
 					MountPath: "some-path",
@@ -745,8 +826,19 @@ func TestConfigureExporterTLS(t *testing.T) {
 
 		// Did we add the "--web.config.file" flag to the command while leaving the
 		// rest intact?
-		assert.DeepEqual(t, template.Spec.Containers[0].Command, []string{"postgres_exporter",
-			exporterExtendQueryPathFlag, exporterWebListenAddressFlag, "--web.config.file=/web-config/web-config.yml"})
+		assert.DeepEqual(t, template.Spec.Containers[0].Command[:3], []string{"bash", "-ceu", "--"})
+		assert.Assert(t, len(template.Spec.Containers[0].Command) > 3, "Command does not have enough arguments.")
+
+		commandStringsFound := make(map[string]bool)
+		for _, elem := range template.Spec.Containers[0].Command {
+			commandStringsFound[elem] = true
+		}
+		assert.Assert(t, commandStringsFound[pgmonitor.ExporterExtendQueryPathFlag],
+			"Command string does not contain the --extend.query-path flag.")
+		assert.Assert(t, commandStringsFound[pgmonitor.ExporterWebListenAddressFlag],
+			"Command string does not contain the --web.listen-address flag.")
+		assert.Assert(t, commandStringsFound[pgmonitor.ExporterWebConfigFileFlag],
+			"Command string does not contain the --web.config.file flag.")
 	})
 }
 
@@ -815,26 +907,7 @@ func TestReconcileExporterQueriesConfig(t *testing.T) {
 		t.Run("Existing", func(t *testing.T) {
 			actual, err = reconciler.reconcileExporterQueriesConfig(ctx, cluster)
 			assert.NilError(t, err)
-			assert.Assert(t, actual.Data["queries.yml"] == existing.Data["queries.yml"], "Data does not align.")
+			assert.Assert(t, actual.Data["defaultQueries.yml"] == existing.Data["defaultQueries.yml"], "Data does not align.")
 		})
-	})
-}
-
-func TestGenerateQueries(t *testing.T) {
-	ctx := context.Background()
-	cluster := &v1beta1.PostgresCluster{}
-
-	t.Run("PG<=11", func(t *testing.T) {
-		cluster.Spec.PostgresVersion = 11
-		queries := generateQueries(ctx, cluster)
-		assert.Assert(t, !strings.Contains(queries, "ccp_pg_stat_statements_reset"),
-			"Queries contain 'ccp_pg_stat_statements_reset' query when they should not.")
-	})
-
-	t.Run("PG>=12", func(t *testing.T) {
-		cluster.Spec.PostgresVersion = 12
-		queries := generateQueries(ctx, cluster)
-		assert.Assert(t, strings.Contains(queries, "ccp_pg_stat_statements_reset"),
-			"Queries do not contain 'ccp_pg_stat_statements_reset' query when they should.")
 	})
 }

@@ -32,6 +32,9 @@ const (
 	// Feature gates should be listed in alphabetical, case-sensitive
 	// (upper before any lower case character) order.
 	//
+	// Enables support of appending custom queries to default PGMonitor queries
+	AppendCustomQueries featuregate.Feature = "AppendCustomQueries"
+	//
 	BridgeIdentifiers featuregate.Feature = "BridgeIdentifiers"
 	//
 	// Enables support of custom sidecars for PostgreSQL instance Pods
@@ -52,10 +55,11 @@ const (
 //
 // - https://releases.k8s.io/v1.20.0/pkg/features/kube_features.go#L729-732
 var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{
-	BridgeIdentifiers: {Default: false, PreRelease: featuregate.Alpha},
-	InstanceSidecars:  {Default: false, PreRelease: featuregate.Alpha},
-	PGBouncerSidecars: {Default: false, PreRelease: featuregate.Alpha},
-	TablespaceVolumes: {Default: false, PreRelease: featuregate.Alpha},
+	AppendCustomQueries: {Default: false, PreRelease: featuregate.Alpha},
+	BridgeIdentifiers:   {Default: false, PreRelease: featuregate.Alpha},
+	InstanceSidecars:    {Default: false, PreRelease: featuregate.Alpha},
+	PGBouncerSidecars:   {Default: false, PreRelease: featuregate.Alpha},
+	TablespaceVolumes:   {Default: false, PreRelease: featuregate.Alpha},
 }
 
 // DefaultMutableFeatureGate is a mutable, shared global FeatureGate.
