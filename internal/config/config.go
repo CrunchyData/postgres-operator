@@ -30,6 +30,15 @@ func defaultFromEnv(value, key string) string {
 	return value
 }
 
+func RegistrationRequired() bool {
+	return os.Getenv("REGISTRATION_REQUIRED") == "true"
+}
+
+// Get the version of CPK that applied the first RegistrationRequired status to this cluster.
+func RegistrationRequiredBy(cluster *v1beta1.PostgresCluster) string {
+	return cluster.Status.RegistrationRequired.PGOVersion
+}
+
 // Red Hat Marketplace requires operators to use environment variables be used
 // for any image other than the operator itself. Those variables must start with
 // "RELATED_IMAGE_" so that OSBS can transform their tag values into digests

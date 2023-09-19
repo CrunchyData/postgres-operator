@@ -192,7 +192,7 @@ func (r *Reconciler) Reconcile(
 		err                      error
 	)
 
-	// Define the function for the updating the PostgresCluster status. Returns any error that
+	// Define a function for updating PostgresCluster status. Returns any error that
 	// occurs while attempting to patch the status, while otherwise simply returning the
 	// Result and error variables that are populated while reconciling the PostgresCluster.
 	patchClusterStatus := func() (reconcile.Result, error) {
@@ -207,6 +207,21 @@ func (r *Reconciler) Reconcile(
 			log.V(1).Info("patched cluster status")
 		}
 		return result, err
+	}
+
+	if config.RegistrationRequired() {
+		if !registrationRequiredStatusFound(cluster) {
+			addRegistrationRequiredStatus(cluster)
+			return patchClusterStatus()
+		}
+
+		if shouldEncumberReconciliation(cluster) {
+			emitEncumbranceWarning(cluster, r)
+			// Encumbrance is just an early return from the reconciliation loop.
+			return patchClusterStatus()
+		} else {
+			emitAdvanceWarning(cluster, r)
+		}
 	}
 
 	// if the cluster is paused, set a condition and return

@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.2.0
 	go.opentelemetry.io/otel/trace v1.2.0
 	golang.org/x/crypto v0.11.0
+	golang.org/x/mod v0.8.0
 	gotest.tools/v3 v3.1.0
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2

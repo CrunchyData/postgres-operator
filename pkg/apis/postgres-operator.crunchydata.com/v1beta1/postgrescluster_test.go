@@ -67,7 +67,8 @@ status:
   postgresVersion: 0
   proxy:
     pgBouncer: {}
-		`)+"\n")
+  registrationRequired: {}
+	`)+"\n")
 	})
 
 	t.Run("one instance set", func(t *testing.T) {
@@ -105,7 +106,8 @@ status:
   postgresVersion: 0
   proxy:
     pgBouncer: {}
-		`)+"\n")
+  registrationRequired: {}
+	`)+"\n")
 	})
 
 	t.Run("empty proxy", func(t *testing.T) {
