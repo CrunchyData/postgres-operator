@@ -21,6 +21,7 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -41,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -163,6 +165,80 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 
 		return result
 	}
+
+	Context("New Cluster with Registration Requirement, no need to Encumber", func() {
+		var cluster *v1beta1.PostgresCluster
+
+		BeforeEach(func() {
+			// PGO_VERSION and REGISTRATION_REQUIRED will be set by OLM installers.
+			os.Setenv("PGO_VERSION", "v5.4.2")
+			os.Setenv("REGISTRATION_REQUIRED", "true")
+			cluster = create(`
+metadata:
+  name: olm
+spec:
+  postgresVersion: 13
+  image: postgres
+  instances:
+  - name: register-now
+    dataVolumeClaimSpec:
+      accessModes:
+      - "ReadWriteMany"
+      resources:
+        requests:
+          storage: 1Gi
+  backups:
+    pgbackrest:
+      image: pgbackrest
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+`)
+			Expect(reconcile(cluster)).To(BeZero())
+		})
+
+		AfterEach(func() {
+			ctx := context.Background()
+
+			if cluster != nil {
+				Expect(client.IgnoreNotFound(
+					suite.Client.Delete(ctx, cluster),
+				)).To(Succeed())
+
+				// Remove finalizers, if any, so the namespace can terminate.
+				Expect(client.IgnoreNotFound(
+					suite.Client.Patch(ctx, cluster, client.RawPatch(
+						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+				)).To(Succeed())
+			}
+			os.Unsetenv("PGO_VERSION")
+			os.Unsetenv("REGISTRATION_REQUIRED")
+		})
+
+		Specify("Cluster RegistrationRequired Status", func() {
+			existing := &v1beta1.PostgresCluster{}
+			Expect(suite.Client.Get(
+				context.Background(), client.ObjectKeyFromObject(cluster), existing,
+			)).To(Succeed())
+
+			registrationRequired := config.RegistrationRequired()
+			Expect(registrationRequired).To(BeTrue())
+
+			pgoVersion := existing.Status.RegistrationRequired.PGOVersion
+			Expect(pgoVersion).To(Equal("v5.4.2"))
+
+			shouldEncumber := shouldEncumberReconciliation(existing)
+			// Only encumber when the RegistrationRequired PGOVersion <
+			// the running CPK version.
+			Expect(shouldEncumber).To(BeFalse())
+		})
+	})
 
 	Context("Cluster", func() {
 		var cluster *v1beta1.PostgresCluster
