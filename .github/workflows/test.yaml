@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.27, v1.24]
+        kubernetes: [v1.28, v1.25]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.25, v1.24, v1.23, v1.22, v1.21]
+        kubernetes: [v1.28, v1.27, v1.26, v1.25]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
