@@ -112,6 +112,12 @@ jobs:
       - name: Build executable
         run: PGO_VERSION='${{ github.sha }}' make build-postgres-operator
 
+      - name: Get pgMonitor files.
+        run: make get-pgmonitor
+        env:
+          PGMONITOR_DIR: "${{ github.workspace }}/hack/tools/pgmonitor"
+          QUERIES_CONFIG_DIR: "${{ github.workspace }}/hack/tools/queries" 
+
       # Start a Docker container with the working directory mounted.
       - name: Start PGO
         run: |
@@ -120,6 +126,7 @@ jobs:
           hack/create-kubeconfig.sh postgres-operator pgo
           docker run --detach --network host --read-only \
             --volume "$(pwd):/mnt" --workdir '/mnt' --env 'PATH=/mnt/bin' \
+            --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
             --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
             --env 'RELATED_IMAGE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-17' \
             --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.47-0' \
@@ -133,6 +140,7 @@ jobs:
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true' \
             --name 'postgres-operator' ubuntu \
             postgres-operator
+
       - name: Install kuttl
         run: |
           curl -Lo /usr/local/bin/kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.13.0/kubectl-kuttl_0.13.0_linux_x86_64
