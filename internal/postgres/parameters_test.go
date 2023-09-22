@@ -68,3 +68,26 @@ func TestParameterSet(t *testing.T) {
 	ps2.Add("x", "n")
 	assert.Assert(t, ps2.Value("x") != ps.Value("x"))
 }
+
+func TestParameterSetAppendToList(t *testing.T) {
+	ps := NewParameterSet()
+
+	ps.AppendToList("empty")
+	assert.Assert(t, ps.Has("empty"))
+	assert.Equal(t, ps.Value("empty"), "")
+
+	ps.AppendToList("empty")
+	assert.Equal(t, ps.Value("empty"), "", "expected no change")
+
+	ps.AppendToList("full", "a")
+	assert.Equal(t, ps.Value("full"), "a")
+
+	ps.AppendToList("full", "b")
+	assert.Equal(t, ps.Value("full"), "a,b")
+
+	ps.AppendToList("full")
+	assert.Equal(t, ps.Value("full"), "a,b", "expected no change")
+
+	ps.AppendToList("full", "a", "cd", `"e"`)
+	assert.Equal(t, ps.Value("full"), `a,b,a,cd,"e"`)
+}

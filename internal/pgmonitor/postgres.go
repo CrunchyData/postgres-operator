@@ -50,14 +50,7 @@ func PostgreSQLParameters(inCluster *v1beta1.PostgresCluster, outParameters *pos
 		// Exporter expects that shared_preload_libraries are installed
 		// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
 		// pgnodemx: https://github.com/CrunchyData/pgnodemx
-		libraries := []string{"pg_stat_statements", "pgnodemx"}
-
-		defined, found := outParameters.Mandatory.Get("shared_preload_libraries")
-		if found {
-			libraries = append(libraries, defined)
-		}
-
-		outParameters.Mandatory.Add("shared_preload_libraries", strings.Join(libraries, ","))
+		outParameters.Mandatory.AppendToList("shared_preload_libraries", "pg_stat_statements", "pgnodemx")
 		outParameters.Mandatory.Add("pgnodemx.kdapi_path",
 			postgres.DownwardAPIVolumeMount().MountPath)
 	}
