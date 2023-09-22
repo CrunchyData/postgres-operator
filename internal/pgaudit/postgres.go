@@ -17,7 +17,6 @@ package pgaudit
 
 import (
 	"context"
-	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -67,7 +66,5 @@ func PostgreSQLParameters(outParameters *postgres.Parameters) {
 	// PostgreSQL must be restarted when changing this value.
 	// - https://github.com/pgaudit/pgaudit#settings
 	// - https://www.postgresql.org/docs/current/runtime-config-client.html
-	shared := outParameters.Mandatory.Value("shared_preload_libraries")
-	outParameters.Mandatory.Add("shared_preload_libraries",
-		strings.TrimPrefix(shared+",pgaudit", ","))
+	outParameters.Mandatory.AppendToList("shared_preload_libraries", "pgaudit")
 }

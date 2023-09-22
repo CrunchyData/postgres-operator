@@ -394,7 +394,7 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "postgresql.parameters: mandatory shared_preload_libraries bad type",
+			name: "postgresql.parameters: mandatory shared_preload_libraries wrong-type is ignored",
 			input: map[string]any{
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
@@ -413,6 +413,33 @@ func TestDynamicConfiguration(t *testing.T) {
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
 						"shared_preload_libraries": "mandatory",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+			},
+		},
+		{
+			name: "postgresql.parameters: shared_preload_libraries order",
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
+						"shared_preload_libraries": "given, citus, more",
+					},
+				},
+			},
+			params: postgres.Parameters{
+				Mandatory: parameters(map[string]string{
+					"shared_preload_libraries": "mandatory",
+				}),
+			},
+			expected: map[string]any{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
+						"shared_preload_libraries": "citus,mandatory,given, citus, more",
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,

@@ -227,17 +227,24 @@ func DynamicConfiguration(
 	// Override the above with mandatory parameters.
 	if pgParameters.Mandatory != nil {
 		for k, v := range pgParameters.Mandatory.AsMap() {
-			// Unlike other PostgreSQL parameters that have mandatory values,
-			// shared_preload_libraries is a comma separated list that can have
-			// other values appended in addition to the mandatory values. Below,
-			// any values provided in the CRD are appended after the mandatory
-			// values.
-			s, ok := parameters[k].(string)
-			if k == "shared_preload_libraries" && ok {
-				parameters[k] = v + "," + s
-			} else {
-				parameters[k] = v
+
+			// This parameter is a comma-separated list. Rather than overwrite the
+			// user-defined value, we want to combine it with the mandatory one.
+			// Some libraries belong at specific positions in the list, so figure
+			// that out as well.
+			if k == "shared_preload_libraries" {
+				// Load mandatory libraries ahead of user-defined libraries.
+				if s, ok := parameters[k].(string); ok && len(s) > 0 {
+					v = v + "," + s
+				}
+				// Load "citus" ahead of any other libraries.
+				// - https://github.com/citusdata/citus/blob/v12.0.0/src/backend/distributed/shared_library_init.c#L417-L419
+				if strings.Contains(v, "citus") {
+					v = "citus," + v
+				}
 			}
+
+			parameters[k] = v
 		}
 	}
 	postgresql["parameters"] = parameters
