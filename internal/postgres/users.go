@@ -66,7 +66,7 @@ CREATE TEMPORARY TABLE input (id serial, data json);
 		}
 
 		if err == nil {
-			err = encoder.Encode(map[string]interface{}{
+			err = encoder.Encode(map[string]any{
 				"databases": databases,
 				"options":   options,
 				"username":  spec.Name,

@@ -26,7 +26,7 @@ import (
 // - kubebuilder:pruning:PreserveUnknownFields
 // - kubebuilder:validation:Schemaless
 // - kubebuilder:validation:Type=object
-type SchemalessObject map[string]interface{}
+type SchemalessObject map[string]any
 
 // DeepCopy creates a new SchemalessObject by copying the receiver.
 func (in *SchemalessObject) DeepCopy() *SchemalessObject {

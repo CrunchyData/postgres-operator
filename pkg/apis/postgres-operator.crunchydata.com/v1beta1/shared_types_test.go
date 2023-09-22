@@ -57,13 +57,13 @@ func TestSchemalessObjectDeepCopy(t *testing.T) {
 	}
 	{
 		change := *one.DeepCopy()
-		change["arr"].([]interface{})[0] = "rock"
+		change["arr"].([]any)[0] = "rock"
 		assert.Assert(t, reflect.DeepEqual(one, same))
 		assert.Assert(t, !reflect.DeepEqual(one, change))
 	}
 	{
 		change := *one.DeepCopy()
-		change["arr"] = append(change["arr"].([]interface{}), "more")
+		change["arr"] = append(change["arr"].([]any), "more")
 		assert.Assert(t, reflect.DeepEqual(one, same))
 		assert.Assert(t, !reflect.DeepEqual(one, change))
 	}

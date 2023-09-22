@@ -29,7 +29,7 @@ type Comparison = gotest.Comparison
 // map, slice, or array. See [gotest.tools/v3/assert/cmp.Contains]. When either
 // item or collection is a multi-line string, the failure message contains a
 // multi-line report of the differences.
-func Contains(collection, item interface{}) Comparison {
+func Contains(collection, item any) Comparison {
 	cString, cStringOK := collection.(string)
 	iString, iStringOK := item.(string)
 
@@ -43,7 +43,7 @@ func Contains(collection, item interface{}) Comparison {
 --- {{ with callArg 0 }}{{ formatNode . }}{{else}}←{{end}} string does not contain
 +++ {{ with callArg 1 }}{{ formatNode . }}{{else}}→{{end}} substring
 {{ .Data.diff }}`,
-					map[string]interface{}{
+					map[string]any{
 						"diff": gocmp.Diff(collection, item),
 					})
 			}
@@ -57,12 +57,12 @@ func Contains(collection, item interface{}) Comparison {
 // succeeds if the values are equal. The comparison can be customized using
 // comparison Options. See [github.com/google/go-cmp/cmp.Option] constructors
 // and [github.com/google/go-cmp/cmp/cmpopts].
-func DeepEqual(x, y interface{}, opts ...gocmp.Option) Comparison {
+func DeepEqual(x, y any, opts ...gocmp.Option) Comparison {
 	return gotest.DeepEqual(x, y, opts...)
 }
 
 // MarshalMatches converts actual to YAML and compares that to expected.
-func MarshalMatches(actual interface{}, expected string) Comparison {
+func MarshalMatches(actual any, expected string) Comparison {
 	b, err := yaml.Marshal(actual)
 	if err != nil {
 		return func() gotest.Result { return gotest.ResultFromError(err) }
@@ -73,6 +73,6 @@ func MarshalMatches(actual interface{}, expected string) Comparison {
 // Regexp succeeds if value contains any match of the regular expression re.
 // The regular expression may be a *regexp.Regexp or a string that is a valid
 // regexp pattern.
-func Regexp(re interface{}, value string) Comparison {
+func Regexp(re any, value string) Comparison {
 	return gotest.Regexp(re, value)
 }

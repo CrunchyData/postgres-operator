@@ -212,7 +212,7 @@ func TestExecutorReplaceConfiguration(t *testing.T) {
 	}
 
 	actual := Executor(exec).ReplaceConfiguration(
-		context.Background(), map[string]interface{}{"some": "values"})
+		context.Background(), map[string]any{"some": "values"})
 
 	assert.Equal(t, expected, actual, "should call exec")
 }
