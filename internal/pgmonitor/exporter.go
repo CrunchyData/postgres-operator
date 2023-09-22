@@ -122,6 +122,9 @@ func GenerateDefaultExporterQueries(ctx context.Context, cluster *v1beta1.Postgr
 // the source queries files.
 func ExporterStartCommand(commandFlags []string) []string {
 	script := strings.Join([]string{
+		// Older images do not have the command on the PATH.
+		`PATH="$PATH:$(echo /opt/cpm/bin/postgres_exporter-*)"`,
+
 		// Set up temporary file to hold postgres_exporter process id
 		`POSTGRES_EXPORTER_PIDFILE=/tmp/postgres_exporter.pid`,
 
