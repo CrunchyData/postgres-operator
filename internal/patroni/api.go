@@ -34,7 +34,7 @@ type API interface {
 	ChangePrimaryAndWait(ctx context.Context, current, next string) (bool, error)
 
 	// ReplaceConfiguration replaces Patroni's entire dynamic configuration.
-	ReplaceConfiguration(ctx context.Context, configuration map[string]interface{}) error
+	ReplaceConfiguration(ctx context.Context, configuration map[string]any) error
 }
 
 // Executor implements API by calling "patronictl".
@@ -137,7 +137,7 @@ func (exec Executor) FailoverAndWait(
 // ReplaceConfiguration replaces Patroni's entire dynamic configuration by
 // calling "patronictl". Similar to the "POST /switchover" REST endpoint.
 func (exec Executor) ReplaceConfiguration(
-	ctx context.Context, configuration map[string]interface{},
+	ctx context.Context, configuration map[string]any,
 ) error {
 	var stdin, stdout, stderr bytes.Buffer
 

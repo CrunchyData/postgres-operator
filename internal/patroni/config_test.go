@@ -156,7 +156,6 @@ watchdog:
 func TestDynamicConfiguration(t *testing.T) {
 	t.Parallel()
 
-	newInt32 := func(i int32) *int32 { return &i }
 	parameters := func(in map[string]string) *postgres.ParameterSet {
 		out := postgres.NewParameterSet()
 		for k, v := range in {
@@ -168,18 +167,18 @@ func TestDynamicConfiguration(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
 		cluster  *v1beta1.PostgresCluster
-		input    map[string]interface{}
+		input    map[string]any
 		hbas     postgres.HBAs
 		params   postgres.Parameters
-		expected map[string]interface{}
+		expected map[string]any
 	}{
 		{
 			name: "empty is valid",
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
@@ -188,15 +187,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "top-level passes through",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"retry_timeout": 5,
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait":     int32(10),
 				"ttl":           int32(30),
 				"retry_timeout": 5,
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
@@ -208,20 +207,20 @@ func TestDynamicConfiguration(t *testing.T) {
 			cluster: &v1beta1.PostgresCluster{
 				Spec: v1beta1.PostgresClusterSpec{
 					Patroni: &v1beta1.PatroniSpec{
-						LeaderLeaseDurationSeconds: newInt32(99),
-						SyncPeriodSeconds:          newInt32(8),
+						LeaderLeaseDurationSeconds: initialize.Int32(99),
+						SyncPeriodSeconds:          initialize.Int32(8),
 					},
 				},
 			},
-			input: map[string]interface{}{
+			input: map[string]any{
 				"loop_wait": 3,
 				"ttl":       "nope",
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(8),
 				"ttl":       int32(99),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
@@ -230,14 +229,14 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql: wrong-type is ignored",
-			input: map[string]interface{}{
+			input: map[string]any{
 				"postgresql": true,
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
@@ -246,17 +245,17 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql: defaults and overrides",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
 					"use_pg_rewind": "overridden",
 					"use_slots":     "input",
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     "input",
@@ -265,16 +264,16 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: wrong-type is ignored",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
 					"parameters": true,
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
@@ -283,19 +282,19 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: input passes through",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"something": "str",
 						"another":   5,
 					},
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"something": "str",
 						"another":   5,
 					},
@@ -307,9 +306,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: input overrides default",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"something": "str",
 						"another":   5,
 					},
@@ -321,11 +320,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					"unrelated": "default",
 				}),
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"something": "str",
 						"another":   5,
 						"unrelated": "default",
@@ -338,9 +337,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: mandatory overrides input",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"something": "str",
 						"another":   5,
 					},
@@ -352,11 +351,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					"unrelated": "setting",
 				}),
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"something": "overrides",
 						"another":   5,
 						"unrelated": "setting",
@@ -369,9 +368,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: mandatory shared_preload_libraries",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"shared_preload_libraries": "given",
 					},
 				},
@@ -381,11 +380,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					"shared_preload_libraries": "mandatory",
 				}),
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"shared_preload_libraries": "mandatory,given",
 					},
 					"pg_hba":        []string{},
@@ -396,9 +395,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: mandatory shared_preload_libraries bad type",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"shared_preload_libraries": 1,
 					},
 				},
@@ -408,11 +407,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					"shared_preload_libraries": "mandatory",
 				}),
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"shared_preload_libraries": "mandatory",
 					},
 					"pg_hba":        []string{},
@@ -423,16 +422,16 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: wrong-type is ignored",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
 					"pg_hba": true,
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
@@ -441,8 +440,8 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: default when no input",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
+			input: map[string]any{
+				"postgresql": map[string]any{
 					"pg_hba": nil,
 				},
 			},
@@ -451,11 +450,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					*postgres.NewHBA().Local().Method("peer"),
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters": map[string]any{},
 					"pg_hba": []string{
 						"local all all peer",
 					},
@@ -466,9 +465,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: no default when input",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"pg_hba": []interface{}{"custom"},
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"pg_hba": []any{"custom"},
 				},
 			},
 			hbas: postgres.HBAs{
@@ -476,11 +475,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					*postgres.NewHBA().Local().Method("peer"),
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters": map[string]any{},
 					"pg_hba": []string{
 						"custom",
 					},
@@ -491,9 +490,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: mandatory before others",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"pg_hba": []interface{}{"custom"},
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"pg_hba": []any{"custom"},
 				},
 			},
 			hbas: postgres.HBAs{
@@ -501,11 +500,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					*postgres.NewHBA().Local().Method("peer"),
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters": map[string]any{},
 					"pg_hba": []string{
 						"local all all peer",
 						"custom",
@@ -517,9 +516,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: ignore non-string types",
-			input: map[string]interface{}{
-				"postgresql": map[string]interface{}{
-					"pg_hba": []interface{}{1, true, "custom", map[string]string{}, []string{}},
+			input: map[string]any{
+				"postgresql": map[string]any{
+					"pg_hba": []any{1, true, "custom", map[string]string{}, []string{}},
 				},
 			},
 			hbas: postgres.HBAs{
@@ -527,11 +526,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					*postgres.NewHBA().Local().Method("peer"),
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters": map[string]any{},
 					"pg_hba": []string{
 						"local all all peer",
 						"custom",
@@ -543,21 +542,21 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "standby_cluster: input passes through",
-			input: map[string]interface{}{
-				"standby_cluster": map[string]interface{}{
+			input: map[string]any{
+				"standby_cluster": map[string]any{
 					"primary_slot_name": "str",
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
 				},
-				"standby_cluster": map[string]interface{}{
+				"standby_cluster": map[string]any{
 					"primary_slot_name": "str",
 				},
 			},
@@ -572,8 +571,8 @@ func TestDynamicConfiguration(t *testing.T) {
 					},
 				},
 			},
-			input: map[string]interface{}{
-				"standby_cluster": map[string]interface{}{
+			input: map[string]any{
+				"standby_cluster": map[string]any{
 					"restore_command": "overridden",
 					"unrelated":       "input",
 				},
@@ -583,18 +582,18 @@ func TestDynamicConfiguration(t *testing.T) {
 					"restore_command": "mandatory",
 				}),
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"restore_command": "mandatory",
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
 				},
-				"standby_cluster": map[string]interface{}{
+				"standby_cluster": map[string]any{
 					"create_replica_methods": []string{"pgbackrest"},
 					"restore_command":        "mandatory",
 					"unrelated":              "input",
@@ -612,8 +611,8 @@ func TestDynamicConfiguration(t *testing.T) {
 					},
 				},
 			},
-			input: map[string]interface{}{
-				"standby_cluster": map[string]interface{}{
+			input: map[string]any{
+				"standby_cluster": map[string]any{
 					"host":            "overridden",
 					"port":            int32(0000),
 					"restore_command": "overridden",
@@ -625,18 +624,18 @@ func TestDynamicConfiguration(t *testing.T) {
 					"restore_command": "mandatory",
 				}),
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"restore_command": "mandatory",
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
 				},
-				"standby_cluster": map[string]interface{}{
+				"standby_cluster": map[string]any{
 					"create_replica_methods": []string{"basebackup"},
 					"host":                   "0.0.0.0",
 					"port":                   int32(5432),
@@ -656,8 +655,8 @@ func TestDynamicConfiguration(t *testing.T) {
 					},
 				},
 			},
-			input: map[string]interface{}{
-				"standby_cluster": map[string]interface{}{
+			input: map[string]any{
+				"standby_cluster": map[string]any{
 					"host":            "overridden",
 					"port":            int32(9999),
 					"restore_command": "overridden",
@@ -669,18 +668,18 @@ func TestDynamicConfiguration(t *testing.T) {
 					"restore_command": "mandatory",
 				}),
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters": map[string]interface{}{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
 						"restore_command": "mandatory",
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
 					"use_slots":     false,
 				},
-				"standby_cluster": map[string]interface{}{
+				"standby_cluster": map[string]any{
 					"create_replica_methods": []string{"pgbackrest", "basebackup"},
 					"host":                   "0.0.0.0",
 					"port":                   int32(5432),
@@ -696,11 +695,11 @@ func TestDynamicConfiguration(t *testing.T) {
 					PostgresVersion: 10,
 				},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
-				"postgresql": map[string]interface{}{
-					"parameters":    map[string]interface{}{},
+				"postgresql": map[string]any{
+					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
 					"use_pg_rewind": false,
 					"use_slots":     false,

@@ -51,7 +51,7 @@ CREATE TEMPORARY TABLE input (id serial, data json);
 
 	for i := range databases {
 		if err == nil {
-			err = encoder.Encode(map[string]interface{}{
+			err = encoder.Encode(map[string]any{
 				"database": databases[i],
 			})
 		}

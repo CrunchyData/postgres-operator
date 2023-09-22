@@ -216,7 +216,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
-	var configuration map[string]interface{}
+	var configuration map[string]any
 	if cluster.Spec.Patroni != nil {
 		configuration = cluster.Spec.Patroni.DynamicConfiguration
 	}
