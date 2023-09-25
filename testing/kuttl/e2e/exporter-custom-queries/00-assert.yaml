@@ -51,4 +51,4 @@ commands:
     }
 
     pid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
-    kubectl annotate -n ${NAMESPACE} ${pod} oldpid=${pid}
+    kubectl annotate --overwrite -n ${NAMESPACE} ${pod} oldpid=${pid}

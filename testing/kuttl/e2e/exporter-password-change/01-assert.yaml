@@ -20,7 +20,7 @@ commands:
     }
 
     pid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
-    kubectl annotate -n ${NAMESPACE} ${pod} oldpid=${pid}
+    kubectl annotate --overwrite -n ${NAMESPACE} ${pod} oldpid=${pid}
 collectors:
 - type: pod
   selector: "postgres-operator.crunchydata.com/cluster=exporter-password-change,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true"
