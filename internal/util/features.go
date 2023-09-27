@@ -43,6 +43,9 @@ const (
 	// Enables support of custom sidecars for pgBouncer Pods
 	PGBouncerSidecars featuregate.Feature = "PGBouncerSidecars"
 	//
+	// Enables support of standalone pgAdmin instances
+	StandalonePGAdmin featuregate.Feature = "StandalonePGAdmin"
+	//
 	// Enables support of tablespace volumes
 	TablespaceVolumes featuregate.Feature = "TablespaceVolumes"
 )
@@ -58,6 +61,7 @@ var pgoFeatures = map[featuregate.Feature]featuregate.FeatureSpec{
 	AppendCustomQueries: {Default: false, PreRelease: featuregate.Alpha},
 	BridgeIdentifiers:   {Default: false, PreRelease: featuregate.Alpha},
 	InstanceSidecars:    {Default: false, PreRelease: featuregate.Alpha},
+	StandalonePGAdmin:   {Default: false, PreRelease: featuregate.Alpha},
 	PGBouncerSidecars:   {Default: false, PreRelease: featuregate.Alpha},
 	TablespaceVolumes:   {Default: false, PreRelease: featuregate.Alpha},
 }

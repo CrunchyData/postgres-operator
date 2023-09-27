@@ -102,18 +102,40 @@ rules:
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
+  - pgadmins
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - postgres-operator.crunchydata.com
+  resources:
+  - pgadmins/finalizers
+  - pgupgrades/finalizers
+  - postgresclusters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - postgres-operator.crunchydata.com
+  resources:
+  - pgadmins/status
+  verbs:
+  - get
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - postgres-operator.crunchydata.com
+  resources:
   - pgupgrades
   verbs:
   - get
   - list
   - watch
-- apiGroups:
-  - postgres-operator.crunchydata.com
-  resources:
-  - pgupgrades/finalizers
-  - postgresclusters/finalizers
-  verbs:
-  - update
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:

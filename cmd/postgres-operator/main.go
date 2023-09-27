@@ -31,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/pgupgrade"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -148,6 +149,19 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create PGUpgrade controller")
 		os.Exit(1)
+	}
+
+	if util.DefaultMutableFeatureGate.Enabled(util.StandalonePGAdmin) {
+		pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
+			Client: mgr.GetClient(),
+			Owner:  "pgadmin-controller",
+			Scheme: mgr.GetScheme(),
+		}
+
+		if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
+			log.Error(err, "unable to create PGAdmin controller")
+			os.Exit(1)
+		}
 	}
 }
 
