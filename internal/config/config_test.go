@@ -121,6 +121,24 @@ func TestPGExporterContainerImage(t *testing.T) {
 	assert.Equal(t, PGExporterContainerImage(cluster), "spec-image")
 }
 
+func TestStandalonePGAdminContainerImage(t *testing.T) {
+	pgadmin := &v1beta1.PGAdmin{}
+
+	unsetEnv(t, "RELATED_IMAGE_STANDALONE_PGADMIN")
+	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "")
+
+	setEnv(t, "RELATED_IMAGE_STANDALONE_PGADMIN", "")
+	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "")
+
+	setEnv(t, "RELATED_IMAGE_STANDALONE_PGADMIN", "env-var-pgadmin")
+	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "env-var-pgadmin")
+
+	assert.NilError(t, yaml.Unmarshal([]byte(`{
+		image: spec-image
+	}`), &pgadmin.Spec))
+	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "spec-image")
+}
+
 func TestPostgresContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Spec.PostgresVersion = 12

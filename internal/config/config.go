@@ -56,6 +56,16 @@ func PGAdminContainerImage(cluster *v1beta1.PostgresCluster) string {
 	return defaultFromEnv(image, "RELATED_IMAGE_PGADMIN")
 }
 
+// StandalonePGAdminContainerImage returns the container image to use for pgAdmin.
+func StandalonePGAdminContainerImage(pgadmin *v1beta1.PGAdmin) string {
+	var image string
+	if pgadmin.Spec.Image != nil {
+		image = *pgadmin.Spec.Image
+	}
+
+	return defaultFromEnv(image, "RELATED_IMAGE_STANDALONE_PGADMIN")
+}
+
 // PGBouncerContainerImage returns the container image to use for pgBouncer.
 func PGBouncerContainerImage(cluster *v1beta1.PostgresCluster) string {
 	var image string

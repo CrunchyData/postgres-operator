@@ -12,12 +12,1450 @@ Packages:
 
 Resource Types:
 
+- [PGAdmin](#pgadmin)
+
 - [PGUpgrade](#pgupgrade)
 
 - [PostgresCluster](#postgrescluster)
 
 
 
+
+<h2 id="pgadmin">PGAdmin</h2>
+
+
+
+
+
+
+PGAdmin is the Schema for the pgadmins API
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>postgres-operator.crunchydata.com/v1beta1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>PGAdmin</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspec">spec</a></b></td>
+        <td>object</td>
+        <td>PGAdminSpec defines the desired state of PGAdmin</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>object</td>
+        <td>PGAdminStatus defines the observed state of PGAdmin</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspec">
+  PGAdmin.spec
+  <sup><sup><a href="#pgadmin">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+PGAdminSpec defines the desired state of PGAdmin
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinity">affinity</a></b></td>
+        <td>object</td>
+        <td>Scheduling constraints of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>image</b></td>
+        <td>string</td>
+        <td>The image name to use for standalone pgAdmin instance.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>imagePullPolicy</b></td>
+        <td>enum</td>
+        <td>ImagePullPolicy is used to determine when Kubernetes will attempt to pull (download) container images. More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecimagepullsecretsindex">imagePullSecrets</a></b></td>
+        <td>[]object</td>
+        <td>The image pull secrets used to pull from a private registry. Changing this value causes all running PGAdmin pods to restart. https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecmetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>Metadata contains metadata for custom resources</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>priorityClassName</b></td>
+        <td>string</td>
+        <td>Priority class name for the PGAdmin pod. Changing this value causes PGAdmin pod to restart. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecresources">resources</a></b></td>
+        <td>object</td>
+        <td>Resource requirements for the PGAdmin container.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspectolerationsindex">tolerations</a></b></td>
+        <td>[]object</td>
+        <td>Tolerations of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinity">
+  PGAdmin.spec.affinity
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Scheduling constraints of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinity">nodeAffinity</a></b></td>
+        <td>object</td>
+        <td>Describes node affinity scheduling rules for the pod.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinity">podAffinity</a></b></td>
+        <td>object</td>
+        <td>Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinity">podAntiAffinity</a></b></td>
+        <td>object</td>
+        <td>Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinity">
+  PGAdmin.spec.affinity.nodeAffinity
+  <sup><sup><a href="#pgadminspecaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Describes node affinity scheduling rules for the pod.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td>[]object</td>
+        <td>The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node matches the corresponding matchExpressions; the node(s) with the highest sum are the most preferred.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td>object</td>
+        <td>If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to an update), the system may or may not try to eventually evict the pod from its node.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PGAdmin.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+An empty preferred scheduling term matches all objects with implicit weight 0 (i.e. it's a no-op). A null preferred scheduling term matches no objects (i.e. is also a no-op).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">preference</a></b></td>
+        <td>object</td>
+        <td>A node selector term, associated with the corresponding weight.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>weight</b></td>
+        <td>integer</td>
+        <td>Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">
+  PGAdmin.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A node selector term, associated with the corresponding weight.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>A list of node selector requirements by node's labels.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">matchFields</a></b></td>
+        <td>[]object</td>
+        <td>A list of node selector requirements by node's fields.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchexpressionsindex">
+  PGAdmin.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreferencematchfieldsindex">
+  PGAdmin.spec.affinity.nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].preference.matchFields[index]
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinitypreferredduringschedulingignoredduringexecutionindexpreference">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">
+  PGAdmin.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to an update), the system may or may not try to eventually evict the pod from its node.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">nodeSelectorTerms</a></b></td>
+        <td>[]object</td>
+        <td>Required. A list of node selector terms. The terms are ORed.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">
+  PGAdmin.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index]
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecution">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A null or empty node selector term matches no objects. The requirements of them are ANDed. The TopologySelectorTerm type implements a subset of the NodeSelectorTerm.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>A list of node selector requirements by node's labels.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">matchFields</a></b></td>
+        <td>[]object</td>
+        <td>A list of node selector requirements by node's fields.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchexpressionsindex">
+  PGAdmin.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindexmatchfieldsindex">
+  PGAdmin.spec.affinity.nodeAffinity.requiredDuringSchedulingIgnoredDuringExecution.nodeSelectorTerms[index].matchFields[index]
+  <sup><sup><a href="#pgadminspecaffinitynodeaffinityrequiredduringschedulingignoredduringexecutionnodeselectortermsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A node selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists, DoesNotExist. Gt, and Lt.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>An array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. If the operator is Gt or Lt, the values array must have a single element, which will be interpreted as an integer. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinity">
+  PGAdmin.spec.affinity.podAffinity
+  <sup><sup><a href="#pgadminspecaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Describes pod affinity scheduling rules (e.g. co-locate this pod in the same node, zone, etc. as some other pod(s)).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td>[]object</td>
+        <td>The scheduler will prefer to schedule pods to nodes that satisfy the affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the node(s) with the highest sum are the most preferred.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td>[]object</td>
+        <td>If the affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to a pod label update), the system may or may not try to eventually evict the pod from its node. When there are multiple elements, the lists of nodes corresponding to each podAffinityTerm are intersected, i.e. all terms must be satisfied.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PGAdmin.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#pgadminspecaffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">podAffinityTerm</a></b></td>
+        <td>object</td>
+        <td>Required. A pod affinity term, associated with the corresponding weight.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>weight</b></td>
+        <td>integer</td>
+        <td>weight associated with matching the corresponding podAffinityTerm, in the range 1-100.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PGAdmin.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Required. A pod affinity term, associated with the corresponding weight.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>topologyKey</b></td>
+        <td>string</td>
+        <td>This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over a set of resources, in this case pods.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespaces</b></td>
+        <td>[]string</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PGAdmin.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over a set of resources, in this case pods.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PGAdmin.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PGAdmin.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#pgadminspecaffinitypodaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines a set of pods (namely those matching the labelSelector relative to the given namespace(s)) that this pod should be co-located (affinity) or not co-located (anti-affinity) with, where co-located is defined as running on a node whose value of the label with key <topologyKey> matches that of any node on which a pod of the set of pods is running
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>topologyKey</b></td>
+        <td>string</td>
+        <td>This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over a set of resources, in this case pods.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespaces</b></td>
+        <td>[]string</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PGAdmin.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over a set of resources, in this case pods.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PGAdmin.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinity">
+  PGAdmin.spec.affinity.podAntiAffinity
+  <sup><sup><a href="#pgadminspecaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Describes pod anti-affinity scheduling rules (e.g. avoid putting this pod in the same node, zone, etc. as some other pod(s)).
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">preferredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td>[]object</td>
+        <td>The scheduler will prefer to schedule pods to nodes that satisfy the anti-affinity expressions specified by this field, but it may choose a node that violates one or more of the expressions. The node that is most preferred is the one with the greatest sum of weights, i.e. for each node that meets all of the scheduling requirements (resource request, requiredDuringScheduling anti-affinity expressions, etc.), compute a sum by iterating through the elements of this field and adding "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the node(s) with the highest sum are the most preferred.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">requiredDuringSchedulingIgnoredDuringExecution</a></b></td>
+        <td>[]object</td>
+        <td>If the anti-affinity requirements specified by this field are not met at scheduling time, the pod will not be scheduled onto the node. If the anti-affinity requirements specified by this field cease to be met at some point during pod execution (e.g. due to a pod label update), the system may or may not try to eventually evict the pod from its node. When there are multiple elements, the lists of nodes corresponding to each podAffinityTerm are intersected, i.e. all terms must be satisfied.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">
+  PGAdmin.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The weights of all of the matched WeightedPodAffinityTerm fields are added per-node to find the most preferred node(s)
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">podAffinityTerm</a></b></td>
+        <td>object</td>
+        <td>Required. A pod affinity term, associated with the corresponding weight.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>weight</b></td>
+        <td>integer</td>
+        <td>weight associated with matching the corresponding podAffinityTerm, in the range 1-100.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">
+  PGAdmin.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Required. A pod affinity term, associated with the corresponding weight.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>topologyKey</b></td>
+        <td>string</td>
+        <td>This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over a set of resources, in this case pods.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespaces</b></td>
+        <td>[]string</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">
+  PGAdmin.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over a set of resources, in this case pods.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.labelSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">
+  PGAdmin.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinityterm">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution[index].podAffinityTerm.namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinitypreferredduringschedulingignoredduringexecutionindexpodaffinitytermnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">
+  PGAdmin.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index]
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinity">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines a set of pods (namely those matching the labelSelector relative to the given namespace(s)) that this pod should be co-located (affinity) or not co-located (anti-affinity) with, where co-located is defined as running on a node whose value of the label with key <topologyKey> matches that of any node on which a pod of the set of pods is running
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>topologyKey</b></td>
+        <td>string</td>
+        <td>This pod should be co-located (affinity) or not co-located (anti-affinity) with the pods matching the labelSelector in the specified namespaces, where co-located is defined as running on a node whose value of the label with key topologyKey matches that of any node on which any of the selected pods is running. Empty topologyKey is not allowed.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">labelSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over a set of resources, in this case pods.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">namespaceSelector</a></b></td>
+        <td>object</td>
+        <td>A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>namespaces</b></td>
+        <td>[]string</td>
+        <td>namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means "this pod's namespace".</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">
+  PGAdmin.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over a set of resources, in this case pods.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].labelSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexlabelselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">
+  PGAdmin.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselectormatchexpressionsindex">
+  PGAdmin.spec.affinity.podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution[index].namespaceSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecaffinitypodantiaffinityrequiredduringschedulingignoredduringexecutionindexnamespaceselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecimagepullsecretsindex">
+  PGAdmin.spec.imagePullSecrets[index]
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecmetadata">
+  PGAdmin.spec.metadata
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Metadata contains metadata for custom resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecresources">
+  PGAdmin.spec.resources
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Resource requirements for the PGAdmin container.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspectolerationsindex">
+  PGAdmin.spec.tolerations[index]
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+The pod this Toleration is attached to tolerates any taint that matches the triple <key,value,effect> using the matching operator <operator>.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>effect</b></td>
+        <td>string</td>
+        <td>Effect indicates the taint effect to match. Empty means match all taint effects. When specified, allowed values are NoSchedule, PreferNoSchedule and NoExecute.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>Key is the taint key that the toleration applies to. Empty means match all taint keys. If the key is empty, operator must be Exists; this combination means to match all values and all keys.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>Operator represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal. Exists is equivalent to wildcard for value, so that a pod can tolerate all taints of a particular category.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>tolerationSeconds</b></td>
+        <td>integer</td>
+        <td>TolerationSeconds represents the period of time the toleration (which must be of effect NoExecute, otherwise this field is ignored) tolerates the taint. By default, it is not set, which means tolerate the taint forever (do not evict). Zero and negative values will be treated as 0 (evict immediately) by the system.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>value</b></td>
+        <td>string</td>
+        <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
 
 <h2 id="pgupgrade">PGUpgrade</h2>
 
