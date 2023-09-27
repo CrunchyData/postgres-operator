@@ -1568,7 +1568,11 @@ func (in *PostgresClusterStatus) DeepCopyInto(out *PostgresClusterStatus) {
 		*out = new(PGBackRestStatus)
 		(*in).DeepCopyInto(*out)
 	}
-	out.RegistrationRequired = in.RegistrationRequired
+	if in.RegistrationRequired != nil {
+		in, out := &in.RegistrationRequired, &out.RegistrationRequired
+		*out = new(RegistrationRequirementStatus)
+		**out = **in
+	}
 	out.Proxy = in.Proxy
 	if in.UserInterface != nil {
 		in, out := &in.UserInterface, &out.UserInterface

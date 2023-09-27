@@ -29,6 +29,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors"
+
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -43,6 +44,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -102,6 +104,34 @@ func TestDeleteControlled(t *testing.T) {
 		assert.Assert(t, apierrors.IsNotFound(err), "expected NotFound, got %#v", err)
 	})
 }
+
+var olmClusterYAML = `
+metadata:
+  name: olm
+spec:
+  postgresVersion: 13
+  image: postgres
+  instances:
+  - name: register-now
+    dataVolumeClaimSpec:
+      accessModes:
+      - "ReadWriteMany"
+      resources:
+        requests:
+          storage: 1Gi
+  backups:
+    pgbackrest:
+      image: pgbackrest
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+`
 
 var _ = Describe("PostgresCluster Reconciler", func() {
 	var test struct {
@@ -166,40 +196,18 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		return result
 	}
 
-	Context("New Cluster with Registration Requirement, no need to Encumber", func() {
+	Context("New Unregistered Cluster with Registration Requirement, no Token, no need to Encumber", func() {
 		var cluster *v1beta1.PostgresCluster
 
 		BeforeEach(func() {
-			// PGO_VERSION and REGISTRATION_REQUIRED will be set by OLM installers.
-			os.Setenv("PGO_VERSION", "v5.4.2")
+			ctx := context.Background()
+			rsaKey, _ := os.ReadFile("../../../cpk_rsa_key.pub")
+			test.Reconciler.Registration = util.GetRegistration(string(rsaKey), "", logging.FromContext(ctx))
+			test.Reconciler.PGOVersion = "v5.4.2"
+
+			// REGISTRATION_REQUIRED will be set by OLM installers.
 			os.Setenv("REGISTRATION_REQUIRED", "true")
-			cluster = create(`
-metadata:
-  name: olm
-spec:
-  postgresVersion: 13
-  image: postgres
-  instances:
-  - name: register-now
-    dataVolumeClaimSpec:
-      accessModes:
-      - "ReadWriteMany"
-      resources:
-        requests:
-          storage: 1Gi
-  backups:
-    pgbackrest:
-      image: pgbackrest
-      repos:
-      - name: repo1
-        volume:
-          volumeClaimSpec:
-            accessModes:
-            - "ReadWriteOnce"
-            resources:
-              requests:
-                storage: 1Gi
-`)
+			cluster = create(olmClusterYAML)
 			Expect(reconcile(cluster)).To(BeZero())
 		})
 
@@ -217,7 +225,6 @@ spec:
 						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
 				)).To(Succeed())
 			}
-			os.Unsetenv("PGO_VERSION")
 			os.Unsetenv("REGISTRATION_REQUIRED")
 		})
 
@@ -233,10 +240,162 @@ spec:
 			pgoVersion := existing.Status.RegistrationRequired.PGOVersion
 			Expect(pgoVersion).To(Equal("v5.4.2"))
 
-			shouldEncumber := shouldEncumberReconciliation(existing)
-			// Only encumber when the RegistrationRequired PGOVersion <
-			// the running CPK version.
+			shouldEncumber := shouldEncumberReconciliation(test.Reconciler.Registration.Authenticated, existing, test.Reconciler.PGOVersion)
 			Expect(shouldEncumber).To(BeFalse())
+		})
+	})
+
+	Context("Cluster with Registration Requirement and an invalid token, must Encumber", func() {
+		var cluster *v1beta1.PostgresCluster
+
+		BeforeEach(func() {
+			test.Reconciler.PGOVersion = "v5.4.3"
+			// REGISTRATION_REQUIRED will be set by an OLM installer.
+			os.Setenv("REGISTRATION_REQUIRED", "true")
+			ctx := context.Background()
+			rsaKey, _ := os.ReadFile("../../../cpk_rsa_key.pub")
+			test.Reconciler.Registration = util.GetRegistration(string(rsaKey), "../../testing/invalid_token", logging.FromContext(ctx))
+			cluster = create(olmClusterYAML)
+			Expect(reconcile(cluster)).To(BeZero())
+		})
+
+		AfterEach(func() {
+			ctx := context.Background()
+
+			if cluster != nil {
+				Expect(client.IgnoreNotFound(
+					suite.Client.Delete(ctx, cluster),
+				)).To(Succeed())
+
+				// Remove finalizers, if any, so the namespace can terminate.
+				Expect(client.IgnoreNotFound(
+					suite.Client.Patch(ctx, cluster, client.RawPatch(
+						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+				)).To(Succeed())
+			}
+			os.Unsetenv("REGISTRATION_REQUIRED")
+		})
+
+		Specify("Cluster RegistrationRequired Status", func() {
+			existing := &v1beta1.PostgresCluster{}
+			Expect(suite.Client.Get(
+				context.Background(), client.ObjectKeyFromObject(cluster), existing,
+			)).To(Succeed())
+
+			reg := test.Reconciler.Registration
+			Expect(reg.TokenFileFound).To(BeTrue())
+			Expect(reg.Authenticated).To(BeFalse())
+			// Simulate an upgrade of the operator by bumping the Reconciler PGOVersion.
+			shouldEncumber := shouldEncumberReconciliation(reg.Authenticated, existing, "v5.4.4")
+			Expect(shouldEncumber).To(BeTrue())
+		})
+	})
+
+	Context("Old Unregistered Cluster with Registration Requirement, need to Encumber", func() {
+		var cluster *v1beta1.PostgresCluster
+
+		BeforeEach(func() {
+			test.Reconciler.PGOVersion = "v5.4.3"
+			// REGISTRATION_REQUIRED will be set by OLM installers.
+			os.Setenv("REGISTRATION_REQUIRED", "true")
+			ctx := context.Background()
+			rsaKey, _ := os.ReadFile("../../../cpk_rsa_key.pub")
+			test.Reconciler.Registration = util.GetRegistration(string(rsaKey), "", logging.FromContext(ctx))
+			test.Reconciler.PGOVersion = "v5.4.3"
+			cluster = create(olmClusterYAML)
+			Expect(reconcile(cluster)).To(BeZero())
+		})
+
+		AfterEach(func() {
+			ctx := context.Background()
+
+			if cluster != nil {
+				Expect(client.IgnoreNotFound(
+					suite.Client.Delete(ctx, cluster),
+				)).To(Succeed())
+
+				// Remove finalizers, if any, so the namespace can terminate.
+				Expect(client.IgnoreNotFound(
+					suite.Client.Patch(ctx, cluster, client.RawPatch(
+						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+				)).To(Succeed())
+			}
+			os.Unsetenv("REGISTRATION_REQUIRED")
+		})
+
+		Specify("Cluster RegistrationRequired Status", func() {
+			existing := &v1beta1.PostgresCluster{}
+			Expect(suite.Client.Get(
+				context.Background(), client.ObjectKeyFromObject(cluster), existing,
+			)).To(Succeed())
+
+			reg := test.Reconciler.Registration
+			Expect(reg.TokenFileFound).To(BeFalse())
+			Expect(reg.Authenticated).To(BeFalse())
+
+			// Simulate an upgrade of the operator.
+			shouldEncumber := shouldEncumberReconciliation(reg.Authenticated, existing, "v5.4.4")
+			Expect(shouldEncumber).To(BeTrue())
+		})
+	})
+
+	Context("New Registered Cluster with Registration Requirement, no need to Encumber", func() {
+		var cluster *v1beta1.PostgresCluster
+
+		BeforeEach(func() {
+			test.Reconciler.PGOVersion = "v5.4.2"
+			// REGISTRATION_REQUIRED will be set by OLM installers.
+			os.Setenv("REGISTRATION_REQUIRED", "true")
+
+			ctx := context.Background()
+			rsaKey, _ := os.ReadFile("../../../cpk_rsa_key.pub")
+			test.Reconciler.Registration = util.GetRegistration(string(rsaKey), "../../testing/cpk_token", logging.FromContext(ctx))
+			test.Reconciler.PGOVersion = "v5.4.3"
+
+			cluster = create(olmClusterYAML)
+			Expect(reconcile(cluster)).To(BeZero())
+		})
+
+		AfterEach(func() {
+			ctx := context.Background()
+
+			if cluster != nil {
+				Expect(client.IgnoreNotFound(
+					suite.Client.Delete(ctx, cluster),
+				)).To(Succeed())
+
+				// Remove finalizers, if any, so the namespace can terminate.
+				Expect(client.IgnoreNotFound(
+					suite.Client.Patch(ctx, cluster, client.RawPatch(
+						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+				)).To(Succeed())
+			}
+			os.Unsetenv("REGISTRATION_REQUIRED")
+		})
+
+		Specify("Cluster RegistrationRequired Status", func() {
+			existing := &v1beta1.PostgresCluster{}
+			Expect(suite.Client.Get(
+				context.Background(), client.ObjectKeyFromObject(cluster), existing,
+			)).To(Succeed())
+
+			registrationRequired := config.RegistrationRequired()
+			Expect(registrationRequired).To(BeTrue())
+
+			registrationRequiredStatus := existing.Status.RegistrationRequired
+			Expect(registrationRequiredStatus).To(BeNil())
+
+			reg := test.Reconciler.Registration
+			shouldEncumber := shouldEncumberReconciliation(reg.Authenticated, existing, "v5.4.2")
+			Expect(shouldEncumber).To(BeFalse())
+			Expect(reg.TokenFileFound).To(BeTrue())
+			Expect(reg.Authenticated).To(BeTrue())
+			Expect(reg.Aud).To(Equal("CPK"))
+			Expect(reg.Sub).To(Equal("point.of.contact@company.com"))
+			Expect(reg.Iss).To(Equal("Crunchy Data"))
+			Expect(reg.Exp).To(Equal(int64(1727451935)))
+			Expect(reg.Nbf).To(Equal(int64(1516239022)))
+			Expect(reg.Iat).To(Equal(int64(1516239022)))
 		})
 	})
 
