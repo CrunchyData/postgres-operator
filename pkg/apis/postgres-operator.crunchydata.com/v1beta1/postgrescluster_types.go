@@ -342,7 +342,7 @@ type PostgresClusterStatus struct {
 
 	// Version information for installations with a registration requirement.
 	// +optional
-	RegistrationRequired RegistrationRequirementStatus `json:"registrationRequired,omitempty"`
+	RegistrationRequired *RegistrationRequirementStatus `json:"registrationRequired,omitempty"`
 
 	// Signals the need for a token to be applied when registration is required.
 	// +optional

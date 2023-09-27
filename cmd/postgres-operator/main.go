@@ -130,10 +130,15 @@ func main() {
 func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger) {
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:      mgr.GetClient(),
-		Owner:       postgrescluster.ControllerName,
-		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
-		Tracer:      otel.Tracer(postgrescluster.ControllerName),
 		IsOpenShift: openshift,
+		Owner:       postgrescluster.ControllerName,
+		PGOVersion:  versionString,
+		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
+		// TODO(tlandreth) Replace the contents of cpk_rsa_key.pub with a key from a
+		// Crunchy authorization server.
+		Registration:    util.GetRegistration(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), log),
+		RegistrationURL: os.Getenv("REGISTRATION_URL"),
+		Tracer:          otel.Tracer(postgrescluster.ControllerName),
 	}
 
 	if err := pgReconciler.SetupWithManager(mgr); err != nil {

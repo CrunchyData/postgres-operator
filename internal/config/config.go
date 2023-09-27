@@ -36,6 +36,9 @@ func RegistrationRequired() bool {
 
 // Get the version of CPK that applied the first RegistrationRequired status to this cluster.
 func RegistrationRequiredBy(cluster *v1beta1.PostgresCluster) string {
+	if cluster.Status.RegistrationRequired == nil {
+		return ""
+	}
 	return cluster.Status.RegistrationRequired.PGOVersion
 }
 
