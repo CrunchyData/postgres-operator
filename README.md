@@ -4,6 +4,9 @@
 </p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/CrunchyData/postgres-operator)](https://goreportcard.com/report/github.com/CrunchyData/postgres-operator)
+![GitHub Repo stars](https://img.shields.io/github/stars/CrunchyData/postgres-operator)
+[![License](https://img.shields.io/github/license/CrunchyData/postgres-operator)](LICENSE.md)
+[![Discord](https://img.shields.io/discord/1068276526740676708?label=discord&logo=discord)](https://discord.gg/a7vWKG8Ec9)
 
 # Production Postgres Made Easy
 
