@@ -19,11 +19,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// PGAdminConfiguration represents pgAdmin configuration files.
+type StandalonePGAdminConfiguration struct {
+	// Files allows the user to mount projected volumes into the pgAdmin
+	// container so that files can be referenced by pgAdmin as needed.
+	Files []corev1.VolumeProjection `json:"files,omitempty"`
+
+	// A Secret containing the value for the LDAP_BIND_PASSWORD setting.
+	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
+	// +optional
+	LDAPBindPassword *corev1.SecretKeySelector `json:"ldapBindPassword,omitempty"`
+
+	// Settings for the pgAdmin server process. Keys should be uppercase and
+	// values must be constants.
+	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html
+	// +optional
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:validation:Type=object
+	Settings SchemalessObject `json:"settings,omitempty"`
+}
+
 // PGAdminSpec defines the desired state of PGAdmin
 type PGAdminSpec struct {
 
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
+
+	// Configuration settings for the pgAdmin process. Changes to any of these
+	// values will be loaded without validation. Be careful, as
+	// you may put pgAdmin into an unusable state.
+	// +optional
+	Config StandalonePGAdminConfiguration `json:"config,omitempty"`
+
+	// Defines a PersistentVolumeClaim for pgAdmin data.
+	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
+	// +kubebuilder:validation:Required
+	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
 
 	// The image name to use for standalone pgAdmin instance.
 	// +optional
@@ -57,6 +89,10 @@ type PGAdminSpec struct {
 	// +optional
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 
+	// Specification of the service that exposes pgAdmin.
+	// +optional
+	Service *ServiceSpec `json:"service,omitempty"`
+
 	// Tolerations of the PGAdmin pod.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
@@ -65,8 +101,20 @@ type PGAdminSpec struct {
 
 // PGAdminStatus defines the observed state of PGAdmin
 type PGAdminStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+
+	// conditions represent the observations of pgadmin's current state.
+	// Known .status.conditions.type are: "PersistentVolumeResizing",
+	// "Progressing", "ProxyAvailable"
+	// +optional
+	// +listType=map
+	// +listMapKey=type
+	// +operator-sdk:csv:customresourcedefinitions:type=status,xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// observedGeneration represents the .metadata.generation on which the status was based.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
 
 //+kubebuilder:object:root=true

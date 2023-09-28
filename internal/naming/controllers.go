@@ -16,5 +16,6 @@
 package naming
 
 const (
-	ControllerBridge = "bridge-controller"
+	ControllerBridge  = "bridge-controller"
+	ControllerPGAdmin = "pgadmin-controller"
 )

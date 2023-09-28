@@ -44,6 +44,7 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRestoreConfig))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGMonitorDiscovery))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPostgresUser))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelStandalonePGAdmin))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelStartupInstance))
 }
 
@@ -51,6 +52,7 @@ func TestLabelValuesValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsValidLabelValue(DataPGAdmin))
 	assert.Assert(t, nil == validation.IsValidLabelValue(DataPGBackRest))
 	assert.Assert(t, nil == validation.IsValidLabelValue(DataPostgres))
+	assert.Assert(t, nil == validation.IsValidLabelValue(DataStandalonePGAdmin))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePatroniLeader))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePatroniReplica))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePGAdmin))
@@ -60,6 +62,7 @@ func TestLabelValuesValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePostgresWAL))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePrimary))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RoleReplica))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RoleStandalonePGAdmin))
 	assert.Assert(t, nil == validation.IsValidLabelValue(string(BackupReplicaCreate)))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RoleMonitoring))
 }

@@ -1,5 +1,11 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PGAdmin
 metadata:
-  name: pgadmin
-spec: {}
+  name: rhino
+spec:
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
