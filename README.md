@@ -31,6 +31,7 @@ cd postgres-operator-examples
 ```
 
 2. Run the following commands
+
 ```sh
 kubectl apply -k kustomize/install/namespace
 kubectl apply --server-side -k kustomize/install/default
@@ -136,7 +137,6 @@ Deploy PGO to watch Postgres clusters in all of your [namespaces][k8s-namespaces
 [k8s-anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
 [k8s-namespaces]: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
 [k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
-
 [pgBackRest]: https://www.pgbackrest.org
 [pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorials/basic-setup/connection-pooling/
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
@@ -205,12 +205,12 @@ a set of contributing guidelines that you can review here:
 Once you are ready to submit a Pull Request, please ensure you do the following:
 
 1. Reviewing the [contributing guidelines](CONTRIBUTING.md) and ensure your
-that you have followed the commit message format, added testing where
-appropriate, documented your changes, etc.
+   that you have followed the commit message format, added testing where
+   appropriate, documented your changes, etc.
 1. Open up a pull request based upon the guidelines. If you are adding a new
-feature, please open up the pull request on the `master` branch.
+   feature, please open up the pull request on the `master` branch.
 1. Please be as descriptive in your pull request as possible. If you are
-referencing an issue, please be sure to include the issue in your pull request
+   referencing an issue, please be sure to include the issue in your pull request
 
 ## Support
 
@@ -240,6 +240,6 @@ When a PostgreSQL Operator general availability (GA) release occurs, the contain
 
 The image rollout can occur over the course of several days.
 
-To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers#email). You can also [join the PGO project community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join)
+To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers#email). You can also [join the PGO project community discord](https://discord.gg/a7vWKG8Ec9)
 
 The PGO Postgres Operator project source code is available subject to the [Apache 2.0 license](LICENSE.md) with the PGO logo and branding assets covered by [our trademark guidelines](docs/static/logos/TRADEMARKS.md).
