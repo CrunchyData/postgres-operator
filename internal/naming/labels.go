@@ -145,6 +145,18 @@ const (
 	BackupReplicaCreate BackupJobType = "replica-create"
 )
 
+const (
+
+	// LabelStandalonePGAdmin is used to indicate a resource for a standalone-pgadmin instance.
+	LabelStandalonePGAdmin = labelPrefix + "standalone-pgadmin"
+
+	// DataStandalonePGAdmin is a LabelData value that indicates the object has standalone-pgAdmin data.
+	DataStandalonePGAdmin = "standalone-pgadmin"
+
+	// RoleStandalonePGAdmin is the LabelRole applied to standalone-pgAdmin objects.
+	RoleStandalonePGAdmin = "standalone-pgadmin"
+)
+
 // Merge takes sets of labels and merges them. The last set
 // provided will win in case of conflicts.
 func Merge(sets ...map[string]string) labels.Set {

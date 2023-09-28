@@ -62,7 +62,7 @@ PGAdmin is the Schema for the pgadmins API
         <td>PGAdminSpec defines the desired state of PGAdmin</td>
         <td>false</td>
       </tr><tr>
-        <td><b>status</b></td>
+        <td><b><a href="#pgadminstatus">status</a></b></td>
         <td>object</td>
         <td>PGAdminStatus defines the observed state of PGAdmin</td>
         <td>false</td>
@@ -89,9 +89,19 @@ PGAdminSpec defines the desired state of PGAdmin
         </tr>
     </thead>
     <tbody><tr>
+        <td><b><a href="#pgadminspecdatavolumeclaimspec">dataVolumeClaimSpec</a></b></td>
+        <td>object</td>
+        <td>Defines a PersistentVolumeClaim for pgAdmin data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes</td>
+        <td>true</td>
+      </tr><tr>
         <td><b><a href="#pgadminspecaffinity">affinity</a></b></td>
         <td>object</td>
         <td>Scheduling constraints of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecconfig">config</a></b></td>
+        <td>object</td>
+        <td>Configuration settings for the pgAdmin process. Changes to any of these values will be loaded without validation. Be careful, as you may put pgAdmin into an unusable state.</td>
         <td>false</td>
       </tr><tr>
         <td><b>image</b></td>
@@ -124,9 +134,251 @@ PGAdminSpec defines the desired state of PGAdmin
         <td>Resource requirements for the PGAdmin container.</td>
         <td>false</td>
       </tr><tr>
+        <td><b><a href="#pgadminspecservice">service</a></b></td>
+        <td>object</td>
+        <td>Specification of the service that exposes pgAdmin.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#pgadminspectolerationsindex">tolerations</a></b></td>
         <td>[]object</td>
         <td>Tolerations of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecdatavolumeclaimspec">
+  PGAdmin.spec.dataVolumeClaimSpec
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Defines a PersistentVolumeClaim for pgAdmin data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>accessModes</b></td>
+        <td>[]string</td>
+        <td>accessModes contains the desired access modes the volume should have. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecdatavolumeclaimspecdatasource">dataSource</a></b></td>
+        <td>object</td>
+        <td>dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecdatavolumeclaimspecdatasourceref">dataSourceRef</a></b></td>
+        <td>object</td>
+        <td>dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecdatavolumeclaimspecresources">resources</a></b></td>
+        <td>object</td>
+        <td>resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecdatavolumeclaimspecselector">selector</a></b></td>
+        <td>object</td>
+        <td>selector is a label query over volumes to consider for binding.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>storageClassName</b></td>
+        <td>string</td>
+        <td>storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeMode</b></td>
+        <td>string</td>
+        <td>volumeMode defines what type of volume is required by the claim. Value of Filesystem is implied when not included in claim spec.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>volumeName</b></td>
+        <td>string</td>
+        <td>volumeName is the binding reference to the PersistentVolume backing this claim.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecdatavolumeclaimspecdatasource">
+  PGAdmin.spec.dataVolumeClaimSpec.dataSource
+  <sup><sup><a href="#pgadminspecdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecdatavolumeclaimspecdatasourceref">
+  PGAdmin.spec.dataVolumeClaimSpec.dataSourceRef
+  <sup><sup><a href="#pgadminspecdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef preserves all values, and generates an error if a disallowed value is specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>kind</b></td>
+        <td>string</td>
+        <td>Kind is the type of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name is the name of resource being referenced</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiGroup</b></td>
+        <td>string</td>
+        <td>APIGroup is the group for the resource being referenced. If APIGroup is not specified, the specified Kind must be in the core API group. For any other third-party types, APIGroup is required.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecdatavolumeclaimspecresources">
+  PGAdmin.spec.dataVolumeClaimSpec.resources
+  <sup><sup><a href="#pgadminspecdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>limits</b></td>
+        <td>map[string]int or string</td>
+        <td>Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>requests</b></td>
+        <td>map[string]int or string</td>
+        <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecdatavolumeclaimspecselector">
+  PGAdmin.spec.dataVolumeClaimSpec.selector
+  <sup><sup><a href="#pgadminspecdatavolumeclaimspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+selector is a label query over volumes to consider for binding.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecdatavolumeclaimspecselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecdatavolumeclaimspecselectormatchexpressionsindex">
+  PGAdmin.spec.dataVolumeClaimSpec.selector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecdatavolumeclaimspecselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
         <td>false</td>
       </tr></tbody>
 </table>
@@ -1320,6 +1572,445 @@ A label selector requirement is a selector that contains values, a key, and an o
 </table>
 
 
+<h3 id="pgadminspecconfig">
+  PGAdmin.spec.config
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Configuration settings for the pgAdmin process. Changes to any of these values will be loaded without validation. Be careful, as you may put pgAdmin into an unusable state.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecconfigfilesindex">files</a></b></td>
+        <td>[]object</td>
+        <td>Files allows the user to mount projected volumes into the pgAdmin container so that files can be referenced by pgAdmin as needed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecconfigldapbindpassword">ldapBindPassword</a></b></td>
+        <td>object</td>
+        <td>A Secret containing the value for the LDAP_BIND_PASSWORD setting. More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>settings</b></td>
+        <td>object</td>
+        <td>Settings for the pgAdmin server process. Keys should be uppercase and values must be constants. More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindex">
+  PGAdmin.spec.config.files[index]
+  <sup><sup><a href="#pgadminspecconfig">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Projection that may be projected along with other supported volume types
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexconfigmap">configMap</a></b></td>
+        <td>object</td>
+        <td>configMap information about the configMap data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexdownwardapi">downwardAPI</a></b></td>
+        <td>object</td>
+        <td>downwardAPI information about the downwardAPI data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexsecret">secret</a></b></td>
+        <td>object</td>
+        <td>secret information about the secret data to project</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexserviceaccounttoken">serviceAccountToken</a></b></td>
+        <td>object</td>
+        <td>serviceAccountToken is information about the serviceAccountToken data to project</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexconfigmap">
+  PGAdmin.spec.config.files[index].configMap
+  <sup><sup><a href="#pgadminspecconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+configMap information about the configMap data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexconfigmapitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced ConfigMap will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the ConfigMap, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>optional specify whether the ConfigMap or its keys must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexconfigmapitemsindex">
+  PGAdmin.spec.config.files[index].configMap.items[index]
+  <sup><sup><a href="#pgadminspecconfigfilesindexconfigmap">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the key to project.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexdownwardapi">
+  PGAdmin.spec.config.files[index].downwardAPI
+  <sup><sup><a href="#pgadminspecconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+downwardAPI information about the downwardAPI data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexdownwardapiitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>Items is a list of DownwardAPIVolume file</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexdownwardapiitemsindex">
+  PGAdmin.spec.config.files[index].downwardAPI.items[index]
+  <sup><sup><a href="#pgadminspecconfigfilesindexdownwardapi">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+DownwardAPIVolumeFile represents information to create the file containing the pod field
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>Required: Path is  the relative path name of the file to be created. Must not be absolute or contain the '..' path. Must be utf-8 encoded. The first item of the relative path must not start with '..'</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexdownwardapiitemsindexfieldref">fieldRef</a></b></td>
+        <td>object</td>
+        <td>Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexdownwardapiitemsindexresourcefieldref">resourceFieldRef</a></b></td>
+        <td>object</td>
+        <td>Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexdownwardapiitemsindexfieldref">
+  PGAdmin.spec.config.files[index].downwardAPI.items[index].fieldRef
+  <sup><sup><a href="#pgadminspecconfigfilesindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Required: Selects a field of the pod: only annotations, labels, name and namespace are supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>fieldPath</b></td>
+        <td>string</td>
+        <td>Path of the field to select in the specified API version.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>apiVersion</b></td>
+        <td>string</td>
+        <td>Version of the schema the FieldPath is written in terms of, defaults to "v1".</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexdownwardapiitemsindexresourcefieldref">
+  PGAdmin.spec.config.files[index].downwardAPI.items[index].resourceFieldRef
+  <sup><sup><a href="#pgadminspecconfigfilesindexdownwardapiitemsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, requests.cpu and requests.memory) are currently supported.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>resource</b></td>
+        <td>string</td>
+        <td>Required: resource to select</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>containerName</b></td>
+        <td>string</td>
+        <td>Container name: required for volumes, optional for env vars</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>divisor</b></td>
+        <td>int or string</td>
+        <td>Specifies the output format of the exposed resources, defaults to "1"</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexsecret">
+  PGAdmin.spec.config.files[index].secret
+  <sup><sup><a href="#pgadminspecconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+secret information about the secret data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecconfigfilesindexsecretitemsindex">items</a></b></td>
+        <td>[]object</td>
+        <td>items if unspecified, each key-value pair in the Data field of the referenced Secret will be projected into the volume as a file whose name is the key and content is the value. If specified, the listed keys will be projected into the specified paths, and unlisted keys will not be present. If a key is specified which is not present in the Secret, the volume setup will error unless it is marked optional. Paths must be relative and may not contain the '..' path or start with '..'.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>optional field specify whether the Secret or its key must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexsecretitemsindex">
+  PGAdmin.spec.config.files[index].secret.items[index]
+  <sup><sup><a href="#pgadminspecconfigfilesindexsecret">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Maps a string key to a path within a volume.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the key to project.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>path is the relative path of the file to map the key to. May not be an absolute path. May not contain the path element '..'. May not start with the string '..'.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>mode</b></td>
+        <td>integer</td>
+        <td>mode is Optional: mode bits used to set permissions on this file. Must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigfilesindexserviceaccounttoken">
+  PGAdmin.spec.config.files[index].serviceAccountToken
+  <sup><sup><a href="#pgadminspecconfigfilesindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+serviceAccountToken is information about the serviceAccountToken data to project
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>path</b></td>
+        <td>string</td>
+        <td>path is the path relative to the mount point of the file to project the token into.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>audience</b></td>
+        <td>string</td>
+        <td>audience is the intended audience of the token. A recipient of a token must identify itself with an identifier specified in the audience of the token, and otherwise should reject the token. The audience defaults to the identifier of the apiserver.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>expirationSeconds</b></td>
+        <td>integer</td>
+        <td>expirationSeconds is the requested duration of validity of the service account token. As the token approaches expiration, the kubelet volume plugin will proactively rotate the service account token. The kubelet will start trying to rotate the token if the token is older than 80 percent of its time to live or if the token is older than 24 hours.Defaults to 1 hour and must be at least 10 minutes.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecconfigldapbindpassword">
+  PGAdmin.spec.config.ldapBindPassword
+  <sup><sup><a href="#pgadminspecconfig">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A Secret containing the value for the LDAP_BIND_PASSWORD setting. More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>The key of the secret to select from.  Must be a valid secret key.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>optional</b></td>
+        <td>boolean</td>
+        <td>Specify whether the Secret or its key must be defined</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="pgadminspecimagepullsecretsindex">
   PGAdmin.spec.imagePullSecrets[index]
   <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
@@ -1411,6 +2102,75 @@ Resource requirements for the PGAdmin container.
 </table>
 
 
+<h3 id="pgadminspecservice">
+  PGAdmin.spec.service
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Specification of the service that exposes pgAdmin.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecservicemetadata">metadata</a></b></td>
+        <td>object</td>
+        <td>Metadata contains metadata for custom resources</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>nodePort</b></td>
+        <td>integer</td>
+        <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>enum</td>
+        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecservicemetadata">
+  PGAdmin.spec.service.metadata
+  <sup><sup><a href="#pgadminspecservice">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Metadata contains metadata for custom resources
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>labels</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
 <h3 id="pgadminspectolerationsindex">
   PGAdmin.spec.tolerations[index]
   <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
@@ -1453,6 +2213,91 @@ The pod this Toleration is attached to tolerates any taint that matches the trip
         <td><b>value</b></td>
         <td>string</td>
         <td>Value is the taint value the toleration matches to. If the operator is Exists, the value should be empty, otherwise just a regular string.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminstatus">
+  PGAdmin.status
+  <sup><sup><a href="#pgadmin">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+PGAdminStatus defines the observed state of PGAdmin
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminstatusconditionsindex">conditions</a></b></td>
+        <td>[]object</td>
+        <td>conditions represent the observations of pgadmin's current state. Known .status.conditions.type are: "PersistentVolumeResizing", "Progressing", "ProxyAvailable"</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>observedGeneration represents the .metadata.generation on which the status was based.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminstatusconditionsindex">
+  PGAdmin.status.conditions[index]
+  <sup><sup><a href="#pgadminstatus">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{ // Represents the observations of a foo's current state. // Known .status.conditions.type are: "Available", "Progressing", and "Degraded" // +patchMergeKey=type // +patchStrategy=merge // +listType=map // +listMapKey=type Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"` 
+ // other fields }
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>lastTransitionTime</b></td>
+        <td>string</td>
+        <td>lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>message</b></td>
+        <td>string</td>
+        <td>message is a human readable message indicating details about the transition. This may be an empty string.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>reason</b></td>
+        <td>string</td>
+        <td>reason contains a programmatic identifier indicating the reason for the condition's last transition. Producers of specific condition types may define expected values and meanings for this field, and whether the values are considered a guaranteed API. The value should be a CamelCase string. This field may not be empty.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>status</b></td>
+        <td>enum</td>
+        <td>status of the condition, one of True, False, Unknown.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>type</b></td>
+        <td>string</td>
+        <td>type of condition in CamelCase or in foo.example.com/CamelCase. --- Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be useful (see .node.status.conditions), the ability to deconflict is important. The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>observedGeneration</b></td>
+        <td>integer</td>
+        <td>observedGeneration represents the .metadata.generation that the condition was set based upon. For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date with respect to the current state of the instance.</td>
         <td>false</td>
       </tr></tbody>
 </table>

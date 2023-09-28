@@ -568,6 +568,38 @@ func MovePGBackRestRepoDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMet
 	}
 }
 
+// StandalonePGAdminCommonLabels returns the ObjectMeta used for the standalone
+// pgAdmin StatefulSet and Pod.
+func StandalonePGAdminCommonLabels(pgadmin *v1beta1.PGAdmin) map[string]string {
+	return map[string]string{
+		LabelStandalonePGAdmin: pgadmin.Name,
+		LabelData:              DataStandalonePGAdmin,
+		LabelRole:              RoleStandalonePGAdmin,
+	}
+}
+
+// StandalonePGAdmin returns the ObjectMeta necessary to lookup the ConfigMap,
+// Service, StatefulSet, or Volume for the cluster's pgAdmin user interface.
+func StandalonePGAdmin(pgadmin *v1beta1.PGAdmin) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: pgadmin.Namespace,
+		Name:      pgadmin.Name + "-standalone-pgadmin",
+	}
+}
+
+// StandalonePGAdminService returns the ObjectMeta necessary to lookup the Service
+// that is responsible for the network identity of Pods.
+func StandalonePGAdminService(pgadmin *v1beta1.PGAdmin) metav1.ObjectMeta {
+	// The hyphen below ensures that the DNS name will not be interpreted as a
+	// top-level domain. Partially qualified requests for "{pod}.{cluster}-pods"
+	// should not leave the Kubernetes cluster, and if they do they are less
+	// likely to resolve.
+	return metav1.ObjectMeta{
+		Namespace: pgadmin.Namespace,
+		Name:      pgadmin.Name + "-standalone-pods",
+	}
+}
+
 // UpgradeCheckConfigMap returns the ObjectMeta for the PGO ConfigMap
 func UpgradeCheckConfigMap() metav1.ObjectMeta {
 	return metav1.ObjectMeta{
