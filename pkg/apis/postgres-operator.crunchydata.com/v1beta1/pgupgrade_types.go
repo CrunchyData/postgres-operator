@@ -59,7 +59,7 @@ type PGUpgradeSpec struct {
 	// The major version of PostgreSQL before the upgrade.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=10
-	// +kubebuilder:validation:Maximum=15
+	// +kubebuilder:validation:Maximum=16
 	FromPostgresVersion int `json:"fromPostgresVersion"`
 
 	// TODO(benjaminjb): define webhook validation to make sure
@@ -70,7 +70,7 @@ type PGUpgradeSpec struct {
 	// The major version of PostgreSQL to be upgraded to.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=10
-	// +kubebuilder:validation:Maximum=15
+	// +kubebuilder:validation:Maximum=16
 	ToPostgresVersion int `json:"toPostgresVersion"`
 
 	// The image name to use for PostgreSQL containers after upgrade.

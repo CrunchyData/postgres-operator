@@ -6,7 +6,7 @@ PGO_IMAGE_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kub
 PGO_IMAGE_PREFIX ?= localhost
 
 PGMONITOR_DIR ?= hack/tools/pgmonitor
-PGMONITOR_VERSION ?= v4.9.0
+PGMONITOR_VERSION ?= v4.10.0
 QUERIES_CONFIG_DIR ?= hack/tools/queries
 
 # Buildah's "build" used to be "bud". Use the alias to be compatible for a while.
@@ -233,6 +233,7 @@ generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	bash -ceu ' \
 	case $(KUTTL_PG_VERSION) in \
+	16 ) export KUTTL_BITNAMI_IMAGE_TAG=16.0.0-debian-11-r3 ;; \
 	15 ) export KUTTL_BITNAMI_IMAGE_TAG=15.0.0-debian-11-r4 ;; \
 	14 ) export KUTTL_BITNAMI_IMAGE_TAG=14.5.0-debian-11-r37 ;; \
 	13 ) export KUTTL_BITNAMI_IMAGE_TAG=13.8.0-debian-11-r39 ;; \

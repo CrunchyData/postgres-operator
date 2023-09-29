@@ -857,7 +857,7 @@ spec:
                 type: object
               fromPostgresVersion:
                 description: The major version of PostgreSQL before the upgrade.
-                maximum: 15
+                maximum: 16
                 minimum: 10
                 type: integer
               image:
@@ -937,7 +937,7 @@ spec:
                 type: string
               toPostgresVersion:
                 description: The major version of PostgreSQL to be upgraded to.
-                maximum: 15
+                maximum: 16
                 minimum: 10
                 type: integer
               tolerations:
