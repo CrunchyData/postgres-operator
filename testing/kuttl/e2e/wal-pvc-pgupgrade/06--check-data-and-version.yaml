@@ -43,7 +43,7 @@ spec:
               DECLARE
                 everything jsonb;
               BEGIN
-                SELECT jsonb_agg(important) INTO everything FROM important;
+                SELECT jsonb_agg(important) INTO everything FROM very.important;
                 ASSERT everything = '[{"data":"treasure"}]', format('got %L', everything);
               END $$$$;
 ---
@@ -103,6 +103,6 @@ spec:
               DECLARE
                 everything jsonb;
               BEGIN
-                SELECT jsonb_agg(important) INTO everything FROM important;
+                SELECT jsonb_agg(important) INTO everything FROM very.important;
                 ASSERT everything = '[{"data":"treasure"}]', format('got %L', everything);
               END $$$$;
