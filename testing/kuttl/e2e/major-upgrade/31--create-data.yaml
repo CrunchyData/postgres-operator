@@ -39,7 +39,8 @@ spec:
               END $$$$;
             - --command
             - |
-              CREATE TABLE important (data) AS VALUES ('treasure');
+              CREATE SCHEMA very;
+              CREATE TABLE very.important (data) AS VALUES ('treasure');
 ---
 apiVersion: batch/v1
 kind: Job
