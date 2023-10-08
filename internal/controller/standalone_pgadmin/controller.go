@@ -83,6 +83,9 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	_, err = r.reconcilePGAdminSecret(ctx, pgAdmin)
 
 	if err == nil {
+		_, err = r.reconcilePGAdminService(ctx, pgAdmin)
+	}
+	if err == nil {
 		configmap, err = r.reconcilePGAdminConfigMap(ctx, pgAdmin)
 	}
 	if err == nil {

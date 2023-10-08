@@ -16,5 +16,11 @@ package standalone_pgadmin
 
 const (
 	// key for standalone pgAdmin settings
-	settingsConfigMapKey = "pgadmin-settings.json"
+	settingsConfigMapKey  = "pgadmin-settings.json"
+	settingsClusterMapKey = "pgadmin-shared-clusters.json"
+
+	logVolume       = "pgadmin-log"
+	configMountPath = "/etc/pgadmin/conf.d"
+
+	pgAdminPort = 5050
 )

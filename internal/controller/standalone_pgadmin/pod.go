@@ -15,6 +15,8 @@
 package standalone_pgadmin
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -50,11 +52,21 @@ func pod(
 		Sources: podConfigFiles(inConfigMap, *inPGAdmin),
 	}
 
+	pgAdminLog := corev1.Volume{Name: logVolume}
+	pgAdminLog.EmptyDir = &corev1.EmptyDirVolumeSource{
+		Medium: corev1.StorageMediumMemory,
+	}
+
+	tmpVol := corev1.Volume{Name: "tmp"}
+	tmpVol.EmptyDir = &corev1.EmptyDirVolumeSource{
+		Medium: corev1.StorageMediumMemory,
+	}
+
 	// pgadmin container
 	container := corev1.Container{
 		Name: naming.ContainerPGAdmin,
 		// TODO(tjmoore4): Update command and image details
-		Command:         []string{"bash", "-c", "while true; do echo 'Hello!'; sleep 2; done"},
+		Command:         startupScript(inPGAdmin),
 		Image:           config.StandalonePGAdminContainerImage(inPGAdmin),
 		ImagePullPolicy: inPGAdmin.Spec.ImagePullPolicy,
 		Resources:       inPGAdmin.Spec.Resources,
@@ -63,7 +75,7 @@ func pod(
 
 		Ports: []corev1.ContainerPort{{
 			Name:          naming.PortPGAdmin,
-			ContainerPort: int32(5050),
+			ContainerPort: int32(pgAdminPort),
 			Protocol:      corev1.ProtocolTCP,
 		}},
 
@@ -81,22 +93,51 @@ func pod(
 					Key: "password",
 				}},
 			},
+			{
+				Name:  "PGADMIN_LISTEN_PORT",
+				Value: fmt.Sprintf("%d", pgAdminPort),
+			},
+			// Setting the KRB5_CONFIG for kerberos
+			// - https://web.mit.edu/kerberos/krb5-current/doc/admin/conf_files/krb5_conf.html
+			{
+				Name:  "KRB5_CONFIG",
+				Value: configMountPath + "/krb5.conf",
+			},
+			// In testing it was determined that we need to set this env var for the replay cache
+			// otherwise it defaults to the read-only location `/var/tmp/`
+			// - https://web.mit.edu/kerberos/krb5-current/doc/basic/rcache_def.html#replay-cache-types
+			{
+				Name:  "KRB5RCACHEDIR",
+				Value: "/tmp",
+			},
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      configVolumeName,
-				MountPath: "/etc/pgadmin/conf.d",
+				MountPath: configMountPath,
 				ReadOnly:  true,
 			},
 			{
 				Name:      dataVolumeName,
 				MountPath: "/var/lib/pgadmin",
 			},
+			{
+				Name:      logVolume,
+				MountPath: "/var/log/pgadmin",
+			},
+			{
+				Name:      "tmp",
+				MountPath: "/tmp",
+			},
 		},
 	}
 
 	// add volumes and containers
-	outPod.Volumes = []corev1.Volume{pgAdminData, configVolume}
+	outPod.Volumes = []corev1.Volume{pgAdminData,
+		configVolume,
+		pgAdminLog,
+		tmpVol,
+	}
 	outPod.Containers = []corev1.Container{container}
 }
 
@@ -113,7 +154,11 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 					Items: []corev1.KeyToPath{
 						{
 							Key:  settingsConfigMapKey,
-							Path: "~postgres-operator/pgadmin.json",
+							Path: fmt.Sprintf("~postgres-operator/%s", settingsConfigMapKey),
+						},
+						{
+							Key:  settingsClusterMapKey,
+							Path: fmt.Sprintf("~postgres-operator/%s", settingsClusterMapKey),
 						},
 					},
 				},
@@ -144,4 +189,21 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 	}
 
 	return config
+}
+
+func startupScript(pgadmin *v1beta1.PGAdmin) []string {
+	var script = `
+PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
+
+echo "Running pgAdmin4 Setup"
+python3 ${PGADMIN_DIR}/setup.py
+
+echo "Starting pgAdmin4"
+PGADMIN4_PIDFILE=/tmp/pgadmin4.pid
+pgadmin4
+echo $! > $PGADMIN4_PIDFILE
+`
+	wrapper := `monitor() {` + script + `}; export cluster_file="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
+
+	return []string{"bash", "-ceu", "--", wrapper, "pgadmin", fmt.Sprintf("%s/~postgres-operator/%s", configMountPath, settingsClusterMapKey)}
 }
