@@ -192,7 +192,9 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 }
 
 func startupScript(pgadmin *v1beta1.PGAdmin) []string {
-	var script = `
+	var loadServerCommand = fmt.Sprintf("python3 ${PGADMIN_DIR}/setup.py --load-servers %s/~postgres-operator/%s --user %s --replace", configMountPath, settingsClusterMapKey, pgadmin.Spec.AdminUsername)
+
+	var script = fmt.Sprintf(`
 PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
 
 echo "Running pgAdmin4 Setup"
@@ -200,9 +202,27 @@ python3 ${PGADMIN_DIR}/setup.py
 
 echo "Starting pgAdmin4"
 PGADMIN4_PIDFILE=/tmp/pgadmin4.pid
-pgadmin4
+pgadmin4 &
 echo $! > $PGADMIN4_PIDFILE
-`
+
+%s
+
+exec {fd}<> <(:)
+while read -r -t 5 -u "${fd}" || true; do
+	if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && %s
+	then
+		exec {fd}>&- && exec {fd}<> <(:)
+		stat --format='Loaded shared servers dated %%y' "${cluster_file}"
+	fi
+	if [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]
+	then
+		pgadmin4 &
+		echo $! > $PGADMIN4_PIDFILE
+		echo "Restarting pgAdmin4"
+	fi
+done
+`, loadServerCommand, loadServerCommand)
+
 	wrapper := `monitor() {` + script + `}; export cluster_file="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
 
 	return []string{"bash", "-ceu", "--", wrapper, "pgadmin", fmt.Sprintf("%s/~postgres-operator/%s", configMountPath, settingsClusterMapKey)}

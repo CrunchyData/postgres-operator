@@ -47,8 +47,22 @@ func TestPod(t *testing.T) {
 containers:
 - command:
   - bash
-  - -c
-  - while true; do echo 'Hello!'; sleep 2; done
+  - -ceu
+  - --
+  - "monitor() {\nPGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4\n\necho
+    \"Running pgAdmin4 Setup\"\npython3 ${PGADMIN_DIR}/setup.py\n\necho \"Starting
+    pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4 &\necho $! > $PGADMIN4_PIDFILE\n\npython3
+    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgo.com --replace\n\nexec {fd}<> <(:)\nwhile read -r -t 5 -u \"${fd}\"
+    || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\" ] && python3
+    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgo.com --replace\n\tthen\n\t\texec {fd}>&- && exec {fd}<> <(:)\n\t\tstat
+    --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif [ !
+    -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! > $PGADMIN4_PIDFILE\n\t\techo
+    \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\"; export -f
+    monitor; exec -a \"$0\" bash -ceu monitor"
+  - pgadmin
+  - /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
   env:
   - name: PGADMIN_SETUP_EMAIL
     value: admin@pgo.com
@@ -57,6 +71,12 @@ containers:
       secretKeyRef:
         key: password
         name: pgadmin-standalone-pgadmin
+  - name: PGADMIN_LISTEN_PORT
+    value: "5050"
+  - name: KRB5_CONFIG
+    value: /etc/pgadmin/conf.d/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   name: pgadmin
   ports:
   - containerPort: 5050
@@ -77,6 +97,10 @@ containers:
     readOnly: true
   - mountPath: /var/lib/pgadmin
     name: standalone-pgadmin-data
+  - mountPath: /var/log/pgadmin
+    name: pgadmin-log
+  - mountPath: /tmp
+    name: tmp
 volumes:
 - name: standalone-pgadmin-data
   persistentVolumeClaim:
@@ -87,7 +111,15 @@ volumes:
     - configMap:
         items:
         - key: pgadmin-settings.json
-          path: ~postgres-operator/pgadmin.json
+          path: ~postgres-operator/pgadmin-settings.json
+        - key: pgadmin-shared-clusters.json
+          path: ~postgres-operator/pgadmin-shared-clusters.json
+- emptyDir:
+    medium: Memory
+  name: pgadmin-log
+- emptyDir:
+    medium: Memory
+  name: tmp
 `))
 
 		// No change when called again.
@@ -110,8 +142,22 @@ volumes:
 containers:
 - command:
   - bash
-  - -c
-  - while true; do echo 'Hello!'; sleep 2; done
+  - -ceu
+  - --
+  - "monitor() {\nPGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4\n\necho
+    \"Running pgAdmin4 Setup\"\npython3 ${PGADMIN_DIR}/setup.py\n\necho \"Starting
+    pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4 &\necho $! > $PGADMIN4_PIDFILE\n\npython3
+    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgo.com --replace\n\nexec {fd}<> <(:)\nwhile read -r -t 5 -u \"${fd}\"
+    || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\" ] && python3
+    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgo.com --replace\n\tthen\n\t\texec {fd}>&- && exec {fd}<> <(:)\n\t\tstat
+    --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif [ !
+    -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! > $PGADMIN4_PIDFILE\n\t\techo
+    \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\"; export -f
+    monitor; exec -a \"$0\" bash -ceu monitor"
+  - pgadmin
+  - /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
   env:
   - name: PGADMIN_SETUP_EMAIL
     value: admin@pgo.com
@@ -120,6 +166,12 @@ containers:
       secretKeyRef:
         key: password
         name: pgadmin-standalone-pgadmin
+  - name: PGADMIN_LISTEN_PORT
+    value: "5050"
+  - name: KRB5_CONFIG
+    value: /etc/pgadmin/conf.d/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   image: new-image
   imagePullPolicy: Always
   name: pgadmin
@@ -144,6 +196,10 @@ containers:
     readOnly: true
   - mountPath: /var/lib/pgadmin
     name: standalone-pgadmin-data
+  - mountPath: /var/log/pgadmin
+    name: pgadmin-log
+  - mountPath: /tmp
+    name: tmp
 volumes:
 - name: standalone-pgadmin-data
   persistentVolumeClaim:
@@ -154,7 +210,15 @@ volumes:
     - configMap:
         items:
         - key: pgadmin-settings.json
-          path: ~postgres-operator/pgadmin.json
+          path: ~postgres-operator/pgadmin-settings.json
+        - key: pgadmin-shared-clusters.json
+          path: ~postgres-operator/pgadmin-shared-clusters.json
+- emptyDir:
+    medium: Memory
+  name: pgadmin-log
+- emptyDir:
+    medium: Memory
+  name: tmp
 `))
 	})
 }
@@ -185,7 +249,9 @@ func TestPodConfigFiles(t *testing.T) {
 - configMap:
     items:
     - key: pgadmin-settings.json
-      path: ~postgres-operator/pgadmin.json
+      path: ~postgres-operator/pgadmin-settings.json
+    - key: pgadmin-shared-clusters.json
+      path: ~postgres-operator/pgadmin-shared-clusters.json
     name: some-cm
 	`))
 }

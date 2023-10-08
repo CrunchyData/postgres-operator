@@ -102,6 +102,14 @@ type PGAdminSpec struct {
 	// pgAdmin requires this to have a valid email form.
 	// +optional
 	AdminUsername string `json:"adminUsername"`
+
+	// ServerGroups for importing PostgresClusters to pgAdmin.
+	// To create a pgAdmin with no selectors, leave this field empty.
+	// A pgAdmin created with no `ServerGroups` will not automatically
+	// add any servers through discovery. PostgresClusters can still be
+	// added manually.
+	// +optional
+	ServerGroups []ServerGroup `json:"serverGroups"`
 }
 
 // Default defines several key default values for a pgAdmin instance.
@@ -109,6 +117,16 @@ func (s *PGAdminSpec) Default() {
 	if s.AdminUsername == "" {
 		s.AdminUsername = "admin@pgo.com"
 	}
+}
+
+type ServerGroup struct {
+	// The name for the ServerGroup in pgAdmin.
+	// Must be unique in the pgAdmin's ServerGroups since it becomes the ServerGroup name in pgAdmin.
+	Name string `json:"name"`
+
+	// PostgresClusterSelector selects clusters to dynamically add to pgAdmin by matching labels.
+	// An empty selector like `{}` will select ALL clusters in the namespace.
+	PostgresClusterSelector *metav1.LabelSelector `json:"postgresClusterSelector"`
 }
 
 // PGAdminStatus defines the observed state of PGAdmin

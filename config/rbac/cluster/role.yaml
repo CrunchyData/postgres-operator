@@ -131,6 +131,13 @@ rules:
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
+  - pgpgadmins
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - postgres-operator.crunchydata.com
+  resources:
   - pgupgrades
   verbs:
   - get
