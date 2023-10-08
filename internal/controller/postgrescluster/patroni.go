@@ -541,7 +541,7 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 
 	// To ensure idempotency, the operator verifies that the timeline reported by Patroni
 	// matches the timeline that was present when the switchover was first requested.
-	// TODO(benjb): consider pulling the timeline from the pod annotation; manual experiments
+	// TODO(benjaminjb): consider pulling the timeline from the pod annotation; manual experiments
 	// have shown that the annotation on the Leader pod is up to date during a switchover, but
 	// missing from the Replica pods.
 	timeline, err := patroni.Executor(exec).GetTimeline(ctx)
