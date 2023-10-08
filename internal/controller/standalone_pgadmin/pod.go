@@ -66,6 +66,22 @@ func pod(
 			ContainerPort: int32(5050),
 			Protocol:      corev1.ProtocolTCP,
 		}},
+
+		Env: []corev1.EnvVar{
+			{
+				Name:  "PGADMIN_SETUP_EMAIL",
+				Value: inPGAdmin.Spec.AdminUsername,
+			},
+			{
+				Name: "PGADMIN_SETUP_PASSWORD",
+				ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: naming.StandalonePGAdmin(inPGAdmin).Name,
+					},
+					Key: "password",
+				}},
+			},
+		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      configVolumeName,

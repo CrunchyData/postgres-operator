@@ -70,8 +70,17 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}()
 
-	var configmap *corev1.ConfigMap
-	var dataVolume *corev1.PersistentVolumeClaim
+	log.Info("Reconciling pgAdmin")
+
+	// Set defaults if unset
+	pgAdmin.Default()
+
+	var (
+		configmap  *corev1.ConfigMap
+		dataVolume *corev1.PersistentVolumeClaim
+	)
+
+	_, err = r.reconcilePGAdminSecret(ctx, pgAdmin)
 
 	if err == nil {
 		configmap, err = r.reconcilePGAdminConfigMap(ctx, pgAdmin)

@@ -31,6 +31,8 @@ func TestPod(t *testing.T) {
 	t.Parallel()
 
 	pgadmin := new(v1beta1.PGAdmin)
+	pgadmin.Name = "pgadmin"
+	pgadmin.Spec.AdminUsername = "admin@pgo.com"
 	config := new(corev1.ConfigMap)
 	testpod := new(corev1.PodSpec)
 	pvc := new(corev1.PersistentVolumeClaim)
@@ -47,6 +49,14 @@ containers:
   - bash
   - -c
   - while true; do echo 'Hello!'; sleep 2; done
+  env:
+  - name: PGADMIN_SETUP_EMAIL
+    value: admin@pgo.com
+  - name: PGADMIN_SETUP_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        key: password
+        name: pgadmin-standalone-pgadmin
   name: pgadmin
   ports:
   - containerPort: 5050
@@ -92,6 +102,7 @@ volumes:
 		pgadmin.Spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
 		}
+		pgadmin.Spec.AdminUsername = "admin@pgo.com"
 
 		call()
 
@@ -101,6 +112,14 @@ containers:
   - bash
   - -c
   - while true; do echo 'Hello!'; sleep 2; done
+  env:
+  - name: PGADMIN_SETUP_EMAIL
+    value: admin@pgo.com
+  - name: PGADMIN_SETUP_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        key: password
+        name: pgadmin-standalone-pgadmin
   image: new-image
   imagePullPolicy: Always
   name: pgadmin

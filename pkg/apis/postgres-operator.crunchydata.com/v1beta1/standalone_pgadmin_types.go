@@ -97,6 +97,18 @@ type PGAdminSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// AdminUsername is the username to set during pgAdmin startup.
+	// pgAdmin requires this to have a valid email form.
+	// +optional
+	AdminUsername string `json:"adminUsername"`
+}
+
+// Default defines several key default values for a pgAdmin instance.
+func (s *PGAdminSpec) Default() {
+	if s.AdminUsername == "" {
+		s.AdminUsername = "admin@pgo.com"
+	}
 }
 
 // PGAdminStatus defines the observed state of PGAdmin
@@ -127,6 +139,19 @@ type PGAdmin struct {
 
 	Spec   PGAdminSpec   `json:"spec,omitempty"`
 	Status PGAdminStatus `json:"status,omitempty"`
+}
+
+// Default implements "sigs.k8s.io/controller-runtime/pkg/webhook.Defaulter" so
+// a webhook can be registered for the type.
+// - https://book.kubebuilder.io/reference/webhook-overview.html
+func (p *PGAdmin) Default() {
+	if len(p.APIVersion) == 0 {
+		p.APIVersion = GroupVersion.String()
+	}
+	if len(p.Kind) == 0 {
+		p.Kind = "PGAdmin"
+	}
+	p.Spec.Default()
 }
 
 //+kubebuilder:object:root=true
