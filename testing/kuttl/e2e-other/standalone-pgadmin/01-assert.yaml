@@ -1,0 +1,15 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+- script: |
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    
+    clusters_actual=$(kubectl exec -n "${NAMESPACE}" pgadmin-standalone-pgadmin-0 -- bash -c 'python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgo.com && cat /tmp/dumped.json')
+    
+    clusters_expected="\"Servers\": {}"
+    {
+      contains "${clusters_actual}" "${clusters_expected}"
+    } || {
+      echo "Wrong servers dumped: got ${clusters_actual}"
+      exit 1
+    }

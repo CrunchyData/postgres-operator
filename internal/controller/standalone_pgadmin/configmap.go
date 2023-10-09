@@ -142,7 +142,9 @@ func generateClusterConfig(
 	encoder.SetIndent("", "  ")
 
 	// To avoid spurious reconciles, we want to keep the `clusters` order consistent
-	// which we can do by sorting the ServerGroup name used as a key.
+	// which we can do by
+	// a) sorting the ServerGroup name used as a key; and
+	// b) sorting the clusters by name;
 	keys := []string{}
 	for key := range clusters {
 		keys = append(keys, key)
@@ -154,6 +156,10 @@ func generateClusterConfig(
 	// track of the last number added to the `Servers` group
 	var currentOffset = 0
 	for _, serverGroupName := range keys {
+		sort.Slice(clusters[serverGroupName].Items,
+			func(i, j int) bool {
+				return clusters[serverGroupName].Items[i].Name < clusters[serverGroupName].Items[j].Name
+			})
 		for i, cluster := range clusters[serverGroupName].Items {
 			object := map[string]any{
 				"Name":          cluster.Name,

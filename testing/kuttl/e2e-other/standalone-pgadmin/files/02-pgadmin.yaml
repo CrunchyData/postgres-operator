@@ -1,0 +1,17 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: pgadmin
+spec:
+  adminUsername: admin@pgo.com
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+  - name: groupOne
+    postgresClusterSelector:
+      matchLabels:
+        hello: world

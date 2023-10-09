@@ -1,0 +1,8 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+delete:
+  - apiVersion: postgres-operator.crunchydata.com/v1beta1
+    kind: PostgresCluster
+    name: pgadmin2
+error:
+- files/04-cluster-check.yaml
