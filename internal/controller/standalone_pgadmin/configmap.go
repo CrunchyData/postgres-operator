@@ -15,7 +15,11 @@
 package standalone_pgadmin
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"sort"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -32,11 +36,12 @@ import (
 // reconcilePGAdminConfigMap writes the ConfigMap for pgAdmin.
 func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
+	clusters map[string]*v1beta1.PostgresClusterList,
 ) (*corev1.ConfigMap, error) {
-	configmap := configmap(pgadmin)
-
-	err := errors.WithStack(r.setControllerReference(pgadmin, configmap))
-
+	configmap, err := configmap(pgadmin, clusters)
+	if err == nil {
+		err = errors.WithStack(r.setControllerReference(pgadmin, configmap))
+	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, configmap))
 	}
@@ -45,7 +50,9 @@ func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 }
 
 // configmap returns a v1.ConfigMap for pgAdmin.
-func configmap(pgadmin *v1beta1.PGAdmin) *corev1.ConfigMap {
+func configmap(pgadmin *v1beta1.PGAdmin,
+	clusters map[string]*v1beta1.PostgresClusterList,
+) (*corev1.ConfigMap, error) {
 	configmap := &corev1.ConfigMap{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
 	configmap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
 
@@ -59,7 +66,114 @@ func configmap(pgadmin *v1beta1.PGAdmin) *corev1.ConfigMap {
 
 	// TODO(tjmoore4): Populate configuration details.
 	initialize.StringMap(&configmap.Data)
-	configmap.Data[settingsConfigMapKey] = "config data"
+	configSettings, err := generateConfig(pgadmin)
+	if err == nil {
+		configmap.Data[settingsConfigMapKey] = configSettings
+	}
 
-	return configmap
+	clusterSettings, err := generateClusterConfig(clusters)
+	if err == nil {
+		configmap.Data[settingsClusterMapKey] = clusterSettings
+	}
+
+	return configmap, err
+}
+
+// generateConfig generates the config settings for the pgAdmin
+func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
+
+	settings := *pgadmin.Spec.Config.Settings.DeepCopy()
+	if settings == nil {
+		settings = make(map[string]interface{})
+	}
+	// SERVER_MODE must always be enabled when running on a webserver.
+	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/config.py#L105
+	settings["SERVER_MODE"] = true
+	settings["UPGRADE_CHECK_ENABLED"] = false
+	settings["UPGRADE_CHECK_URL"] = ""
+	settings["UPGRADE_CHECK_KEY"] = ""
+
+	// To avoid spurious reconciles, the following value must not change when
+	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
+	// emitting map keys in sorted order. Indent so the value is not rendered
+	// as one long line by `kubectl`.
+	buffer := new(bytes.Buffer)
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+	err := encoder.Encode(settings)
+
+	return buffer.String(), err
+}
+
+// generateClusterConfig generates the settings for the servers registered in pgAdmin.
+// pgAdmin's `setup.py --load-server` function ingests this list of servers as JSON,
+// in the following form:
+//
+//	{
+//		"Servers": {
+//			"1": {
+//				"Name": "Minimally Defined Server",
+//				"Group": "Server Group 1",
+//				"Port": 5432,
+//				"Username": "postgres",
+//				"Host": "localhost",
+//				"SSLMode": "prefer",
+//				"MaintenanceDB": "postgres"
+//			},
+//			"2": { ... }
+//		}
+//	}
+func generateClusterConfig(
+	clusters map[string]*v1beta1.PostgresClusterList,
+) (string, error) {
+	// To avoid spurious reconciles, the following value must not change when
+	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
+	// emitting map keys in sorted order. Indent so the value is not rendered
+	// as one long line by `kubectl`.
+	buffer := new(bytes.Buffer)
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+
+	// To avoid spurious reconciles, we want to keep the `clusters` order consistent
+	// which we can do by
+	// a) sorting the ServerGroup name used as a key; and
+	// b) sorting the clusters by name;
+	keys := []string{}
+	for key := range clusters {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	clusterServers := map[int]any{}
+	// Because we allow multiple ServerGroups to be defined, we use `currentOffset` to keep
+	// track of the last number added to the `Servers` group
+	var currentOffset = 0
+	for _, serverGroupName := range keys {
+		sort.Slice(clusters[serverGroupName].Items,
+			func(i, j int) bool {
+				return clusters[serverGroupName].Items[i].Name < clusters[serverGroupName].Items[j].Name
+			})
+		for i, cluster := range clusters[serverGroupName].Items {
+			object := map[string]any{
+				"Name":          cluster.Name,
+				"Group":         serverGroupName,
+				"Host":          fmt.Sprintf("%s-primary.%s.svc", cluster.Name, cluster.Namespace),
+				"Port":          5432,
+				"MaintenanceDB": "postgres",
+				"Username":      cluster.Name,
+				// `SSLMode` and some other settings may need to be set by the user in the future
+				"SSLMode": "prefer",
+				"Shared":  true,
+			}
+			clusterServers[i+1+currentOffset] = object
+		}
+		currentOffset = len(clusters[serverGroupName].Items) + currentOffset
+	}
+	servers := map[string]any{
+		"Servers": clusterServers,
+	}
+	err := encoder.Encode(servers)
+	return buffer.String(), err
 }

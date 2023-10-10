@@ -21,9 +21,13 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -37,9 +41,49 @@ type PGAdminReconciler struct {
 	Scheme   *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins/finalizers,verbs=update
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
+
+// SetupWithManager sets up the controller with the Manager.
+//
+// TODO(tjmoore4): This function is duplicated from a version that takes a PostgresCluster object.
+func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1beta1.PGAdmin{}).
+		Watches(
+			&source.Kind{Type: v1beta1.NewPostgresCluster()},
+			r.watchPostgresClusters(),
+		).
+		Complete(r)
+}
+
+// watchPostgresClusters returns a [handler.EventHandler] for PostgresClusters.
+func (r *PGAdminReconciler) watchPostgresClusters() handler.Funcs {
+	handle := func(cluster client.Object, q workqueue.RateLimitingInterface) {
+		ctx := context.Background()
+		for _, pgadmin := range r.findPGAdminsForPostgresCluster(ctx, cluster) {
+
+			q.Add(ctrl.Request{
+				NamespacedName: client.ObjectKeyFromObject(pgadmin),
+			})
+		}
+	}
+
+	return handler.Funcs{
+		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
+			handle(e.Object, q)
+		},
+		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+			handle(e.ObjectNew, q)
+		},
+		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+			handle(e.Object, q)
+		},
+	}
+}
+
+//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins,verbs={get,list,watch,create,update,patch,delete}
+//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins/status,verbs={get,update,patch}
+//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins/finalizers,verbs={update}
 
 // Reconcile which aims to move the current state of the pgAdmin closer to the
 // desired state described in a [v1beta1.PGAdmin] identified by request.
@@ -70,11 +114,27 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}()
 
-	var configmap *corev1.ConfigMap
-	var dataVolume *corev1.PersistentVolumeClaim
+	log.Info("Reconciling pgAdmin")
+
+	// Set defaults if unset
+	pgAdmin.Default()
+
+	var (
+		configmap  *corev1.ConfigMap
+		dataVolume *corev1.PersistentVolumeClaim
+		clusters   map[string]*v1beta1.PostgresClusterList
+	)
+
+	_, err = r.reconcilePGAdminSecret(ctx, pgAdmin)
 
 	if err == nil {
-		configmap, err = r.reconcilePGAdminConfigMap(ctx, pgAdmin)
+		clusters, err = r.getClustersForPGAdmin(ctx, pgAdmin)
+	}
+	if err == nil {
+		_, err = r.reconcilePGAdminService(ctx, pgAdmin)
+	}
+	if err == nil {
+		configmap, err = r.reconcilePGAdminConfigMap(ctx, pgAdmin, clusters)
 	}
 	if err == nil {
 		dataVolume, err = r.reconcilePGAdminDataVolume(ctx, pgAdmin)
@@ -91,15 +151,6 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return ctrl.Result{}, err
-}
-
-// SetupWithManager sets up the controller with the Manager.
-//
-// TODO(tjmoore4): This function is duplicated from a version that takes a PostgresCluster object.
-func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.PGAdmin{}).
-		Complete(r)
 }
 
 // The owner reference created by controllerutil.SetControllerReference blocks

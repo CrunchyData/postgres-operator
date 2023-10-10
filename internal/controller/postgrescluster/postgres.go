@@ -249,7 +249,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		if cluster.Spec.PostGISVersion == "" {
 			postgisInstallOK = true
 		} else if postgisInstallOK = postgis.EnableInPostgreSQL(ctx, exec) == nil; !postgisInstallOK {
-			// TODO(benjb): Investigate under what conditions postgis would fail install
+			// TODO(benjaminjb): Investigate under what conditions postgis would fail install
 			r.Recorder.Event(cluster, corev1.EventTypeWarning, "PostGISDisabled",
 				"Unable to install PostGIS")
 		}

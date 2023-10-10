@@ -94,6 +94,11 @@ PGAdminSpec defines the desired state of PGAdmin
         <td>Defines a PersistentVolumeClaim for pgAdmin data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes</td>
         <td>true</td>
       </tr><tr>
+        <td><b>adminUsername</b></td>
+        <td>string</td>
+        <td>AdminUsername is the username to set during pgAdmin startup. pgAdmin requires this to have a valid email form.</td>
+        <td>false</td>
+      </tr><tr>
         <td><b><a href="#pgadminspecaffinity">affinity</a></b></td>
         <td>object</td>
         <td>Scheduling constraints of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
@@ -132,6 +137,11 @@ PGAdminSpec defines the desired state of PGAdmin
         <td><b><a href="#pgadminspecresources">resources</a></b></td>
         <td>object</td>
         <td>Resource requirements for the PGAdmin container.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecservergroupsindex">serverGroups</a></b></td>
+        <td>[]object</td>
+        <td>ServerGroups for importing PostgresClusters to pgAdmin. To create a pgAdmin with no selectors, leave this field empty. A pgAdmin created with no `ServerGroups` will not automatically add any servers through discovery. PostgresClusters can still be added manually.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#pgadminspecservice">service</a></b></td>
@@ -2097,6 +2107,107 @@ Resource requirements for the PGAdmin container.
         <td><b>requests</b></td>
         <td>map[string]int or string</td>
         <td>Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecservergroupsindex">
+  PGAdmin.spec.serverGroups[index]
+  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>The name for the ServerGroup in pgAdmin. Must be unique in the pgAdmin's ServerGroups since it becomes the ServerGroup name in pgAdmin.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#pgadminspecservergroupsindexpostgresclusterselector">postgresClusterSelector</a></b></td>
+        <td>object</td>
+        <td>PostgresClusterSelector selects clusters to dynamically add to pgAdmin by matching labels. An empty selector like `{}` will select ALL clusters in the namespace.</td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecservergroupsindexpostgresclusterselector">
+  PGAdmin.spec.serverGroups[index].postgresClusterSelector
+  <sup><sup><a href="#pgadminspecservergroupsindex">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+PostgresClusterSelector selects clusters to dynamically add to pgAdmin by matching labels. An empty selector like `{}` will select ALL clusters in the namespace.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#pgadminspecservergroupsindexpostgresclusterselectormatchexpressionsindex">matchExpressions</a></b></td>
+        <td>[]object</td>
+        <td>matchExpressions is a list of label selector requirements. The requirements are ANDed.</td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>matchLabels</b></td>
+        <td>map[string]string</td>
+        <td>matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels map is equivalent to an element of matchExpressions, whose key field is "key", the operator is "In", and the values array contains only "value". The requirements are ANDed.</td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+<h3 id="pgadminspecservergroupsindexpostgresclusterselectormatchexpressionsindex">
+  PGAdmin.spec.serverGroups[index].postgresClusterSelector.matchExpressions[index]
+  <sup><sup><a href="#pgadminspecservergroupsindexpostgresclusterselector">↩ Parent</a></sup></sup>
+</h3>
+
+
+
+A label selector requirement is a selector that contains values, a key, and an operator that relates the key and values.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>key</b></td>
+        <td>string</td>
+        <td>key is the label key that the selector applies to.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>operator</b></td>
+        <td>string</td>
+        <td>operator represents a key's relationship to a set of values. Valid operators are In, NotIn, Exists and DoesNotExist.</td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>[]string</td>
+        <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
         <td>false</td>
       </tr></tbody>
 </table>

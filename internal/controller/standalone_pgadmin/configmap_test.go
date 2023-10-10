@@ -24,18 +24,127 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestGenerateConfig(t *testing.T) {
+	require.ParallelCapacity(t, 0)
+
+	expectedString := `{
+  "ALLOWED_HOSTS": [
+    "225.0.0.0/8",
+    "226.0.0.0/7",
+    "228.0.0.0/6"
+  ],
+  "SERVER_MODE": true,
+  "UPGRADE_CHECK_ENABLED": false,
+  "UPGRADE_CHECK_KEY": "",
+  "UPGRADE_CHECK_URL": ""
+}
+`
+	pgadmin := new(v1beta1.PGAdmin)
+	pgadmin.Spec.Config.Settings = map[string]interface{}{
+		"ALLOWED_HOSTS": []interface{}{"225.0.0.0/8", "226.0.0.0/7", "228.0.0.0/6"},
+	}
+	actualString, err := generateConfig(pgadmin)
+	assert.NilError(t, err)
+	assert.Equal(t, actualString, expectedString)
+}
+
+func TestGenerateClusterConfig(t *testing.T) {
+	require.ParallelCapacity(t, 0)
+
+	cluster := testCluster()
+	cluster.Namespace = "postgres-operator"
+	clusterList := &v1beta1.PostgresClusterList{
+		Items: []v1beta1.PostgresCluster{*cluster, *cluster},
+	}
+	clusters := map[string]*v1beta1.PostgresClusterList{
+		"shared": clusterList,
+		"test":   clusterList,
+		"hello":  clusterList,
+	}
+
+	expectedString := `{
+  "Servers": {
+    "1": {
+      "Group": "hello",
+      "Host": "hippo-primary.postgres-operator.svc",
+      "MaintenanceDB": "postgres",
+      "Name": "hippo",
+      "Port": 5432,
+      "SSLMode": "prefer",
+      "Shared": true,
+      "Username": "hippo"
+    },
+    "2": {
+      "Group": "hello",
+      "Host": "hippo-primary.postgres-operator.svc",
+      "MaintenanceDB": "postgres",
+      "Name": "hippo",
+      "Port": 5432,
+      "SSLMode": "prefer",
+      "Shared": true,
+      "Username": "hippo"
+    },
+    "3": {
+      "Group": "shared",
+      "Host": "hippo-primary.postgres-operator.svc",
+      "MaintenanceDB": "postgres",
+      "Name": "hippo",
+      "Port": 5432,
+      "SSLMode": "prefer",
+      "Shared": true,
+      "Username": "hippo"
+    },
+    "4": {
+      "Group": "shared",
+      "Host": "hippo-primary.postgres-operator.svc",
+      "MaintenanceDB": "postgres",
+      "Name": "hippo",
+      "Port": 5432,
+      "SSLMode": "prefer",
+      "Shared": true,
+      "Username": "hippo"
+    },
+    "5": {
+      "Group": "test",
+      "Host": "hippo-primary.postgres-operator.svc",
+      "MaintenanceDB": "postgres",
+      "Name": "hippo",
+      "Port": 5432,
+      "SSLMode": "prefer",
+      "Shared": true,
+      "Username": "hippo"
+    },
+    "6": {
+      "Group": "test",
+      "Host": "hippo-primary.postgres-operator.svc",
+      "MaintenanceDB": "postgres",
+      "Name": "hippo",
+      "Port": 5432,
+      "SSLMode": "prefer",
+      "Shared": true,
+      "Username": "hippo"
+    }
+  }
+}
+`
+	actualString, err := generateClusterConfig(clusters)
+	assert.NilError(t, err)
+	assert.Equal(t, actualString, expectedString)
+}
+
 func TestGeneratePGAdminConfigMap(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Namespace = "some-ns"
 	pgadmin.Name = "pg1"
-
+	clusters := map[string]*v1beta1.PostgresClusterList{}
 	t.Run("Data,ObjectMeta,TypeMeta", func(t *testing.T) {
 		pgadmin := pgadmin.DeepCopy()
 
-		configmap := configmap(pgadmin)
+		configmap, err := configmap(pgadmin, clusters)
 
+		assert.NilError(t, err)
 		assert.Assert(t, cmp.MarshalMatches(configmap.TypeMeta, `
 apiVersion: v1
 kind: ConfigMap
@@ -59,8 +168,9 @@ namespace: some-ns
 			Labels:      map[string]string{"c": "v3", "d": "v4"},
 		}
 
-		configmap := configmap(pgadmin)
+		configmap, err := configmap(pgadmin, clusters)
 
+		assert.NilError(t, err)
 		// Annotations present in the metadata.
 		assert.DeepEqual(t, configmap.ObjectMeta.Annotations, map[string]string{
 			"a": "v1", "b": "v2",

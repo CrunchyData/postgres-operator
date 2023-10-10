@@ -15,6 +15,8 @@
 package standalone_pgadmin
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -50,11 +52,22 @@ func pod(
 		Sources: podConfigFiles(inConfigMap, *inPGAdmin),
 	}
 
+	pgAdminLog := corev1.Volume{Name: logVolume}
+	pgAdminLog.EmptyDir = &corev1.EmptyDirVolumeSource{
+		Medium: corev1.StorageMediumMemory,
+	}
+
+	// TODO: discuss tmp vol vs. persistent vol
+	tmpVol := corev1.Volume{Name: "tmp"}
+	tmpVol.EmptyDir = &corev1.EmptyDirVolumeSource{
+		Medium: corev1.StorageMediumMemory,
+	}
+
 	// pgadmin container
 	container := corev1.Container{
 		Name: naming.ContainerPGAdmin,
 		// TODO(tjmoore4): Update command and image details
-		Command:         []string{"bash", "-c", "while true; do echo 'Hello!'; sleep 2; done"},
+		Command:         startupScript(inPGAdmin),
 		Image:           config.StandalonePGAdminContainerImage(inPGAdmin),
 		ImagePullPolicy: inPGAdmin.Spec.ImagePullPolicy,
 		Resources:       inPGAdmin.Spec.Resources,
@@ -63,24 +76,69 @@ func pod(
 
 		Ports: []corev1.ContainerPort{{
 			Name:          naming.PortPGAdmin,
-			ContainerPort: int32(5050),
+			ContainerPort: int32(pgAdminPort),
 			Protocol:      corev1.ProtocolTCP,
 		}},
+
+		Env: []corev1.EnvVar{
+			{
+				Name:  "PGADMIN_SETUP_EMAIL",
+				Value: inPGAdmin.Spec.AdminUsername,
+			},
+			{
+				Name: "PGADMIN_SETUP_PASSWORD",
+				ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: naming.StandalonePGAdmin(inPGAdmin).Name,
+					},
+					Key: "password",
+				}},
+			},
+			{
+				Name:  "PGADMIN_LISTEN_PORT",
+				Value: fmt.Sprintf("%d", pgAdminPort),
+			},
+			// Setting the KRB5_CONFIG for kerberos
+			// - https://web.mit.edu/kerberos/krb5-current/doc/admin/conf_files/krb5_conf.html
+			{
+				Name:  "KRB5_CONFIG",
+				Value: configMountPath + "/krb5.conf",
+			},
+			// In testing it was determined that we need to set this env var for the replay cache
+			// otherwise it defaults to the read-only location `/var/tmp/`
+			// - https://web.mit.edu/kerberos/krb5-current/doc/basic/rcache_def.html#replay-cache-types
+			{
+				Name:  "KRB5RCACHEDIR",
+				Value: "/tmp",
+			},
+		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      configVolumeName,
-				MountPath: "/etc/pgadmin/conf.d",
+				MountPath: configMountPath,
 				ReadOnly:  true,
 			},
 			{
 				Name:      dataVolumeName,
 				MountPath: "/var/lib/pgadmin",
 			},
+			{
+				Name:      logVolume,
+				MountPath: "/var/log/pgadmin",
+			},
+			{
+				Name:      "tmp",
+				MountPath: "/tmp",
+			},
 		},
 	}
 
 	// add volumes and containers
-	outPod.Volumes = []corev1.Volume{pgAdminData, configVolume}
+	outPod.Volumes = []corev1.Volume{pgAdminData,
+		configVolume,
+		pgAdminLog,
+		tmpVol,
+	}
 	outPod.Containers = []corev1.Container{container}
 }
 
@@ -97,7 +155,11 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 					Items: []corev1.KeyToPath{
 						{
 							Key:  settingsConfigMapKey,
-							Path: "~postgres-operator/pgadmin.json",
+							Path: fmt.Sprintf("~postgres-operator/%s", settingsConfigMapKey),
+						},
+						{
+							Key:  settingsClusterMapKey,
+							Path: fmt.Sprintf("~postgres-operator/%s", settingsClusterMapKey),
 						},
 					},
 				},
@@ -128,4 +190,60 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 	}
 
 	return config
+}
+
+func startupScript(pgadmin *v1beta1.PGAdmin) []string {
+	// loadServerCommand is a python command leveraging the pgadmin setup.py script
+	// with the `--load-servers` flag to replace the servers registered to the admin user
+	// with the contents of the `settingsClusterMapKey` file
+	var loadServerCommand = fmt.Sprintf(`python3 ${PGADMIN_DIR}/setup.py --load-servers %s/~postgres-operator/%s --user %s --replace`,
+		configMountPath,
+		settingsClusterMapKey,
+		pgadmin.Spec.AdminUsername)
+
+	// This script sets up, starts pgadmin, and runs the `loadServerCommand` to register the discovered servers.
+	var startScript = fmt.Sprintf(`
+PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
+
+echo "Running pgAdmin4 Setup"
+python3 ${PGADMIN_DIR}/setup.py
+
+echo "Starting pgAdmin4"
+PGADMIN4_PIDFILE=/tmp/pgadmin4.pid
+pgadmin4 &
+echo $! > $PGADMIN4_PIDFILE
+
+%s
+`, loadServerCommand)
+
+	// Use a Bash loop to periodically check:
+	// 1. the mtime of the mounted configuration volume for shared/discovered servers.
+	//   When it changes, reload the shared server configuration.
+	// 2. that the proc id of the pgadmin process is still running.
+	//	 When it isn't, restart pgadmin and continue watching.
+
+	// Coreutils `sleep` uses a lot of memory, so the following opens a file
+	// descriptor and uses the timeout of the builtin `read` to wait. That same
+	// descriptor gets closed and reopened to use the builtin `[ -nt` to check mtimes.
+	// - https://unix.stackexchange.com/a/407383
+	var reloadScript = fmt.Sprintf(`
+exec {fd}<> <(:)
+while read -r -t 5 -u "${fd}" || true; do
+	if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && %s
+	then
+		exec {fd}>&- && exec {fd}<> <(:)
+		stat --format='Loaded shared servers dated %%y' "${cluster_file}"
+	fi
+	if [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]
+	then
+		pgadmin4 &
+		echo $! > $PGADMIN4_PIDFILE
+		echo "Restarting pgAdmin4"
+	fi
+done
+`, loadServerCommand)
+
+	wrapper := `monitor() {` + startScript + reloadScript + `}; export cluster_file="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
+
+	return []string{"bash", "-ceu", "--", wrapper, "pgadmin", fmt.Sprintf("%s/~postgres-operator/%s", configMountPath, settingsClusterMapKey)}
 }

@@ -37,6 +37,10 @@ spec:
           spec:
             description: PGAdminSpec defines the desired state of PGAdmin
             properties:
+              adminUsername:
+                description: AdminUsername is the username to set during pgAdmin startup.
+                  pgAdmin requires this to have a valid email form.
+                type: string
               affinity:
                 description: 'Scheduling constraints of the PGAdmin pod. More info:
                   https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node'
@@ -1334,6 +1338,70 @@ spec:
                       to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
+              serverGroups:
+                description: ServerGroups for importing PostgresClusters to pgAdmin.
+                  To create a pgAdmin with no selectors, leave this field empty. A
+                  pgAdmin created with no `ServerGroups` will not automatically add
+                  any servers through discovery. PostgresClusters can still be added
+                  manually.
+                items:
+                  properties:
+                    name:
+                      description: The name for the ServerGroup in pgAdmin. Must be
+                        unique in the pgAdmin's ServerGroups since it becomes the
+                        ServerGroup name in pgAdmin.
+                      type: string
+                    postgresClusterSelector:
+                      description: PostgresClusterSelector selects clusters to dynamically
+                        add to pgAdmin by matching labels. An empty selector like
+                        `{}` will select ALL clusters in the namespace.
+                      properties:
+                        matchExpressions:
+                          description: matchExpressions is a list of label selector
+                            requirements. The requirements are ANDed.
+                          items:
+                            description: A label selector requirement is a selector
+                              that contains values, a key, and an operator that relates
+                              the key and values.
+                            properties:
+                              key:
+                                description: key is the label key that the selector
+                                  applies to.
+                                type: string
+                              operator:
+                                description: operator represents a key's relationship
+                                  to a set of values. Valid operators are In, NotIn,
+                                  Exists and DoesNotExist.
+                                type: string
+                              values:
+                                description: values is an array of string values.
+                                  If the operator is In or NotIn, the values array
+                                  must be non-empty. If the operator is Exists or
+                                  DoesNotExist, the values array must be empty. This
+                                  array is replaced during a strategic merge patch.
+                                items:
+                                  type: string
+                                type: array
+                            required:
+                            - key
+                            - operator
+                            type: object
+                          type: array
+                        matchLabels:
+                          additionalProperties:
+                            type: string
+                          description: matchLabels is a map of {key,value} pairs.
+                            A single {key,value} in the matchLabels map is equivalent
+                            to an element of matchExpressions, whose key field is
+                            "key", the operator is "In", and the values array contains
+                            only "value". The requirements are ANDed.
+                          type: object
+                      type: object
+                  required:
+                  - name
+                  - postgresClusterSelector
+                  type: object
+                type: array
               service:
                 description: Specification of the service that exposes pgAdmin.
                 properties:
