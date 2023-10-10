@@ -57,6 +57,7 @@ func pod(
 		Medium: corev1.StorageMediumMemory,
 	}
 
+	// TODO: discuss tmp vol vs. persistent vol
 	tmpVol := corev1.Volume{Name: "tmp"}
 	tmpVol.EmptyDir = &corev1.EmptyDirVolumeSource{
 		Medium: corev1.StorageMediumMemory,
@@ -192,9 +193,16 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 }
 
 func startupScript(pgadmin *v1beta1.PGAdmin) []string {
-	var loadServerCommand = fmt.Sprintf("python3 ${PGADMIN_DIR}/setup.py --load-servers %s/~postgres-operator/%s --user %s --replace", configMountPath, settingsClusterMapKey, pgadmin.Spec.AdminUsername)
+	// loadServerCommand is a python command leveraging the pgadmin setup.py script
+	// with the `--load-servers` flag to replace the servers registered to the admin user
+	// with the contents of the `settingsClusterMapKey` file
+	var loadServerCommand = fmt.Sprintf(`python3 ${PGADMIN_DIR}/setup.py --load-servers %s/~postgres-operator/%s --user %s --replace`,
+		configMountPath,
+		settingsClusterMapKey,
+		pgadmin.Spec.AdminUsername)
 
-	var script = fmt.Sprintf(`
+	// This script sets up, starts pgadmin, and runs the `loadServerCommand` to register the discovered servers.
+	var startScript = fmt.Sprintf(`
 PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
 
 echo "Running pgAdmin4 Setup"
@@ -206,7 +214,19 @@ pgadmin4 &
 echo $! > $PGADMIN4_PIDFILE
 
 %s
+`, loadServerCommand)
 
+	// Use a Bash loop to periodically check:
+	// 1. the mtime of the mounted configuration volume for shared/discovered servers.
+	//   When it changes, reload the shared server configuration.
+	// 2. that the proc id of the pgadmin process is still running.
+	//	 When it isn't, restart pgadmin and continue watching.
+
+	// Coreutils `sleep` uses a lot of memory, so the following opens a file
+	// descriptor and uses the timeout of the builtin `read` to wait. That same
+	// descriptor gets closed and reopened to use the builtin `[ -nt` to check mtimes.
+	// - https://unix.stackexchange.com/a/407383
+	var reloadScript = fmt.Sprintf(`
 exec {fd}<> <(:)
 while read -r -t 5 -u "${fd}" || true; do
 	if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && %s
@@ -221,9 +241,9 @@ while read -r -t 5 -u "${fd}" || true; do
 		echo "Restarting pgAdmin4"
 	fi
 done
-`, loadServerCommand, loadServerCommand)
+`, loadServerCommand)
 
-	wrapper := `monitor() {` + script + `}; export cluster_file="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
+	wrapper := `monitor() {` + startScript + reloadScript + `}; export cluster_file="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
 
 	return []string{"bash", "-ceu", "--", wrapper, "pgadmin", fmt.Sprintf("%s/~postgres-operator/%s", configMountPath, settingsClusterMapKey)}
 }

@@ -9,3 +9,11 @@ spec:
     resources:
       requests:
         storage: 1Gi
+  serverGroups:
+    - name: supply
+      # An empty selector selects all postgresclusters in the Namespace
+      postgresClusterSelector: {}
+    - name: demand
+      postgresClusterSelector:
+        matchLabels:
+          postgres-operator.crunchydata.com/cluster: hippo

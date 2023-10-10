@@ -79,13 +79,13 @@ func configmap(pgadmin *v1beta1.PGAdmin,
 	return configmap, err
 }
 
-// systemSettings returns pgAdmin settings as a value that can be marshaled to JSON.
-func systemSettings(pgadmin *v1beta1.PGAdmin) map[string]interface{} {
+// generateConfig generates the config settings for the pgAdmin
+func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
+
 	settings := *pgadmin.Spec.Config.Settings.DeepCopy()
 	if settings == nil {
 		settings = make(map[string]interface{})
 	}
-
 	// SERVER_MODE must always be enabled when running on a webserver.
 	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/config.py#L105
 	settings["SERVER_MODE"] = true
@@ -93,11 +93,6 @@ func systemSettings(pgadmin *v1beta1.PGAdmin) map[string]interface{} {
 	settings["UPGRADE_CHECK_URL"] = ""
 	settings["UPGRADE_CHECK_KEY"] = ""
 
-	return settings
-}
-
-// generateConfig generates the config settings for the pgAdmin
-func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
 	// To avoid spurious reconciles, the following value must not change when
 	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
 	// emitting map keys in sorted order. Indent so the value is not rendered
@@ -106,7 +101,7 @@ func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
 	encoder := json.NewEncoder(buffer)
 	encoder.SetEscapeHTML(false)
 	encoder.SetIndent("", "  ")
-	err := encoder.Encode(systemSettings(pgadmin))
+	err := encoder.Encode(settings)
 
 	return buffer.String(), err
 }
