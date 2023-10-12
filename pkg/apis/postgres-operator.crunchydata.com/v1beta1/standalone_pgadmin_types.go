@@ -98,12 +98,6 @@ type PGAdminSpec struct {
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
-	// AdminUsername is the username to set during pgAdmin startup.
-	// pgAdmin requires this to have a valid email form in order to log in.
-	// Once set, this cannot be changed.
-	// +optional
-	AdminUsername string `json:"adminUsername"`
-
 	// ServerGroups for importing PostgresClusters to pgAdmin.
 	// To create a pgAdmin with no selectors, leave this field empty.
 	// A pgAdmin created with no `ServerGroups` will not automatically
@@ -111,13 +105,6 @@ type PGAdminSpec struct {
 	// added manually.
 	// +optional
 	ServerGroups []ServerGroup `json:"serverGroups"`
-}
-
-// Default defines several key default values for a pgAdmin instance.
-func (s *PGAdminSpec) Default() {
-	if s.AdminUsername == "" {
-		s.AdminUsername = "admin@pgo.com"
-	}
 }
 
 type ServerGroup struct {
@@ -170,7 +157,6 @@ func (p *PGAdmin) Default() {
 	if len(p.Kind) == 0 {
 		p.Kind = "PGAdmin"
 	}
-	p.Spec.Default()
 }
 
 //+kubebuilder:object:root=true

@@ -32,7 +32,7 @@ func TestPod(t *testing.T) {
 
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Name = "pgadmin"
-	pgadmin.Spec.AdminUsername = "admin@pgo.com"
+	pgadmin.Namespace = "postgres-operator"
 	config := new(corev1.ConfigMap)
 	testpod := new(corev1.PodSpec)
 	pvc := new(corev1.PersistentVolumeClaim)
@@ -53,19 +53,19 @@ containers:
     \"Running pgAdmin4 Setup\"\npython3 ${PGADMIN_DIR}/setup.py\n\necho \"Starting
     pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4 &\necho $! > $PGADMIN4_PIDFILE\n\npython3
     ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgo.com --replace\n\nexec {fd}<> <(:)\nwhile read -r -t 5 -u \"${fd}\"
-    || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\" ] && python3
-    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgo.com --replace\n\tthen\n\t\texec {fd}>&- && exec {fd}<> <(:)\n\t\tstat
-    --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif [ !
-    -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! > $PGADMIN4_PIDFILE\n\t\techo
-    \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\"; export -f
-    monitor; exec -a \"$0\" bash -ceu monitor"
+    --user admin@pgadmin.postgres-operator.svc --replace\n\nexec {fd}<> <(:)\nwhile
+    read -r -t 5 -u \"${fd}\" || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\"
+    ] && python3 ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgadmin.postgres-operator.svc --replace\n\tthen\n\t\texec {fd}>&-
+    && exec {fd}<> <(:)\n\t\tstat --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif
+    [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! >
+    $PGADMIN4_PIDFILE\n\t\techo \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\";
+    export -f monitor; exec -a \"$0\" bash -ceu monitor"
   - pgadmin
   - /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
   env:
   - name: PGADMIN_SETUP_EMAIL
-    value: admin@pgo.com
+    value: admin@pgadmin.postgres-operator.svc
   - name: PGADMIN_SETUP_PASSWORD
     valueFrom:
       secretKeyRef:
@@ -134,7 +134,6 @@ volumes:
 		pgadmin.Spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
 		}
-		pgadmin.Spec.AdminUsername = "admin@pgo.com"
 
 		call()
 
@@ -148,19 +147,19 @@ containers:
     \"Running pgAdmin4 Setup\"\npython3 ${PGADMIN_DIR}/setup.py\n\necho \"Starting
     pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4 &\necho $! > $PGADMIN4_PIDFILE\n\npython3
     ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgo.com --replace\n\nexec {fd}<> <(:)\nwhile read -r -t 5 -u \"${fd}\"
-    || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\" ] && python3
-    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgo.com --replace\n\tthen\n\t\texec {fd}>&- && exec {fd}<> <(:)\n\t\tstat
-    --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif [ !
-    -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! > $PGADMIN4_PIDFILE\n\t\techo
-    \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\"; export -f
-    monitor; exec -a \"$0\" bash -ceu monitor"
+    --user admin@pgadmin.postgres-operator.svc --replace\n\nexec {fd}<> <(:)\nwhile
+    read -r -t 5 -u \"${fd}\" || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\"
+    ] && python3 ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgadmin.postgres-operator.svc --replace\n\tthen\n\t\texec {fd}>&-
+    && exec {fd}<> <(:)\n\t\tstat --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif
+    [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! >
+    $PGADMIN4_PIDFILE\n\t\techo \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\";
+    export -f monitor; exec -a \"$0\" bash -ceu monitor"
   - pgadmin
   - /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
   env:
   - name: PGADMIN_SETUP_EMAIL
-    value: admin@pgo.com
+    value: admin@pgadmin.postgres-operator.svc
   - name: PGADMIN_SETUP_PASSWORD
     valueFrom:
       secretKeyRef:

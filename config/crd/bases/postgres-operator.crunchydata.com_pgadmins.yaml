@@ -37,11 +37,6 @@ spec:
           spec:
             description: PGAdminSpec defines the desired state of PGAdmin
             properties:
-              adminUsername:
-                description: AdminUsername is the username to set during pgAdmin startup.
-                  pgAdmin requires this to have a valid email form in order to log
-                  in. Once set, this cannot be changed.
-                type: string
               affinity:
                 description: 'Scheduling constraints of the PGAdmin pod. More info:
                   https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node'
