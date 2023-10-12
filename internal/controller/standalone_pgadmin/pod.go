@@ -83,7 +83,7 @@ func pod(
 		Env: []corev1.EnvVar{
 			{
 				Name:  "PGADMIN_SETUP_EMAIL",
-				Value: inPGAdmin.Spec.AdminUsername,
+				Value: fmt.Sprintf("admin@%s.%s.svc", inPGAdmin.Name, inPGAdmin.Namespace),
 			},
 			{
 				Name: "PGADMIN_SETUP_PASSWORD",
@@ -199,7 +199,7 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 	var loadServerCommand = fmt.Sprintf(`python3 ${PGADMIN_DIR}/setup.py --load-servers %s/~postgres-operator/%s --user %s --replace`,
 		configMountPath,
 		settingsClusterMapKey,
-		pgadmin.Spec.AdminUsername)
+		fmt.Sprintf("admin@%s.%s.svc", pgadmin.Name, pgadmin.Namespace))
 
 	// This script sets up, starts pgadmin, and runs the `loadServerCommand` to register the discovered servers.
 	var startScript = fmt.Sprintf(`

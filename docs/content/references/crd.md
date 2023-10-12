@@ -94,11 +94,6 @@ PGAdminSpec defines the desired state of PGAdmin
         <td>Defines a PersistentVolumeClaim for pgAdmin data. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes</td>
         <td>true</td>
       </tr><tr>
-        <td><b>adminUsername</b></td>
-        <td>string</td>
-        <td>AdminUsername is the username to set during pgAdmin startup. pgAdmin requires this to have a valid email form in order to log in. Once set, this cannot be changed.</td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#pgadminspecaffinity">affinity</a></b></td>
         <td>object</td>
         <td>Scheduling constraints of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node</td>
