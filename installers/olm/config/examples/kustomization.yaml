@@ -15,4 +15,5 @@ kind: Kustomization
 
 resources:
 - postgrescluster.example.yaml
+- pgadmin.example.yaml
 - pgupgrade.example.yaml
