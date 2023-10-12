@@ -96,7 +96,7 @@ PGAdminSpec defines the desired state of PGAdmin
       </tr><tr>
         <td><b>adminUsername</b></td>
         <td>string</td>
-        <td>AdminUsername is the username to set during pgAdmin startup. pgAdmin requires this to have a valid email form.</td>
+        <td>AdminUsername is the username to set during pgAdmin startup. pgAdmin requires this to have a valid email form in order to log in. Once set, this cannot be changed.</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#pgadminspecaffinity">affinity</a></b></td>
