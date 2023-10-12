@@ -1,0 +1,15 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: example-pgadmin
+  namespace: openshift-operators
+spec:
+  dataVolumeClaimSpec:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+    - name: "Crunchy Postgres for Kubernetes"
+      postgresClusterSelector: {}

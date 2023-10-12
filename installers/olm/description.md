@@ -32,6 +32,8 @@ Kubernetes, providing a seamless cloud native Postgres solution to keep your dat
 - **Affinity and Tolerations**: Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference.
   Set your [pod anti-affinity][k8s-anti-affinity], node affinity, Pod tolerations and more rules to customize your deployment topology!
 - **PostgreSQL Major Version Upgrades**: Perform a [PostgreSQL major version upgrade][major-version-upgrade] declaratively.
+- **Database Administration**: Easily deploy [pgAdmin4][pgadmin] to administer your PostgresClusters' databases.
+  The automatic discovery of PostgresClusters ensures that you are able to seamlessly access any databases within your environment from the pgAdmin4 GUI.
 - **Full Customizability**: Crunchy PostgreSQL for Kubernetes makes it easy to get your own PostgreSQL-as-a-Service up and running
   and fully customize your deployments, including:
     - Choose the resources for your Postgres cluster: [container resources and storage size][resize-cluster]. [Resize at any time][resize-cluster] with minimal disruption.
@@ -55,6 +57,7 @@ and much more!
 [k8s-anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
 [k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
 
+[pgAdmin]: https://www.pgadmin.org/
 [pgBackRest]: https://www.pgbackrest.org
 [pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/v5/tutorial/connection-pooling/
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
