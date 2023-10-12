@@ -44,7 +44,7 @@ func (r *PGAdminReconciler) findPGAdminsForPostgresCluster(
 	}) == nil {
 		for i := range pgadmins.Items {
 			for _, serverGroup := range pgadmins.Items[i].Spec.ServerGroups {
-				if selector, err := naming.AsSelector(*serverGroup.PostgresClusterSelector); err == nil {
+				if selector, err := naming.AsSelector(serverGroup.PostgresClusterSelector); err == nil {
 					if selector.Matches(labels.Set(cluster.GetLabels())) {
 						matching = append(matching, &pgadmins.Items[i])
 					}
@@ -67,7 +67,7 @@ func (r *PGAdminReconciler) getClustersForPGAdmin(
 	var selector labels.Selector
 
 	for _, serverGroup := range pgAdmin.Spec.ServerGroups {
-		if selector, err = naming.AsSelector(*serverGroup.PostgresClusterSelector); err == nil {
+		if selector, err = naming.AsSelector(serverGroup.PostgresClusterSelector); err == nil {
 			var filteredList v1beta1.PostgresClusterList
 			err = r.List(ctx, &filteredList,
 				client.InNamespace(pgAdmin.Namespace),

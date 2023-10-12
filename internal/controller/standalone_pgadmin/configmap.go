@@ -147,15 +147,12 @@ func generateClusterConfig(
 	sort.Strings(keys)
 
 	clusterServers := map[int]any{}
-	// Because we allow multiple ServerGroups to be defined, we use `currentOffset` to keep
-	// track of the last number added to the `Servers` group
-	var currentOffset = 0
 	for _, serverGroupName := range keys {
 		sort.Slice(clusters[serverGroupName].Items,
 			func(i, j int) bool {
 				return clusters[serverGroupName].Items[i].Name < clusters[serverGroupName].Items[j].Name
 			})
-		for i, cluster := range clusters[serverGroupName].Items {
+		for _, cluster := range clusters[serverGroupName].Items {
 			object := map[string]any{
 				"Name":          cluster.Name,
 				"Group":         serverGroupName,
@@ -167,9 +164,8 @@ func generateClusterConfig(
 				"SSLMode": "prefer",
 				"Shared":  true,
 			}
-			clusterServers[i+1+currentOffset] = object
+			clusterServers[len(clusterServers)+1] = object
 		}
-		currentOffset = len(clusters[serverGroupName].Items) + currentOffset
 	}
 	servers := map[string]any{
 		"Servers": clusterServers,

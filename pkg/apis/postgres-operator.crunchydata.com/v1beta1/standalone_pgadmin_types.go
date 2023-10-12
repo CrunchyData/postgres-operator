@@ -99,7 +99,8 @@ type PGAdminSpec struct {
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
 	// AdminUsername is the username to set during pgAdmin startup.
-	// pgAdmin requires this to have a valid email form.
+	// pgAdmin requires this to have a valid email form in order to log in.
+	// Once set, this cannot be changed.
 	// +optional
 	AdminUsername string `json:"adminUsername"`
 
@@ -126,7 +127,7 @@ type ServerGroup struct {
 
 	// PostgresClusterSelector selects clusters to dynamically add to pgAdmin by matching labels.
 	// An empty selector like `{}` will select ALL clusters in the namespace.
-	PostgresClusterSelector *metav1.LabelSelector `json:"postgresClusterSelector"`
+	PostgresClusterSelector metav1.LabelSelector `json:"postgresClusterSelector"`
 }
 
 // PGAdminStatus defines the observed state of PGAdmin
