@@ -103,13 +103,10 @@ rules:
   - postgres-operator.crunchydata.com
   resources:
   - pgadmins
+  - pgupgrades
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - postgres-operator.crunchydata.com
@@ -123,29 +120,6 @@ rules:
   - postgres-operator.crunchydata.com
   resources:
   - pgadmins/status
-  verbs:
-  - get
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - postgres-operator.crunchydata.com
-  resources:
-  - pgpgadmins
-  verbs:
-  - list
-  - watch
-- apiGroups:
-  - postgres-operator.crunchydata.com
-  resources:
-  - pgupgrades
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - postgres-operator.crunchydata.com
-  resources:
   - pgupgrades/status
   - postgresclusters/status
   verbs:

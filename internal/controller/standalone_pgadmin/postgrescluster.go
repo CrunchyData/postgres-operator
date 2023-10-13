@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgpgadmins",verbs={list}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={list}
 
 // findPGAdminsForPostgresCluster returns PGAdmins that target a given cluster.
 func (r *PGAdminReconciler) findPGAdminsForPostgresCluster(

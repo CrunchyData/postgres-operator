@@ -81,9 +81,8 @@ func (r *PGAdminReconciler) watchPostgresClusters() handler.Funcs {
 	}
 }
 
-//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins,verbs={get,list,watch,create,update,patch,delete}
-//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins/status,verbs={get,update,patch}
-//+kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=pgadmins/finalizers,verbs={update}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={get}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins/status",verbs={patch}
 
 // Reconcile which aims to move the current state of the pgAdmin closer to the
 // desired state described in a [v1beta1.PGAdmin] identified by request.
