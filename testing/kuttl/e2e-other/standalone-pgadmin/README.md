@@ -1,6 +1,5 @@
 ** pgAdmin **
 
-Note: requires the StandalonePGAdmin FeatureGate enabled.
 Note: due to the (random) namespace being part of the host, we cannot check the configmap using the usual assert/file pattern.
 
 *Phase one*

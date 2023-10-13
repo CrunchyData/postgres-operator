@@ -152,18 +152,16 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 		os.Exit(1)
 	}
 
-	if util.DefaultMutableFeatureGate.Enabled(util.StandalonePGAdmin) {
-		pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
-			Client:   mgr.GetClient(),
-			Owner:    "pgadmin-controller",
-			Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-			Scheme:   mgr.GetScheme(),
-		}
+	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
+		Client:   mgr.GetClient(),
+		Owner:    "pgadmin-controller",
+		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
+		Scheme:   mgr.GetScheme(),
+	}
 
-		if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
-			log.Error(err, "unable to create PGAdmin controller")
-			os.Exit(1)
-		}
+	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create PGAdmin controller")
+		os.Exit(1)
 	}
 }
 
