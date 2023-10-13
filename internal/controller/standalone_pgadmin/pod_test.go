@@ -73,10 +73,6 @@ containers:
         name: pgadmin-standalone-pgadmin
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
-  - name: KRB5_CONFIG
-    value: /etc/pgadmin/conf.d/krb5.conf
-  - name: KRB5RCACHEDIR
-    value: /tmp
   name: pgadmin
   ports:
   - containerPort: 5050
@@ -93,19 +89,50 @@ containers:
     runAsNonRoot: true
   volumeMounts:
   - mountPath: /etc/pgadmin/conf.d
-    name: standalone-pgadmin-config
+    name: pgadmin-config
     readOnly: true
   - mountPath: /var/lib/pgadmin
-    name: standalone-pgadmin-data
+    name: pgadmin-data
   - mountPath: /var/log/pgadmin
     name: pgadmin-log
+  - mountPath: /etc/pgadmin
+    name: pgadmin-config-system
+    readOnly: true
   - mountPath: /tmp
     name: tmp
+initContainers:
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    mkdir -p /etc/pgadmin/conf.d
+    (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
+  - startup
+  - |
+    import json, re, os
+    with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
+        _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
+        if type(_data) is dict:
+            globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+    if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
+        with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
+            LDAP_BIND_PASSWORD = _f.read()
+  name: pgadmin-startup
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgadmin
+    name: pgadmin-config-system
 volumes:
-- name: standalone-pgadmin-data
-  persistentVolumeClaim:
-    claimName: ""
-- name: standalone-pgadmin-config
+- name: pgadmin-config
   projected:
     sources:
     - configMap:
@@ -114,9 +141,16 @@ volumes:
           path: ~postgres-operator/pgadmin-settings.json
         - key: pgadmin-shared-clusters.json
           path: ~postgres-operator/pgadmin-shared-clusters.json
+- name: pgadmin-data
+  persistentVolumeClaim:
+    claimName: ""
 - emptyDir:
     medium: Memory
   name: pgadmin-log
+- emptyDir:
+    medium: Memory
+    sizeLimit: 32Ki
+  name: pgadmin-config-system
 - emptyDir:
     medium: Memory
   name: tmp
@@ -167,10 +201,6 @@ containers:
         name: pgadmin-standalone-pgadmin
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
-  - name: KRB5_CONFIG
-    value: /etc/pgadmin/conf.d/krb5.conf
-  - name: KRB5RCACHEDIR
-    value: /tmp
   image: new-image
   imagePullPolicy: Always
   name: pgadmin
@@ -191,19 +221,54 @@ containers:
     runAsNonRoot: true
   volumeMounts:
   - mountPath: /etc/pgadmin/conf.d
-    name: standalone-pgadmin-config
+    name: pgadmin-config
     readOnly: true
   - mountPath: /var/lib/pgadmin
-    name: standalone-pgadmin-data
+    name: pgadmin-data
   - mountPath: /var/log/pgadmin
     name: pgadmin-log
+  - mountPath: /etc/pgadmin
+    name: pgadmin-config-system
+    readOnly: true
   - mountPath: /tmp
     name: tmp
+initContainers:
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    mkdir -p /etc/pgadmin/conf.d
+    (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
+  - startup
+  - |
+    import json, re, os
+    with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
+        _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
+        if type(_data) is dict:
+            globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+    if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
+        with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
+            LDAP_BIND_PASSWORD = _f.read()
+  image: new-image
+  imagePullPolicy: Always
+  name: pgadmin-startup
+  resources:
+    requests:
+      cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgadmin
+    name: pgadmin-config-system
 volumes:
-- name: standalone-pgadmin-data
-  persistentVolumeClaim:
-    claimName: ""
-- name: standalone-pgadmin-config
+- name: pgadmin-config
   projected:
     sources:
     - configMap:
@@ -212,9 +277,16 @@ volumes:
           path: ~postgres-operator/pgadmin-settings.json
         - key: pgadmin-shared-clusters.json
           path: ~postgres-operator/pgadmin-shared-clusters.json
+- name: pgadmin-data
+  persistentVolumeClaim:
+    claimName: ""
 - emptyDir:
     medium: Memory
   name: pgadmin-log
+- emptyDir:
+    medium: Memory
+    sizeLimit: 32Ki
+  name: pgadmin-config-system
 - emptyDir:
     medium: Memory
   name: tmp
