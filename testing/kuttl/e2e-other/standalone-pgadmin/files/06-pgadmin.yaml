@@ -3,7 +3,6 @@ kind: PGAdmin
 metadata:
   name: pgadmin
 spec:
-  adminUsername: admin@pgo.com
   dataVolumeClaimSpec:
     accessModes:
     - "ReadWriteOnce"
