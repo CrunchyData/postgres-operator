@@ -67,7 +67,7 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 func service(
 	pgadmin *v1beta1.PGAdmin) (*corev1.Service, error,
 ) {
-	service := &corev1.Service{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
+	service := &corev1.Service{ObjectMeta: naming.StandalonePGAdminService(pgadmin)}
 	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
 	service.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()

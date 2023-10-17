@@ -4,7 +4,7 @@ metadata:
   labels:
     postgres-operator.crunchydata.com/role: pgadmin
     postgres-operator.crunchydata.com/standalone-pgadmin: pgadmin
-  name: pgadmin-standalone-pgadmin
+  name: pgadmin-standalone-pods
 spec:
   ports:
   - name: pgadmin
