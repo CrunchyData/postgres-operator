@@ -14,13 +14,12 @@
 
 package standalone_pgadmin
 
+// Include configs here used by multiple files
 const (
-	// key for standalone pgAdmin settings
+	// ConfigMap keys used also in mounting volume to pod
 	settingsConfigMapKey  = "pgadmin-settings.json"
 	settingsClusterMapKey = "pgadmin-shared-clusters.json"
 
-	logVolume       = "pgadmin-log"
-	configMountPath = "/etc/pgadmin/conf.d"
-
+	// Port address used to define pod and service
 	pgAdminPort = 5050
 )

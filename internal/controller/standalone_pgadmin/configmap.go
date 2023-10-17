@@ -87,7 +87,7 @@ func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
 		settings = make(map[string]interface{})
 	}
 	// SERVER_MODE must always be enabled when running on a webserver.
-	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-4_30/web/config.py#L105
+	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-7_7/web/config.py#L110
 	settings["SERVER_MODE"] = true
 	settings["UPGRADE_CHECK_ENABLED"] = false
 	settings["UPGRADE_CHECK_URL"] = ""
