@@ -1398,37 +1398,6 @@ spec:
                   - postgresClusterSelector
                   type: object
                 type: array
-              service:
-                description: Specification of the service that exposes pgAdmin.
-                properties:
-                  metadata:
-                    description: Metadata contains metadata for custom resources
-                    properties:
-                      annotations:
-                        additionalProperties:
-                          type: string
-                        type: object
-                      labels:
-                        additionalProperties:
-                          type: string
-                        type: object
-                    type: object
-                  nodePort:
-                    description: The port on which this service is exposed when type
-                      is NodePort or LoadBalancer. Value must be in-range and not
-                      in use or the operation will fail. If unspecified, a port will
-                      be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
-                    format: int32
-                    type: integer
-                  type:
-                    default: ClusterIP
-                    description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types'
-                    enum:
-                    - ClusterIP
-                    - NodePort
-                    - LoadBalancer
-                    type: string
-                type: object
               tolerations:
                 description: 'Tolerations of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration'
                 items:

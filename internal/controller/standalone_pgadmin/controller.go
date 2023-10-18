@@ -130,9 +130,6 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		clusters, err = r.getClustersForPGAdmin(ctx, pgAdmin)
 	}
 	if err == nil {
-		_, err = r.reconcilePGAdminService(ctx, pgAdmin)
-	}
-	if err == nil {
 		configmap, err = r.reconcilePGAdminConfigMap(ctx, pgAdmin, clusters)
 	}
 	if err == nil {

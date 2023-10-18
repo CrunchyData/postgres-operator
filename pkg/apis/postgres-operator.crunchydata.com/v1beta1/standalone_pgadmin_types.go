@@ -89,10 +89,6 @@ type PGAdminSpec struct {
 	// +optional
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 
-	// Specification of the service that exposes pgAdmin.
-	// +optional
-	Service *ServiceSpec `json:"service,omitempty"`
-
 	// Tolerations of the PGAdmin pod.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
