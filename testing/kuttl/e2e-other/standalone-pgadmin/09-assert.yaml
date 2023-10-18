@@ -55,7 +55,7 @@ commands:
       exit 1
     }
 
-    clusters_actual=$(kubectl exec -n "${NAMESPACE}" pgadmin-standalone-pgadmin-0 -- bash -c 'python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgo.com && cat /tmp/dumped.json')
+    clusters_actual=$(kubectl exec -n "${NAMESPACE}" pgadmin-standalone-pgadmin-0 -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
     
     clusters_expected='
     {
