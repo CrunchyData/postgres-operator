@@ -57,7 +57,7 @@ func statefulset(
 	sts.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			naming.LabelStandalonePGAdmin: pgadmin.Name,
-			naming.LabelRole:              naming.RoleStandalonePGAdmin,
+			naming.LabelRole:              naming.RolePGAdmin,
 		},
 	}
 	sts.Spec.Template.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()

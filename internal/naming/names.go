@@ -573,8 +573,8 @@ func MovePGBackRestRepoDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMet
 func StandalonePGAdminCommonLabels(pgadmin *v1beta1.PGAdmin) map[string]string {
 	return map[string]string{
 		LabelStandalonePGAdmin: pgadmin.Name,
-		LabelData:              DataStandalonePGAdmin,
-		LabelRole:              RoleStandalonePGAdmin,
+		LabelData:              DataPGAdmin,
+		LabelRole:              RolePGAdmin,
 	}
 }
 
@@ -583,7 +583,7 @@ func StandalonePGAdminCommonLabels(pgadmin *v1beta1.PGAdmin) map[string]string {
 func StandalonePGAdmin(pgadmin *v1beta1.PGAdmin) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: pgadmin.Namespace,
-		Name:      pgadmin.Name + "-standalone-pgadmin",
+		Name:      fmt.Sprintf("pgadmin-%s", pgadmin.UID),
 	}
 }
 

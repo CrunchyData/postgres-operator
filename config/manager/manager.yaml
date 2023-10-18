@@ -41,7 +41,7 @@ spec:
         - name: RELATED_IMAGE_PGUPGRADE
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:latest"
         - name: RELATED_IMAGE_STANDALONE_PGADMIN
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-17"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-7.7-0"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities: { drop: [ALL] }

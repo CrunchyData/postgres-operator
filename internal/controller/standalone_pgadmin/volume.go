@@ -53,8 +53,8 @@ func (r *PGAdminReconciler) reconcilePGAdminDataVolume(
 func pvc(pgadmin *v1beta1.PGAdmin) *corev1.PersistentVolumeClaim {
 	labelMap := map[string]string{
 		naming.LabelStandalonePGAdmin: pgadmin.Name,
-		naming.LabelRole:              naming.RoleStandalonePGAdmin,
-		naming.LabelData:              naming.DataStandalonePGAdmin,
+		naming.LabelRole:              naming.RolePGAdmin,
+		naming.LabelData:              naming.DataPGAdmin,
 	}
 
 	pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}

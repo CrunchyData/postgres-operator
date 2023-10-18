@@ -70,7 +70,7 @@ containers:
     valueFrom:
       secretKeyRef:
         key: password
-        name: pgadmin-standalone-pgadmin
+        name: pgadmin-
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
   name: pgadmin
@@ -198,7 +198,7 @@ containers:
     valueFrom:
       secretKeyRef:
         key: password
-        name: pgadmin-standalone-pgadmin
+        name: pgadmin-
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
   image: new-image

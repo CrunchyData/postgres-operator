@@ -1269,7 +1269,7 @@ spec:
                     type: string
                 type: object
               image:
-                description: The image name to use for standalone pgAdmin instance.
+                description: The image name to use for pgAdmin instance.
                 type: string
               imagePullPolicy:
                 description: 'ImagePullPolicy is used to determine when Kubernetes

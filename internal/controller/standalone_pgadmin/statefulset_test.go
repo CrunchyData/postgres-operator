@@ -88,9 +88,9 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 creationTimestamp: null
 labels:
-  postgres-operator.crunchydata.com/data: standalone-pgadmin
-  postgres-operator.crunchydata.com/role: standalone-pgadmin
-  postgres-operator.crunchydata.com/standalone-pgadmin: test-standalone-pgadmin
+  postgres-operator.crunchydata.com/data: pgadmin
+  postgres-operator.crunchydata.com/pgadmin: test-standalone-pgadmin
+  postgres-operator.crunchydata.com/role: pgadmin
 		`))
 
 		compare := `
@@ -184,9 +184,9 @@ annotations:
 creationTimestamp: null
 labels:
   label1: labelvalue
-  postgres-operator.crunchydata.com/data: standalone-pgadmin
-  postgres-operator.crunchydata.com/role: standalone-pgadmin
-  postgres-operator.crunchydata.com/standalone-pgadmin: custom-pgadmin
+  postgres-operator.crunchydata.com/data: pgadmin
+  postgres-operator.crunchydata.com/pgadmin: custom-pgadmin
+  postgres-operator.crunchydata.com/role: pgadmin
 		`))
 
 		compare := `
