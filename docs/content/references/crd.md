@@ -106,7 +106,7 @@ PGAdminSpec defines the desired state of PGAdmin
       </tr><tr>
         <td><b>image</b></td>
         <td>string</td>
-        <td>The image name to use for standalone pgAdmin instance.</td>
+        <td>The image name to use for pgAdmin instance.</td>
         <td>false</td>
       </tr><tr>
         <td><b>imagePullPolicy</b></td>

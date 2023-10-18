@@ -3,8 +3,7 @@ kind: ConfigMap
 metadata:
   labels:
     postgres-operator.crunchydata.com/role: pgadmin
-    postgres-operator.crunchydata.com/standalone-pgadmin: pgadmin
-  name: pgadmin-standalone-pgadmin
+    postgres-operator.crunchydata.com/pgadmin: pgadmin
 data:
   pgadmin-settings.json: |
     {
@@ -22,10 +21,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    postgres-operator.crunchydata.com/data: standalone-pgadmin
-    postgres-operator.crunchydata.com/role: standalone-pgadmin
-    postgres-operator.crunchydata.com/standalone-pgadmin: pgadmin
-  name: pgadmin-standalone-pgadmin-0
+    postgres-operator.crunchydata.com/data: pgadmin
+    postgres-operator.crunchydata.com/role: pgadmin
+    postgres-operator.crunchydata.com/pgadmin: pgadmin
 status:
   containerStatuses:
   - name: pgadmin
@@ -38,6 +36,5 @@ kind: Secret
 metadata:
   labels:
     postgres-operator.crunchydata.com/role: pgadmin
-    postgres-operator.crunchydata.com/standalone-pgadmin: pgadmin
-  name: pgadmin-standalone-pgadmin
+    postgres-operator.crunchydata.com/pgadmin: pgadmin
 type: Opaque

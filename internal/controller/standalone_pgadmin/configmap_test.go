@@ -152,9 +152,9 @@ kind: ConfigMap
 		assert.Assert(t, cmp.MarshalMatches(configmap.ObjectMeta, `
 creationTimestamp: null
 labels:
+  postgres-operator.crunchydata.com/pgadmin: pg1
   postgres-operator.crunchydata.com/role: pgadmin
-  postgres-operator.crunchydata.com/standalone-pgadmin: pg1
-name: pg1-standalone-pgadmin
+name: pgadmin-
 namespace: some-ns
 		`))
 
@@ -179,8 +179,8 @@ namespace: some-ns
 		// Labels present in the metadata.
 		assert.DeepEqual(t, configmap.ObjectMeta.Labels, map[string]string{
 			"c": "v3", "d": "v4",
-			"postgres-operator.crunchydata.com/standalone-pgadmin": "pg1",
-			"postgres-operator.crunchydata.com/role":               "pgadmin",
+			"postgres-operator.crunchydata.com/pgadmin": "pg1",
+			"postgres-operator.crunchydata.com/role":    "pgadmin",
 		})
 	})
 }

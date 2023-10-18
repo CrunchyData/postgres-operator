@@ -57,7 +57,7 @@ type PGAdminSpec struct {
 	// +kubebuilder:validation:Required
 	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
 
-	// The image name to use for standalone pgAdmin instance.
+	// The image name to use for pgAdmin instance.
 	// +optional
 	Image *string `json:"image,omitempty"`
 

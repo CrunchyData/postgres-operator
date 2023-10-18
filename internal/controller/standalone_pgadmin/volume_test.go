@@ -75,8 +75,8 @@ func TestReconcilePGAdminDataVolume(t *testing.T) {
 		assert.Assert(t, metav1.IsControlledBy(pvc, pgadmin))
 
 		assert.Equal(t, pvc.Labels[naming.LabelStandalonePGAdmin], pgadmin.Name)
-		assert.Equal(t, pvc.Labels[naming.LabelRole], naming.RoleStandalonePGAdmin)
-		assert.Equal(t, pvc.Labels[naming.LabelData], naming.DataStandalonePGAdmin)
+		assert.Equal(t, pvc.Labels[naming.LabelRole], naming.RolePGAdmin)
+		assert.Equal(t, pvc.Labels[naming.LabelData], naming.DataPGAdmin)
 
 		assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
