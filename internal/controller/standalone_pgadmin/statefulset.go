@@ -69,11 +69,6 @@ func statefulset(
 	// Don't clutter the namespace with extra ControllerRevisions.
 	sts.Spec.RevisionHistoryLimit = initialize.Int32(0)
 
-	// Give the Pod a stable DNS record based on its name.
-	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#stable-network-id
-	// - https://docs.k8s.io/concepts/services-networking/dns-pod-service/#pods
-	sts.Spec.ServiceName = naming.StandalonePGAdminService(pgadmin).Name
-
 	// Set the StatefulSet update strategy to "RollingUpdate", and the Partition size for the
 	// update strategy to 0 (note that these are the defaults for a StatefulSet).  This means
 	// every pod of the StatefulSet will be deleted and recreated when the Pod template changes.

@@ -587,19 +587,6 @@ func StandalonePGAdmin(pgadmin *v1beta1.PGAdmin) metav1.ObjectMeta {
 	}
 }
 
-// StandalonePGAdminService returns the ObjectMeta necessary to lookup the Service
-// that is responsible for the network identity of Pods.
-func StandalonePGAdminService(pgadmin *v1beta1.PGAdmin) metav1.ObjectMeta {
-	// The hyphen below ensures that the DNS name will not be interpreted as a
-	// top-level domain. Partially qualified requests for "{pod}.{cluster}-pods"
-	// should not leave the Kubernetes cluster, and if they do they are less
-	// likely to resolve.
-	return metav1.ObjectMeta{
-		Namespace: pgadmin.Namespace,
-		Name:      pgadmin.Name + "-standalone-pods",
-	}
-}
-
 // UpgradeCheckConfigMap returns the ObjectMeta for the PGO ConfigMap
 func UpgradeCheckConfigMap() metav1.ObjectMeta {
 	return metav1.ObjectMeta{

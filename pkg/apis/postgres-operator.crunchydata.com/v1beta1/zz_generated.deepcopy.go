@@ -473,11 +473,6 @@ func (in *PGAdminSpec) DeepCopyInto(out *PGAdminSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Service != nil {
-		in, out := &in.Service, &out.Service
-		*out = new(ServiceSpec)
-		(*in).DeepCopyInto(*out)
-	}
 	if in.Tolerations != nil {
 		in, out := &in.Tolerations, &out.Tolerations
 		*out = make([]v1.Toleration, len(*in))

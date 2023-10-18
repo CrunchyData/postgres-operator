@@ -139,11 +139,6 @@ PGAdminSpec defines the desired state of PGAdmin
         <td>ServerGroups for importing PostgresClusters to pgAdmin. To create a pgAdmin with no selectors, leave this field empty. A pgAdmin created with no `ServerGroups` will not automatically add any servers through discovery. PostgresClusters can still be added manually.</td>
         <td>false</td>
       </tr><tr>
-        <td><b><a href="#pgadminspecservice">service</a></b></td>
-        <td>object</td>
-        <td>Specification of the service that exposes pgAdmin.</td>
-        <td>false</td>
-      </tr><tr>
         <td><b><a href="#pgadminspectolerationsindex">tolerations</a></b></td>
         <td>[]object</td>
         <td>Tolerations of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration</td>
@@ -2203,75 +2198,6 @@ A label selector requirement is a selector that contains values, a key, and an o
         <td><b>values</b></td>
         <td>[]string</td>
         <td>values is an array of string values. If the operator is In or NotIn, the values array must be non-empty. If the operator is Exists or DoesNotExist, the values array must be empty. This array is replaced during a strategic merge patch.</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="pgadminspecservice">
-  PGAdmin.spec.service
-  <sup><sup><a href="#pgadminspec">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Specification of the service that exposes pgAdmin.
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b><a href="#pgadminspecservicemetadata">metadata</a></b></td>
-        <td>object</td>
-        <td>Metadata contains metadata for custom resources</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>nodePort</b></td>
-        <td>integer</td>
-        <td>The port on which this service is exposed when type is NodePort or LoadBalancer. Value must be in-range and not in use or the operation will fail. If unspecified, a port will be allocated if this Service requires one. - https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport</td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>type</b></td>
-        <td>enum</td>
-        <td>More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types</td>
-        <td>false</td>
-      </tr></tbody>
-</table>
-
-
-<h3 id="pgadminspecservicemetadata">
-  PGAdmin.spec.service.metadata
-  <sup><sup><a href="#pgadminspecservice">↩ Parent</a></sup></sup>
-</h3>
-
-
-
-Metadata contains metadata for custom resources
-
-<table>
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Description</th>
-            <th>Required</th>
-        </tr>
-    </thead>
-    <tbody><tr>
-        <td><b>annotations</b></td>
-        <td>map[string]string</td>
-        <td></td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>labels</b></td>
-        <td>map[string]string</td>
-        <td></td>
         <td>false</td>
       </tr></tbody>
 </table>
