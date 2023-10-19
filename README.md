@@ -204,7 +204,7 @@ a set of contributing guidelines that you can review here:
 
 Once you are ready to submit a Pull Request, please ensure you do the following:
 
-1. Reviewing the [contributing guidelines](CONTRIBUTING.md) and ensure your
+1. Reviewing the [contributing guidelines](CONTRIBUTING.md) and ensure
    that you have followed the commit message format, added testing where
    appropriate, documented your changes, etc.
 1. Open up a pull request based upon the guidelines. If you are adding a new
