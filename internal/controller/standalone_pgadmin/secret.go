@@ -16,6 +16,7 @@ package standalone_pgadmin
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -71,6 +72,12 @@ func secret(pgadmin *v1beta1.PGAdmin, existing *corev1.Secret) (*corev1.Secret, 
 		})
 
 	intent.Data = make(map[string][]byte)
+	intent.StringData = make(map[string]string)
+
+	// The username format is hardcoded,
+	// but append the full username to the secret for visibility
+	intent.StringData["username"] = fmt.Sprintf("admin@%s.%s.svc",
+		pgadmin.Name, pgadmin.Namespace)
 
 	// Copy existing password into the intent
 	if existing.Data != nil {
