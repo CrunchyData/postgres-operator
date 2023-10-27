@@ -19,23 +19,29 @@ spec:
         - name: CRUNCHY_DEBUG
           value: "true"
         - name: RELATED_IMAGE_POSTGRES_14
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.9-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.9-1"
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.1
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.1-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.1-1"
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.2
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.2-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.2-1"
         - name: RELATED_IMAGE_POSTGRES_14_GIS_3.3
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.3-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.3-1"
         - name: RELATED_IMAGE_POSTGRES_15
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.4-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.4-1"
         - name: RELATED_IMAGE_POSTGRES_15_GIS_3.3
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.4-3.3-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.4-3.3-1"
+        - name: RELATED_IMAGE_POSTGRES_16
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.0-0"
+        - name: RELATED_IMAGE_POSTGRES_16_GIS_3.3
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_16_33_tag}}"
+        - name: RELATED_IMAGE_POSTGRES_16_GIS_3.4
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:{{ubi8_postgres_gis_component_16_34_tag}}"
         - name: RELATED_IMAGE_PGADMIN
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-17"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-18"
         - name: RELATED_IMAGE_PGBACKREST
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.47-0"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.47-1"
         - name: RELATED_IMAGE_PGBOUNCER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.19-4"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.19-5"
         - name: RELATED_IMAGE_PGEXPORTER
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:latest"
         - name: RELATED_IMAGE_PGUPGRADE
