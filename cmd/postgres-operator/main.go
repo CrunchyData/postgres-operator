@@ -128,11 +128,16 @@ func main() {
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
 func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger) {
+	semanticVersionString := util.SemanticMajorMinorPatch(versionString)
+	if semanticVersionString == "" {
+		os.Setenv("REGISTRATION_REQUIRED", "false")
+	}
+
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:      mgr.GetClient(),
 		IsOpenShift: openshift,
 		Owner:       postgrescluster.ControllerName,
-		PGOVersion:  versionString,
+		PGOVersion:  semanticVersionString,
 		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
 		// TODO(tlandreth) Replace the contents of cpk_rsa_key.pub with a key from a
 		// Crunchy authorization server.
