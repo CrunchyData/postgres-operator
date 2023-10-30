@@ -108,6 +108,9 @@ jobs:
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.1-1
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.4-1
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.4-3.3-1
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.0-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.0-3.3-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.0-3.4-0
       - run: go mod download
       - name: Build executable
         run: PGO_VERSION='${{ github.sha }}' make build-postgres-operator
@@ -137,10 +140,12 @@ jobs:
             --env 'RELATED_IMAGE_POSTGRES_14_GIS_3.1=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.9-3.1-1' \
             --env 'RELATED_IMAGE_POSTGRES_15=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.4-1' \
             --env 'RELATED_IMAGE_POSTGRES_15_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.4-3.3-1' \
+            --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.0-0' \
+            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.0-3.3-0' \
+            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.0-3.4-0' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true' \
             --name 'postgres-operator' ubuntu \
             postgres-operator
-
       - name: Install kuttl
         run: |
           curl -Lo /usr/local/bin/kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.13.0/kubectl-kuttl_0.13.0_linux_x86_64
@@ -148,11 +153,11 @@ jobs:
 
       - run: make generate-kuttl
         env:
-          KUTTL_PG_UPGRADE_FROM_VERSION: '14'
-          KUTTL_PG_UPGRADE_TO_VERSION: '15'
-          KUTTL_PG_VERSION: '14'
-          KUTTL_POSTGIS_VERSION: '3.1'
-          KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.9-1'
+          KUTTL_PG_UPGRADE_FROM_VERSION: '15'
+          KUTTL_PG_UPGRADE_TO_VERSION: '16'
+          KUTTL_PG_VERSION: '15'
+          KUTTL_POSTGIS_VERSION: '3.3'
+          KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.4-1'
       - run: |
           make check-kuttl && exit
           failed=$?
