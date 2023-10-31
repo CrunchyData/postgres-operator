@@ -81,10 +81,9 @@ func TestServerSideApply(t *testing.T) {
 		assert.Assert(t, after.GetResourceVersion() != "")
 
 		switch {
-		// TODO(tjmoore4): The update currently impacts 1.28+ only, but may be
-		// backpatched in the future.
-		// - https://github.com/kubernetes/kubernetes/pull/116865
-		case serverVersion.LessThan(version.MustParseGeneric("1.28")):
+		case serverVersion.LessThan(version.MustParseGeneric("1.25.15")):
+		case serverVersion.AtLeast(version.MustParseGeneric("1.26")) && serverVersion.LessThan(version.MustParseGeneric("1.26.10")):
+		case serverVersion.AtLeast(version.MustParseGeneric("1.27")) && serverVersion.LessThan(version.MustParseGeneric("1.27.7")):
 
 			assert.Assert(t, after.GetResourceVersion() != before.GetResourceVersion(),
 				"expected https://issue.k8s.io/116861")
