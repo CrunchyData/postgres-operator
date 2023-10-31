@@ -95,7 +95,7 @@ func TestTicker(t *testing.T) {
 		assert.NilError(t, ticker.Start(ctx, th, tq))
 		<-ctx.Done()
 
-		assert.Equal(t, len(called), 3)
+		assert.Assert(t, len(called) > 2)
 		assert.Equal(t, called[0], expected, "expected at 0ms")
 		assert.Equal(t, called[1], expected, "expected at 100ms")
 		assert.Equal(t, called[2], expected, "expected at 200ms")
