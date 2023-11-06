@@ -22,7 +22,6 @@ import (
 	"net/http"
 	"os"
 
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -95,8 +94,8 @@ func initOpenTelemetry() (func(), error) {
 // otelTransportWrapper creates a function that wraps the provided net/http.RoundTripper
 // with one that starts a span for each request, injects context into that request,
 // and ends the span when that request's response body is closed.
-func otelTransportWrapper(options ...otelhttp.Option) func(http.RoundTripper) http.RoundTripper {
+func otelTransportWrapper() func(http.RoundTripper) http.RoundTripper {
 	return func(rt http.RoundTripper) http.RoundTripper {
-		return otelhttp.NewTransport(rt, options...)
+		return rt
 	}
 }
