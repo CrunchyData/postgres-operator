@@ -24,7 +24,9 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -48,14 +50,25 @@ func TestGenerateDefaultExporterQueries(t *testing.T) {
 }
 
 func TestExporterStartCommand(t *testing.T) {
-	t.Run("OneFlag", func(t *testing.T) {
-		commandSlice := ExporterStartCommand([]string{"--testFlag"})
-		assert.DeepEqual(t, commandSlice[:3], []string{"bash", "-ceu", "--"})
-		assert.DeepEqual(t, commandSlice[4:], []string{"postgres_exporter_watcher", "--testFlag"})
+	t.Run("NoInput", func(t *testing.T) {
+		command := ExporterStartCommand()
+		assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+		assert.Assert(t, len(command) > 3)
+		script := command[3]
+
+		assert.Assert(t, cmp.Contains(script, "'--extend.query-path=/tmp/queries.yml'"))
+		assert.Assert(t, cmp.Contains(script, "'--web.listen-address=:9187'"))
+
+		t.Run("PrettyYAML", func(t *testing.T) {
+			b, err := yaml.Marshal(script)
+			assert.NilError(t, err)
+			assert.Assert(t, strings.HasPrefix(string(b), `|`),
+				"expected literal block scalar, got:\n%s", b)
+		})
 	})
 
 	t.Run("MultipleFlags", func(t *testing.T) {
-		commandSlice := ExporterStartCommand([]string{"--firstTestFlag", "--secondTestFlag"})
+		commandSlice := ExporterStartCommand("--firstTestFlag", "--secondTestFlag")
 		assert.DeepEqual(t, commandSlice[:3], []string{"bash", "-ceu", "--"})
 		assert.DeepEqual(t, commandSlice[4:], []string{"postgres_exporter_watcher", "--firstTestFlag", "--secondTestFlag"})
 	})

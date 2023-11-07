@@ -43,9 +43,7 @@ const (
 
 // postgres_exporter command flags
 var (
-	ExporterExtendQueryPathFlag  = "--extend.query-path=/tmp/queries.yml"
-	ExporterWebListenAddressFlag = fmt.Sprintf("--web.listen-address=:%d", ExporterPort)
-	ExporterWebConfigFileFlag    = "--web.config.file=/web-config/web-config.yml"
+	ExporterWebConfigFileFlag = "--web.config.file=/web-config/web-config.yml"
 )
 
 // Defaults for certain values used in queries.yml
@@ -120,7 +118,7 @@ func GenerateDefaultExporterQueries(ctx context.Context, cluster *v1beta1.Postgr
 // ExporterStartCommand generates an entrypoint that will create a master queries file and
 // start the postgres_exporter. It will repeat those steps if it notices a change in
 // the source queries files.
-func ExporterStartCommand(commandFlags []string) []string {
+func ExporterStartCommand(commandFlags ...string) []string {
 	script := strings.Join([]string{
 		// Older images do not have the command on the PATH.
 		`PATH="$PATH:$(echo /opt/cpm/bin/postgres_exporter-*)"`,
@@ -128,18 +126,23 @@ func ExporterStartCommand(commandFlags []string) []string {
 		// Set up temporary file to hold postgres_exporter process id
 		`POSTGRES_EXPORTER_PIDFILE=/tmp/postgres_exporter.pid`,
 
+		`postgres_exporter_flags=(`,
+		`'--extend.query-path=/tmp/queries.yml'`,
+		fmt.Sprintf(`'--web.listen-address=:%d'`, ExporterPort),
+		`"$@")`,
+
 		// declare function that will combine custom queries file and default
 		// queries and start the postgres_exporter
 		`start_postgres_exporter() {`,
-		`	cat /conf/* > /tmp/queries.yml`,
-		`	echo "Starting postgres_exporter with the following flags..."`,
-		`	echo "$@"`,
-		`	postgres_exporter "$@" &`,
-		`	echo $! > $POSTGRES_EXPORTER_PIDFILE`,
+		`  cat /conf/* > /tmp/queries.yml`,
+		`  echo "Starting postgres_exporter with the following flags..."`,
+		`  echo "${postgres_exporter_flags[@]}"`,
+		`  postgres_exporter "${postgres_exporter_flags[@]}" &`,
+		`  echo $! > $POSTGRES_EXPORTER_PIDFILE`,
 		`}`,
 
 		// run function to combine queries files and start postgres_exporter
-		`start_postgres_exporter "$@"`,
+		`start_postgres_exporter`,
 
 		// Create a file descriptor with a no-op process that will not get
 		// cleaned up
@@ -153,7 +156,7 @@ func ExporterStartCommand(commandFlags []string) []string {
 		// something must have changed, so kill the postgres_exporter and rerun
 		// the function to combine queries files and start postgres_exporter
 		`  if ([ "/conf" -nt "/proc/self/fd/${fd}" ] || [ "/opt/crunchy/password" -nt "/proc/self/fd/${fd}" ]) \`,
-		`    && kill $(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) && start_postgres_exporter "$@";`,
+		`    && kill $(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) && start_postgres_exporter;`,
 		`  then`,
 
 		// When something changes we want to get rid of the old file descriptor, get a fresh one

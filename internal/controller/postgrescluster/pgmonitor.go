@@ -269,9 +269,7 @@ func addPGMonitorExporterToInstancePodSpec(
 		Image:           config.PGExporterContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Resources:       cluster.Spec.Monitoring.PGMonitor.Exporter.Resources,
-		Command: pgmonitor.ExporterStartCommand([]string{
-			pgmonitor.ExporterExtendQueryPathFlag, pgmonitor.ExporterWebListenAddressFlag,
-		}),
+		Command:         pgmonitor.ExporterStartCommand(),
 		Env: []corev1.EnvVar{
 			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("%s:%d/%s", pgmonitor.ExporterHost, *cluster.Spec.Port, pgmonitor.ExporterDB)},
 			{Name: "DATA_SOURCE_USER", Value: pgmonitor.MonitoringUser},
@@ -400,9 +398,7 @@ func configureExporterTLS(cluster *v1beta1.PostgresCluster, template *corev1.Pod
 		}}
 
 		exporterContainer.VolumeMounts = append(exporterContainer.VolumeMounts, mounts...)
-		exporterContainer.Command = pgmonitor.ExporterStartCommand([]string{
-			pgmonitor.ExporterExtendQueryPathFlag, pgmonitor.ExporterWebListenAddressFlag, pgmonitor.ExporterWebConfigFileFlag,
-		})
+		exporterContainer.Command = pgmonitor.ExporterStartCommand(pgmonitor.ExporterWebConfigFileFlag)
 	}
 }
 
