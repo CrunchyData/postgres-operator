@@ -263,6 +263,8 @@ func addPGMonitorExporterToInstancePodSpec(
 		return nil
 	}
 
+	certSecret := cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret
+
 	securityContext := initialize.RestrictedSecurityContext()
 	exporterContainer := corev1.Container{
 		Name:            naming.ContainerPGMonitorExporter,
@@ -292,8 +294,6 @@ func addPGMonitorExporterToInstancePodSpec(
 			MountPath: "/opt/crunchy/",
 		}},
 	}
-
-	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
 
 	passwordVolume := corev1.Volume{
 		Name: "monitoring-secret",
@@ -335,48 +335,13 @@ func addPGMonitorExporterToInstancePodSpec(
 			defaultConfigVolumeProjection)
 	}
 
-	if cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret != nil {
-		configureExporterTLS(cluster, template, exporterWebConfig)
-	}
-
-	// add the proper label to support Pod discovery by Prometheus per pgMonitor configuration
-	initialize.Labels(template)
-	template.Labels[naming.LabelPGMonitorDiscovery] = "true"
-
-	return nil
-}
-
-// getExporterCertSecret retrieves the custom tls cert secret projection from the exporter spec
-// TODO (jmckulk): One day we might want to generate certs here
-func getExporterCertSecret(cluster *v1beta1.PostgresCluster) *corev1.SecretProjection {
-	if cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret != nil {
-		return cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret
-	}
-
-	return nil
-}
-
-// configureExporterTLS takes a cluster and pod template spec. If enabled, the pod template spec
-// will be updated with exporter tls configuration
-func configureExporterTLS(cluster *v1beta1.PostgresCluster, template *corev1.PodTemplateSpec, exporterWebConfig *corev1.ConfigMap) {
-	var found bool
-	var exporterContainer *corev1.Container
-	for i, container := range template.Spec.Containers {
-		if container.Name == naming.ContainerPGMonitorExporter {
-			exporterContainer = &template.Spec.Containers[i]
-			found = true
-		}
-	}
-
-	if found &&
-		pgmonitor.ExporterEnabled(cluster) &&
-		(cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret != nil) {
+	if certSecret != nil {
 		// TODO (jmckulk): params for paths and such
 		certVolume := corev1.Volume{Name: "exporter-certs"}
 		certVolume.Projected = &corev1.ProjectedVolumeSource{
 			Sources: append([]corev1.VolumeProjection{},
 				corev1.VolumeProjection{
-					Secret: getExporterCertSecret(cluster),
+					Secret: certSecret,
 				},
 			),
 		}
@@ -400,6 +365,14 @@ func configureExporterTLS(cluster *v1beta1.PostgresCluster, template *corev1.Pod
 		exporterContainer.VolumeMounts = append(exporterContainer.VolumeMounts, mounts...)
 		exporterContainer.Command = pgmonitor.ExporterStartCommand(pgmonitor.ExporterWebConfigFileFlag)
 	}
+
+	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
+
+	// add the proper label to support Pod discovery by Prometheus per pgMonitor configuration
+	initialize.Labels(template)
+	template.Labels[naming.LabelPGMonitorDiscovery] = "true"
+
+	return nil
 }
 
 // reconcileExporterWebConfig reconciles the configmap containing the webconfig for exporter tls
