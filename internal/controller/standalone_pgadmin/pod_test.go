@@ -110,7 +110,8 @@ initContainers:
     (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
   - startup
   - |
-    import json, re, os
+    import glob, json, re, os
+    DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
         _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
         if type(_data) is dict:
@@ -242,7 +243,8 @@ initContainers:
     (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
   - startup
   - |
-    import json, re, os
+    import glob, json, re, os
+    DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
         _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
         if type(_data) is dict:
