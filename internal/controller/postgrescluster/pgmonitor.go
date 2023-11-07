@@ -305,7 +305,6 @@ func addPGMonitorExporterToInstancePodSpec(
 			},
 		},
 	}
-	template.Spec.Volumes = append(template.Spec.Volumes, passwordVolume)
 
 	// add custom exporter config volume
 	configVolume := corev1.Volume{
@@ -316,7 +315,7 @@ func addPGMonitorExporterToInstancePodSpec(
 			},
 		},
 	}
-	template.Spec.Volumes = append(template.Spec.Volumes, configVolume)
+	template.Spec.Volumes = append(template.Spec.Volumes, configVolume, passwordVolume)
 
 	// The original "custom queries" ability allowed users to provide a file with custom queries;
 	// however, it would turn off the default queries. The new "custom queries" ability allows
