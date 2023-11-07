@@ -33,7 +33,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap, dataVolume *corev1.PersistentVolumeClaim,
 ) error {
-	sts := statefulset(pgadmin, configmap, dataVolume)
+	sts := statefulset(r, pgadmin, configmap, dataVolume)
 	if err := errors.WithStack(r.setControllerReference(pgadmin, sts)); err != nil {
 		return err
 	}
@@ -42,6 +42,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 
 // statefulset defines the StatefulSet needed to run pgAdmin.
 func statefulset(
+	r *PGAdminReconciler,
 	pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap,
 	dataVolume *corev1.PersistentVolumeClaim,
@@ -100,6 +101,8 @@ func statefulset(
 
 	// set the image pull secrets, if any exist
 	sts.Spec.Template.Spec.ImagePullSecrets = pgadmin.Spec.ImagePullSecrets
+
+	sts.Spec.Template.Spec.SecurityContext = podSecurityContext(r)
 
 	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
 

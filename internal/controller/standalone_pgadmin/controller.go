@@ -36,9 +36,10 @@ import (
 // PGAdminReconciler reconciles a PGAdmin object
 type PGAdminReconciler struct {
 	client.Client
-	Owner    client.FieldOwner
-	Recorder record.EventRecorder
-	Scheme   *runtime.Scheme
+	Owner       client.FieldOwner
+	Recorder    record.EventRecorder
+	Scheme      *runtime.Scheme
+	IsOpenShift bool
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
