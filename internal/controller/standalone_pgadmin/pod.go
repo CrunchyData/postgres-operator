@@ -319,7 +319,8 @@ func startupCommand() []string {
 		ldapPasswordAbsolutePath = configMountPath + "/" + ldapFilePath
 
 		configSystem = `
-import json, re, os
+import glob, json, re, os
+DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
     _conf, _data = re.compile(r'[A-Z_]+'), json.load(_f)
     if type(_data) is dict:
