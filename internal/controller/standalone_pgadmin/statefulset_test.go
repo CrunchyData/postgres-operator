@@ -100,7 +100,9 @@ dnsPolicy: ClusterFirst
 enableServiceLinks: false
 restartPolicy: Always
 schedulerName: default-scheduler
-securityContext: {}
+securityContext:
+  fsGroup: 2
+  fsGroupChangePolicy: OnRootMismatch
 terminationGracePeriodSeconds: 30
 		`
 
@@ -205,7 +207,9 @@ imagePullSecrets:
 - name: myImagePullSecret
 restartPolicy: Always
 schedulerName: default-scheduler
-securityContext: {}
+securityContext:
+  fsGroup: 2
+  fsGroupChangePolicy: OnRootMismatch
 terminationGracePeriodSeconds: 30
 tolerations:
 - key: sometoleration

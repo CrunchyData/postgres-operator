@@ -326,3 +326,16 @@ func TestPodConfigFiles(t *testing.T) {
     name: some-cm
 	`))
 }
+
+func TestPodSecurityContext(t *testing.T) {
+	pgAdminReconciler := &PGAdminReconciler{}
+
+	assert.Assert(t, cmp.MarshalMatches(podSecurityContext(pgAdminReconciler), `
+fsGroup: 2
+fsGroupChangePolicy: OnRootMismatch
+	`))
+
+	pgAdminReconciler.IsOpenShift = true
+	assert.Assert(t, cmp.MarshalMatches(podSecurityContext(pgAdminReconciler),
+		`fsGroupChangePolicy: OnRootMismatch`))
+}

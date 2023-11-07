@@ -163,10 +163,11 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 	}
 
 	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
-		Client:   mgr.GetClient(),
-		Owner:    "pgadmin-controller",
-		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-		Scheme:   mgr.GetScheme(),
+		Client:      mgr.GetClient(),
+		Owner:       "pgadmin-controller",
+		Recorder:    mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
+		Scheme:      mgr.GetScheme(),
+		IsOpenShift: openshift,
 	}
 
 	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {

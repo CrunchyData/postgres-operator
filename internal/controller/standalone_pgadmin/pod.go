@@ -342,3 +342,23 @@ if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
 
 	return append([]string{"bash", "-ceu", "--", script, "startup"}, args...)
 }
+
+// podSecurityContext returns a v1.PodSecurityContext for pgadmin that can write
+// to PersistentVolumes.
+func podSecurityContext(r *PGAdminReconciler) *corev1.PodSecurityContext {
+	podSecurityContext := initialize.PodSecurityContext()
+
+	// TODO (dsessler7): Add ability to add supplemental groups
+
+	// OpenShift assigns a filesystem group based on a SecurityContextConstraint.
+	// Otherwise, set a filesystem group so pgAdmin can write to files
+	// regardless of the UID or GID of a container.
+	// - https://cloud.redhat.com/blog/a-guide-to-openshift-and-uids
+	// - https://docs.k8s.io/tasks/configure-pod-container/security-context/
+	// - https://docs.openshift.com/container-platform/4.14/authentication/managing-security-context-constraints.html
+	if !r.IsOpenShift {
+		podSecurityContext.FSGroup = initialize.Int64(2)
+	}
+
+	return podSecurityContext
+}
