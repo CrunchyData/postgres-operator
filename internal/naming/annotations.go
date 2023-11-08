@@ -58,4 +58,9 @@ const (
 	// for this annotation is due to an issue in pgBackRest (#1841) where using a wildcard address to
 	// bind all addresses does not work in certain IPv6 environments.
 	PGBackRestIPVersion = annotationPrefix + "pgbackrest-ip-version"
+
+	// PostgresExporterCollectorsAnnotation is an annotation used to allow users to control whether or
+	// not postgres_exporter default metrics, settings, and collectors are enabled. The value "None"
+	// disables all postgres_exporter defaults. Disabling the defaults may cause errors in dashboards.
+	PostgresExporterCollectorsAnnotation = annotationPrefix + "postgres-exporter-collectors"
 )

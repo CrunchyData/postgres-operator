@@ -118,8 +118,8 @@ func GenerateDefaultExporterQueries(ctx context.Context, cluster *v1beta1.Postgr
 // ExporterStartCommand generates an entrypoint that will create a master queries file and
 // start the postgres_exporter. It will repeat those steps if it notices a change in
 // the source queries files.
-func ExporterStartCommand(commandFlags ...string) []string {
-	script := strings.Join([]string{
+func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []string {
+	script := []string{
 		// Older images do not have the command on the PATH.
 		`PATH="$PATH:$(echo /opt/cpm/bin/postgres_exporter-*)"`,
 
@@ -130,7 +130,21 @@ func ExporterStartCommand(commandFlags ...string) []string {
 		`'--extend.query-path=/tmp/queries.yml'`,
 		fmt.Sprintf(`'--web.listen-address=:%d'`, ExporterPort),
 		`"$@")`,
+	}
 
+	// Append flags that disable built-in collectors. Find flags in the help
+	// output and return them with "--[no-]" replaced by "--no-" or "--".
+	if !builtinCollectors {
+		script = append(script,
+			`postgres_exporter_flags+=($(`,
+			`postgres_exporter --help 2>&1 | while read -r w _; do case "${w}" in`,
+			`'--[no-]collector.'*) echo "--no-${w#*-]}";;`,
+			`'--[no-]disable'*'metrics') echo "--${w#*-]}";;`,
+			`esac; done))`,
+		)
+	}
+
+	script = append(script,
 		// declare function that will combine custom queries file and default
 		// queries and start the postgres_exporter
 		`start_postgres_exporter() {`,
@@ -167,7 +181,9 @@ func ExporterStartCommand(commandFlags ...string) []string {
 		`    stat --format='Latest password file dated %y' "/opt/crunchy/password"`,
 		`  fi`,
 		`done`,
-	}, "\n")
+	)
 
-	return append([]string{"bash", "-ceu", "--", script, "postgres_exporter_watcher"}, commandFlags...)
+	return append([]string{
+		"bash", "-ceu", "--", strings.Join(script, "\n"), "postgres_exporter_watcher",
+	}, commandFlags...)
 }
