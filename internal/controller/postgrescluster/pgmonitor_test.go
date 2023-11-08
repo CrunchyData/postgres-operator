@@ -42,6 +42,56 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func testExporterCollectorsAnnotation(t *testing.T, cluster *v1beta1.PostgresCluster, queriesConfig, webConfig *corev1.ConfigMap) {
+	t.Helper()
+
+	t.Run("ExporterCollectorsAnnotation", func(t *testing.T) {
+		t.Run("UnexpectedValue", func(t *testing.T) {
+			template := new(corev1.PodTemplateSpec)
+			cluster := cluster.DeepCopy()
+			cluster.SetAnnotations(map[string]string{
+				naming.PostgresExporterCollectorsAnnotation: "wrong-value",
+			})
+
+			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, queriesConfig, webConfig))
+
+			assert.Equal(t, len(template.Spec.Containers), 1)
+			container := template.Spec.Containers[0]
+
+			command := strings.Join(container.Command, "\n")
+			assert.Assert(t, cmp.Contains(command, "postgres_exporter"))
+			assert.Assert(t, !strings.Contains(command, "collector"))
+		})
+
+		t.Run("ExpectedValueNone", func(t *testing.T) {
+			template := new(corev1.PodTemplateSpec)
+			cluster := cluster.DeepCopy()
+			cluster.SetAnnotations(map[string]string{
+				naming.PostgresExporterCollectorsAnnotation: "None",
+			})
+
+			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, queriesConfig, webConfig))
+
+			assert.Equal(t, len(template.Spec.Containers), 1)
+			container := template.Spec.Containers[0]
+
+			command := strings.Join(container.Command, "\n")
+			assert.Assert(t, cmp.Contains(command, "postgres_exporter"))
+			assert.Assert(t, cmp.Contains(command, "--[no-]collector"))
+
+			t.Run("LowercaseToo", func(t *testing.T) {
+				template := new(corev1.PodTemplateSpec)
+				cluster.SetAnnotations(map[string]string{
+					naming.PostgresExporterCollectorsAnnotation: "none",
+				})
+
+				assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, queriesConfig, webConfig))
+				assert.Assert(t, cmp.Contains(strings.Join(template.Spec.Containers[0].Command, "\n"), "--[no-]collector"))
+			})
+		})
+	})
+}
+
 func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 	image := "test/image:tag"
 
@@ -139,6 +189,8 @@ volumeMounts:
   secret:
     secretName: pg1-monitoring
 		`))
+
+		testExporterCollectorsAnnotation(t, cluster, exporterQueriesConfig, nil)
 	})
 
 	t.Run("CustomConfigAppendCustomQueriesOff", func(t *testing.T) {
@@ -288,6 +340,8 @@ name: exporter-config
 		command := strings.Join(container.Command, "\n")
 		assert.Assert(t, cmp.Contains(command, "postgres_exporter"))
 		assert.Assert(t, cmp.Contains(command, "--web.config.file"))
+
+		testExporterCollectorsAnnotation(t, cluster, exporterQueriesConfig, testConfigMap)
 	})
 }
 

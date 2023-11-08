@@ -50,26 +50,50 @@ func TestGenerateDefaultExporterQueries(t *testing.T) {
 }
 
 func TestExporterStartCommand(t *testing.T) {
-	t.Run("NoInput", func(t *testing.T) {
-		command := ExporterStartCommand()
-		assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
-		assert.Assert(t, len(command) > 3)
-		script := command[3]
+	for _, tt := range []struct {
+		Name       string
+		Collectors bool
+		Flags      []string
+		Expect     func(t *testing.T, command []string, script string)
+	}{
+		{
+			Name: "NoCollectorsNoFlags",
+			Expect: func(t *testing.T, _ []string, script string) {
+				assert.Assert(t, cmp.Contains(script, "--[no-]collector"))
+			},
+		},
+		{
+			Name:       "WithCollectorsNoFlags",
+			Collectors: true,
+			Expect: func(t *testing.T, _ []string, script string) {
+				assert.Assert(t, !strings.Contains(script, "collector"))
+			},
+		},
+		{
+			Name:  "MultipleFlags",
+			Flags: []string{"--firstTestFlag", "--secondTestFlag"},
+			Expect: func(t *testing.T, command []string, _ string) {
+				assert.DeepEqual(t, command[4:], []string{"postgres_exporter_watcher", "--firstTestFlag", "--secondTestFlag"})
+			},
+		},
+	} {
+		t.Run(tt.Name, func(t *testing.T) {
+			command := ExporterStartCommand(tt.Collectors, tt.Flags...)
+			assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+			assert.Assert(t, len(command) > 3)
+			script := command[3]
 
-		assert.Assert(t, cmp.Contains(script, "'--extend.query-path=/tmp/queries.yml'"))
-		assert.Assert(t, cmp.Contains(script, "'--web.listen-address=:9187'"))
+			assert.Assert(t, cmp.Contains(script, "'--extend.query-path=/tmp/queries.yml'"))
+			assert.Assert(t, cmp.Contains(script, "'--web.listen-address=:9187'"))
 
-		t.Run("PrettyYAML", func(t *testing.T) {
-			b, err := yaml.Marshal(script)
-			assert.NilError(t, err)
-			assert.Assert(t, strings.HasPrefix(string(b), `|`),
-				"expected literal block scalar, got:\n%s", b)
+			tt.Expect(t, command, script)
+
+			t.Run("PrettyYAML", func(t *testing.T) {
+				b, err := yaml.Marshal(script)
+				assert.NilError(t, err)
+				assert.Assert(t, strings.HasPrefix(string(b), `|`),
+					"expected literal block scalar, got:\n%s", b)
+			})
 		})
-	})
-
-	t.Run("MultipleFlags", func(t *testing.T) {
-		commandSlice := ExporterStartCommand("--firstTestFlag", "--secondTestFlag")
-		assert.DeepEqual(t, commandSlice[:3], []string{"bash", "-ceu", "--"})
-		assert.DeepEqual(t, commandSlice[4:], []string{"postgres_exporter_watcher", "--firstTestFlag", "--secondTestFlag"})
-	})
+	}
 }

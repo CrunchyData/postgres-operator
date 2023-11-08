@@ -264,6 +264,8 @@ func addPGMonitorExporterToInstancePodSpec(
 	}
 
 	certSecret := cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret
+	withBuiltInCollectors :=
+		!strings.EqualFold(cluster.Annotations[naming.PostgresExporterCollectorsAnnotation], "None")
 
 	securityContext := initialize.RestrictedSecurityContext()
 	exporterContainer := corev1.Container{
@@ -271,7 +273,7 @@ func addPGMonitorExporterToInstancePodSpec(
 		Image:           config.PGExporterContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Resources:       cluster.Spec.Monitoring.PGMonitor.Exporter.Resources,
-		Command:         pgmonitor.ExporterStartCommand(),
+		Command:         pgmonitor.ExporterStartCommand(withBuiltInCollectors),
 		Env: []corev1.EnvVar{
 			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("%s:%d/%s", pgmonitor.ExporterHost, *cluster.Spec.Port, pgmonitor.ExporterDB)},
 			{Name: "DATA_SOURCE_USER", Value: pgmonitor.MonitoringUser},
@@ -363,7 +365,8 @@ func addPGMonitorExporterToInstancePodSpec(
 		}}
 
 		exporterContainer.VolumeMounts = append(exporterContainer.VolumeMounts, mounts...)
-		exporterContainer.Command = pgmonitor.ExporterStartCommand(pgmonitor.ExporterWebConfigFileFlag)
+		exporterContainer.Command = pgmonitor.ExporterStartCommand(
+			withBuiltInCollectors, pgmonitor.ExporterWebConfigFileFlag)
 	}
 
 	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
