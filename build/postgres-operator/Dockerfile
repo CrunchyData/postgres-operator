@@ -6,8 +6,7 @@ COPY bin/postgres-operator /usr/local/bin
 
 RUN mkdir -p /opt/crunchy/conf
 
-COPY hack/tools/pgmonitor/postgres_exporter/common /opt/crunchy/conf
-COPY hack/tools/pgmonitor/postgres_exporter/linux/queries_backrest.yml /opt/crunchy/conf
+COPY hack/tools/queries /opt/crunchy/conf
 
 RUN chgrp -R 0 /opt/crunchy/conf && chmod -R g=u opt/crunchy/conf
 
