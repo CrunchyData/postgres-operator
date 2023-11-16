@@ -79,6 +79,7 @@ spec:
 
             - { name: REGISTRATION_REQUIRED, value: "true" }
             - { name: RSA_KEY, value: <rsa_key> }
+            - { name: TOKEN_PATH, value: "etc/cpk/cpk_token" }
             - {
                 name: REGISTRATION_URL,
                 value: "https://access.crunchydata.com/register-cpk",
