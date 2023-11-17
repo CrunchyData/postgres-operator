@@ -76,11 +76,3 @@ spec:
                 name: RELATED_IMAGE_POSTGRES_16_GIS_3.4,
                 value: "registry.connect.redhat.com/crunchydata/crunchy-postgres-gis@sha256:<update_postgres16gis34_SHA_value>",
               }
-
-            - { name: REGISTRATION_REQUIRED, value: "true" }
-            - { name: RSA_KEY, value: <rsa_key> }
-            - { name: TOKEN_PATH, value: "etc/cpk/cpk_token" }
-            - {
-                name: REGISTRATION_URL,
-                value: "https://access.crunchydata.com/register-cpk",
-              }
