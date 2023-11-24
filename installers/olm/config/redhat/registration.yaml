@@ -1,0 +1,43 @@
+# Red Hat Marketplace requires that bundles work offline. OSBS will fill out
+# the "spec.relatedImages" field of the ClusterServiceVersion if it is blank.
+#
+# https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/offline-enabled-operators
+# https://osbs.readthedocs.io/en/latest/users.html#pinning-pullspecs-for-related-images
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgo
+spec:
+  template:
+    spec:
+      containers:
+        - name: operator
+          env:
+            - { name: REGISTRATION_REQUIRED, value: "true" }
+            - { name: TOKEN_PATH, value: "/etc/cpk/cpk_token" }
+            - name: REGISTRATION_URL
+              value: "https://access.crunchydata.com/register-cpk"
+            - name: RSA_KEY
+              value: |-
+                -----BEGIN PUBLIC KEY-----
+                MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA0JWaCc/F+/uV5zJQ7ryN
+                uzvO+oGgT7z9uXm11qtKae86H3Z3W4qX+gGPs5LrFg444yDRMLqKzPLwuS2yc4mz
+                QxtVbJyBZijbEDVd/knycj6MxFdBkbjxeGeWYT8nuZf4jBnWB48/O+uUnCbIYt8Q
+                hUtyJ+KMIXkxrOd4mOgL6dQSCEAIcxBh10ZAucDQIgCn2BrD595uPrvlrrioV/Nq
+                P0w0qIaKS785YU75qM4rT8tGeWVMEGst4AaRwfV7ZdVe065TP0hjd9sv8iJkr7En
+                /Zym1NXcKbpwoeT3X9E7cVSARPFhZU1mmtL56wq3QLeFxef9TmVva1/Io0mKn4ah
+                Uly5jgOpazrXliKJUoOurfMOakkHWfqSd5EfmRTh5nBcNqxtytLdiH0WlCkPSm+Z
+                Ue3aY91YwcRnFhImLpbQYD5aVLAryzu+IdfRJa+zcZYSK0N8n9irg6jSrQZBct7z
+                OagHUc0n/ZDP/BO8m0jlpJ7jH+N31Z5qFoNSaxf5H1Y/CwByXtzHJ1k2LleYsr9k
+                k40nMY4l+SXCe4PmW4zW9uP3ItBWKEI2jFrRJgowQvL0MwtzDhbX9qg4+L9eBFpK
+                jpHXr2kgLu4srIyXH6JO5UmE/62mHZh0SuqtOT1GQqWde5RjZyidYkwkAHup/AqA
+                P0TPL/poQ6yvI9a0i22TCpcCAwEAAQ==
+                -----END PUBLIC KEY-----
+          volumeMounts:
+            - mountPath: /etc/cpk
+              name: cpk-registration-volume
+      volumes:
+        - name: cpk-registration-volume
+          secret:
+            optional: true
+            secretName: cpk-registration
