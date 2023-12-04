@@ -134,10 +134,32 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 	repoHostName string, repoResources *RepoResources,
 	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
 
-	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName, repoResources,
-		observedInstances)
+	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName, repoResources, observedInstances)
 	if err != nil {
 		return nil, err
+	}
+
+	// Previous versions of PGO used a StatefulSet Pod Management Policy that could leave the Pod
+	// in a failed state. When we see that it has the wrong policy, we will delete the StatefulSet
+	// and then recreate it with the correct policy, as this is not a property that can be patched.
+	// When we delete the StatefulSet, we will leave its Pods in place. They will be claimed by
+	// the StatefulSet that gets created in the next reconcile.
+	existing := &appsv1.StatefulSet{}
+	if err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(repo), existing)); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return nil, err
+		}
+	} else {
+		if existing.Spec.PodManagementPolicy != repo.Spec.PodManagementPolicy {
+			// We want to delete the STS without affecting the Pods, so we set the PropagationPolicy to Orphan.
+			// The orphaned Pods will be claimed by the new StatefulSet that gets created in the next reconcile.
+			uid := existing.GetUID()
+			version := existing.GetResourceVersion()
+			exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
+			propagate := client.PropagationPolicy(metav1.DeletePropagationOrphan)
+
+			return repo, errors.WithStack(r.Client.Delete(ctx, existing, exactly, propagate))
+		}
 	}
 
 	if err := r.apply(ctx, repo); err != nil {
@@ -560,6 +582,14 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		// the cluster should not be shutdown, set this value to 1
 		repo.Spec.Replicas = initialize.Int32(1)
 	}
+
+	// Use StatefulSet's "RollingUpdate" strategy and "Parallel" policy to roll
+	// out changes to pods even when not Running or not Ready.
+	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#rolling-updates
+	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#forced-rollback
+	// - https://kep.k8s.io/3541
+	repo.Spec.PodManagementPolicy = appsv1.ParallelPodManagement
+	repo.Spec.UpdateStrategy.Type = appsv1.RollingUpdateStatefulSetStrategyType
 
 	// Restart containers any time they stop, die, are killed, etc.
 	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
