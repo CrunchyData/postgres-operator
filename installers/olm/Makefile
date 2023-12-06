@@ -88,7 +88,7 @@ tools/$(SYSTEM)/operator-sdk:
 tools: tools/$(SYSTEM)/opm
 tools/$(SYSTEM)/opm:
 	install -d '$(dir $@)'
-	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-registry/releases/download/v1.20.0/$(OS_KERNEL)-$(OS_MACHINE)-opm'
+	curl -fSL -o '$@' 'https://github.com/operator-framework/operator-registry/releases/download/v1.33.0/$(OS_KERNEL)-$(OS_MACHINE)-opm'
 	chmod u+x '$@'
 
 tools/$(SYSTEM)/venv:
