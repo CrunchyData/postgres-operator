@@ -43,6 +43,12 @@ spec:
                   pgbackrest:
                     description: pgBackRest archive configuration
                     properties:
+                      command:
+                        description: The command for pgBackRest containers. The default
+                          is "/opt/crunchy/bin/pgbackrest".
+                        items:
+                          type: string
+                        type: array
                       configuration:
                         description: 'Projected volumes containing custom pgBackRest
                           configuration.  These files are mounted under "/etc/pgbackrest/conf.d"

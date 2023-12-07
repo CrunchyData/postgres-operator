@@ -120,6 +120,10 @@ type PGBackRestArchive struct {
 	// +optional
 	Image string `json:"image,omitempty"`
 
+	// The command for pgBackRest containers. The default is "/opt/crunchy/bin/pgbackrest".
+	// +optional
+	Command []string `json:"command,omitempty"`
+
 	// Jobs field allows configuration for all backup jobs
 	// +optional
 	Jobs *BackupJobs `json:"jobs,omitempty"`
