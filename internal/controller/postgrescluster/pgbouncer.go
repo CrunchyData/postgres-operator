@@ -318,6 +318,9 @@ func (r *Reconciler) generatePGBouncerService(
 	}
 	service.Spec.Ports = []corev1.ServicePort{servicePort}
 
+	service.Spec.SessionAffinity = cluster.Spec.Proxy.PGBouncer.Service.SessionAffinity
+	service.Spec.SessionAffinityConfig = cluster.Spec.Proxy.PGBouncer.Service.SessionAffinityConfig
+
 	err := errors.WithStack(r.setControllerReference(cluster, service))
 
 	return service, true, err
