@@ -14,7 +14,9 @@ for Kubernetes will keep your Postgres cluster in a desired state so you do not 
 Crunchy Postgres for Kubernetes is developed with many years of production experience in automating Postgres management on Kubernetes, providing
 a seamless cloud native Postgres solution to keep your data always available.
 
-Crunchy Postgres for Kubernetes is made available to users without an active Crunchy Data subscription in connection with Crunchy Data's [Developer Program](https://www.crunchydata.com/developers/terms-of-use). For more information, please contact us at [info@crunchydata.com](mailto:info@crunchydata.com).
+Crunchy Postgres for Kubernetes is made available to users without an active Crunchy Data subscription in connection with Crunchy Data's
+[Developer Program](https://www.crunchydata.com/developers/terms-of-use).
+For more information, please contact us at [info@crunchydata.com](mailto:info@crunchydata.com).
 
 - **PostgreSQL Cluster Provisioning**: [Create, Scale, & Delete PostgreSQL clusters with ease][provisioning],
   while fully customizing your Pods and PostgreSQL configuration!
