@@ -253,7 +253,7 @@ generate-kuttl: ## Generate kuttl tests
 ##@ Generate
 
 .PHONY: check-generate
-check-generate: ## Check crd, crd-docs, deepcopy functions, and rbac generation
+check-generate: ## Check crd, deepcopy functions, and rbac generation
 check-generate: generate-crd
 check-generate: generate-deepcopy
 check-generate: generate-rbac
@@ -262,9 +262,8 @@ check-generate: generate-rbac
 	git diff --exit-code -- pkg/apis
 
 .PHONY: generate
-generate: ## Generate crd, crd-docs, deepcopy functions, and rbac
+generate: ## Generate crd, deepcopy functions, and rbac
 generate: generate-crd
-generate: generate-crd-docs
 generate: generate-deepcopy
 generate: generate-rbac
 
@@ -288,14 +287,6 @@ generate-crd: ## Generate crd
 	kubectl kustomize ./build/crd/postgresclusters > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 	kubectl kustomize ./build/crd/pgupgrades > ./config/crd/bases/postgres-operator.crunchydata.com_pgupgrades.yaml
 	kubectl kustomize ./build/crd/pgadmins > ./config/crd/bases/postgres-operator.crunchydata.com_pgadmins.yaml
-
-.PHONY: generate-crd-docs
-generate-crd-docs: ## Generate crd-docs
-	GOBIN='$(CURDIR)/hack/tools' $(GO) install fybrik.io/crdoc@v0.5.2
-	./hack/tools/crdoc \
-		--resources ./config/crd/bases \
-		--template ./hack/api-template.tmpl \
-		--output ./docs/content/references/crd.md
 
 .PHONY: generate-deepcopy
 generate-deepcopy: ## Generate deepcopy functions
