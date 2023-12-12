@@ -18,6 +18,8 @@ With conveniences like cloning Postgres clusters to using rolling updates to rol
 
 PGO is developed with many years of production experience in automating Postgres management on Kubernetes, providing a seamless cloud native Postgres solution to keep your data always available.
 
+Have questions or looking for help? [Join our Discord group](https://discord.gg/a7vWKG8Ec9).
+
 # Installation
 
 We recommend following our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/v5/quickstart/) for how to install and get up and running with PGO, the Postgres Operator from Crunchy Data. However, if you can't wait to try it out, here are some instructions to get Postgres up and running on Kubernetes:
@@ -216,7 +218,7 @@ Once you are ready to submit a Pull Request, please ensure you do the following:
 
 If you believe you have found a bug or have a detailed feature request, please open a GitHub issue and follow the guidelines for submitting a bug.
 
-For general questions or community support, we welcome you to join our [community Discord](https://discord.gg/a7vWKG8Ec9) or the PGO project [community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) and ask your questions there.
+For general questions or community support, we welcome you to join our [community Discord](https://discord.gg/a7vWKG8Ec9) and ask your questions there.
 
 For other information, please visit the [Support](https://access.crunchydata.com/documentation/postgres-operator/latest/support/) section of the documentation.
 
