@@ -206,16 +206,28 @@ func AddConfigToRestorePod(
 	sources := append([]corev1.VolumeProjection{},
 		cluster.Spec.Backups.PGBackRest.Configuration...)
 
-	if cluster.Spec.DataSource != nil &&
-		cluster.Spec.DataSource.PGBackRest != nil &&
-		cluster.Spec.DataSource.PGBackRest.Configuration != nil {
-		sources = append(sources, cluster.Spec.DataSource.PGBackRest.Configuration...)
-	}
-
 	// For a PostgresCluster restore, append all pgBackRest configuration from
-	// the source cluster for the restore
+	// the source cluster for the restore.
 	if sourceCluster != nil {
 		sources = append(sources, sourceCluster.Spec.Backups.PGBackRest.Configuration...)
+	}
+
+	// Currently the spec accepts a dataSource with both a PostgresCluster and
+	// a PGBackRest section. In that case only the PostgresCluster is honored (see
+	// internal/controller/postgrescluster/cluster.go, reconcileDataSource).
+	//
+	// `sourceCluster` is always nil for a cloud based restore (see
+	// internal/controller/postgrescluster/pgbackrest.go, reconcileCloudBasedDataSource).
+	//
+	// So, if `sourceCluster` is nil and `DataSource.PGBackRest` is not,
+	// this is a cloud based datasource restore and only the configuration from
+	// `dataSource.pgbackrest` section should be included.
+	if sourceCluster == nil &&
+		cluster.Spec.DataSource != nil &&
+		cluster.Spec.DataSource.PGBackRest != nil {
+
+		sources = append([]corev1.VolumeProjection{},
+			cluster.Spec.DataSource.PGBackRest.Configuration...)
 	}
 
 	addConfigVolumeAndMounts(pod, append(sources, configmap, secret))
