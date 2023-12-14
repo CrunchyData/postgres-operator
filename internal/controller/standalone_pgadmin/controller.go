@@ -17,6 +17,7 @@ package standalone_pgadmin
 import (
 	"context"
 
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,6 +44,10 @@ type PGAdminReconciler struct {
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
+//+kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={list,watch}
+//+kubebuilder:rbac:groups="",resources="secrets",verbs={list,watch}
+//+kubebuilder:rbac:groups="",resources="configmaps",verbs={list,watch}
+//+kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={list,watch}
 
 // SetupWithManager sets up the controller with the Manager.
 //
@@ -50,6 +55,10 @@ type PGAdminReconciler struct {
 func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta1.PGAdmin{}).
+		Owns(&corev1.ConfigMap{}).
+		Owns(&corev1.PersistentVolumeClaim{}).
+		Owns(&corev1.Secret{}).
+		Owns(&appsv1.StatefulSet{}).
 		Watches(
 			&source.Kind{Type: v1beta1.NewPostgresCluster()},
 			r.watchPostgresClusters(),
