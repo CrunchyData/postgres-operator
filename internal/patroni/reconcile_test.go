@@ -231,6 +231,31 @@ volumes:
 	`))
 }
 
+func TestPodIsPrimary(t *testing.T) {
+	// No object
+	assert.Assert(t, !PodIsPrimary(nil))
+
+	// No annotations
+	pod := &corev1.Pod{}
+	assert.Assert(t, !PodIsPrimary(pod))
+
+	// No role
+	pod.Annotations = map[string]string{"status": `{}`}
+	assert.Assert(t, !PodIsPrimary(pod))
+
+	// Replica
+	pod.Annotations["status"] = `{"role":"replica"}`
+	assert.Assert(t, !PodIsPrimary(pod))
+
+	// Standby leader
+	pod.Annotations["status"] = `{"role":"standby_leader"}`
+	assert.Assert(t, !PodIsPrimary(pod))
+
+	// Primary
+	pod.Annotations["status"] = `{"role":"master"}`
+	assert.Assert(t, PodIsPrimary(pod))
+}
+
 func TestPodIsStandbyLeader(t *testing.T) {
 	// No object
 	assert.Assert(t, !PodIsStandbyLeader(nil))

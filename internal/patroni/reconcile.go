@@ -181,6 +181,24 @@ func instanceProbes(cluster *v1beta1.PostgresCluster, container *corev1.Containe
 	}
 }
 
+// PodIsPrimary returns whether or not pod is currently acting as the leader with
+// the "master" role. This role will be called "primary" in the future, see:
+// - https://github.com/zalando/patroni/blob/master/docs/releases.rst?plain=1#L213
+func PodIsPrimary(pod metav1.Object) bool {
+	if pod == nil {
+		return false
+	}
+
+	// TODO(cbandy): This works only when using Kubernetes for DCS.
+
+	// - https://github.com/zalando/patroni/blob/v3.1.1/patroni/ha.py#L296
+	// - https://github.com/zalando/patroni/blob/v3.1.1/patroni/ha.py#L583
+	// - https://github.com/zalando/patroni/blob/v3.1.1/patroni/ha.py#L782
+	// - https://github.com/zalando/patroni/blob/v3.1.1/patroni/ha.py#L1574
+	status := pod.GetAnnotations()["status"]
+	return strings.Contains(status, `"role":"master"`)
+}
+
 // PodIsStandbyLeader returns whether or not pod is currently acting as a "standby_leader".
 func PodIsStandbyLeader(pod metav1.Object) bool {
 	if pod == nil {
