@@ -57,6 +57,18 @@ func (*Reconciler) watchPods() handler.Funcs {
 				}})
 				return
 			}
+
+			// Queue an event to start applying changes if the PostgreSQL instance
+			// now has the "master" role.
+			if len(cluster) != 0 &&
+				!patroni.PodIsPrimary(e.ObjectOld) &&
+				patroni.PodIsPrimary(e.ObjectNew) {
+				q.Add(reconcile.Request{NamespacedName: client.ObjectKey{
+					Namespace: e.ObjectNew.GetNamespace(),
+					Name:      cluster,
+				}})
+				return
+			}
 		},
 	}
 }
