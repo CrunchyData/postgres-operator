@@ -4,7 +4,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: missing-primary-status
+  name: major-upgrade-empty-image
 spec:
   # postgres version that is no longer available
   postgresVersion: 10
