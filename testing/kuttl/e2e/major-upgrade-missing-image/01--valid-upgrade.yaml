@@ -8,4 +8,4 @@ spec:
   # postgres version that is no longer available
   fromPostgresVersion: 10
   toPostgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
-  postgresClusterName: missing-primary-status
+  postgresClusterName: major-upgrade-empty-image

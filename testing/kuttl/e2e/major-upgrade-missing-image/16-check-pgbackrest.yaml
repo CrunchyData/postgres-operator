@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+# Check that the pgbackrest setup has successfully completed
+- script: |
+    kubectl -n "${NAMESPACE}" exec "statefulset.apps/major-upgrade-empty-image-repo-host" -c pgbackrest -- pgbackrest check --stanza=db
