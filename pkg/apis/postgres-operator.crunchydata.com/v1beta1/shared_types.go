@@ -55,6 +55,12 @@ type ServiceSpec struct {
 	// +kubebuilder:default=ClusterIP
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
 	Type string `json:"type"`
+
+	// +optional
+	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicyType `json:"internalTrafficPolicy"`
+
+	// +optional
+	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy"`
 }
 
 // Sidecar defines the configuration of a sidecar container

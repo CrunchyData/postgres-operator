@@ -13060,6 +13060,13 @@ spec:
                       service:
                         description: Specification of the service that exposes PgBouncer.
                         properties:
+                          externalTrafficPolicy:
+                            description: Service External Traffic Policy Type string
+                            type: string
+                          internalTrafficPolicy:
+                            description: ServiceInternalTrafficPolicyType describes
+                              the type of traffic routing for internal traffic
+                            type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
                             properties:
@@ -13355,6 +13362,13 @@ spec:
                 description: Specification of the service that exposes the PostgreSQL
                   primary instance.
                 properties:
+                  externalTrafficPolicy:
+                    description: Service External Traffic Policy Type string
+                    type: string
+                  internalTrafficPolicy:
+                    description: ServiceInternalTrafficPolicyType describes the type
+                      of traffic routing for internal traffic
+                    type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
                     properties:
@@ -14825,6 +14839,13 @@ spec:
                       service:
                         description: Specification of the service that exposes pgAdmin.
                         properties:
+                          externalTrafficPolicy:
+                            description: Service External Traffic Policy Type string
+                            type: string
+                          internalTrafficPolicy:
+                            description: ServiceInternalTrafficPolicyType describes
+                              the type of traffic routing for internal traffic
+                            type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
                             properties:
