@@ -111,6 +111,7 @@ jobs:
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.3-0
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.4-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-7.8-0
       - run: go mod download
       - name: Build executable
         run: PGO_VERSION='${{ github.sha }}' make build-postgres-operator
@@ -143,6 +144,7 @@ jobs:
             --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0' \
             --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.3-0' \
             --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.4-0' \
+            --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-7.8-0' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true' \
             --name 'postgres-operator' ubuntu \
             postgres-operator
