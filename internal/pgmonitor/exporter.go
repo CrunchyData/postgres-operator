@@ -152,11 +152,8 @@ func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []stri
 		`  echo "Starting postgres_exporter with the following flags..."`,
 		`  echo "${postgres_exporter_flags[@]}"`,
 		`  postgres_exporter "${postgres_exporter_flags[@]}" &`,
-		`  echo $! > $POSTGRES_EXPORTER_PIDFILE`,
+		`  [ -e /proc/$! ] && echo $! > $POSTGRES_EXPORTER_PIDFILE`,
 		`}`,
-
-		// run function to combine queries files and start postgres_exporter
-		`start_postgres_exporter`,
 
 		// Create a file descriptor with a no-op process that will not get
 		// cleaned up
@@ -167,18 +164,22 @@ func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []stri
 		`while read -r -t 3 -u "${fd}" || true; do`,
 
 		// If either directories' modify time is newer than our file descriptor's,
-		// something must have changed, so kill the postgres_exporter and rerun
-		// the function to combine queries files and start postgres_exporter
+		// something must have changed, so kill the postgres_exporter
 		`  if ([ "/conf" -nt "/proc/self/fd/${fd}" ] || [ "/opt/crunchy/password" -nt "/proc/self/fd/${fd}" ]) \`,
-		`    && kill $(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) && start_postgres_exporter;`,
+		`    && kill $(head -1 ${POSTGRES_EXPORTER_PIDFILE?});`,
 		`  then`,
-
 		// When something changes we want to get rid of the old file descriptor, get a fresh one
 		// and restart the loop
 		`    echo "Something changed..."`,
 		`    exec {fd}>&- && exec {fd}<> <(:)`,
 		`    stat --format='Latest queries file dated %y' "/conf"`,
 		`    stat --format='Latest password file dated %y' "/opt/crunchy/password"`,
+		`  fi`,
+
+		// If postgres_exporter is not running, restart it
+		// Use the recorded pid as a proxy for checking if postgres_exporter is running
+		`  if [ ! -e $POSTGRES_EXPORTER_PIDFILE ] || [ ! -e /proc/$(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) ] ; then`,
+		`    start_postgres_exporter`,
 		`  fi`,
 		`done`,
 	)
