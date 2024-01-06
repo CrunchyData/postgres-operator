@@ -155,6 +155,9 @@ func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []stri
 		`  [ -e /proc/$! ] && echo $! > $POSTGRES_EXPORTER_PIDFILE`,
 		`}`,
 
+		// run function to combine queries files and start postgres_exporter
+		`start_postgres_exporter`,
+
 		// Create a file descriptor with a no-op process that will not get
 		// cleaned up
 		`exec {fd}<> <(:)`,
@@ -178,7 +181,7 @@ func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []stri
 
 		// If postgres_exporter is not running, restart it
 		// Use the recorded pid as a proxy for checking if postgres_exporter is running
-		`  if [ ! -e $POSTGRES_EXPORTER_PIDFILE ] || [ ! -e /proc/$(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) ] ; then`,
+		`  if [ ! -e /proc/$(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) ] ; then`,
 		`    start_postgres_exporter`,
 		`  fi`,
 		`done`,
