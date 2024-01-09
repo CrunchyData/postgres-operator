@@ -49,6 +49,71 @@ func unsetEnv(t testing.TB, key string) {
 	assert.NilError(t, os.Unsetenv(key))
 }
 
+func TestFetchKeyCommand(t *testing.T) {
+
+	spec1 := v1beta1.PostgresClusterSpec{}
+	assert.Assert(t, FetchKeyCommand(&spec1) == "")
+
+	spec2 := v1beta1.PostgresClusterSpec{
+		Patroni: &v1beta1.PatroniSpec{},
+	}
+	assert.Assert(t, FetchKeyCommand(&spec2) == "")
+
+	spec3 := v1beta1.PostgresClusterSpec{
+		Patroni: &v1beta1.PatroniSpec{
+			DynamicConfiguration: map[string]any{},
+		},
+	}
+	assert.Assert(t, FetchKeyCommand(&spec3) == "")
+
+	spec4 := v1beta1.PostgresClusterSpec{
+		Patroni: &v1beta1.PatroniSpec{
+			DynamicConfiguration: map[string]any{
+				"postgresql": map[string]any{},
+			},
+		},
+	}
+	assert.Assert(t, FetchKeyCommand(&spec4) == "")
+
+	spec5 := v1beta1.PostgresClusterSpec{
+		Patroni: &v1beta1.PatroniSpec{
+			DynamicConfiguration: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{},
+				},
+			},
+		},
+	}
+	assert.Assert(t, FetchKeyCommand(&spec5) == "")
+
+	spec6 := v1beta1.PostgresClusterSpec{
+		Patroni: &v1beta1.PatroniSpec{
+			DynamicConfiguration: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
+						"encryption_key_command": "",
+					},
+				},
+			},
+		},
+	}
+	assert.Assert(t, FetchKeyCommand(&spec6) == "")
+
+	spec7 := v1beta1.PostgresClusterSpec{
+		Patroni: &v1beta1.PatroniSpec{
+			DynamicConfiguration: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
+						"encryption_key_command": "echo mykey",
+					},
+				},
+			},
+		},
+	}
+	assert.Assert(t, FetchKeyCommand(&spec7) == "echo mykey")
+
+}
+
 func TestPGAdminContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 
