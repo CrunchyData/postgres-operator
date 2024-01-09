@@ -204,6 +204,54 @@ pg1-socket-path = /tmp/postgres
 			"postgres-operator.crunchydata.com/pgbackrest-config": "",
 		})
 	})
+
+	t.Run("EnabledTDE", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			DynamicConfiguration: map[string]any{
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
+						"encryption_key_command": "echo test",
+					},
+				},
+			},
+		}
+
+		configmap := CreatePGBackRestConfigMapIntent(cluster,
+			"", "number", "pod-service-name", "test-ns",
+			[]string{"some-instance"})
+
+		assert.Assert(t,
+			strings.Contains(configmap.Data["pgbackrest_instance.conf"],
+				"archive-header-check = n"))
+		assert.Assert(t,
+			strings.Contains(configmap.Data["pgbackrest_instance.conf"],
+				"page-header-check = n"))
+		assert.Assert(t,
+			strings.Contains(configmap.Data["pgbackrest_instance.conf"],
+				"pg-version-force"))
+
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name:   "repo1",
+				Volume: &v1beta1.RepoPVC{},
+			},
+		}
+
+		configmap = CreatePGBackRestConfigMapIntent(cluster,
+			"repo1", "number", "pod-service-name", "test-ns",
+			[]string{"some-instance"})
+
+		assert.Assert(t,
+			strings.Contains(configmap.Data["pgbackrest_repo.conf"],
+				"archive-header-check = n"))
+		assert.Assert(t,
+			strings.Contains(configmap.Data["pgbackrest_repo.conf"],
+				"page-header-check = n"))
+		assert.Assert(t,
+			strings.Contains(configmap.Data["pgbackrest_repo.conf"],
+				"pg-version-force"))
+	})
 }
 
 func TestMakePGBackrestLogDir(t *testing.T) {
@@ -297,7 +345,7 @@ func TestRestoreCommand(t *testing.T) {
 	opts := []string{
 		"--stanza=" + DefaultStanzaName, "--pg1-path=" + pgdata,
 		"--repo=1"}
-	command := RestoreCommand(pgdata, "try", nil, strings.Join(opts, " "))
+	command := RestoreCommand(pgdata, "try", "", nil, strings.Join(opts, " "))
 
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
 	assert.Assert(t, len(command) > 3)
@@ -312,12 +360,20 @@ func TestRestoreCommand(t *testing.T) {
 }
 
 func TestRestoreCommandPrettyYAML(t *testing.T) {
-	b, err := yaml.Marshal(RestoreCommand("/dir", "try", nil, "--options"))
+	b, err := yaml.Marshal(RestoreCommand("/dir", "try", "", nil, "--options"))
+
 	assert.NilError(t, err)
 	assert.Assert(t, strings.Contains(string(b), "\n- |"),
 		"expected literal block scalar, got:\n%s", b)
 }
 
+func TestRestoreCommandTDE(t *testing.T) {
+	b, err := yaml.Marshal(RestoreCommand("/dir", "try", "echo testValue", nil, "--options"))
+
+	assert.NilError(t, err)
+	assert.Assert(t, strings.Contains(string(b), "encryption_key_command = 'echo testValue'"),
+		"expected encryption_key_command setting, got:\n%s", b)
+}
 func TestServerConfig(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.UID = "shoe"

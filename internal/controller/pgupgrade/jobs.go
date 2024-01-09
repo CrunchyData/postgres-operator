@@ -42,9 +42,15 @@ func pgUpgradeJob(upgrade *v1beta1.PGUpgrade) metav1.ObjectMeta {
 
 // upgradeCommand returns an entrypoint that prepares the filesystem for
 // and performs a PostgreSQL major version upgrade using pg_upgrade.
-func upgradeCommand(upgrade *v1beta1.PGUpgrade) []string {
+func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string {
 	oldVersion := fmt.Sprint(upgrade.Spec.FromPostgresVersion)
 	newVersion := fmt.Sprint(upgrade.Spec.ToPostgresVersion)
+
+	// if the fetch key command is set for TDE, provide the value during initialization
+	initdb := `/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"`
+	if fetchKeyCommand != "" {
+		initdb += ` --encryption-key-command "` + fetchKeyCommand + `"`
+	}
 
 	args := []string{oldVersion, newVersion}
 	script := strings.Join([]string{
@@ -84,7 +90,7 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade) []string {
 		`echo -e "Step 1: Making new pgdata directory...\n"`,
 		`mkdir /pgdata/pg"${new_version}"`,
 		`echo -e "Step 2: Initializing new pgdata directory...\n"`,
-		`/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"`,
+		initdb,
 
 		// Before running the upgrade check, which ensures the clusters are compatible,
 		// proper permissions have to be set on the old pgdata directory and the
@@ -124,7 +130,8 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade) []string {
 // generateUpgradeJob returns a Job that can upgrade the PostgreSQL data
 // directory of the startup instance.
 func (r *PGUpgradeReconciler) generateUpgradeJob(
-	_ context.Context, upgrade *v1beta1.PGUpgrade, startup *appsv1.StatefulSet,
+	_ context.Context, upgrade *v1beta1.PGUpgrade,
+	startup *appsv1.StatefulSet, fetchKeyCommand string,
 ) *batchv1.Job {
 	job := &batchv1.Job{}
 	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
@@ -177,7 +184,7 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 		VolumeMounts:    database.VolumeMounts,
 
 		// Use our upgrade command and the specified image and resources.
-		Command:         upgradeCommand(upgrade),
+		Command:         upgradeCommand(upgrade, fetchKeyCommand),
 		Image:           pgUpgradeContainerImage(upgrade),
 		ImagePullPolicy: upgrade.Spec.ImagePullPolicy,
 		Resources:       upgrade.Spec.Resources,

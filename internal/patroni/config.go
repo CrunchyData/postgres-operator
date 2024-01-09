@@ -23,6 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -272,12 +273,18 @@ func DynamicConfiguration(
 
 	// Enabling `pg_rewind` allows a former primary to automatically rejoin the
 	// cluster even if it has commits that were not sent to a replica. In other
-	// words, this favors availability over consistency.
+	// words, this favors availability over consistency. Without it, the former
+	// primary needs patronictl reinit to rejoin.
 	//
 	// Recent versions of `pg_rewind` can run with limited permissions granted
 	// by Patroni to the user defined in "postgresql.authentication.rewind".
 	// PostgreSQL v10 and earlier require superuser access over the network.
-	postgresql["use_pg_rewind"] = cluster.Spec.PostgresVersion > 10
+	//
+	// Additionally, Patroni does not currently provide an easy way to set the
+	// "encryption_key_command" value for `pg_rewind`, so if TDE is enabled,
+	// `use_pg_rewind` is set to false.
+	postgresql["use_pg_rewind"] = cluster.Spec.PostgresVersion > 10 &&
+		config.FetchKeyCommand(&cluster.Spec) == ""
 
 	if cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled {
 		// Copy the "standby_cluster" section before making any changes.
@@ -593,6 +600,33 @@ func instanceYAML(
 				},
 			}
 		} else {
+
+			initdb := []string{
+				// Enable checksums on data pages to help detect corruption of
+				// storage that would otherwise be silent. This also enables
+				// "wal_log_hints" which is a prerequisite for using `pg_rewind`.
+				// - https://www.postgresql.org/docs/current/app-initdb.html
+				// - https://www.postgresql.org/docs/current/app-pgrewind.html
+				// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+				//
+				// The benefits of checksums in the Kubernetes storage landscape
+				// outweigh their negligible overhead, and enabling them later
+				// is costly. (Every file of the cluster must be rewritten.)
+				// PostgreSQL v12 introduced the `pg_checksums` utility which
+				// can cheaply disable them while PostgreSQL is stopped.
+				// - https://www.postgresql.org/docs/current/app-pgchecksums.html
+				"data-checksums",
+				"encoding=UTF8",
+
+				// NOTE(cbandy): The "--waldir" option was introduced in PostgreSQL v10.
+				"waldir=" + postgres.WALDirectory(cluster, instance),
+			}
+
+			// Append the encryption key command, if provided.
+			if ekc := config.FetchKeyCommand(&cluster.Spec); ekc != "" {
+				initdb = append(initdb, fmt.Sprintf("encryption-key-command=%s", ekc))
+			}
+
 			// Populate some "bootstrap" fields to initialize the cluster.
 			// When Patroni is already bootstrapped, this section is ignored.
 			// - https://github.com/zalando/patroni/blob/v2.0.2/docs/SETTINGS.rst#bootstrap-configuration
@@ -603,26 +637,7 @@ func instanceYAML(
 				// The "initdb" bootstrap method is configured differently from others.
 				// Patroni prepends "--" before it calls `initdb`.
 				// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/bootstrap.py#L45
-				"initdb": []string{
-					// Enable checksums on data pages to help detect corruption of
-					// storage that would otherwise be silent. This also enables
-					// "wal_log_hints" which is a prerequisite for using `pg_rewind`.
-					// - https://www.postgresql.org/docs/current/app-initdb.html
-					// - https://www.postgresql.org/docs/current/app-pgrewind.html
-					// - https://www.postgresql.org/docs/current/runtime-config-wal.html
-					//
-					// The benefits of checksums in the Kubernetes storage landscape
-					// outweigh their negligible overhead, and enabling them later
-					// is costly. (Every file of the cluster must be rewritten.)
-					// PostgreSQL v12 introduced the `pg_checksums` utility which
-					// can cheaply disable them while PostgreSQL is stopped.
-					// - https://www.postgresql.org/docs/current/app-pgchecksums.html
-					"data-checksums",
-					"encoding=UTF8",
-
-					// NOTE(cbandy): The "--waldir" option was introduced in PostgreSQL v10.
-					"waldir=" + postgres.WALDirectory(cluster, instance),
-				},
+				"initdb": initdb,
 			}
 		}
 	}
