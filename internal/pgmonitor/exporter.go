@@ -152,7 +152,7 @@ func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []stri
 		`  echo "Starting postgres_exporter with the following flags..."`,
 		`  echo "${postgres_exporter_flags[@]}"`,
 		`  postgres_exporter "${postgres_exporter_flags[@]}" &`,
-		`  [ -e /proc/$! ] && echo $! > $POSTGRES_EXPORTER_PIDFILE`,
+		`  echo $! > $POSTGRES_EXPORTER_PIDFILE`,
 		`}`,
 
 		// run function to combine queries files and start postgres_exporter
