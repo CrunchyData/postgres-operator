@@ -1,0 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+- type: command
+  command: kubectl -n ${KUTTL_TEST_DELETE_NAMESPACE} describe pods --selector postgres-operator.crunchydata.com/cluster=delete-namespace
+- namespace: ${KUTTL_TEST_DELETE_NAMESPACE}
+  selector: postgres-operator.crunchydata.com/cluster=delete-namespace

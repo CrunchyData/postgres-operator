@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=delete-not-running
+# This shouldn't be running, so skip logs; if there's an error, we'll be able to see it in the describe

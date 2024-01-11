@@ -1,5 +1,3 @@
----
-# Remove the cluster.
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 delete:
