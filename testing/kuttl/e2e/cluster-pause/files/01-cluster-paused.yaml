@@ -4,8 +4,8 @@ metadata:
   name: cluster-pause
 status:
   conditions:
-    - message: pgBackRest blah
-      reason: RepoHostNotReady
+    - message: pgBackRest dedicated repository host is ready
+      reason: RepoHostReady
       status: "True"
       type: PGBackRestRepoHostReady
     - message: pgBackRest replica create repo is ready for backups
