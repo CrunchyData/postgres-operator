@@ -1,0 +1,16 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: cluster-pause
+spec:
+  paused: true
+  instances:
+    - name: instance1
+      # We set replicas to 2, but this won't result in a new replica until we resume
+      replicas: 2
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
