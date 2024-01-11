@@ -1,6 +1,7 @@
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: psql-connect
-status:
-  succeeded: 1
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=cluster-start
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/cluster=cluster-start
