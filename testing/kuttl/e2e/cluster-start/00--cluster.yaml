@@ -1,25 +1,6 @@
-apiVersion: postgres-operator.crunchydata.com/v1beta1
-kind: PostgresCluster
-metadata:
-  name: cluster-start
-spec:
-  postgresVersion: ${KUTTL_PG_VERSION}
-  instances:
-    - name: instance1
-      dataVolumeClaimSpec:
-        accessModes:
-        - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: 1Gi
-  backups:
-    pgbackrest:
-      repos:
-      - name: repo1
-        volume:
-          volumeClaimSpec:
-            accessModes:
-            - "ReadWriteOnce"
-            resources:
-              requests:
-                storage: 1Gi
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/00-create-cluster.yaml
+assert:
+- files/00-cluster-created.yaml

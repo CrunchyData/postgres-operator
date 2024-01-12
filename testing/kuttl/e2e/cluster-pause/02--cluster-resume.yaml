@@ -1,6 +1,6 @@
-apiVersion: postgres-operator.crunchydata.com/v1beta1
-kind: PostgresCluster
-metadata:
-  name: cluster-pause
-spec:
-  paused: false
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/02-resume-cluster.yaml
+assert:
+- files/02-cluster-resumed.yaml
