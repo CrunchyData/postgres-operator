@@ -3,11 +3,12 @@ kind: PostgresCluster
 metadata:
   name: cluster-pause
 spec:
+  # We change the service, but this won't result in a change until we resume
+  service:
+    type: LoadBalancer
   paused: true
   instances:
     - name: instance1
-      # We set replicas to 2, but this won't result in a new replica until we resume
-      replicas: 2
       dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"
