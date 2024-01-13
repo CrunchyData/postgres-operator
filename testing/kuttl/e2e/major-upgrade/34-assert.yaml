@@ -1,18 +1,11 @@
----
-# Wait for the instances to be ready with the target Postgres version.
-apiVersion: postgres-operator.crunchydata.com/v1beta1
-kind: PostgresCluster
-metadata:
-  name: major-upgrade
-status:
-  postgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
-  instances:
-    - name: '00'
-      replicas: 3
-      readyReplicas: 3
-      updatedReplicas: 3
-  pgbackrest:
-    repos:
-    - name: repo1
-      replicaCreateBackupComplete: true
-      stanzaCreated: true
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=major-upgrade
+- type: command
+  command: kubectl -n $NAMESPACE describe pgupgrade major-upgrade-do-it
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/cluster=major-upgrade
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/pgupgrade=major-upgrade-do-it

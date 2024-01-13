@@ -1,14 +1,11 @@
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: major-upgrade-after
-status:
-  succeeded: 1
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: major-upgrade-after-replica
-status:
-  succeeded: 1
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=major-upgrade
+- type: command
+  command: kubectl -n $NAMESPACE describe pgupgrade major-upgrade-do-it
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/cluster=major-upgrade
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/pgupgrade=major-upgrade-do-it

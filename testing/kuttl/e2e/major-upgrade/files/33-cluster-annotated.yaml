@@ -1,0 +1,22 @@
+---
+# Now that the postgres cluster is shut down and annotated, the pgupgrade
+# can finish reconciling. We know the reconciling is complete when
+# the pgupgrade status is succeeded and the postgres cluster status
+# has the updated version.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGUpgrade
+metadata:
+  name: major-upgrade-do-it
+status:
+  conditions:
+  - type:   "Progressing"
+    status: "False"
+  - type:   "Succeeded"
+    status: "True"
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: major-upgrade
+status:
+  postgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
