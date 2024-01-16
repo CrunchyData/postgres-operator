@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/20-create-broken-cluster.yaml
+error:
+- files/20-broken-cluster-not-created.yaml

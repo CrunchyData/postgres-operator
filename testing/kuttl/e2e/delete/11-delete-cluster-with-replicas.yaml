@@ -5,4 +5,6 @@ kind: TestStep
 delete:
   - apiVersion: postgres-operator.crunchydata.com/v1beta1
     kind: PostgresCluster
-    name: delete-not-running
+    name: delete-with-replica
+error:
+- files/11-cluster-with-replicas-deleted.yaml
