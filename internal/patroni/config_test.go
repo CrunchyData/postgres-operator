@@ -752,9 +752,10 @@ func TestDynamicConfiguration(t *testing.T) {
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
 				"postgresql": map[string]any{
+					"bin_name":      map[string]any{"pg_rewind": string("/tmp/pg_rewind_tde.sh")},
 					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
-					"use_pg_rewind": bool(false),
+					"use_pg_rewind": bool(true),
 					"use_slots":     bool(false),
 				},
 			},

@@ -21,6 +21,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -246,6 +247,18 @@ func startupCommand(
 		}
 	}
 
+	pg_rewind_override := ""
+	if config.FetchKeyCommand(&cluster.Spec) != "" {
+		// Quoting "EOF" disables parameter substitution during write.
+		// - https://tldp.org/LDP/abs/html/here-docs.html#EX71C
+		pg_rewind_override = `cat << "EOF" > /tmp/pg_rewind_tde.sh
+#!/bin/sh
+pg_rewind -K "$(postgres -C encryption_key_command)" "$@"
+EOF
+chmod +x /tmp/pg_rewind_tde.sh
+`
+	}
+
 	args := []string{version, walDir, naming.PGBackRestPGDataLogPath}
 	script := strings.Join([]string{
 		`declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3"`,
@@ -331,6 +344,9 @@ func startupCommand(
 			naming.ReplicationTmp, naming.CertMountPath+naming.ReplicationDirectory,
 			naming.ReplicationCert, naming.ReplicationPrivateKey,
 			naming.ReplicationCACert),
+
+		// Add the pg_rewind wrapper script, if TDE is enabled.
+		pg_rewind_override,
 
 		tablespaceCmd,
 		// When the data directory is empty, there's nothing more to do.

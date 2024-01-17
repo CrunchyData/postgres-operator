@@ -206,6 +206,15 @@ func DynamicConfiguration(
 		// TODO(cbandy): explain this. requires an archive, perhaps.
 		"use_slots": false,
 	}
+
+	// When TDE is configured, override the pg_rewind binary name to point
+	// to the wrapper script.
+	if config.FetchKeyCommand(&cluster.Spec) != "" {
+		postgresql["bin_name"] = map[string]any{
+			"pg_rewind": "/tmp/pg_rewind_tde.sh",
+		}
+	}
+
 	if section, ok := root["postgresql"].(map[string]any); ok {
 		for k, v := range section {
 			postgresql[k] = v
@@ -279,12 +288,7 @@ func DynamicConfiguration(
 	// Recent versions of `pg_rewind` can run with limited permissions granted
 	// by Patroni to the user defined in "postgresql.authentication.rewind".
 	// PostgreSQL v10 and earlier require superuser access over the network.
-	//
-	// Additionally, Patroni does not currently provide an easy way to set the
-	// "encryption_key_command" value for `pg_rewind`, so if TDE is enabled,
-	// `use_pg_rewind` is set to false.
-	postgresql["use_pg_rewind"] = cluster.Spec.PostgresVersion > 10 &&
-		config.FetchKeyCommand(&cluster.Spec) == ""
+	postgresql["use_pg_rewind"] = cluster.Spec.PostgresVersion > 10
 
 	if cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled {
 		// Copy the "standby_cluster" section before making any changes.
