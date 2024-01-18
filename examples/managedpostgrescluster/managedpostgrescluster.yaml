@@ -1,0 +1,13 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: ManagedPostgresCluster
+metadata:
+  name: sigil
+spec:
+  is_ha: false
+  clusterName: sigil
+  plan_id: standard-8
+  postgres_version_id: 15
+  provider_id: aws
+  region_id: us-east-1
+  secret: crunchy-bridge-api-key
+  storage: 10G

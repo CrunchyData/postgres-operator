@@ -2,6 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
+- bases/postgres-operator.crunchydata.com_managedpostgresclusters.yaml
 - bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 - bases/postgres-operator.crunchydata.com_pgupgrades.yaml
 - bases/postgres-operator.crunchydata.com_pgadmins.yaml

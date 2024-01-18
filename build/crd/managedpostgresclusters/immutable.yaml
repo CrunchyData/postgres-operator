@@ -1,0 +1,11 @@
+- op: add
+  path: /work
+  value: [{ message: 'immutable', rule: 'self == oldSelf'}]
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/provider_id/x-kubernetes-validations
+- op: copy
+  from: /work
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/region_id/x-kubernetes-validations
+- op: remove
+  path: /work
