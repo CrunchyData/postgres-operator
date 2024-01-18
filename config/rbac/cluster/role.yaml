@@ -102,6 +102,24 @@ rules:
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
+  - managedpostgresclusters
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - postgres-operator.crunchydata.com
+  resources:
+  - managedpostgresclusters/finalizers
+  - managedpostgresclusters/status
+  verbs:
+  - patch
+  - update
+- apiGroups:
+  - postgres-operator.crunchydata.com
+  resources:
   - pgadmins
   - pgupgrades
   verbs:

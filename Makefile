@@ -120,7 +120,7 @@ undeploy: ## Undeploy the PostgreSQL Operator
 
 .PHONY: deploy-dev
 deploy-dev: ## Deploy the PostgreSQL Operator locally
-deploy-dev: PGO_FEATURE_GATES ?= "TablespaceVolumes=true"
+deploy-dev: PGO_FEATURE_GATES ?= "TablespaceVolumes=true,BridgeManagedClusters=true"
 deploy-dev: get-pgmonitor
 deploy-dev: build-postgres-operator
 deploy-dev: createnamespaces
@@ -284,9 +284,15 @@ generate-crd: ## Generate crd
 		paths='./pkg/apis/...' \
 		output:dir='build/crd/pgadmins/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
 	@
+	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+		crd:crdVersions='v1' \
+		paths='./pkg/apis/...' \
+		output:dir='build/crd/managedpostgresclusters/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
+	@
 	kubectl kustomize ./build/crd/postgresclusters > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 	kubectl kustomize ./build/crd/pgupgrades > ./config/crd/bases/postgres-operator.crunchydata.com_pgupgrades.yaml
 	kubectl kustomize ./build/crd/pgadmins > ./config/crd/bases/postgres-operator.crunchydata.com_pgadmins.yaml
+	kubectl kustomize ./build/crd/managedpostgresclusters > ./config/crd/bases/postgres-operator.crunchydata.com_managedpostgresclusters.yaml
 
 .PHONY: generate-deepcopy
 generate-deepcopy: ## Generate deepcopy functions

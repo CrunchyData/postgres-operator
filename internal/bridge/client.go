@@ -29,6 +29,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const defaultAPI = "https://api.crunchybridge.com"
@@ -102,6 +104,8 @@ func (c *Client) doWithBackoff(
 
 		if err == nil {
 			request.Header = headers.Clone()
+
+			// TODO(managedpostgrescluster): add params?
 
 			//nolint:bodyclose // This response is returned to the caller.
 			response, err = c.Client.Do(request)
@@ -219,6 +223,266 @@ func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 
 	response, err := c.doWithRetry(ctx, "POST", "/vendor/operator/installations", nil, http.Header{
 		"Accept": []string{"application/json"},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+// TODO(managedpostgrescluster) Is this where we want CRUD for clusters functions? Or make client `do` funcs
+// directly callable?
+
+type ClusterList struct {
+	Clusters []*v1beta1.ClusterDetails `json:"clusters"`
+}
+
+func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*v1beta1.ClusterDetails, error) {
+	result := &ClusterList{}
+
+	// Can't add param to path
+	response, err := c.doWithRetry(ctx, "GET", "/clusters", nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result.Clusters, err
+}
+
+func (c *Client) CreateCluster(ctx context.Context, apiKey string, cluster *v1beta1.ClusterDetails) (*v1beta1.ClusterDetails, error) {
+	result := &v1beta1.ClusterDetails{}
+
+	clusterbyte, err := json.Marshal(cluster)
+	if err != nil {
+		return result, err
+	}
+
+	response, err := c.doWithRetry(ctx, "POST", "/clusters", clusterbyte, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+// DeleteCluster calls the delete endpoint, returning
+//
+//	the cluster,
+//	whether the cluster is deleted already,
+//	and an error.
+func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*v1beta1.ClusterDetails, bool, error) {
+	result := &v1beta1.ClusterDetails{}
+	var deletedAlready bool
+
+	response, err := c.doWithRetry(ctx, "DELETE", "/clusters/"+id, nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		// Already deleted
+		// Bridge API returns 410 Gone for previously deleted clusters
+		// --https://docs.crunchybridge.com/api-concepts/idempotency#delete-semantics
+		// But also, if we can't find it...
+		// Maybe if no ID we return already deleted?
+		case response.StatusCode == 410:
+			fallthrough
+		case response.StatusCode == 404:
+			deletedAlready = true
+			err = nil
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, deletedAlready, err
+}
+
+func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*v1beta1.ClusterDetails, error) {
+	result := &v1beta1.ClusterDetails{}
+
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id, nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+// TODO (dsessler7) We should use a ClusterStatus struct here
+func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (string, error) {
+	result := ""
+
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/status", nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*v1beta1.ClusterUpgrade, error) {
+	result := &v1beta1.ClusterUpgrade{}
+
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/upgrade", nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+func (c *Client) UpgradeCluster(ctx context.Context, apiKey, id string, cluster *v1beta1.ClusterDetails) (*v1beta1.ClusterUpgrade, error) {
+	result := &v1beta1.ClusterUpgrade{}
+
+	clusterbyte, err := json.Marshal(cluster)
+	if err != nil {
+		return result, err
+	}
+
+	response, err := c.doWithRetry(ctx, "POST", "/clusters/"+id+"/upgrade", clusterbyte, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string) (*v1beta1.ClusterUpgrade, error) {
+	result := &v1beta1.ClusterUpgrade{}
+
+	response, err := c.doWithRetry(ctx, "PUT", "/clusters/"+id+"/actions/"+action, nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
 	})
 
 	if err == nil {

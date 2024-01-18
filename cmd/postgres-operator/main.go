@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
+	"github.com/crunchydata/postgres-operator/internal/bridge/managedpostgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/pgupgrade"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -173,6 +174,28 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create PGAdmin controller")
 		os.Exit(1)
+	}
+
+	if util.DefaultMutableFeatureGate.Enabled(util.BridgeManagedClusters) {
+		constructor := func() *bridge.Client {
+			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
+			client.Transport = otelTransportWrapper()(http.DefaultTransport)
+			return client
+		}
+
+		managedPostgresClusterReconciler := &managedpostgrescluster.ManagedPostgresClusterReconciler{
+			Client: mgr.GetClient(),
+			Owner:  "managedpostgrescluster-controller",
+			// TODO(managedpostgrescluster): recorder?
+			// Recorder: mgr.GetEventRecorderFor(naming...),
+			Scheme:    mgr.GetScheme(),
+			NewClient: constructor,
+		}
+
+		if err := managedPostgresClusterReconciler.SetupWithManager(mgr); err != nil {
+			log.Error(err, "unable to create ManagedPostgresCluster controller")
+			os.Exit(1)
+		}
 	}
 }
 
