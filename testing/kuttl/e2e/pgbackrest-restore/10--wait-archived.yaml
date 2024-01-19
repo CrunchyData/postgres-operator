@@ -14,5 +14,5 @@ commands:
       # "pg_stat_archiver" counters, so anything more than zero should suffice.
       kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -c 'SELECT pg_switch_wal()'
       while [ 0 = "$(
-        kubectl exec "${NAMESPACE}" "${PRIMARY}" -- psql -qAt -c 'SELECT archived_count FROM pg_stat_archiver'
+        kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -qAt -c 'SELECT archived_count FROM pg_stat_archiver'
       )" ]; do sleep 1; done
