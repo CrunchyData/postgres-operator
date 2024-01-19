@@ -1,6 +1,6 @@
 <h1 align="center">PGO: The Postgres Operator from Crunchy Data</h1>
 <p align="center">
-  <img width="150" src="./docs/static/logos/pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
+  <img width="150" src="./img/CrunchyDataPrimaryIcon.png" alt="PGO: The Postgres Operator from Crunchy Data"/>
 </p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/CrunchyData/postgres-operator)](https://goreportcard.com/report/github.com/CrunchyData/postgres-operator)
