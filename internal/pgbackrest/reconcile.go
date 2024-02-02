@@ -230,6 +230,23 @@ func AddConfigToRestorePod(
 			cluster.Spec.DataSource.PGBackRest.Configuration...)
 	}
 
+	// mount any provided configuration files to the restore Job Pod
+	if len(cluster.Spec.Config.Files) != 0 {
+		additionalConfigVolumeMount := postgres.AdditionalConfigVolumeMount()
+		additionalConfigVolume := corev1.Volume{Name: additionalConfigVolumeMount.Name}
+		additionalConfigVolume.Projected = &corev1.ProjectedVolumeSource{
+			Sources: append(sources, cluster.Spec.Config.Files...),
+		}
+		for i := range pod.Containers {
+			container := &pod.Containers[i]
+
+			if container.Name == naming.PGBackRestRestoreContainerName {
+				container.VolumeMounts = append(container.VolumeMounts, additionalConfigVolumeMount)
+			}
+		}
+		pod.Volumes = append(pod.Volumes, additionalConfigVolume)
+	}
+
 	addConfigVolumeAndMounts(pod, append(sources, configmap, secret))
 }
 
