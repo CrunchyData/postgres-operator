@@ -43,7 +43,7 @@ import (
 
 const finalizer = "crunchybridgecluster.postgres-operator.crunchydata.com/finalizer"
 
-// crunchybridgeClusterReconciler reconciles a crunchybridgecluster object
+// CrunchyBridgeClusterReconciler reconciles a CrunchyBridgeCluster object
 type CrunchyBridgeClusterReconciler struct {
 	client.Client
 
