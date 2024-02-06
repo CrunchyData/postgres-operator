@@ -56,11 +56,17 @@ type ServiceSpec struct {
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
 	Type string `json:"type"`
 
+	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
+	//
 	// +optional
-	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicyType `json:"internalTrafficPolicy"`
+	// +kubebuilder:validation:Enum={Cluster,Local}
+	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicyType `json:"internalTrafficPolicy,omitempty"`
 
+	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
+	//
 	// +optional
-	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy"`
+	// +kubebuilder:validation:Enum={Cluster,Local}
+	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty"`
 }
 
 // Sidecar defines the configuration of a sidecar container
