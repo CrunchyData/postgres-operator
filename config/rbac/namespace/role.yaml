@@ -102,7 +102,7 @@ rules:
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
-  - managedpostgresclusters
+  - crunchybridgeclusters
   verbs:
   - get
   - list
@@ -112,8 +112,8 @@ rules:
 - apiGroups:
   - postgres-operator.crunchydata.com
   resources:
-  - managedpostgresclusters/finalizers
-  - managedpostgresclusters/status
+  - crunchybridgeclusters/finalizers
+  - crunchybridgeclusters/status
   verbs:
   - patch
   - update

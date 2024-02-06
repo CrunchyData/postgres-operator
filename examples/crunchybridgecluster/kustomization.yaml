@@ -4,4 +4,4 @@ kind: Kustomization
 namespace: postgres-operator
 
 resources:
-- managedpostgrescluster.yaml
+- crunchybridgecluster.yaml
