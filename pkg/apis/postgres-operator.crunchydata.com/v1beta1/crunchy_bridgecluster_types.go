@@ -21,9 +21,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// ManagedPostgresClusterSpec defines the desired state of ManagedPostgresCluster
+// CrunchyBridgeClusterSpec defines the desired state of CrunchyBridgeCluster
 // to be managed by Crunchy Data Bridge
-type ManagedPostgresClusterSpec struct {
+type CrunchyBridgeClusterSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
@@ -79,8 +79,8 @@ type ManagedPostgresClusterSpec struct {
 	Storage resource.Quantity `json:"storage"`
 }
 
-// ManagedPostgresClusterStatus defines the observed state of ManagedPostgresCluster
-type ManagedPostgresClusterStatus struct {
+// CrunchyBridgeClusterStatus defines the observed state of CrunchyBridgeCluster
+type CrunchyBridgeClusterStatus struct {
 	// The ID of the postgrescluster in Bridge, provided by Bridge API and null until then.
 	// +optional
 	ID string `json:"id,omitempty"`
@@ -119,10 +119,8 @@ type ClusterDetails struct {
 	Storage         int64              `json:"storage,omitempty"`
 	Team            string             `json:"team_id,omitempty"`
 	State           string             `json:"state,omitempty"`
-	// TODO(managedpostgrescluster): add other fields, DiskUsage, Host, IsProtected, IsSuspended, CPU, Memory, etc.
+	// TODO(crunchybridgecluster): add other fields, DiskUsage, Host, IsProtected, IsSuspended, CPU, Memory, etc.
 }
-
-// TODO (dsessler7) Create a ClusterStatus struct here
 
 type ClusterUpgrade struct {
 	Operations []*Operation `json:"operations,omitempty"`
@@ -134,8 +132,8 @@ type Operation struct {
 	State        string `json:"state"`
 }
 
-// TODO(managedpostgrescluster) Think through conditions
-// ManagedPostgresClusterStatus condition types.
+// TODO(crunchybridgecluster) Think through conditions
+// CrunchyBridgeClusterStatus condition types.
 const (
 	ConditionUnknown  = ""
 	ConditionPending  = "Pending"
@@ -149,9 +147,9 @@ const (
 // +kubebuilder:subresource:status
 // +operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Secret,v1},{Service,v1},{CronJob,v1beta1},{Deployment,v1},{Job,v1},{StatefulSet,v1},{PersistentVolumeClaim,v1}}
 
-// ManagedPostgresCluster is the Schema for the managedpostgresclusters API
-// This Custom Resource requires enabling BridgeManagedClusters feature gate
-type ManagedPostgresCluster struct {
+// CrunchyBridgeCluster is the Schema for the crunchybridgeclusters API
+// This Custom Resource requires enabling CrunchyBridgeClusters feature gate
+type CrunchyBridgeCluster struct {
 	// ObjectMeta.Name is a DNS subdomain.
 	// - https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
 	// - https://releases.k8s.io/v1.21.0/staging/src/k8s.io/apiextensions-apiserver/pkg/registry/customresource/validator.go#L60
@@ -160,40 +158,40 @@ type ManagedPostgresCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// NOTE(cbandy): Every ManagedPostgresCluster needs a Spec, but it is optional here
+	// NOTE(cbandy): Every CrunchyBridgeCluster needs a Spec, but it is optional here
 	// so ObjectMeta can be managed independently.
 
-	Spec   ManagedPostgresClusterSpec   `json:"spec,omitempty"`
-	Status ManagedPostgresClusterStatus `json:"status,omitempty"`
+	Spec   CrunchyBridgeClusterSpec   `json:"spec,omitempty"`
+	Status CrunchyBridgeClusterStatus `json:"status,omitempty"`
 }
 
 // Default implements "sigs.k8s.io/controller-runtime/pkg/webhook.Defaulter" so
 // a webhook can be registered for the type.
 // - https://book.kubebuilder.io/reference/webhook-overview.html
-func (c *ManagedPostgresCluster) Default() {
+func (c *CrunchyBridgeCluster) Default() {
 	if len(c.APIVersion) == 0 {
 		c.APIVersion = GroupVersion.String()
 	}
 	if len(c.Kind) == 0 {
-		c.Kind = "ManagedPostgresCluster"
+		c.Kind = "CrunchyBridgeCluster"
 	}
 }
 
 // +kubebuilder:object:root=true
 
-// ManagedPostgresClusterList contains a list of ManagedPostgresCluster
-type ManagedPostgresClusterList struct {
+// CrunchyBridgeClusterList contains a list of CrunchyBridgeCluster
+type CrunchyBridgeClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ManagedPostgresCluster `json:"items"`
+	Items           []CrunchyBridgeCluster `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ManagedPostgresCluster{}, &ManagedPostgresClusterList{})
+	SchemeBuilder.Register(&CrunchyBridgeCluster{}, &CrunchyBridgeClusterList{})
 }
 
-func NewManagedPostgresCluster() *ManagedPostgresCluster {
-	cluster := &ManagedPostgresCluster{}
-	cluster.SetGroupVersionKind(GroupVersion.WithKind("ManagedPostgresCluster"))
+func NewCrunchyBridgeCluster() *CrunchyBridgeCluster {
+	cluster := &CrunchyBridgeCluster{}
+	cluster.SetGroupVersionKind(GroupVersion.WithKind("CrunchyBridgeCluster"))
 	return cluster
 }

@@ -7,21 +7,21 @@ metadata:
   labels:
     app.kubernetes.io/name: pgo
     app.kubernetes.io/version: latest
-  name: managedpostgresclusters.postgres-operator.crunchydata.com
+  name: crunchybridgeclusters.postgres-operator.crunchydata.com
 spec:
   group: postgres-operator.crunchydata.com
   names:
-    kind: ManagedPostgresCluster
-    listKind: ManagedPostgresClusterList
-    plural: managedpostgresclusters
-    singular: managedpostgrescluster
+    kind: CrunchyBridgeCluster
+    listKind: CrunchyBridgeClusterList
+    plural: crunchybridgeclusters
+    singular: crunchybridgecluster
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: ManagedPostgresCluster is the Schema for the managedpostgresclusters
-          API This Custom Resource requires enabling BridgeManagedClusters feature
+        description: CrunchyBridgeCluster is the Schema for the crunchybridgeclusters
+          API This Custom Resource requires enabling CrunchyBridgeClusters feature
           gate
         properties:
           apiVersion:
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ManagedPostgresClusterSpec defines the desired state of ManagedPostgresCluster
+            description: CrunchyBridgeClusterSpec defines the desired state of CrunchyBridgeCluster
               to be managed by Crunchy Data Bridge
             properties:
               clusterName:
@@ -119,8 +119,8 @@ spec:
             - storage
             type: object
           status:
-            description: ManagedPostgresClusterStatus defines the observed state of
-              ManagedPostgresCluster
+            description: CrunchyBridgeClusterStatus defines the observed state of
+              CrunchyBridgeCluster
             properties:
               clusterResponse:
                 description: The cluster as represented by Bridge

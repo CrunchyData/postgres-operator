@@ -105,7 +105,7 @@ func (c *Client) doWithBackoff(
 		if err == nil {
 			request.Header = headers.Clone()
 
-			// TODO(managedpostgrescluster): add params?
+			// TODO(crunchybridgecluster): add params?
 
 			//nolint:bodyclose // This response is returned to the caller.
 			response, err = c.Client.Do(request)
@@ -245,7 +245,7 @@ func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 	return result, err
 }
 
-// TODO(managedpostgrescluster) Is this where we want CRUD for clusters functions? Or make client `do` funcs
+// TODO(crunchybridgecluster) Is this where we want CRUD for clusters functions? Or make client `do` funcs
 // directly callable?
 
 type ClusterList struct {

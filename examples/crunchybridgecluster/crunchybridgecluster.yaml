@@ -1,5 +1,5 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
-kind: ManagedPostgresCluster
+kind: CrunchyBridgeCluster
 metadata:
   name: sigil
 spec:

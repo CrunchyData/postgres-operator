@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package managedpostgrescluster
+package crunchybridgecluster
 
 import (
 	"context"
@@ -41,10 +41,10 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-const finalizer = "managedpostgrescluster.postgres-operator.crunchydata.com/finalizer"
+const finalizer = "crunchybridgecluster.postgres-operator.crunchydata.com/finalizer"
 
-// ManagedPostgresClusterReconciler reconciles a ManagedPostgrescluster object
-type ManagedPostgresClusterReconciler struct {
+// crunchybridgeClusterReconciler reconciles a crunchybridgecluster object
+type CrunchyBridgeClusterReconciler struct {
 	client.Client
 
 	Owner  client.FieldOwner
@@ -59,23 +59,23 @@ type ManagedPostgresClusterReconciler struct {
 	NewClient func() *bridge.Client
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="managedpostgresclusters",verbs={list,watch}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={list,watch}
 //+kubebuilder:rbac:groups="",resources="secrets",verbs={list,watch}
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ManagedPostgresClusterReconciler) SetupWithManager(
+func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 	mgr ctrl.Manager,
 ) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.ManagedPostgresCluster{}).
-		// Wake periodically to check Bridge API for all ManagedPostgresClusters.
+		For(&v1beta1.CrunchyBridgeCluster{}).
+		// Wake periodically to check Bridge API for all CrunchyBridgeClusters.
 		// Potentially replace with different requeue times, remove the Watch function
 		// Smarter: retry after a certain time for each cluster: https://gist.github.com/cbandy/a5a604e3026630c5b08cfbcdfffd2a13
 		Watches(
 			pgoRuntime.NewTickerImmediate(5*time.Minute, event.GenericEvent{}),
 			r.Watch(),
 		).
-		// Watch secrets and filter for secrets mentioned by ManagedPostgresClusters
+		// Watch secrets and filter for secrets mentioned by CrunchyBridgeClusters
 		Watches(
 			&source.Kind{Type: &corev1.Secret{}},
 			r.watchForRelatedSecret(),
@@ -84,13 +84,13 @@ func (r *ManagedPostgresClusterReconciler) SetupWithManager(
 }
 
 // watchForRelatedSecret handles create/update/delete events for secrets,
-// passing the Secret ObjectKey to findManagedPostgresClustersForSecret
-func (r *ManagedPostgresClusterReconciler) watchForRelatedSecret() handler.EventHandler {
+// passing the Secret ObjectKey to findCrunchyBridgeClustersForSecret
+func (r *CrunchyBridgeClusterReconciler) watchForRelatedSecret() handler.EventHandler {
 	handle := func(secret client.Object, q workqueue.RateLimitingInterface) {
 		ctx := context.Background()
 		key := client.ObjectKeyFromObject(secret)
 
-		for _, cluster := range r.findManagedPostgresClustersForSecret(ctx, key) {
+		for _, cluster := range r.findCrunchyBridgeClustersForSecret(ctx, key) {
 			q.Add(ctrl.Request{
 				NamespacedName: client.ObjectKeyFromObject(cluster),
 			})
@@ -116,17 +116,17 @@ func (r *ManagedPostgresClusterReconciler) watchForRelatedSecret() handler.Event
 	}
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="managedpostgresclusters",verbs={list}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={list}
 
-// findManagedPostgresClustersForSecret returns ManagedPostgresClusters
+// findCrunchyBridgeClustersForSecret returns CrunchyBridgeClusters
 // that are connected to the Secret
-func (r *ManagedPostgresClusterReconciler) findManagedPostgresClustersForSecret(
+func (r *CrunchyBridgeClusterReconciler) findCrunchyBridgeClustersForSecret(
 	ctx context.Context, secret client.ObjectKey,
-) []*v1beta1.ManagedPostgresCluster {
-	var matching []*v1beta1.ManagedPostgresCluster
-	var clusters v1beta1.ManagedPostgresClusterList
+) []*v1beta1.CrunchyBridgeCluster {
+	var matching []*v1beta1.CrunchyBridgeCluster
+	var clusters v1beta1.CrunchyBridgeClusterList
 
-	// NOTE: If this becomes slow due to a large number of ManagedPostgresClusters in a single
+	// NOTE: If this becomes slow due to a large number of CrunchyBridgeClusters in a single
 	// namespace, we can configure the [ctrl.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
@@ -142,22 +142,22 @@ func (r *ManagedPostgresClusterReconciler) findManagedPostgresClustersForSecret(
 	return matching
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="managedpostgresclusters",verbs={list}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={list}
 
-// Watch enqueues all existing ManagedPostgresClusters for reconciles.
-func (r *ManagedPostgresClusterReconciler) Watch() handler.EventHandler {
+// Watch enqueues all existing CrunchyBridgeClusters for reconciles.
+func (r *CrunchyBridgeClusterReconciler) Watch() handler.EventHandler {
 	return handler.EnqueueRequestsFromMapFunc(func(client.Object) []reconcile.Request {
 		ctx := context.Background()
 
-		managedPostgresClusterList := &v1beta1.ManagedPostgresClusterList{}
-		_ = r.List(ctx, managedPostgresClusterList)
+		crunchyBridgeClusterList := &v1beta1.CrunchyBridgeClusterList{}
+		_ = r.List(ctx, crunchyBridgeClusterList)
 
 		reconcileRequests := []reconcile.Request{}
-		for index := range managedPostgresClusterList.Items {
+		for index := range crunchyBridgeClusterList.Items {
 			reconcileRequests = append(reconcileRequests,
 				reconcile.Request{
 					NamespacedName: client.ObjectKeyFromObject(
-						&managedPostgresClusterList.Items[index],
+						&crunchyBridgeClusterList.Items[index],
 					),
 				},
 			)
@@ -167,60 +167,60 @@ func (r *ManagedPostgresClusterReconciler) Watch() handler.EventHandler {
 	})
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="managedpostgresclusters",verbs={get,patch,update}
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="managedpostgresclusters/status",verbs={patch,update}
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="managedpostgresclusters/finalizers",verbs={patch,update}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={get,patch,update}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters/status",verbs={patch,update}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters/finalizers",verbs={patch,update}
 //+kubebuilder:rbac:groups="",resources="secrets",verbs={get}
 
 // Reconcile does the work to move the current state of the world toward the
-// desired state described in a [v1beta1.ManagedPostgresCluster] identified by req.
-func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// desired state described in a [v1beta1.CrunchyBridgeCluster] identified by req.
+func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
-	// Retrieve the managedpostgrescluster from the client cache, if it exists. A deferred
+	// Retrieve the crunchybridgecluster from the client cache, if it exists. A deferred
 	// function below will send any changes to its Status field.
 	//
 	// NOTE: No DeepCopy is necessary here because controller-runtime makes a
 	// copy before returning from its cache.
 	// - https://github.com/kubernetes-sigs/controller-runtime/issues/1235
-	managedpostgrescluster := &v1beta1.ManagedPostgresCluster{}
-	err := r.Get(ctx, req.NamespacedName, managedpostgrescluster)
+	crunchybridgecluster := &v1beta1.CrunchyBridgeCluster{}
+	err := r.Get(ctx, req.NamespacedName, crunchybridgecluster)
 
 	if err == nil {
-		// Write any changes to the managedpostgrescluster status on the way out.
-		before := managedpostgrescluster.DeepCopy()
+		// Write any changes to the crunchybridgecluster status on the way out.
+		before := crunchybridgecluster.DeepCopy()
 		defer func() {
-			if !equality.Semantic.DeepEqual(before.Status, managedpostgrescluster.Status) {
-				status := r.Status().Patch(ctx, managedpostgrescluster, client.MergeFrom(before), r.Owner)
+			if !equality.Semantic.DeepEqual(before.Status, crunchybridgecluster.Status) {
+				status := r.Status().Patch(ctx, crunchybridgecluster, client.MergeFrom(before), r.Owner)
 
 				if err == nil && status != nil {
 					err = status
 				} else if status != nil {
-					log.Error(status, "Patching ManagedPostgresCluster status")
+					log.Error(status, "Patching CrunchyBridgeCluster status")
 				}
 			}
 		}()
 	} else {
 		// NotFound cannot be fixed by requeuing so ignore it. During background
-		// deletion, we receive delete events from managedpostgrescluster's dependents after
-		// managedpostgrescluster is deleted.
+		// deletion, we receive delete events from crunchybridgecluster's dependents after
+		// crunchybridgecluster is deleted.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// START SECRET HANDLING -- SPIN OFF INTO ITS OWN FUNC?
 
 	// Get and validate secret for req
-	key, team, err := r.GetSecretKeys(ctx, managedpostgrescluster)
+	key, team, err := r.GetSecretKeys(ctx, crunchybridgecluster)
 	if err != nil {
 		log.Error(err, "whoops, secret issue")
 
-		meta.SetStatusCondition(&managedpostgrescluster.Status.Conditions, metav1.Condition{
-			ObservedGeneration: managedpostgrescluster.GetGeneration(),
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
 			Type:               v1beta1.ConditionCreating,
 			Status:             metav1.ConditionFalse,
 			Reason:             "SecretInvalid",
 			Message: fmt.Sprintf(
-				"Cannot create with bad secret: %v", "TODO(managedpostgrescluster)"),
+				"Cannot create with bad secret: %v", "TODO(crunchybridgecluster)"),
 		})
 
 		// Don't automatically requeue Secret issues
@@ -231,31 +231,31 @@ func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ct
 	}
 
 	// Remove SecretInvalid condition if found
-	invalid := meta.FindStatusCondition(managedpostgrescluster.Status.Conditions,
+	invalid := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
 		v1beta1.ConditionCreating)
 	if invalid != nil && invalid.Status == metav1.ConditionFalse && invalid.Reason == "SecretInvalid" {
-		meta.RemoveStatusCondition(&managedpostgrescluster.Status.Conditions,
+		meta.RemoveStatusCondition(&crunchybridgecluster.Status.Conditions,
 			v1beta1.ConditionCreating)
 	}
 
 	// END SECRET HANDLING
 
-	// If the ManagedPostgresCluster isn't being deleted, add the finalizer
-	if managedpostgrescluster.ObjectMeta.DeletionTimestamp.IsZero() {
-		if !controllerutil.ContainsFinalizer(managedpostgrescluster, finalizer) {
-			controllerutil.AddFinalizer(managedpostgrescluster, finalizer)
-			if err := r.Update(ctx, managedpostgrescluster); err != nil {
+	// If the CrunchyBridgeCluster isn't being deleted, add the finalizer
+	if crunchybridgecluster.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(crunchybridgecluster, finalizer) {
+			controllerutil.AddFinalizer(crunchybridgecluster, finalizer)
+			if err := r.Update(ctx, crunchybridgecluster); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
-		// If the ManagedPostgresCluster is being deleted,
+		// If the CrunchyBridgeCluster is being deleted,
 		// handle the deletion, and remove the finalizer
 	} else {
-		if controllerutil.ContainsFinalizer(managedpostgrescluster, finalizer) {
-			log.Info("deleting cluster", "clusterName", managedpostgrescluster.Spec.ClusterName)
+		if controllerutil.ContainsFinalizer(crunchybridgecluster, finalizer) {
+			log.Info("deleting cluster", "clusterName", crunchybridgecluster.Spec.ClusterName)
 
-			// TODO(managedpostgrescluster): If is_protected is true, maybe skip this call, but allow the deletion of the K8s object?
-			_, deletedAlready, err := r.NewClient().DeleteCluster(ctx, key, managedpostgrescluster.Status.ID)
+			// TODO(crunchybridgecluster): If is_protected is true, maybe skip this call, but allow the deletion of the K8s object?
+			_, deletedAlready, err := r.NewClient().DeleteCluster(ctx, key, crunchybridgecluster.Status.ID)
 			// Requeue if error
 			if err != nil {
 				return ctrl.Result{}, err
@@ -267,10 +267,10 @@ func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ct
 
 			// Remove finalizer if deleted already
 			if deletedAlready {
-				log.Info("cluster deleted", "clusterName", managedpostgrescluster.Spec.ClusterName)
+				log.Info("cluster deleted", "clusterName", crunchybridgecluster.Spec.ClusterName)
 
-				controllerutil.RemoveFinalizer(managedpostgrescluster, finalizer)
-				if err := r.Update(ctx, managedpostgrescluster); err != nil {
+				controllerutil.RemoveFinalizer(crunchybridgecluster, finalizer)
+				if err := r.Update(ctx, crunchybridgecluster); err != nil {
 					return ctrl.Result{}, err
 				}
 			}
@@ -283,12 +283,12 @@ func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ct
 	// We did something in the upgrade controller
 	// Exit early if we can't create from this K8s object
 	// unless this K8s object has been changed (compare ObservedGeneration)
-	invalid = meta.FindStatusCondition(managedpostgrescluster.Status.Conditions,
+	invalid = meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
 		v1beta1.ConditionCreating)
 	if invalid != nil &&
 		invalid.Status == metav1.ConditionFalse &&
 		invalid.Message == "ClusterInvalid" &&
-		invalid.ObservedGeneration == managedpostgrescluster.GetGeneration() {
+		invalid.ObservedGeneration == crunchybridgecluster.GetGeneration() {
 		return ctrl.Result{}, nil
 	}
 
@@ -296,24 +296,24 @@ func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ct
 	if invalid != nil &&
 		invalid.Status == metav1.ConditionFalse &&
 		invalid.Reason == "ClusterInvalid" {
-		meta.RemoveStatusCondition(&managedpostgrescluster.Status.Conditions,
+		meta.RemoveStatusCondition(&crunchybridgecluster.Status.Conditions,
 			v1beta1.ConditionCreating)
 	}
 
-	storageVal, err := handleStorage(managedpostgrescluster.Spec.Storage)
+	storageVal, err := handleStorage(crunchybridgecluster.Spec.Storage)
 	if err != nil {
 		log.Error(err, "whoops, storage issue")
-		// TODO(managedpostgrescluster)
+		// TODO(crunchybridgecluster)
 		// lint:ignore nilerr no requeue needed
 		return ctrl.Result{}, nil
 	}
 
 	// We should only be missing the ID if no create has been issued
 	// or the create was interrupted and we haven't received the ID.
-	if managedpostgrescluster.Status.ID == "" {
+	if crunchybridgecluster.Status.ID == "" {
 		// START FIND
 
-		// TODO(managedpostgrescluster) If the CreateCluster response was interrupted, we won't have the ID
+		// TODO(crunchybridgecluster) If the CreateCluster response was interrupted, we won't have the ID
 		// so we can get by name
 		// BUT if we do that, there's a chance for the K8s object to grab a pre-existing Bridge cluster
 		// which means there's a chance to delete a Bridge cluster through K8s actions
@@ -327,8 +327,8 @@ func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ct
 		}
 
 		for _, cluster := range clusters {
-			if managedpostgrescluster.Name == cluster.Name {
-				managedpostgrescluster.Status.ID = cluster.ID
+			if crunchybridgecluster.Name == cluster.Name {
+				crunchybridgecluster.Status.ID = cluster.ID
 				// Requeue now that we have a cluster ID assigned
 				return ctrl.Result{Requeue: true}, nil
 			}
@@ -338,57 +338,57 @@ func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ct
 
 		// if we've gotten here then no cluster exists with that name and we're missing the ID, ergo, create cluster
 
-		// TODO(managedpostgrescluster) Can almost just use the managed.Spec... except for the team, which we don't want
+		// TODO(crunchybridgecluster) Can almost just use the managed.Spec... except for the team, which we don't want
 		// users to set on the spec. Do we?
 		clusterReq := &v1beta1.ClusterDetails{
-			IsHA:            managedpostgrescluster.Spec.IsHA,
-			Name:            managedpostgrescluster.Spec.ClusterName,
-			Plan:            managedpostgrescluster.Spec.Plan,
-			PostgresVersion: intstr.FromInt(managedpostgrescluster.Spec.PostgresVersion),
-			Provider:        managedpostgrescluster.Spec.Provider,
-			Region:          managedpostgrescluster.Spec.Region,
+			IsHA:            crunchybridgecluster.Spec.IsHA,
+			Name:            crunchybridgecluster.Spec.ClusterName,
+			Plan:            crunchybridgecluster.Spec.Plan,
+			PostgresVersion: intstr.FromInt(crunchybridgecluster.Spec.PostgresVersion),
+			Provider:        crunchybridgecluster.Spec.Provider,
+			Region:          crunchybridgecluster.Spec.Region,
 			Storage:         storageVal,
 			Team:            team,
 		}
 		cluster, err := r.NewClient().CreateCluster(ctx, key, clusterReq)
 		if err != nil {
 			log.Error(err, "whoops, cluster creating issue")
-			// TODO(managedpostgrescluster): probably shouldn't set this condition unless response from Bridge
+			// TODO(crunchybridgecluster): probably shouldn't set this condition unless response from Bridge
 			// indicates the payload is wrong
 			// Otherwise want a different condition
-			meta.SetStatusCondition(&managedpostgrescluster.Status.Conditions, metav1.Condition{
-				ObservedGeneration: managedpostgrescluster.GetGeneration(),
+			meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: crunchybridgecluster.GetGeneration(),
 				Type:               v1beta1.ConditionCreating,
 				Status:             metav1.ConditionFalse,
 				Reason:             "ClusterInvalid",
 				Message: fmt.Sprintf(
-					"Cannot create from spec for some reason: %v", "TODO(managedpostgrescluster)"),
+					"Cannot create from spec for some reason: %v", "TODO(crunchybridgecluster)"),
 			})
 
-			// TODO(managedpostgrescluster): If the payload is wrong, we don't want to requeue, so pass nil error
+			// TODO(crunchybridgecluster): If the payload is wrong, we don't want to requeue, so pass nil error
 			// If the transmission hit a transient problem, we do want to requeue
 			return ctrl.Result{}, nil
 		}
-		managedpostgrescluster.Status.ID = cluster.ID
+		crunchybridgecluster.Status.ID = cluster.ID
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
 
-	// If we reach this point, our ManagedPostgresCluster object has an ID
+	// If we reach this point, our CrunchyBridgeCluster object has an ID
 	// so we want to fill in the details for the cluster and cluster upgrades from the Bridge API
 	// Consider cluster details as a separate func.
-	clusterDetails, err := r.NewClient().GetCluster(ctx, key, managedpostgrescluster.Status.ID)
+	clusterDetails, err := r.NewClient().GetCluster(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
 		log.Error(err, "whoops, cluster getting issue")
 		return ctrl.Result{}, err
 	}
-	managedpostgrescluster.Status.Cluster = clusterDetails
+	crunchybridgecluster.Status.Cluster = clusterDetails
 
-	clusterUpgradeDetails, err := r.NewClient().GetClusterUpgrade(ctx, key, managedpostgrescluster.Status.ID)
+	clusterUpgradeDetails, err := r.NewClient().GetClusterUpgrade(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
 		log.Error(err, "whoops, cluster upgrade getting issue")
 		return ctrl.Result{}, err
 	}
-	managedpostgrescluster.Status.ClusterUpgrade = clusterUpgradeDetails
+	crunchybridgecluster.Status.ClusterUpgrade = clusterUpgradeDetails
 
 	// For now, we skip updating until the upgrade status is cleared.
 	// For the future, we may want to update in-progress upgrades,
@@ -397,35 +397,35 @@ func (r *ManagedPostgresClusterReconciler) Reconcile(ctx context.Context, req ct
 	// Consider: Perhaps add `generation` field to upgrade status?
 	// Checking this here also means that if an upgrade is requested through the GUI/API
 	// then we will requeue and wait for it to be done.
-	// TODO(managedpostgrescluster): Do we want the operator to interrupt
+	// TODO(crunchybridgecluster): Do we want the operator to interrupt
 	// upgrades created through the GUI/API?
-	if len(managedpostgrescluster.Status.ClusterUpgrade.Operations) != 0 {
+	if len(crunchybridgecluster.Status.ClusterUpgrade.Operations) != 0 {
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
 
 	// Check if there's an upgrade difference for the three upgradeable fields that hit the upgrade endpoint
 	// Why PostgresVersion and MajorVersion? Because MajorVersion in the Status is sure to be
 	// an int of the major version, whereas Status.Cluster.PostgresVersion might be the ID
-	if (storageVal != managedpostgrescluster.Status.Cluster.Storage) ||
-		managedpostgrescluster.Spec.Plan != managedpostgrescluster.Status.Cluster.Plan ||
-		managedpostgrescluster.Spec.PostgresVersion != managedpostgrescluster.Status.Cluster.MajorVersion {
-		return r.handleUpgrade(ctx, key, managedpostgrescluster, storageVal)
+	if (storageVal != crunchybridgecluster.Status.Cluster.Storage) ||
+		crunchybridgecluster.Spec.Plan != crunchybridgecluster.Status.Cluster.Plan ||
+		crunchybridgecluster.Spec.PostgresVersion != crunchybridgecluster.Status.Cluster.MajorVersion {
+		return r.handleUpgrade(ctx, key, crunchybridgecluster, storageVal)
 	}
 
 	// Are there diffs between the cluster response from the Bridge API and the spec?
 	// HA diffs are sent to /clusters/{cluster_id}/actions/[enable|disable]-ha
 	// so have to know (a) to send and (b) which to send to
-	if managedpostgrescluster.Spec.IsHA != managedpostgrescluster.Status.Cluster.IsHA {
-		return r.handleUpgradeHA(ctx, key, managedpostgrescluster)
+	if crunchybridgecluster.Spec.IsHA != crunchybridgecluster.Status.Cluster.IsHA {
+		return r.handleUpgradeHA(ctx, key, crunchybridgecluster)
 	}
 
 	// Check if there's a difference in is_protected, name, maintenance_window_start, etc.
 	// see https://docs.crunchybridge.com/api/cluster#update-cluster
 	// updates to these fields that hit the PATCH `clusters/<id>` endpoint
-	// TODO(managedpostgrescluster)
+	// TODO(crunchybridgecluster)
 
 	log.Info("Reconciled")
-	// TODO(managedpostgrescluster): do we always want to requeue? Does the Watch mean we
+	// TODO(crunchybridgecluster): do we always want to requeue? Does the Watch mean we
 	// don't need this, or do we want both?
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
@@ -443,9 +443,9 @@ func handleStorage(storageSpec resource.Quantity) (int64, error) {
 }
 
 // handleUpgrade handles upgrades that hit the "POST /clusters/<id>/upgrade" endpoint
-func (r *ManagedPostgresClusterReconciler) handleUpgrade(ctx context.Context,
+func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 	apiKey string,
-	managedpostgrescluster *v1beta1.ManagedPostgresCluster,
+	crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
 	storageVal int64,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
@@ -453,60 +453,60 @@ func (r *ManagedPostgresClusterReconciler) handleUpgrade(ctx context.Context,
 	log.Info("Handling upgrade request")
 
 	upgradeRequest := &v1beta1.ClusterDetails{
-		Plan:            managedpostgrescluster.Spec.Plan,
-		PostgresVersion: intstr.FromInt(managedpostgrescluster.Spec.PostgresVersion),
+		Plan:            crunchybridgecluster.Spec.Plan,
+		PostgresVersion: intstr.FromInt(crunchybridgecluster.Spec.PostgresVersion),
 		Storage:         storageVal,
 	}
 
 	clusterUpgrade, err := r.NewClient().UpgradeCluster(ctx, apiKey,
-		managedpostgrescluster.Status.ID, upgradeRequest)
+		crunchybridgecluster.Status.ID, upgradeRequest)
 	if err != nil {
-		// TODO(managedpostgrescluster): consider what errors we might get
+		// TODO(crunchybridgecluster): consider what errors we might get
 		// and what different results/requeue times we want to return.
 		// Currently: don't requeue and wait for user to change spec.
 		log.Error(err, "Error while attempting cluster upgrade")
 		return ctrl.Result{}, nil
 	}
-	managedpostgrescluster.Status.ClusterUpgrade = clusterUpgrade
+	crunchybridgecluster.Status.ClusterUpgrade = clusterUpgrade
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 
 // handleUpgradeHA handles upgrades that hit the
 // "PUT /clusters/<id>/actions/[enable|disable]-ha" endpoint
-func (r *ManagedPostgresClusterReconciler) handleUpgradeHA(ctx context.Context,
+func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 	apiKey string,
-	managedpostgrescluster *v1beta1.ManagedPostgresCluster,
+	crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.Info("Handling HA change request")
 
 	action := "enable-ha"
-	if !managedpostgrescluster.Spec.IsHA {
+	if !crunchybridgecluster.Spec.IsHA {
 		action = "disable-ha"
 	}
 
-	clusterUpgrade, err := r.NewClient().UpgradeClusterHA(ctx, apiKey, managedpostgrescluster.Status.ID, action)
+	clusterUpgrade, err := r.NewClient().UpgradeClusterHA(ctx, apiKey, crunchybridgecluster.Status.ID, action)
 	if err != nil {
-		// TODO(managedpostgrescluster): consider what errors we might get
+		// TODO(crunchybridgecluster): consider what errors we might get
 		// and what different results/requeue times we want to return.
 		// Currently: don't requeue and wait for user to change spec.
 		log.Error(err, "Error while attempting cluster HA change")
 		return ctrl.Result{}, nil
 	}
-	managedpostgrescluster.Status.ClusterUpgrade = clusterUpgrade
+	crunchybridgecluster.Status.ClusterUpgrade = clusterUpgrade
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 
 // GetSecretKeys gets the secret and returns the expected API key and team id
 // or an error if either of those fields or the Secret are missing
-func (r *ManagedPostgresClusterReconciler) GetSecretKeys(
-	ctx context.Context, managedPostgresCluster *v1beta1.ManagedPostgresCluster,
+func (r *CrunchyBridgeClusterReconciler) GetSecretKeys(
+	ctx context.Context, crunchyBridgeCluster *v1beta1.CrunchyBridgeCluster,
 ) (string, string, error) {
 
 	existing := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
-		Namespace: managedPostgresCluster.GetNamespace(),
-		Name:      managedPostgresCluster.Spec.Secret,
+		Namespace: crunchyBridgeCluster.GetNamespace(),
+		Name:      crunchyBridgeCluster.Spec.Secret,
 	}}
 
 	err := errors.WithStack(

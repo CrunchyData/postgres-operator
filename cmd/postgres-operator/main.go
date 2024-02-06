@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
-	"github.com/crunchydata/postgres-operator/internal/bridge/managedpostgrescluster"
+	"github.com/crunchydata/postgres-operator/internal/bridge/crunchybridgecluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/pgupgrade"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -176,24 +176,24 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 		os.Exit(1)
 	}
 
-	if util.DefaultMutableFeatureGate.Enabled(util.BridgeManagedClusters) {
+	if util.DefaultMutableFeatureGate.Enabled(util.CrunchyBridgeClusters) {
 		constructor := func() *bridge.Client {
 			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
 			client.Transport = otelTransportWrapper()(http.DefaultTransport)
 			return client
 		}
 
-		managedPostgresClusterReconciler := &managedpostgrescluster.ManagedPostgresClusterReconciler{
+		crunchyBridgeClusterReconciler := &crunchybridgecluster.CrunchyBridgeClusterReconciler{
 			Client: mgr.GetClient(),
-			Owner:  "managedpostgrescluster-controller",
-			// TODO(managedpostgrescluster): recorder?
+			Owner:  "crunchybridgecluster-controller",
+			// TODO(crunchybridgecluster): recorder?
 			// Recorder: mgr.GetEventRecorderFor(naming...),
 			Scheme:    mgr.GetScheme(),
 			NewClient: constructor,
 		}
 
-		if err := managedPostgresClusterReconciler.SetupWithManager(mgr); err != nil {
-			log.Error(err, "unable to create ManagedPostgresCluster controller")
+		if err := crunchyBridgeClusterReconciler.SetupWithManager(mgr); err != nil {
+			log.Error(err, "unable to create CrunchyBridgeCluster controller")
 			os.Exit(1)
 		}
 	}
