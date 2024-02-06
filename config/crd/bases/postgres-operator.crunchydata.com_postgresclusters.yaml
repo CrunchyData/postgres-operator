@@ -13061,11 +13061,16 @@ spec:
                         description: Specification of the service that exposes PgBouncer.
                         properties:
                           externalTrafficPolicy:
-                            description: Service External Traffic Policy Type string
+                            description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                            enum:
+                            - Cluster
+                            - Local
                             type: string
                           internalTrafficPolicy:
-                            description: ServiceInternalTrafficPolicyType describes
-                              the type of traffic routing for internal traffic
+                            description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                            enum:
+                            - Cluster
+                            - Local
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -13331,11 +13336,16 @@ spec:
                   primary instance.
                 properties:
                   externalTrafficPolicy:
-                    description: Service External Traffic Policy Type string
+                    description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                    enum:
+                    - Cluster
+                    - Local
                     type: string
                   internalTrafficPolicy:
-                    description: ServiceInternalTrafficPolicyType describes the type
-                      of traffic routing for internal traffic
+                    description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                    enum:
+                    - Cluster
+                    - Local
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -14808,11 +14818,16 @@ spec:
                         description: Specification of the service that exposes pgAdmin.
                         properties:
                           externalTrafficPolicy:
-                            description: Service External Traffic Policy Type string
+                            description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                            enum:
+                            - Cluster
+                            - Local
                             type: string
                           internalTrafficPolicy:
-                            description: ServiceInternalTrafficPolicyType describes
-                              the type of traffic routing for internal traffic
+                            description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                            enum:
+                            - Cluster
+                            - Local
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
