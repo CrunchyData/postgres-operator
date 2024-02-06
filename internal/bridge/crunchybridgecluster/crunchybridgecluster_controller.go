@@ -338,8 +338,8 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 
 		// if we've gotten here then no cluster exists with that name and we're missing the ID, ergo, create cluster
 
-		// TODO(crunchybridgecluster) Can almost just use the managed.Spec... except for the team, which we don't want
-		// users to set on the spec. Do we?
+		// TODO(crunchybridgecluster) Can almost just use the crunchybridgecluster.Spec... except for the team,
+		// which we don't want users to set on the spec. Do we?
 		clusterReq := &v1beta1.ClusterDetails{
 			IsHA:            crunchybridgecluster.Spec.IsHA,
 			Name:            crunchybridgecluster.Spec.ClusterName,
