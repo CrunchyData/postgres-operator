@@ -27,25 +27,60 @@ import (
 func TestGenerateConfig(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
-	expectedString := `{
+	t.Run("Default", func(t *testing.T) {
+		pgadmin := new(v1beta1.PGAdmin)
+		result, err := generateConfig(pgadmin)
+
+		assert.NilError(t, err)
+		assert.Equal(t, result, `{
+  "DEFAULT_SERVER": "0.0.0.0",
+  "SERVER_MODE": true,
+  "UPGRADE_CHECK_ENABLED": false,
+  "UPGRADE_CHECK_KEY": "",
+  "UPGRADE_CHECK_URL": ""
+}`+"\n")
+	})
+
+	t.Run("Mandatory", func(t *testing.T) {
+		pgadmin := new(v1beta1.PGAdmin)
+		pgadmin.Spec.Config.Settings = map[string]any{
+			"SERVER_MODE":           false,
+			"UPGRADE_CHECK_ENABLED": true,
+		}
+		result, err := generateConfig(pgadmin)
+
+		assert.NilError(t, err)
+		assert.Equal(t, result, `{
+  "DEFAULT_SERVER": "0.0.0.0",
+  "SERVER_MODE": true,
+  "UPGRADE_CHECK_ENABLED": false,
+  "UPGRADE_CHECK_KEY": "",
+  "UPGRADE_CHECK_URL": ""
+}`+"\n")
+	})
+
+	t.Run("Specified", func(t *testing.T) {
+		pgadmin := new(v1beta1.PGAdmin)
+		pgadmin.Spec.Config.Settings = map[string]any{
+			"ALLOWED_HOSTS":  []any{"225.0.0.0/8", "226.0.0.0/7", "228.0.0.0/6"},
+			"DEFAULT_SERVER": "::",
+		}
+		result, err := generateConfig(pgadmin)
+
+		assert.NilError(t, err)
+		assert.Equal(t, result, `{
   "ALLOWED_HOSTS": [
     "225.0.0.0/8",
     "226.0.0.0/7",
     "228.0.0.0/6"
   ],
+  "DEFAULT_SERVER": "::",
   "SERVER_MODE": true,
   "UPGRADE_CHECK_ENABLED": false,
   "UPGRADE_CHECK_KEY": "",
   "UPGRADE_CHECK_URL": ""
-}
-`
-	pgadmin := new(v1beta1.PGAdmin)
-	pgadmin.Spec.Config.Settings = map[string]interface{}{
-		"ALLOWED_HOSTS": []interface{}{"225.0.0.0/8", "226.0.0.0/7", "228.0.0.0/6"},
-	}
-	actualString, err := generateConfig(pgadmin)
-	assert.NilError(t, err)
-	assert.Equal(t, actualString, expectedString)
+}`+"\n")
+	})
 }
 
 func TestGenerateClusterConfig(t *testing.T) {

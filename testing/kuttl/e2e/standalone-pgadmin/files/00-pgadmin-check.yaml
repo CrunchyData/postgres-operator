@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -7,6 +8,7 @@ metadata:
 data:
   pgadmin-settings.json: |
     {
+      "DEFAULT_SERVER": "0.0.0.0",
       "SERVER_MODE": true,
       "UPGRADE_CHECK_ENABLED": false,
       "UPGRADE_CHECK_KEY": "",

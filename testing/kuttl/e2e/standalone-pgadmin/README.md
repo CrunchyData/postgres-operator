@@ -6,7 +6,7 @@ Note: due to the (random) namespace being part of the host, we cannot check the 
 
 * 00:
   * create a pgadmin with no server groups;
-  * check the correct existence of the secret, service, configmap, and pod.
+  * check the correct existence of the secret, configmap, and pod.
 * 01: dump the servers from pgAdmin and check that the list is empty.
 
 *Phase two*
