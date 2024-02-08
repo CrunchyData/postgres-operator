@@ -1,0 +1,46 @@
+---
+# Verify the new PgBouncer certificate and transport encryption.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-tls-after
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      volumes:
+        # TODO(cbandy): Provide a CA bundle that clients can use for verification.
+        - { name: tls, secret: { secretName: proxied-cluster-cert } }
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            # Connect through PgBouncer.
+            - name: PGURI
+              valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-uri } }
+
+            # Verify the certificate presented by PgBouncer.
+            - { name: PGSSLMODE, value: verify-full }
+            - { name: PGSSLROOTCERT, value: /mnt/ca.crt }
+
+          volumeMounts:
+            - { name: tls, mountPath: /mnt }
+
+          # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+          # - https://kubernetes.io/docs/tasks/inject-data-application/
+          command:
+            - psql
+            - $(PGURI)
+            - -qb
+            - --set=ON_ERROR_STOP=1
+            - --command
+            - |
+              DO $$$$
+              BEGIN
+                PERFORM * FROM pg_stat_ssl WHERE ssl AND pid = pg_backend_pid();
+                ASSERT FOUND, 'expected TLS end-to-end';
+              END $$$$;

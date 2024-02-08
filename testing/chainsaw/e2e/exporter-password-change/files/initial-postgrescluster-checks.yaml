@@ -1,0 +1,33 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: exporter-password-change
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: exporter-password-change
+    postgres-operator.crunchydata.com/crunchy-postgres-exporter: "true"
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: exporter-password-change-monitoring
+  labels:
+    postgres-operator.crunchydata.com/cluster: exporter-password-change
+    postgres-operator.crunchydata.com/role: monitoring
+  ownerReferences:
+  - apiVersion: postgres-operator.crunchydata.com/v1beta1
+    blockOwnerDeletion: true
+    controller: true
+    kind: PostgresCluster
+    name: exporter-password-change

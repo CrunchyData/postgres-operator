@@ -1,0 +1,22 @@
+---
+# Clone the cluster using a pgBackRest restore.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: clone-two
+  labels: { postgres-operator-test: kuttl }
+spec:
+  dataSource:
+    postgresCluster:
+      clusterName: original
+      repoName: repo1
+
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }

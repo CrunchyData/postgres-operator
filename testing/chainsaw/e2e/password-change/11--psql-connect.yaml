@@ -1,0 +1,34 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect6
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          command:
+            - psql
+            - -c
+            - "select version();"
+          env:
+          - name: PGHOST
+            valueFrom: { secretKeyRef: { name: password-change-pguser-rhino, key: host } }
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: password-change-pguser-rhino, key: port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: password-change-pguser-rhino, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: password-change-pguser-rhino, key: user } }
+          # Hardcoding the password here to be equal to what we changed the password to in 
+          # ./10-secret.yaml
+          # The ./10-errors.yaml checks that the secret is not in the state that we set it to
+          # in the ./10-secret.yaml file, i.e., the secret has been reconciled by PGO
+          - name: PGPASSWORD
+            value: infopond
+          
+          # Do not wait indefinitely.
+          - { name: PGCONNECT_TIMEOUT, value: '5' }

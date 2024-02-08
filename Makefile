@@ -19,6 +19,7 @@ GO_CMD = $(GO_ENV) $(GO)
 GO_TEST ?= $(GO) test
 KUTTL ?= kubectl-kuttl
 KUTTL_TEST ?= $(KUTTL) test
+CHAINSAW ?= chainsaw
 
 # Disable optimizations if creating a debug build
 ifeq ("$(DEBUG_BUILD)", "true")
@@ -213,6 +214,12 @@ check-envtest-existing: createnamespaces
 	USE_EXISTING_CLUSTER=true PGO_NAMESPACE="postgres-operator" QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" \
 		$(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
 	kubectl delete -k ./config/dev
+
+# Expects operator to be running
+.PHONY: check-chainsaw
+check-chainsaw: ## Run chainsaw end-to-end tests
+check-chainsaw:
+	$(CHAINSAW) test --test-dir ./testing/chainsaw
 
 # Expects operator to be running
 .PHONY: check-kuttl

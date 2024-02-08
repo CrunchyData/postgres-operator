@@ -1,0 +1,7 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: major-upgrade-empty-image-after
+status:
+  succeeded: 1

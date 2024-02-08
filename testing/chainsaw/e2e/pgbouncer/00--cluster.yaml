@@ -1,0 +1,25 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: proxied
+  labels: { postgres-operator-test: kuttl }
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      replicas: 2
+      dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  proxy:
+    pgBouncer:
+      replicas: 1
+      config:
+        # Set the pgBouncer verbosity level to debug to print connection logs
+        # --https://www.pgbouncer.org/config.html#log-settings
+        global:
+          verbose: '1'

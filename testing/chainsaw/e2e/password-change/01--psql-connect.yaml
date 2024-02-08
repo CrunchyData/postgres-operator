@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          command:
+            - psql
+            - -c
+            - "select version();"
+          env:
+          - name: PGHOST
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: host } }
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: user } }
+          - name: PGPASSWORD
+            valueFrom: { secretKeyRef: { name: password-change-pguser-password-change, key: password } }
+          
+          # Do not wait indefinitely.
+          - { name: PGCONNECT_TIMEOUT, value: '5' }

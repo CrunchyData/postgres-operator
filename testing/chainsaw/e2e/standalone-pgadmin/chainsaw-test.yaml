@@ -1,0 +1,445 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: standalone-pgadmin
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: files/00-pgadmin.yaml
+    - assert:
+        file: files/00-pgadmin-check.yaml
+  - catch:
+    - script:
+        content: |
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+          pod_name=$(kubectl get pod -n "${NAMESPACE}" -l postgres-operator.crunchydata.com/pgadmin=pgadmin -o name)
+
+          clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
+
+          clusters_expected="\"Servers\": {}"
+          {
+            contains "${clusters_actual}" "${clusters_expected}"
+          } || {
+            echo "Wrong servers dumped: got ${clusters_actual}"
+            exit 1
+          }
+    name: step-01
+    try: null
+  - name: step-02
+    try:
+    - apply:
+        file: files/02-cluster.yaml
+    - apply:
+        file: files/02-pgadmin.yaml
+    - assert:
+        file: files/02-cluster-check.yaml
+  - catch:
+    - script:
+        content: |
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          diff_comp() { bash -ceu 'diff <(echo "$1" ) <(echo "$2")' - "$@"; }
+
+          data_expected='"pgadmin-shared-clusters.json": "{\n  \"Servers\": {\n    \"1\": {\n      \"Group\": \"groupOne\",\n      \"Host\": \"pgadmin1-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin1\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin1\"\n    }\n  }\n}\n"'
+
+          data_actual=$(kubectl get cm -l postgres-operator.crunchydata.com/pgadmin=pgadmin -n "${NAMESPACE}" -o json | jq .items[0].data)
+
+          {
+            contains "${data_actual}" "${data_expected}"
+          } || {
+            echo "Wrong configmap: got ${data_actual}"
+            exit 1
+          }
+
+          pod_name=$(kubectl get pod -n "${NAMESPACE}" -l postgres-operator.crunchydata.com/pgadmin=pgadmin -o name)
+
+          config_updated=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c 'cat /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json')
+          config_expected='"Servers": {
+              "1": {
+                "Group": "groupOne",
+                "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin1",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin1"
+              }
+            }'
+          {
+            contains "${config_updated}" "${config_expected}"
+          } || {
+            echo "Wrong file mounted: got ${config_updated}"
+            echo "Wrong file mounted: expected ${config_expected}"
+            sleep 10
+            exit 1
+          }
+
+          clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
+
+          clusters_expected='
+          {
+              "Servers": {
+                  "1": {
+                      "Name": "pgadmin1",
+                      "Group": "groupOne",
+                      "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin1",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  }
+              }
+          }'
+          {
+            contains "${clusters_actual}" "${clusters_expected}"
+          } || {
+            echo "Wrong servers dumped: got ${clusters_actual}"
+            echo "Wrong servers dumped: expected ${clusters_expected}"
+            diff_comp "${clusters_actual}" "${clusters_expected}"
+            exit 1
+          }
+    name: step-03
+    try: null
+  - name: step-04
+    try:
+    - apply:
+        file: files/04-cluster.yaml
+    - assert:
+        file: files/04-cluster-check.yaml
+  - catch:
+    - script:
+        content: |
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          diff_comp() { bash -ceu 'diff <(echo "$1" ) <(echo "$2")' - "$@"; }
+
+          data_expected='"pgadmin-shared-clusters.json": "{\n  \"Servers\": {\n    \"1\": {\n      \"Group\": \"groupOne\",\n      \"Host\": \"pgadmin1-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin1\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin1\"\n    },\n    \"2\": {\n      \"Group\": \"groupOne\",\n      \"Host\": \"pgadmin2-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin2\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin2\"\n    }\n  }\n}\n"'
+
+          data_actual=$(kubectl get cm -l postgres-operator.crunchydata.com/pgadmin=pgadmin -n "${NAMESPACE}" -o json | jq .items[0].data)
+
+          {
+            contains "${data_actual}" "${data_expected}"
+          } || {
+            echo "Wrong configmap: got ${data_actual}"
+            diff_comp "${data_actual}" "${data_expected}"
+            exit 1
+          }
+
+          pod_name=$(kubectl get pod -n "${NAMESPACE}" -l postgres-operator.crunchydata.com/pgadmin=pgadmin -o name)
+
+          config_updated=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c 'cat /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json')
+          config_expected='"Servers": {
+              "1": {
+                "Group": "groupOne",
+                "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin1",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin1"
+              },
+              "2": {
+                "Group": "groupOne",
+                "Host": "pgadmin2-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin2",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin2"
+              }
+            }'
+          {
+            contains "${config_updated}" "${config_expected}"
+          } || {
+            echo "Wrong file mounted: got ${config_updated}"
+            echo "Wrong file mounted: expected ${config_expected}"
+            diff_comp  "${config_updated}" "${config_expected}"
+            sleep 10
+            exit 1
+          }
+
+          clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
+
+          clusters_expected='
+          {
+              "Servers": {
+                  "1": {
+                      "Name": "pgadmin1",
+                      "Group": "groupOne",
+                      "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin1",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  },
+                  "2": {
+                      "Name": "pgadmin2",
+                      "Group": "groupOne",
+                      "Host": "pgadmin2-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin2",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  }
+              }
+          }'
+          {
+            contains "${clusters_actual}" "${clusters_expected}"
+          } || {
+            echo "Wrong servers dumped: got ${clusters_actual}"
+            echo "Wrong servers dumped: expected ${clusters_expected}"
+            diff_comp "${clusters_actual}" "${clusters_expected}"
+            exit 1
+          }
+    name: step-05
+    try: null
+  - name: step-06
+    try:
+    - apply:
+        file: files/06-cluster.yaml
+    - apply:
+        file: files/06-pgadmin.yaml
+    - assert:
+        file: files/06-cluster-check.yaml
+  - catch:
+    - script:
+        content: |
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          diff_comp() { bash -ceu 'diff <(echo "$1" ) <(echo "$2")' - "$@"; }
+
+          data_expected='"pgadmin-shared-clusters.json": "{\n  \"Servers\": {\n    \"1\": {\n      \"Group\": \"groupOne\",\n      \"Host\": \"pgadmin1-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin1\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin1\"\n    },\n    \"2\": {\n      \"Group\": \"groupOne\",\n      \"Host\": \"pgadmin2-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin2\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin2\"\n    },\n    \"3\": {\n      \"Group\": \"groupTwo\",\n      \"Host\": \"pgadmin3-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin3\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin3\"\n    }\n  }\n}\n"'
+
+          data_actual=$(kubectl get cm -l postgres-operator.crunchydata.com/pgadmin=pgadmin -n "${NAMESPACE}" -o json | jq .items[0].data)
+
+          {
+            contains "${data_actual}" "${data_expected}"
+          } || {
+            echo "Wrong configmap: got ${data_actual}"
+            diff_comp "${data_actual}" "${data_expected}"
+            exit 1
+          }
+
+          pod_name=$(kubectl get pod -n "${NAMESPACE}" -l postgres-operator.crunchydata.com/pgadmin=pgadmin -o name)
+
+          config_updated=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c 'cat /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json')
+          config_expected='"Servers": {
+              "1": {
+                "Group": "groupOne",
+                "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin1",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin1"
+              },
+              "2": {
+                "Group": "groupOne",
+                "Host": "pgadmin2-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin2",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin2"
+              },
+              "3": {
+                "Group": "groupTwo",
+                "Host": "pgadmin3-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin3",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin3"
+              }
+            }'
+          {
+            contains "${config_updated}" "${config_expected}"
+          } || {
+            echo "Wrong file mounted: got ${config_updated}"
+            echo "Wrong file mounted: expected ${config_expected}"
+            diff_comp  "${config_updated}" "${config_expected}"
+            sleep 10
+            exit 1
+          }
+
+          clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
+
+          clusters_expected='
+          {
+              "Servers": {
+                  "1": {
+                      "Name": "pgadmin1",
+                      "Group": "groupOne",
+                      "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin1",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  },
+                  "2": {
+                      "Name": "pgadmin2",
+                      "Group": "groupOne",
+                      "Host": "pgadmin2-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin2",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  },
+                  "3": {
+                      "Name": "pgadmin3",
+                      "Group": "groupTwo",
+                      "Host": "pgadmin3-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin3",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  }
+              }
+          }'
+          {
+            contains "${clusters_actual}" "${clusters_expected}"
+          } || {
+            echo "Wrong servers dumped: got ${clusters_actual}"
+            echo "Wrong servers dumped: expected ${clusters_expected}"
+            diff_comp "${clusters_actual}" "${clusters_expected}"
+            exit 1
+          }
+    name: step-07
+    try: null
+  - name: step-08
+    try:
+    - error:
+        file: files/04-cluster-check.yaml
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: pgadmin2
+  - catch:
+    - script:
+        content: |
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          diff_comp() { bash -ceu 'diff <(echo "$1" ) <(echo "$2")' - "$@"; }
+
+          data_expected='"pgadmin-shared-clusters.json": "{\n  \"Servers\": {\n    \"1\": {\n      \"Group\": \"groupOne\",\n      \"Host\": \"pgadmin1-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin1\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin1\"\n    },\n    \"2\": {\n      \"Group\": \"groupTwo\",\n      \"Host\": \"pgadmin3-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"pgadmin3\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"pgadmin3\"\n    }\n  }\n}\n"'
+
+          data_actual=$(kubectl get cm -l postgres-operator.crunchydata.com/pgadmin=pgadmin -n "${NAMESPACE}" -o json | jq .items[0].data)
+
+          {
+            contains "${data_actual}" "${data_expected}"
+          } || {
+            echo "Wrong configmap: got ${data_actual}"
+            diff_comp "${data_actual}" "${data_expected}"
+            exit 1
+          }
+
+          pod_name=$(kubectl get pod -n "${NAMESPACE}" -l postgres-operator.crunchydata.com/pgadmin=pgadmin -o name)
+
+          config_updated=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c 'cat /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json')
+          config_expected='"Servers": {
+              "1": {
+                "Group": "groupOne",
+                "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin1",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin1"
+              },
+              "2": {
+                "Group": "groupTwo",
+                "Host": "pgadmin3-primary.'${NAMESPACE}.svc'",
+                "MaintenanceDB": "postgres",
+                "Name": "pgadmin3",
+                "Port": 5432,
+                "SSLMode": "prefer",
+                "Shared": true,
+                "Username": "pgadmin3"
+              }
+            }'
+          {
+            contains "${config_updated}" "${config_expected}"
+          } || {
+            echo "Wrong file mounted: got ${config_updated}"
+            echo "Wrong file mounted: expected ${config_expected}"
+            diff_comp  "${config_updated}" "${config_expected}"
+            sleep 10
+            exit 1
+          }
+
+          clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
+
+          clusters_expected='
+          {
+              "Servers": {
+                  "1": {
+                      "Name": "pgadmin1",
+                      "Group": "groupOne",
+                      "Host": "pgadmin1-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin1",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  },
+                  "2": {
+                      "Name": "pgadmin3",
+                      "Group": "groupTwo",
+                      "Host": "pgadmin3-primary.'${NAMESPACE}.svc'",
+                      "Port": 5432,
+                      "MaintenanceDB": "postgres",
+                      "Username": "pgadmin3",
+                      "Shared": true,
+                      "KerberosAuthentication": false,
+                      "ConnectionParameters": {
+                          "sslmode": "prefer"
+                      }
+                  }
+              }
+          }'
+          {
+            contains "${clusters_actual}" "${clusters_expected}"
+          } || {
+            echo "Wrong servers dumped: got ${clusters_actual}"
+            echo "Wrong servers dumped: expected ${clusters_expected}"
+            diff_comp "${clusters_actual}" "${clusters_expected}"
+            exit 1
+          }
+    name: step-09
+    try: null

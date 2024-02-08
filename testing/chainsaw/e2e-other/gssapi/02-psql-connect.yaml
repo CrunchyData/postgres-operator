@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect-gssapi
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: psql
+        image: ${KUTTL_PSQL_IMAGE}
+        command:
+        - bash
+        - -c
+        - --
+        - |-
+          psql -c 'create user "krb5hippo@PGO.CRUNCHYDATA.COM";'
+          kinit -k -t /krb5-conf/krb5.keytab krb5hippo@PGO.CRUNCHYDATA.COM
+          psql -U krb5hippo@PGO.CRUNCHYDATA.COM -h gssapi-primary.$(NAMESPACE).svc.cluster.local -d postgres \
+            -c 'select version();'
+        env:
+        - name: NAMESPACE
+          valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+        - name: PGHOST
+          valueFrom: { secretKeyRef: { name: gssapi-pguser-postgres, key: host } }
+        - name: PGPORT
+          valueFrom: { secretKeyRef: { name: gssapi-pguser-postgres, key: port } }
+        - name: PGUSER
+          valueFrom: { secretKeyRef: { name: gssapi-pguser-postgres, key: user } }
+        - name: PGPASSWORD
+          valueFrom: { secretKeyRef: { name: gssapi-pguser-postgres, key: password } }
+        - name: PGDATABASE
+          value: postgres  
+        - name: KRB5_CONFIG
+          value: /krb5-conf/krb5.conf
+        volumeMounts:
+        - name: krb5-conf
+          mountPath: /krb5-conf
+      volumes:
+      - name: krb5-conf
+        projected:
+          sources:
+          - configMap:
+              name: krb5
+          - secret:
+              name: krb5-keytab

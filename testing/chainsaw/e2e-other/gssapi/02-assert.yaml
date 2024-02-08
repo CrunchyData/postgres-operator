@@ -1,0 +1,6 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect-gssapi
+status:
+  succeeded: 1

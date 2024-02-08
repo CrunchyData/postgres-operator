@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: pgadmin
+spec:
+  steps:
+  - name: step-01
+    try:
+    - apply:
+        file: 01--cluster.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-02
+    try:
+    - script:
+        content: |
+          kubectl exec --namespace "${NAMESPACE}" statefulset.apps/interfaced-pgadmin \
+            -- df --block-size=1K /etc/pgadmin |
+            awk '{ print } END { exit ($3 != "4") }'
+    - script:
+        content: |
+          SETTINGS=$(
+            kubectl exec --namespace "${NAMESPACE}" statefulset.apps/interfaced-pgadmin \
+              -- cat /etc/pgadmin/conf.d/~postgres-operator/pgadmin.json
+          )
+
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          {
+            contains "${SETTINGS}" '"LOGIN_BANNER": "Custom KUTTL Login Banner\n"' &&
+            contains "${SETTINGS}" '"SHOW_GRAVATAR_IMAGE": false'
+          } || {
+            echo >&2 'Wrong settings!'
+            echo "${SETTINGS}"
+            exit 1
+          }
+    - script:
+        content: |
+          CONTENTS=$(
+            kubectl exec --namespace "${NAMESPACE}" statefulset.apps/interfaced-pgadmin \
+              -- cat /etc/pgadmin/conf.d/configMap
+          )
+
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          {
+            contains "${CONTENTS}" 'config'
+          } || {
+            echo >&2 'Wrong settings!'
+            echo "${CONTENTS}"
+            exit 1
+          }
+    - script:
+        content: |
+          CONTENTS=$(
+            kubectl exec --namespace "${NAMESPACE}" statefulset.apps/interfaced-pgadmin \
+              -- cat /etc/pgadmin/conf.d/password
+          )
+
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          {
+            contains "${CONTENTS}" 'myPassword'
+          } || {
+            echo >&2 'Wrong settings!'
+            echo "${CONTENTS}"
+            exit 1
+          }

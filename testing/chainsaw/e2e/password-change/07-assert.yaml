@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect4
+status:
+  succeeded: 1
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect-uri4
+status:
+  succeeded: 1
