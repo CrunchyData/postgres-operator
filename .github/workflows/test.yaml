@@ -12,10 +12,9 @@ jobs:
   go-test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: 1.21
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: 1.21 }
       - run: make check
       - run: make check-generate
 
@@ -30,8 +29,8 @@ jobs:
       matrix:
         kubernetes: ['default']
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with: { go-version: 1.21 }
       - run: go mod download
       - run: ENVTEST_K8S_VERSION="${KUBERNETES#default}" make check-envtest
@@ -41,9 +40,9 @@ jobs:
 
       # Upload coverage to GitHub
       - run: gzip envtest.coverage
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: "kubernetes-api=${{ matrix.kubernetes }}"
+          name: "~coverage~kubernetes-api=${{ matrix.kubernetes }}"
           path: envtest.coverage.gz
           retention-days: 1
 
@@ -56,8 +55,8 @@ jobs:
       matrix:
         kubernetes: [v1.29, v1.25]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with: { go-version: 1.21 }
 
       - name: Start k3s
@@ -76,23 +75,23 @@ jobs:
 
       # Upload coverage to GitHub
       - run: gzip envtest-existing.coverage
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: "kubernetes-k3d=${{ matrix.kubernetes }}"
+          name: "~coverage~kubernetes-k3d=${{ matrix.kubernetes }}"
           path: envtest-existing.coverage.gz
           retention-days: 1
 
   kuttl-k3d:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [go-test]
     strategy:
       fail-fast: false
       matrix:
         kubernetes: [v1.29, v1.28, v1.27, v1.26, v1.25]
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with: { go-version: 1.x }
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: stable }
 
       - name: Start k3s
         uses: ./.github/actions/k3d
@@ -177,10 +176,10 @@ jobs:
       - kubernetes-api
       - kubernetes-k3d
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with: { go-version: 1.x }
-      - uses: actions/download-artifact@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: stable }
+      - uses: actions/download-artifact@v4
         with: { path: download }
 
       # Combine the coverage profiles by taking the mode line from any one file
@@ -204,8 +203,8 @@ jobs:
 
       # Upload coverage to GitHub
       - run: gzip total-coverage.html
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          name: coverage-report
+          name: coverage-report=html
           path: total-coverage.html.gz
           retention-days: 15
