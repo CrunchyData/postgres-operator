@@ -81,11 +81,19 @@ func configmap(pgadmin *v1beta1.PGAdmin,
 
 // generateConfig generates the config settings for the pgAdmin
 func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
-
-	settings := *pgadmin.Spec.Config.Settings.DeepCopy()
-	if settings == nil {
-		settings = make(map[string]interface{})
+	settings := map[string]any{
+		// Bind to all IPv4 addresses by default. "0.0.0.0" here represents INADDR_ANY.
+		// - https://flask.palletsprojects.com/en/2.2.x/api/#flask.Flask.run
+		// - https://flask.palletsprojects.com/en/2.3.x/api/#flask.Flask.run
+		"DEFAULT_SERVER": "0.0.0.0",
 	}
+
+	// Copy any specified settings over the defaults.
+	for k, v := range pgadmin.Spec.Config.Settings {
+		settings[k] = v
+	}
+
+	// Write mandatory settings over any specified ones.
 	// SERVER_MODE must always be enabled when running on a webserver.
 	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-7_7/web/config.py#L110
 	settings["SERVER_MODE"] = true
