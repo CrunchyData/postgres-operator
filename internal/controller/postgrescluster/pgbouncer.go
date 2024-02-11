@@ -291,10 +291,11 @@ func (r *Reconciler) generatePGBouncerService(
 	// ContainerPort. This name allows the port number to differ between Pods,
 	// which can happen during a rolling update.
 	servicePort := corev1.ServicePort{
-		Name:       naming.PortPGBouncer,
-		Port:       *cluster.Spec.Proxy.PGBouncer.Port,
-		Protocol:   corev1.ProtocolTCP,
-		TargetPort: intstr.FromString(naming.PortPGBouncer),
+		Name:        naming.PortPGBouncer,
+		Port:        *cluster.Spec.Proxy.PGBouncer.Port,
+		Protocol:    corev1.ProtocolTCP,
+		TargetPort:  intstr.FromString(naming.PortPGBouncer),
+		AppProtocol: initialize.String(postgres.IANAServiceName),
 	}
 
 	if spec := cluster.Spec.Proxy.PGBouncer.Service; spec == nil {

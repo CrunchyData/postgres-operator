@@ -267,7 +267,8 @@ ownerReferences:
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
 		assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgadmin
+- appProtocol: http
+  name: pgadmin
   port: 5050
   protocol: TCP
   targetPort: pgadmin
@@ -300,7 +301,8 @@ ownerReferences:
 			alwaysExpect(t, service)
 			test.Expect(t, service)
 			assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgadmin
+- appProtocol: http
+  name: pgadmin
   port: 5050
   protocol: TCP
   targetPort: pgadmin
@@ -325,7 +327,8 @@ ownerReferences:
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
 				alwaysExpect(t, service)
 				assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgadmin
+- appProtocol: http
+  name: pgadmin
   nodePort: 32001
   port: 5050
   protocol: TCP
@@ -338,7 +341,8 @@ ownerReferences:
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
 				alwaysExpect(t, service)
 				assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: pgadmin
+- appProtocol: http
+  name: pgadmin
   nodePort: 32002
   port: 5050
   protocol: TCP

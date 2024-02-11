@@ -352,9 +352,10 @@ func instanceEnvironment(
 			for _, cp := range podContainers[i].Ports {
 				if sp.TargetPort.StrVal == cp.Name {
 					ports = append(ports, corev1.EndpointPort{
-						Name:     sp.Name,
-						Port:     cp.ContainerPort,
-						Protocol: cp.Protocol,
+						Name:        sp.Name,
+						Port:        cp.ContainerPort,
+						Protocol:    cp.Protocol,
+						AppProtocol: sp.AppProtocol,
 					})
 				}
 			}

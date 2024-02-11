@@ -186,6 +186,11 @@ const (
 	RestoreConfigCopySuffix = "%s-restorecopy-%d"
 )
 
+const (
+	// AppProtocolHTTP is the name of the appProtocol for Services which use the HTTP protocol
+	AppProtocolHTTP = "http"
+)
+
 // AsObjectKey converts the ObjectMeta API type to a client.ObjectKey.
 // When you have a client.Object, use client.ObjectKeyFromObject() instead.
 func AsObjectKey(m metav1.ObjectMeta) client.ObjectKey {

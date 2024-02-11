@@ -634,7 +634,8 @@ ownerReferences:
   uid: ""
 		`))
 		assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: postgres
+- appProtocol: postgresql
+  name: postgres
   port: 2600
   protocol: TCP
   targetPort: postgres
@@ -665,7 +666,8 @@ subsets:
 - addresses:
   - ip: 1.9.8.3
   ports:
-  - name: postgres
+  - appProtocol: postgresql
+    name: postgres
     port: 2600
     protocol: TCP
 		`))
@@ -753,7 +755,8 @@ ownerReferences:
 	`))
 	assert.Assert(t, marshalMatches(service.Spec, `
 ports:
-- name: postgres
+- appProtocol: postgresql
+  name: postgres
   port: 9876
   protocol: TCP
   targetPort: postgres

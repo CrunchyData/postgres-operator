@@ -93,7 +93,8 @@ ownerReferences:
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
 		assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: postgres
+- appProtocol: postgresql
+  name: postgres
   port: 9876
   protocol: TCP
   targetPort: postgres
@@ -182,7 +183,8 @@ ownerReferences:
 			alwaysExpect(t, service)
 			test.Expect(t, service)
 			assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: postgres
+- appProtocol: postgresql
+  name: postgres
   port: 9876
   protocol: TCP
   targetPort: postgres
@@ -207,7 +209,8 @@ ownerReferences:
 				alwaysExpect(t, service)
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
 				assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: postgres
+- appProtocol: postgresql
+  name: postgres
   nodePort: 32001
   port: 9876
   protocol: TCP
@@ -220,7 +223,8 @@ ownerReferences:
 				assert.NilError(t, err)
 				alwaysExpect(t, service)
 				assert.Assert(t, marshalMatches(service.Spec.Ports, `
-- name: postgres
+- appProtocol: postgresql
+  name: postgres
   nodePort: 32002
   port: 9876
   protocol: TCP

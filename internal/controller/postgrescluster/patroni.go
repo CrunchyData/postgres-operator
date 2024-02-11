@@ -262,10 +262,11 @@ func (r *Reconciler) generatePatroniLeaderLeaseService(
 	// ContainerPort. This name allows the port number to differ between
 	// instances, which can happen during a rolling update.
 	servicePort := corev1.ServicePort{
-		Name:       naming.PortPostgreSQL,
-		Port:       *cluster.Spec.Port,
-		Protocol:   corev1.ProtocolTCP,
-		TargetPort: intstr.FromString(naming.PortPostgreSQL),
+		Name:        naming.PortPostgreSQL,
+		Port:        *cluster.Spec.Port,
+		Protocol:    corev1.ProtocolTCP,
+		TargetPort:  intstr.FromString(naming.PortPostgreSQL),
+		AppProtocol: initialize.String(postgres.IANAServiceName),
 	}
 
 	if spec := cluster.Spec.Service; spec == nil {
