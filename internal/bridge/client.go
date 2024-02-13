@@ -77,7 +77,7 @@ func NewClient(apiURL, version string) *Client {
 // Be sure to close the [http.Response] Body when the returned error is nil.
 // See [http.Client.Do] for more details.
 func (c *Client) doWithBackoff(
-	ctx context.Context, method, path string, body []byte, headers http.Header,
+	ctx context.Context, method, path string, params url.Values, body []byte, headers http.Header,
 ) (
 	*http.Response, error,
 ) {
@@ -96,16 +96,18 @@ func (c *Client) doWithBackoff(
 	}
 
 	headers.Set("User-Agent", "PGO/"+c.Version)
-	url := c.BaseURL.JoinPath(path).String()
+	url := c.BaseURL.JoinPath(path)
+	if params != nil {
+		url.RawQuery = params.Encode()
+	}
+	urlString := url.String()
 
 	err := wait.ExponentialBackoff(c.Backoff, func() (bool, error) {
 		// NOTE: The [net/http] package treats an empty [bytes.Reader] the same as nil.
-		request, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
+		request, err := http.NewRequestWithContext(ctx, method, urlString, bytes.NewReader(body))
 
 		if err == nil {
 			request.Header = headers.Clone()
-
-			// TODO(crunchybridgecluster): add params?
 
 			//nolint:bodyclose // This response is returned to the caller.
 			response, err = c.Client.Do(request)
@@ -146,11 +148,11 @@ func (c *Client) doWithBackoff(
 // Be sure to close the [http.Response] Body when the returned error is nil.
 // See [http.Client.Do] for more details.
 func (c *Client) doWithRetry(
-	ctx context.Context, method, path string, body []byte, headers http.Header,
+	ctx context.Context, method, path string, params url.Values, body []byte, headers http.Header,
 ) (
 	*http.Response, error,
 ) {
-	response, err := c.doWithBackoff(ctx, method, path, body, headers)
+	response, err := c.doWithBackoff(ctx, method, path, params, body, headers)
 
 	// Retry the request when the server responds with "Too many requests".
 	// - https://docs.crunchybridge.com/api-concepts/getting-started/#status-codes
@@ -174,7 +176,7 @@ func (c *Client) doWithRetry(
 		select {
 		case <-timer.C:
 			// Try the request again. Check it in the loop condition.
-			response, err = c.doWithBackoff(ctx, method, path, body, headers)
+			response, err = c.doWithBackoff(ctx, method, path, params, body, headers)
 			timer.Stop()
 
 		case <-ctx.Done():
@@ -189,7 +191,7 @@ func (c *Client) doWithRetry(
 func (c *Client) CreateAuthObject(ctx context.Context, authn AuthObject) (AuthObject, error) {
 	var result AuthObject
 
-	response, err := c.doWithRetry(ctx, "POST", "/vendor/operator/auth-objects", nil, http.Header{
+	response, err := c.doWithRetry(ctx, "POST", "/vendor/operator/auth-objects", nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + authn.Secret},
 	})
@@ -221,7 +223,7 @@ func (c *Client) CreateAuthObject(ctx context.Context, authn AuthObject) (AuthOb
 func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 	var result Installation
 
-	response, err := c.doWithRetry(ctx, "POST", "/vendor/operator/installations", nil, http.Header{
+	response, err := c.doWithRetry(ctx, "POST", "/vendor/operator/installations", nil, nil, http.Header{
 		"Accept": []string{"application/json"},
 	})
 
@@ -255,8 +257,11 @@ type ClusterList struct {
 func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*v1beta1.ClusterDetails, error) {
 	result := &ClusterList{}
 
-	// Can't add param to path
-	response, err := c.doWithRetry(ctx, "GET", "/clusters", nil, http.Header{
+	params := url.Values{}
+	if len(teamId) > 0 {
+		params.Add("team_id", teamId)
+	}
+	response, err := c.doWithRetry(ctx, "GET", "/clusters", params, nil, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
@@ -289,7 +294,7 @@ func (c *Client) CreateCluster(ctx context.Context, apiKey string, cluster *v1be
 		return result, err
 	}
 
-	response, err := c.doWithRetry(ctx, "POST", "/clusters", clusterbyte, http.Header{
+	response, err := c.doWithRetry(ctx, "POST", "/clusters", nil, clusterbyte, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
@@ -323,7 +328,7 @@ func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*v1beta1
 	result := &v1beta1.ClusterDetails{}
 	var deletedAlready bool
 
-	response, err := c.doWithRetry(ctx, "DELETE", "/clusters/"+id, nil, http.Header{
+	response, err := c.doWithRetry(ctx, "DELETE", "/clusters/"+id, nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
@@ -362,7 +367,7 @@ func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*v1beta1
 func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*v1beta1.ClusterDetails, error) {
 	result := &v1beta1.ClusterDetails{}
 
-	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id, nil, http.Header{
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id, nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
@@ -391,7 +396,7 @@ func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*v1beta1.Cl
 func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (string, error) {
 	result := ""
 
-	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/status", nil, http.Header{
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/status", nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
@@ -419,7 +424,7 @@ func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (strin
 func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*v1beta1.ClusterUpgrade, error) {
 	result := &v1beta1.ClusterUpgrade{}
 
-	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/upgrade", nil, http.Header{
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/upgrade", nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
@@ -452,7 +457,7 @@ func (c *Client) UpgradeCluster(ctx context.Context, apiKey, id string, cluster 
 		return result, err
 	}
 
-	response, err := c.doWithRetry(ctx, "POST", "/clusters/"+id+"/upgrade", clusterbyte, http.Header{
+	response, err := c.doWithRetry(ctx, "POST", "/clusters/"+id+"/upgrade", nil, clusterbyte, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
@@ -480,7 +485,7 @@ func (c *Client) UpgradeCluster(ctx context.Context, apiKey, id string, cluster 
 func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string) (*v1beta1.ClusterUpgrade, error) {
 	result := &v1beta1.ClusterUpgrade{}
 
-	response, err := c.doWithRetry(ctx, "PUT", "/clusters/"+id+"/actions/"+action, nil, http.Header{
+	response, err := c.doWithRetry(ctx, "PUT", "/clusters/"+id+"/actions/"+action, nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
 		"Authorization": []string{"Bearer " + apiKey},
 	})
