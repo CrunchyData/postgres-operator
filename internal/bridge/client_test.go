@@ -20,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -75,8 +76,10 @@ func TestClientDoWithBackoff(t *testing.T) {
 		assert.Equal(t, client.BaseURL.String(), server.URL)
 
 		ctx := context.Background()
+		params := url.Values{}
+		params.Add("foo", "bar")
 		response, err := client.doWithBackoff(ctx,
-			"ANY", "/some/path", []byte(`the-body`),
+			"ANY", "/some/path", params, []byte(`the-body`),
 			http.Header{"Some": []string{"header"}})
 
 		assert.NilError(t, err)
@@ -87,7 +90,7 @@ func TestClientDoWithBackoff(t *testing.T) {
 		assert.Equal(t, len(requests), 1)
 		assert.Equal(t, bodies[0], "the-body")
 		assert.Equal(t, requests[0].Method, "ANY")
-		assert.Equal(t, requests[0].URL.String(), "/some/path")
+		assert.Equal(t, requests[0].URL.String(), "/some/path?foo=bar")
 		assert.DeepEqual(t, requests[0].Header.Values("Some"), []string{"header"})
 		assert.DeepEqual(t, requests[0].Header.Values("User-Agent"), []string{"PGO/xyz"})
 
@@ -120,7 +123,7 @@ func TestClientDoWithBackoff(t *testing.T) {
 
 		ctx := context.Background()
 		response, err := client.doWithBackoff(ctx,
-			"POST", "/anything", []byte(`any-body`),
+			"POST", "/anything", nil, []byte(`any-body`),
 			http.Header{"Any": []string{"thing"}})
 
 		assert.NilError(t, err)
@@ -147,7 +150,7 @@ func TestClientDoWithBackoff(t *testing.T) {
 
 		// Another, identical request gets a new Idempotency-Key.
 		response, err = client.doWithBackoff(ctx,
-			"POST", "/anything", []byte(`any-body`),
+			"POST", "/anything", nil, []byte(`any-body`),
 			http.Header{"Any": []string{"thing"}})
 
 		assert.NilError(t, err)
@@ -176,7 +179,7 @@ func TestClientDoWithBackoff(t *testing.T) {
 		assert.Equal(t, client.BaseURL.String(), server.URL)
 
 		ctx := context.Background()
-		_, err := client.doWithBackoff(ctx, "POST", "/any", nil, nil) //nolint:bodyclose
+		_, err := client.doWithBackoff(ctx, "POST", "/any", nil, nil, nil) //nolint:bodyclose
 		assert.ErrorContains(t, err, "timed out waiting")
 		assert.Assert(t, requests > 0, "expected multiple requests")
 	})
@@ -198,7 +201,7 @@ func TestClientDoWithBackoff(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 		t.Cleanup(cancel)
 
-		_, err := client.doWithBackoff(ctx, "POST", "/any", nil, nil) //nolint:bodyclose
+		_, err := client.doWithBackoff(ctx, "POST", "/any", nil, nil, nil) //nolint:bodyclose
 		assert.ErrorIs(t, err, context.DeadlineExceeded)
 		assert.Assert(t, requests > 0, "expected multiple requests")
 	})
@@ -222,8 +225,10 @@ func TestClientDoWithRetry(t *testing.T) {
 		assert.Equal(t, client.BaseURL.String(), server.URL)
 
 		ctx := context.Background()
+		params := url.Values{}
+		params.Add("foo", "bar")
 		response, err := client.doWithRetry(ctx,
-			"ANY", "/some/path", []byte(`the-body`),
+			"ANY", "/some/path", params, []byte(`the-body`),
 			http.Header{"Some": []string{"header"}})
 
 		assert.NilError(t, err)
@@ -234,7 +239,7 @@ func TestClientDoWithRetry(t *testing.T) {
 		assert.Equal(t, len(requests), 1)
 		assert.Equal(t, bodies[0], "the-body")
 		assert.Equal(t, requests[0].Method, "ANY")
-		assert.Equal(t, requests[0].URL.String(), "/some/path")
+		assert.Equal(t, requests[0].URL.String(), "/some/path?foo=bar")
 		assert.DeepEqual(t, requests[0].Header.Values("Some"), []string{"header"})
 		assert.DeepEqual(t, requests[0].Header.Values("User-Agent"), []string{"PGO/xyz"})
 
@@ -267,7 +272,7 @@ func TestClientDoWithRetry(t *testing.T) {
 
 		ctx := context.Background()
 		response, err := client.doWithRetry(ctx,
-			"POST", "/anything", []byte(`any-body`),
+			"POST", "/anything", nil, []byte(`any-body`),
 			http.Header{"Any": []string{"thing"}})
 
 		assert.NilError(t, err)
@@ -321,7 +326,7 @@ func TestClientDoWithRetry(t *testing.T) {
 		t.Cleanup(cancel)
 
 		start := time.Now()
-		_, err := client.doWithRetry(ctx, "POST", "/any", nil, nil) //nolint:bodyclose
+		_, err := client.doWithRetry(ctx, "POST", "/any", nil, nil, nil) //nolint:bodyclose
 		assert.ErrorIs(t, err, context.DeadlineExceeded)
 		assert.Assert(t, time.Since(start) < time.Second)
 		assert.Equal(t, requests, 1, "expected one request")
@@ -392,7 +397,7 @@ func TestClientDoWithRetry(t *testing.T) {
 				assert.Equal(t, client.BaseURL.String(), server.URL)
 
 				ctx := context.Background()
-				response, err := client.doWithRetry(ctx, "POST", "/any", nil, nil)
+				response, err := client.doWithRetry(ctx, "POST", "/any", nil, nil, nil)
 				assert.NilError(t, err)
 				assert.Assert(t, response != nil)
 				t.Cleanup(func() { _ = response.Body.Close() })
