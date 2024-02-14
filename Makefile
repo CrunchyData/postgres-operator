@@ -194,10 +194,9 @@ check: get-pgmonitor
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
 .PHONY: check-envtest
 check-envtest: ## Run check using envtest and a mock kube api
-check-envtest: ENVTEST_USE = hack/tools/setup-envtest --bin-dir=$(CURDIR)/hack/tools/envtest use $(ENVTEST_K8S_VERSION)
+check-envtest: ENVTEST_USE = $(ENVTEST) --bin-dir=$(CURDIR)/hack/tools/envtest use $(ENVTEST_K8S_VERSION)
 check-envtest: SHELL = bash
-check-envtest: get-pgmonitor
-	GOBIN='$(CURDIR)/hack/tools' $(GO) install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+check-envtest: get-pgmonitor tools/setup-envtest
 	@$(ENVTEST_USE) --print=overview && echo
 	source <($(ENVTEST_USE) --print=env) && PGO_NAMESPACE="postgres-operator" QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" \
 		$(GO_TEST) -count=1 -cover ./...
@@ -326,6 +325,11 @@ CONTROLLER ?= hack/tools/controller-gen
 tools: tools/controller-gen
 tools/controller-gen:
 	$(call go-get-tool,$(CONTROLLER),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+
+ENVTEST ?= hack/tools/setup-envtest
+tools: tools/setup-envtest
+tools/setup-envtest:
+	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
 ##@ Release
 
