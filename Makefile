@@ -269,23 +269,24 @@ generate: generate-deepcopy
 generate: generate-rbac
 
 .PHONY: generate-crd
-generate-crd: ## Generate crd
-	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+generate-crd: ## Generate Custom Resource Definitions (CRDs)
+generate-crd: tools/controller-gen
+	$(CONTROLLER) \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
 		output:dir='build/crd/postgresclusters/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
 	@
-	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+	$(CONTROLLER) \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
 		output:dir='build/crd/pgupgrades/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
 	@
-	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+	$(CONTROLLER) \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
 		output:dir='build/crd/pgadmins/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
 	@
-	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+	$(CONTROLLER) \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
 		output:dir='build/crd/crunchybridgeclusters/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
@@ -296,15 +297,35 @@ generate-crd: ## Generate crd
 	kubectl kustomize ./build/crd/crunchybridgeclusters > ./config/crd/bases/postgres-operator.crunchydata.com_crunchybridgeclusters.yaml
 
 .PHONY: generate-deepcopy
-generate-deepcopy: ## Generate deepcopy functions
-	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+generate-deepcopy: ## Generate DeepCopy functions
+generate-deepcopy: tools/controller-gen
+	$(CONTROLLER) \
 		object:headerFile='hack/boilerplate.go.txt' \
 		paths='./pkg/apis/postgres-operator.crunchydata.com/...'
 
 .PHONY: generate-rbac
-generate-rbac: ## Generate rbac
-	GOBIN='$(CURDIR)/hack/tools' ./hack/generate-rbac.sh \
-		'./internal/...' 'config/rbac'
+generate-rbac: ## Generate RBAC
+generate-rbac: tools/controller-gen
+	$(CONTROLLER) \
+		rbac:roleName='generated' \
+		paths='./internal/...' \
+		output:dir='config/rbac' # ${directory}/role.yaml
+	./hack/generate-rbac.sh 'config/rbac'
+
+##@ Tools
+
+.PHONY: tools
+tools: ## Download tools like controller-gen and kustomize if necessary.
+
+# go-get-tool will 'go install' any package $2 and install it to $1.
+define go-get-tool
+@[ -f '$(1)' ] || { echo Downloading '$(2)'; GOBIN='$(abspath $(dir $(1)))' $(GO) install '$(2)'; }
+endef
+
+CONTROLLER ?= hack/tools/controller-gen
+tools: tools/controller-gen
+tools/controller-gen:
+	$(call go-get-tool,$(CONTROLLER),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
 
 ##@ Release
 

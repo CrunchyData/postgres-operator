@@ -15,15 +15,7 @@
 
 set -eu
 
-declare -r paths="$1" directory="$2"
-
-# Use `controller-gen` to parse Go markers.
-( set -x
-"${BASH_SOURCE[0]%/*}/controller-generator.sh" \
-	rbac:roleName='generated' \
-	paths="${paths}" \
-	output:dir="${directory}" # ${directory}/role.yaml
-)
+declare -r directory="$1"
 
 # NOTE(cbandy): `kustomize` v4.1 and `kubectl` v1.22 will be able to change the
 # kind of a resource: https://pr.k8s.io/101120
