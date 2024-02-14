@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
-        with: { go-version: 1.x }
+        with: { go-version: 1.21 }
       - run: go mod download
       - run: ENVTEST_K8S_VERSION="${KUBERNETES#default}" make check-envtest
         env:
@@ -58,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
-        with: { go-version: 1.x }
+        with: { go-version: 1.21 }
 
       - name: Start k3s
         uses: ./.github/actions/k3d
