@@ -406,12 +406,28 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// If we reach this point, our CrunchyBridgeCluster object has an ID
 	// so we want to fill in the details for the cluster and cluster upgrades from the Bridge API
 	// Consider cluster details as a separate func.
+
 	clusterDetails, err := r.NewClient().GetCluster(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
 		log.Error(err, "whoops, cluster getting issue")
 		return ctrl.Result{}, err
 	}
-	crunchybridgecluster.Status.Cluster = clusterDetails
+
+	clusterStatus := &v1beta1.ClusterStatus{
+		ID:              clusterDetails.ID,
+		IsHA:            clusterDetails.IsHA,
+		Name:            clusterDetails.Name,
+		Plan:            clusterDetails.Plan,
+		MajorVersion:    clusterDetails.MajorVersion,
+		PostgresVersion: clusterDetails.PostgresVersion,
+		Provider:        clusterDetails.Provider,
+		Region:          clusterDetails.Region,
+		Storage:         clusterDetails.Storage,
+		Team:            clusterDetails.Team,
+		State:           clusterDetails.State,
+	}
+
+	crunchybridgecluster.Status.Cluster = clusterStatus
 
 	clusterUpgradeDetails, err := r.NewClient().GetClusterUpgrade(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {

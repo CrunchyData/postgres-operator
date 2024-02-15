@@ -50,11 +50,17 @@ spec:
                 minLength: 5
                 pattern: ^[A-Za-z][A-Za-z0-9\-_ ]*[A-Za-z0-9]$
                 type: string
-              is_ha:
+              isHa:
                 description: Whether the cluster is high availability, meaning that
                   it has a secondary it can fail over to quickly in case the primary
                   becomes unavailable.
                 type: boolean
+              majorVersion:
+                description: The ID of the cluster's major Postgres version. Currently
+                  Bridge offers 13-16
+                maximum: 16
+                minimum: 13
+                type: integer
               metadata:
                 description: Metadata contains metadata for custom resources
                 properties:
@@ -67,17 +73,11 @@ spec:
                       type: string
                     type: object
                 type: object
-              plan_id:
+              planId:
                 description: The ID of the cluster's plan. Determines instance, CPU,
                   and memory.
                 type: string
-              postgres_version_id:
-                description: The ID of the cluster's major Postgres version. Currently
-                  Bridge offers 13-16
-                maximum: 16
-                minimum: 13
-                type: integer
-              provider_id:
+              providerId:
                 description: The cloud provider where the cluster is located. Currently
                   Bridge offers aws, azure, and gcp only
                 enum:
@@ -88,7 +88,7 @@ spec:
                 x-kubernetes-validations:
                 - message: immutable
                   rule: self == oldSelf
-              region_id:
+              regionId:
                 description: The provider region where the cluster is located.
                 type: string
                 x-kubernetes-validations:
@@ -111,45 +111,45 @@ spec:
                 x-kubernetes-int-or-string: true
             required:
             - clusterName
-            - is_ha
-            - plan_id
-            - postgres_version_id
-            - provider_id
-            - region_id
+            - isHa
+            - majorVersion
+            - planId
+            - providerId
+            - regionId
             - storage
             type: object
           status:
             description: CrunchyBridgeClusterStatus defines the observed state of
               CrunchyBridgeCluster
             properties:
-              clusterResponse:
+              clusterStatus:
                 description: The cluster as represented by Bridge
                 properties:
                   id:
                     type: string
-                  is_ha:
+                  isHa:
                     type: boolean
-                  major_version:
+                  majorVersion:
                     type: integer
                   name:
                     type: string
-                  plan_id:
+                  planId:
                     type: string
-                  postgres_version_id:
+                  postgresVersionId:
                     anyOf:
                     - type: integer
                     - type: string
                     x-kubernetes-int-or-string: true
-                  provider_id:
+                  providerId:
                     type: string
-                  region_id:
+                  regionId:
                     type: string
                   state:
                     type: string
                   storage:
                     format: int64
                     type: integer
-                  team_id:
+                  teamId:
                     type: string
                 type: object
               clusterUpgradeResponse:
