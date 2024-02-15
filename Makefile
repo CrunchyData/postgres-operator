@@ -64,6 +64,7 @@ clean: ## Clean resources
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f config/rbac/role.yaml
+	rm -rf licenses/*/
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	rm -rf build/crd/generated build/crd/*/generated
