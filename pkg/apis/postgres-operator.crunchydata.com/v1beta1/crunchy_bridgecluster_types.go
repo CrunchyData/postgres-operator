@@ -31,7 +31,7 @@ type CrunchyBridgeClusterSpec struct {
 	// meaning that it has a secondary it can fail over to quickly
 	// in case the primary becomes unavailable.
 	// +kubebuilder:validation:Required
-	IsHA bool `json:"is_ha"`
+	IsHA bool `json:"isHa"`
 
 	// The name of the cluster
 	// ---
@@ -46,7 +46,7 @@ type CrunchyBridgeClusterSpec struct {
 
 	// The ID of the cluster's plan. Determines instance, CPU, and memory.
 	// +kubebuilder:validation:Required
-	Plan string `json:"plan_id"`
+	Plan string `json:"planId"`
 
 	// The ID of the cluster's major Postgres version.
 	// Currently Bridge offers 13-16
@@ -54,17 +54,17 @@ type CrunchyBridgeClusterSpec struct {
 	// +kubebuilder:validation:Minimum=13
 	// +kubebuilder:validation:Maximum=16
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
-	PostgresVersion int `json:"postgres_version_id"`
+	PostgresVersion int `json:"majorVersion"`
 
 	// The cloud provider where the cluster is located.
 	// Currently Bridge offers aws, azure, and gcp only
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum={aws,azure,gcp}
-	Provider string `json:"provider_id"`
+	Provider string `json:"providerId"`
 
 	// The provider region where the cluster is located.
 	// +kubebuilder:validation:Required
-	Region string `json:"region_id"`
+	Region string `json:"regionId"`
 
 	// The name of the secret containing the API key and team id
 	// +kubebuilder:validation:Required
@@ -99,7 +99,7 @@ type CrunchyBridgeClusterStatus struct {
 
 	// The cluster as represented by Bridge
 	// +optional
-	Cluster *ClusterDetails `json:"clusterResponse,omitempty"`
+	Cluster *ClusterStatus `json:"clusterStatus,omitempty"`
 
 	// The cluster upgrade as represented by Bridge
 	// +optional
@@ -118,6 +118,22 @@ type ClusterDetails struct {
 	Region          string             `json:"region_id,omitempty"`
 	Storage         int64              `json:"storage,omitempty"`
 	Team            string             `json:"team_id,omitempty"`
+	State           string             `json:"state,omitempty"`
+	// TODO(crunchybridgecluster): add other fields, DiskUsage, Host, IsProtected, IsSuspended, CPU, Memory, etc.
+}
+
+// Used to make the cluster status look kubey
+type ClusterStatus struct {
+	ID              string             `json:"id,omitempty"`
+	IsHA            bool               `json:"isHa,omitempty"`
+	Name            string             `json:"name,omitempty"`
+	Plan            string             `json:"planId,omitempty"`
+	MajorVersion    int                `json:"majorVersion,omitempty"`
+	PostgresVersion intstr.IntOrString `json:"postgresVersionId,omitempty"`
+	Provider        string             `json:"providerId,omitempty"`
+	Region          string             `json:"regionId,omitempty"`
+	Storage         int64              `json:"storage,omitempty"`
+	Team            string             `json:"teamId,omitempty"`
 	State           string             `json:"state,omitempty"`
 	// TODO(crunchybridgecluster): add other fields, DiskUsage, Host, IsProtected, IsSuspended, CPU, Memory, etc.
 }
