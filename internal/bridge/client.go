@@ -45,6 +45,21 @@ type Client struct {
 	Version string
 }
 
+type ClusterRole struct {
+	AccountEmail string `json:"account_email"`
+	AccountId    string `json:"account_id"`
+	ClusterId    string `json:"cluster_id"`
+	Flavor       string `json:"flavor"`
+	Name         string `json:"name"`
+	Password     string `json:"password"`
+	TeamId       string `json:"team_id"`
+	URI          string `json:"uri"`
+}
+
+type ClusterRoleList struct {
+	Roles []*ClusterRole `json:"roles"`
+}
+
 // NewClient creates a Client with backoff settings that amount to
 // ~10 attempts over ~2 minutes. A default is used when apiURL is not
 // an acceptable URL.
@@ -508,4 +523,60 @@ func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string
 	}
 
 	return result, err
+}
+
+func (c *Client) GetClusterRole(ctx context.Context, apiKey, clusterId, roleName string) (*ClusterRole, error) {
+	result := &ClusterRole{}
+
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+clusterId+"/roles/"+roleName, nil, nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+func (c *Client) ListClusterRoles(ctx context.Context, apiKey, id string) ([]*ClusterRole, error) {
+	result := ClusterRoleList{}
+
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/roles", nil, nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result.Roles, err
 }

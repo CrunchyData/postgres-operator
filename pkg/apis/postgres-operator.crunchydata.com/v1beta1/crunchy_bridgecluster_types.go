@@ -66,6 +66,15 @@ type CrunchyBridgeClusterSpec struct {
 	// +kubebuilder:validation:Required
 	Region string `json:"regionId"`
 
+	// Roles for which to create Secrets that contain their credentials which
+	// are retrieved from the Bridge API. An empty list creates no role secrets.
+	// Removing a role from this list does NOT drop the role nor revoke their
+	// access, but it will delete that role's secret from the kube cluster.
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	Roles []CrunchyBridgeClusterRoleSpec `json:"roles,omitempty"`
+
 	// The name of the secret containing the API key and team id
 	// +kubebuilder:validation:Required
 	Secret string `json:"secret,omitempty"`
@@ -77,6 +86,21 @@ type CrunchyBridgeClusterSpec struct {
 	// The maximum value allowed by Bridge is 65535 GB.
 	// +kubebuilder:validation:Required
 	Storage resource.Quantity `json:"storage"`
+}
+
+type CrunchyBridgeClusterRoleSpec struct {
+	// The name of this PostgreSQL role. The value may contain only lowercase
+	// letters, numbers, and hyphen so that it fits into Kubernetes metadata.
+	// The above is problematic for us as Bridge has a role with an underscore.
+	// TODO: figure out underscore dilemma
+	// +kubebuilder:validation:Pattern=`^[A-Za-z][A-Za-z0-9\-_ ]*[A-Za-z0-9]$`
+	// +kubebuilder:validation:Type=string
+	Name string `json:"name"`
+
+	// The name of the Secret that will hold the role credentials.
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
+	// +kubebuilder:validation:Type=string
+	SecretName string `json:"secretName"`
 }
 
 // CrunchyBridgeClusterStatus defines the observed state of CrunchyBridgeCluster

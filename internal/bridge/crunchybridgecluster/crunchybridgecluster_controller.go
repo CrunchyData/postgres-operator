@@ -70,6 +70,7 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 ) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta1.CrunchyBridgeCluster{}).
+		Owns(&corev1.Secret{}).
 		// Wake periodically to check Bridge API for all CrunchyBridgeClusters.
 		// Potentially replace with different requeue times, remove the Watch function
 		// Smarter: retry after a certain time for each cluster: https://gist.github.com/cbandy/a5a604e3026630c5b08cfbcdfffd2a13
@@ -83,6 +84,22 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 			r.watchForRelatedSecret(),
 		).
 		Complete(r)
+}
+
+// The owner reference created by controllerutil.SetControllerReference blocks
+// deletion. The OwnerReferencesPermissionEnforcement plugin requires that the
+// creator of such a reference have either "delete" permission on the owner or
+// "update" permission on the owner's "finalizers" subresource.
+// - https://docs.k8s.io/reference/access-authn-authz/admission-controllers/
+// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades/finalizers",verbs={update}
+
+// setControllerReference sets owner as a Controller OwnerReference on controlled.
+// Only one OwnerReference can be a controller, so it returns an error if another
+// is already set.
+func (r *CrunchyBridgeClusterReconciler) setControllerReference(
+	owner *v1beta1.CrunchyBridgeCluster, controlled client.Object,
+) error {
+	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
 }
 
 // watchForRelatedSecret handles create/update/delete events for secrets,
@@ -436,6 +453,9 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	}
 	crunchybridgecluster.Status.ClusterUpgrade = clusterUpgradeDetails
 
+	// reconcile roles and their secrets
+	err = r.reconcilePostgresRoles(ctx, key, crunchybridgecluster)
+
 	// For now, we skip updating until the upgrade status is cleared.
 	// For the future, we may want to update in-progress upgrades,
 	// and for that we will need a way tell that an upgrade in progress
@@ -568,4 +588,19 @@ func (r *CrunchyBridgeClusterReconciler) GetSecretKeys(
 	}
 
 	return "", "", err
+}
+
+// deleteControlled safely deletes object when it is controlled by cluster.
+func (r *CrunchyBridgeClusterReconciler) deleteControlled(
+	ctx context.Context, crunchyBridgeCluster *v1beta1.CrunchyBridgeCluster, object client.Object,
+) error {
+	if metav1.IsControlledBy(object, crunchyBridgeCluster) {
+		uid := object.GetUID()
+		version := object.GetResourceVersion()
+		exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
+
+		return r.Client.Delete(ctx, object, exactly)
+	}
+
+	return nil
 }

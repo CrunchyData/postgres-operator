@@ -94,6 +94,35 @@ spec:
                 x-kubernetes-validations:
                 - message: immutable
                   rule: self == oldSelf
+              roles:
+                description: Roles for which to create Secrets that contain their
+                  credentials which are retrieved from the Bridge API. An empty list
+                  creates no role secrets. Removing a role from this list does NOT
+                  drop the role nor revoke their access, but it will delete that role's
+                  secret from the kube cluster.
+                items:
+                  properties:
+                    name:
+                      description: 'The name of this PostgreSQL role. The value may
+                        contain only lowercase letters, numbers, and hyphen so that
+                        it fits into Kubernetes metadata. The above is problematic
+                        for us as Bridge has a role with an underscore. TODO: figure
+                        out underscore dilemma'
+                      pattern: ^[A-Za-z][A-Za-z0-9\-_ ]*[A-Za-z0-9]$
+                      type: string
+                    secretName:
+                      description: The name of the Secret that will hold the role
+                        credentials.
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                      type: string
+                  required:
+                  - name
+                  - secretName
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               secret:
                 description: The name of the secret containing the API key and team
                   id
