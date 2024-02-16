@@ -122,6 +122,14 @@ const (
 )
 
 const (
+	// LabelCrunchyBridgeClusterPostgresRole identifies the PostgreSQL user an object is for or about.
+	LabelCrunchyBridgeClusterPostgresRole = labelPrefix + "cbc-pgrole"
+
+	// RoleCrunchyBridgeClusterPostgresRole is the LabelRole applied to CBC PostgreSQL role secrets.
+	RoleCrunchyBridgeClusterPostgresRole = "cbc-pgrole"
+)
+
+const (
 	// DataPGAdmin is a LabelData value that indicates the object has pgAdmin data.
 	DataPGAdmin = "pgadmin"
 
