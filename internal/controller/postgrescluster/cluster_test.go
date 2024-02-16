@@ -732,11 +732,12 @@ func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
 	service, err := reconciler.generateClusterReplicaService(cluster)
 	assert.NilError(t, err)
 
-	assert.Assert(t, marshalMatches(service.TypeMeta, `
+	alwaysExpect := func(t testing.TB, service *corev1.Service) {
+		assert.Assert(t, marshalMatches(service.TypeMeta, `
 apiVersion: v1
 kind: Service
-	`))
-	assert.Assert(t, marshalMatches(service.ObjectMeta, `
+		`))
+		assert.Assert(t, marshalMatches(service.ObjectMeta, `
 creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: pg2
@@ -750,7 +751,10 @@ ownerReferences:
   kind: PostgresCluster
   name: pg2
   uid: ""
-	`))
+		`))
+	}
+
+	alwaysExpect(t, service)
 	assert.Assert(t, marshalMatches(service.Spec, `
 ports:
 - name: postgres
@@ -762,6 +766,39 @@ selector:
   postgres-operator.crunchydata.com/role: replica
 type: ClusterIP
 	`))
+
+	types := []struct {
+		Type   string
+		Expect func(testing.TB, *corev1.Service)
+	}{
+		{Type: "ClusterIP", Expect: func(t testing.TB, service *corev1.Service) {
+			assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
+		}},
+		{Type: "NodePort", Expect: func(t testing.TB, service *corev1.Service) {
+			assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
+		}},
+		{Type: "LoadBalancer", Expect: func(t testing.TB, service *corev1.Service) {
+			assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
+		}},
+	}
+
+	for _, test := range types {
+		t.Run(test.Type, func(t *testing.T) {
+			cluster := cluster.DeepCopy()
+			cluster.Spec.ReplicaService = &v1beta1.ServiceSpec{Type: test.Type}
+
+			service, err := reconciler.generateClusterReplicaService(cluster)
+			assert.NilError(t, err)
+			alwaysExpect(t, service)
+			test.Expect(t, service)
+			assert.Assert(t, marshalMatches(service.Spec.Ports, `
+- name: postgres
+  port: 9876
+  protocol: TCP
+  targetPort: postgres
+	`))
+		})
+	}
 
 	t.Run("AnnotationsLabels", func(t *testing.T) {
 		cluster := cluster.DeepCopy()

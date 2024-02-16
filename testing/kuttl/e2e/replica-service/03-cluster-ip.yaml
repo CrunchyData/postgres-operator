@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/cip-cluster.yaml
+assert:
+- files/cip-check.yaml

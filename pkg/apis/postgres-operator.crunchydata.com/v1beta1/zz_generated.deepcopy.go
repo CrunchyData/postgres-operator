@@ -1699,6 +1699,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(ServiceSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ReplicaService != nil {
+		in, out := &in.ReplicaService, &out.ReplicaService
+		*out = new(ServiceSpec)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Shutdown != nil {
 		in, out := &in.Shutdown, &out.Shutdown
 		*out = new(bool)

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-replicas
+spec:
+  type: NodePort
+  ports:
+  - name: postgres
+    nodePort: 30789
+    port: 5432
+    protocol: TCP
+    targetPort: postgres
+  selector:
+    postgres-operator.crunchydata.com/cluster: service
+    postgres-operator.crunchydata.com/role: replica
