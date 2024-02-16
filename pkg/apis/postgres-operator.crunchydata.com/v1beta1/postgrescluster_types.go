@@ -148,6 +148,10 @@ type PostgresClusterSpec struct {
 	// +optional
 	Service *ServiceSpec `json:"service,omitempty"`
 
+	// Specification of the service that exposes PostgreSQL replica instances
+	// +optional
+	ReplicaService *ServiceSpec `json:"replicaService,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should be stopped.
 	// When this is true, workloads are scaled to zero and CronJobs
 	// are suspended.

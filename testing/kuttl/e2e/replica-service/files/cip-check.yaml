@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-replicas
+spec:
+  type: ClusterIP
+  selector:
+    postgres-operator.crunchydata.com/cluster: service
+    postgres-operator.crunchydata.com/role: replica

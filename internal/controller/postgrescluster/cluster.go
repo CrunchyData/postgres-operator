@@ -17,6 +17,7 @@ package postgrescluster
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
@@ -199,33 +200,64 @@ func (r *Reconciler) generateClusterReplicaService(
 	service := &corev1.Service{ObjectMeta: naming.ClusterReplicaService(cluster)}
 	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
-	service.Annotations = naming.Merge(
-		cluster.Spec.Metadata.GetAnnotationsOrNil())
+	service.Annotations = cluster.Spec.Metadata.GetAnnotationsOrNil()
+	service.Labels = cluster.Spec.Metadata.GetLabelsOrNil()
+
+	if spec := cluster.Spec.ReplicaService; spec != nil {
+		service.Annotations = naming.Merge(service.Annotations,
+			spec.Metadata.GetAnnotationsOrNil())
+		service.Labels = naming.Merge(service.Labels,
+			spec.Metadata.GetLabelsOrNil())
+	}
+
+	// add our labels last so they aren't overwritten
 	service.Labels = naming.Merge(
-		cluster.Spec.Metadata.GetLabelsOrNil(),
+		service.Labels,
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RoleReplica,
 		})
 
-	// Allocate an IP address and let Kubernetes manage the Endpoints by
-	// selecting Pods with the Patroni replica role.
-	// - https://docs.k8s.io/concepts/services-networking/service/#defining-a-service
-	service.Spec.Type = corev1.ServiceTypeClusterIP
-	service.Spec.Selector = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePatroniReplica,
-	}
-
 	// The TargetPort must be the name (not the number) of the PostgreSQL
 	// ContainerPort. This name allows the port number to differ between Pods,
 	// which can happen during a rolling update.
-	service.Spec.Ports = []corev1.ServicePort{{
+	servicePort := corev1.ServicePort{
 		Name:       naming.PortPostgreSQL,
 		Port:       *cluster.Spec.Port,
 		Protocol:   corev1.ProtocolTCP,
 		TargetPort: intstr.FromString(naming.PortPostgreSQL),
-	}}
+	}
+
+	// Default to a service type of ClusterIP
+	service.Spec.Type = corev1.ServiceTypeClusterIP
+
+	// Check user provided spec for a specified type
+	if spec := cluster.Spec.ReplicaService; spec != nil {
+		service.Spec.Type = corev1.ServiceType(spec.Type)
+		if spec.NodePort != nil {
+			if service.Spec.Type == corev1.ServiceTypeClusterIP {
+				// The NodePort can only be set when the Service type is NodePort or
+				// LoadBalancer. However, due to a known issue prior to Kubernetes
+				// 1.20, we clear these errors during our apply. To preserve the
+				// appropriate behavior, we log an Event and return an error.
+				// TODO(tjmoore4): Once Validation Rules are available, this check
+				// and event could potentially be removed in favor of that validation
+				r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "MisconfiguredClusterIP",
+					"NodePort cannot be set with type ClusterIP on Service %q", service.Name)
+				return nil, fmt.Errorf("NodePort cannot be set with type ClusterIP on Service %q", service.Name)
+			}
+			servicePort.NodePort = *spec.NodePort
+		}
+	}
+	service.Spec.Ports = []corev1.ServicePort{servicePort}
+
+	// Allocate an IP address and let Kubernetes manage the Endpoints by
+	// selecting Pods with the Patroni replica role.
+	// - https://docs.k8s.io/concepts/services-networking/service/#defining-a-service
+	service.Spec.Selector = map[string]string{
+		naming.LabelCluster: cluster.Name,
+		naming.LabelRole:    naming.RolePatroniReplica,
+	}
 
 	err := errors.WithStack(r.setControllerReference(cluster, service))
 
