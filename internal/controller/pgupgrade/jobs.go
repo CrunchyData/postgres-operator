@@ -69,7 +69,7 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string
 		`echo "postgres:x:${gid%% *}:") > "${NSS_WRAPPER_GROUP}"`,
 
 		// Create a copy of the system user definitions, but remove the "postgres"
-		// user or any user with the currrent UID. Replace them with our own that
+		// user or any user with the current UID. Replace them with our own that
 		// has the current UID and GID.
 		`uid=$(id -u); NSS_WRAPPER_PASSWD=$(mktemp)`,
 		`(sed "/^postgres:x:/ d; /^[^:]*:x:${uid}:/ d" /etc/passwd`,
