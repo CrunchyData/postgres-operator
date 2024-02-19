@@ -55,7 +55,7 @@ Marketplace: https://github.com/redhat-openshift-ecosystem/redhat-marketplace-op
 
 We hit various issues with 5.1.0 where the 'replaces' name, set in the clusterserviceversion.yaml, didn't match the
 expected names found for all indexes. Previously, we set the 'com.redhat.openshift.versions' annotation to "v4.6-v4.9".
-The goal for this setting was to limit the upper bound of supported versions for a particulary PGO release.
+The goal for this setting was to limit the upper bound of supported versions for a particularly PGO release.
 The problem with this was, at the time of the 5.1.0 release, OCP 4.10 had been just been released. This meant that the
 5.0.5 bundle did not exist in the OCP 4.10 index. The solution presented by Red Hat was to use the 'skips' clause for
 the 5.1.0 release to remedy the immediate problem, but then go back to using an unbounded setting for subsequent
