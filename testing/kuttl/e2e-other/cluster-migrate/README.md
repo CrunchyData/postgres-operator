@@ -39,7 +39,7 @@ as an automatic step. User intervention and supervision is recommended in that c
 * 02: Create data on that cluster
 * 03: Alter the Reclaim policy of the PV so that it will survive deletion of the cluster
 * 04: Delete the original cluster, leaving the PV
-* 05: Create a PGO-managed `postgrescluster` with the remaing PV as the datasource
+* 05: Create a PGO-managed `postgrescluster` with the remaining PV as the datasource
 * 06-07: Wait for the PG pod to be ready and alter the collation (PG 15 only, see above)
 * 08: Alter the PV to the original Reclaim policy
 * 09: Check that the data successfully migrated
