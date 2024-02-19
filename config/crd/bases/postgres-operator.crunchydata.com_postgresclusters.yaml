@@ -15291,7 +15291,7 @@ spec:
                           type: boolean
                         repoOptionsHash:
                           description: A hash of the required fields in the spec for
-                            defining an Azure, GCS or S3 repository, Utilizd to detect
+                            defining an Azure, GCS or S3 repository, Utilized to detect
                             changes to these fields and then execute pgBackRest stanza-create
                             commands accordingly.
                           type: string

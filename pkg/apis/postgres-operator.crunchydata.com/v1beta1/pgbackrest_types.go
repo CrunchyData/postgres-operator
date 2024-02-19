@@ -414,7 +414,7 @@ type RepoStatus struct {
 	ReplicaCreateBackupComplete bool `json:"replicaCreateBackupComplete,omitempty"`
 
 	// A hash of the required fields in the spec for defining an Azure, GCS or S3 repository,
-	// Utilizd to detect changes to these fields and then execute pgBackRest stanza-create
+	// Utilized to detect changes to these fields and then execute pgBackRest stanza-create
 	// commands accordingly.
 	// +optional
 	RepoOptionsHash string `json:"repoOptionsHash,omitempty"`
