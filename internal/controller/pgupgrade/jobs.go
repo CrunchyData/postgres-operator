@@ -80,7 +80,7 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string
 		`export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD`,
 
 		// Below is the pg_upgrade script used to upgrade a PostgresCluster from
-		// one major verson to another. Additional information concerning the
+		// one major version to another. Additional information concerning the
 		// steps used and command flag specifics can be found in the documentation:
 		// - https://www.postgresql.org/docs/current/pgupgrade.html
 
