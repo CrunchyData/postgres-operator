@@ -317,7 +317,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 
 		// TODO(crunchybridgecluster) If the CreateCluster response was interrupted, we won't have the ID
 		// so we can get by name
-		// BUT if we do that, there's a chance for the K8s object to grab a pre-existing Bridge cluster
+		// BUT if we do that, there's a chance for the K8s object to grab a preexisting Bridge cluster
 		// which means there's a chance to delete a Bridge cluster through K8s actions
 		// even though that cluster didn't originate from K8s.
 
