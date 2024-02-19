@@ -729,9 +729,9 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		Message:            "pgBackRest dedicated repository host is ready",
 	})
 
-	configHashMistmatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
+	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
 	assert.NilError(t, err)
-	assert.Assert(t, !configHashMistmatch)
+	assert.Assert(t, !configHashMismatch)
 
 	events := &corev1.EventList{}
 	err = wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
@@ -773,7 +773,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		SystemIdentifier: "6952526174828511264",
 	}
 
-	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
+	configHashMismatch, err = r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
 	assert.Error(t, err, "fake stanza create failed: ")
 	assert.Assert(t, !configHashMismatch)
 
