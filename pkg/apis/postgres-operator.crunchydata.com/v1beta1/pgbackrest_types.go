@@ -311,7 +311,7 @@ type PGBackRestRepo struct {
 	// will be applicable once implemented:
 	// https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1027-api-unions
 
-	// The name of the the repository
+	// The name of the repository
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=^repo[1-4]
 	Name string `json:"name"`

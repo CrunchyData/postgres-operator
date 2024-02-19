@@ -69,7 +69,7 @@ instance name or set to blank ("")
 ### Logic Map
 
 With this, the grid below shows the expected replica count value, depending on
-the the values. Below, the letters represent the following:
+the values. Below, the letters represent the following:
 
 M = StartupInstance matches the instance name
 

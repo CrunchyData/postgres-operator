@@ -304,7 +304,7 @@ func TestClientDoWithRetry(t *testing.T) {
 		assert.Assert(t, requests[1].Header.Get("Idempotency-Key") != prior,
 			"expected a new idempotency key")
 
-		// Requests are delayed according the the server's response.
+		// Requests are delayed according the server's response.
 		// TODO: Mock the clock for faster tests.
 		assert.Assert(t, times[0].Add(time.Second).Before(times[1]),
 			"expected the second request over 1sec after the first")

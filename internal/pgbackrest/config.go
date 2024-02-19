@@ -492,7 +492,7 @@ func serverConfig(cluster *v1beta1.PostgresCluster) iniSectionSet {
 	//
 	// NOTE(cbandy): The unspecified IPv6 address, which ends up being the IPv6
 	// wildcard address, did not work in all environments. In some cases, the
-	// the "server-ping" command would not connect.
+	// "server-ping" command would not connect.
 	// - https://tools.ietf.org/html/rfc3493#section-3.8
 	//
 	// TODO(cbandy): When pgBackRest provides a way to bind to all addresses,
