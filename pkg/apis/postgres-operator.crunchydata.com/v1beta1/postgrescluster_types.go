@@ -217,7 +217,7 @@ type DataSourceVolumes struct {
 	PGBackRestVolume *DataSourceVolume `json:"pgBackRestVolume,omitempty"`
 }
 
-// DataSourceVolume defines the PVC name and data diretory path for an existing cluster volume.
+// DataSourceVolume defines the PVC name and data directory path for an existing cluster volume.
 type DataSourceVolume struct {
 	// The existing PVC name.
 	PVCName string `json:"pvcName"`
