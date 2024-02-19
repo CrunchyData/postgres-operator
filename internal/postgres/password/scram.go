@@ -179,7 +179,7 @@ func (s *SCRAMPassword) saslPrep() string {
 
 	// perform SASLprep on the password. if the SASLprep fails or returns an
 	// empty string, return the original password
-	// Otherwise return the clean pasword
+	// Otherwise return the clean password
 	cleanedPassword, err := stringprep.SASLprep.Prepare(s.password)
 	if cleanedPassword == "" || err != nil {
 		return s.password
