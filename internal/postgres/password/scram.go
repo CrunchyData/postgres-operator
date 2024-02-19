@@ -37,7 +37,7 @@ import (
 //
 // where:
 // DIGEST = SCRAM-SHA-256 (only value for now in PostgreSQL)
-// ITERATIONS = the number of iteratiosn to use for PBKDF2
+// ITERATIONS = the number of iterations to use for PBKDF2
 // SALT = the salt used as part of the PBKDF2, stored in base64
 // STORED_KEY = the hash of the client key, stored in base64
 // SERVER_KEY = the hash of the server key
