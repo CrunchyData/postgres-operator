@@ -86,7 +86,7 @@ possible as to what the changes are. Good things to include:
 understand.
 ```
 
-If you wish to tag a Github issue or another project management tracker, please
+If you wish to tag a GitHub issue or another project management tracker, please
 do so at the bottom of the commit message, and make it clearly labeled like so:
 
 ```
