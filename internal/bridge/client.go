@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/wait"
 
@@ -45,20 +46,171 @@ type Client struct {
 	Version string
 }
 
-type ClusterRole struct {
+// BRIDGE API RESPONSE OBJECTS
+
+// ClusterApiResource is used to hold cluster information received in Bridge API response.
+type ClusterApiResource struct {
+	ID                     string                       `json:"id,omitempty"`
+	ClusterGroup           *ClusterGroupApiResource     `json:"cluster_group,omitempty"`
+	PrimaryClusterID       string                       `json:"cluster_id,omitempty"`
+	CPU                    int64                        `json:"cpu,omitempty"`
+	CreatedAt              string                       `json:"created_at,omitempty"`
+	DiskUsage              *ClusterDiskUsageApiResource `json:"disk_usage,omitempty"`
+	Environment            string                       `json:"environment,omitempty"`
+	Host                   string                       `json:"host,omitempty"`
+	IsHA                   bool                         `json:"is_ha,omitempty"`
+	IsProtected            bool                         `json:"is_protected,omitempty"`
+	IsSuspended            bool                         `json:"is_suspended,omitempty"`
+	Keychain               string                       `json:"keychain_id,omitempty"`
+	MaintenanceWindowStart int64                        `json:"maintenance_window_start,omitempty"`
+	MajorVersion           int                          `json:"major_version,omitempty"`
+	Memory                 float64                      `json:"memory,omitempty"`
+	ClusterName            string                       `json:"name,omitempty"`
+	Network                string                       `json:"network_id,omitempty"`
+	Parent                 string                       `json:"parent_id,omitempty"`
+	Plan                   string                       `json:"plan_id,omitempty"`
+	PostgresVersion        intstr.IntOrString           `json:"postgres_version_id,omitempty"`
+	Provider               string                       `json:"provider_id,omitempty"`
+	Region                 string                       `json:"region_id,omitempty"`
+	Replicas               []*ClusterApiResource        `json:"replicas,omitempty"`
+	Storage                int64                        `json:"storage,omitempty"`
+	Tailscale              bool                         `json:"tailscale_active,omitempty"`
+	Team                   string                       `json:"team_id,omitempty"`
+	LastUpdate             string                       `json:"updated_at,omitempty"`
+	ResponsePayload        v1beta1.SchemalessObject     `json:""`
+}
+
+func (c *ClusterApiResource) AddDataToClusterStatus(cluster *v1beta1.CrunchyBridgeCluster) {
+	cluster.Status.ClusterName = c.ClusterName
+	cluster.Status.Host = c.Host
+	cluster.Status.ID = c.ID
+	cluster.Status.IsHA = c.IsHA
+	cluster.Status.IsProtected = c.IsProtected
+	cluster.Status.MajorVersion = c.MajorVersion
+	cluster.Status.Plan = c.Plan
+	cluster.Status.Storage = c.Storage
+	cluster.Status.Responses.Cluster = c.ResponsePayload
+}
+
+type ClusterList struct {
+	Clusters []*ClusterApiResource `json:"clusters"`
+}
+
+// ClusterDiskUsageApiResource hold information on disk usage for a particular cluster.
+type ClusterDiskUsageApiResource struct {
+	DiskAvailableMB int64 `json:"disk_available_mb,omitempty"`
+	DiskTotalSizeMB int64 `json:"disk_total_size_mb,omitempty"`
+	DiskUsedMB      int64 `json:"disk_used_mb,omitempty"`
+}
+
+// ClusterGroupApiResource holds information on a ClusterGroup
+type ClusterGroupApiResource struct {
+	ID       string                `json:"id,omitempty"`
+	Clusters []*ClusterApiResource `json:"clusters,omitempty"`
+	Kind     string                `json:"kind,omitempty"`
+	Name     string                `json:"name,omitempty"`
+	Network  string                `json:"network_id,omitempty"`
+	Provider string                `json:"provider_id,omitempty"`
+	Region   string                `json:"region_id,omitempty"`
+	Team     string                `json:"team_id,omitempty"`
+}
+
+type ClusterStatusApiResource struct {
+	DiskUsage       *ClusterDiskUsageApiResource `json:"disk_usage,omitempty"`
+	OldestBackup    string                       `json:"oldest_backup_at,omitempty"`
+	OngoingUpgrade  *ClusterUpgradeApiResource   `json:"ongoing_upgrade,omitempty"`
+	State           string                       `json:"state,omitempty"`
+	ResponsePayload v1beta1.SchemalessObject     `json:""`
+}
+
+func (c *ClusterStatusApiResource) AddDataToClusterStatus(cluster *v1beta1.CrunchyBridgeCluster) {
+	cluster.Status.State = c.State
+	cluster.Status.Responses.Status = c.ResponsePayload
+}
+
+type ClusterUpgradeApiResource struct {
+	ClusterID       string                      `json:"cluster_id,omitempty"`
+	Operations      []*v1beta1.UpgradeOperation `json:"operations,omitempty"`
+	Team            string                      `json:"team_id,omitempty"`
+	ResponsePayload v1beta1.SchemalessObject    `json:""`
+}
+
+func (c *ClusterUpgradeApiResource) AddDataToClusterStatus(cluster *v1beta1.CrunchyBridgeCluster) {
+	cluster.Status.OngoingUpgrade = c.Operations
+	cluster.Status.Responses.Upgrade = c.ResponsePayload
+}
+
+type ClusterUpgradeOperationApiResource struct {
+	Flavor       string `json:"flavor,omitempty"`
+	StartingFrom string `json:"starting_from,omitempty"`
+	State        string `json:"state,omitempty"`
+}
+
+// BRIDGE API REQUEST PAYLOADS
+
+// PatchClustersRequestPayload is used for updating various properties of an existing cluster.
+type PatchClustersRequestPayload struct {
+	ClusterGroup string `json:"cluster_group_id,omitempty"`
+	// DashboardSettings      *ClusterDashboardSettings `json:"dashboard_settings,omitempty"`
+	// TODO: (dsessler7) Find docs for DashboardSettings and create appropriate struct
+	Environment            string `json:"environment,omitempty"`
+	IsProtected            bool   `json:"is_protected,omitempty"`
+	MaintenanceWindowStart int64  `json:"maintenance_window_start,omitempty"`
+	Name                   string `json:"name,omitempty"`
+}
+
+// PostClustersRequestPayload is used for creating a new cluster.
+type PostClustersRequestPayload struct {
+	Name            string             `json:"name"`
+	Plan            string             `json:"plan_id"`
+	Team            string             `json:"team_id"`
+	ClusterGroup    string             `json:"cluster_group_id,omitempty"`
+	Environment     string             `json:"environment,omitempty"`
+	IsHA            bool               `json:"is_ha,omitempty"`
+	Keychain        string             `json:"keychain_id,omitempty"`
+	Network         string             `json:"network_id,omitempty"`
+	PostgresVersion intstr.IntOrString `json:"postgres_version_id,omitempty"`
+	Provider        string             `json:"provider_id,omitempty"`
+	Region          string             `json:"region_id,omitempty"`
+	Storage         int64              `json:"storage,omitempty"`
+}
+
+// PostClustersUpgradeRequestPayload is used for creating a new cluster upgrade which may include
+// changing its plan, upgrading its major version, or increasing its storage size.
+type PostClustersUpgradeRequestPayload struct {
+	Plan             string             `json:"plan_id,omitempty"`
+	PostgresVersion  intstr.IntOrString `json:"postgres_version_id,omitempty"`
+	UpgradeStartTime string             `json:"starting_from,omitempty"`
+	Storage          int64              `json:"storage,omitempty"`
+}
+
+// PutClustersUpgradeRequestPayload is used for updating an ongoing or scheduled upgrade.
+type PutClustersUpgradeRequestPayload struct {
+	Plan                 string             `json:"plan_id,omitempty"`
+	PostgresVersion      intstr.IntOrString `json:"postgres_version_id,omitempty"`
+	UpgradeStartTime     string             `json:"starting_from,omitempty"`
+	Storage              int64              `json:"storage,omitempty"`
+	UseMaintenanceWindow bool               `json:"use_cluster_maintenance_window,omitempty"`
+}
+
+// ClusterRoleApiResource is used for retrieving details on ClusterRole from the Bridge API
+type ClusterRoleApiResource struct {
 	AccountEmail string `json:"account_email"`
 	AccountId    string `json:"account_id"`
 	ClusterId    string `json:"cluster_id"`
 	Flavor       string `json:"flavor"`
 	Name         string `json:"name"`
 	Password     string `json:"password"`
-	TeamId       string `json:"team_id"`
+	Team         string `json:"team_id"`
 	URI          string `json:"uri"`
 }
 
+// ClusterRoleList holds a slice of ClusterRoleApiResource
 type ClusterRoleList struct {
-	Roles []*ClusterRole `json:"roles"`
+	Roles []*ClusterRoleApiResource `json:"roles"`
 }
+
+// BRIDGE CLIENT FUNCTIONS AND METHODS
 
 // NewClient creates a Client with backoff settings that amount to
 // ~10 attempts over ~2 minutes. A default is used when apiURL is not
@@ -265,11 +417,7 @@ func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 // TODO(crunchybridgecluster) Is this where we want CRUD for clusters functions? Or make client `do` funcs
 // directly callable?
 
-type ClusterList struct {
-	Clusters []*v1beta1.ClusterDetails `json:"clusters"`
-}
-
-func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*v1beta1.ClusterDetails, error) {
+func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*ClusterApiResource, error) {
 	result := &ClusterList{}
 
 	params := url.Values{}
@@ -301,10 +449,12 @@ func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*v1
 	return result.Clusters, err
 }
 
-func (c *Client) CreateCluster(ctx context.Context, apiKey string, cluster *v1beta1.ClusterDetails) (*v1beta1.ClusterDetails, error) {
-	result := &v1beta1.ClusterDetails{}
+func (c *Client) CreateCluster(
+	ctx context.Context, apiKey string, clusterRequestPayload *PostClustersRequestPayload,
+) (*ClusterApiResource, error) {
+	result := &ClusterApiResource{}
 
-	clusterbyte, err := json.Marshal(cluster)
+	clusterbyte, err := json.Marshal(clusterRequestPayload)
 	if err != nil {
 		return result, err
 	}
@@ -323,6 +473,10 @@ func (c *Client) CreateCluster(ctx context.Context, apiKey string, cluster *v1be
 		case response.StatusCode >= 200 && response.StatusCode < 300:
 			if err = json.Unmarshal(body, &result); err != nil {
 				err = fmt.Errorf("%w: %s", err, body)
+				return result, err
+			}
+			if err = json.Unmarshal(body, &result.ResponsePayload); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
 			}
 
 		default:
@@ -339,8 +493,8 @@ func (c *Client) CreateCluster(ctx context.Context, apiKey string, cluster *v1be
 //	the cluster,
 //	whether the cluster is deleted already,
 //	and an error.
-func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*v1beta1.ClusterDetails, bool, error) {
-	result := &v1beta1.ClusterDetails{}
+func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*ClusterApiResource, bool, error) {
+	result := &ClusterApiResource{}
 	var deletedAlready bool
 
 	response, err := c.doWithRetry(ctx, "DELETE", "/clusters/"+id, nil, nil, http.Header{
@@ -379,8 +533,8 @@ func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*v1beta1
 	return result, deletedAlready, err
 }
 
-func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*v1beta1.ClusterDetails, error) {
-	result := &v1beta1.ClusterDetails{}
+func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*ClusterApiResource, error) {
+	result := &ClusterApiResource{}
 
 	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id, nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
@@ -396,6 +550,10 @@ func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*v1beta1.Cl
 		case response.StatusCode >= 200 && response.StatusCode < 300:
 			if err = json.Unmarshal(body, &result); err != nil {
 				err = fmt.Errorf("%w: %s", err, body)
+				return result, err
+			}
+			if err = json.Unmarshal(body, &result.ResponsePayload); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
 			}
 
 		default:
@@ -407,9 +565,8 @@ func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*v1beta1.Cl
 	return result, err
 }
 
-// TODO (dsessler7) We should use a ClusterStatus struct here
-func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (string, error) {
-	result := ""
+func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (*ClusterStatusApiResource, error) {
+	result := &ClusterStatusApiResource{}
 
 	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/status", nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
@@ -425,6 +582,10 @@ func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (strin
 		case response.StatusCode >= 200 && response.StatusCode < 300:
 			if err = json.Unmarshal(body, &result); err != nil {
 				err = fmt.Errorf("%w: %s", err, body)
+				return result, err
+			}
+			if err = json.Unmarshal(body, &result.ResponsePayload); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
 			}
 
 		default:
@@ -436,8 +597,8 @@ func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (strin
 	return result, err
 }
 
-func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*v1beta1.ClusterUpgrade, error) {
-	result := &v1beta1.ClusterUpgrade{}
+func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*ClusterUpgradeApiResource, error) {
+	result := &ClusterUpgradeApiResource{}
 
 	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/upgrade", nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
@@ -453,6 +614,10 @@ func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*v1b
 		case response.StatusCode >= 200 && response.StatusCode < 300:
 			if err = json.Unmarshal(body, &result); err != nil {
 				err = fmt.Errorf("%w: %s", err, body)
+				return result, err
+			}
+			if err = json.Unmarshal(body, &result.ResponsePayload); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
 			}
 
 		default:
@@ -464,10 +629,12 @@ func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*v1b
 	return result, err
 }
 
-func (c *Client) UpgradeCluster(ctx context.Context, apiKey, id string, cluster *v1beta1.ClusterDetails) (*v1beta1.ClusterUpgrade, error) {
-	result := &v1beta1.ClusterUpgrade{}
+func (c *Client) UpgradeCluster(
+	ctx context.Context, apiKey, id string, clusterRequestPayload *PostClustersUpgradeRequestPayload,
+) (*ClusterUpgradeApiResource, error) {
+	result := &ClusterUpgradeApiResource{}
 
-	clusterbyte, err := json.Marshal(cluster)
+	clusterbyte, err := json.Marshal(clusterRequestPayload)
 	if err != nil {
 		return result, err
 	}
@@ -486,6 +653,10 @@ func (c *Client) UpgradeCluster(ctx context.Context, apiKey, id string, cluster 
 		case response.StatusCode >= 200 && response.StatusCode < 300:
 			if err = json.Unmarshal(body, &result); err != nil {
 				err = fmt.Errorf("%w: %s", err, body)
+				return result, err
+			}
+			if err = json.Unmarshal(body, &result.ResponsePayload); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
 			}
 
 		default:
@@ -497,8 +668,8 @@ func (c *Client) UpgradeCluster(ctx context.Context, apiKey, id string, cluster 
 	return result, err
 }
 
-func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string) (*v1beta1.ClusterUpgrade, error) {
-	result := &v1beta1.ClusterUpgrade{}
+func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string) (*ClusterUpgradeApiResource, error) {
+	result := &ClusterUpgradeApiResource{}
 
 	response, err := c.doWithRetry(ctx, "PUT", "/clusters/"+id+"/actions/"+action, nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
@@ -514,6 +685,10 @@ func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string
 		case response.StatusCode >= 200 && response.StatusCode < 300:
 			if err = json.Unmarshal(body, &result); err != nil {
 				err = fmt.Errorf("%w: %s", err, body)
+				return result, err
+			}
+			if err = json.Unmarshal(body, &result.ResponsePayload); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
 			}
 
 		default:
@@ -525,8 +700,8 @@ func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string
 	return result, err
 }
 
-func (c *Client) GetClusterRole(ctx context.Context, apiKey, clusterId, roleName string) (*ClusterRole, error) {
-	result := &ClusterRole{}
+func (c *Client) GetClusterRole(ctx context.Context, apiKey, clusterId, roleName string) (*ClusterRoleApiResource, error) {
+	result := &ClusterRoleApiResource{}
 
 	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+clusterId+"/roles/"+roleName, nil, nil, http.Header{
 		"Accept":        []string{"application/json"},
@@ -553,7 +728,7 @@ func (c *Client) GetClusterRole(ctx context.Context, apiKey, clusterId, roleName
 	return result, err
 }
 
-func (c *Client) ListClusterRoles(ctx context.Context, apiKey, id string) ([]*ClusterRole, error) {
+func (c *Client) ListClusterRoles(ctx context.Context, apiKey, id string) ([]*ClusterRoleApiResource, error) {
 	result := ClusterRoleList{}
 
 	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/roles", nil, nil, http.Header{

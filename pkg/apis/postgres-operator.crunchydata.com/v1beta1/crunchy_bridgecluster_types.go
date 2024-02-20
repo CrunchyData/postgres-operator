@@ -18,7 +18,6 @@ package v1beta1
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // CrunchyBridgeClusterSpec defines the desired state of CrunchyBridgeCluster
@@ -73,7 +72,7 @@ type CrunchyBridgeClusterSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +optional
-	Roles []CrunchyBridgeClusterRoleSpec `json:"roles,omitempty"`
+	Roles []*CrunchyBridgeClusterRoleSpec `json:"roles,omitempty"`
 
 	// The name of the secret containing the API key and team id
 	// +kubebuilder:validation:Required
@@ -89,84 +88,91 @@ type CrunchyBridgeClusterSpec struct {
 }
 
 type CrunchyBridgeClusterRoleSpec struct {
-	// The name of this PostgreSQL role. The value may contain only lowercase
-	// letters, numbers, and hyphen so that it fits into Kubernetes metadata.
-	// The above is problematic for us as Bridge has a role with an underscore.
-	// TODO: figure out underscore dilemma
-	// +kubebuilder:validation:Pattern=`^[A-Za-z][A-Za-z0-9\-_ ]*[A-Za-z0-9]$`
-	// +kubebuilder:validation:Type=string
+	// Name of the role within Crunchy Bridge.
+	// More info: https://docs.crunchybridge.com/concepts/users
 	Name string `json:"name"`
 
 	// The name of the Secret that will hold the role credentials.
-	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
 	// +kubebuilder:validation:Type=string
 	SecretName string `json:"secretName"`
 }
 
 // CrunchyBridgeClusterStatus defines the observed state of CrunchyBridgeCluster
 type CrunchyBridgeClusterStatus struct {
-	// The ID of the postgrescluster in Bridge, provided by Bridge API and null until then.
+	// The name of the cluster in Bridge.
 	// +optional
-	ID string `json:"id,omitempty"`
+	ClusterName string `json:"name,omitempty"`
 
-	// observedGeneration represents the .metadata.generation on which the status was based.
-	// +optional
-	// +kubebuilder:validation:Minimum=0
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
-	// conditions represent the observations of postgrescluster's current state.
+	// conditions represent the observations of postgres cluster's current state.
 	// +optional
 	// +listType=map
 	// +listMapKey=type
 	// +operator-sdk:csv:customresourcedefinitions:type=status,xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
-	// The cluster as represented by Bridge
+	// The Hostname of the postgres cluster in Bridge, provided by Bridge API and null until then.
 	// +optional
-	Cluster *ClusterStatus `json:"clusterStatus,omitempty"`
+	Host string `json:"host,omitempty"`
+
+	// The ID of the postgres cluster in Bridge, provided by Bridge API and null until then.
+	// +optional
+	ID string `json:"id,omitempty"`
+
+	// Whether the cluster is high availability, meaning that it has a secondary it can fail
+	// over to quickly in case the primary becomes unavailable.
+	// +optional
+	IsHA bool `json:"isHa"`
+
+	// Whether the cluster is protected. Protected clusters can't be destroyed until
+	// their protected flag is removed
+	// +optional
+	IsProtected bool `json:"isProtected,omitempty"`
+
+	// The cluster's major Postgres version.
+	// +optional
+	MajorVersion int `json:"majorVersion"`
+
+	// observedGeneration represents the .metadata.generation on which the status was based.
+	// +optional
+	// +kubebuilder:validation:Minimum=0
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// The cluster upgrade as represented by Bridge
 	// +optional
-	ClusterUpgrade *ClusterUpgrade `json:"clusterUpgradeResponse,omitempty"`
+	OngoingUpgrade []*UpgradeOperation `json:"ongoingUpgrade,omitempty"`
+
+	// The ID of the cluster's plan. Determines instance, CPU, and memory.
+	// +optional
+	Plan string `json:"planId"`
+
+	// Most recent, raw responses from Bridge API
+	// +optional
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:validation:Type=object
+	Responses APIResponses `json:"responses"`
+
+	// State of cluster in Bridge.
+	// +optional
+	State string `json:"state,omitempty"`
+
+	// The amount of storage available to the cluster in gigabytes.
+	// +optional
+	Storage int64 `json:"storage"`
 }
 
-// Right now used for cluster create requests and cluster get responses
-type ClusterDetails struct {
-	ID              string             `json:"id,omitempty"`
-	IsHA            bool               `json:"is_ha,omitempty"`
-	Name            string             `json:"name,omitempty"`
-	Plan            string             `json:"plan_id,omitempty"`
-	MajorVersion    int                `json:"major_version,omitempty"`
-	PostgresVersion intstr.IntOrString `json:"postgres_version_id,omitempty"`
-	Provider        string             `json:"provider_id,omitempty"`
-	Region          string             `json:"region_id,omitempty"`
-	Storage         int64              `json:"storage,omitempty"`
-	Team            string             `json:"team_id,omitempty"`
-	State           string             `json:"state,omitempty"`
-	// TODO(crunchybridgecluster): add other fields, DiskUsage, Host, IsProtected, IsSuspended, CPU, Memory, etc.
-}
-
-// Used to make the cluster status look kubey
-type ClusterStatus struct {
-	ID              string             `json:"id,omitempty"`
-	IsHA            bool               `json:"isHa,omitempty"`
-	Name            string             `json:"name,omitempty"`
-	Plan            string             `json:"planId,omitempty"`
-	MajorVersion    int                `json:"majorVersion,omitempty"`
-	PostgresVersion intstr.IntOrString `json:"postgresVersionId,omitempty"`
-	Provider        string             `json:"providerId,omitempty"`
-	Region          string             `json:"regionId,omitempty"`
-	Storage         int64              `json:"storage,omitempty"`
-	Team            string             `json:"teamId,omitempty"`
-	State           string             `json:"state,omitempty"`
-	// TODO(crunchybridgecluster): add other fields, DiskUsage, Host, IsProtected, IsSuspended, CPU, Memory, etc.
+type APIResponses struct {
+	Cluster SchemalessObject `json:"cluster,omitempty"`
+	Status  SchemalessObject `json:"status,omitempty"`
+	Upgrade SchemalessObject `json:"upgrade,omitempty"`
 }
 
 type ClusterUpgrade struct {
-	Operations []*Operation `json:"operations,omitempty"`
+	Operations []*UpgradeOperation `json:"operations,omitempty"`
 }
 
-type Operation struct {
+type UpgradeOperation struct {
 	Flavor       string `json:"flavor"`
 	StartingFrom string `json:"starting_from"`
 	State        string `json:"state"`
