@@ -22,7 +22,7 @@ Have questions or looking for help? [Join our Discord group](https://discord.gg/
 
 # Installation
 
-Crunchy Data makes PGO available as the orchestration behind Crunchy Postgres for Kubernetes, along with PostgreSQL and a collection of PostgreSQL tools and extensions is the integrated product that includes PGO and the various [open source components listed in the documentation](https://access.crunchydata.com/documentation/postgres-operator/latest/references/components).
+Crunchy Data makes PGO available as the orchestration behind Crunchy Postgres for Kubernetes.  Crunchy Postgres for Kubernetes is the integrated product that includes PostgreSQL, PGO and a collection of PostgreSQL tools and extensions that includes the various [open source components listed in the documentation](https://access.crunchydata.com/documentation/postgres-operator/latest/references/components).
 
 We recommend following our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/v5/quickstart/) for how to install and get up and running. However, if you can't wait to try it out, here are some instructions to get Postgres up and running on Kubernetes:
 
