@@ -346,7 +346,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		}
 
 		for _, cluster := range clusters {
-			if crunchybridgecluster.Spec.ClusterName == cluster.Name {
+			if crunchybridgecluster.Spec.ClusterName == cluster.ClusterName {
 				// Cluster with the same name exists so check for adoption annotation
 				adoptionID, annotationExists := crunchybridgecluster.Annotations[naming.CrunchyBridgeClusterAdoptionAnnotation]
 				if annotationExists && strings.EqualFold(adoptionID, cluster.ID) {
@@ -387,7 +387,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 
 		// TODO(crunchybridgecluster) Can almost just use the crunchybridgecluster.Spec... except for the team,
 		// which we don't want users to set on the spec. Do we?
-		clusterReq := &v1beta1.ClusterDetails{
+		createClusterRequestPayload := &bridge.PostClustersRequestPayload{
 			IsHA:            crunchybridgecluster.Spec.IsHA,
 			Name:            crunchybridgecluster.Spec.ClusterName,
 			Plan:            crunchybridgecluster.Spec.Plan,
@@ -397,7 +397,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			Storage:         storageVal,
 			Team:            team,
 		}
-		cluster, err := r.NewClient().CreateCluster(ctx, key, clusterReq)
+		cluster, err := r.NewClient().CreateCluster(ctx, key, createClusterRequestPayload)
 		if err != nil {
 			log.Error(err, "whoops, cluster creating issue")
 			// TODO(crunchybridgecluster): probably shouldn't set this condition unless response from Bridge
@@ -420,40 +420,35 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
 
-	// If we reach this point, our CrunchyBridgeCluster object has an ID
-	// so we want to fill in the details for the cluster and cluster upgrades from the Bridge API
-	// Consider cluster details as a separate func.
+	// If we reach this point, our CrunchyBridgeCluster object has an ID, so we want
+	// to fill in the details for the cluster, cluster status, and cluster upgrades
+	// from the Bridge API.
 
+	// Get Cluster
 	clusterDetails, err := r.NewClient().GetCluster(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
-		log.Error(err, "whoops, cluster getting issue")
+		log.Error(err, "whoops, issue getting cluster")
 		return ctrl.Result{}, err
 	}
+	clusterDetails.AddDataToClusterStatus(crunchybridgecluster)
 
-	clusterStatus := &v1beta1.ClusterStatus{
-		ID:              clusterDetails.ID,
-		IsHA:            clusterDetails.IsHA,
-		Name:            clusterDetails.Name,
-		Plan:            clusterDetails.Plan,
-		MajorVersion:    clusterDetails.MajorVersion,
-		PostgresVersion: clusterDetails.PostgresVersion,
-		Provider:        clusterDetails.Provider,
-		Region:          clusterDetails.Region,
-		Storage:         clusterDetails.Storage,
-		Team:            clusterDetails.Team,
-		State:           clusterDetails.State,
+	// Get Cluster Status
+	clusterStatus, err := r.NewClient().GetClusterStatus(ctx, key, crunchybridgecluster.Status.ID)
+	if err != nil {
+		log.Error(err, "whoops, issue getting cluster status")
+		return ctrl.Result{}, err
 	}
+	clusterStatus.AddDataToClusterStatus(crunchybridgecluster)
 
-	crunchybridgecluster.Status.Cluster = clusterStatus
-
+	// Get Cluster Upgrade
 	clusterUpgradeDetails, err := r.NewClient().GetClusterUpgrade(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
-		log.Error(err, "whoops, cluster upgrade getting issue")
+		log.Error(err, "whoops, issue getting cluster upgrade")
 		return ctrl.Result{}, err
 	}
-	crunchybridgecluster.Status.ClusterUpgrade = clusterUpgradeDetails
+	clusterUpgradeDetails.AddDataToClusterStatus(crunchybridgecluster)
 
-	// reconcile roles and their secrets
+	// Reconcile roles and their secrets
 	err = r.reconcilePostgresRoles(ctx, key, crunchybridgecluster)
 
 	// For now, we skip updating until the upgrade status is cleared.
@@ -465,23 +460,23 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// then we will requeue and wait for it to be done.
 	// TODO(crunchybridgecluster): Do we want the operator to interrupt
 	// upgrades created through the GUI/API?
-	if len(crunchybridgecluster.Status.ClusterUpgrade.Operations) != 0 {
+	if len(crunchybridgecluster.Status.OngoingUpgrade) != 0 {
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
 
 	// Check if there's an upgrade difference for the three upgradeable fields that hit the upgrade endpoint
 	// Why PostgresVersion and MajorVersion? Because MajorVersion in the Status is sure to be
-	// an int of the major version, whereas Status.Cluster.PostgresVersion might be the ID
-	if (storageVal != crunchybridgecluster.Status.Cluster.Storage) ||
-		crunchybridgecluster.Spec.Plan != crunchybridgecluster.Status.Cluster.Plan ||
-		crunchybridgecluster.Spec.PostgresVersion != crunchybridgecluster.Status.Cluster.MajorVersion {
+	// an int of the major version, whereas Status.Responses.Cluster.PostgresVersion might be the ID
+	if (storageVal != crunchybridgecluster.Status.Storage) ||
+		crunchybridgecluster.Spec.Plan != crunchybridgecluster.Status.Plan ||
+		crunchybridgecluster.Spec.PostgresVersion != crunchybridgecluster.Status.MajorVersion {
 		return r.handleUpgrade(ctx, key, crunchybridgecluster, storageVal)
 	}
 
 	// Are there diffs between the cluster response from the Bridge API and the spec?
 	// HA diffs are sent to /clusters/{cluster_id}/actions/[enable|disable]-ha
 	// so have to know (a) to send and (b) which to send to
-	if crunchybridgecluster.Spec.IsHA != crunchybridgecluster.Status.Cluster.IsHA {
+	if crunchybridgecluster.Spec.IsHA != crunchybridgecluster.Status.IsHA {
 		return r.handleUpgradeHA(ctx, key, crunchybridgecluster)
 	}
 
@@ -518,7 +513,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 
 	log.Info("Handling upgrade request")
 
-	upgradeRequest := &v1beta1.ClusterDetails{
+	upgradeRequest := &bridge.PostClustersUpgradeRequestPayload{
 		Plan:            crunchybridgecluster.Spec.Plan,
 		PostgresVersion: intstr.FromInt(crunchybridgecluster.Spec.PostgresVersion),
 		Storage:         storageVal,
@@ -533,7 +528,8 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 		log.Error(err, "Error while attempting cluster upgrade")
 		return ctrl.Result{}, nil
 	}
-	crunchybridgecluster.Status.ClusterUpgrade = clusterUpgrade
+	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
+
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 
@@ -560,7 +556,8 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 		log.Error(err, "Error while attempting cluster HA change")
 		return ctrl.Result{}, nil
 	}
-	crunchybridgecluster.Status.ClusterUpgrade = clusterUpgrade
+	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
+
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 

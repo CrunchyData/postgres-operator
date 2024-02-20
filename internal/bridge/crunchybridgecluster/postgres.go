@@ -34,7 +34,7 @@ import (
 // connection details for the appropriate database.
 func (r *CrunchyBridgeClusterReconciler) generatePostgresRoleSecret(
 	cluster *v1beta1.CrunchyBridgeCluster, roleSpec *v1beta1.CrunchyBridgeClusterRoleSpec,
-	clusterRole *bridge.ClusterRole,
+	clusterRole *bridge.ClusterRoleApiResource,
 ) (*corev1.Secret, error) {
 	roleName := roleSpec.Name
 	secretName := roleSpec.SecretName
@@ -69,23 +69,17 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoles(
 	ctx context.Context, apiKey string, cluster *v1beta1.CrunchyBridgeCluster,
 ) error {
 	_, _, err := r.reconcilePostgresRoleSecrets(ctx, apiKey, cluster)
-	// if err == nil {
-	// 	err = r.reconcilePostgresUsersInPostgreSQL(ctx, cluster, instances, users, secrets)
-	// }
-	// if err == nil {
-	// 	// Copy PostgreSQL users and passwords into pgAdmin. This is here because
-	// 	// reconcilePostgresRoleSecrets is building a (default) PostgresUserSpec
-	// 	// that is not in the PostgresClusterSpec. The freshly generated Secrets
-	// 	// are available here, too.
-	// 	err = r.reconcilePGAdminUsers(ctx, cluster, users, secrets)
-	// }
+
+	// TODO: If we ever add a PgAdmin feature to CrunchyBridgeCluster, we will
+	// want to add the role credentials to PgAdmin here
+
 	return err
 }
 
 func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 	ctx context.Context, apiKey string, cluster *v1beta1.CrunchyBridgeCluster,
 ) (
-	[]v1beta1.CrunchyBridgeClusterRoleSpec, map[string]*corev1.Secret, error,
+	[]*v1beta1.CrunchyBridgeClusterRoleSpec, map[string]*corev1.Secret, error,
 ) {
 	log := ctrl.LoggerFrom(ctx)
 	specRoles := cluster.Spec.Roles
@@ -93,7 +87,7 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 	// Index role specifications by PostgreSQL role name.
 	roleSpecs := make(map[string]*v1beta1.CrunchyBridgeClusterRoleSpec, len(specRoles))
 	for i := range specRoles {
-		roleSpecs[string(specRoles[i].Name)] = &specRoles[i]
+		roleSpecs[specRoles[i].Name] = specRoles[i]
 	}
 
 	// Gather existing role secrets

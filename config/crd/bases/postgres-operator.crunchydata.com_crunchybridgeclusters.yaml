@@ -103,17 +103,13 @@ spec:
                 items:
                   properties:
                     name:
-                      description: 'The name of this PostgreSQL role. The value may
-                        contain only lowercase letters, numbers, and hyphen so that
-                        it fits into Kubernetes metadata. The above is problematic
-                        for us as Bridge has a role with an underscore. TODO: figure
-                        out underscore dilemma'
-                      pattern: ^[A-Za-z][A-Za-z0-9\-_ ]*[A-Za-z0-9]$
+                      description: 'Name of the role within Crunchy Bridge. More info:
+                        https://docs.crunchybridge.com/concepts/users'
                       type: string
                     secretName:
                       description: The name of the Secret that will hold the role
                         credentials.
-                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                   required:
                   - name
@@ -151,57 +147,8 @@ spec:
             description: CrunchyBridgeClusterStatus defines the observed state of
               CrunchyBridgeCluster
             properties:
-              clusterStatus:
-                description: The cluster as represented by Bridge
-                properties:
-                  id:
-                    type: string
-                  isHa:
-                    type: boolean
-                  majorVersion:
-                    type: integer
-                  name:
-                    type: string
-                  planId:
-                    type: string
-                  postgresVersionId:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    x-kubernetes-int-or-string: true
-                  providerId:
-                    type: string
-                  regionId:
-                    type: string
-                  state:
-                    type: string
-                  storage:
-                    format: int64
-                    type: integer
-                  teamId:
-                    type: string
-                type: object
-              clusterUpgradeResponse:
-                description: The cluster upgrade as represented by Bridge
-                properties:
-                  operations:
-                    items:
-                      properties:
-                        flavor:
-                          type: string
-                        starting_from:
-                          type: string
-                        state:
-                          type: string
-                      required:
-                      - flavor
-                      - starting_from
-                      - state
-                      type: object
-                    type: array
-                type: object
               conditions:
-                description: conditions represent the observations of postgrescluster's
+                description: conditions represent the observations of postgres cluster's
                   current state.
                 items:
                   description: "Condition contains details for one aspect of the current
@@ -273,15 +220,65 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              host:
+                description: The Hostname of the postgres cluster in Bridge, provided
+                  by Bridge API and null until then.
+                type: string
               id:
-                description: The ID of the postgrescluster in Bridge, provided by
+                description: The ID of the postgres cluster in Bridge, provided by
                   Bridge API and null until then.
+                type: string
+              isHa:
+                description: Whether the cluster is high availability, meaning that
+                  it has a secondary it can fail over to quickly in case the primary
+                  becomes unavailable.
+                type: boolean
+              isProtected:
+                description: Whether the cluster is protected. Protected clusters
+                  can't be destroyed until their protected flag is removed
+                type: boolean
+              majorVersion:
+                description: The cluster's major Postgres version.
+                type: integer
+              name:
+                description: The name of the cluster in Bridge.
                 type: string
               observedGeneration:
                 description: observedGeneration represents the .metadata.generation
                   on which the status was based.
                 format: int64
                 minimum: 0
+                type: integer
+              ongoingUpgrade:
+                description: The cluster upgrade as represented by Bridge
+                items:
+                  properties:
+                    flavor:
+                      type: string
+                    starting_from:
+                      type: string
+                    state:
+                      type: string
+                  required:
+                  - flavor
+                  - starting_from
+                  - state
+                  type: object
+                type: array
+              planId:
+                description: The ID of the cluster's plan. Determines instance, CPU,
+                  and memory.
+                type: string
+              responses:
+                description: Most recent, raw responses from Bridge API
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              state:
+                description: State of cluster in Bridge.
+                type: string
+              storage:
+                description: The amount of storage available to the cluster in gigabytes.
+                format: int64
                 type: integer
             type: object
         type: object
