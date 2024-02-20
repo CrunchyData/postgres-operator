@@ -54,7 +54,7 @@ func (r *Reconciler) reconcilePGMonitor(ctx context.Context,
 // Status.Monitoring.ExporterConfiguration is used to determine when the
 // pgMonitor postgres_exporter configuration should be added/changed to
 // limit how often PodExec is used
-// - TODO jmckulk: kube perms comment?
+// - TODO (jmckulk): kube perms comment?
 func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, instances *observedInstances,
 	monitoringSecret *corev1.Secret) error {
@@ -251,7 +251,7 @@ func addPGMonitorToInstancePodSpec(
 
 // addPGMonitorExporterToInstancePodSpec performs the necessary setup to
 // add pgMonitor exporter resources to a PodTemplateSpec
-// TODO jmckulk: refactor to pass around monitoring secret; Without the secret
+// TODO (jmckulk): refactor to pass around monitoring secret; Without the secret
 // the exporter container cannot be created; Testing relies on ensuring the
 // monitoring secret is available
 func addPGMonitorExporterToInstancePodSpec(
