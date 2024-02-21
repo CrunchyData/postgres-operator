@@ -65,12 +65,12 @@ clean: ## Clean resources
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f config/rbac/role.yaml
+	rm -rf licenses/*/
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	rm -rf build/crd/generated build/crd/*/generated
-	[ ! -f hack/tools/setup-envtest ] || hack/tools/setup-envtest --bin-dir=hack/tools/envtest cleanup
 	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
-	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
+	[ ! -d hack/tools/envtest ] || { chmod -R u+w hack/tools/envtest && rm -r hack/tools/envtest; }
 	[ ! -d hack/tools/pgmonitor ] || rm -rf hack/tools/pgmonitor
 	[ ! -n "$$(ls hack/tools)" ] || rm -r hack/tools/*
 	[ ! -d hack/.kube ] || rm -r hack/.kube

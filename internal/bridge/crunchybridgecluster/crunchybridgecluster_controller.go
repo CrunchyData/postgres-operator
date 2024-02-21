@@ -17,6 +17,7 @@ package crunchybridgecluster
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -38,6 +39,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	pgoRuntime "github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -327,10 +329,38 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		}
 
 		for _, cluster := range clusters {
-			if crunchybridgecluster.Name == cluster.Name {
-				crunchybridgecluster.Status.ID = cluster.ID
-				// Requeue now that we have a cluster ID assigned
-				return ctrl.Result{Requeue: true}, nil
+			if crunchybridgecluster.Spec.ClusterName == cluster.Name {
+				// Cluster with the same name exists so check for adoption annotation
+				adoptionID, annotationExists := crunchybridgecluster.Annotations[naming.CrunchyBridgeClusterAdoptionAnnotation]
+				if annotationExists && strings.EqualFold(adoptionID, cluster.ID) {
+					// Annotation is present with correct ID value; adopt cluster by assigning ID to status.
+					crunchybridgecluster.Status.ID = cluster.ID
+					// Requeue now that we have a cluster ID assigned
+					return ctrl.Result{Requeue: true}, nil
+				}
+
+				// If we made it here, the adoption annotation either doesn't exist or its value is incorrect.
+				// The user must either add it or change the name on the CR.
+
+				// Set invalid status condition and create log message.
+				meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+					ObservedGeneration: crunchybridgecluster.GetGeneration(),
+					Type:               v1beta1.ConditionCreating,
+					Status:             metav1.ConditionFalse,
+					Reason:             "ClusterInvalid",
+					Message: fmt.Sprintf("A cluster with the same name already exists for this team (Team ID: %v). "+
+						"Give the CrunchyBridgeCluster CR a unique name, or if you would like to take control of the "+
+						"existing cluster, add the 'postgres-operator.crunchydata.com/adopt-bridge-cluster' "+
+						"annotation and set its value to the existing cluster's ID (Cluster ID: %v).", team, cluster.ID),
+				})
+
+				log.Info(fmt.Sprintf("A cluster with the same name already exists for this team (Team ID: %v). "+
+					"Give the CrunchyBridgeCluster CR a unique name, or if you would like to take control "+
+					"of the existing cluster, add the 'postgres-operator.crunchydata.com/adopt-bridge-cluster' "+
+					"annotation and set its value to the existing cluster's ID (Cluster ID: %v).", team, cluster.ID))
+
+				// We have an invalid cluster spec so we don't want to requeue
+				return ctrl.Result{}, nil
 			}
 		}
 
@@ -376,12 +406,28 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// If we reach this point, our CrunchyBridgeCluster object has an ID
 	// so we want to fill in the details for the cluster and cluster upgrades from the Bridge API
 	// Consider cluster details as a separate func.
+
 	clusterDetails, err := r.NewClient().GetCluster(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
 		log.Error(err, "whoops, cluster getting issue")
 		return ctrl.Result{}, err
 	}
-	crunchybridgecluster.Status.Cluster = clusterDetails
+
+	clusterStatus := &v1beta1.ClusterStatus{
+		ID:              clusterDetails.ID,
+		IsHA:            clusterDetails.IsHA,
+		Name:            clusterDetails.Name,
+		Plan:            clusterDetails.Plan,
+		MajorVersion:    clusterDetails.MajorVersion,
+		PostgresVersion: clusterDetails.PostgresVersion,
+		Provider:        clusterDetails.Provider,
+		Region:          clusterDetails.Region,
+		Storage:         clusterDetails.Storage,
+		Team:            clusterDetails.Team,
+		State:           clusterDetails.State,
+	}
+
+	crunchybridgecluster.Status.Cluster = clusterStatus
 
 	clusterUpgradeDetails, err := r.NewClient().GetClusterUpgrade(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
