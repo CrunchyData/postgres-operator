@@ -12,7 +12,8 @@ spec:
         file: files/00-pgadmin.yaml
     - assert:
         file: files/00-pgadmin-check.yaml
-  - catch:
+  - name: step-01
+    try:
     - script:
         content: |
           contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
@@ -28,8 +29,6 @@ spec:
             echo "Wrong servers dumped: got ${clusters_actual}"
             exit 1
           }
-    name: step-01
-    try: null
   - name: step-02
     try:
     - apply:
@@ -38,7 +37,8 @@ spec:
         file: files/02-pgadmin.yaml
     - assert:
         file: files/02-cluster-check.yaml
-  - catch:
+  - name: step-03
+    try:
     - script:
         content: |
           contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
@@ -107,15 +107,14 @@ spec:
             diff_comp "${clusters_actual}" "${clusters_expected}"
             exit 1
           }
-    name: step-03
-    try: null
   - name: step-04
     try:
     - apply:
         file: files/04-cluster.yaml
     - assert:
         file: files/04-cluster-check.yaml
-  - catch:
+  - name: step-05
+    try:
     - script:
         content: |
           contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
@@ -209,8 +208,6 @@ spec:
             diff_comp "${clusters_actual}" "${clusters_expected}"
             exit 1
           }
-    name: step-05
-    try: null
   - name: step-06
     try:
     - apply:
@@ -219,7 +216,8 @@ spec:
         file: files/06-pgadmin.yaml
     - assert:
         file: files/06-cluster-check.yaml
-  - catch:
+  - name: step-07
+    try:
     - script:
         content: |
           contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
@@ -336,8 +334,6 @@ spec:
             diff_comp "${clusters_actual}" "${clusters_expected}"
             exit 1
           }
-    name: step-07
-    try: null
   - name: step-08
     try:
     - error:
@@ -347,7 +343,8 @@ spec:
           apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           name: pgadmin2
-  - catch:
+  - name: step-09
+    try:
     - script:
         content: |
           contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
@@ -441,5 +438,3 @@ spec:
             diff_comp "${clusters_actual}" "${clusters_expected}"
             exit 1
           }
-    name: step-09
-    try: null

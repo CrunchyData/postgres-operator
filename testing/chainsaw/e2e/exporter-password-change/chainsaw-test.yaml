@@ -8,6 +8,14 @@ spec:
   steps:
   - catch:
     - script:
+        content: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=exporter-password-change,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true
+    name: step-00
+    try:
+    - apply:
+        file: files/initial-postgrescluster.yaml
+    - assert:
+        file: files/initial-postgrescluster-checks.yaml
+    - script:
         content: |
           retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
           check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
@@ -23,15 +31,12 @@ spec:
             retry "containers not ready"
             exit 1
           }
-    - script:
-        content: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=exporter-password-change,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true
-    name: step-00
-    try:
-    - apply:
-        file: files/initial-postgrescluster.yaml
-    - assert:
-        file: files/initial-postgrescluster-checks.yaml
   - catch:
+    - podLogs:
+        container: exporter
+        selector: postgres-operator.crunchydata.com/cluster=exporter-password-change,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true
+    name: step-01
+    try:
     - script:
         content: |
           retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
@@ -51,12 +56,12 @@ spec:
 
           pid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
           kubectl annotate --overwrite -n ${NAMESPACE} ${pod} oldpid=${pid}
-    - podLogs:
-        container: exporter
-        selector: postgres-operator.crunchydata.com/cluster=exporter-password-change,postgres-operator.crunchydata.com/crunchy-postgres-exporter=true
-    name: step-01
-    try: null
-  - catch:
+  - name: step-02
+    try:
+    - apply:
+        file: files/update-monitoring-password.yaml
+    - assert:
+        file: files/update-monitoring-password-checks.yaml
     - script:
         content: |
           retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
@@ -84,9 +89,3 @@ spec:
             retry "${scrape_metrics}"
             exit 1
           }
-    name: step-02
-    try:
-    - apply:
-        file: files/update-monitoring-password.yaml
-    - assert:
-        file: files/update-monitoring-password-checks.yaml

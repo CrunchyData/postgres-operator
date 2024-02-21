@@ -6,7 +6,12 @@ metadata:
   name: exporter-no-tls
 spec:
   steps:
-  - catch:
+  - name: step-00
+    try:
+    - apply:
+        file: files/exporter-no-tls-cluster.yaml
+    - assert:
+        file: files/exporter-no-tls-cluster-checks.yaml
     - script:
         content: |
           retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
@@ -48,9 +53,3 @@ spec:
               ASSERT FOUND, 'user not found';
             END $$
           SQL
-    name: step-00
-    try:
-    - apply:
-        file: files/exporter-no-tls-cluster.yaml
-    - assert:
-        file: files/exporter-no-tls-cluster-checks.yaml

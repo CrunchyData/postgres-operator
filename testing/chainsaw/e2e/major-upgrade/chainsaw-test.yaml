@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: major-upgrade
+spec:
+  steps:
+  - name: step-01
+    try:
+    - apply:
+        file: 01--invalid-pgupgrade.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-02
+    try:
+    - apply:
+        file: 02--valid-upgrade.yaml
+    - assert:
+        file: 02-assert.yaml
+  - name: step-10
+    try:
+    - apply:
+        file: 10--already-updated-cluster.yaml
+    - assert:
+        file: 10-assert.yaml
+  - name: step-11
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: major-upgrade
+  - name: step-30
+    try:
+    - apply:
+        file: 30--cluster.yaml
+    - assert:
+        file: 30-assert.yaml
+  - name: step-31
+    try:
+    - apply:
+        file: 31--create-data.yaml
+    - assert:
+        file: 31-assert.yaml
+  - name: step-32
+    try:
+    - apply:
+        file: 32--shutdown-cluster.yaml
+    - assert:
+        file: 32-assert.yaml
+  - name: step-33
+    try:
+    - apply:
+        file: 33--annotate-cluster.yaml
+    - assert:
+        file: 33-assert.yaml
+  - name: step-34
+    try:
+    - apply:
+        file: 34--restart-cluster.yaml
+    - assert:
+        file: 34-assert.yaml
+  - name: step-35
+    try:
+    - script:
+        content: |
+          kubectl -n "${NAMESPACE}" exec "statefulset.apps/major-upgrade-repo-host" -c pgbackrest -- pgbackrest check --stanza=db
+    - script:
+        content: |
+          # Check that the old pg folders do not exist on the replica
+          REPLICA=$(kubectl get pod -l=postgres-operator.crunchydata.com/role=replica -n "${NAMESPACE}" -o=jsonpath='{ .items[0].metadata.name }')
+          kubectl -n "${NAMESPACE}" exec "${REPLICA}" -c database -- [ ! -d "pgdata/pg${KUTTL_PG_UPGRADE_FROM_VERSION}" ]
+  - name: step-36
+    try:
+    - apply:
+        file: 36--check-data-and-version.yaml
+    - assert:
+        file: 36-assert.yaml
