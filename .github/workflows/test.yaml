@@ -240,13 +240,13 @@ jobs:
       - name: Install chainsaw
         uses: kyverno/action-install-chainsaw@v0.1.6
 
-      # - run: make generate-kuttl
-      #   env:
-      #     KUTTL_PG_UPGRADE_FROM_VERSION: '15'
-      #     KUTTL_PG_UPGRADE_TO_VERSION: '16'
-      #     KUTTL_PG_VERSION: '15'
-      #     KUTTL_POSTGIS_VERSION: '3.4'
-      #     KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0'
+      - run: make generate-chainsaw
+        env:
+          CHAINSAW_PG_UPGRADE_FROM_VERSION: '15'
+          CHAINSAW_PG_UPGRADE_TO_VERSION: '16'
+          CHAINSAW_PG_VERSION: '15'
+          CHAINSAW_POSTGIS_VERSION: '3.4'
+          CHAINSAW_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0'
 
       - run: |
           make check-chainsaw && exit
