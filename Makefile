@@ -258,28 +258,28 @@ generate-kuttl: ## Generate kuttl tests
 	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e-other/*/*.yaml testing/kuttl/e2e/*/*/*.yaml testing/kuttl/e2e-other/*/*/*.yaml
 
 .PHONY: generate-chainsaw
-generate-chainsaw: export CHAINSAW_PG_UPGRADE_FROM_VERSION ?= 15
-generate-chainsaw: export CHAINSAW_PG_UPGRADE_TO_VERSION ?= 16
-generate-chainsaw: export CHAINSAW_PG_VERSION ?= 16
-generate-chainsaw: export CHAINSAW_POSTGIS_VERSION ?= 3.4
-generate-chainsaw: export CHAINSAW_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0
-generate-chainsaw: export CHAINSAW_TEST_DELETE_NAMESPACE ?= chainsaw-test-delete-namespace
+generate-chainsaw: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 15
+generate-chainsaw: export KUTTL_PG_UPGRADE_TO_VERSION ?= 16
+generate-chainsaw: export KUTTL_PG_VERSION ?= 16
+generate-chainsaw: export KUTTL_POSTGIS_VERSION ?= 3.4
+generate-chainsaw: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0
+generate-chainsaw: export KUTTL_TEST_DELETE_NAMESPACE ?= chainsaw-test-delete-namespace
 generate-chainsaw: ## Generate chainsaw tests
 	[ ! -d testing/chainsaw/e2e-generated ] || rm -r testing/chainsaw/e2e-generated
 	[ ! -d testing/chainsaw/e2e-generated-other ] || rm -r testing/chainsaw/e2e-generated-other
 	bash -ceu ' \
-	case $(CHAINSAW_PG_VERSION) in \
-	16 ) export CHAINSAW_BITNAMI_IMAGE_TAG=16.0.0-debian-11-r3 ;; \
-	15 ) export CHAINSAW_BITNAMI_IMAGE_TAG=15.0.0-debian-11-r4 ;; \
-	14 ) export CHAINSAW_BITNAMI_IMAGE_TAG=14.5.0-debian-11-r37 ;; \
-	13 ) export CHAINSAW_BITNAMI_IMAGE_TAG=13.8.0-debian-11-r39 ;; \
-	12 ) export CHAINSAW_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
-	11 ) export CHAINSAW_BITNAMI_IMAGE_TAG=11.17.0-debian-11-r39 ;; \
+	case $(KUTTL_PG_VERSION) in \
+	16 ) export KUTTL_BITNAMI_IMAGE_TAG=16.0.0-debian-11-r3 ;; \
+	15 ) export KUTTL_BITNAMI_IMAGE_TAG=15.0.0-debian-11-r4 ;; \
+	14 ) export KUTTL_BITNAMI_IMAGE_TAG=14.5.0-debian-11-r37 ;; \
+	13 ) export KUTTL_BITNAMI_IMAGE_TAG=13.8.0-debian-11-r39 ;; \
+	12 ) export KUTTL_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
+	11 ) export KUTTL_BITNAMI_IMAGE_TAG=11.17.0-debian-11-r39 ;; \
 	esac; \
 	render() { envsubst '"'"' \
-		$$CHAINSAW_PG_UPGRADE_FROM_VERSION $$CHAINSAW_PG_UPGRADE_TO_VERSION \
-		$$CHAINSAW_PG_VERSION $$CHAINSAW_POSTGIS_VERSION $$CHAINSAW_PSQL_IMAGE \
-		$$CHAINSAW_BITNAMI_IMAGE_TAG $$CHAINSAW_TEST_DELETE_NAMESPACE'"'"'; }; \
+		$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION \
+		$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE \
+		$$KUTTL_BITNAMI_IMAGE_TAG $$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \
 	while [ $$# -gt 0 ]; do \
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
