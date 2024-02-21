@@ -238,7 +238,7 @@ jobs:
             postgres-operator
 
       - name: Install chainsaw
-        uses: kyverno/action-install-chainsaw@07b6c986572f2abaf6647c85d37cbecfddc4a6ab # v0.1.3
+        uses: kyverno/action-install-chainsaw@v0.1.6
 
       # - run: make generate-kuttl
       #   env:
