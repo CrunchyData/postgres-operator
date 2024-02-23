@@ -148,13 +148,11 @@ func ClusterPrimary(cluster string) metav1.LabelSelector {
 
 // CrunchyBridgeClusterPostgresRoles selects things labeled for CrunchyBridgeCluster
 // PostgreSQL roles in cluster.
-func CrunchyBridgeClusterPostgresRoles(cluster string) metav1.LabelSelector {
+func CrunchyBridgeClusterPostgresRoles(clusterName string) metav1.LabelSelector {
 	return metav1.LabelSelector{
 		MatchLabels: map[string]string{
-			LabelCluster: cluster,
-		},
-		MatchExpressions: []metav1.LabelSelectorRequirement{
-			{Key: LabelCrunchyBridgeClusterPostgresRole, Operator: metav1.LabelSelectorOpExists},
+			LabelCluster: clusterName,
+			LabelRole:    RoleCrunchyBridgeClusterPostgresRole,
 		},
 	}
 }

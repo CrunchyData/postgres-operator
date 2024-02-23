@@ -16,6 +16,7 @@ package crunchybridgecluster
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -84,10 +85,40 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 	log := ctrl.LoggerFrom(ctx)
 	specRoles := cluster.Spec.Roles
 
-	// Index role specifications by PostgreSQL role name.
+	// Index role specifications by PostgreSQL role name and make sure that none of the
+	// secretNames are identical in the spec
+	secretNames := make(map[string]bool)
 	roleSpecs := make(map[string]*v1beta1.CrunchyBridgeClusterRoleSpec, len(specRoles))
 	for i := range specRoles {
+		if secretNames[specRoles[i].SecretName] {
+			// Duplicate secretName found, return early with error
+			err := errors.New("There are duplicate Role SecretNames in the spec. SecretNames must be unique.")
+			return nil, nil, err
+		}
+		secretNames[specRoles[i].SecretName] = true
+
 		roleSpecs[specRoles[i].Name] = specRoles[i]
+	}
+
+	// Make sure that this cluster's role secret names are not being used by any other
+	// secrets in the namespace
+	allSecretsInNamespace := &corev1.SecretList{}
+	err := errors.WithStack(r.Client.List(ctx, allSecretsInNamespace, client.InNamespace(cluster.Namespace)))
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, secret := range allSecretsInNamespace.Items {
+		if secretNames[secret.Name] {
+			existingSecretLabels := secret.GetLabels()
+			if existingSecretLabels[naming.LabelCluster] != cluster.Name ||
+				existingSecretLabels[naming.LabelRole] != naming.RoleCrunchyBridgeClusterPostgresRole {
+				err = errors.New(
+					fmt.Sprintf("There is already an existing Secret in this namespace with the name %v. "+
+						"Please choose a different name for this role's Secret.", secret.Name),
+				)
+				return nil, nil, err
+			}
+		}
 	}
 
 	// Gather existing role secrets
@@ -125,7 +156,7 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 		// If issue with getting ClusterRole, log error and move on to next role
 		if err != nil {
 			// TODO (dsessler7): Emit event here?
-			log.Error(err, "whoops, issue retrieving cluster role")
+			log.Error(err, "issue retrieving cluster role from Bridge")
 			continue
 		}
 		if err == nil {
