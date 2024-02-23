@@ -73,11 +73,11 @@ spec:
                       type: string
                     type: object
                 type: object
-              planId:
+              plan:
                 description: The ID of the cluster's plan. Determines instance, CPU,
                   and memory.
                 type: string
-              providerId:
+              provider:
                 description: The cloud provider where the cluster is located. Currently
                   Bridge offers aws, azure, and gcp only
                 enum:
@@ -88,7 +88,7 @@ spec:
                 x-kubernetes-validations:
                 - message: immutable
                   rule: self == oldSelf
-              regionId:
+              region:
                 description: The provider region where the cluster is located.
                 type: string
                 x-kubernetes-validations:
@@ -109,6 +109,7 @@ spec:
                     secretName:
                       description: The name of the Secret that will hold the role
                         credentials.
+                      maxLength: 253
                       pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                       type: string
                   required:
@@ -138,9 +139,9 @@ spec:
             - clusterName
             - isHa
             - majorVersion
-            - planId
-            - providerId
-            - regionId
+            - plan
+            - provider
+            - region
             - storage
             type: object
           status:
@@ -265,7 +266,7 @@ spec:
                   - state
                   type: object
                 type: array
-              planId:
+              plan:
                 description: The ID of the cluster's plan. Determines instance, CPU,
                   and memory.
                 type: string

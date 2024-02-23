@@ -45,7 +45,7 @@ type CrunchyBridgeClusterSpec struct {
 
 	// The ID of the cluster's plan. Determines instance, CPU, and memory.
 	// +kubebuilder:validation:Required
-	Plan string `json:"planId"`
+	Plan string `json:"plan"`
 
 	// The ID of the cluster's major Postgres version.
 	// Currently Bridge offers 13-16
@@ -59,11 +59,11 @@ type CrunchyBridgeClusterSpec struct {
 	// Currently Bridge offers aws, azure, and gcp only
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum={aws,azure,gcp}
-	Provider string `json:"providerId"`
+	Provider string `json:"provider"`
 
 	// The provider region where the cluster is located.
 	// +kubebuilder:validation:Required
-	Region string `json:"regionId"`
+	Region string `json:"region"`
 
 	// Roles for which to create Secrets that contain their credentials which
 	// are retrieved from the Bridge API. An empty list creates no role secrets.
@@ -94,6 +94,7 @@ type CrunchyBridgeClusterRoleSpec struct {
 
 	// The name of the Secret that will hold the role credentials.
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Type=string
 	SecretName string `json:"secretName"`
 }
@@ -122,12 +123,12 @@ type CrunchyBridgeClusterStatus struct {
 	// Whether the cluster is high availability, meaning that it has a secondary it can fail
 	// over to quickly in case the primary becomes unavailable.
 	// +optional
-	IsHA bool `json:"isHa"`
+	IsHA *bool `json:"isHa"`
 
 	// Whether the cluster is protected. Protected clusters can't be destroyed until
 	// their protected flag is removed
 	// +optional
-	IsProtected bool `json:"isProtected,omitempty"`
+	IsProtected *bool `json:"isProtected"`
 
 	// The cluster's major Postgres version.
 	// +optional
@@ -144,7 +145,7 @@ type CrunchyBridgeClusterStatus struct {
 
 	// The ID of the cluster's plan. Determines instance, CPU, and memory.
 	// +optional
-	Plan string `json:"planId"`
+	Plan string `json:"plan"`
 
 	// Most recent, raw responses from Bridge API
 	// +optional

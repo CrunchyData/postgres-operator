@@ -58,9 +58,9 @@ type ClusterApiResource struct {
 	DiskUsage              *ClusterDiskUsageApiResource `json:"disk_usage,omitempty"`
 	Environment            string                       `json:"environment,omitempty"`
 	Host                   string                       `json:"host,omitempty"`
-	IsHA                   bool                         `json:"is_ha,omitempty"`
-	IsProtected            bool                         `json:"is_protected,omitempty"`
-	IsSuspended            bool                         `json:"is_suspended,omitempty"`
+	IsHA                   *bool                        `json:"is_ha,omitempty"`
+	IsProtected            *bool                        `json:"is_protected,omitempty"`
+	IsSuspended            *bool                        `json:"is_suspended,omitempty"`
 	Keychain               string                       `json:"keychain_id,omitempty"`
 	MaintenanceWindowStart int64                        `json:"maintenance_window_start,omitempty"`
 	MajorVersion           int                          `json:"major_version,omitempty"`
@@ -74,7 +74,7 @@ type ClusterApiResource struct {
 	Region                 string                       `json:"region_id,omitempty"`
 	Replicas               []*ClusterApiResource        `json:"replicas,omitempty"`
 	Storage                int64                        `json:"storage,omitempty"`
-	Tailscale              bool                         `json:"tailscale_active,omitempty"`
+	Tailscale              *bool                        `json:"tailscale_active,omitempty"`
 	Team                   string                       `json:"team_id,omitempty"`
 	LastUpdate             string                       `json:"updated_at,omitempty"`
 	ResponsePayload        v1beta1.SchemalessObject     `json:""`
@@ -185,12 +185,13 @@ type PostClustersUpgradeRequestPayload struct {
 }
 
 // PutClustersUpgradeRequestPayload is used for updating an ongoing or scheduled upgrade.
+// TODO: Implement the ability to update an upgrade (this isn't currently being used)
 type PutClustersUpgradeRequestPayload struct {
 	Plan                 string             `json:"plan_id,omitempty"`
 	PostgresVersion      intstr.IntOrString `json:"postgres_version_id,omitempty"`
 	UpgradeStartTime     string             `json:"starting_from,omitempty"`
 	Storage              int64              `json:"storage,omitempty"`
-	UseMaintenanceWindow bool               `json:"use_cluster_maintenance_window,omitempty"`
+	UseMaintenanceWindow *bool              `json:"use_cluster_maintenance_window,omitempty"`
 }
 
 // ClusterRoleApiResource is used for retrieving details on ClusterRole from the Bridge API

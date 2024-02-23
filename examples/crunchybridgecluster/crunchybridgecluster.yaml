@@ -5,9 +5,9 @@ metadata:
 spec:
   isHa: false
   clusterName: sigil
-  planId: standard-8
+  plan: standard-8
   majorVersion: 15
-  providerId: aws
-  regionId: us-east-2
+  provider: aws
+  region: us-east-2
   secret: crunchy-bridge-api-key
   storage: 10G

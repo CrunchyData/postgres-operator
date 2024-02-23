@@ -43,8 +43,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-const finalizer = "crunchybridgecluster.postgres-operator.crunchydata.com/finalizer"
-
 // CrunchyBridgeClusterReconciler reconciles a CrunchyBridgeCluster object
 type CrunchyBridgeClusterReconciler struct {
 	client.Client
@@ -91,7 +89,7 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 // creator of such a reference have either "delete" permission on the owner or
 // "update" permission on the owner's "finalizers" subresource.
 // - https://docs.k8s.io/reference/access-authn-authz/admission-controllers/
-// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades/finalizers",verbs={update}
+// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters/finalizers",verbs={update}
 
 // setControllerReference sets owner as a Controller OwnerReference on controlled.
 // Only one OwnerReference can be a controller, so it returns an error if another
@@ -226,83 +224,40 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// START SECRET HANDLING -- SPIN OFF INTO ITS OWN FUNC?
-
-	// Get and validate secret for req
-	key, team, err := r.GetSecretKeys(ctx, crunchybridgecluster)
+	// Get and validate connection secret for requests
+	key, team, err := r.reconcileBridgeConnectionSecret(ctx, crunchybridgecluster)
 	if err != nil {
-		log.Error(err, "whoops, secret issue")
+		log.Error(err, "issue reconciling bridge connection secret")
 
-		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
-			ObservedGeneration: crunchybridgecluster.GetGeneration(),
-			Type:               v1beta1.ConditionCreating,
-			Status:             metav1.ConditionFalse,
-			Reason:             "SecretInvalid",
-			Message: fmt.Sprintf(
-				"Cannot create with bad secret: %v", "TODO(crunchybridgecluster)"),
-		})
-
-		// Don't automatically requeue Secret issues
-		// We are watching for related secrets,
-		// so will requeue when a related secret is touched
+		// Don't automatically requeue Secret issues. We are watching for
+		// related secrets, so will requeue when a related secret is touched.
 		// lint:ignore nilerr Return err as status, no requeue needed
 		return ctrl.Result{}, nil
 	}
 
-	// Remove SecretInvalid condition if found
-	invalid := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
-		v1beta1.ConditionCreating)
-	if invalid != nil && invalid.Status == metav1.ConditionFalse && invalid.Reason == "SecretInvalid" {
-		meta.RemoveStatusCondition(&crunchybridgecluster.Status.Conditions,
-			v1beta1.ConditionCreating)
-	}
-
-	// END SECRET HANDLING
-
-	// If the CrunchyBridgeCluster isn't being deleted, add the finalizer
-	if crunchybridgecluster.ObjectMeta.DeletionTimestamp.IsZero() {
-		if !controllerutil.ContainsFinalizer(crunchybridgecluster, finalizer) {
-			controllerutil.AddFinalizer(crunchybridgecluster, finalizer)
-			if err := r.Update(ctx, crunchybridgecluster); err != nil {
-				return ctrl.Result{}, err
+	// Check for and handle deletion of cluster. Return early if it is being
+	// deleted or there was an error. Make sure finalizer is added if cluster
+	// is not being deleted.
+	if result, err := r.handleDelete(ctx, crunchybridgecluster, key); err != nil {
+		log.Error(err, "deleting")
+		return ctrl.Result{}, err
+	} else if result != nil {
+		if log := log.V(1); log.Enabled() {
+			if result.RequeueAfter > 0 {
+				// RequeueAfter implies Requeue, but set both to make the next
+				// log message more clear.
+				result.Requeue = true
 			}
+			log.Info("deleting", "result", fmt.Sprintf("%+v", *result))
 		}
-		// If the CrunchyBridgeCluster is being deleted,
-		// handle the deletion, and remove the finalizer
-	} else {
-		if controllerutil.ContainsFinalizer(crunchybridgecluster, finalizer) {
-			log.Info("deleting cluster", "clusterName", crunchybridgecluster.Spec.ClusterName)
-
-			// TODO(crunchybridgecluster): If is_protected is true, maybe skip this call, but allow the deletion of the K8s object?
-			_, deletedAlready, err := r.NewClient().DeleteCluster(ctx, key, crunchybridgecluster.Status.ID)
-			// Requeue if error
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-
-			if !deletedAlready {
-				return ctrl.Result{RequeueAfter: 1 * time.Second}, err
-			}
-
-			// Remove finalizer if deleted already
-			if deletedAlready {
-				log.Info("cluster deleted", "clusterName", crunchybridgecluster.Spec.ClusterName)
-
-				controllerutil.RemoveFinalizer(crunchybridgecluster, finalizer)
-				if err := r.Update(ctx, crunchybridgecluster); err != nil {
-					return ctrl.Result{}, err
-				}
-			}
-		}
-		// Stop reconciliation as the item is being deleted
-		return ctrl.Result{}, nil
+		return *result, err
 	}
 
 	// Wonder if there's a better way to handle adding/checking/removing statuses
 	// We did something in the upgrade controller
 	// Exit early if we can't create from this K8s object
 	// unless this K8s object has been changed (compare ObservedGeneration)
-	invalid = meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
+	invalid := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
 		v1beta1.ConditionCreating)
 	if invalid != nil &&
 		invalid.Status == metav1.ConditionFalse &&
@@ -321,7 +276,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 
 	storageVal, err := handleStorage(crunchybridgecluster.Spec.Storage)
 	if err != nil {
-		log.Error(err, "whoops, storage issue")
+		log.Error(err, "issue handling storage value")
 		// TODO(crunchybridgecluster)
 		// lint:ignore nilerr no requeue needed
 		return ctrl.Result{}, nil
@@ -330,18 +285,10 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// We should only be missing the ID if no create has been issued
 	// or the create was interrupted and we haven't received the ID.
 	if crunchybridgecluster.Status.ID == "" {
-		// START FIND
-
-		// TODO(crunchybridgecluster) If the CreateCluster response was interrupted, we won't have the ID
-		// so we can get by name
-		// BUT if we do that, there's a chance for the K8s object to grab a preexisting Bridge cluster
-		// which means there's a chance to delete a Bridge cluster through K8s actions
-		// even though that cluster didn't originate from K8s.
-
 		// Check if the cluster exists
 		clusters, err := r.NewClient().ListClusters(ctx, key, team)
 		if err != nil {
-			log.Error(err, "whoops, cluster listing issue")
+			log.Error(err, "issue listing existing clusters in Bridge")
 			return ctrl.Result{}, err
 		}
 
@@ -381,12 +328,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			}
 		}
 
-		// END FIND
-
 		// if we've gotten here then no cluster exists with that name and we're missing the ID, ergo, create cluster
-
-		// TODO(crunchybridgecluster) Can almost just use the crunchybridgecluster.Spec... except for the team,
-		// which we don't want users to set on the spec. Do we?
 		createClusterRequestPayload := &bridge.PostClustersRequestPayload{
 			IsHA:            crunchybridgecluster.Spec.IsHA,
 			Name:            crunchybridgecluster.Spec.ClusterName,
@@ -399,7 +341,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		}
 		cluster, err := r.NewClient().CreateCluster(ctx, key, createClusterRequestPayload)
 		if err != nil {
-			log.Error(err, "whoops, cluster creating issue")
+			log.Error(err, "issue creating cluster in Bridge")
 			// TODO(crunchybridgecluster): probably shouldn't set this condition unless response from Bridge
 			// indicates the payload is wrong
 			// Otherwise want a different condition
@@ -427,7 +369,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Get Cluster
 	clusterDetails, err := r.NewClient().GetCluster(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
-		log.Error(err, "whoops, issue getting cluster")
+		log.Error(err, "issue getting cluster information from Bridge")
 		return ctrl.Result{}, err
 	}
 	clusterDetails.AddDataToClusterStatus(crunchybridgecluster)
@@ -435,21 +377,27 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Get Cluster Status
 	clusterStatus, err := r.NewClient().GetClusterStatus(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
-		log.Error(err, "whoops, issue getting cluster status")
+		log.Error(err, "issue getting cluster status from Bridge")
 		return ctrl.Result{}, err
 	}
 	clusterStatus.AddDataToClusterStatus(crunchybridgecluster)
+	// TODO: Update the ConditionReady status here
 
 	// Get Cluster Upgrade
 	clusterUpgradeDetails, err := r.NewClient().GetClusterUpgrade(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
-		log.Error(err, "whoops, issue getting cluster upgrade")
+		log.Error(err, "issue getting cluster upgrade from Bridge")
 		return ctrl.Result{}, err
 	}
 	clusterUpgradeDetails.AddDataToClusterStatus(crunchybridgecluster)
+	// TODO: Update the ConditionUpdating status here
 
 	// Reconcile roles and their secrets
 	err = r.reconcilePostgresRoles(ctx, key, crunchybridgecluster)
+	if err != nil {
+		log.Error(err, "issue reconciling postgres user roles/secrets")
+		return ctrl.Result{}, err
+	}
 
 	// For now, we skip updating until the upgrade status is cleared.
 	// For the future, we may want to update in-progress upgrades,
@@ -476,7 +424,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Are there diffs between the cluster response from the Bridge API and the spec?
 	// HA diffs are sent to /clusters/{cluster_id}/actions/[enable|disable]-ha
 	// so have to know (a) to send and (b) which to send to
-	if crunchybridgecluster.Spec.IsHA != crunchybridgecluster.Status.IsHA {
+	if crunchybridgecluster.Spec.IsHA != *crunchybridgecluster.Status.IsHA {
 		return r.handleUpgradeHA(ctx, key, crunchybridgecluster)
 	}
 
@@ -489,6 +437,34 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// TODO(crunchybridgecluster): do we always want to requeue? Does the Watch mean we
 	// don't need this, or do we want both?
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
+}
+
+func (r *CrunchyBridgeClusterReconciler) reconcileBridgeConnectionSecret(
+	ctx context.Context, crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
+) (string, string, error) {
+	key, team, err := r.GetSecretKeys(ctx, crunchybridgecluster)
+	if err != nil {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionCreating,
+			Status:             metav1.ConditionFalse,
+			Reason:             "SecretInvalid",
+			Message: fmt.Sprintf(
+				"Cannot create with bad secret: %v", "TODO(crunchybridgecluster)"),
+		})
+
+		return "", "", err
+	}
+
+	// Remove SecretInvalid condition if found
+	invalid := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
+		v1beta1.ConditionCreating)
+	if invalid != nil && invalid.Status == metav1.ConditionFalse && invalid.Reason == "SecretInvalid" {
+		meta.RemoveStatusCondition(&crunchybridgecluster.Status.Conditions,
+			v1beta1.ConditionCreating)
+	}
+
+	return key, team, err
 }
 
 // handleStorage returns a usable int in G (rounded up if the original storage was in Gi).

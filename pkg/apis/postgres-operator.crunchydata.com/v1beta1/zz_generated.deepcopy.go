@@ -241,6 +241,16 @@ func (in *CrunchyBridgeClusterStatus) DeepCopyInto(out *CrunchyBridgeClusterStat
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.IsHA != nil {
+		in, out := &in.IsHA, &out.IsHA
+		*out = new(bool)
+		**out = **in
+	}
+	if in.IsProtected != nil {
+		in, out := &in.IsProtected, &out.IsProtected
+		*out = new(bool)
+		**out = **in
+	}
 	if in.OngoingUpgrade != nil {
 		in, out := &in.OngoingUpgrade, &out.OngoingUpgrade
 		*out = make([]*UpgradeOperation, len(*in))

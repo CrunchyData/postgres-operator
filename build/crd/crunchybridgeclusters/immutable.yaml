@@ -3,9 +3,9 @@
   value: [{ message: 'immutable', rule: 'self == oldSelf'}]
 - op: copy
   from: /work
-  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/providerId/x-kubernetes-validations
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/provider/x-kubernetes-validations
 - op: copy
   from: /work
-  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/regionId/x-kubernetes-validations
+  path: /spec/versions/0/schema/openAPIV3Schema/properties/spec/properties/region/x-kubernetes-validations
 - op: remove
   path: /work
