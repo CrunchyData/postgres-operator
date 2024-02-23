@@ -66,7 +66,7 @@ tools: ## Download tools needed to build bundles
 tools: tools/$(SYSTEM)/jq
 tools/$(SYSTEM)/jq:
 	install -d '$(dir $@)'
-	curl -fSL -o '$@' "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-$$(SYSTEM='$(SYSTEM)'; \
+	curl -fSL -o '$@' "https://github.com/jqlang/jq/releases/download/jq-1.6/jq-$$(SYSTEM='$(SYSTEM)'; \
 		case "$$SYSTEM" in \
 			(linux-*) echo "$${SYSTEM/-amd/}";; (darwin-*) echo "$${SYSTEM/darwin/osx}";; (*) echo '$(SYSTEM)';; \
 		esac)"

@@ -65,7 +65,7 @@ func RegistrationRequiredBy(cluster *v1beta1.PostgresCluster) string {
 // Red Hat Marketplace requires operators to use environment variables be used
 // for any image other than the operator itself. Those variables must start with
 // "RELATED_IMAGE_" so that OSBS can transform their tag values into digests
-// for a "disconncted" OLM CSV.
+// for a "disconnected" OLM CSV.
 
 // - https://redhat-connect.gitbook.io/certified-operator-guide/troubleshooting-and-resources/offline-enabled-operators
 // - https://osbs.readthedocs.io/en/latest/users.html#pullspec-locations

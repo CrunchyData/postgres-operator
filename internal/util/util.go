@@ -26,7 +26,7 @@ import (
 // be used as part of an SQL statement.
 //
 // Any double quotes in name will be escaped.  The quoted identifier will be
-// case sensitive when used in a query.  If the input string contains a zero
+// case-sensitive when used in a query.  If the input string contains a zero
 // byte, the result will be truncated immediately before it.
 //
 // Implementation borrowed from lib/pq: https://github.com/lib/pq which is

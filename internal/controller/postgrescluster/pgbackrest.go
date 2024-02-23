@@ -2190,7 +2190,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	//
 	// TODO (andrewlecuyer): Since reconciliation doesn't currently occur when a leader is elected,
 	// the operator may not get another chance to create the backup if a writable instance is not
-	// detected, and it then returns without requeing.  To ensure this doesn't occur and that the
+	// detected, and it then returns without requeuing.  To ensure this doesn't occur and that the
 	// operator always has a chance to reconcile when an instance becomes writable, we should watch
 	// Pods in the cluster for leader election events, and trigger reconciles accordingly.
 	if !clusterWritable || manualAnnotation == "" ||
@@ -2384,7 +2384,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	//
 	// TODO (andrewlecuyer): Since reconciliation doesn't currently occur when a leader is elected,
 	// the operator may not get another chance to create the backup if a writable instance is not
-	// detected, and it then returns without requeing.  To ensure this doesn't occur and that the
+	// detected, and it then returns without requeuing.  To ensure this doesn't occur and that the
 	// operator always has a chance to reconcile when an instance becomes writable, we should watch
 	// Pods in the cluster for leader election events, and trigger reconciles accordingly.
 	if !clusterWritable || replicaCreateRepoStatus == nil || replicaCreateRepoStatus.ReplicaCreateBackupComplete {
@@ -2624,7 +2624,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	//
 	// TODO (andrewlecuyer): Since reconciliation doesn't currently occur when a leader is elected,
 	// the operator may not get another chance to create the stanza if a writable instance is not
-	// detected, and it then returns without requeing.  To ensure this doesn't occur and that the
+	// detected, and it then returns without requeuing.  To ensure this doesn't occur and that the
 	// operator always has a chance to reconcile when an instance becomes writable, we should watch
 	// Pods in the cluster for leader election events, and trigger reconciles accordingly.
 	if !clusterWritable || stanzasCreated {

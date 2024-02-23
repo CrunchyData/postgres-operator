@@ -184,7 +184,7 @@ type PostgresClusterSpec struct {
 // DataSource defines data sources for a new PostgresCluster.
 type DataSource struct {
 	// Defines a pgBackRest cloud-based data source that can be used to pre-populate the
-	// the PostgreSQL data directory for a new PostgreSQL cluster using a pgBackRest restore.
+	// PostgreSQL data directory for a new PostgreSQL cluster using a pgBackRest restore.
 	// The PGBackRest field is incompatible with the PostgresCluster field: only one
 	// data source can be used for pre-populating a new PostgreSQL cluster
 	// +optional
@@ -221,7 +221,7 @@ type DataSourceVolumes struct {
 	PGBackRestVolume *DataSourceVolume `json:"pgBackRestVolume,omitempty"`
 }
 
-// DataSourceVolume defines the PVC name and data diretory path for an existing cluster volume.
+// DataSourceVolume defines the PVC name and data directory path for an existing cluster volume.
 type DataSourceVolume struct {
 	// The existing PVC name.
 	PVCName string `json:"pvcName"`

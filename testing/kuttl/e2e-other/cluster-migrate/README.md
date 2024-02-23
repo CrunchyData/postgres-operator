@@ -24,7 +24,7 @@ WARNING:  database \"postgres\" has a collation version mismatch
 DETAIL:  The database was created using collation version 2.31, but the operating system provides version 2.28
 ```
 
-This error occured in `reconcilePostgresDatabases` and prevented PGO from finishing the reconcile
+This error occurred in `reconcilePostgresDatabases` and prevented PGO from finishing the reconcile
 loop. For _testing purposes_, this problem is worked around in steps 06 and 07, which wait for
 the PG pod to be ready and then send a command to `REFRESH COLLATION VERSION` on the `postgres`
 and `template1` databases (which were the only databases where this error was observed during
@@ -39,7 +39,7 @@ as an automatic step. User intervention and supervision is recommended in that c
 * 02: Create data on that cluster
 * 03: Alter the Reclaim policy of the PV so that it will survive deletion of the cluster
 * 04: Delete the original cluster, leaving the PV
-* 05: Create a PGO-managed `postgrescluster` with the remaing PV as the datasource
+* 05: Create a PGO-managed `postgrescluster` with the remaining PV as the datasource
 * 06-07: Wait for the PG pod to be ready and alter the collation (PG 15 only, see above)
 * 08: Alter the PV to the original Reclaim policy
 * 09: Check that the data successfully migrated

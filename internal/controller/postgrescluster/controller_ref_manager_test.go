@@ -67,7 +67,7 @@ func TestManageControllerRefs(t *testing.T) {
 	t.Run("adopt Object", func(t *testing.T) {
 
 		obj := objBase.DeepCopy()
-		obj.Name = "adpot"
+		obj.Name = "adopt"
 		obj.Labels = map[string]string{naming.LabelCluster: clusterName}
 
 		if err := r.Client.Create(ctx, obj); err != nil {
@@ -155,7 +155,7 @@ func TestManageControllerRefs(t *testing.T) {
 
 		obj := objBase.DeepCopy()
 		obj.Name = "ignore-no-postgrescluster"
-		obj.Labels = map[string]string{naming.LabelCluster: "noexist"}
+		obj.Labels = map[string]string{naming.LabelCluster: "nonexistent"}
 
 		if err := r.Client.Create(ctx, obj); err != nil {
 			t.Error(err)

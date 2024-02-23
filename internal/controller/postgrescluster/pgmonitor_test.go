@@ -604,7 +604,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 		exporterEnabled: true,
 		podExecCalled:   false,
 		// Status was generated manually for this test case
-		// TODO jmckulk: add code to generate status
+		// TODO (jmckulk): add code to generate status
 		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "7cdb484b6c"},
 		statusChangedAfterReconcile: false,
 	}} {
@@ -695,7 +695,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 // is correct. If exporter is enabled, the return shouldn't be nil. If the exporter is disabled, the
 // return should be nil.
 func TestReconcileMonitoringSecret(t *testing.T) {
-	// TODO jmckulk: debug test with existing cluster
+	// TODO (jmckulk): debug test with existing cluster
 	// Seems to be an issue when running with other tests
 	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
 		t.Skip("Test failing with existing cluster")

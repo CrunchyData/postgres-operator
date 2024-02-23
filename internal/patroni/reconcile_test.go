@@ -132,7 +132,7 @@ func TestInstancePod(t *testing.T) {
 	cluster.Spec.ImagePullPolicy = corev1.PullAlways
 	clusterConfigMap := new(corev1.ConfigMap)
 	clusterPodService := new(corev1.Service)
-	instanceCertficates := new(corev1.Secret)
+	instanceCertificates := new(corev1.Secret)
 	instanceConfigMap := new(corev1.ConfigMap)
 	instanceSpec := new(v1beta1.PostgresInstanceSetSpec)
 	patroniLeaderService := new(corev1.Service)
@@ -142,7 +142,7 @@ func TestInstancePod(t *testing.T) {
 	call := func() error {
 		return InstancePod(context.Background(),
 			cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
-			instanceSpec, instanceCertficates, instanceConfigMap, template)
+			instanceSpec, instanceCertificates, instanceConfigMap, template)
 	}
 
 	assert.NilError(t, call())
