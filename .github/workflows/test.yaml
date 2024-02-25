@@ -54,7 +54,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.28, v1.25]
+        kubernetes: [v1.29, v1.25]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -65,9 +65,9 @@ jobs:
         with:
           k3s-channel: "${{ matrix.kubernetes }}"
           prefetch-images: |
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.47-2
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.21-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.10-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.49-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.21-3
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.11-0
 
       - run: make createnamespaces check-envtest-existing
         env:
@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.28, v1.27, v1.26, v1.25]
+        kubernetes: [v1.29, v1.28, v1.27, v1.26, v1.25]
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
@@ -99,19 +99,19 @@ jobs:
         with:
           k3s-channel: "${{ matrix.kubernetes }}"
           prefetch-images: |
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-19
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.47-2
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.21-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-22
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.49-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.21-3
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:latest
             registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:latest
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.10-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.10-3.1-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.5-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.5-3.3-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.3-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.4-0
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-7.8-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.11-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.11-3.1-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.6-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.6-3.3-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.2-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.2-3.3-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.2-3.4-0
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-7.8-3
       - run: go mod download
       - name: Build executable
         run: PGO_VERSION='${{ github.sha }}' make build-postgres-operator
@@ -132,19 +132,19 @@ jobs:
             --volume "$(pwd):/mnt" --workdir '/mnt' --env 'PATH=/mnt/bin' \
             --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
             --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
-            --env 'RELATED_IMAGE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-19' \
-            --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.47-2' \
-            --env 'RELATED_IMAGE_PGBOUNCER=registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.21-0' \
+            --env 'RELATED_IMAGE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-22' \
+            --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.49-0' \
+            --env 'RELATED_IMAGE_PGBOUNCER=registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.21-3' \
             --env 'RELATED_IMAGE_PGEXPORTER=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:latest' \
             --env 'RELATED_IMAGE_PGUPGRADE=registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:latest' \
-            --env 'RELATED_IMAGE_POSTGRES_14=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.10-0' \
-            --env 'RELATED_IMAGE_POSTGRES_14_GIS_3.1=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.10-3.1-0' \
-            --env 'RELATED_IMAGE_POSTGRES_15=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.5-0' \
-            --env 'RELATED_IMAGE_POSTGRES_15_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.5-3.3-0' \
-            --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0' \
-            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.3-0' \
-            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.1-3.4-0' \
-            --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-7.8-0' \
+            --env 'RELATED_IMAGE_POSTGRES_14=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-14.11-0' \
+            --env 'RELATED_IMAGE_POSTGRES_14_GIS_3.1=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-14.11-3.1-0' \
+            --env 'RELATED_IMAGE_POSTGRES_15=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.6-0' \
+            --env 'RELATED_IMAGE_POSTGRES_15_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-15.6-3.3-0' \
+            --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.2-0' \
+            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.2-3.3-0' \
+            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.2-3.4-0' \
+            --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-7.8-3' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true' \
             --name 'postgres-operator' ubuntu \
             postgres-operator
@@ -159,7 +159,7 @@ jobs:
           KUTTL_PG_UPGRADE_TO_VERSION: '16'
           KUTTL_PG_VERSION: '15'
           KUTTL_POSTGIS_VERSION: '3.4'
-          KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0'
+          KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.2-0'
       - run: |
           make check-kuttl && exit
           failed=$?
