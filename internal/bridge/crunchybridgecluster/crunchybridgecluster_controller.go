@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -274,14 +273,6 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			v1beta1.ConditionCreating)
 	}
 
-	storageVal, err := handleStorage(crunchybridgecluster.Spec.Storage)
-	if err != nil {
-		log.Error(err, "issue handling storage value")
-		// TODO(crunchybridgecluster)
-		// lint:ignore nilerr no requeue needed
-		return ctrl.Result{}, nil
-	}
-
 	// We should only be missing the ID if no create has been issued
 	// or the create was interrupted and we haven't received the ID.
 	if crunchybridgecluster.Status.ID == "" {
@@ -336,7 +327,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			PostgresVersion: intstr.FromInt(crunchybridgecluster.Spec.PostgresVersion),
 			Provider:        crunchybridgecluster.Spec.Provider,
 			Region:          crunchybridgecluster.Spec.Region,
-			Storage:         storageVal,
+			Storage:         bridge.ToGibibytes(crunchybridgecluster.Spec.Storage),
 			Team:            team,
 		}
 		cluster, err := r.NewClient().CreateCluster(ctx, key, createClusterRequestPayload)
@@ -415,10 +406,10 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Check if there's an upgrade difference for the three upgradeable fields that hit the upgrade endpoint
 	// Why PostgresVersion and MajorVersion? Because MajorVersion in the Status is sure to be
 	// an int of the major version, whereas Status.Responses.Cluster.PostgresVersion might be the ID
-	if (storageVal != crunchybridgecluster.Status.Storage) ||
+	if (crunchybridgecluster.Spec.Storage != *crunchybridgecluster.Status.Storage) ||
 		crunchybridgecluster.Spec.Plan != crunchybridgecluster.Status.Plan ||
 		crunchybridgecluster.Spec.PostgresVersion != crunchybridgecluster.Status.MajorVersion {
-		return r.handleUpgrade(ctx, key, crunchybridgecluster, storageVal)
+		return r.handleUpgrade(ctx, key, crunchybridgecluster)
 	}
 
 	// Are there diffs between the cluster response from the Bridge API and the spec?
@@ -467,23 +458,10 @@ func (r *CrunchyBridgeClusterReconciler) reconcileBridgeConnectionSecret(
 	return key, team, err
 }
 
-// handleStorage returns a usable int in G (rounded up if the original storage was in Gi).
-// Returns an error if the int is outside the range for Bridge min (10) or max (65535).
-func handleStorage(storageSpec resource.Quantity) (int64, error) {
-	scaledValue := storageSpec.ScaledValue(resource.Giga)
-
-	if scaledValue < 10 || scaledValue > 65535 {
-		return 0, fmt.Errorf("storage value must be between 10 and 65535")
-	}
-
-	return scaledValue, nil
-}
-
 // handleUpgrade handles upgrades that hit the "POST /clusters/<id>/upgrade" endpoint
 func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 	apiKey string,
 	crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
-	storageVal int64,
 ) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -492,7 +470,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 	upgradeRequest := &bridge.PostClustersUpgradeRequestPayload{
 		Plan:            crunchybridgecluster.Spec.Plan,
 		PostgresVersion: intstr.FromInt(crunchybridgecluster.Spec.PostgresVersion),
-		Storage:         storageVal,
+		Storage:         bridge.ToGibibytes(crunchybridgecluster.Spec.Storage),
 	}
 
 	clusterUpgrade, err := r.NewClient().UpgradeCluster(ctx, apiKey,

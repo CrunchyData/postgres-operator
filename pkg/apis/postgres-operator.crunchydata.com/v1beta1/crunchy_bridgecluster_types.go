@@ -158,9 +158,9 @@ type CrunchyBridgeClusterStatus struct {
 	// +optional
 	State string `json:"state,omitempty"`
 
-	// The amount of storage available to the cluster in gigabytes.
+	// The amount of storage available to the cluster.
 	// +optional
-	Storage int64 `json:"storage"`
+	Storage *resource.Quantity `json:"storage"`
 }
 
 type APIResponses struct {

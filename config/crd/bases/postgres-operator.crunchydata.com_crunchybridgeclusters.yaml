@@ -278,9 +278,12 @@ spec:
                 description: State of cluster in Bridge.
                 type: string
               storage:
-                description: The amount of storage available to the cluster in gigabytes.
-                format: int64
-                type: integer
+                anyOf:
+                - type: integer
+                - type: string
+                description: The amount of storage available to the cluster.
+                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                x-kubernetes-int-or-string: true
             type: object
         type: object
     served: true

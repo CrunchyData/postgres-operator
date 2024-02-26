@@ -88,7 +88,7 @@ func (c *ClusterApiResource) AddDataToClusterStatus(cluster *v1beta1.CrunchyBrid
 	cluster.Status.IsProtected = c.IsProtected
 	cluster.Status.MajorVersion = c.MajorVersion
 	cluster.Status.Plan = c.Plan
-	cluster.Status.Storage = c.Storage
+	cluster.Status.Storage = FromGibibytes(c.Storage)
 	cluster.Status.Responses.Cluster = c.ResponsePayload
 }
 
