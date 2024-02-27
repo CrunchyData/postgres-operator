@@ -350,6 +350,15 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			return ctrl.Result{}, nil
 		}
 		crunchybridgecluster.Status.ID = cluster.ID
+
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionUpdating,
+			Status:             metav1.ConditionUnknown,
+			Reason:             "NoUpgradesInProgress",
+			Message: fmt.Sprintf(
+				"No upgrades in Progress for Crunchy Bridge Cluster %v", crunchybridgecluster.Name),
+		})
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
 
@@ -418,6 +427,14 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	if crunchybridgecluster.Spec.IsHA != *crunchybridgecluster.Status.IsHA {
 		return r.handleUpgradeHA(ctx, key, crunchybridgecluster)
 	}
+	meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+		ObservedGeneration: crunchybridgecluster.GetGeneration(),
+		Type:               v1beta1.ConditionUpdating,
+		Status:             metav1.ConditionUnknown,
+		Reason:             "NoUpgradesInProgress",
+		Message: fmt.Sprintf(
+			"No upgrades in Progress for Crunchy Bridge Cluster %v", crunchybridgecluster.Name),
+	})
 
 	// Check if there's a difference in is_protected, name, maintenance_window_start, etc.
 	// see https://docs.crunchybridge.com/api/cluster#update-cluster
@@ -484,6 +501,17 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 	}
 	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
 
+	for _, operation := range clusterUpgrade.Operations {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionUpdating,
+			Status:             metav1.ConditionTrue,
+			Reason:             operation.Flavor,
+			Message: fmt.Sprintf(
+				"Performing an upgrade of type %v with a state of %v on Crunchy Bridge Cluster %v",
+				operation.Flavor, operation.State, crunchybridgecluster.Name),
+		})
+	}
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 
@@ -512,6 +540,14 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 	}
 	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
 
+	meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+		ObservedGeneration: crunchybridgecluster.GetGeneration(),
+		Type:               v1beta1.ConditionUpdating,
+		Status:             metav1.ConditionTrue,
+		Reason:             "UpgradeInProgress",
+		Message: fmt.Sprintf(
+			"HA upgrade in progress to %v on the Crunchy Bridge Cluster %v", action, crunchybridgecluster.Name),
+	})
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 
