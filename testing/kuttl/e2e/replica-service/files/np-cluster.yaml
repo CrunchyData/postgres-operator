@@ -5,4 +5,3 @@ metadata:
 spec:
   replicaService:
     type: NodePort
-    nodePort: 30789
