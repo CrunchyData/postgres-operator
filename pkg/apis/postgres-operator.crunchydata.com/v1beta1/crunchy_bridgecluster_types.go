@@ -182,12 +182,12 @@ type UpgradeOperation struct {
 // TODO(crunchybridgecluster) Think through conditions
 // CrunchyBridgeClusterStatus condition types.
 const (
-	ConditionUnknown  = ""
-	ConditionPending  = "Pending"
-	ConditionCreating = "Creating"
-	ConditionUpdating = "Updating"
-	ConditionReady    = "Ready"
-	ConditionDeleting = "Deleting"
+	ConditionUnknown   = ""
+	ConditionPending   = "Pending"
+	ConditionCreating  = "Creating"
+	ConditionUpgrading = "Upgrading"
+	ConditionReady     = "Ready"
+	ConditionDeleting  = "Deleting"
 )
 
 // +kubebuilder:object:root=true
