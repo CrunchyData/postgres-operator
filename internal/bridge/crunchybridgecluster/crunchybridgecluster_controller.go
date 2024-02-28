@@ -265,12 +265,15 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, nil
 	}
 
-	// Remove cluster invalid status if found
-	if invalid != nil &&
-		invalid.Status == metav1.ConditionFalse &&
-		invalid.Reason == "ClusterInvalid" {
-		meta.RemoveStatusCondition(&crunchybridgecluster.Status.Conditions,
-			v1beta1.ConditionCreating)
+	// check for an upgrade error and return until observedGeneration has
+	// been incremented by updating the CR with valid value(s).
+	invalidUpgrade := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
+		v1beta1.ConditionUpgrading)
+	if invalidUpgrade != nil &&
+		invalidUpgrade.Status == metav1.ConditionFalse &&
+		invalidUpgrade.Reason == "UpgradeError" &&
+		invalidUpgrade.ObservedGeneration == crunchybridgecluster.GetGeneration() {
+		return ctrl.Result{}, nil
 	}
 
 	// We should only be missing the ID if no create has been issued
@@ -355,9 +358,8 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			ObservedGeneration: crunchybridgecluster.GetGeneration(),
 			Type:               v1beta1.ConditionUpgrading,
 			Status:             metav1.ConditionUnknown,
-			Reason:             "NoUpgradesInProgress",
-			Message: fmt.Sprintf(
-				"No upgrades in progress for Crunchy Bridge Cluster %v", crunchybridgecluster.Name),
+			Reason:             "UpgradeConditionUnknown",
+			Message:            "The condition of the upgrade(s) is unknown.",
 		})
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
@@ -390,7 +392,25 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, err
 	}
 	clusterUpgradeDetails.AddDataToClusterStatus(crunchybridgecluster)
-	// TODO: Update the ConditionUpdating status here
+	if len(clusterUpgradeDetails.Operations) != 0 {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionUpgrading,
+			Status:             metav1.ConditionTrue,
+			Reason:             clusterUpgradeDetails.Operations[0].Flavor,
+			Message: fmt.Sprintf(
+				"Performing an upgrade of type %v with a state of %v.",
+				clusterUpgradeDetails.Operations[0].Flavor, clusterUpgradeDetails.Operations[0].State),
+		})
+	} else {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionUpgrading,
+			Status:             metav1.ConditionFalse,
+			Reason:             "NoUpgradesInProgress",
+			Message:            "No upgrades being performed",
+		})
+	}
 
 	// Reconcile roles and their secrets
 	err = r.reconcilePostgresRoles(ctx, key, crunchybridgecluster)
@@ -409,17 +429,6 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// TODO(crunchybridgecluster): Do we want the operator to interrupt
 	// upgrades created through the GUI/API?
 	if len(crunchybridgecluster.Status.OngoingUpgrade) != 0 {
-		for _, operation := range clusterUpgradeDetails.Operations {
-			meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
-				ObservedGeneration: crunchybridgecluster.GetGeneration(),
-				Type:               v1beta1.ConditionUpgrading,
-				Status:             metav1.ConditionTrue,
-				Reason:             operation.Flavor,
-				Message: fmt.Sprintf(
-					"Performing an upgrade of type %v with a state of %v on Crunchy Bridge Cluster %v",
-					operation.Flavor, operation.State, crunchybridgecluster.Name),
-			})
-		}
 		return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 	}
 
@@ -438,14 +447,6 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	if crunchybridgecluster.Spec.IsHA != *crunchybridgecluster.Status.IsHA {
 		return r.handleUpgradeHA(ctx, key, crunchybridgecluster)
 	}
-	meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
-		ObservedGeneration: crunchybridgecluster.GetGeneration(),
-		Type:               v1beta1.ConditionUpgrading,
-		Status:             metav1.ConditionUnknown,
-		Reason:             "NoUpgradesInProgress",
-		Message: fmt.Sprintf(
-			"No upgrades in progress for Crunchy Bridge Cluster %v", crunchybridgecluster.Name),
-	})
 
 	// Check if there's a difference in is_protected, name, maintenance_window_start, etc.
 	// see https://docs.crunchybridge.com/api/cluster#update-cluster
@@ -513,23 +514,22 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 			Status:             metav1.ConditionFalse,
 			Reason:             "UpgradeError",
 			Message: fmt.Sprintf(
-				"Error performing an upgrade, please check your spec for errors or invalid values"+
-					"for cluster %v", crunchybridgecluster.Name),
+				"Error performing an upgrade: %s", err),
 		})
 		log.Error(err, "Error while attempting cluster upgrade")
 		return ctrl.Result{}, nil
 	}
 	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
 
-	for _, operation := range clusterUpgrade.Operations {
+	if len(clusterUpgrade.Operations) != 0 {
 		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
 			ObservedGeneration: crunchybridgecluster.GetGeneration(),
 			Type:               v1beta1.ConditionUpgrading,
 			Status:             metav1.ConditionTrue,
-			Reason:             operation.Flavor,
+			Reason:             clusterUpgrade.Operations[0].Flavor,
 			Message: fmt.Sprintf(
-				"Performing an upgrade of type %v with a state of %v on Crunchy Bridge Cluster %v",
-				operation.Flavor, operation.State, crunchybridgecluster.Name),
+				"Performing an upgrade of type %v with a state of %v.",
+				clusterUpgrade.Operations[0].Flavor, clusterUpgrade.Operations[0].State),
 		})
 	}
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
@@ -559,24 +559,25 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 			ObservedGeneration: crunchybridgecluster.GetGeneration(),
 			Type:               v1beta1.ConditionUpgrading,
 			Status:             metav1.ConditionFalse,
-			Reason:             "HAUpgradeError",
+			Reason:             "UpgradeError",
 			Message: fmt.Sprintf(
-				"Error performing an HA upgrade, please check your spec for errors or invalid values"+
-					"for cluster %v", crunchybridgecluster.Name),
+				"Error performing an HA upgrade: %s", err),
 		})
 		log.Error(err, "Error while attempting cluster HA change")
 		return ctrl.Result{}, nil
 	}
 	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
-
-	meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
-		ObservedGeneration: crunchybridgecluster.GetGeneration(),
-		Type:               v1beta1.ConditionUpgrading,
-		Status:             metav1.ConditionTrue,
-		Reason:             "UpgradeInProgress",
-		Message: fmt.Sprintf(
-			"HA upgrade in progress to %v on the Crunchy Bridge Cluster %v", action, crunchybridgecluster.Name),
-	})
+	if len(clusterUpgrade.Operations) != 0 {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionUpgrading,
+			Status:             metav1.ConditionTrue,
+			Reason:             clusterUpgrade.Operations[0].Flavor,
+			Message: fmt.Sprintf(
+				"Perfoming an upgrade of type %v with a state of %v.",
+				clusterUpgrade.Operations[0].Flavor, clusterUpgrade.Operations[0].State),
+		})
+	}
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 
