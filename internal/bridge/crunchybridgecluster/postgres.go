@@ -92,7 +92,8 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 	for i := range specRoles {
 		if secretNames[specRoles[i].SecretName] {
 			// Duplicate secretName found, return early with error
-			err := errors.New("There are duplicate Role SecretNames in the spec. SecretNames must be unique.")
+			err := errors.New("Two or more of the Roles in the CrunchyBridgeCluster spec " +
+				"have the same SecretName. Role SecretNames must be unique.")
 			return nil, nil, err
 		}
 		secretNames[specRoles[i].SecretName] = true
