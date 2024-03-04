@@ -17,6 +17,7 @@ package bridge
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -27,7 +28,13 @@ import (
 	gocmp "github.com/google/go-cmp/cmp"
 	gocmpopts "github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/v3/assert"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 )
+
+var testApiKey = "9012"
+var testTeamId = "5678"
 
 // TestClientBackoff logs the backoff timing chosen by [NewClient] for use
 // with `go test -v`.
@@ -534,5 +541,826 @@ func TestClientCreateInstallation(t *testing.T) {
 		_, err := client.CreateInstallation(context.Background())
 		assert.ErrorContains(t, err, "invalid")
 		assert.ErrorContains(t, err, "asdf")
+	})
+}
+
+func TestListClusters(t *testing.T) {
+	responsePayload := &ClusterList{
+		Clusters: []*ClusterApiResource{},
+	}
+	firstClusterApiResource := &ClusterApiResource{
+		ID: "1234",
+	}
+	secondClusterApiResource := &ClusterApiResource{
+		ID: "2345",
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET", "Expected GET method")
+			assert.Equal(t, r.URL.Path, "/clusters", "Expected path to be '/clusters'")
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+			assert.Equal(t, r.URL.Query()["team_id"][0], testTeamId, "Expected query params to contain team id.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.ListClusters(context.Background(), testApiKey, testTeamId)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponseNoClusters", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusters, err := client.ListClusters(context.Background(), testApiKey, testTeamId)
+		assert.NilError(t, err)
+		assert.Equal(t, len(clusters), 0)
+	})
+
+	t.Run("OkResponseOneCluster", func(t *testing.T) {
+		responsePayload.Clusters = append(responsePayload.Clusters, firstClusterApiResource)
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusters, err := client.ListClusters(context.Background(), testApiKey, testTeamId)
+		assert.NilError(t, err)
+		assert.Equal(t, len(clusters), 1)
+		assert.Equal(t, clusters[0].ID, responsePayload.Clusters[0].ID)
+	})
+
+	t.Run("OkResponseTwoClusters", func(t *testing.T) {
+		responsePayload.Clusters = append(responsePayload.Clusters, secondClusterApiResource)
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusters, err := client.ListClusters(context.Background(), testApiKey, testTeamId)
+		assert.NilError(t, err)
+		assert.Equal(t, len(clusters), 2)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.ListClusters(context.Background(), testApiKey, testTeamId)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestCreateCluster(t *testing.T) {
+	clusterApiResource := &ClusterApiResource{
+		ClusterName: "test-cluster1",
+	}
+	clusterRequestPayload := &PostClustersRequestPayload{
+		Name: "test-cluster1",
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var receivedPayload PostClustersRequestPayload
+			dec := json.NewDecoder(r.Body)
+			err = dec.Decode(&receivedPayload)
+			assert.NilError(t, err)
+			assert.Equal(t, r.Method, "POST", "Expected POST method")
+			assert.Equal(t, r.URL.Path, "/clusters", "Expected path to be '/clusters'")
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+			assert.Equal(t, receivedPayload, *clusterRequestPayload)
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.CreateCluster(context.Background(), testApiKey, clusterRequestPayload)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		newCluster, err := client.CreateCluster(context.Background(), testApiKey, clusterRequestPayload)
+		assert.NilError(t, err)
+		assert.Equal(t, newCluster.ClusterName, clusterApiResource.ClusterName)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.CreateCluster(context.Background(), testApiKey, clusterRequestPayload)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestDeleteCluster(t *testing.T) {
+	clusterId := "1234"
+	clusterApiResource := &ClusterApiResource{
+		ClusterName: "test-cluster1",
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "DELETE", "Expected DELETE method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId, "Expected path to be /clusters/"+clusterId)
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, _, err = client.DeleteCluster(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		deletedCluster, deletedAlready, err := client.DeleteCluster(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+		assert.Equal(t, deletedCluster.ClusterName, clusterApiResource.ClusterName)
+		assert.Equal(t, deletedAlready, false)
+	})
+
+	t.Run("GoneResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusGone)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, deletedAlready, err := client.DeleteCluster(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+		assert.Equal(t, deletedAlready, true)
+	})
+
+	t.Run("NotFoundResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, deletedAlready, err := client.DeleteCluster(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+		assert.Equal(t, deletedAlready, true)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, _, err = client.DeleteCluster(context.Background(), testApiKey, clusterId)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestGetCluster(t *testing.T) {
+	clusterId := "1234"
+	clusterApiResource := &ClusterApiResource{
+		ClusterName: "test-cluster1",
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET", "Expected GET method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId, "Expected path to be /clusters/"+clusterId)
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetCluster(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		cluster, err := client.GetCluster(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+		assert.Equal(t, cluster.ClusterName, clusterApiResource.ClusterName)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetCluster(context.Background(), testApiKey, clusterId)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestGetClusterStatus(t *testing.T) {
+	clusterId := "1234"
+	state := "Ready"
+
+	clusterStatusApiResource := &ClusterStatusApiResource{
+		State: state,
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterStatusApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET", "Expected GET method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId+"/status", "Expected path to be /clusters/"+clusterId+"/status")
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetClusterStatus(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterStatusApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusterStatus, err := client.GetClusterStatus(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+		assert.Equal(t, clusterStatus.State, state)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterStatusApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetClusterStatus(context.Background(), testApiKey, clusterId)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestGetClusterUpgrade(t *testing.T) {
+	clusterId := "1234"
+	clusterUpgradeApiResource := &ClusterUpgradeApiResource{
+		ClusterID: clusterId,
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET", "Expected GET method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId+"/upgrade", "Expected path to be /clusters/"+clusterId+"/upgrade")
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetClusterUpgrade(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusterUpgrade, err := client.GetClusterUpgrade(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+		assert.Equal(t, clusterUpgrade.ClusterID, clusterId)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetClusterUpgrade(context.Background(), testApiKey, clusterId)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestUpgradeCluster(t *testing.T) {
+	clusterId := "1234"
+	clusterUpgradeApiResource := &ClusterUpgradeApiResource{
+		ClusterID: clusterId,
+	}
+	clusterUpgradeRequestPayload := &PostClustersUpgradeRequestPayload{
+		Plan:             "standard-8",
+		PostgresVersion:  intstr.FromInt(15),
+		UpgradeStartTime: "start-time",
+		Storage:          10,
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var receivedPayload PostClustersUpgradeRequestPayload
+			dec := json.NewDecoder(r.Body)
+			err = dec.Decode(&receivedPayload)
+			assert.NilError(t, err)
+			assert.Equal(t, r.Method, "POST", "Expected POST method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId+"/upgrade", "Expected path to be /clusters/"+clusterId+"/upgrade")
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+			assert.Equal(t, receivedPayload, *clusterUpgradeRequestPayload)
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.UpgradeCluster(context.Background(), testApiKey, clusterId, clusterUpgradeRequestPayload)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusterUpgrade, err := client.UpgradeCluster(context.Background(), testApiKey, clusterId, clusterUpgradeRequestPayload)
+		assert.NilError(t, err)
+		assert.Equal(t, clusterUpgrade.ClusterID, clusterId)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.UpgradeCluster(context.Background(), testApiKey, clusterId, clusterUpgradeRequestPayload)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestUpgradeClusterHA(t *testing.T) {
+	clusterId := "1234"
+	action := "enable-ha"
+	clusterUpgradeApiResource := &ClusterUpgradeApiResource{
+		ClusterID: clusterId,
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "PUT", "Expected PUT method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId+"/actions/"+action,
+				"Expected path to be /clusters/"+clusterId+"/actions/"+action)
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.UpgradeClusterHA(context.Background(), testApiKey, clusterId, action)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusterUpgrade, err := client.UpgradeClusterHA(context.Background(), testApiKey, clusterId, action)
+		assert.NilError(t, err)
+		assert.Equal(t, clusterUpgrade.ClusterID, clusterId)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterUpgradeApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.UpgradeClusterHA(context.Background(), testApiKey, clusterId, action)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestUpdateCluster(t *testing.T) {
+	clusterId := "1234"
+	clusterApiResource := &ClusterApiResource{
+		ClusterName: "new-cluster-name",
+	}
+	clusterUpdateRequestPayload := &PatchClustersRequestPayload{
+		IsProtected: initialize.Bool(true),
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var receivedPayload PatchClustersRequestPayload
+			dec := json.NewDecoder(r.Body)
+			err = dec.Decode(&receivedPayload)
+			assert.NilError(t, err)
+			assert.Equal(t, r.Method, "PATCH", "Expected PATCH method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId, "Expected path to be /clusters/"+clusterId)
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+			assert.Equal(t, *receivedPayload.IsProtected, *clusterUpdateRequestPayload.IsProtected)
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.UpdateCluster(context.Background(), testApiKey, clusterId, clusterUpdateRequestPayload)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusterUpdate, err := client.UpdateCluster(context.Background(), testApiKey, clusterId, clusterUpdateRequestPayload)
+		assert.NilError(t, err)
+		assert.Equal(t, clusterUpdate.ClusterName, clusterApiResource.ClusterName)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.UpdateCluster(context.Background(), testApiKey, clusterId, clusterUpdateRequestPayload)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestGetClusterRole(t *testing.T) {
+	clusterId := "1234"
+	roleName := "application"
+	clusterRoleApiResource := &ClusterRoleApiResource{
+		Name: roleName,
+	}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterRoleApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET", "Expected GET method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId+"/roles/"+roleName,
+				"Expected path to be /clusters/"+clusterId+"/roles/"+roleName)
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetClusterRole(context.Background(), testApiKey, clusterId, roleName)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterRoleApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusterRole, err := client.GetClusterRole(context.Background(), testApiKey, clusterId, roleName)
+		assert.NilError(t, err)
+		assert.Equal(t, clusterRole.Name, roleName)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(clusterRoleApiResource)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.GetClusterRole(context.Background(), testApiKey, clusterId, roleName)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
+	})
+}
+
+func TestListClusterRoles(t *testing.T) {
+	clusterId := "1234"
+	responsePayload := &ClusterRoleList{
+		Roles: []*ClusterRoleApiResource{},
+	}
+	applicationClusterRoleApiResource := &ClusterRoleApiResource{}
+	postgresClusterRoleApiResource := &ClusterRoleApiResource{}
+
+	t.Run("WeSendCorrectData", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET", "Expected GET method")
+			assert.Equal(t, r.URL.Path, "/clusters/"+clusterId+"/roles", "Expected path to be '/clusters/%s/roles'")
+			assert.Equal(t, r.Header.Get("Authorization"), "Bearer "+testApiKey, "Expected Authorization header to contain api key.")
+
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.ListClusterRoles(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+	})
+
+	t.Run("OkResponse", func(t *testing.T) {
+		responsePayload.Roles = append(responsePayload.Roles, applicationClusterRoleApiResource, postgresClusterRoleApiResource)
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		clusterRoles, err := client.ListClusterRoles(context.Background(), testApiKey, clusterId)
+		assert.NilError(t, err)
+		assert.Equal(t, len(clusterRoles), 2)
+	})
+
+	t.Run("ErrorResponse", func(t *testing.T) {
+		responsePayloadJson, err := json.Marshal(responsePayload)
+		assert.NilError(t, err)
+
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write(responsePayloadJson)
+		}))
+		t.Cleanup(server.Close)
+
+		client := NewClient(server.URL, "")
+		assert.Equal(t, client.BaseURL.String(), server.URL)
+
+		_, err = client.ListClusterRoles(context.Background(), testApiKey, clusterId)
+		assert.Check(t, err != nil)
+		assert.ErrorContains(t, err, "400 Bad Request")
 	})
 }

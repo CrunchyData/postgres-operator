@@ -26,7 +26,7 @@ import (
 // can be overridden in options.
 // - https://docs.k8s.io/reference/using-api/server-side-apply/#managers
 //
-// TODO(dsessler7): This function is duplicated from a version that takes a PostgresCluster object.
+// NOTE: This function is duplicated from a version in the postgrescluster package
 func (r *CrunchyBridgeClusterReconciler) patch(
 	ctx context.Context, object client.Object,
 	patch client.Patch, options ...client.PatchOption,
@@ -41,7 +41,7 @@ func (r *CrunchyBridgeClusterReconciler) patch(
 // - https://docs.k8s.io/reference/using-api/server-side-apply/#managers
 // - https://docs.k8s.io/reference/using-api/server-side-apply/#conflicts
 //
-// TODO(dsessler7): This function is duplicated from a version that takes a PostgresCluster object.
+// NOTE: This function is duplicated from a version in the postgrescluster package
 func (r *CrunchyBridgeClusterReconciler) apply(ctx context.Context, object client.Object) error {
 	// Generate an apply-patch by comparing the object to its zero value.
 	zero := reflect.New(reflect.TypeOf(object).Elem()).Interface()

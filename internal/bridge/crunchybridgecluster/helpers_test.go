@@ -32,7 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -170,4 +172,80 @@ func testCluster() *v1beta1.CrunchyBridgeCluster {
 		},
 	}
 	return cluster.DeepCopy()
+}
+
+func testClusterApiResource() *bridge.ClusterApiResource {
+	cluster := bridge.ClusterApiResource{
+		ID:           "1234",
+		Host:         "example.com",
+		IsHA:         initialize.Bool(false),
+		IsProtected:  initialize.Bool(false),
+		MajorVersion: 15,
+		ClusterName:  "hippo-cluster",
+		Plan:         "standard-8",
+		Provider:     "aws",
+		Region:       "us-east-2",
+		Storage:      10,
+		Team:         "5678",
+	}
+	return &cluster
+}
+
+func testClusterStatusApiResource(clusterId string) *bridge.ClusterStatusApiResource {
+	teamId := "5678"
+	state := "ready"
+
+	clusterStatus := bridge.ClusterStatusApiResource{
+		DiskUsage: &bridge.ClusterDiskUsageApiResource{
+			DiskAvailableMB: 16,
+			DiskTotalSizeMB: 16,
+			DiskUsedMB:      0,
+		},
+		OldestBackup: "oldbackup",
+		OngoingUpgrade: &bridge.ClusterUpgradeApiResource{
+			ClusterID:  clusterId,
+			Operations: []*v1beta1.UpgradeOperation{},
+			Team:       teamId,
+		},
+		State: state,
+	}
+
+	return &clusterStatus
+}
+
+func testClusterUpgradeApiResource(clusterId string) *bridge.ClusterUpgradeApiResource {
+	teamId := "5678"
+
+	clusterUpgrade := bridge.ClusterUpgradeApiResource{
+		ClusterID: clusterId,
+		Operations: []*v1beta1.UpgradeOperation{
+			{
+				Flavor:       "resize",
+				StartingFrom: "",
+				State:        "in_progress",
+			},
+		},
+		Team: teamId,
+	}
+
+	return &clusterUpgrade
+}
+
+func testClusterRoleApiResource() *bridge.ClusterRoleApiResource {
+	clusterId := "1234"
+	teamId := "5678"
+	roleName := "application"
+
+	clusterRole := bridge.ClusterRoleApiResource{
+		AccountEmail: "test@email.com",
+		AccountId:    "12345678",
+		ClusterId:    clusterId,
+		Flavor:       "chocolate",
+		Name:         roleName,
+		Password:     "application-password",
+		Team:         teamId,
+		URI:          "connection-string",
+	}
+
+	return &clusterRole
 }

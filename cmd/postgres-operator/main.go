@@ -177,7 +177,7 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 	}
 
 	if util.DefaultMutableFeatureGate.Enabled(util.CrunchyBridgeClusters) {
-		constructor := func() *bridge.Client {
+		constructor := func() bridge.ClientInterface {
 			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
 			client.Transport = otelTransportWrapper()(http.DefaultTransport)
 			return client
