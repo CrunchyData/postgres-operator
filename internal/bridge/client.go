@@ -38,6 +38,19 @@ const defaultAPI = "https://api.crunchybridge.com"
 
 var errAuthentication = errors.New("authentication failed")
 
+type ClientInterface interface {
+	ListClusters(ctx context.Context, apiKey, teamId string) ([]*ClusterApiResource, error)
+	CreateCluster(ctx context.Context, apiKey string, clusterRequestPayload *PostClustersRequestPayload) (*ClusterApiResource, error)
+	DeleteCluster(ctx context.Context, apiKey, id string) (*ClusterApiResource, bool, error)
+	GetCluster(ctx context.Context, apiKey, id string) (*ClusterApiResource, error)
+	GetClusterStatus(ctx context.Context, apiKey, id string) (*ClusterStatusApiResource, error)
+	GetClusterUpgrade(ctx context.Context, apiKey, id string) (*ClusterUpgradeApiResource, error)
+	UpgradeCluster(ctx context.Context, apiKey, id string, clusterRequestPayload *PostClustersUpgradeRequestPayload) (*ClusterUpgradeApiResource, error)
+	UpgradeClusterHA(ctx context.Context, apiKey, id, action string) (*ClusterUpgradeApiResource, error)
+	UpdateCluster(ctx context.Context, apiKey, id string, clusterRequestPayload *PatchClustersRequestPayload) (*ClusterApiResource, error)
+	GetClusterRole(ctx context.Context, apiKey, clusterId, roleName string) (*ClusterRoleApiResource, error)
+}
+
 type Client struct {
 	http.Client
 	wait.Backoff
@@ -146,13 +159,30 @@ type ClusterUpgradeOperationApiResource struct {
 	State        string `json:"state,omitempty"`
 }
 
+// ClusterRoleApiResource is used for retrieving details on ClusterRole from the Bridge API
+type ClusterRoleApiResource struct {
+	AccountEmail string `json:"account_email"`
+	AccountId    string `json:"account_id"`
+	ClusterId    string `json:"cluster_id"`
+	Flavor       string `json:"flavor"`
+	Name         string `json:"name"`
+	Password     string `json:"password"`
+	Team         string `json:"team_id"`
+	URI          string `json:"uri"`
+}
+
+// ClusterRoleList holds a slice of ClusterRoleApiResource
+type ClusterRoleList struct {
+	Roles []*ClusterRoleApiResource `json:"roles"`
+}
+
 // BRIDGE API REQUEST PAYLOADS
 
 // PatchClustersRequestPayload is used for updating various properties of an existing cluster.
 type PatchClustersRequestPayload struct {
 	ClusterGroup string `json:"cluster_group_id,omitempty"`
 	// DashboardSettings      *ClusterDashboardSettings `json:"dashboard_settings,omitempty"`
-	// TODO: (dsessler7) Find docs for DashboardSettings and create appropriate struct
+	// TODO (dsessler7): Find docs for DashboardSettings and create appropriate struct
 	Environment            string `json:"environment,omitempty"`
 	IsProtected            *bool  `json:"is_protected,omitempty"`
 	MaintenanceWindowStart int64  `json:"maintenance_window_start,omitempty"`
@@ -192,23 +222,6 @@ type PutClustersUpgradeRequestPayload struct {
 	UpgradeStartTime     string             `json:"starting_from,omitempty"`
 	Storage              int64              `json:"storage,omitempty"`
 	UseMaintenanceWindow *bool              `json:"use_cluster_maintenance_window,omitempty"`
-}
-
-// ClusterRoleApiResource is used for retrieving details on ClusterRole from the Bridge API
-type ClusterRoleApiResource struct {
-	AccountEmail string `json:"account_email"`
-	AccountId    string `json:"account_id"`
-	ClusterId    string `json:"cluster_id"`
-	Flavor       string `json:"flavor"`
-	Name         string `json:"name"`
-	Password     string `json:"password"`
-	Team         string `json:"team_id"`
-	URI          string `json:"uri"`
-}
-
-// ClusterRoleList holds a slice of ClusterRoleApiResource
-type ClusterRoleList struct {
-	Roles []*ClusterRoleApiResource `json:"roles"`
 }
 
 // BRIDGE CLIENT FUNCTIONS AND METHODS
@@ -415,9 +428,10 @@ func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 	return result, err
 }
 
-// TODO(crunchybridgecluster) Is this where we want CRUD for clusters functions? Or make client `do` funcs
-// directly callable?
+// CRUNCHYBRIDGECLUSTER CRUD METHODS
 
+// ListClusters makes a GET request to the "/clusters" endpoint to retrieve a list of all clusters
+// in Bridge that are owned by the team specified by the provided team id.
 func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*ClusterApiResource, error) {
 	result := &ClusterList{}
 
@@ -450,6 +464,8 @@ func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*Cl
 	return result.Clusters, err
 }
 
+// CreateCluster makes a POST request to the "/clusters" endpoint thereby creating a cluster
+// in Bridge with the settings specified in the request payload.
 func (c *Client) CreateCluster(
 	ctx context.Context, apiKey string, clusterRequestPayload *PostClustersRequestPayload,
 ) (*ClusterApiResource, error) {
@@ -534,6 +550,8 @@ func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*Cluster
 	return result, deletedAlready, err
 }
 
+// GetCluster makes a GET request to the "/clusters/<id>" endpoint, thereby retrieving details
+// for a given cluster in Bridge specified by the provided cluster id.
 func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*ClusterApiResource, error) {
 	result := &ClusterApiResource{}
 
@@ -566,6 +584,8 @@ func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*ClusterApi
 	return result, err
 }
 
+// GetClusterStatus makes a GET request to the "/clusters/<id>/status" endpoint, thereby retrieving details
+// for a given cluster's status in Bridge, specified by the provided cluster id.
 func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (*ClusterStatusApiResource, error) {
 	result := &ClusterStatusApiResource{}
 
@@ -598,6 +618,8 @@ func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (*Clus
 	return result, err
 }
 
+// GetClusterUpgrade makes a GET request to the "/clusters/<id>/upgrade" endpoint, thereby retrieving details
+// for a given cluster's upgrade status in Bridge, specified by the provided cluster id.
 func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*ClusterUpgradeApiResource, error) {
 	result := &ClusterUpgradeApiResource{}
 
@@ -630,6 +652,8 @@ func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*Clu
 	return result, err
 }
 
+// UpgradeCluster makes a POST request to the "/clusters/<id>/upgrade" endpoint, thereby attempting
+// to upgrade certain settings for a given cluster in Bridge.
 func (c *Client) UpgradeCluster(
 	ctx context.Context, apiKey, id string, clusterRequestPayload *PostClustersUpgradeRequestPayload,
 ) (*ClusterUpgradeApiResource, error) {
@@ -669,6 +693,9 @@ func (c *Client) UpgradeCluster(
 	return result, err
 }
 
+// UpgradeClusterHA makes a PUT request to the "/clusters/<id>/actions/<action>" endpoint,
+// where <action> is either "enable-ha" or "disable-ha", thereby attempting to change the
+// HA setting for a given cluster in Bridge.
 func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string) (*ClusterUpgradeApiResource, error) {
 	result := &ClusterUpgradeApiResource{}
 
@@ -701,62 +728,8 @@ func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string
 	return result, err
 }
 
-func (c *Client) GetClusterRole(ctx context.Context, apiKey, clusterId, roleName string) (*ClusterRoleApiResource, error) {
-	result := &ClusterRoleApiResource{}
-
-	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+clusterId+"/roles/"+roleName, nil, nil, http.Header{
-		"Accept":        []string{"application/json"},
-		"Authorization": []string{"Bearer " + apiKey},
-	})
-
-	if err == nil {
-		defer response.Body.Close()
-		body, _ := io.ReadAll(response.Body)
-
-		switch {
-		// 2xx, Successful
-		case response.StatusCode >= 200 && response.StatusCode < 300:
-			if err = json.Unmarshal(body, &result); err != nil {
-				err = fmt.Errorf("%w: %s", err, body)
-			}
-
-		default:
-			//nolint:goerr113 // This is intentionally dynamic.
-			err = fmt.Errorf("%v: %s", response.Status, body)
-		}
-	}
-
-	return result, err
-}
-
-func (c *Client) ListClusterRoles(ctx context.Context, apiKey, id string) ([]*ClusterRoleApiResource, error) {
-	result := ClusterRoleList{}
-
-	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/roles", nil, nil, http.Header{
-		"Accept":        []string{"application/json"},
-		"Authorization": []string{"Bearer " + apiKey},
-	})
-
-	if err == nil {
-		defer response.Body.Close()
-		body, _ := io.ReadAll(response.Body)
-
-		switch {
-		// 2xx, Successful
-		case response.StatusCode >= 200 && response.StatusCode < 300:
-			if err = json.Unmarshal(body, &result); err != nil {
-				err = fmt.Errorf("%w: %s", err, body)
-			}
-
-		default:
-			//nolint:goerr113 // This is intentionally dynamic.
-			err = fmt.Errorf("%v: %s", response.Status, body)
-		}
-	}
-
-	return result.Roles, err
-}
-
+// UpdateCluster makes a PATCH request to the "/clusters/<id>" endpoint, thereby attempting to
+// update certain settings for a given cluster in Bridge.
 func (c *Client) UpdateCluster(
 	ctx context.Context, apiKey, id string, clusterRequestPayload *PatchClustersRequestPayload,
 ) (*ClusterApiResource, error) {
@@ -794,4 +767,64 @@ func (c *Client) UpdateCluster(
 	}
 
 	return result, err
+}
+
+// GetClusterRole sends a GET request to the "/clusters/<id>/roles/<roleName>" endpoint, thereby retrieving
+// Role information for a specific role from a specific cluster in Bridge.
+func (c *Client) GetClusterRole(ctx context.Context, apiKey, clusterId, roleName string) (*ClusterRoleApiResource, error) {
+	result := &ClusterRoleApiResource{}
+
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+clusterId+"/roles/"+roleName, nil, nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
+}
+
+// ListClusterRoles sends a GET request to the "/clusters/<id>/roles" endpoint thereby retrieving
+// a list of all cluster roles for a specific cluster in Bridge.
+func (c *Client) ListClusterRoles(ctx context.Context, apiKey, id string) ([]*ClusterRoleApiResource, error) {
+	result := ClusterRoleList{}
+
+	response, err := c.doWithRetry(ctx, "GET", "/clusters/"+id+"/roles", nil, nil, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result.Roles, err
 }
