@@ -257,16 +257,16 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Exit early if we can't create from this K8s object
 	// unless this K8s object has been changed (compare ObservedGeneration)
 	invalid := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
-		v1beta1.ConditionCreating)
+		v1beta1.ConditionReady)
 	if invalid != nil &&
 		invalid.Status == metav1.ConditionFalse &&
-		invalid.Message == "ClusterInvalid" &&
+		invalid.Reason == "ClusterInvalid" &&
 		invalid.ObservedGeneration == crunchybridgecluster.GetGeneration() {
 		return ctrl.Result{}, nil
 	}
 
 	// check for an upgrade error and return until observedGeneration has
-	// been incremented by updating the CR with valid value(s).
+	// been incremented.
 	invalidUpgrade := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
 		v1beta1.ConditionUpgrading)
 	if invalidUpgrade != nil &&
@@ -282,6 +282,13 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		// Check if the cluster exists
 		clusters, err := r.NewClient().ListClusters(ctx, key, team)
 		if err != nil {
+			meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+				ObservedGeneration: crunchybridgecluster.GetGeneration(),
+				Type:               v1beta1.ConditionReady,
+				Status:             metav1.ConditionUnknown,
+				Reason:             "UnknownClusterState",
+				Message:            fmt.Sprintf("Issue listing existing clusters in Bridge %v", err),
+			})
 			log.Error(err, "issue listing existing clusters in Bridge")
 			return ctrl.Result{}, err
 		}
@@ -303,7 +310,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 				// Set invalid status condition and create log message.
 				meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
 					ObservedGeneration: crunchybridgecluster.GetGeneration(),
-					Type:               v1beta1.ConditionCreating,
+					Type:               v1beta1.ConditionReady,
 					Status:             metav1.ConditionFalse,
 					Reason:             "ClusterInvalid",
 					Message: fmt.Sprintf("A cluster with the same name already exists for this team (Team ID: %v). "+
@@ -341,11 +348,11 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			// Otherwise want a different condition
 			meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
 				ObservedGeneration: crunchybridgecluster.GetGeneration(),
-				Type:               v1beta1.ConditionCreating,
+				Type:               v1beta1.ConditionReady,
 				Status:             metav1.ConditionFalse,
 				Reason:             "ClusterInvalid",
 				Message: fmt.Sprintf(
-					"Cannot create from spec for some reason: %v", "TODO(crunchybridgecluster)"),
+					"Cannot create from spec: %v", err),
 			})
 
 			// TODO(crunchybridgecluster): If the payload is wrong, we don't want to requeue, so pass nil error
@@ -353,6 +360,14 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 			return ctrl.Result{}, nil
 		}
 		crunchybridgecluster.Status.ID = cluster.ID
+
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionReady,
+			Status:             metav1.ConditionUnknown,
+			Reason:             "ReadyConditionUnknown",
+			Message:            "The condition of the cluster is unknown.",
+		})
 
 		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
 			ObservedGeneration: crunchybridgecluster.GetGeneration(),
@@ -371,6 +386,13 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Get Cluster
 	clusterDetails, err := r.NewClient().GetCluster(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionReady,
+			Status:             metav1.ConditionUnknown,
+			Reason:             "UnknownClusterState",
+			Message:            fmt.Sprintf("Issue getting cluster information from Bridge: %v", err),
+		})
 		log.Error(err, "issue getting cluster information from Bridge")
 		return ctrl.Result{}, err
 	}
@@ -379,11 +401,34 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Get Cluster Status
 	clusterStatus, err := r.NewClient().GetClusterStatus(ctx, key, crunchybridgecluster.Status.ID)
 	if err != nil {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionReady,
+			Status:             metav1.ConditionUnknown,
+			Reason:             "UnknownClusterState",
+			Message:            fmt.Sprintf("Issue getting cluster status from Bridge: %v", err),
+		})
 		log.Error(err, "issue getting cluster status from Bridge")
 		return ctrl.Result{}, err
 	}
 	clusterStatus.AddDataToClusterStatus(crunchybridgecluster)
-	// TODO: Update the ConditionReady status here
+	if clusterStatus.State == "ready" {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionReady,
+			Status:             metav1.ConditionTrue,
+			Reason:             clusterStatus.State,
+			Message:            fmt.Sprintf("Bridge cluster state is %v.", clusterStatus.State),
+		})
+	} else {
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionReady,
+			Status:             metav1.ConditionFalse,
+			Reason:             clusterStatus.State,
+			Message:            fmt.Sprintf("Bridge cluster state is %v.", clusterStatus.State),
+		})
+	}
 
 	// Get Cluster Upgrade
 	clusterUpgradeDetails, err := r.NewClient().GetClusterUpgrade(ctx, key, crunchybridgecluster.Status.ID)
@@ -466,22 +511,23 @@ func (r *CrunchyBridgeClusterReconciler) reconcileBridgeConnectionSecret(
 	if err != nil {
 		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
 			ObservedGeneration: crunchybridgecluster.GetGeneration(),
-			Type:               v1beta1.ConditionCreating,
-			Status:             metav1.ConditionFalse,
+			Type:               v1beta1.ConditionReady,
+			Status:             metav1.ConditionUnknown,
 			Reason:             "SecretInvalid",
 			Message: fmt.Sprintf(
-				"Cannot create with bad secret: %v", "TODO(crunchybridgecluster)"),
+				"The condition of the cluster is unknown because the secret is invalid: %v", err),
+		})
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			Type:               v1beta1.ConditionUpgrading,
+			Status:             metav1.ConditionUnknown,
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			LastTransitionTime: metav1.Time{},
+			Reason:             "SecretInvalid",
+			Message: fmt.Sprintf(
+				"The condition of the upgrade(s) is unknown because the secret is invalid: %v", err),
 		})
 
 		return "", "", err
-	}
-
-	// Remove SecretInvalid condition if found
-	invalid := meta.FindStatusCondition(crunchybridgecluster.Status.Conditions,
-		v1beta1.ConditionCreating)
-	if invalid != nil && invalid.Status == metav1.ConditionFalse && invalid.Reason == "SecretInvalid" {
-		meta.RemoveStatusCondition(&crunchybridgecluster.Status.Conditions,
-			v1beta1.ConditionCreating)
 	}
 
 	return key, team, err

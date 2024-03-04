@@ -183,8 +183,6 @@ type UpgradeOperation struct {
 // CrunchyBridgeClusterStatus condition types.
 const (
 	ConditionUnknown   = ""
-	ConditionPending   = "Pending"
-	ConditionCreating  = "Creating"
 	ConditionUpgrading = "Upgrading"
 	ConditionReady     = "Ready"
 	ConditionDeleting  = "Deleting"
