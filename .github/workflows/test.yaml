@@ -31,11 +31,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: 1.21 }
+        with: { go-version: stable }
       - run: go mod download
       - run: ENVTEST_K8S_VERSION="${KUBERNETES#default}" make check-envtest
         env:
           KUBERNETES: "${{ matrix.kubernetes }}"
+          GOEXPERIMENT: nocoverageredesign # https://go.dev/issue/65653
           GO_TEST: go test --coverprofile 'envtest.coverage' --coverpkg ./internal/...
 
       # Upload coverage to GitHub
@@ -57,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: 1.21 }
+        with: { go-version: stable }
 
       - name: Start k3s
         uses: ./.github/actions/k3d
@@ -71,6 +72,7 @@ jobs:
       - run: make createnamespaces check-envtest-existing
         env:
           PGO_TEST_TIMEOUT_SCALE: 1.2
+          GOEXPERIMENT: nocoverageredesign # https://go.dev/issue/65653
           GO_TEST: go test --coverprofile 'envtest-existing.coverage' --coverpkg ./internal/...
 
       # Upload coverage to GitHub
