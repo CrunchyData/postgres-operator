@@ -17,6 +17,7 @@ jobs:
         with:
           version: latest
           args: --timeout=5m
+          skip-cache: true # https://github.com/golangci/golangci-lint-action/issues/863
 
       # Count issues reported by disabled linters. The command always
       # exits zero to ensure it does not fail the pull request check.
