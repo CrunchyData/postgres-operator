@@ -55,6 +55,10 @@ spec:
                   it has a secondary it can fail over to quickly in case the primary
                   becomes unavailable.
                 type: boolean
+              isProtected:
+                description: Whether the cluster is protected. Protected clusters
+                  can't be destroyed until their protected flag is removed
+                type: boolean
               majorVersion:
                 description: The ID of the cluster's major Postgres version. Currently
                   Bridge offers 13-16

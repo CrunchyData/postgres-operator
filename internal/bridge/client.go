@@ -154,7 +154,7 @@ type PatchClustersRequestPayload struct {
 	// DashboardSettings      *ClusterDashboardSettings `json:"dashboard_settings,omitempty"`
 	// TODO: (dsessler7) Find docs for DashboardSettings and create appropriate struct
 	Environment            string `json:"environment,omitempty"`
-	IsProtected            bool   `json:"is_protected,omitempty"`
+	IsProtected            *bool  `json:"is_protected,omitempty"`
 	MaintenanceWindowStart int64  `json:"maintenance_window_start,omitempty"`
 	Name                   string `json:"name,omitempty"`
 }
@@ -755,4 +755,43 @@ func (c *Client) ListClusterRoles(ctx context.Context, apiKey, id string) ([]*Cl
 	}
 
 	return result.Roles, err
+}
+
+func (c *Client) UpdateCluster(
+	ctx context.Context, apiKey, id string, clusterRequestPayload *PatchClustersRequestPayload,
+) (*ClusterApiResource, error) {
+	result := &ClusterApiResource{}
+
+	clusterbyte, err := json.Marshal(clusterRequestPayload)
+	if err != nil {
+		return result, err
+	}
+
+	response, err := c.doWithRetry(ctx, "PATCH", "/clusters/"+id, nil, clusterbyte, http.Header{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{"Bearer " + apiKey},
+	})
+
+	if err == nil {
+		defer response.Body.Close()
+		body, _ := io.ReadAll(response.Body)
+
+		switch {
+		// 2xx, Successful
+		case response.StatusCode >= 200 && response.StatusCode < 300:
+			if err = json.Unmarshal(body, &result); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+				return result, err
+			}
+			if err = json.Unmarshal(body, &result.ResponsePayload); err != nil {
+				err = fmt.Errorf("%w: %s", err, body)
+			}
+
+		default:
+			//nolint:goerr113 // This is intentionally dynamic.
+			err = fmt.Errorf("%v: %s", response.Status, body)
+		}
+	}
+
+	return result, err
 }
