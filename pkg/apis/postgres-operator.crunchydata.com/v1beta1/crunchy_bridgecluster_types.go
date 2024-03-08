@@ -32,6 +32,11 @@ type CrunchyBridgeClusterSpec struct {
 	// +kubebuilder:validation:Required
 	IsHA bool `json:"isHa"`
 
+	// Whether the cluster is protected. Protected clusters can't be destroyed until
+	// their protected flag is removed
+	// +optional
+	IsProtected bool `json:"isProtected,omitempty"`
+
 	// The name of the cluster
 	// ---
 	// According to Bridge API/GUI errors,

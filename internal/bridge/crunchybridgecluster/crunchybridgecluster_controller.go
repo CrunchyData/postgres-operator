@@ -410,6 +410,10 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// see https://docs.crunchybridge.com/api/cluster#update-cluster
 	// updates to these fields that hit the PATCH `clusters/<id>` endpoint
 	// TODO(crunchybridgecluster)
+	if crunchybridgecluster.Spec.IsProtected != *crunchybridgecluster.Status.IsProtected ||
+		crunchybridgecluster.Spec.ClusterName != crunchybridgecluster.Status.ClusterName {
+		return r.handleUpdate(ctx, key, crunchybridgecluster)
+	}
 
 	log.Info("Reconciled")
 	// TODO(crunchybridgecluster): do we always want to requeue? Does the Watch mean we
@@ -537,6 +541,51 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 				clusterUpgrade.Operations[0].Flavor, clusterUpgrade.Operations[0].State),
 		})
 	}
+	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
+}
+
+// handleUpdate handles upgrades that hit the "PATCH /clusters/<id>" endpoint
+func (r *CrunchyBridgeClusterReconciler) handleUpdate(ctx context.Context,
+	apiKey string,
+	crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
+) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	log.Info("Handling update request")
+
+	updateRequest := &bridge.PatchClustersRequestPayload{
+		IsProtected: &crunchybridgecluster.Spec.IsProtected,
+		Name:        crunchybridgecluster.Spec.ClusterName,
+	}
+
+	clusterUpdate, err := r.NewClient().UpdateCluster(ctx, apiKey,
+		crunchybridgecluster.Status.ID, updateRequest)
+	if err != nil {
+		// TODO(crunchybridgecluster): consider what errors we might get
+		// and what different results/requeue times we want to return.
+		// Currently: don't requeue and wait for user to change spec.
+		meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+			ObservedGeneration: crunchybridgecluster.GetGeneration(),
+			Type:               v1beta1.ConditionUpgrading,
+			Status:             metav1.ConditionFalse,
+			Reason:             "UpgradeError",
+			Message: fmt.Sprintf(
+				"Error performing an upgrade: %s", err),
+		})
+		log.Error(err, "Error while attempting cluster update")
+		return ctrl.Result{}, nil
+	}
+	clusterUpdate.AddDataToClusterStatus(crunchybridgecluster)
+	meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
+		ObservedGeneration: crunchybridgecluster.GetGeneration(),
+		Type:               v1beta1.ConditionUpgrading,
+		Status:             metav1.ConditionTrue,
+		Reason:             "ClusterUpgrade",
+		Message: fmt.Sprintf(
+			"An upgrade is occurring, the clusters name is %v and the cluster is protected is %v.",
+			clusterUpdate.ClusterName, clusterUpdate.IsProtected),
+	})
+
 	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
 }
 
