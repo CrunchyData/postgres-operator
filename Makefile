@@ -187,7 +187,8 @@ build-postgres-operator-image: build/postgres-operator/Dockerfile
 ##@ Test
 .PHONY: check
 check: ## Run basic go tests with coverage output
-	$(GO_TEST) -cover ./...
+check: get-pgmonitor
+	QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" $(GO_TEST) -cover ./...
 
 # Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
@@ -199,7 +200,7 @@ check-envtest: get-pgmonitor
 	GOBIN='$(CURDIR)/hack/tools' $(GO) install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 	@$(ENVTEST_USE) --print=overview && echo
 	source <($(ENVTEST_USE) --print=env) && PGO_NAMESPACE="postgres-operator" QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" \
-		$(GO_TEST) -count=1 -cover -tags=envtest ./...
+		$(GO_TEST) -count=1 -cover ./...
 
 # The "PGO_TEST_TIMEOUT_SCALE" environment variable (default: 1) can be set to a
 # positive number that extends test timeouts. The following runs tests with 
@@ -211,7 +212,7 @@ check-envtest-existing: get-pgmonitor
 check-envtest-existing: createnamespaces
 	kubectl apply --server-side -k ./config/dev
 	USE_EXISTING_CLUSTER=true PGO_NAMESPACE="postgres-operator" QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" \
-		$(GO_TEST) -count=1 -cover -p=1 -tags=envtest ./...
+		$(GO_TEST) -count=1 -cover -p=1 ./...
 	kubectl delete -k ./config/dev
 
 # Expects operator to be running

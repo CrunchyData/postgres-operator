@@ -1,8 +1,3 @@
-//go:build envtest
-// +build envtest
-
-package upgradecheck
-
 /*
  Copyright 2021 - 2024 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +13,15 @@ package upgradecheck
  limitations under the License.
 */
 
+package upgradecheck
+
 import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -44,6 +43,10 @@ import (
 )
 
 func TestGenerateHeader(t *testing.T) {
+	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.SkipNow()
+	}
+
 	setupDeploymentID(t)
 	ctx := context.Background()
 	env := &envtest.Environment{
@@ -140,6 +143,10 @@ func TestGenerateHeader(t *testing.T) {
 }
 
 func TestEnsureID(t *testing.T) {
+	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.SkipNow()
+	}
+
 	ctx := context.Background()
 	env := &envtest.Environment{}
 	config, err := env.Start()
@@ -283,6 +290,10 @@ func TestEnsureID(t *testing.T) {
 }
 
 func TestManageUpgradeCheckConfigMap(t *testing.T) {
+	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.SkipNow()
+	}
+
 	ctx := context.Background()
 	env := &envtest.Environment{}
 	config, err := env.Start()
@@ -416,6 +427,10 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 }
 
 func TestApplyConfigMap(t *testing.T) {
+	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.SkipNow()
+	}
+
 	ctx := context.Background()
 	env := &envtest.Environment{}
 	config, err := env.Start()

@@ -1,6 +1,3 @@
-//go:build envtest
-// +build envtest
-
 // Copyright 2023 - 2024 Crunchy Data Solutions, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -71,6 +69,9 @@ var kubernetes struct {
 // TODO(tjmoore4): This function is duplicated from a version that takes a PostgresCluster object.
 func setupKubernetes(t testing.TB) client.Client {
 	t.Helper()
+	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.SkipNow()
+	}
 
 	kubernetes.Lock()
 	defer kubernetes.Unlock()

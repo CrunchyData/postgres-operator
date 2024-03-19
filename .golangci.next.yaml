@@ -38,7 +38,3 @@ linters-settings:
     # https://github.com/kulti/thelper/issues/27
     tb:   { begin: true, first: true }
     test: { begin: true, first: true, name: true }
-
-run:
-  build-tags:
-    - envtest

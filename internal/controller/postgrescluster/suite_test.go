@@ -1,6 +1,3 @@
-//go:build envtest
-// +build envtest
-
 /*
  Copyright 2021 - 2024 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +17,9 @@ package postgrescluster
 
 import (
 	"context"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -60,6 +59,10 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		Skip("skipping")
+	}
+
 	logging.SetLogSink(logging.Logrus(GinkgoWriter, "test", 1, 1))
 	log.SetLogger(logging.FromContext(context.Background()))
 
@@ -74,6 +77,8 @@ var _ = BeforeSuite(func() {
 
 	_, err := suite.Environment.Start()
 	Expect(err).ToNot(HaveOccurred())
+
+	DeferCleanup(suite.Environment.Stop)
 
 	suite.Config = suite.Environment.Config
 	suite.Client, err = client.New(suite.Config, client.Options{Scheme: suite.Scheme})
@@ -90,6 +95,5 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	Expect(suite.Environment.Stop()).To(Succeed())
+
 })
