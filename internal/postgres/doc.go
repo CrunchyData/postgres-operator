@@ -1,8 +1,3 @@
-// Package postgres is a collection of resources that interact with PostgreSQL
-// or provide functionality that makes it easier for other resources to interact
-// with PostgreSQL.
-package postgres
-
 /*
  Copyright 2021 - 2024 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,3 +12,8 @@ package postgres
  See the License for the specific language governing permissions and
  limitations under the License.
 */
+
+// Package postgres is a collection of resources that interact with PostgreSQL
+// or provide functionality that makes it easier for other resources to interact
+// with PostgreSQL.
+package postgres

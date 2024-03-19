@@ -69,7 +69,5 @@ linters-settings:
     no-unaliased: true
 
 run:
-  build-tags:
-    - envtest
   skip-dirs:
     - pkg/generated

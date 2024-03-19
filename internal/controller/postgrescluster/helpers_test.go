@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -85,6 +86,9 @@ var kubernetes struct {
 // It deletes CRDs and stops the local API using t.Cleanup.
 func setupKubernetes(t testing.TB) (*envtest.Environment, client.Client) {
 	t.Helper()
+	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.SkipNow()
+	}
 
 	kubernetes.Lock()
 	defer kubernetes.Unlock()
