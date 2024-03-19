@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/ubi-micro
+FROM registry.access.redhat.com/ubi8/ubi-minimal
 
 COPY licenses /licenses
 
