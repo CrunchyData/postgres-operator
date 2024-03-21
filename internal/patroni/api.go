@@ -200,9 +200,9 @@ func (exec Executor) GetTimeline(ctx context.Context) (int64, error) {
 	}
 
 	var members []struct {
-		Role     string
-		State    string
-		Timeline int64 `json:"TL"`
+		Role     string `json:"Role"`
+		State    string `json:"State"`
+		Timeline int64  `json:"TL"`
 	}
 	err = json.Unmarshal(stdout.Bytes(), &members)
 	if err != nil {
