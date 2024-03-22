@@ -198,7 +198,6 @@ const (
 // +operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Secret,v1},{Service,v1},{CronJob,v1beta1},{Deployment,v1},{Job,v1},{StatefulSet,v1},{PersistentVolumeClaim,v1}}
 
 // CrunchyBridgeCluster is the Schema for the crunchybridgeclusters API
-// This Custom Resource requires enabling CrunchyBridgeClusters feature gate
 type CrunchyBridgeCluster struct {
 	// ObjectMeta.Name is a DNS subdomain.
 	// - https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
