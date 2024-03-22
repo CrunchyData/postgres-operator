@@ -21,8 +21,7 @@ spec:
     schema:
       openAPIV3Schema:
         description: CrunchyBridgeCluster is the Schema for the crunchybridgeclusters
-          API This Custom Resource requires enabling CrunchyBridgeClusters feature
-          gate
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

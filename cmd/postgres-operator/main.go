@@ -176,26 +176,24 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 		os.Exit(1)
 	}
 
-	if util.DefaultMutableFeatureGate.Enabled(util.CrunchyBridgeClusters) {
-		constructor := func() bridge.ClientInterface {
-			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
-			client.Transport = otelTransportWrapper()(http.DefaultTransport)
-			return client
-		}
+	constructor := func() bridge.ClientInterface {
+		client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
+		client.Transport = otelTransportWrapper()(http.DefaultTransport)
+		return client
+	}
 
-		crunchyBridgeClusterReconciler := &crunchybridgecluster.CrunchyBridgeClusterReconciler{
-			Client: mgr.GetClient(),
-			Owner:  "crunchybridgecluster-controller",
-			// TODO(crunchybridgecluster): recorder?
-			// Recorder: mgr.GetEventRecorderFor(naming...),
-			Scheme:    mgr.GetScheme(),
-			NewClient: constructor,
-		}
+	crunchyBridgeClusterReconciler := &crunchybridgecluster.CrunchyBridgeClusterReconciler{
+		Client: mgr.GetClient(),
+		Owner:  "crunchybridgecluster-controller",
+		// TODO(crunchybridgecluster): recorder?
+		// Recorder: mgr.GetEventRecorderFor(naming...),
+		Scheme:    mgr.GetScheme(),
+		NewClient: constructor,
+	}
 
-		if err := crunchyBridgeClusterReconciler.SetupWithManager(mgr); err != nil {
-			log.Error(err, "unable to create CrunchyBridgeCluster controller")
-			os.Exit(1)
-		}
+	if err := crunchyBridgeClusterReconciler.SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create CrunchyBridgeCluster controller")
+		os.Exit(1)
 	}
 }
 
