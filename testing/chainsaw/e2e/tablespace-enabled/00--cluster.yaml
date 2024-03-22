@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tablespace-script
+data:
+  script.sql: |
+    CREATE TABLESPACE trial OWNER "tablespace-enabled" LOCATION '/tablespaces/library/data';
+    CREATE TABLESPACE castle OWNER "tablespace-enabled" LOCATION '/tablespaces/user/data';
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: tablespace-enabled
+spec:
+  databaseInitSQL:
+    name: tablespace-script
+    key: script.sql
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+      tablespaceVolumes:
+      - name: user
+        dataVolumeClaimSpec:
+          accessModes:
+          - "ReadWriteOnce"
+          resources:
+            requests:
+              storage: 1Gi
+      - name: library
+        dataVolumeClaimSpec:
+          accessModes:
+          - "ReadWriteOnce"
+          resources:
+            requests:
+              storage: 1Gi
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi

@@ -19,6 +19,7 @@ GO_CMD = $(GO_ENV) $(GO)
 GO_TEST ?= $(GO) test
 KUTTL ?= kubectl-kuttl
 KUTTL_TEST ?= $(KUTTL) test
+CHAINSAW ?= chainsaw
 
 # Disable optimizations if creating a debug build
 ifeq ("$(DEBUG_BUILD)", "true")
@@ -215,6 +216,12 @@ check-envtest-existing: createnamespaces
 	kubectl delete -k ./config/dev
 
 # Expects operator to be running
+.PHONY: check-chainsaw
+check-chainsaw: ## Run chainsaw end-to-end tests
+check-chainsaw:
+	$(CHAINSAW) test --test-dir ./testing/chainsaw/e2e-generated
+
+# Expects operator to be running
 .PHONY: check-kuttl
 check-kuttl: ## Run kuttl end-to-end tests
 check-kuttl: ## example command: make check-kuttl KUTTL_TEST='
@@ -249,6 +256,35 @@ generate-kuttl: ## Generate kuttl tests
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
 		shift; \
 	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e-other/*/*.yaml testing/kuttl/e2e/*/*/*.yaml testing/kuttl/e2e-other/*/*/*.yaml
+
+.PHONY: generate-chainsaw
+generate-chainsaw: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 15
+generate-chainsaw: export KUTTL_PG_UPGRADE_TO_VERSION ?= 16
+generate-chainsaw: export KUTTL_PG_VERSION ?= 16
+generate-chainsaw: export KUTTL_POSTGIS_VERSION ?= 3.4
+generate-chainsaw: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.1-0
+generate-chainsaw: export KUTTL_TEST_DELETE_NAMESPACE ?= chainsaw-test-delete-namespace
+generate-chainsaw: ## Generate chainsaw tests
+	[ ! -d testing/chainsaw/e2e-generated ] || rm -r testing/chainsaw/e2e-generated
+	[ ! -d testing/chainsaw/e2e-generated-other ] || rm -r testing/chainsaw/e2e-generated-other
+	bash -ceu ' \
+	case $(KUTTL_PG_VERSION) in \
+	16 ) export KUTTL_BITNAMI_IMAGE_TAG=16.0.0-debian-11-r3 ;; \
+	15 ) export KUTTL_BITNAMI_IMAGE_TAG=15.0.0-debian-11-r4 ;; \
+	14 ) export KUTTL_BITNAMI_IMAGE_TAG=14.5.0-debian-11-r37 ;; \
+	13 ) export KUTTL_BITNAMI_IMAGE_TAG=13.8.0-debian-11-r39 ;; \
+	12 ) export KUTTL_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
+	11 ) export KUTTL_BITNAMI_IMAGE_TAG=11.17.0-debian-11-r39 ;; \
+	esac; \
+	render() { envsubst '"'"' \
+		$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION \
+		$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE \
+		$$KUTTL_BITNAMI_IMAGE_TAG $$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \
+	while [ $$# -gt 0 ]; do \
+		source="$${1}" target="$${1/e2e/e2e-generated}"; \
+		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
+		shift; \
+	done' - testing/chainsaw/e2e/*/*.yaml testing/chainsaw/e2e-other/*/*.yaml testing/chainsaw/e2e/*/*/*.yaml testing/chainsaw/e2e-other/*/*/*.yaml
 
 ##@ Generate
 

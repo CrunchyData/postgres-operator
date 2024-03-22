@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Event
+type: Warning
+involvedObject:
+  apiVersion: postgres-operator.crunchydata.com/v1beta1
+  kind: PostgresCluster
+  name: resize-volume-down
+reason: PersistentVolumeError
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: resize-volume-down
+    postgres-operator.crunchydata.com/instance-set: instance1
+spec:
+  resources:
+    requests:
+      storage: 2Gi
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  phase: Bound
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: resize-volume-down
+    postgres-operator.crunchydata.com/data: pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+spec:
+  resources:
+    requests:
+      storage: 2Gi
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  phase: Bound

@@ -1,0 +1,10 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGUpgrade
+metadata:
+  name: major-upgrade-do-it
+status:
+  conditions:
+  - type:   "Progressing"
+    status: "False"
+    reason: "PGUpgradeInvalid"

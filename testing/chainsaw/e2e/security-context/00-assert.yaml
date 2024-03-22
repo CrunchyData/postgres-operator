@@ -1,0 +1,186 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: security-context
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: security-context
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+status:
+  succeeded: 1
+---
+# initial pgBackRest backup
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: security-context
+    postgres-operator.crunchydata.com/pgbackrest: ""
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+spec:
+  containers:
+  - name: pgbackrest
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+---
+# instance
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: security-context
+    postgres-operator.crunchydata.com/data: postgres
+    postgres-operator.crunchydata.com/instance-set: instance1
+    postgres-operator.crunchydata.com/patroni: security-context-ha
+    postgres-operator.crunchydata.com/role: master
+spec:
+  containers:
+  - name: database
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: replication-cert-copy
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: pgbackrest
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: pgbackrest-config
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: exporter
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  initContainers:
+  - name: postgres-startup
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: nss-wrapper-init
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+---
+# pgAdmin
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: security-context
+    postgres-operator.crunchydata.com/data: pgadmin
+    postgres-operator.crunchydata.com/role: pgadmin
+    statefulset.kubernetes.io/pod-name: security-context-pgadmin-0
+  name: security-context-pgadmin-0
+spec:
+  containers:
+  - name: pgadmin
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  initContainers:
+  - name: pgadmin-startup
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: nss-wrapper-init
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+---
+# pgBouncer
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: security-context
+    postgres-operator.crunchydata.com/role: pgbouncer
+spec:
+  containers:
+  - name: pgbouncer
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: pgbouncer-config
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+---
+# pgBackRest repo
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: security-context
+    postgres-operator.crunchydata.com/data: pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest: ""
+    postgres-operator.crunchydata.com/pgbackrest-dedicated: ""
+    statefulset.kubernetes.io/pod-name: security-context-repo-host-0
+  name: security-context-repo-host-0
+spec:
+  containers:
+  - name: pgbackrest
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: pgbackrest-config
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  initContainers:
+  - name: pgbackrest-log-dir
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+  - name: nss-wrapper-init
+    securityContext:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
