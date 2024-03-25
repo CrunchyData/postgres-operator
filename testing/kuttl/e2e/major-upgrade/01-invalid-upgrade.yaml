@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/01-create-invalid-pgupgrade.yaml
+assert:
+- files/01-invalid-pgupgrade-created.yaml
