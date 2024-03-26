@@ -49,15 +49,18 @@ containers:
   - bash
   - -ceu
   - --
-  - "monitor() {\nPGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4\n\necho
-    \"Running pgAdmin4 Setup\"\npython3 ${PGADMIN_DIR}/setup.py\n\necho \"Starting
-    pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4 &\necho $! > $PGADMIN4_PIDFILE\n\npython3
-    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgadmin.postgres-operator.svc --replace\n\nexec {fd}<> <(:)\nwhile
-    read -r -t 5 -u \"${fd}\" || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\"
-    ] && python3 ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgadmin.postgres-operator.svc --replace\n\tthen\n\t\texec {fd}>&-
-    && exec {fd}<> <(:)\n\t\tstat --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif
+  - "monitor() {\nPGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4\nAPP_RELEASE=$(cd
+    $PGADMIN_DIR && python3 -c \"import config; print(config.APP_RELEASE)\")\n\necho
+    \"Running pgAdmin4 Setup\"\nif [ $APP_RELEASE -eq 7 ]; then\n\tpython3 ${PGADMIN_DIR}/setup.py\nelse\n\tpython3
+    ${PGADMIN_DIR}/setup.py setup-db\nfi\n\necho \"Starting pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4
+    &\necho $! > $PGADMIN4_PIDFILE\n\nloadServerCommand() {\n\tif [ $APP_RELEASE -eq
+    7 ]; then\n\t\tpython3 ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgadmin.postgres-operator.svc --replace\n\telse\n\t\tpython3 ${PGADMIN_DIR}/setup.py
+    load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgadmin.postgres-operator.svc --replace\n\tfi\n}\nloadServerCommand\n\nexec
+    {fd}<> <(:)\nwhile read -r -t 5 -u \"${fd}\" || true; do\n\tif [ \"${cluster_file}\"
+    -nt \"/proc/self/fd/${fd}\" ] && loadServerCommand\n\tthen\n\t\texec {fd}>&- &&
+    exec {fd}<> <(:)\n\t\tstat --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif
     [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! >
     $PGADMIN4_PIDFILE\n\t\techo \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\";
     export -f monitor; exec -a \"$0\" bash -ceu monitor"
@@ -178,15 +181,18 @@ containers:
   - bash
   - -ceu
   - --
-  - "monitor() {\nPGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4\n\necho
-    \"Running pgAdmin4 Setup\"\npython3 ${PGADMIN_DIR}/setup.py\n\necho \"Starting
-    pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4 &\necho $! > $PGADMIN4_PIDFILE\n\npython3
-    ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgadmin.postgres-operator.svc --replace\n\nexec {fd}<> <(:)\nwhile
-    read -r -t 5 -u \"${fd}\" || true; do\n\tif [ \"${cluster_file}\" -nt \"/proc/self/fd/${fd}\"
-    ] && python3 ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
-    --user admin@pgadmin.postgres-operator.svc --replace\n\tthen\n\t\texec {fd}>&-
-    && exec {fd}<> <(:)\n\t\tstat --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif
+  - "monitor() {\nPGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4\nAPP_RELEASE=$(cd
+    $PGADMIN_DIR && python3 -c \"import config; print(config.APP_RELEASE)\")\n\necho
+    \"Running pgAdmin4 Setup\"\nif [ $APP_RELEASE -eq 7 ]; then\n\tpython3 ${PGADMIN_DIR}/setup.py\nelse\n\tpython3
+    ${PGADMIN_DIR}/setup.py setup-db\nfi\n\necho \"Starting pgAdmin4\"\nPGADMIN4_PIDFILE=/tmp/pgadmin4.pid\npgadmin4
+    &\necho $! > $PGADMIN4_PIDFILE\n\nloadServerCommand() {\n\tif [ $APP_RELEASE -eq
+    7 ]; then\n\t\tpython3 ${PGADMIN_DIR}/setup.py --load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgadmin.postgres-operator.svc --replace\n\telse\n\t\tpython3 ${PGADMIN_DIR}/setup.py
+    load-servers /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json
+    --user admin@pgadmin.postgres-operator.svc --replace\n\tfi\n}\nloadServerCommand\n\nexec
+    {fd}<> <(:)\nwhile read -r -t 5 -u \"${fd}\" || true; do\n\tif [ \"${cluster_file}\"
+    -nt \"/proc/self/fd/${fd}\" ] && loadServerCommand\n\tthen\n\t\texec {fd}>&- &&
+    exec {fd}<> <(:)\n\t\tstat --format='Loaded shared servers dated %y' \"${cluster_file}\"\n\tfi\n\tif
     [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]\n\tthen\n\t\tpgadmin4 &\n\t\techo $! >
     $PGADMIN4_PIDFILE\n\t\techo \"Restarting pgAdmin4\"\n\tfi\ndone\n}; export cluster_file=\"$1\";
     export -f monitor; exec -a \"$0\" bash -ceu monitor"

@@ -242,28 +242,52 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 }
 
 func startupScript(pgadmin *v1beta1.PGAdmin) []string {
-	// loadServerCommand is a python command leveraging the pgadmin setup.py script
+	// loadServerCommandV7 is a python command leveraging the pgadmin v7 setup.py script
 	// with the `--load-servers` flag to replace the servers registered to the admin user
 	// with the contents of the `settingsClusterMapKey` file
-	var loadServerCommand = fmt.Sprintf(`python3 ${PGADMIN_DIR}/setup.py --load-servers %s/%s --user %s --replace`,
+	var loadServerCommandV7 = fmt.Sprintf(`python3 ${PGADMIN_DIR}/setup.py --load-servers %s/%s --user %s --replace`,
 		configMountPath,
 		clusterFilePath,
 		fmt.Sprintf("admin@%s.%s.svc", pgadmin.Name, pgadmin.Namespace))
 
-	// This script sets up, starts pgadmin, and runs the `loadServerCommand` to register the discovered servers.
+	// loadServerCommandV8 is a python command leveraging the pgadmin v8 setup.py script
+	// with the `load-servers` sub-command to replace the servers registered to the admin user
+	// with the contents of the `settingsClusterMapKey` file
+	var loadServerCommandV8 = fmt.Sprintf(`python3 ${PGADMIN_DIR}/setup.py load-servers %s/%s --user %s --replace`,
+		configMountPath,
+		clusterFilePath,
+		fmt.Sprintf("admin@%s.%s.svc", pgadmin.Name, pgadmin.Namespace))
+
+	// setupCommands (v8 requires the 'setup-db' sub-command)
+	var setupCommandV7 = "python3 ${PGADMIN_DIR}/setup.py"
+	var setupCommandV8 = setupCommandV7 + " setup-db"
+
+	// This script sets up, starts pgadmin, and runs the appropriate `loadServerCommand` to register the discovered servers.
 	var startScript = fmt.Sprintf(`
 PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
+APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
 echo "Running pgAdmin4 Setup"
-python3 ${PGADMIN_DIR}/setup.py
+if [ $APP_RELEASE -eq 7 ]; then
+	%s
+else
+	%s
+fi
 
 echo "Starting pgAdmin4"
 PGADMIN4_PIDFILE=/tmp/pgadmin4.pid
 pgadmin4 &
 echo $! > $PGADMIN4_PIDFILE
 
-%s
-`, loadServerCommand)
+loadServerCommand() {
+	if [ $APP_RELEASE -eq 7 ]; then
+		%s
+	else
+		%s
+	fi
+}
+loadServerCommand
+`, setupCommandV7, setupCommandV8, loadServerCommandV7, loadServerCommandV8)
 
 	// Use a Bash loop to periodically check:
 	// 1. the mtime of the mounted configuration volume for shared/discovered servers.
@@ -276,13 +300,13 @@ echo $! > $PGADMIN4_PIDFILE
 	// descriptor and uses the timeout of the builtin `read` to wait. That same
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check mtimes.
 	// - https://unix.stackexchange.com/a/407383
-	var reloadScript = fmt.Sprintf(`
+	var reloadScript = `
 exec {fd}<> <(:)
 while read -r -t 5 -u "${fd}" || true; do
-	if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && %s
+	if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && loadServerCommand
 	then
 		exec {fd}>&- && exec {fd}<> <(:)
-		stat --format='Loaded shared servers dated %%y' "${cluster_file}"
+		stat --format='Loaded shared servers dated %y' "${cluster_file}"
 	fi
 	if [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]
 	then
@@ -291,7 +315,7 @@ while read -r -t 5 -u "${fd}" || true; do
 		echo "Restarting pgAdmin4"
 	fi
 done
-`, loadServerCommand)
+`
 
 	wrapper := `monitor() {` + startScript + reloadScript + `}; export cluster_file="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
 
