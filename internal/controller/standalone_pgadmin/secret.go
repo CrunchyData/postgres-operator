@@ -72,12 +72,11 @@ func secret(pgadmin *v1beta1.PGAdmin, existing *corev1.Secret) (*corev1.Secret, 
 		})
 
 	intent.Data = make(map[string][]byte)
-	intent.StringData = make(map[string]string)
 
 	// The username format is hardcoded,
 	// but append the full username to the secret for visibility
-	intent.StringData["username"] = fmt.Sprintf("admin@%s.%s.svc",
-		pgadmin.Name, pgadmin.Namespace)
+	intent.Data["username"] = []byte(fmt.Sprintf("admin@%s.%s.svc",
+		pgadmin.Name, pgadmin.Namespace))
 
 	// Copy existing password into the intent
 	if existing.Data != nil {
@@ -91,6 +90,11 @@ func secret(pgadmin *v1beta1.PGAdmin, existing *corev1.Secret) (*corev1.Secret, 
 			return nil, err
 		}
 		intent.Data["password"] = []byte(password)
+	}
+
+	// Copy existing user data into the intent
+	if existing.Data["users.json"] != nil {
+		intent.Data["users.json"] = existing.Data["users.json"]
 	}
 
 	return intent, nil

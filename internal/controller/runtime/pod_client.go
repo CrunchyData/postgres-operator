@@ -13,7 +13,7 @@
  limitations under the License.
 */
 
-package postgrescluster
+package runtime
 
 import (
 	"io"
@@ -41,7 +41,7 @@ func newPodClient(config *rest.Config) (rest.Interface, error) {
 
 // +kubebuilder:rbac:groups="",resources="pods/exec",verbs={create}
 
-func newPodExecutor(config *rest.Config) (podExecutor, error) {
+func NewPodExecutor(config *rest.Config) (podExecutor, error) {
 	client, err := newPodClient(config)
 
 	return func(

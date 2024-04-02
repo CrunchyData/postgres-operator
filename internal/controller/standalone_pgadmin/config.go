@@ -23,4 +23,7 @@ const (
 
 	// Port address used to define pod and service
 	pgAdminPort = 5050
+
+	// Directory for pgAdmin in container
+	pgAdminDir = "/usr/local/lib/python3.11/site-packages/pgadmin4"
 )

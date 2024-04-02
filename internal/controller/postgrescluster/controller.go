@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
@@ -451,7 +452,7 @@ func (r *Reconciler) setOwnerReference(
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 	if r.PodExec == nil {
 		var err error
-		r.PodExec, err = newPodExecutor(mgr.GetConfig())
+		r.PodExec, err = runtime.NewPodExecutor(mgr.GetConfig())
 		if err != nil {
 			return err
 		}
