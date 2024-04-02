@@ -20,7 +20,7 @@ spec:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: PGAdmin is the Schema for the pgadmins API
+        description: PGAdmin is the Schema for the PGAdmin API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -1442,6 +1442,31 @@ spec:
                       type: string
                   type: object
                 type: array
+              users:
+                description: pgAdmin users that are managed via the PGAdmin spec.
+                  Users can still be added via the pgAdmin GUI, but those users will
+                  not show up here.
+                items:
+                  properties:
+                    role:
+                      description: Role determines whether the user has admin privileges
+                        or not. Defaults to User. Valid options are Administrator
+                        and User.
+                      enum:
+                      - Administrator
+                      - User
+                      type: string
+                    username:
+                      description: The username for User in pgAdmin. Must be unique
+                        in the pgAdmin's users list.
+                      type: string
+                  required:
+                  - username
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - username
+                x-kubernetes-list-type: map
             required:
             - dataVolumeClaimSpec
             type: object
@@ -1449,9 +1474,8 @@ spec:
             description: PGAdminStatus defines the observed state of PGAdmin
             properties:
               conditions:
-                description: 'conditions represent the observations of pgadmin''s
-                  current state. Known .status.conditions.type are: "PersistentVolumeResizing",
-                  "Progressing", "ProxyAvailable"'
+                description: 'conditions represent the observations of pgAdmin''s
+                  current state. Known .status.conditions.type is: "PersistentVolumeResizing"'
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -1522,6 +1546,14 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              imageSHA:
+                description: ImageSHA represents the image SHA for the container running
+                  pgAdmin.
+                type: string
+              majorVersion:
+                description: MajorVersion represents the major version of the running
+                  pgAdmin.
+                type: integer
               observedGeneration:
                 description: observedGeneration represents the .metadata.generation
                   on which the status was based.

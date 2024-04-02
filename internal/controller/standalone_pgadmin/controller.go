@@ -16,6 +16,7 @@ package standalone_pgadmin
 
 import (
 	"context"
+	"io"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	controllerruntime "github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -36,7 +38,11 @@ import (
 // PGAdminReconciler reconciles a PGAdmin object
 type PGAdminReconciler struct {
 	client.Client
-	Owner       client.FieldOwner
+	Owner   client.FieldOwner
+	PodExec func(
+		namespace, pod, container string,
+		stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error
 	Recorder    record.EventRecorder
 	IsOpenShift bool
 }
@@ -51,6 +57,14 @@ type PGAdminReconciler struct {
 //
 // TODO(tjmoore4): This function is duplicated from a version that takes a PostgresCluster object.
 func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.PodExec == nil {
+		var err error
+		r.PodExec, err = controllerruntime.NewPodExecutor(mgr.GetConfig())
+		if err != nil {
+			return err
+		}
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta1.PGAdmin{}).
 		Owns(&corev1.ConfigMap{}).
@@ -146,12 +160,15 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err == nil {
 		err = r.reconcilePGAdminStatefulSet(ctx, pgAdmin, configmap, dataVolume)
 	}
+	if err == nil {
+		err = r.reconcilePGAdminUsers(ctx, pgAdmin)
+	}
 
 	if err == nil {
 		// at this point everything reconciled successfully, and we can update the
 		// observedGeneration
 		pgAdmin.Status.ObservedGeneration = pgAdmin.GetGeneration()
-		log.V(1).Info("reconciled cluster")
+		log.V(1).Info("reconciled pgadmin")
 	}
 
 	return ctrl.Result{}, err

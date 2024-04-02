@@ -23,6 +23,7 @@ import (
 type StandalonePGAdminConfiguration struct {
 	// Files allows the user to mount projected volumes into the pgAdmin
 	// container so that files can be referenced by pgAdmin as needed.
+	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 
 	// Settings for the gunicorn server.
@@ -109,29 +110,58 @@ type PGAdminSpec struct {
 	// added manually.
 	// +optional
 	ServerGroups []ServerGroup `json:"serverGroups"`
+
+	// pgAdmin users that are managed via the PGAdmin spec. Users can still
+	// be added via the pgAdmin GUI, but those users will not show up here.
+	// +listType=map
+	// +listMapKey=username
+	// +optional
+	Users []PGAdminUser `json:"users,omitempty"`
 }
 
 type ServerGroup struct {
 	// The name for the ServerGroup in pgAdmin.
 	// Must be unique in the pgAdmin's ServerGroups since it becomes the ServerGroup name in pgAdmin.
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 
 	// PostgresClusterSelector selects clusters to dynamically add to pgAdmin by matching labels.
 	// An empty selector like `{}` will select ALL clusters in the namespace.
+	// +kubebuilder:validation:Required
 	PostgresClusterSelector metav1.LabelSelector `json:"postgresClusterSelector"`
+}
+
+type PGAdminUser struct {
+	// Role determines whether the user has admin privileges or not.
+	// Defaults to User. Valid options are Administrator and User.
+	// +kubebuilder:validation:Enum={Administrator,User}
+	// +optional
+	Role string `json:"role,omitempty"`
+
+	// The username for User in pgAdmin.
+	// Must be unique in the pgAdmin's users list.
+	// +kubebuilder:validation:Required
+	Username string `json:"username"`
 }
 
 // PGAdminStatus defines the observed state of PGAdmin
 type PGAdminStatus struct {
 
-	// conditions represent the observations of pgadmin's current state.
-	// Known .status.conditions.type are: "PersistentVolumeResizing",
-	// "Progressing", "ProxyAvailable"
+	// conditions represent the observations of pgAdmin's current state.
+	// Known .status.conditions.type is: "PersistentVolumeResizing"
 	// +optional
 	// +listType=map
 	// +listMapKey=type
 	// +operator-sdk:csv:customresourcedefinitions:type=status,xDescriptors={"urn:alm:descriptor:io.kubernetes.conditions"}
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// ImageSHA represents the image SHA for the container running pgAdmin.
+	// +optional
+	ImageSHA string `json:"imageSHA,omitempty"`
+
+	// MajorVersion represents the major version of the running pgAdmin.
+	// +optional
+	MajorVersion int `json:"majorVersion,omitempty"`
 
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional
@@ -142,7 +172,7 @@ type PGAdminStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// PGAdmin is the Schema for the pgadmins API
+// PGAdmin is the Schema for the PGAdmin API
 type PGAdmin struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

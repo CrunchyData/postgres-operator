@@ -276,7 +276,7 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 	// - https://www.pgadmin.org/docs/pgadmin4/development/server_deployment.html#standalone-gunicorn-configuration
 	// - https://docs.gunicorn.org/en/latest/configure.html
 	var startScript = fmt.Sprintf(`
-PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
+PGADMIN_DIR=%s
 APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
 echo "Running pgAdmin4 Setup"
@@ -303,7 +303,7 @@ loadServerCommand() {
     fi
 }
 loadServerCommand
-`, setupCommandV7, setupCommandV8, startCommandV7, startCommandV8, loadServerCommandV7, loadServerCommandV8)
+`, pgAdminDir, setupCommandV7, setupCommandV8, startCommandV7, startCommandV8, loadServerCommandV7, loadServerCommandV8)
 
 	// Use a Bash loop to periodically check:
 	// 1. the mtime of the mounted configuration volume for shared/discovered servers.
