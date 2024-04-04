@@ -50,18 +50,6 @@ func FetchKeyCommand(spec *v1beta1.PostgresClusterSpec) string {
 	return ""
 }
 
-func RegistrationRequired() bool {
-	return os.Getenv("REGISTRATION_REQUIRED") == "true"
-}
-
-// Get the version of CPK that applied the first RegistrationRequired status to this cluster.
-func RegistrationRequiredBy(cluster *v1beta1.PostgresCluster) string {
-	if cluster.Status.RegistrationRequired == nil {
-		return ""
-	}
-	return cluster.Status.RegistrationRequired.PGOVersion
-}
-
 // Red Hat Marketplace requires operators to use environment variables be used
 // for any image other than the operator itself. Those variables must start with
 // "RELATED_IMAGE_" so that OSBS can transform their tag values into digests
