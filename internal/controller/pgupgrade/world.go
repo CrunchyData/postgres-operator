@@ -49,7 +49,7 @@ func (r *PGUpgradeReconciler) observeWorld(
 
 	cluster := v1beta1.NewPostgresCluster()
 	err := errors.WithStack(
-		r.Get(ctx, client.ObjectKey{
+		r.Client.Get(ctx, client.ObjectKey{
 			Namespace: upgrade.Namespace,
 			Name:      upgrade.Spec.PostgresClusterName,
 		}, cluster))
@@ -58,7 +58,7 @@ func (r *PGUpgradeReconciler) observeWorld(
 	if err == nil {
 		var endpoints corev1.EndpointsList
 		err = errors.WithStack(
-			r.List(ctx, &endpoints,
+			r.Client.List(ctx, &endpoints,
 				client.InNamespace(upgrade.Namespace),
 				client.MatchingLabelsSelector{Selector: selectCluster},
 			))
@@ -68,7 +68,7 @@ func (r *PGUpgradeReconciler) observeWorld(
 	if err == nil {
 		var jobs batchv1.JobList
 		err = errors.WithStack(
-			r.List(ctx, &jobs,
+			r.Client.List(ctx, &jobs,
 				client.InNamespace(upgrade.Namespace),
 				client.MatchingLabelsSelector{Selector: selectCluster},
 			))
@@ -80,7 +80,7 @@ func (r *PGUpgradeReconciler) observeWorld(
 	if err == nil {
 		var statefulsets appsv1.StatefulSetList
 		err = errors.WithStack(
-			r.List(ctx, &statefulsets,
+			r.Client.List(ctx, &statefulsets,
 				client.InNamespace(upgrade.Namespace),
 				client.MatchingLabelsSelector{Selector: selectCluster},
 			))

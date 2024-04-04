@@ -344,11 +344,9 @@ type PostgresClusterStatus struct {
 	// +optional
 	PGBackRest *PGBackRestStatus `json:"pgbackrest,omitempty"`
 
-	// Version information for installations with a registration requirement.
 	// +optional
 	RegistrationRequired *RegistrationRequirementStatus `json:"registrationRequired,omitempty"`
 
-	// Signals the need for a token to be applied when registration is required.
 	// +optional
 	TokenRequired string `json:"tokenRequired,omitempty"`
 
@@ -405,8 +403,7 @@ const (
 	PersistentVolumeResizing   = "PersistentVolumeResizing"
 	PostgresClusterProgressing = "Progressing"
 	ProxyAvailable             = "ProxyAvailable"
-	RegistrationRequired       = "RegistrationRequired"
-	TokenRequired              = "TokenRequired"
+	Registered                 = "Registered"
 )
 
 type PostgresInstanceSetSpec struct {

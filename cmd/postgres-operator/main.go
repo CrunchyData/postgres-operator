@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strings"
@@ -35,6 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/internal/util"
 )
@@ -70,6 +72,7 @@ func main() {
 
 	// create a context that will be used to stop all controllers on a SIGTERM or SIGINT
 	ctx := cruntime.SetupSignalHandler()
+	ctx, shutdown := context.WithCancel(ctx)
 	log := logging.FromContext(ctx)
 	log.V(1).Info("debug flag set to true")
 
@@ -96,8 +99,13 @@ func main() {
 		log.Info("detected OpenShift environment")
 	}
 
+	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), shutdown)
+	assertNoError(err)
+	assertNoError(mgr.Add(registrar))
+	_ = registrar.CheckToken()
+
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, openshift, log)
+	addControllersToManager(mgr, openshift, log, registrar)
 
 	if util.DefaultMutableFeatureGate.Enabled(util.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -128,23 +136,14 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger) {
-	semanticVersionString := util.SemanticMajorMinorPatch(versionString)
-	if semanticVersionString == "" {
-		os.Setenv("REGISTRATION_REQUIRED", "false")
-	}
-
+func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
-		Client:      mgr.GetClient(),
-		IsOpenShift: openshift,
-		Owner:       postgrescluster.ControllerName,
-		PGOVersion:  semanticVersionString,
-		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
-		// TODO(tlandreth) Replace the contents of cpk_rsa_key.pub with a key from a
-		// Crunchy authorization server.
-		Registration:    util.GetRegistration(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), log),
-		RegistrationURL: os.Getenv("REGISTRATION_URL"),
-		Tracer:          otel.Tracer(postgrescluster.ControllerName),
+		Client:       mgr.GetClient(),
+		IsOpenShift:  openshift,
+		Owner:        postgrescluster.ControllerName,
+		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
+		Registration: reg,
+		Tracer:       otel.Tracer(postgrescluster.ControllerName),
 	}
 
 	if err := pgReconciler.SetupWithManager(mgr); err != nil {
@@ -153,9 +152,10 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 	}
 
 	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
-		Client: mgr.GetClient(),
-		Owner:  "pgupgrade-controller",
-		Scheme: mgr.GetScheme(),
+		Client:       mgr.GetClient(),
+		Owner:        "pgupgrade-controller",
+		Recorder:     mgr.GetEventRecorderFor("pgupgrade-controller"),
+		Registration: reg,
 	}
 
 	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
