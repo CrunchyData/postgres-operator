@@ -20,7 +20,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,7 +38,6 @@ type PGAdminReconciler struct {
 	client.Client
 	Owner       client.FieldOwner
 	Recorder    record.EventRecorder
-	Scheme      *runtime.Scheme
 	IsOpenShift bool
 }
 

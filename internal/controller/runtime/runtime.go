@@ -27,6 +27,18 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// Scheme associates standard Kubernetes API objects and PGO API objects with Go structs.
+var Scheme *runtime.Scheme = runtime.NewScheme()
+
+func init() {
+	if err := scheme.AddToScheme(Scheme); err != nil {
+		panic(err)
+	}
+	if err := v1beta1.AddToScheme(Scheme); err != nil {
+		panic(err)
+	}
+}
+
 // default refresh interval in minutes
 var refreshInterval = 60 * time.Minute
 
@@ -38,15 +50,10 @@ var refreshInterval = 60 * time.Minute
 func CreateRuntimeManager(namespace string, config *rest.Config,
 	disableMetrics bool) (manager.Manager, error) {
 
-	pgoScheme, err := CreatePostgresOperatorScheme()
-	if err != nil {
-		return nil, err
-	}
-
 	options := manager.Options{
 		Namespace:  namespace, // if empty then watching all namespaces
 		SyncPeriod: &refreshInterval,
-		Scheme:     pgoScheme,
+		Scheme:     Scheme,
 	}
 	if disableMetrics {
 		options.HealthProbeBindAddress = "0"
@@ -64,24 +71,3 @@ func CreateRuntimeManager(namespace string, config *rest.Config,
 
 // GetConfig creates a *rest.Config for talking to a Kubernetes API server.
 func GetConfig() (*rest.Config, error) { return config.GetConfig() }
-
-// CreatePostgresOperatorScheme creates a scheme containing the resource types required by the
-// PostgreSQL Operator.  This includes any custom resource types specific to the PostgreSQL
-// Operator, as well as any standard Kubernetes resource types.
-func CreatePostgresOperatorScheme() (*runtime.Scheme, error) {
-
-	// create a new scheme specifically for this manager
-	pgoScheme := runtime.NewScheme()
-
-	// add standard resource types to the scheme
-	if err := scheme.AddToScheme(pgoScheme); err != nil {
-		return nil, err
-	}
-
-	// add custom resource types to the default scheme
-	if err := v1beta1.AddToScheme(pgoScheme); err != nil {
-		return nil, err
-	}
-
-	return pgoScheme, nil
-}

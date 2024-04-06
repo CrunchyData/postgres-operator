@@ -26,7 +26,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,8 +43,7 @@ import (
 type CrunchyBridgeClusterReconciler struct {
 	client.Client
 
-	Owner  client.FieldOwner
-	Scheme *runtime.Scheme
+	Owner client.FieldOwner
 
 	// For this iteration, we will only be setting conditions rather than
 	// setting conditions and emitting events. That may change in the future,

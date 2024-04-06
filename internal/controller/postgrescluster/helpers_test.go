@@ -137,10 +137,7 @@ func setupKubernetes(t testing.TB) (*envtest.Environment, client.Client) {
 		}
 	})
 
-	scheme, err := runtime.CreatePostgresOperatorScheme()
-	assert.NilError(t, err)
-
-	client, err := client.New(kubernetes.env.Config, client.Options{Scheme: scheme})
+	client, err := client.New(kubernetes.env.Config, client.Options{Scheme: runtime.Scheme})
 	assert.NilError(t, err)
 
 	return kubernetes.env, client

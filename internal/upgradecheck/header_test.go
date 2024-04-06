@@ -56,9 +56,7 @@ func TestGenerateHeader(t *testing.T) {
 	assert.NilError(t, err)
 	t.Cleanup(func() { assert.Check(t, env.Stop()) })
 
-	pgoScheme, err := runtime.CreatePostgresOperatorScheme()
-	assert.NilError(t, err)
-	cc, err := crclient.New(cfg, crclient.Options{Scheme: pgoScheme})
+	cc, err := crclient.New(cfg, crclient.Options{Scheme: runtime.Scheme})
 	assert.NilError(t, err)
 
 	setupNamespace(t, cc)
