@@ -24,10 +24,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes/scheme"
 
 	// Google Kubernetes Engine / Google Cloud Platform authentication provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -37,14 +35,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var suite struct {
 	Client client.Client
 	Config *rest.Config
-	Scheme *runtime.Scheme
 
 	Environment   *envtest.Environment
 	ServerVersion *version.Version
@@ -71,17 +68,13 @@ var _ = BeforeSuite(func() {
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 	}
 
-	suite.Scheme = runtime.NewScheme()
-	Expect(scheme.AddToScheme(suite.Scheme)).To(Succeed())
-	Expect(v1beta1.AddToScheme(suite.Scheme)).To(Succeed())
-
 	_, err := suite.Environment.Start()
 	Expect(err).ToNot(HaveOccurred())
 
 	DeferCleanup(suite.Environment.Stop)
 
 	suite.Config = suite.Environment.Config
-	suite.Client, err = client.New(suite.Config, client.Options{Scheme: suite.Scheme})
+	suite.Client, err = client.New(suite.Config, client.Options{Scheme: runtime.Scheme})
 	Expect(err).ToNot(HaveOccurred())
 
 	dc, err := discovery.NewDiscoveryClientForConfig(suite.Config)

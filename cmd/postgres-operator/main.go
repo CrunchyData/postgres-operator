@@ -167,7 +167,6 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 		Client:      mgr.GetClient(),
 		Owner:       "pgadmin-controller",
 		Recorder:    mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-		Scheme:      mgr.GetScheme(),
 		IsOpenShift: openshift,
 	}
 
@@ -187,7 +186,6 @@ func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logge
 		Owner:  "crunchybridgecluster-controller",
 		// TODO(crunchybridgecluster): recorder?
 		// Recorder: mgr.GetEventRecorderFor(naming...),
-		Scheme:    mgr.GetScheme(),
 		NewClient: constructor,
 	}
 

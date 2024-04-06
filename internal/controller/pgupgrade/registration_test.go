@@ -55,10 +55,7 @@ func TestUpgradeAuthorized(t *testing.T) {
 	})
 
 	t.Run("RegistrationRequired", func(t *testing.T) {
-		scheme, err := runtime.CreatePostgresOperatorScheme()
-		assert.NilError(t, err)
-
-		recorder := events.NewRecorder(t, scheme)
+		recorder := events.NewRecorder(t, runtime.Scheme)
 		upgrade := new(v1beta1.PGUpgrade)
 		upgrade.Name = "some-upgrade"
 

@@ -41,10 +41,7 @@ import (
 )
 
 func TestHandlePersistentVolumeClaimError(t *testing.T) {
-	scheme, err := runtime.CreatePostgresOperatorScheme()
-	assert.NilError(t, err)
-
-	recorder := events.NewRecorder(t, scheme)
+	recorder := events.NewRecorder(t, runtime.Scheme)
 	reconciler := &Reconciler{
 		Recorder: recorder,
 	}

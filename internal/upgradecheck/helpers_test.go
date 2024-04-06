@@ -83,10 +83,6 @@ func setupDeploymentID(t *testing.T) string {
 
 func setupFakeClientWithPGOScheme(t *testing.T, includeCluster bool) crclient.Client {
 	t.Helper()
-	pgoScheme, err := runtime.CreatePostgresOperatorScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
 	if includeCluster {
 		pc := &v1beta1.PostgresClusterList{
 			Items: []v1beta1.PostgresCluster{
@@ -102,9 +98,9 @@ func setupFakeClientWithPGOScheme(t *testing.T, includeCluster bool) crclient.Cl
 				},
 			},
 		}
-		return fake.NewClientBuilder().WithScheme(pgoScheme).WithLists(pc).Build()
+		return fake.NewClientBuilder().WithScheme(runtime.Scheme).WithLists(pc).Build()
 	}
-	return fake.NewClientBuilder().WithScheme(pgoScheme).Build()
+	return fake.NewClientBuilder().WithScheme(runtime.Scheme).Build()
 }
 
 func setupVersionServer(t *testing.T, works bool) (version.Info, *httptest.Server) {
