@@ -36,6 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -136,22 +137,11 @@ func setupKubernetes(t testing.TB) (*envtest.Environment, client.Client) {
 }
 
 // setupNamespace creates a random namespace that will be deleted by t.Cleanup.
-// When creation fails, it calls t.Fatal. The caller may delete the namespace
-// at any time.
 //
-// This function was duplicated from the postgrescluster package.
-// TODO: Pull these duplicated functions out into a separate, shared package.
+// Deprecated: Use [require.Namespace] instead.
 func setupNamespace(t testing.TB, cc client.Client) *corev1.Namespace {
 	t.Helper()
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
-
-	ctx := context.Background()
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, client.IgnoreNotFound(cc.Delete(ctx, ns))) })
-
-	return ns
+	return require.Namespace(t, cc)
 }
 
 // testCluster defines a base cluster spec that can be used by tests to
