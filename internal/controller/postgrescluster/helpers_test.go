@@ -18,20 +18,15 @@ package postgrescluster
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
-	"sync"
 	"testing"
 	"time"
 
-	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/yaml"
 
@@ -73,75 +68,33 @@ func marshalMatches(actual interface{}, expected string) cmp.Comparison {
 	return cmp.MarshalMatches(actual, expected)
 }
 
-var kubernetes struct {
-	sync.Mutex
-
-	env   *envtest.Environment
-	count int
-}
-
 // setupKubernetes starts or connects to a Kubernetes API and returns a client
-// that uses it. When starting a local API, the client is a member of the
-// "system:masters" group. It also creates any CRDs present in the
-// "/config/crd/bases" directory. When any of these fail, it calls t.Fatal.
-// It deletes CRDs and stops the local API using t.Cleanup.
-func setupKubernetes(t testing.TB) (*envtest.Environment, client.Client) {
+// that uses it. See [require.Kubernetes] for more details.
+func setupKubernetes(t testing.TB) (*rest.Config, client.Client) {
 	t.Helper()
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.SkipNow()
-	}
 
-	kubernetes.Lock()
-	defer kubernetes.Unlock()
+	// Start and/or connect to a Kubernetes API, or Skip when that's not configured.
+	cfg, cc := require.Kubernetes2(t)
 
-	if kubernetes.env == nil {
-		env := &envtest.Environment{
-			CRDDirectoryPaths: []string{
-				filepath.Join("..", "..", "..", "config", "crd", "bases"),
-			},
-		}
-
-		_, err := env.Start()
-		assert.NilError(t, err)
-
-		kubernetes.env = env
-	}
-
-	kubernetes.count++
-
+	// Log the status of any test namespaces after this test fails.
 	t.Cleanup(func() {
-		kubernetes.Lock()
-		defer kubernetes.Unlock()
-
 		if t.Failed() {
-			if cc, err := client.New(kubernetes.env.Config, client.Options{}); err == nil {
-				var namespaces corev1.NamespaceList
-				_ = cc.List(context.Background(), &namespaces, client.HasLabels{"postgres-operator-test"})
+			var namespaces corev1.NamespaceList
+			_ = cc.List(context.Background(), &namespaces, client.HasLabels{"postgres-operator-test"})
 
-				type shaped map[string]corev1.NamespaceStatus
-				result := make([]shaped, len(namespaces.Items))
+			type shaped map[string]corev1.NamespaceStatus
+			result := make([]shaped, len(namespaces.Items))
 
-				for i, ns := range namespaces.Items {
-					result[i] = shaped{ns.Labels["postgres-operator-test"]: ns.Status}
-				}
-
-				formatted, _ := yaml.Marshal(result)
-				t.Logf("Test Namespaces:\n%s", formatted)
+			for i, ns := range namespaces.Items {
+				result[i] = shaped{ns.Labels["postgres-operator-test"]: ns.Status}
 			}
-		}
 
-		kubernetes.count--
-
-		if kubernetes.count == 0 {
-			assert.Check(t, kubernetes.env.Stop())
-			kubernetes.env = nil
+			formatted, _ := yaml.Marshal(result)
+			t.Logf("Test Namespaces:\n%s", formatted)
 		}
 	})
 
-	client, err := client.New(kubernetes.env.Config, client.Options{Scheme: runtime.Scheme})
-	assert.NilError(t, err)
-
-	return kubernetes.env, client
+	return cfg, cc
 }
 
 // setupNamespace creates a random namespace that will be deleted by t.Cleanup.

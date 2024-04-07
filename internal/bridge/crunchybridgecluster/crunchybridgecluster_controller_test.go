@@ -35,7 +35,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -44,7 +43,7 @@ var testApiKey = "9012"
 
 func TestReconcileBridgeConnectionSecret(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	reconciler := &CrunchyBridgeClusterReconciler{
@@ -99,7 +98,7 @@ func TestReconcileBridgeConnectionSecret(t *testing.T) {
 
 func TestHandleDuplicateClusterName(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	clusterInBridge := testClusterApiResource()
@@ -176,7 +175,7 @@ func TestHandleDuplicateClusterName(t *testing.T) {
 
 func TestHandleCreateCluster(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
@@ -243,7 +242,7 @@ func TestHandleCreateCluster(t *testing.T) {
 
 func TestHandleGetCluster(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
@@ -301,7 +300,7 @@ func TestHandleGetCluster(t *testing.T) {
 
 func TestHandleGetClusterStatus(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
@@ -380,7 +379,7 @@ func TestHandleGetClusterStatus(t *testing.T) {
 
 func TestHandleGetClusterUpgrade(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
@@ -462,7 +461,7 @@ func TestHandleGetClusterUpgrade(t *testing.T) {
 
 func TestHandleUpgrade(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
@@ -570,7 +569,7 @@ func TestHandleUpgrade(t *testing.T) {
 
 func TestHandleUpgradeHA(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
@@ -657,7 +656,7 @@ func TestHandleUpgradeHA(t *testing.T) {
 
 func TestHandleUpdate(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
@@ -733,7 +732,7 @@ func TestHandleUpdate(t *testing.T) {
 
 func TestGetSecretKeys(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	reconciler := &CrunchyBridgeClusterReconciler{
@@ -815,7 +814,7 @@ func TestGetSecretKeys(t *testing.T) {
 
 func TestDeleteControlled(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
 	ns := setupNamespace(t, tClient)

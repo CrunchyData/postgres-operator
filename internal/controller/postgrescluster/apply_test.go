@@ -40,12 +40,12 @@ import (
 
 func TestServerSideApply(t *testing.T) {
 	ctx := context.Background()
-	env, cc := setupKubernetes(t)
+	cfg, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, cc)
 
-	dc, err := discovery.NewDiscoveryClientForConfig(env.Config)
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
 	assert.NilError(t, err)
 
 	server, err := dc.ServerVersion()

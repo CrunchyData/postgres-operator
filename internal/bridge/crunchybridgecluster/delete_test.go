@@ -31,7 +31,7 @@ import (
 
 func TestHandleDeleteCluster(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient).Name
