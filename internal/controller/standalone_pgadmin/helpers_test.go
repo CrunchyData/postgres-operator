@@ -127,19 +127,9 @@ func setupKubernetes(t testing.TB) client.Client {
 }
 
 // setupNamespace creates a random namespace that will be deleted by t.Cleanup.
-// When creation fails, it calls t.Fatal. The caller may delete the namespace
-// at any time.
 //
-// TODO(tjmoore4): This function is duplicated from a version that takes a PostgresCluster object.
+// Deprecated: Use [require.Namespace] instead.
 func setupNamespace(t testing.TB, cc client.Client) *corev1.Namespace {
 	t.Helper()
-	ns := &corev1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
-
-	ctx := context.Background()
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, client.IgnoreNotFound(cc.Delete(ctx, ns))) })
-
-	return ns
+	return require.Namespace(t, cc)
 }
