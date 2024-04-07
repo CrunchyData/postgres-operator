@@ -183,11 +183,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
 	}
 
-	tEnv, tClient := setupKubernetes(t)
+	cfg, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 2)
 
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -670,11 +670,11 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 }
 
 func TestReconcileStanzaCreate(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	cfg, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -1009,11 +1009,11 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 }
 
 func TestReconcileManualBackup(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	cfg, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 2)
 
 	r := &Reconciler{}
-	_, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
+	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -1759,11 +1759,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 }
 
 func TestReconcilePostgresClusterDataSource(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	cfg, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 4)
 
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -2059,11 +2059,11 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 }
 
 func TestReconcileCloudBasedDataSource(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	cfg, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 4)
 
 	r := &Reconciler{}
-	ctx, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
@@ -3429,11 +3429,11 @@ func TestPrepareForRestore(t *testing.T) {
 }
 
 func TestReconcileScheduledBackups(t *testing.T) {
-	tEnv, tClient := setupKubernetes(t)
+	cfg, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 2)
 
 	r := &Reconciler{}
-	_, cancel := setupManager(t, tEnv.Config, func(mgr manager.Manager) {
+	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),

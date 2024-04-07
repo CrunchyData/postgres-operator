@@ -19,9 +19,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -32,33 +29,18 @@ import (
 	// Google Kubernetes Engine / Google Cloud Platform authentication provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
-	crclient "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
-	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestGenerateHeader(t *testing.T) {
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.SkipNow()
-	}
-
 	setupDeploymentID(t)
 	ctx := context.Background()
-	env := &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
-	}
-	cfg, err := env.Start()
-	assert.NilError(t, err)
-	t.Cleanup(func() { assert.Check(t, env.Stop()) })
-
-	cc, err := crclient.New(cfg, crclient.Options{Scheme: runtime.Scheme})
-	assert.NilError(t, err)
-
+	cfg, cc := require.Kubernetes2(t)
 	setupNamespace(t, cc)
 
 	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
@@ -141,19 +123,8 @@ func TestGenerateHeader(t *testing.T) {
 }
 
 func TestEnsureID(t *testing.T) {
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.SkipNow()
-	}
-
 	ctx := context.Background()
-	env := &envtest.Environment{}
-	config, err := env.Start()
-	assert.NilError(t, err)
-	t.Cleanup(func() { assert.Check(t, env.Stop()) })
-
-	cc, err := crclient.New(config, crclient.Options{})
-	assert.NilError(t, err)
-
+	cc := require.Kubernetes(t)
 	setupNamespace(t, cc)
 
 	t.Run("success, no id set in mem or configmap", func(t *testing.T) {
@@ -288,19 +259,8 @@ func TestEnsureID(t *testing.T) {
 }
 
 func TestManageUpgradeCheckConfigMap(t *testing.T) {
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.SkipNow()
-	}
-
 	ctx := context.Background()
-	env := &envtest.Environment{}
-	config, err := env.Start()
-	assert.NilError(t, err)
-	t.Cleanup(func() { assert.Check(t, env.Stop()) })
-
-	cc, err := crclient.New(config, crclient.Options{})
-	assert.NilError(t, err)
-
+	cc := require.Kubernetes(t)
 	setupNamespace(t, cc)
 
 	t.Run("no namespace given", func(t *testing.T) {
@@ -425,19 +385,8 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 }
 
 func TestApplyConfigMap(t *testing.T) {
-	if os.Getenv("KUBEBUILDER_ASSETS") == "" && !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.SkipNow()
-	}
-
 	ctx := context.Background()
-	env := &envtest.Environment{}
-	config, err := env.Start()
-	assert.NilError(t, err)
-	t.Cleanup(func() { assert.Check(t, env.Stop()) })
-
-	cc, err := crclient.New(config, crclient.Options{})
-	assert.NilError(t, err)
-
+	cc := require.Kubernetes(t)
 	setupNamespace(t, cc)
 
 	t.Run("successful create", func(t *testing.T) {

@@ -32,7 +32,7 @@ import (
 )
 
 func TestGeneratePostgresRoleSecret(t *testing.T) {
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	reconciler := &CrunchyBridgeClusterReconciler{
@@ -82,7 +82,7 @@ func TestGeneratePostgresRoleSecret(t *testing.T) {
 
 func TestReconcilePostgresRoleSecrets(t *testing.T) {
 	ctx := context.Background()
-	_, tClient := setupKubernetes(t)
+	tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
 	apiKey := "9012"
