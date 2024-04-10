@@ -64,10 +64,12 @@ type CrunchyBridgeClusterSpec struct {
 	// Currently Bridge offers aws, azure, and gcp only
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum={aws,azure,gcp}
+	// +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
 	Provider string `json:"provider"`
 
 	// The provider region where the cluster is located.
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
 	Region string `json:"region"`
 
 	// Roles for which to create Secrets that contain their credentials which
