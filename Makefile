@@ -324,7 +324,7 @@ endef
 CONTROLLER ?= hack/tools/controller-gen
 tools: tools/controller-gen
 tools/controller-gen:
-	$(call go-get-tool,$(CONTROLLER),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+	$(call go-get-tool,$(CONTROLLER),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.0)
 
 ENVTEST ?= hack/tools/setup-envtest
 tools: tools/setup-envtest

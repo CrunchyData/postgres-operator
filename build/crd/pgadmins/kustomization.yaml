@@ -5,18 +5,6 @@ resources:
 - generated/postgres-operator.crunchydata.com_pgadmins.yaml
 
 patches:
-# Remove the zero status field included by controller-gen@v0.8.0. These zero
-# values conflict with the CRD controller in Kubernetes before v1.22.
-# - https://github.com/kubernetes-sigs/controller-tools/pull/630
-# - https://pr.k8s.io/100970
-- target:
-    group: apiextensions.k8s.io
-    version: v1
-    kind: CustomResourceDefinition
-    name: pgadmins.postgres-operator.crunchydata.com
-  patch: |-
-    - op: remove
-      path: /status
 - target:
     group: apiextensions.k8s.io
     version: v1
