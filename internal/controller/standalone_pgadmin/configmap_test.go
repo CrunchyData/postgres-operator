@@ -219,3 +219,85 @@ namespace: some-ns
 		})
 	})
 }
+
+func TestGenerateGunicornConfig(t *testing.T) {
+	require.ParallelCapacity(t, 0)
+
+	t.Run("Default", func(t *testing.T) {
+		pgAdmin := &v1beta1.PGAdmin{}
+		pgAdmin.Name = "test"
+		pgAdmin.Namespace = "postgres-operator"
+
+		expectedString := `{
+  "bind": "0.0.0.0:5050",
+  "threads": 25,
+  "workers": 1
+}
+`
+		actualString, err := generateGunicornConfig(pgAdmin)
+		assert.NilError(t, err)
+		assert.Equal(t, actualString, expectedString)
+	})
+
+	t.Run("Add Settings", func(t *testing.T) {
+		pgAdmin := &v1beta1.PGAdmin{}
+		pgAdmin.Name = "test"
+		pgAdmin.Namespace = "postgres-operator"
+		pgAdmin.Spec.Config.Gunicorn = map[string]any{
+			"keyfile":  "/path/to/keyfile",
+			"certfile": "/path/to/certfile",
+		}
+
+		expectedString := `{
+  "bind": "0.0.0.0:5050",
+  "certfile": "/path/to/certfile",
+  "keyfile": "/path/to/keyfile",
+  "threads": 25,
+  "workers": 1
+}
+`
+		actualString, err := generateGunicornConfig(pgAdmin)
+		assert.NilError(t, err)
+		assert.Equal(t, actualString, expectedString)
+	})
+
+	t.Run("Update Defaults", func(t *testing.T) {
+		pgAdmin := &v1beta1.PGAdmin{}
+		pgAdmin.Name = "test"
+		pgAdmin.Namespace = "postgres-operator"
+		pgAdmin.Spec.Config.Gunicorn = map[string]any{
+			"bind":    "127.0.0.1:5051",
+			"threads": 30,
+		}
+
+		expectedString := `{
+  "bind": "127.0.0.1:5051",
+  "threads": 30,
+  "workers": 1
+}
+`
+		actualString, err := generateGunicornConfig(pgAdmin)
+		assert.NilError(t, err)
+		assert.Equal(t, actualString, expectedString)
+	})
+
+	t.Run("Update Mandatory", func(t *testing.T) {
+		pgAdmin := &v1beta1.PGAdmin{}
+		pgAdmin.Name = "test"
+		pgAdmin.Namespace = "postgres-operator"
+		pgAdmin.Spec.Config.Gunicorn = map[string]any{
+			"workers": "100",
+		}
+
+		expectedString := `{
+  "bind": "0.0.0.0:5050",
+  "threads": 25,
+  "workers": 1
+}
+`
+		actualString, err := generateGunicornConfig(pgAdmin)
+		assert.NilError(t, err)
+		assert.Equal(t, actualString, expectedString)
+	})
+
+}

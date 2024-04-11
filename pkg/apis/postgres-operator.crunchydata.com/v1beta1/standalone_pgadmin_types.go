@@ -25,6 +25,14 @@ type StandalonePGAdminConfiguration struct {
 	// container so that files can be referenced by pgAdmin as needed.
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 
+	// Settings for the gunicorn server.
+	// More info: https://docs.gunicorn.org/en/latest/settings.html
+	// +optional
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:validation:Type=object
+	Gunicorn SchemalessObject `json:"gunicorn,omitempty"`
+
 	// A Secret containing the value for the LDAP_BIND_PASSWORD setting.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
 	// +optional
