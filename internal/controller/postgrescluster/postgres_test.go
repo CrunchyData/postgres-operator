@@ -17,6 +17,7 @@ package postgrescluster
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 
@@ -30,10 +31,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -656,5 +659,84 @@ func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
 
 		assert.NilError(t, r.reconcileDatabaseInitSQL(ctx, cluster, observed))
 		assert.Assert(t, called)
+	})
+}
+
+func TestValidatePostgresUsers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Empty", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+
+		cluster.Spec.Users = nil
+		reconciler.validatePostgresUsers(cluster)
+		assert.Equal(t, len(recorder.Events), 0)
+
+		cluster.Spec.Users = []v1beta1.PostgresUserSpec{}
+		reconciler.validatePostgresUsers(cluster)
+		assert.Equal(t, len(recorder.Events), 0)
+	})
+
+	t.Run("NoComments", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		cluster.Name = "pg1"
+		cluster.Spec.Users = []v1beta1.PostgresUserSpec{
+			{Name: "dashes", Options: "ANY -- comment"},
+			{Name: "block-open", Options: "/* asdf"},
+			{Name: "block-close", Options: " qw */ rt"},
+		}
+
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+
+		reconciler.validatePostgresUsers(cluster)
+		assert.Equal(t, len(recorder.Events), 3)
+
+		for i, event := range recorder.Events {
+			assert.Equal(t, event.Regarding.Name, cluster.Name)
+			assert.Equal(t, event.Reason, "InvalidUser")
+			assert.Assert(t, cmp.Contains(event.Note, "cannot contain comments"))
+			assert.Assert(t, cmp.Contains(event.Note,
+				fmt.Sprintf("spec.users[%d].options", i)))
+		}
+	})
+
+	t.Run("NoPassword", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		cluster.Name = "pg5"
+		cluster.Spec.Users = []v1beta1.PostgresUserSpec{
+			{Name: "uppercase", Options: "SUPERUSER PASSWORD ''"},
+			{Name: "lowercase", Options: "password 'asdf'"},
+		}
+
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+
+		reconciler.validatePostgresUsers(cluster)
+		assert.Equal(t, len(recorder.Events), 2)
+
+		for i, event := range recorder.Events {
+			assert.Equal(t, event.Regarding.Name, cluster.Name)
+			assert.Equal(t, event.Reason, "InvalidUser")
+			assert.Assert(t, cmp.Contains(event.Note, "cannot assign password"))
+			assert.Assert(t, cmp.Contains(event.Note,
+				fmt.Sprintf("spec.users[%d].options", i)))
+		}
+	})
+
+	t.Run("Valid", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		cluster.Spec.Users = []v1beta1.PostgresUserSpec{
+			{Name: "normal", Options: "CREATEDB valid until '2006-01-02'"},
+			{Name: "very-full", Options: "NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOLOGIN NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 5"},
+		}
+
+		reconciler := &Reconciler{}
+		assert.Assert(t, reconciler.Recorder == nil,
+			"expected the following to not use a Recorder at all")
+
+		reconciler.validatePostgresUsers(cluster)
 	})
 }

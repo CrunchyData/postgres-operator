@@ -297,6 +297,8 @@ func (r *Reconciler) reconcilePostgresDatabases(
 func (r *Reconciler) reconcilePostgresUsers(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, instances *observedInstances,
 ) error {
+	r.validatePostgresUsers(cluster)
+
 	users, secrets, err := r.reconcilePostgresUserSecrets(ctx, cluster)
 	if err == nil {
 		err = r.reconcilePostgresUsersInPostgreSQL(ctx, cluster, instances, users, secrets)
@@ -309,6 +311,40 @@ func (r *Reconciler) reconcilePostgresUsers(
 		err = r.reconcilePGAdminUsers(ctx, cluster, users, secrets)
 	}
 	return err
+}
+
+// validatePostgresUsers emits warnings when cluster.Spec.Users contains values
+// that are no longer valid. NOTE(ratcheting) NOTE(validation)
+// - https://docs.k8s.io/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#validation-ratcheting
+func (r *Reconciler) validatePostgresUsers(cluster *v1beta1.PostgresCluster) {
+	if len(cluster.Spec.Users) == 0 {
+		return
+	}
+
+	path := field.NewPath("spec", "users")
+	reComments := regexp.MustCompile(`(?:--|/[*]|[*]/)`)
+	rePassword := regexp.MustCompile(`(?i:PASSWORD)`)
+
+	for i := range cluster.Spec.Users {
+		errs := field.ErrorList{}
+		spec := cluster.Spec.Users[i]
+
+		if reComments.MatchString(spec.Options) {
+			errs = append(errs,
+				field.Invalid(path.Index(i).Child("options"), spec.Options,
+					"cannot contain comments"))
+		}
+		if rePassword.MatchString(spec.Options) {
+			errs = append(errs,
+				field.Invalid(path.Index(i).Child("options"), spec.Options,
+					"cannot assign password"))
+		}
+
+		if len(errs) > 0 {
+			r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidUser",
+				errs.ToAggregate().Error())
+		}
+	}
 }
 
 // +kubebuilder:rbac:groups="",resources="secrets",verbs={list}
