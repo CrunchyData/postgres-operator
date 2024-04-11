@@ -19,6 +19,7 @@ const (
 	// ConfigMap keys used also in mounting volume to pod
 	settingsConfigMapKey  = "pgadmin-settings.json"
 	settingsClusterMapKey = "pgadmin-shared-clusters.json"
+	gunicornConfigKey     = "gunicorn-config.json"
 
 	// Port address used to define pod and service
 	pgAdminPort = 5050

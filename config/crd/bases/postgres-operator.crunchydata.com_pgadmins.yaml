@@ -1082,6 +1082,10 @@ spec:
                           type: object
                       type: object
                     type: array
+                  gunicorn:
+                    description: 'Settings for the gunicorn server. More info: https://docs.gunicorn.org/en/latest/settings.html'
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
                   ldapBindPassword:
                     description: 'A Secret containing the value for the LDAP_BIND_PASSWORD
                       setting. More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html'

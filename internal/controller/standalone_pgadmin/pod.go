@@ -28,10 +28,11 @@ import (
 )
 
 const (
-	configMountPath = "/etc/pgadmin/conf.d"
-	configFilePath  = "~postgres-operator/" + settingsConfigMapKey
-	clusterFilePath = "~postgres-operator/" + settingsClusterMapKey
-	ldapFilePath    = "~postgres-operator/ldap-bind-password"
+	configMountPath        = "/etc/pgadmin/conf.d"
+	configFilePath         = "~postgres-operator/" + settingsConfigMapKey
+	clusterFilePath        = "~postgres-operator/" + settingsClusterMapKey
+	ldapFilePath           = "~postgres-operator/ldap-bind-password"
+	gunicornConfigFilePath = "~postgres-operator/" + gunicornConfigKey
 
 	// Nothing should be mounted to this location except the script our initContainer writes
 	scriptMountPath = "/etc/pgadmin"
@@ -210,6 +211,10 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 							Key:  settingsClusterMapKey,
 							Path: clusterFilePath,
 						},
+						{
+							Key:  gunicornConfigKey,
+							Path: gunicornConfigFilePath,
+						},
 					},
 				},
 			},
@@ -262,32 +267,43 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 	var setupCommandV7 = "python3 ${PGADMIN_DIR}/setup.py"
 	var setupCommandV8 = setupCommandV7 + " setup-db"
 
+	// startCommands (v8 image includes Gunicorn)
+	var startCommandV7 = "pgadmin4 &"
+	var startCommandV8 = "gunicorn -c /etc/pgadmin/gunicorn_config.py --chdir $PGADMIN_DIR pgAdmin4:app &"
+
 	// This script sets up, starts pgadmin, and runs the appropriate `loadServerCommand` to register the discovered servers.
+	// pgAdmin is hosted by Gunicorn and uses a config file.
+	// - https://www.pgadmin.org/docs/pgadmin4/development/server_deployment.html#standalone-gunicorn-configuration
+	// - https://docs.gunicorn.org/en/latest/configure.html
 	var startScript = fmt.Sprintf(`
 PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
 APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
 echo "Running pgAdmin4 Setup"
 if [ $APP_RELEASE -eq 7 ]; then
-	%s
+    %s
 else
-	%s
+    %s
 fi
 
 echo "Starting pgAdmin4"
 PGADMIN4_PIDFILE=/tmp/pgadmin4.pid
-pgadmin4 &
+if [ $APP_RELEASE -eq 7 ]; then
+    %s
+else
+    %s
+fi
 echo $! > $PGADMIN4_PIDFILE
 
 loadServerCommand() {
-	if [ $APP_RELEASE -eq 7 ]; then
-		%s
-	else
-		%s
-	fi
+    if [ $APP_RELEASE -eq 7 ]; then
+        %s
+    else
+        %s
+    fi
 }
 loadServerCommand
-`, setupCommandV7, setupCommandV8, loadServerCommandV7, loadServerCommandV8)
+`, setupCommandV7, setupCommandV8, startCommandV7, startCommandV8, loadServerCommandV7, loadServerCommandV8)
 
 	// Use a Bash loop to periodically check:
 	// 1. the mtime of the mounted configuration volume for shared/discovered servers.
@@ -303,17 +319,21 @@ loadServerCommand
 	var reloadScript = `
 exec {fd}<> <(:)
 while read -r -t 5 -u "${fd}" || true; do
-	if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && loadServerCommand
-	then
-		exec {fd}>&- && exec {fd}<> <(:)
-		stat --format='Loaded shared servers dated %y' "${cluster_file}"
-	fi
-	if [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]
-	then
-		pgadmin4 &
-		echo $! > $PGADMIN4_PIDFILE
-		echo "Restarting pgAdmin4"
-	fi
+    if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && loadServerCommand
+    then
+        exec {fd}>&- && exec {fd}<> <(:)
+        stat --format='Loaded shared servers dated %y' "${cluster_file}"
+    fi
+    if [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]
+    then
+        if [ $APP_RELEASE -eq 7 ]; then
+            ` + startCommandV7 + `
+        else
+            ` + startCommandV8 + `
+        fi
+        echo $! > $PGADMIN4_PIDFILE
+        echo "Restarting pgAdmin4"
+    fi
 done
 `
 
@@ -333,8 +353,8 @@ func startupCommand() []string {
 	// and sets those variables globally. That way those values are available as pgAdmin
 	// configurations when pgAdmin starts.
 	//
-	// Note: All pgAdmin settings are uppercase with underscores, so ignore any keys/names
-	// that are not.
+	// Note: All pgAdmin settings are uppercase alphanumeric with underscores, so ignore
+	// any keys/names that are not.
 	//
 	// Note: set pgAdmin's LDAP_BIND_PASSWORD setting from the Secret last
 	// in order to overwrite configuration of LDAP_BIND_PASSWORD via ConfigMap JSON.
@@ -353,9 +373,26 @@ if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
     with open('` + ldapPasswordAbsolutePath + `') as _f:
         LDAP_BIND_PASSWORD = _f.read()
 `
+		// gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
+		// after all other config files.
+		// - https://docs.gunicorn.org/en/latest/configure.html#configuration-file
+		//
+		// This command writes a script in `/etc/pgadmin/gunicorn_config.py` that reads
+		// from the `gunicorn-config.json` file and sets those variables globally.
+		// That way those values are available as settings when gunicorn starts.
+		//
+		// Note: All gunicorn settings are lowercase with underscores, so ignore
+		// any keys/names that are not.
+		gunicornConfig = `
+import json, re
+with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
+    _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
+    if type(_data) is dict:
+        globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+`
 	)
 
-	args := []string{strings.TrimLeft(configSystem, "\n")}
+	args := []string{strings.TrimLeft(configSystem, "\n"), strings.TrimLeft(gunicornConfig, "\n")}
 
 	script := strings.Join([]string{
 		// Use the initContainer to create this path to avoid the error noted here:
@@ -363,6 +400,8 @@ if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
 		`mkdir -p /etc/pgadmin/conf.d`,
 		// Write the system configuration into a read-only file.
 		`(umask a-w && echo "$1" > ` + scriptMountPath + `/config_system.py` + `)`,
+		// Write the server configuration into a read-only file.
+		`(umask a-w && echo "$2" > ` + scriptMountPath + `/gunicorn_config.py` + `)`,
 	}, "\n")
 
 	return append([]string{"bash", "-ceu", "--", script, "startup"}, args...)
