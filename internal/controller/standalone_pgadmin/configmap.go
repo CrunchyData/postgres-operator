@@ -60,10 +60,7 @@ func configmap(pgadmin *v1beta1.PGAdmin,
 	configmap.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()
 	configmap.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelStandalonePGAdmin: pgadmin.Name,
-			naming.LabelRole:              naming.RolePGAdmin,
-		})
+		naming.StandalonePGAdminLabels(pgadmin.Name))
 
 	// TODO(tjmoore4): Populate configuration details.
 	initialize.StringMap(&configmap.Data)

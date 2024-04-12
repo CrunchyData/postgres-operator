@@ -568,16 +568,6 @@ func MovePGBackRestRepoDirJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMet
 	}
 }
 
-// StandalonePGAdminCommonLabels returns the ObjectMeta used for the standalone
-// pgAdmin StatefulSet and Pod.
-func StandalonePGAdminCommonLabels(pgadmin *v1beta1.PGAdmin) map[string]string {
-	return map[string]string{
-		LabelStandalonePGAdmin: pgadmin.Name,
-		LabelData:              DataPGAdmin,
-		LabelRole:              RolePGAdmin,
-	}
-}
-
 // StandalonePGAdmin returns the ObjectMeta necessary to lookup the ConfigMap,
 // Service, StatefulSet, or Volume for the cluster's pgAdmin user interface.
 func StandalonePGAdmin(pgadmin *v1beta1.PGAdmin) metav1.ObjectMeta {

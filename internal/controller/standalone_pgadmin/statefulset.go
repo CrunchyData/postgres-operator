@@ -79,18 +79,15 @@ func statefulset(
 	sts.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()
 	sts.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
-		naming.StandalonePGAdminCommonLabels(pgadmin),
+		naming.StandalonePGAdminDataLabels(pgadmin.Name),
 	)
 	sts.Spec.Selector = &metav1.LabelSelector{
-		MatchLabels: map[string]string{
-			naming.LabelStandalonePGAdmin: pgadmin.Name,
-			naming.LabelRole:              naming.RolePGAdmin,
-		},
+		MatchLabels: naming.StandalonePGAdminLabels(pgadmin.Name),
 	}
 	sts.Spec.Template.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()
 	sts.Spec.Template.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
-		naming.StandalonePGAdminCommonLabels(pgadmin),
+		naming.StandalonePGAdminDataLabels(pgadmin.Name),
 	)
 
 	// Don't clutter the namespace with extra ControllerRevisions.
