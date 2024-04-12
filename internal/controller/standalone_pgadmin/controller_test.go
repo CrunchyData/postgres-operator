@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestDeleteControlled(t *testing.T) {
@@ -36,7 +37,7 @@ func TestDeleteControlled(t *testing.T) {
 	ns := setupNamespace(t, cc)
 	reconciler := PGAdminReconciler{Client: cc}
 
-	pgadmin := testPGAdmin()
+	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Namespace = ns.Name
 	pgadmin.Name = strings.ToLower(t.Name())
 	assert.NilError(t, cc.Create(ctx, pgadmin))

@@ -51,19 +51,15 @@ func (r *PGAdminReconciler) reconcilePGAdminDataVolume(
 
 // pvc defines the data volume for pgAdmin.
 func pvc(pgadmin *v1beta1.PGAdmin) *corev1.PersistentVolumeClaim {
-	labelMap := map[string]string{
-		naming.LabelStandalonePGAdmin: pgadmin.Name,
-		naming.LabelRole:              naming.RolePGAdmin,
-		naming.LabelData:              naming.DataPGAdmin,
+	pvc := &corev1.PersistentVolumeClaim{
+		ObjectMeta: naming.StandalonePGAdmin(pgadmin),
 	}
-
-	pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
 	pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
 
 	pvc.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()
 	pvc.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
-		labelMap,
+		naming.StandalonePGAdminDataLabels(pgadmin.Name),
 	)
 	pvc.Spec = pgadmin.Spec.DataVolumeClaimSpec
 

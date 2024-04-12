@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin-service
+  labels:
+    postgres-operator.crunchydata.com/role: pgadmin
+    postgres-operator.crunchydata.com/pgadmin: pgadmin
+spec:
+  selector:
+    postgres-operator.crunchydata.com/pgadmin: pgadmin
+  ports:
+  - port: 5050
+    targetPort: 5050
+    protocol: TCP
+    name: pgadmin-port
+  type: ClusterIP

@@ -1402,6 +1402,12 @@ spec:
                   - postgresClusterSelector
                   type: object
                 type: array
+              serviceName:
+                description: ServiceName will be used as the name of a ClusterIP service
+                  pointing to the pgAdmin pod and port. If the service already exists,
+                  PGO will update the service. For more information about services
+                  reference the Kubernetes and CrunchyData documentation. https://kubernetes.io/docs/concepts/services-networking/service/
+                type: string
               tolerations:
                 description: 'Tolerations of the PGAdmin pod. More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration'
                 items:

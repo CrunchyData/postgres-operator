@@ -159,10 +159,7 @@ func (r *PGAdminReconciler) writePGAdminUsers(ctx context.Context, pgadmin *v1be
 	)
 	intentUserSecret.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelStandalonePGAdmin: pgadmin.Name,
-			naming.LabelRole:              naming.RolePGAdmin,
-		})
+		naming.StandalonePGAdminLabels(pgadmin.Name))
 
 	// Initialize secret data map, or copy existing data if not nil
 	intentUserSecret.Data = make(map[string][]byte)
