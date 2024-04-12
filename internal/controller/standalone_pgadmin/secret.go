@@ -66,10 +66,7 @@ func secret(pgadmin *v1beta1.PGAdmin, existing *corev1.Secret) (*corev1.Secret, 
 	)
 	intent.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
-		map[string]string{
-			naming.LabelStandalonePGAdmin: pgadmin.Name,
-			naming.LabelRole:              naming.RolePGAdmin,
-		})
+		naming.StandalonePGAdminLabels(pgadmin.Name))
 
 	intent.Data = make(map[string][]byte)
 

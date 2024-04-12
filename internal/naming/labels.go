@@ -298,3 +298,33 @@ func PGBackRestRepoVolumeLabels(clusterName, repoName string) labels.Set {
 	}
 	return labels.Merge(repoLabels, repoVolLabels)
 }
+
+// StandalonePGAdminLabels return labels for standalone pgadmin resources
+func StandalonePGAdminLabels(pgadminName string) labels.Set {
+	return map[string]string{
+		LabelStandalonePGAdmin: pgadminName,
+		LabelRole:              RolePGAdmin,
+	}
+}
+
+// StandalonePGAdminSelector provides a selector for standalone pgadmin resources
+func StandalonePGAdminSelector(pgadminName string) labels.Selector {
+	return StandalonePGAdminLabels(pgadminName).AsSelector()
+}
+
+// StandalonePGAdminDataLabels returns the labels for standalone pgadmin resources
+// that contain or mount data
+func StandalonePGAdminDataLabels(pgadminName string) labels.Set {
+	return labels.Merge(
+		StandalonePGAdminLabels(pgadminName),
+		map[string]string{
+			LabelData: DataPGAdmin,
+		},
+	)
+}
+
+// StandalonePGAdminDataSelector returns a selector for standalone pgadmin resources
+// that contain or mount data
+func StandalonePGAdminDataSelector(pgadmiName string) labels.Selector {
+	return StandalonePGAdminDataLabels(pgadmiName).AsSelector()
+}
