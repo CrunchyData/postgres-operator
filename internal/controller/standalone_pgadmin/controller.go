@@ -72,6 +72,7 @@ func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.PersistentVolumeClaim{}).
 		Owns(&corev1.Secret{}).
 		Owns(&appsv1.StatefulSet{}).
+		Owns(&corev1.Service{}).
 		Watches(
 			&source.Kind{Type: v1beta1.NewPostgresCluster()},
 			r.watchPostgresClusters(),
@@ -145,6 +146,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		configmap  *corev1.ConfigMap
 		dataVolume *corev1.PersistentVolumeClaim
 		clusters   map[string]*v1beta1.PostgresClusterList
+		_          *corev1.Service
 	)
 
 	_, err = r.reconcilePGAdminSecret(ctx, pgAdmin)
@@ -157,6 +159,9 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	if err == nil {
 		dataVolume, err = r.reconcilePGAdminDataVolume(ctx, pgAdmin)
+	}
+	if err == nil {
+		err = r.reconcilePGAdminService(ctx, pgAdmin)
 	}
 	if err == nil {
 		err = r.reconcilePGAdminStatefulSet(ctx, pgAdmin, configmap, dataVolume)

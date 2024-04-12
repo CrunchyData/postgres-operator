@@ -117,6 +117,14 @@ type PGAdminSpec struct {
 	// +listMapKey=username
 	// +optional
 	Users []PGAdminUser `json:"users,omitempty"`
+
+	// ServiceName will be used as the name of a ClusterIP service pointing
+	// to the pgAdmin pod and port. If the service already exists, PGO will
+	// update the service. For more information about services reference
+	// the Kubernetes and CrunchyData documentation.
+	// https://kubernetes.io/docs/concepts/services-networking/service/
+	// +optional
+	ServiceName string `json:"serviceName,omitempty"`
 }
 
 type ServerGroup struct {
