@@ -21,6 +21,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -166,4 +167,19 @@ func (r *PGAdminReconciler) setControllerReference(
 	owner *v1beta1.PGAdmin, controlled client.Object,
 ) error {
 	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
+}
+
+// deleteControlled safely deletes object when it is controlled by pgAdmin.
+func (r *PGAdminReconciler) deleteControlled(
+	ctx context.Context, pgadmin *v1beta1.PGAdmin, object client.Object,
+) error {
+	if metav1.IsControlledBy(object, pgadmin) {
+		uid := object.GetUID()
+		version := object.GetResourceVersion()
+		exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
+
+		return r.Client.Delete(ctx, object, exactly)
+	}
+
+	return nil
 }
