@@ -111,7 +111,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}()
 
-	log.Info("Reconciling pgAdmin")
+	log.V(1).Info("Reconciling pgAdmin")
 
 	// Set defaults if unset
 	pgAdmin.Default()
@@ -144,7 +144,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// at this point everything reconciled successfully, and we can update the
 		// observedGeneration
 		pgAdmin.Status.ObservedGeneration = pgAdmin.GetGeneration()
-		log.V(1).Info("reconciled pgadmin")
+		log.V(1).Info("Reconciled pgAdmin")
 	}
 
 	return ctrl.Result{}, err
