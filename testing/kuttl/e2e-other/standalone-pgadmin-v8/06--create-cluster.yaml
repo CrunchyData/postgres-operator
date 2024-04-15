@@ -1,0 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/06-cluster.yaml
+- files/06-pgadmin.yaml
+assert:
+- files/06-cluster-check.yaml
