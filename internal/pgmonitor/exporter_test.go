@@ -17,6 +17,7 @@ package pgmonitor
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 
@@ -28,6 +29,10 @@ import (
 )
 
 func TestGenerateDefaultExporterQueries(t *testing.T) {
+	if os.Getenv("QUERIES_CONFIG_DIR") == "" {
+		t.Skip("QUERIES_CONFIG_DIR must be set")
+	}
+
 	ctx := context.Background()
 	cluster := &v1beta1.PostgresCluster{}
 

@@ -346,6 +346,10 @@ name: exporter-config
 // reacts when the kubernetes resources are in different states (e.g., checks
 // what happens when the database pod is terminating)
 func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
+	if os.Getenv("QUERIES_CONFIG_DIR") == "" {
+		t.Skip("QUERIES_CONFIG_DIR must be set")
+	}
+
 	for _, test := range []struct {
 		name          string
 		podExecCalled bool
@@ -570,6 +574,10 @@ func TestReconcilePGMonitorExporter(t *testing.T) {
 // when it should be. Because the status updated when we update the setup sql from
 // pgmonitor (by using podExec), we check if podExec is called when a change is needed.
 func TestReconcilePGMonitorExporterStatus(t *testing.T) {
+	if os.Getenv("QUERIES_CONFIG_DIR") == "" {
+		t.Skip("QUERIES_CONFIG_DIR must be set")
+	}
+
 	for _, test := range []struct {
 		name                        string
 		exporterEnabled             bool
