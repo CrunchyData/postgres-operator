@@ -679,6 +679,8 @@ func TestValidatePostgresUsers(t *testing.T) {
 		assert.Equal(t, len(recorder.Events), 0)
 	})
 
+	// See [internal/testing/validation.TestPostgresUserOptions]
+
 	t.Run("NoComments", func(t *testing.T) {
 		cluster := v1beta1.NewPostgresCluster()
 		cluster.Name = "pg1"

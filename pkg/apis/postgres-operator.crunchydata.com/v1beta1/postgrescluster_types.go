@@ -175,6 +175,7 @@ type PostgresClusterSpec struct {
 	// from this list does NOT drop the user nor revoke their access.
 	// +listType=map
 	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=64
 	// +optional
 	Users []PostgresUserSpec `json:"users,omitempty"`
 
