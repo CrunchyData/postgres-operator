@@ -15080,8 +15080,14 @@ spec:
                     options:
                       description: 'ALTER ROLE options except for PASSWORD. This field
                         is ignored for the "postgres" user. More info: https://www.postgresql.org/docs/current/role-attributes.html'
+                      maxLength: 200
                       pattern: ^[^;]*$
                       type: string
+                      x-kubernetes-validations:
+                      - message: cannot assign password
+                        rule: '!self.matches("(?i:PASSWORD)")'
+                      - message: cannot contain comments
+                        rule: '!self.matches("(?:--|/[*]|[*]/)")'
                     password:
                       description: Properties of the password generated for this user.
                       properties:
@@ -15102,6 +15108,7 @@ spec:
                   required:
                   - name
                   type: object
+                maxItems: 64
                 type: array
                 x-kubernetes-list-map-keys:
                 - name
