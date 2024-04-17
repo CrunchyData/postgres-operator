@@ -158,9 +158,13 @@ func kubernetes3(t testing.TB) (*envtest.Environment, client.Client) {
 func Namespace(t testing.TB, cc client.Client) *corev1.Namespace {
 	t.Helper()
 
+	// Remove / that shows up when running a sub-test
+	// TestSomeThing/test_some_specific_thing
+	name, _, _ := strings.Cut(t.Name(), "/")
+
 	ns := &corev1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
+	ns.Labels = map[string]string{"postgres-operator-test": name}
 
 	ctx := context.Background()
 	assert.NilError(t, cc.Create(ctx, ns))
