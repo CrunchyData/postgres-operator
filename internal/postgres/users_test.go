@@ -28,6 +28,24 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestSanitizeAlterRoleOptions(t *testing.T) {
+	assert.Equal(t, sanitizeAlterRoleOptions(""), "")
+	assert.Equal(t, sanitizeAlterRoleOptions(" login  other stuff"), "",
+		"expected non-options to be removed")
+
+	t.Run("RemovesPassword", func(t *testing.T) {
+		assert.Equal(t, sanitizeAlterRoleOptions("password 'anything'"), "")
+		assert.Equal(t, sanitizeAlterRoleOptions("password $wild$ dollar quoting $wild$ login"), "LOGIN")
+		assert.Equal(t, sanitizeAlterRoleOptions(" login password '' replication "), "LOGIN REPLICATION")
+	})
+
+	t.Run("RemovesComments", func(t *testing.T) {
+		assert.Equal(t, sanitizeAlterRoleOptions("login -- asdf"), "LOGIN")
+		assert.Equal(t, sanitizeAlterRoleOptions("login /*"), "")
+		assert.Equal(t, sanitizeAlterRoleOptions("login /* createdb */ createrole"), "LOGIN CREATEROLE")
+	})
+}
+
 func TestWriteUsersInPostgreSQL(t *testing.T) {
 	ctx := context.Background()
 
@@ -108,8 +126,9 @@ COMMIT;`))
 			assert.Assert(t, cmp.Contains(string(b), `
 \copy input (data) from stdin with (format text)
 {"databases":["db1"],"options":"","username":"user-no-options","verifier":""}
-{"databases":null,"options":"some options here","username":"user-no-databases","verifier":""}
+{"databases":null,"options":"CREATEDB CREATEROLE","username":"user-no-databases","verifier":""}
 {"databases":null,"options":"","username":"user-with-verifier","verifier":"some$verifier"}
+{"databases":null,"options":"LOGIN","username":"user-invalid-options","verifier":""}
 \.
 `))
 			return nil
@@ -123,10 +142,14 @@ COMMIT;`))
 				},
 				{
 					Name:    "user-no-databases",
-					Options: "some options here",
+					Options: "createdb createrole",
 				},
 				{
 					Name: "user-with-verifier",
+				},
+				{
+					Name:    "user-invalid-options",
+					Options: "login password 'doot' --",
 				},
 			},
 			map[string]string{

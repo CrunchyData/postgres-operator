@@ -19,10 +19,42 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
+
+	pg_query "github.com/pganalyze/pg_query_go/v5"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func sanitizeAlterRoleOptions(options string) string {
+	const AlterRolePrefix = `ALTER ROLE "any" WITH `
+
+	// Parse the options and discard them completely when incoherent.
+	parsed, err := pg_query.Parse(AlterRolePrefix + options)
+	if err != nil || len(parsed.GetStmts()) != 1 {
+		return ""
+	}
+
+	// Rebuild the options list without invalid options. TODO(go1.21) TODO(slices)
+	orig := parsed.GetStmts()[0].GetStmt().GetAlterRoleStmt().GetOptions()
+	next := make([]*pg_query.Node, 0, len(orig))
+	for i, option := range orig {
+		if strings.EqualFold(option.GetDefElem().GetDefname(), "password") {
+			continue
+		}
+		next = append(next, orig[i])
+	}
+	if len(next) > 0 {
+		parsed.GetStmts()[0].GetStmt().GetAlterRoleStmt().Options = next
+	} else {
+		return ""
+	}
+
+	// Turn the modified statement back into SQL and remove the ALTER ROLE portion.
+	sql, _ := pg_query.Deparse(parsed)
+	return strings.TrimPrefix(sql, AlterRolePrefix)
+}
 
 // WriteUsersInPostgreSQL calls exec to create users that do not exist in
 // PostgreSQL. Once they exist, it updates their options and passwords and
@@ -56,7 +88,7 @@ CREATE TEMPORARY TABLE input (id serial, data json);
 		spec := users[i]
 
 		databases := spec.Databases
-		options := spec.Options
+		options := sanitizeAlterRoleOptions(spec.Options)
 
 		// The "postgres" user must always be a superuser that can login to
 		// the "postgres" database.
