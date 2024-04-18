@@ -25,11 +25,11 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -196,25 +196,45 @@ cd $PGADMIN_DIR
 			isAdmin = true
 		}
 
+		// Get password from secret
+		userPasswordSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
+			Namespace: pgadmin.Namespace,
+			Name:      user.PasswordRef.LocalObjectReference.Name,
+		}}
+		err := errors.WithStack(
+			r.Client.Get(ctx, client.ObjectKeyFromObject(userPasswordSecret), userPasswordSecret))
+		if err != nil {
+			log.Error(err, "Could not get user password secret")
+			continue
+		}
+
+		// Make sure the password isn't nil or empty
+		password := userPasswordSecret.Data[user.PasswordRef.Key]
+		if password == nil {
+			log.Error(nil, `Could not retrieve password from secret. Make sure secret name and key are correct.`)
+			continue
+		}
+		if len(password) == 0 {
+			log.Error(nil, `Password must not be empty.`)
+			continue
+		}
+
 		// Assemble user that will be used in add/update command and in updating
 		// the users.json file in the secret
 		intentUser := pgAdminUserForJson{
 			Username: user.Username,
-			Password: "",
+			Password: string(password),
 			IsAdmin:  isAdmin,
 		}
-		// If the user already exists in users.json, and isAdmin has changed, run
-		// the update-user command. If the user already exists in users.json, but
-		// it hasn't changed, do nothing. If the user doesn't exist in users.json,
-		// run the add-user command.
+		// If the user already exists in users.json and isAdmin or password has
+		// changed, run the update-user command. If the user already exists in
+		// users.json, but it hasn't changed, do nothing. If the user doesn't
+		// exist in users.json, run the add-user command.
 		if existingUser, present := existingUsersMap[user.Username]; present {
-			// Set password for intentUser
-			intentUser.Password = existingUser.Password
-
-			if intentUser.IsAdmin != existingUser.IsAdmin {
-				// Attempt update-user command
-				script := setupScript + fmt.Sprintf(`python3 setup.py update-user %s "%s"`,
-					typeFlag, intentUser.Username) + "\n"
+			// If Password or IsAdmin have changed, attempt update-user command
+			if intentUser.IsAdmin != existingUser.IsAdmin || intentUser.Password != existingUser.Password {
+				script := setupScript + fmt.Sprintf(`python3 setup.py update-user %s --password "%s" "%s"`,
+					typeFlag, intentUser.Password, intentUser.Username) + "\n"
 				err = exec(ctx, &stdin, &stdout, &stderr,
 					[]string{"bash", "-ceu", "--", script}...)
 
@@ -231,16 +251,23 @@ cd $PGADMIN_DIR
 					intentUsers = append(intentUsers, existingUser)
 					continue
 				}
+				// If update user fails due to user not found or password length:
+				// https://github.com/pgadmin-org/pgadmin4/blob/REL-8_5/web/setup.py#L263
+				// https://github.com/pgadmin-org/pgadmin4/blob/REL-8_5/web/setup.py#L246
+				if strings.Contains(stdout.String(), "User not found") ||
+					strings.Contains(stdout.String(), "Password must be") {
+
+					log.Info("Failed to update pgAdmin user", "user", intentUser.Username, "error", stdout.String())
+					r.Recorder.Event(pgadmin,
+						corev1.EventTypeWarning, "InvalidUserWarning",
+						fmt.Sprintf("Failed to update pgAdmin user %s: %s",
+							intentUser.Username, stdout.String()))
+					intentUsers = append(intentUsers, existingUser)
+					continue
+				}
 			}
 		} else {
-			// New user, so generate a password and set it on intentUser
-			password, err := util.GenerateASCIIPassword(util.DefaultGeneratedPasswordLength)
-			if err != nil {
-				return err
-			}
-			intentUser.Password = password
-
-			// Attempt add-user command
+			// New user, so attempt add-user command
 			script := setupScript + fmt.Sprintf(`python3 setup.py add-user %s -- "%s" "%s"`,
 				typeFlag, intentUser.Username, intentUser.Password) + "\n"
 			err = exec(ctx, &stdin, &stdout, &stderr,

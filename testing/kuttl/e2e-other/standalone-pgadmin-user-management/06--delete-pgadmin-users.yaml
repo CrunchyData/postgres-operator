@@ -1,6 +1,6 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 apply:
-- files/04-pgadmin.yaml
+- files/06-pgadmin.yaml
 assert:
-- files/00-pgadmin-check.yaml
+- files/06-pgadmin-check.yaml

@@ -16,14 +16,4 @@ commands:
 
     users_in_secret=$(kubectl get "${secret_name}" -n "${NAMESPACE}" -o 'go-template={{index .data "users.json" }}' | base64 -d)
 
-    bob_is_admin=$(jq '.[] | select(.username=="bob@example.com") | .isAdmin' <<< $users_in_secret)
-    dave_is_admin=$(jq '.[] | select(.username=="dave@example.com") | .isAdmin' <<< $users_in_secret)
-    jimi_is_admin=$(jq '.[] | select(.username=="jimi@example.com") | .isAdmin' <<< $users_in_secret)
-
-    $bob_is_admin && $dave_is_admin && ! $jimi_is_admin || exit 1
-
-    bob_password=$(jq -r '.[] | select(.username=="bob@example.com") | .password' <<< $users_in_secret)
-    dave_password=$(jq -r '.[] | select(.username=="dave@example.com") | .password' <<< $users_in_secret)
-    jimi_password=$(jq -r '.[] | select(.username=="jimi@example.com") | .password' <<< $users_in_secret)
-
-    [ "$bob_password" = "NEWpassword123" ] && [ "$dave_password" = "NEWpassword456" ] && [ "$jimi_password" = "NEWpassword789" ] || exit 1
+    $(jq '. == []' <<< $users_in_secret) || exit 1

@@ -21,3 +21,9 @@ commands:
     jimi_is_admin=$(jq '.[] | select(.username=="jimi@example.com") | .isAdmin' <<< $users_in_secret)
 
     $bob_is_admin && $dave_is_admin && ! $jimi_is_admin || exit 1
+
+    bob_password=$(jq -r '.[] | select(.username=="bob@example.com") | .password' <<< $users_in_secret)
+    dave_password=$(jq -r '.[] | select(.username=="dave@example.com") | .password' <<< $users_in_secret)
+    jimi_password=$(jq -r '.[] | select(.username=="jimi@example.com") | .password' <<< $users_in_secret)
+
+    [ "$bob_password" = "password123" ] && [ "$dave_password" = "password456" ] && [ "$jimi_password" = "password789" ] || exit 1

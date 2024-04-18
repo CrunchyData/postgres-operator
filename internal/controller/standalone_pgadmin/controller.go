@@ -22,12 +22,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	controllerruntime "github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -75,32 +72,11 @@ func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			&source.Kind{Type: v1beta1.NewPostgresCluster()},
 			r.watchPostgresClusters(),
 		).
+		Watches(
+			&source.Kind{Type: &corev1.Secret{}},
+			r.watchForRelatedSecret(),
+		).
 		Complete(r)
-}
-
-// watchPostgresClusters returns a [handler.EventHandler] for PostgresClusters.
-func (r *PGAdminReconciler) watchPostgresClusters() handler.Funcs {
-	handle := func(cluster client.Object, q workqueue.RateLimitingInterface) {
-		ctx := context.Background()
-		for _, pgadmin := range r.findPGAdminsForPostgresCluster(ctx, cluster) {
-
-			q.Add(ctrl.Request{
-				NamespacedName: client.ObjectKeyFromObject(pgadmin),
-			})
-		}
-	}
-
-	return handler.Funcs{
-		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
-		},
-		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.ObjectNew, q)
-		},
-		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
-		},
-	}
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={get}

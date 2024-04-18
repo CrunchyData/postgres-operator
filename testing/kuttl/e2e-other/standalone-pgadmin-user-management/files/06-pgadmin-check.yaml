@@ -20,15 +20,3 @@ metadata:
     postgres-operator.crunchydata.com/role: pgadmin
     postgres-operator.crunchydata.com/pgadmin: pgadmin
 type: Opaque
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: bob-password-secret
-type: Opaque
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: dave-password-secret
-type: Opaque

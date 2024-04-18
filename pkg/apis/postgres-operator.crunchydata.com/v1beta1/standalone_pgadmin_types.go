@@ -132,6 +132,10 @@ type ServerGroup struct {
 }
 
 type PGAdminUser struct {
+	// A reference to the secret that holds the user's password.
+	// +kubebuilder:validation:Required
+	PasswordRef *corev1.SecretKeySelector `json:"passwordRef"`
+
 	// Role determines whether the user has admin privileges or not.
 	// Defaults to User. Valid options are Administrator and User.
 	// +kubebuilder:validation:Enum={Administrator,User}

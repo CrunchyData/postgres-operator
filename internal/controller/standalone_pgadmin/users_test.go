@@ -242,9 +242,35 @@ func TestWritePGAdminUsers(t *testing.T) {
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Name = "test-standalone-pgadmin"
 	pgadmin.Namespace = ns.Name
-
 	assert.NilError(t, cc.Create(ctx, pgadmin))
-	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pgadmin)) })
+
+	userPasswordSecret1 := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "user-password-secret1",
+			Namespace: ns.Name,
+		},
+		Data: map[string][]byte{
+			"password": []byte(`asdf`),
+		},
+	}
+	assert.NilError(t, cc.Create(ctx, userPasswordSecret1))
+
+	userPasswordSecret2 := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "user-password-secret2",
+			Namespace: ns.Name,
+		},
+		Data: map[string][]byte{
+			"password": []byte(`qwer`),
+		},
+	}
+	assert.NilError(t, cc.Create(ctx, userPasswordSecret2))
+
+	t.Cleanup(func() {
+		assert.Check(t, cc.Delete(ctx, pgadmin))
+		assert.Check(t, cc.Delete(ctx, userPasswordSecret1))
+		assert.Check(t, cc.Delete(ctx, userPasswordSecret2))
+	})
 
 	pod := corev1.Pod{}
 	pod.Namespace = pgadmin.Namespace
@@ -259,6 +285,12 @@ func TestWritePGAdminUsers(t *testing.T) {
 	t.Run("CreateOneUser", func(t *testing.T) {
 		pgadmin.Spec.Users = []v1beta1.PGAdminUser{
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret1",
+					},
+					Key: "password",
+				},
 				Username: "testuser1",
 				Role:     "Administrator",
 			},
@@ -274,8 +306,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, pod, fmt.Sprintf("pgadmin-%s-0", pgadmin.UID))
 			assert.Equal(t, namespace, pgadmin.Namespace)
 			assert.Equal(t, container, naming.ContainerPGAdmin)
-			assert.Equal(t, strings.Contains(strings.Join(command, " "), "python3 setup.py add-user --admin --"), true)
-			assert.Equal(t, strings.Contains(strings.Join(command, " "), "testuser1"), true)
+			assert.Equal(t, strings.Contains(strings.Join(command, " "),
+				`python3 setup.py add-user --admin -- "testuser1" "asdf"`), true)
 
 			return nil
 		}
@@ -292,20 +324,34 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, true)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 	})
 
 	t.Run("AddAnotherUserEditExistingUser", func(t *testing.T) {
 		pgadmin.Spec.Users = []v1beta1.PGAdminUser{
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret1",
+					},
+					Key: "password",
+				},
 				Username: "testuser1",
 				Role:     "User",
 			},
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret2",
+					},
+					Key: "password",
+				},
 				Username: "testuser2",
 				Role:     "Administrator",
 			},
 		}
+
 		calls := 0
 		addUserCalls := 0
 		updateUserCalls := 0
@@ -338,22 +384,42 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 2)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 			assert.Equal(t, usersArr[1].Username, "testuser2")
 			assert.Equal(t, usersArr[1].IsAdmin, true)
+			assert.Equal(t, usersArr[1].Password, "qwer")
 		}
 	})
 
 	t.Run("AddOneEditOneLeaveOneAlone", func(t *testing.T) {
 		pgadmin.Spec.Users = []v1beta1.PGAdminUser{
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret1",
+					},
+					Key: "password",
+				},
 				Username: "testuser1",
 				Role:     "User",
 			},
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret1",
+					},
+					Key: "password",
+				},
 				Username: "testuser2",
 				Role:     "User",
 			},
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret2",
+					},
+					Key: "password",
+				},
 				Username: "testuser3",
 				Role:     "Administrator",
 			},
@@ -390,16 +456,25 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 3)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 			assert.Equal(t, usersArr[1].Username, "testuser2")
 			assert.Equal(t, usersArr[1].IsAdmin, false)
+			assert.Equal(t, usersArr[1].Password, "asdf")
 			assert.Equal(t, usersArr[2].Username, "testuser3")
 			assert.Equal(t, usersArr[2].IsAdmin, true)
+			assert.Equal(t, usersArr[2].Password, "qwer")
 		}
 	})
 
 	t.Run("DeleteUsers", func(t *testing.T) {
 		pgadmin.Spec.Users = []v1beta1.PGAdminUser{
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret1",
+					},
+					Key: "password",
+				},
 				Username: "testuser1",
 				Role:     "User",
 			},
@@ -426,12 +501,19 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 	})
 
 	t.Run("ErrorsWhenUpdating", func(t *testing.T) {
 		pgadmin.Spec.Users = []v1beta1.PGAdminUser{
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret1",
+					},
+					Key: "password",
+				},
 				Username: "testuser1",
 				Role:     "Administrator",
 			},
@@ -461,6 +543,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 
 		// setup.py error in stderr
@@ -487,16 +570,29 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 	})
 
 	t.Run("ErrorsWhenAdding", func(t *testing.T) {
 		pgadmin.Spec.Users = []v1beta1.PGAdminUser{
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret1",
+					},
+					Key: "password",
+				},
 				Username: "testuser1",
 				Role:     "User",
 			},
 			{
+				PasswordRef: &corev1.SecretKeySelector{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: "user-password-secret2",
+					},
+					Key: "password",
+				},
 				Username: "testuser2",
 				Role:     "Administrator",
 			},
@@ -527,6 +623,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 
 		// setup.py error in stderr
@@ -554,6 +651,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 
 		// setup.py error in stdout regarding email address
@@ -581,6 +679,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 		assert.Equal(t, len(recorder.Events), 1)
 
@@ -609,6 +708,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 			assert.Equal(t, len(usersArr), 1)
 			assert.Equal(t, usersArr[0].Username, "testuser1")
 			assert.Equal(t, usersArr[0].IsAdmin, false)
+			assert.Equal(t, usersArr[0].Password, "asdf")
 		}
 		assert.Equal(t, len(recorder.Events), 2)
 	})

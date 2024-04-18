@@ -11,6 +11,44 @@ spec:
         storage: 1Gi
   serverGroups: []
   users:
-    - { username: bob@example.com, role: Administrator }
-    - { username: dave@example.com, role: Administrator }
-    - { username: jimi@example.com }
+    - username: bob@example.com
+      role: Administrator
+      passwordRef:
+        name: bob-password-secret
+        key: password
+    - username: dave@example.com
+      role: Administrator
+      passwordRef:
+        name: dave-password-secret
+        key: password
+    - username: jimi@example.com
+      passwordRef:
+        name: jimi-password-secret
+        key: password
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bob-password-secret
+type: Opaque
+data:
+  # Password is "password123", base64 encoded
+  password: cGFzc3dvcmQxMjM=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dave-password-secret
+type: Opaque
+data:
+  # Password is "password456", base64 encoded
+  password: cGFzc3dvcmQ0NTY=
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jimi-password-secret
+type: Opaque
+data:
+  # Password is "password789", base64 encoded
+  password: cGFzc3dvcmQ3ODk=
