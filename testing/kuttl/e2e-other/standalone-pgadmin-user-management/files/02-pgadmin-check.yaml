@@ -32,3 +32,9 @@ kind: Secret
 metadata:
   name: dave-password-secret
 type: Opaque
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jimi-password-secret
+type: Opaque
