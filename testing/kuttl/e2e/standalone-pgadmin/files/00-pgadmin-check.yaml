@@ -32,11 +32,3 @@ status:
     ready: true
     started: true
   phase: Running
----
-apiVersion: v1
-kind: Secret
-metadata:
-  labels:
-    postgres-operator.crunchydata.com/role: pgadmin
-    postgres-operator.crunchydata.com/pgadmin: pgadmin
-type: Opaque

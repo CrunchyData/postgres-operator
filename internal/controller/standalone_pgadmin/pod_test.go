@@ -51,6 +51,7 @@ containers:
   - --
   - |-
     monitor() {
+    export PGADMIN_SETUP_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32)"
     PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
     APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
@@ -103,11 +104,6 @@ containers:
   env:
   - name: PGADMIN_SETUP_EMAIL
     value: admin@pgadmin.postgres-operator.svc
-  - name: PGADMIN_SETUP_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        key: password
-        name: pgadmin-
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
   name: pgadmin
@@ -226,6 +222,7 @@ containers:
   - --
   - |-
     monitor() {
+    export PGADMIN_SETUP_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32)"
     PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
     APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
@@ -278,11 +275,6 @@ containers:
   env:
   - name: PGADMIN_SETUP_EMAIL
     value: admin@pgadmin.postgres-operator.svc
-  - name: PGADMIN_SETUP_PASSWORD
-    valueFrom:
-      secretKeyRef:
-        key: password
-        name: pgadmin-
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
   image: new-image

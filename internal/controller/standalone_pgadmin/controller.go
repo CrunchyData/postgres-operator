@@ -125,8 +125,6 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		_          *corev1.Service
 	)
 
-	_, err = r.reconcilePGAdminSecret(ctx, pgAdmin)
-
 	if err == nil {
 		clusters, err = r.getClustersForPGAdmin(ctx, pgAdmin)
 	}
