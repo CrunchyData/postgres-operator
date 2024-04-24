@@ -52,8 +52,8 @@ type pgAdminUserForJson struct {
 	Username string `json:"username"`
 }
 
-// reconcilePGAdminUsers reconciles the default admin user and the users listed in the pgAdmin spec,
-// adding them to the pgAdmin secret, and creating/updating them in pgAdmin when appropriate.
+// reconcilePGAdminUsers reconciles the users listed in the pgAdmin spec, adding them
+// to the pgAdmin secret, and creating/updating them in pgAdmin when appropriate.
 func (r *PGAdminReconciler) reconcilePGAdminUsers(ctx context.Context, pgadmin *v1beta1.PGAdmin) error {
 	const container = naming.ContainerPGAdmin
 	var podExecutor Executor
@@ -163,9 +163,6 @@ func (r *PGAdminReconciler) writePGAdminUsers(ctx context.Context, pgadmin *v1be
 
 	// Initialize secret data map, or copy existing data if not nil
 	intentUserSecret.Data = make(map[string][]byte)
-	if existingUserSecret.Data != nil {
-		intentUserSecret.Data = existingUserSecret.Data
-	}
 
 	setupScript := fmt.Sprintf(`
 PGADMIN_DIR=%s

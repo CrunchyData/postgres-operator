@@ -125,15 +125,6 @@ func pod(
 				Value: fmt.Sprintf("admin@%s.%s.svc", inPGAdmin.Name, inPGAdmin.Namespace),
 			},
 			{
-				Name: "PGADMIN_SETUP_PASSWORD",
-				ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: naming.StandalonePGAdmin(inPGAdmin).Name,
-					},
-					Key: "password",
-				}},
-			},
-			{
 				Name:  "PGADMIN_LISTEN_PORT",
 				Value: fmt.Sprintf("%d", pgAdminPort),
 			},
@@ -292,6 +283,7 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 	// - https://www.pgadmin.org/docs/pgadmin4/development/server_deployment.html#standalone-gunicorn-configuration
 	// - https://docs.gunicorn.org/en/latest/configure.html
 	var startScript = fmt.Sprintf(`
+export PGADMIN_SETUP_PASSWORD="$(date +%%s | sha256sum | base64 | head -c 32)"
 PGADMIN_DIR=%s
 APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
