@@ -2224,6 +2224,11 @@ func (in *StandalonePGAdminConfiguration) DeepCopyInto(out *StandalonePGAdminCon
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.ConfigDatabaseURI != nil {
+		in, out := &in.ConfigDatabaseURI, &out.ConfigDatabaseURI
+		*out = new(corev1.SecretKeySelector)
+		(*in).DeepCopyInto(*out)
+	}
 	in.Gunicorn.DeepCopyInto(&out.Gunicorn)
 	if in.LDAPBindPassword != nil {
 		in, out := &in.LDAPBindPassword, &out.LDAPBindPassword

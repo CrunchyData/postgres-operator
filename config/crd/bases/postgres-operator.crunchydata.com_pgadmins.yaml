@@ -860,6 +860,24 @@ spec:
                   to any of these values will be loaded without validation. Be careful,
                   as you may put pgAdmin into an unusable state.
                 properties:
+                  configDatabaseURI:
+                    description: 'A Secret containing the value for the CONFIG_DATABASE_URI
+                      setting. More info: https://www.pgadmin.org/docs/pgadmin4/latest/external_database.html'
+                    properties:
+                      key:
+                        description: The key of the secret to select from.  Must be
+                          a valid secret key.
+                        type: string
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                        type: string
+                      optional:
+                        description: Specify whether the Secret or its key must be
+                          defined
+                        type: boolean
+                    required:
+                    - key
+                    type: object
                   files:
                     description: Files allows the user to mount projected volumes
                       into the pgAdmin container so that files can be referenced by

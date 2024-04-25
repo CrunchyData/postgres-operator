@@ -1,0 +1,33 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: pgadmin1
+spec:
+  users:
+    - username: "john.doe@example.com"
+      passwordRef:
+        name: john-doe-password
+        key: password
+  config:
+    configDatabaseURI:
+      name: elephant-pguser-elephant
+      key: uri
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+    - name: kuttl-test
+      postgresClusterSelector:
+        matchLabels:
+          sometest: test1
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: john-doe-password
+type: Opaque
+stringData:
+  password: password

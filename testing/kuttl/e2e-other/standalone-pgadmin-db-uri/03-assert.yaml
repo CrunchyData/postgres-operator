@@ -1,0 +1,21 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+- script: |
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=elephant,
+            postgres-operator.crunchydata.com/role=master'
+      )
+
+      NUM_USERS=$(
+      kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- \
+        psql -qAt -d elephant --command 'select count(*) from elephant.user' \
+      )
+
+      if [[ ${NUM_USERS} != 1 ]]; then
+          echo >&2 'Expected 1 user'
+          echo "got ${NUM_USERS}"
+          exit 1
+      fi

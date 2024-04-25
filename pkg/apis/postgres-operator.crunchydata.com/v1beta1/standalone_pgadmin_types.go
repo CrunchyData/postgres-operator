@@ -26,6 +26,11 @@ type StandalonePGAdminConfiguration struct {
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 
+	// A Secret containing the value for the CONFIG_DATABASE_URI setting.
+	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/external_database.html
+	// +optional
+	ConfigDatabaseURI *corev1.SecretKeySelector `json:"configDatabaseURI,omitempty"`
+
 	// Settings for the gunicorn server.
 	// More info: https://docs.gunicorn.org/en/latest/settings.html
 	// +optional
