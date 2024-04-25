@@ -157,6 +157,9 @@ initContainers:
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
             LDAP_BIND_PASSWORD = _f.read()
+    if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri'):
+        with open('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri') as _f:
+            CONFIG_DATABASE_URI = _f.read()
   - |
     import json, re
     with open('/etc/pgadmin/conf.d/~postgres-operator/gunicorn-config.json') as _f:
@@ -336,6 +339,9 @@ initContainers:
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
             LDAP_BIND_PASSWORD = _f.read()
+    if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri'):
+        with open('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri') as _f:
+            CONFIG_DATABASE_URI = _f.read()
   - |
     import json, re
     with open('/etc/pgadmin/conf.d/~postgres-operator/gunicorn-config.json') as _f:

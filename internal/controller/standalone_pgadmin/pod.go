@@ -31,6 +31,7 @@ const (
 	configMountPath        = "/etc/pgadmin/conf.d"
 	configFilePath         = "~postgres-operator/" + settingsConfigMapKey
 	clusterFilePath        = "~postgres-operator/" + settingsClusterMapKey
+	configDatabaseURIPath  = "~postgres-operator/config-database-uri"
 	ldapFilePath           = "~postgres-operator/ldap-bind-password"
 	gunicornConfigFilePath = "~postgres-operator/" + gunicornConfigKey
 
@@ -220,6 +221,21 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 			},
 		}...)
 
+	if pgadmin.Spec.Config.ConfigDatabaseURI != nil {
+		config = append(config, corev1.VolumeProjection{
+			Secret: &corev1.SecretProjection{
+				LocalObjectReference: pgadmin.Spec.Config.ConfigDatabaseURI.LocalObjectReference,
+				Optional:             pgadmin.Spec.Config.ConfigDatabaseURI.Optional,
+				Items: []corev1.KeyToPath{
+					{
+						Key:  pgadmin.Spec.Config.ConfigDatabaseURI.Key,
+						Path: configDatabaseURIPath,
+					},
+				},
+			},
+		})
+	}
+
 	// To enable LDAP authentication for pgAdmin, various LDAP settings must be configured.
 	// While most of the required configuration can be set using the 'settings'
 	// feature on the spec (.Spec.UserInterface.PGAdmin.Config.Settings), those
@@ -349,18 +365,22 @@ func startupCommand() []string {
 	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-7_7/docs/en_US/config_py.rst
 	//
 	// This command writes a script in `/etc/pgadmin/config_system.py` that reads from
-	// the `pgadmin-settings.json` file and the `ldap-bind-password` file (if it exists)
-	// and sets those variables globally. That way those values are available as pgAdmin
-	// configurations when pgAdmin starts.
+	// the `pgadmin-settings.json` file and the config-database-uri and/or
+	// `ldap-bind-password` files (if either exists) and sets those variables globally.
+	// That way those values are available as pgAdmin configurations when pgAdmin starts.
 	//
 	// Note: All pgAdmin settings are uppercase alphanumeric with underscores, so ignore
 	// any keys/names that are not.
 	//
-	// Note: set pgAdmin's LDAP_BIND_PASSWORD setting from the Secret last
-	// in order to overwrite configuration of LDAP_BIND_PASSWORD via ConfigMap JSON.
+	// Note: set the pgAdmin LDAP_BIND_PASSWORD and CONFIG_DATABASE_URI settings from the
+	// Secrets last in order to overwrite the respective configurations set via ConfigMap JSON.
+
 	const (
 		// ldapFilePath is the path for mounting the LDAP Bind Password
 		ldapPasswordAbsolutePath = configMountPath + "/" + ldapFilePath
+
+		// configDatabaseURIPath is the path for mounting the database URI connection string
+		configDatabaseURIPathAbsolutePath = configMountPath + "/" + configDatabaseURIPath
 
 		configSystem = `
 import glob, json, re, os
@@ -372,6 +392,9 @@ with open('` + configMountPath + `/` + configFilePath + `') as _f:
 if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
     with open('` + ldapPasswordAbsolutePath + `') as _f:
         LDAP_BIND_PASSWORD = _f.read()
+if os.path.isfile('` + configDatabaseURIPathAbsolutePath + `'):
+    with open('` + configDatabaseURIPathAbsolutePath + `') as _f:
+        CONFIG_DATABASE_URI = _f.read()
 `
 		// gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
 		// after all other config files.

@@ -1,0 +1,20 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: pgadmin1
+spec:
+  config:
+    configDatabaseURI:
+      name: elephant-pguser-elephant
+      key: uri
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+    - name: kuttl-test
+      postgresClusterSelector:
+        matchLabels:
+          sometest: test1

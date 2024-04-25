@@ -1,0 +1,14 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+# ensure the user schema is created for pgAdmin to use
+  - script: |
+      PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/cluster=elephant,
+            postgres-operator.crunchydata.com/role=master'
+      )
+      kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+        -- psql -qAt -d elephant --command 'CREATE SCHEMA elephant AUTHORIZATION elephant'

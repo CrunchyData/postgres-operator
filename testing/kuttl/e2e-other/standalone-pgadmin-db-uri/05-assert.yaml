@@ -1,0 +1,36 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+# timeout: 120
+commands:
+- script: |
+    PRIMARY=$(
+      kubectl get pod --namespace "${NAMESPACE}" \
+        --output name --selector '
+          postgres-operator.crunchydata.com/cluster=elephant,
+          postgres-operator.crunchydata.com/role=master'
+    )
+
+    NUM_USERS=$(
+    kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- \
+      psql -qAt -d elephant --command 'select count(*) from elephant.user' \
+    )
+
+    if [[ ${NUM_USERS} != 2 ]]; then
+        echo >&2 'Expected 2 user'
+        echo "got ${NUM_USERS}"
+        exit 1
+    fi
+
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    USER_LIST=$(
+    kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- \
+      psql -qAt -d elephant --command 'select email from elephant.user;' \
+    )      
+
+    {
+      contains "${USER_LIST}" "john.doe@example.com"
+    } || {
+      echo >&2 'User john.doe@example.com not found. Got:'
+      echo "${USER_LIST}"
+      exit 1
+    }
