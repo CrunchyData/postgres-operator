@@ -10396,7 +10396,7 @@ spec:
                     description: 'Patroni dynamic configuration settings. Changes
                       to this value will be automatically reloaded without validation.
                       Changes to certain PostgreSQL parameters cause PostgreSQL to
-                      restart. More info: https://patroni.readthedocs.io/en/latest/SETTINGS.html'
+                      restart. More info: https://patroni.readthedocs.io/en/latest/dynamic_configuration.html'
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   leaderLeaseDurationSeconds:
