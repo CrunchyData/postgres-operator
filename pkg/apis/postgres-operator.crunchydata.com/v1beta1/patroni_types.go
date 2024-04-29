@@ -19,7 +19,7 @@ type PatroniSpec struct {
 	// Patroni dynamic configuration settings. Changes to this value will be
 	// automatically reloaded without validation. Changes to certain PostgreSQL
 	// parameters cause PostgreSQL to restart.
-	// More info: https://patroni.readthedocs.io/en/latest/SETTINGS.html
+	// More info: https://patroni.readthedocs.io/en/latest/dynamic_configuration.html
 	// +optional
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
