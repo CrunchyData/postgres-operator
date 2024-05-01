@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -374,6 +375,36 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 				client.MatchingLabelsSelector{Selector: selector},
 			))
 	}
+
+	// Sorts the slice of secrets.Items based on secrets with identical labels
+	// If one secret has "pguser" in its name and the other does not, the
+	// one without "pguser" is moved to the front.
+	// If both secrets have "pguser" in their names or neither has "pguser", they
+	// are sorted by creation timestamp.
+	// If two secrets have the same creation timestamp, they are further sorted by name.
+	// The secret to be used by PGO is put at the end of the sorted slice.
+	sort.Slice(secrets.Items, func(i, j int) bool {
+		// Check if either secrets have "pguser" in their names
+		isIPgUser := strings.Contains(secrets.Items[i].Name, "pguser")
+		isJPgUser := strings.Contains(secrets.Items[j].Name, "pguser")
+
+		// If one secret has "pguser" and the other does not,
+		// move the one without "pguser" to the front
+		if isIPgUser && !isJPgUser {
+			return false
+		} else if !isIPgUser && isJPgUser {
+			return true
+		}
+
+		if secrets.Items[i].CreationTimestamp.Time.Equal(secrets.Items[j].CreationTimestamp.Time) {
+			// If the creation timestamps are equal, sort by name
+			return secrets.Items[i].Name < secrets.Items[j].Name
+		}
+
+		// If both secrets have "pguser" or neither have "pguser",
+		// sort by creation timestamp
+		return secrets.Items[i].CreationTimestamp.Time.After(secrets.Items[j].CreationTimestamp.Time)
+	})
 
 	// Index secrets by PostgreSQL user name and delete any that are not in the
 	// cluster spec. Keep track of the deprecated default secret to migrate its
