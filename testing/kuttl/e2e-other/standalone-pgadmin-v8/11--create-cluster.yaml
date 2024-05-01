@@ -1,0 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/11-cluster.yaml
+- files/11-pgadmin.yaml
+error:
+- files/11-pgadmin-check.yaml

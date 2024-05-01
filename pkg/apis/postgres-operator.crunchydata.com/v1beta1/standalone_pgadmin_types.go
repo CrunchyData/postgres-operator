@@ -132,16 +132,21 @@ type PGAdminSpec struct {
 	ServiceName string `json:"serviceName,omitempty"`
 }
 
+// +kubebuilder:validation:XValidation:rule=`[has(self.postgresClusterName),has(self.postgresClusterSelector)].exists_one(x,x)`,message=`exactly one of "postgresClusterName" or "postgresClusterSelector" is required`
 type ServerGroup struct {
 	// The name for the ServerGroup in pgAdmin.
 	// Must be unique in the pgAdmin's ServerGroups since it becomes the ServerGroup name in pgAdmin.
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 
+	// PostgresClusterName selects one cluster to add to pgAdmin by name.
+	// +kubebuilder:validation:Optional
+	PostgresClusterName string `json:"postgresClusterName,omitempty"`
+
 	// PostgresClusterSelector selects clusters to dynamically add to pgAdmin by matching labels.
 	// An empty selector like `{}` will select ALL clusters in the namespace.
-	// +kubebuilder:validation:Required
-	PostgresClusterSelector metav1.LabelSelector `json:"postgresClusterSelector"`
+	// +kubebuilder:validation:Optional
+	PostgresClusterSelector metav1.LabelSelector `json:"postgresClusterSelector,omitempty"`
 }
 
 type PGAdminUser struct {
