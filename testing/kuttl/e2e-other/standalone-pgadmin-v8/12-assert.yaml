@@ -1,0 +1,80 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+# Check the configmap is updated;
+# Check the file is updated on the pod;
+# Check the server dump is accurate.
+# Because we have to wait for the configmap reload, make sure we have enough time.
+timeout: 120
+commands:
+- script: |
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    diff_comp() { bash -ceu 'diff <(echo "$1" ) <(echo "$2")' - "$@"; }
+    
+    data_expected='"pgadmin-shared-clusters.json": "{\n  \"Servers\": {\n    \"1\": {\n      \"Group\": \"groupOne\",\n      \"Host\": \"named-cluster-primary.'${NAMESPACE}.svc'\",\n      \"MaintenanceDB\": \"postgres\",\n      \"Name\": \"named-cluster\",\n      \"Port\": 5432,\n      \"SSLMode\": \"prefer\",\n      \"Shared\": true,\n      \"Username\": \"named-cluster\"\n    }\n  }\n}\n"'
+
+    data_actual=$(kubectl get cm -l postgres-operator.crunchydata.com/pgadmin=pgadmin2 -n "${NAMESPACE}" -o json | jq .items[0].data)
+
+    {
+      contains "${data_actual}" "${data_expected}"
+    } || {
+      echo "Wrong configmap: got ${data_actual}"
+      diff_comp "${data_actual}" "${data_expected}"
+      exit 1
+    }
+
+    pod_name=$(kubectl get pod -n "${NAMESPACE}" -l postgres-operator.crunchydata.com/pgadmin=pgadmin2 -o name)
+
+    config_updated=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c 'cat /etc/pgadmin/conf.d/~postgres-operator/pgadmin-shared-clusters.json')
+    config_expected='{
+      "Servers": {
+        "1": {
+          "Group": "groupOne",
+          "Host": "named-cluster-primary.'${NAMESPACE}.svc'",
+          "MaintenanceDB": "postgres",
+          "Name": "named-cluster",
+          "Port": 5432,
+          "SSLMode": "prefer",
+          "Shared": true,
+          "Username": "named-cluster"
+        }
+      }
+    }'
+    {
+      contains "${config_updated}" "${config_expected}"
+    } || {
+      echo "Wrong file mounted: got ${config_updated}"
+      echo "Wrong file mounted: expected ${config_expected}"
+      diff_comp  "${config_updated}" "${config_expected}"
+      sleep 10
+      exit 1
+    }
+
+    clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py dump-servers /tmp/dumped.json --user admin@pgadmin2.${NAMESPACE}.svc && cat /tmp/dumped.json")
+    
+    clusters_expected='
+    {
+        "Servers": {
+            "1": {
+                "Name": "named-cluster",
+                "Group": "groupOne",
+                "Host": "named-cluster-primary.'${NAMESPACE}.svc'",
+                "Port": 5432,
+                "MaintenanceDB": "postgres",
+                "Username": "named-cluster",
+                "Shared": true,
+                "TunnelPort": "22",
+                "KerberosAuthentication": false,
+                "ConnectionParameters": {
+                    "sslmode": "prefer"
+                }
+            }
+        }
+    }'
+    {
+      contains "${clusters_actual}" "${clusters_expected}"
+    } || {
+      echo "Wrong servers dumped: got ${clusters_actual}"
+      echo "Wrong servers dumped: expected ${clusters_expected}"
+      diff_comp "${clusters_actual}" "${clusters_expected}"
+      exit 1
+    }

@@ -1,0 +1,37 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+# Check that invalid spec cannot be applied.
+commands:
+- script: |
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    diff_comp() { bash -ceu 'diff <(echo "$1" ) <(echo "$2")' - "$@"; }
+    
+    data_expected='"pgadmin2" is invalid: spec.serverGroups[0]: Invalid value: "object": exactly one of "postgresClusterName" or "postgresClusterSelector" is required'
+
+    data_actual=$(kubectl apply -f - 2>&1 <<EOF
+    apiVersion: postgres-operator.crunchydata.com/v1beta1
+    kind: PGAdmin
+    metadata:
+      name: pgadmin2
+    spec:
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+      serverGroups:
+      - name: groupOne # can't have both a selector and name
+        postgresClusterSelector:
+          matchLabels:
+            hello: world
+        postgresClusterName: pgadmin4
+    EOF
+    )
+    {
+      contains "${data_actual}" "${data_expected}"
+    } || {
+      echo "Expected invalid error: got ${data_actual}"
+      diff_comp "${data_actual}" "${data_expected}"
+      exit 1
+    }

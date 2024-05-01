@@ -1369,6 +1369,10 @@ spec:
                         unique in the pgAdmin's ServerGroups since it becomes the
                         ServerGroup name in pgAdmin.
                       type: string
+                    postgresClusterName:
+                      description: PostgresClusterName selects one cluster to add
+                        to pgAdmin by name.
+                      type: string
                     postgresClusterSelector:
                       description: PostgresClusterSelector selects clusters to dynamically
                         add to pgAdmin by matching labels. An empty selector like
@@ -1417,8 +1421,11 @@ spec:
                       type: object
                   required:
                   - name
-                  - postgresClusterSelector
                   type: object
+                  x-kubernetes-validations:
+                  - message: exactly one of "postgresClusterName" or "postgresClusterSelector"
+                      is required
+                    rule: '[has(self.postgresClusterName),has(self.postgresClusterSelector)].exists_one(x,x)'
                 type: array
               serviceName:
                 description: ServiceName will be used as the name of a ClusterIP service
