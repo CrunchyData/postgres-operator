@@ -1,6 +1,6 @@
 # Manually create a service that should be taken over by pgAdmin
 # The manual service is of type LoadBalancer
-# Cnce taken over, the type should change to ClusterIP
+# Once taken over, the type should change to ClusterIP
 apiVersion: v1
 kind: Service
 metadata:

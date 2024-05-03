@@ -21,6 +21,7 @@ spec:
     name: pgadmin-port
   type: ClusterIP
 ---
+# An event should be created for the failure to reconcile the Service
 apiVersion: v1
 involvedObject:
   apiVersion: postgres-operator.crunchydata.com/v1beta1
