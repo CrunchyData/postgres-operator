@@ -19,14 +19,16 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+	"github.com/pkg/errors"
 )
 
 // +kubebuilder:rbac:groups="",resources="services",verbs={get}
@@ -45,10 +47,12 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 	// need to delete any existing service(s). At the start of every reconcile
 	// get all services that match the current pgAdmin labels.
 	services := corev1.ServiceList{}
-	if err := r.Client.List(ctx, &services, client.MatchingLabels{
-		naming.LabelStandalonePGAdmin: pgadmin.Name,
-		naming.LabelRole:              naming.RolePGAdmin,
-	}); err != nil {
+	if err := r.Client.List(ctx, &services,
+		client.InNamespace(pgadmin.Namespace),
+		client.MatchingLabels{
+			naming.LabelStandalonePGAdmin: pgadmin.Name,
+			naming.LabelRole:              naming.RolePGAdmin,
+		}); err != nil {
 		return err
 	}
 
@@ -64,16 +68,49 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 		}
 	}
 
-	// TODO (jmckulk): check if the requested services exists without our pgAdmin
-	// as the owner. If this happens, don't take over ownership of the existing svc.
-
 	// At this point only a service defined by spec.ServiceName should exist.
-	// Update the service or create it if it does not exist
+	// Check if the user has requested a service through ServiceName
 	if pgadmin.Spec.ServiceName != "" {
+		// Look for an existing service with name ServiceName in the namespace
+		existingService := &corev1.Service{}
+		err := r.Client.Get(ctx, types.NamespacedName{
+			Name:      pgadmin.Spec.ServiceName,
+			Namespace: pgadmin.GetNamespace(),
+		}, existingService)
+		if client.IgnoreNotFound(err) != nil {
+			return err
+		}
+
+		// If we found an existing service in our namespace with ServiceName
+		if !apierrors.IsNotFound(err) {
+
+			// Check if the existing service has ownerReferences.
+			// If it doesn't we can go ahead and reconcile the service.
+			// If it does then we need to check if we are the controller.
+			if len(existingService.OwnerReferences) != 0 {
+
+				// If the service is not controlled by this pgAdmin then we shouldn't reconcile
+				if !metav1.IsControlledBy(existingService, pgadmin) {
+					err := errors.New("Service is controlled by another object")
+					log.V(1).Error(err, "PGO does not force ownership on existing services",
+						"ServiceName", pgadmin.Spec.ServiceName)
+					r.Recorder.Event(pgadmin,
+						corev1.EventTypeWarning, "InvalidServiceWarning",
+						"Failed to reconcile Service ServiceName: "+pgadmin.Spec.ServiceName)
+
+					return err
+				}
+			}
+		}
+
+		// A service has been requested and we are allowed to create or reconcile
 		service := service(pgadmin)
+
+		// Set the controller reference on the service
 		if err := errors.WithStack(r.setControllerReference(pgadmin, service)); err != nil {
 			return err
 		}
+
 		return errors.WithStack(r.apply(ctx, service))
 	}
 
