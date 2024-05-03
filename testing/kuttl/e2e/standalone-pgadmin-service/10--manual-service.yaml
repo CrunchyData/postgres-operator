@@ -1,0 +1,30 @@
+# Manually create a service that should be taken over by pgAdmin
+# The manual service is of type LoadBalancer
+# Cnce taken over, the type should change to ClusterIP
+apiVersion: v1
+kind: Service
+metadata:
+  name: manual-pgadmin-service
+spec:
+  ports:
+  - name: pgadmin-port
+    port: 5050
+    protocol: TCP
+  selector:
+    postgres-operator.crunchydata.com/pgadmin: rhino
+  type: LoadBalancer
+---
+# Create a pgAdmin that points to an existing un-owned service
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: manual-svc-pgadmin
+spec:
+  serviceName: manual-pgadmin-service
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups: []
