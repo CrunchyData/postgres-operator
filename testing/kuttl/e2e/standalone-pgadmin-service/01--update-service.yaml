@@ -9,5 +9,4 @@ spec:
     resources:
       requests:
         storage: 1Gi
-  serverGroups: []
   serviceName: pgadmin-service-updated
