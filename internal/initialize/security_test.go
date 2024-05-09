@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 )
@@ -59,9 +60,8 @@ func TestPodSecurityContext(t *testing.T) {
 		assert.Assert(t, psc.RunAsUser == nil,
 			`Containers must not set runAsUser to 0`)
 
-		// TODO(cbandy): delegate to v1.SecurityContext
 		assert.Assert(t, psc.SeccompProfile == nil,
-			`Seccomp profile must be explicitly set to one of the allowed values. Both the Unconfined profile and the absence of a profile are prohibited.`)
+			`SeccompProfile must be set to RuntimeDefault.`)
 	})
 }
 
@@ -121,7 +121,7 @@ func TestRestrictedSecurityContext(t *testing.T) {
 		// of OpenShift 4.11 uses the "runtime/default" profile.
 		// - https://docs.openshift.com/container-platform/4.10/security/seccomp-profiles.html
 		// - https://docs.openshift.com/container-platform/4.11/security/seccomp-profiles.html
-		assert.Assert(t, sc.SeccompProfile == nil,
+		assert.Assert(t, sc.SeccompProfile.Type == corev1.SeccompProfileTypeRuntimeDefault,
 			`Seccomp profile must be explicitly set to one of the allowed values. Both the Unconfined profile and the absence of a profile are prohibited.`)
 	})
 

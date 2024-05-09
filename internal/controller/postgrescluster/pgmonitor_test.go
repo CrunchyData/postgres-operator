@@ -169,6 +169,8 @@ securityContext:
   privileged: false
   readOnlyRootFilesystem: true
   runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
 volumeMounts:
 - mountPath: /conf
   name: exporter-config
