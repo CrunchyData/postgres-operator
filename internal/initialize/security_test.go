@@ -60,8 +60,10 @@ func TestPodSecurityContext(t *testing.T) {
 		assert.Assert(t, psc.RunAsUser == nil,
 			`Containers must not set runAsUser to 0`)
 
-		assert.Assert(t, psc.SeccompProfile == nil,
-			`SeccompProfile must be set to RuntimeDefault.`)
+		if assert.Check(t, psc.SeccompProfile == nil) {
+			assert.Assert(t, initialize.RestrictedSecurityContext().SeccompProfile != nil,
+				`SeccompProfile should be delegated to the container-level v1.SecurityContext`)
+		}
 	})
 }
 
