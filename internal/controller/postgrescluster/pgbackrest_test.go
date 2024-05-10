@@ -2519,6 +2519,8 @@ containers:
     privileged: false
     readOnlyRootFilesystem: true
     runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   volumeMounts:
   - mountPath: /etc/pgbackrest/conf.d
     name: pgbackrest-config

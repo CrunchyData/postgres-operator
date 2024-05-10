@@ -51,5 +51,9 @@ func RestrictedSecurityContext() *corev1.SecurityContext {
 
 		// Fail to start the container if its image runs as UID 0 (root).
 		RunAsNonRoot: Bool(true),
+
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: corev1.SeccompProfileTypeRuntimeDefault,
+		},
 	}
 }
