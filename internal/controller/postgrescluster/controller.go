@@ -42,6 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/crunchydata/postgres-operator/internal/autogrow"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -62,6 +63,7 @@ const (
 
 // Reconciler holds resources for the PostgresCluster reconciler
 type Reconciler struct {
+	Autogrow    autogrow.Autogrow
 	Client      client.Client
 	IsOpenShift bool
 	Owner       client.FieldOwner
@@ -209,6 +211,10 @@ func (r *Reconciler) Reconcile(
 			log.V(1).Info("patched cluster status")
 		}
 		return result, err
+	}
+
+	if autogrow.Enabled(*cluster) {
+		r.Autogrow.WatchCluster(cluster.Namespace, cluster.Name, r.Client)
 	}
 
 	if r.Registration != nil && r.Registration.Required(r.Recorder, cluster, &cluster.Status.Conditions) {
