@@ -199,7 +199,7 @@ while read -r -t 5 -u "${fd}" || true; do
 	sizeInt="${size//M/}"
 	# Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
 	useInt=$(echo $use | sed 's/[[:punct:]]//g')
-	triggerExpansion="$((useInt > 5))"
+	triggerExpansion="$((useInt > 75))"
 	if [ $triggerExpansion -eq 1 ]; then
 		newSize="$(((sizeInt / 2)+sizeInt))"
 		newSizeMi="${newSize}Mi"
