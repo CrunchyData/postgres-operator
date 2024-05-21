@@ -195,7 +195,7 @@ func InstancePod(ctx context.Context,
 		ImagePullPolicy: container.ImagePullPolicy,
 		SecurityContext: initialize.RestrictedSecurityContext(),
 
-		VolumeMounts: []corev1.VolumeMount{certVolumeMount},
+		VolumeMounts: []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
 	}
 
 	if inInstanceSpec.Sidecars != nil &&
@@ -294,8 +294,7 @@ func PodSecurityContext(cluster *v1beta1.PostgresCluster) *corev1.PodSecurityCon
 	// - https://docs.k8s.io/concepts/security/pod-security-standards/
 	for i := range cluster.Spec.SupplementalGroups {
 		if gid := cluster.Spec.SupplementalGroups[i]; gid > 0 {
-			podSecurityContext.SupplementalGroups =
-				append(podSecurityContext.SupplementalGroups, gid)
+			podSecurityContext.SupplementalGroups = append(podSecurityContext.SupplementalGroups, gid)
 		}
 	}
 

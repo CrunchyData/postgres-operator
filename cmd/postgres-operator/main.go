@@ -28,7 +28,6 @@ import (
 	cruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/crunchydata/postgres-operator/internal/autogrow"
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/bridge/crunchybridgecluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/pgupgrade"
@@ -105,11 +104,8 @@ func main() {
 	assertNoError(mgr.Add(registrar))
 	_ = registrar.CheckToken()
 
-	autogrow, err := autogrow.NewRunner(mgr.GetConfig(), log)
-	assertNoError(mgr.Add(autogrow))
-
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, openshift, log, registrar, autogrow)
+	addControllersToManager(mgr, openshift, log, registrar)
 
 	if util.DefaultMutableFeatureGate.Enabled(util.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -140,9 +136,8 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger, reg registration.Registration, autogrow autogrow.Autogrow) {
+func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
-		Autogrow:     autogrow,
 		Client:       mgr.GetClient(),
 		IsOpenShift:  openshift,
 		Owner:        postgrescluster.ControllerName,
