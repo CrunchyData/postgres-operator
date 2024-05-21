@@ -13335,6 +13335,18 @@ spec:
                 description: Specification of the service that exposes PostgreSQL
                   replica instances
                 properties:
+                  externalTrafficPolicy:
+                    description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                    enum:
+                    - Cluster
+                    - Local
+                    type: string
+                  internalTrafficPolicy:
+                    description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
+                    enum:
+                    - Cluster
+                    - Local
+                    type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
                     properties:
