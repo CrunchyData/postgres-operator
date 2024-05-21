@@ -334,6 +334,13 @@ func (r *Reconciler) observeInstances(
 			if matches, known := instance.PodMatchesPodTemplate(); known && matches {
 				status.UpdatedReplicas++
 			}
+			// store desired pgData volume size, if set
+			for _, pod := range instance.Pods {
+				status.DesiredPGDataVolume = pod.Annotations["disk-starvation"]
+				if status.DesiredPGDataVolume != "" {
+					break
+				}
+			}
 		}
 
 		cluster.Status.InstanceSets = append(cluster.Status.InstanceSets, status)

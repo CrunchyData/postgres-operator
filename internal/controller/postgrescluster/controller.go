@@ -80,6 +80,8 @@ type Reconciler struct {
 // +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list,watch}
 // +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters/status",verbs={patch}
 
+var haveIRun = false
+
 // Reconcile reconciles a ConfigMap in a namespace managed by the PostgreSQL Operator
 func (r *Reconciler) Reconcile(
 	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
@@ -200,11 +202,26 @@ func (r *Reconciler) Reconcile(
 	// occurs while attempting to patch the status, while otherwise simply returning the
 	// Result and error variables that are populated while reconciling the PostgresCluster.
 	patchClusterStatus := func() (reconcile.Result, error) {
+
+		for _, is := range before.Status.InstanceSets {
+			fmt.Println("IN PATCH. BEFORE CLUSTER STATUS")
+			fmt.Println(is.Name)
+			fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
+		}
+
+		for _, is := range cluster.Status.InstanceSets {
+			fmt.Println("IN PATCH. CURRENT CLUSTER STATUS")
+			fmt.Println(is.Name)
+			fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
+		}
+
 		if !equality.Semantic.DeepEqual(before.Status, cluster.Status) {
+			fmt.Println("NOT DEEP EQUAL")
 			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
 			// managed fields on the status subresource: https://issue.k8s.io/88901
 			if err := errors.WithStack(r.Client.Status().Patch(
 				ctx, cluster, client.MergeFrom(before), r.Owner)); err != nil {
+				fmt.Println("ERR NOT NIL")
 				log.Error(err, "patching cluster status")
 				return result, err
 			}
@@ -249,6 +266,12 @@ func (r *Reconciler) Reconcile(
 
 	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
 	postgres.SetHugePages(cluster, &pgParameters)
+
+	fmt.Println("IN CONTROLLER 1")
+	for _, is := range cluster.Status.InstanceSets {
+		fmt.Println(is.Name)
+		fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
+	}
 
 	if err == nil {
 		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
@@ -352,6 +375,12 @@ func (r *Reconciler) Reconcile(
 			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig)
 	}
 
+	fmt.Println("IN CONTROLLER 2")
+	for _, is := range cluster.Status.InstanceSets {
+		fmt.Println(is.Name)
+		fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
+	}
+
 	if err == nil {
 		err = r.reconcilePostgresDatabases(ctx, cluster, instances)
 	}
@@ -385,6 +414,12 @@ func (r *Reconciler) Reconcile(
 	cluster.Status.ObservedGeneration = cluster.GetGeneration()
 
 	log.V(1).Info("reconciled cluster")
+
+	fmt.Println("IN CONTROLLER END")
+	for _, is := range cluster.Status.InstanceSets {
+		fmt.Println(is.Name)
+		fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
+	}
 
 	return patchClusterStatus()
 }

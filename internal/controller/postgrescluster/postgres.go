@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -582,6 +583,8 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	clusterVolumes []corev1.PersistentVolumeClaim,
 ) (*corev1.PersistentVolumeClaim, error) {
 
+	log := logging.FromContext(ctx)
+
 	labelMap := map[string]string{
 		naming.LabelCluster:     cluster.Name,
 		naming.LabelInstanceSet: instanceSpec.Name,
@@ -618,12 +621,41 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 		labelMap,
 	)
 
+	// Capture the largest pgData volume size currently defined for a given instance set.
+	// TODO(tjmoore4): What happens if/when the desired value gets wiped out?
+	var volumeRequestSize int64
+	for i, _ := range cluster.Status.InstanceSets {
+		if instanceSpec.Name == cluster.Status.InstanceSets[i].Name {
+			// From the spec and three status values, get the largest value per instance set.
+			volumeRequestSize = instanceSpec.DataVolumeClaimSpec.Resources.Requests.Storage().Value()
+			if cluster.Status.InstanceSets[i].DesiredPGDataVolume != "" {
+				desiredRequest, err := resource.ParseQuantity(cluster.Status.InstanceSets[i].DesiredPGDataVolume)
+				if err == nil {
+					if desiredRequest.Value() > volumeRequestSize {
+						volumeRequestSize = desiredRequest.Value()
+					}
+				} else {
+					log.Error(err, "Unable to parse volume request: "+
+						cluster.Status.InstanceSets[i].DesiredPGDataVolume)
+				}
+			}
+		}
+	}
+
+	fmt.Printf("\n EXISTING REQUEST: \n%v\n\n", instanceSpec.DataVolumeClaimSpec.Resources.Requests.Storage())
+	fmt.Printf("\nVOLUME SIZE REQUESTED: %v\n\n", volumeRequestSize)
+	instanceSpec.DataVolumeClaimSpec.Resources.Requests = corev1.ResourceList{
+		corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize, resource.BinarySI),
+	}
+
 	pvc.Spec = instanceSpec.DataVolumeClaimSpec
 
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,
 			errors.WithStack(r.apply(ctx, pvc)))
 	}
+
+	fmt.Printf("\nAFTER APPLY. ERROR: %v\n\n", err)
 
 	return pvc, err
 }

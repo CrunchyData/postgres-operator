@@ -554,6 +554,10 @@ type PostgresInstanceSetStatus struct {
 	// Total number of pods that have the desired specification.
 	// +optional
 	UpdatedReplicas int32 `json:"updatedReplicas,omitempty"`
+
+	// Desired Size of the pgData volume
+	// +optional
+	DesiredPGDataVolume string `json:"desiredPGDataVolume,omitempty"`
 }
 
 // PostgresProxySpec is a union of the supported PostgreSQL proxies.
