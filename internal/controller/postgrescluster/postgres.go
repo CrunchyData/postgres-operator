@@ -624,7 +624,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	// Capture the largest pgData volume size currently defined for a given instance set.
 	// TODO(tjmoore4): What happens if/when the desired value gets wiped out?
 	var volumeRequestSize int64
-	for i, _ := range cluster.Status.InstanceSets {
+	for i := range cluster.Status.InstanceSets {
 		if instanceSpec.Name == cluster.Status.InstanceSets[i].Name {
 			// From the spec and three status values, get the largest value per instance set.
 			volumeRequestSize = instanceSpec.DataVolumeClaimSpec.Resources.Requests.Storage().Value()
@@ -644,6 +644,11 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 
 	fmt.Printf("\n EXISTING REQUEST: \n%v\n\n", instanceSpec.DataVolumeClaimSpec.Resources.Requests.Storage())
 	fmt.Printf("\nVOLUME SIZE REQUESTED: %v\n\n", volumeRequestSize)
+	if volumeRequestSize > instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().Value() {
+		size := instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage()
+		log.Info(fmt.Sprintf("Postgres data volume size is at limit (%v).", size))
+		volumeRequestSize = instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().Value()
+	}
 	instanceSpec.DataVolumeClaimSpec.Resources.Requests = corev1.ResourceList{
 		corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize, resource.BinarySI),
 	}

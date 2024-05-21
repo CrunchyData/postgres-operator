@@ -336,7 +336,7 @@ func (r *Reconciler) observeInstances(
 			}
 			// store desired pgData volume size, if set
 			for _, pod := range instance.Pods {
-				status.DesiredPGDataVolume = pod.Annotations["disk-starvation"]
+				status.DesiredPGDataVolume = pod.Annotations["diskstarved"]
 				if status.DesiredPGDataVolume != "" {
 					break
 				}
