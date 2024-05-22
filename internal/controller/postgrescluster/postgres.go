@@ -648,13 +648,15 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	// the request size to the limit value.
 	if volumeRequestSize > instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().Value() &&
 		instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().Value() > 0 {
+
 		r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "VolumeLimit",
 			"pgData volume(s) for %s/%s are at size limit (%v).", cluster.Name,
 			instanceSpec.Name, instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage())
+
 		volumeRequestSize = instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().Value()
-	}
-	instanceSpec.DataVolumeClaimSpec.Resources.Requests = corev1.ResourceList{
-		corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize, resource.BinarySI),
+		instanceSpec.DataVolumeClaimSpec.Resources.Requests = corev1.ResourceList{
+			corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize, resource.BinarySI),
+		}
 	}
 
 	pvc.Spec = instanceSpec.DataVolumeClaimSpec
