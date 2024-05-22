@@ -320,6 +320,20 @@ func (r *Reconciler) observeInstances(
 
 	observed := newObservedInstances(cluster, runners.Items, pods.Items)
 
+	// Save desired volume size values in case the status is removed.
+	// This may happen in cases where the Pod is restarted, the cluster
+	// is shutdown, etc. Only save values for instances defined in the spec.
+	desiredVolumes := make(map[string]string)
+	for _, statusIS := range cluster.Status.InstanceSets {
+		for _, specIS := range cluster.Spec.InstanceSets {
+			if specIS.Name == statusIS.Name {
+				if statusIS.DesiredPGDataVolume != "" {
+					desiredVolumes[specIS.Name] = statusIS.DesiredPGDataVolume
+				}
+			}
+		}
+	}
+
 	// Fill out status sorted by set name.
 	cluster.Status.InstanceSets = cluster.Status.InstanceSets[:0]
 	for _, name := range observed.setNames.List() {
@@ -334,13 +348,22 @@ func (r *Reconciler) observeInstances(
 			if matches, known := instance.PodMatchesPodTemplate(); known && matches {
 				status.UpdatedReplicas++
 			}
-			// store desired pgData volume size, if set
+			// Store desired pgData volume size, if set.
 			for _, pod := range instance.Pods {
-				status.DesiredPGDataVolume = pod.Annotations["diskstarved"]
+				// don't set an empty status
+				if pod.Annotations["diskstarved"] != "" {
+					status.DesiredPGDataVolume = pod.Annotations["diskstarved"]
+				}
+				// Only the primary Pod should have the annotation; break when found.
 				if status.DesiredPGDataVolume != "" {
 					break
 				}
 			}
+		}
+
+		// If the desired size was not observed, update with previously stored value.
+		if status.DesiredPGDataVolume == "" && desiredVolumes[name] != "" {
+			status.DesiredPGDataVolume = desiredVolumes[name]
 		}
 
 		cluster.Status.InstanceSets = append(cluster.Status.InstanceSets, status)
