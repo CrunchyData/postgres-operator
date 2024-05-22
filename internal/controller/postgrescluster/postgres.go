@@ -621,52 +621,52 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 		labelMap,
 	)
 
+	pvc.Spec = instanceSpec.DataVolumeClaimSpec
+
 	// Capture the largest pgData volume size currently defined for a given instance set.
-	volumeRequestSize := instanceSpec.DataVolumeClaimSpec.Resources.Requests.Storage().Value()
+	volumeRequestSize := pvc.Spec.Resources.Requests.Storage().Value()
 	// if the limit is not set, do not autogrow.
-	if !instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero() {
+	if !pvc.Spec.Resources.Limits.Storage().IsZero() {
 		for i := range cluster.Status.InstanceSets {
 			if instanceSpec.Name == cluster.Status.InstanceSets[i].Name {
-				// From the spec and three status values, get the largest value per instance set.
-				if cluster.Status.InstanceSets[i].DesiredPGDataVolume != "" {
-					desiredRequest, err := resource.ParseQuantity(cluster.Status.InstanceSets[i].DesiredPGDataVolume)
+				if cluster.Status.InstanceSets[i].DesiredPGDataVolume[instance.Name] != "" {
+					desiredRequest, err := resource.ParseQuantity(cluster.Status.InstanceSets[i].DesiredPGDataVolume[instance.Name])
 					if err == nil {
 						if desiredRequest.Value() > volumeRequestSize {
 							volumeRequestSize = desiredRequest.Value()
 						}
 					} else {
 						log.Error(err, "Unable to parse volume request: "+
-							cluster.Status.InstanceSets[i].DesiredPGDataVolume)
+							cluster.Status.InstanceSets[i].DesiredPGDataVolume[instance.Name])
 					}
 				}
 			}
 		}
 
-		fmt.Printf("\n EXISTING REQUEST: \n%v\n\n", instanceSpec.DataVolumeClaimSpec.Resources.Requests.Storage())
-		fmt.Printf("\nVOLUME SIZE REQUESTED: %v\n\n", volumeRequestSize)
 		// If the volume request size is greater than the limit and the limit is not zero, update
 		// the request size to the limit value.
-		if volumeRequestSize > instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().Value() {
+		// TODO(tjmoore4): What happens when a user adds a lower limit than the current volume size?
+		if volumeRequestSize > pvc.Spec.Resources.Limits.Storage().Value() {
 
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "VolumeLimit",
 				"pgData volume(s) for %s/%s are at size limit (%v).", cluster.Name,
-				instanceSpec.Name, instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage())
+				instanceSpec.Name, pvc.Spec.Resources.Limits.Storage())
 
-			volumeRequestSize = instanceSpec.DataVolumeClaimSpec.Resources.Limits.Storage().Value()
+			volumeRequestSize = pvc.Spec.Resources.Limits.Storage().Value()
 		}
-		instanceSpec.DataVolumeClaimSpec.Resources.Requests = corev1.ResourceList{
+		pvc.Spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize, resource.BinarySI),
 		}
 	}
 
-	pvc.Spec = instanceSpec.DataVolumeClaimSpec
+	// Clear any set limit before applying PVC. This is needed to allow the limit
+	// value to change later.
+	pvc.Spec.Resources.Limits = nil
 
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,
 			errors.WithStack(r.apply(ctx, pvc)))
 	}
-
-	fmt.Printf("\nAFTER APPLY. ERROR: %v\n\n", err)
 
 	return pvc, err
 }

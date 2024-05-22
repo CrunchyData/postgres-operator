@@ -15197,8 +15197,10 @@ spec:
                 items:
                   properties:
                     desiredPGDataVolume:
+                      additionalProperties:
+                        type: string
                       description: Desired Size of the pgData volume
-                      type: string
+                      type: object
                     name:
                       type: string
                     readyReplicas:

@@ -325,11 +325,9 @@ func (r *Reconciler) observeInstances(
 	// is shutdown, etc. Only save values for instances defined in the spec.
 	desiredVolumes := make(map[string]string)
 	for _, statusIS := range cluster.Status.InstanceSets {
-		for _, specIS := range cluster.Spec.InstanceSets {
-			if specIS.Name == statusIS.Name {
-				if statusIS.DesiredPGDataVolume != "" {
-					desiredVolumes[specIS.Name] = statusIS.DesiredPGDataVolume
-				}
+		if statusIS.DesiredPGDataVolume != nil {
+			for k, v := range statusIS.DesiredPGDataVolume {
+				desiredVolumes[k] = v
 			}
 		}
 	}
@@ -338,6 +336,7 @@ func (r *Reconciler) observeInstances(
 	cluster.Status.InstanceSets = cluster.Status.InstanceSets[:0]
 	for _, name := range observed.setNames.List() {
 		status := v1beta1.PostgresInstanceSetStatus{Name: name}
+		status.DesiredPGDataVolume = make(map[string]string)
 
 		for _, instance := range observed.bySet[name] {
 			status.Replicas += int32(len(instance.Pods))
@@ -348,22 +347,20 @@ func (r *Reconciler) observeInstances(
 			if matches, known := instance.PodMatchesPodTemplate(); known && matches {
 				status.UpdatedReplicas++
 			}
-			// Store desired pgData volume size, if set.
+			// Store desired pgData volume size for each instance Pod.
 			for _, pod := range instance.Pods {
 				// don't set an empty status
 				if pod.Annotations["diskstarved"] != "" {
-					status.DesiredPGDataVolume = pod.Annotations["diskstarved"]
-				}
-				// Only the primary Pod should have the annotation; break when found.
-				if status.DesiredPGDataVolume != "" {
-					break
+					status.DesiredPGDataVolume[instance.Name] = pod.Annotations["diskstarved"]
 				}
 			}
 		}
 
-		// If the desired size was not observed, update with previously stored value.
-		if status.DesiredPGDataVolume == "" && desiredVolumes[name] != "" {
-			status.DesiredPGDataVolume = desiredVolumes[name]
+		for _, instance := range observed.bySet[name] {
+			// If the desired size was not observed, update with previously stored value.
+			if status.DesiredPGDataVolume[instance.Name] == "" {
+				status.DesiredPGDataVolume[instance.Name] = desiredVolumes[instance.Name]
+			}
 		}
 
 		cluster.Status.InstanceSets = append(cluster.Status.InstanceSets, status)
