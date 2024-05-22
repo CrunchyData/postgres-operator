@@ -189,8 +189,8 @@ For more information about which versions of the PostgreSQL Operator include whi
 
 PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
-- Kubernetes 1.25-1.28
-- OpenShift 4.10-4.13
+- Kubernetes 1.25-1.30
+- OpenShift 4.10-4.15
 - Rancher
 - Google Kubernetes Engine (GKE), including Anthos
 - Amazon EKS

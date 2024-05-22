@@ -226,7 +226,7 @@ generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 15
 generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 16
 generate-kuttl: export KUTTL_PG_VERSION ?= 16
 generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.4
-generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.2-0
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.3-0
 generate-kuttl: export KUTTL_TEST_DELETE_NAMESPACE ?= kuttl-test-delete-namespace
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
@@ -238,7 +238,6 @@ generate-kuttl: ## Generate kuttl tests
 	14 ) export KUTTL_BITNAMI_IMAGE_TAG=14.5.0-debian-11-r37 ;; \
 	13 ) export KUTTL_BITNAMI_IMAGE_TAG=13.8.0-debian-11-r39 ;; \
 	12 ) export KUTTL_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
-	11 ) export KUTTL_BITNAMI_IMAGE_TAG=11.17.0-debian-11-r39 ;; \
 	esac; \
 	render() { envsubst '"'"' \
 		$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION \

@@ -3,8 +3,8 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.3-2
-  postgresVersion: 15
+  image: registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.3-0
+  postgresVersion: 16
   instances:
     - name: instance1
       dataVolumeClaimSpec:
@@ -15,7 +15,7 @@ spec:
             storage: 1Gi
   backups:
     pgbackrest:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.45-2
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi8-2.51-0
       repos:
       - name: repo1
         volume:
@@ -35,4 +35,4 @@ spec:
                 storage: 1Gi
   proxy:
     pgBouncer:
-      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.19-2
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi8-1.22-0
