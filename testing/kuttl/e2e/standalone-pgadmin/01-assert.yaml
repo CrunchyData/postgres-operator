@@ -6,7 +6,7 @@ commands:
     
     pod_name=$(kubectl get pod -n "${NAMESPACE}" -l postgres-operator.crunchydata.com/pgadmin=pgadmin -o name)
 
-    clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
+    clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
     
     clusters_expected="\"Servers\": {}"
     {

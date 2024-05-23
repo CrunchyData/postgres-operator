@@ -67,7 +67,7 @@ commands:
       exit 1
     }
 
-    clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py --dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
+    clusters_actual=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py dump-servers /tmp/dumped.json --user admin@pgadmin.${NAMESPACE}.svc && cat /tmp/dumped.json")
     
     clusters_expected='
     {
@@ -80,6 +80,7 @@ commands:
                 "MaintenanceDB": "postgres",
                 "Username": "pgadmin1",
                 "Shared": true,
+                "TunnelPort": "22",
                 "KerberosAuthentication": false,
                 "ConnectionParameters": {
                     "sslmode": "prefer"
@@ -93,6 +94,7 @@ commands:
                 "MaintenanceDB": "postgres",
                 "Username": "pgadmin2",
                 "Shared": true,
+                "TunnelPort": "22",
                 "KerberosAuthentication": false,
                 "ConnectionParameters": {
                     "sslmode": "prefer"
@@ -106,6 +108,7 @@ commands:
                 "MaintenanceDB": "postgres",
                 "Username": "pgadmin3",
                 "Shared": true,
+                "TunnelPort": "22",
                 "KerberosAuthentication": false,
                 "ConnectionParameters": {
                     "sslmode": "prefer"
