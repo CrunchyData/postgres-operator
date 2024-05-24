@@ -8,22 +8,22 @@ commands:
 
     users_in_pgadmin=$(kubectl exec -n "${NAMESPACE}" "${pod_name}" -- bash -c "python3 /usr/local/lib/python3.11/site-packages/pgadmin4/setup.py get-users --json")
     
-    bob_role=$(jq '.[] | select(.username=="bob@example.com") | .role' <<< $users_in_pgadmin)
-    dave_role=$(jq '.[] | select(.username=="dave@example.com") | .role' <<< $users_in_pgadmin)
-    jimi_role=$(jq '.[] | select(.username=="jimi@example.com") | .role' <<< $users_in_pgadmin)
+    bob_role=$(printf '%s\n' $users_in_pgadmin | jq '.[] | select(.username=="bob@example.com") | .role')
+    dave_role=$(printf '%s\n' $users_in_pgadmin | jq '.[] | select(.username=="dave@example.com") | .role')
+    jimi_role=$(printf '%s\n' $users_in_pgadmin | jq '.[] | select(.username=="jimi@example.com") | .role')
 
     [ $bob_role = 1 ] && [ $dave_role = 1 ] && [ $jimi_role = 2 ] || exit 1
 
     users_in_secret=$(kubectl get "${secret_name}" -n "${NAMESPACE}" -o 'go-template={{index .data "users.json" }}' | base64 -d)
 
-    bob_is_admin=$(jq '.[] | select(.username=="bob@example.com") | .isAdmin' <<< $users_in_secret)
-    dave_is_admin=$(jq '.[] | select(.username=="dave@example.com") | .isAdmin' <<< $users_in_secret)
-    jimi_is_admin=$(jq '.[] | select(.username=="jimi@example.com") | .isAdmin' <<< $users_in_secret)
+    bob_is_admin=$(printf '%s\n' $users_in_secret | jq '.[] | select(.username=="bob@example.com") | .isAdmin')
+    dave_is_admin=$(printf '%s\n' $users_in_secret | jq '.[] | select(.username=="dave@example.com") | .isAdmin')
+    jimi_is_admin=$(printf '%s\n' $users_in_secret | jq '.[] | select(.username=="jimi@example.com") | .isAdmin')
 
     $bob_is_admin && $dave_is_admin && ! $jimi_is_admin || exit 1
 
-    bob_password=$(jq -r '.[] | select(.username=="bob@example.com") | .password' <<< $users_in_secret)
-    dave_password=$(jq -r '.[] | select(.username=="dave@example.com") | .password' <<< $users_in_secret)
-    jimi_password=$(jq -r '.[] | select(.username=="jimi@example.com") | .password' <<< $users_in_secret)
+    bob_password=$(printf '%s\n' $users_in_secret | jq -r '.[] | select(.username=="bob@example.com") | .password')
+    dave_password=$(printf '%s\n' $users_in_secret | jq -r '.[] | select(.username=="dave@example.com") | .password')
+    jimi_password=$(printf '%s\n' $users_in_secret | jq -r '.[] | select(.username=="jimi@example.com") | .password')
 
     [ "$bob_password" = "password123" ] && [ "$dave_password" = "password456" ] && [ "$jimi_password" = "password789" ] || exit 1
