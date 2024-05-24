@@ -16,6 +16,7 @@
 package postgrescluster
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -115,6 +116,7 @@ func TestWatchPodsUpdate(t *testing.T) {
 		assert.Equal(t, queue.Len(), 1, "expected one reconcile")
 
 		item, _ := queue.Get()
+		fmt.Println(item, expected)
 		assert.Equal(t, item, expected)
 		queue.Done(item)
 
@@ -140,4 +142,54 @@ func TestWatchPodsUpdate(t *testing.T) {
 		assert.Equal(t, item, expected)
 		queue.Done(item)
 	})
+
+	// Pod annotation with arbitrary key; no reconcile.
+	update(event.UpdateEvent{
+		ObjectOld: &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"clortho": "vince",
+				},
+				Labels: map[string]string{
+					"postgres-operator.crunchydata.com/cluster": "starfish",
+				},
+			},
+		},
+		ObjectNew: &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"clortho": "vin",
+				},
+				Labels: map[string]string{
+					"postgres-operator.crunchydata.com/cluster": "starfish",
+				},
+			},
+		},
+	}, queue)
+	assert.Equal(t, queue.Len(), 0)
+
+	// Pod annotation with diskstarved; reconcile.
+	update(event.UpdateEvent{
+		ObjectOld: &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"diskstarved": "5000Mi",
+				},
+				Labels: map[string]string{
+					"postgres-operator.crunchydata.com/cluster": "starfish",
+				},
+			},
+		},
+		ObjectNew: &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					"diskstarved": "8000Mi",
+				},
+				Labels: map[string]string{
+					"postgres-operator.crunchydata.com/cluster": "starfish",
+				},
+			},
+		},
+	}, queue)
+	assert.Equal(t, queue.Len(), 1)
 }

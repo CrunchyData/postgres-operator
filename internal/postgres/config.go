@@ -172,7 +172,7 @@ func reloadCommand(name string) []string {
 	// mtimes.
 	// - https://unix.stackexchange.com/a/407383
 	script := fmt.Sprintf(`
-# Paramaters for curl when managing autogrow annotation.
+# Parameters for curl when managing autogrow annotation.
 APISERVER="https://kubernetes.default.svc"
 SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
 NAMESPACE=$(cat ${SERVICEACCOUNT}/namespace)
@@ -182,8 +182,7 @@ CACERT=${SERVICEACCOUNT}/ca.crt
 declare -r directory=%q
 exec {fd}<> <(:)
 while read -r -t 5 -u "${fd}" || true; do
-
-	# Manage replication certificate.
+  # Manage replication certificate.
   if [ "${directory}" -nt "/proc/self/fd/${fd}" ] &&
     install -D --mode=0600 -t %q "${directory}"/{%s,%s,%s} &&
     pkill -HUP --exact --parent=1 postgres
@@ -192,20 +191,20 @@ while read -r -t 5 -u "${fd}" || true; do
     stat --format='Loaded certificates dated %%y' "${directory}"
   fi
 
-	# Manage autogrow annotation.
-	# Return size in Mebibytes.
-	size=$(df --human-readable --block-size=M /pgdata | awk 'FNR == 2 {print $2}')
-	use=$(df --human-readable /pgdata | awk 'FNR == 2 {print $5}')
-	sizeInt="${size//M/}"
-	# Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
-	useInt=$(echo $use | sed 's/[[:punct:]]//g')
-	triggerExpansion="$((useInt > 75))"
-	if [ $triggerExpansion -eq 1 ]; then
-		newSize="$(((sizeInt / 2)+sizeInt))"
-		newSizeMi="${newSize}Mi"
-		d='[{"op": "add", "path": "/metadata/annotations/diskstarved", "value": "'"$newSizeMi"'"}]'
-		curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
-	fi
+  # Manage autogrow annotation.
+  # Return size in Mebibytes.
+  size=$(df --human-readable --block-size=M /pgdata | awk 'FNR == 2 {print $2}')
+  use=$(df --human-readable /pgdata | awk 'FNR == 2 {print $5}')
+  sizeInt="${size//M/}"
+  # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+  useInt=$(echo $use | sed 's/[[:punct:]]//g')
+  triggerExpansion="$((useInt > 75))"
+  if [ $triggerExpansion -eq 1 ]; then
+    newSize="$(((sizeInt / 2)+sizeInt))"
+    newSizeMi="${newSize}Mi"
+    d='[{"op": "add", "path": "/metadata/annotations/diskstarved", "value": "'"$newSizeMi"'"}]'
+    curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
+  fi
 done
 `,
 		naming.CertMountPath,
