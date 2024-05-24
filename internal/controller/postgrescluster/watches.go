@@ -69,6 +69,17 @@ func (*Reconciler) watchPods() handler.Funcs {
 				}})
 				return
 			}
+
+			oldAnnotations := e.ObjectOld.GetAnnotations()
+			newAnnotations := e.ObjectNew.GetAnnotations()
+			// If the diskstarved annotation is added or changes, reconcile.
+			if len(cluster) != 0 && oldAnnotations["diskstarved"] != newAnnotations["diskstarved"] {
+				q.Add(reconcile.Request{NamespacedName: client.ObjectKey{
+					Namespace: e.ObjectNew.GetNamespace(),
+					Name:      cluster,
+				}})
+				return
+			}
 		},
 	}
 }
