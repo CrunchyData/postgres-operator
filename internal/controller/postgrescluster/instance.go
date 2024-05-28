@@ -29,6 +29,8 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -299,6 +301,7 @@ func (observed *observedInstances) writablePod(container string) (*corev1.Pod, *
 func (r *Reconciler) observeInstances(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*observedInstances, error) {
+	log := logging.FromContext(ctx)
 	pods := &corev1.PodList{}
 	runners := &appsv1.StatefulSetList{}
 
@@ -323,11 +326,11 @@ func (r *Reconciler) observeInstances(
 	// Save desired volume size values in case the status is removed.
 	// This may happen in cases where the Pod is restarted, the cluster
 	// is shutdown, etc. Only save values for instances defined in the spec.
-	desiredVolumes := make(map[string]string)
+	desiredRequestsBackup := make(map[string]string)
 	for _, statusIS := range cluster.Status.InstanceSets {
 		if statusIS.DesiredPGDataVolume != nil {
 			for k, v := range statusIS.DesiredPGDataVolume {
-				desiredVolumes[k] = v
+				desiredRequestsBackup[k] = v
 			}
 		}
 	}
@@ -348,6 +351,9 @@ func (r *Reconciler) observeInstances(
 				status.UpdatedReplicas++
 			}
 			// Store desired pgData volume size for each instance Pod.
+			// The 'diskstarved' annotation value is stored in the PostgresCluster status
+			// so that 1) it is available to the function 'reconcilePostgresDataVolume'
+			// and 2) so that the value persists after Pod restart and cluster shutdown events.
 			for _, pod := range instance.Pods {
 				// don't set an empty status
 				if pod.Annotations["diskstarved"] != "" {
@@ -357,9 +363,46 @@ func (r *Reconciler) observeInstances(
 		}
 
 		for _, instance := range observed.bySet[name] {
+
+			// these values would need to be converted to int64
+			var current resource.Quantity
+			var previous resource.Quantity
+			if status.DesiredPGDataVolume[instance.Name] != "" {
+				current, err = resource.ParseQuantity(status.DesiredPGDataVolume[instance.Name])
+				if err != nil {
+					log.Error(err, "Unable to parse pgData volume request size ("+current.String()+")for "+instance.Name)
+
+				}
+			}
+			if desiredRequestsBackup[instance.Name] != "" {
+				previous, err = resource.ParseQuantity(desiredRequestsBackup[instance.Name])
+				if err != nil {
+					log.Error(err, "Unable to parse pgData volume request size ("+previous.String()+") for "+instance.Name)
+
+				}
+			}
+			if current.Value() > previous.Value() {
+				fmt.Println("*********** CLUSTER OBSERVED GENERATION ***********")
+				fmt.Println(cluster.Status.ObservedGeneration)
+				// this works, but I've been seeing 2 events due to status value jitter
+				// Do we want this if we can't guarantee only one event will be triggered?
+				r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
+					"pgData volume expansion to %v requested for %s.", current.String(), instance.Name)
+
+				// set auto-grow in progress condition
+				// for some reason, this disappears pretty quickly....
+				const ConditionAutoGrowInProgress = "Progressing"
+				meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+					ObservedGeneration: cluster.GetGeneration(),
+					Type:               ConditionAutoGrowInProgress,
+					Status:             metav1.ConditionTrue,
+					Reason:             "VolumeSizeUpdating",
+					Message:            "Volume Resize for " + instance.Name + "'s pgData volume in progress.",
+				})
+			}
 			// If the desired size was not observed, update with previously stored value.
 			if status.DesiredPGDataVolume[instance.Name] == "" {
-				status.DesiredPGDataVolume[instance.Name] = desiredVolumes[instance.Name]
+				status.DesiredPGDataVolume[instance.Name] = desiredRequestsBackup[instance.Name]
 			}
 		}
 
