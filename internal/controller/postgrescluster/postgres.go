@@ -641,21 +641,34 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 func (r *Reconciler) determineVolumeSize(ctx context.Context, cluster *v1beta1.PostgresCluster,
 	pvc *corev1.PersistentVolumeClaim, instanceName, instanceSpecName string) {
 	log := logging.FromContext(ctx)
+
+	if pvc.Spec.Resources.Requests.Storage().Value() > pvc.Spec.Resources.Limits.Storage().Value() {
+		r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "VolumeRequestOverLimit",
+			"pgData volume request (%v) for %s/%s is greater than set limit (%v).",
+			pvc.Spec.Resources.Requests.Storage(), cluster.Name, instanceSpecName, pvc.Spec.Resources.Limits.Storage())
+	}
+
 	// Capture the largest pgData volume size currently defined for a given instance set.
 	volumeRequestSize := pvc.Spec.Resources.Requests.Storage().Value()
+
 	// if the limit is not set or the feature gate is not enabled, do not autogrow.
 	if !pvc.Spec.Resources.Limits.Storage().IsZero() && util.DefaultMutableFeatureGate.Enabled(util.AutoGrowVolumes) {
 		for i := range cluster.Status.InstanceSets {
 			if instanceSpecName == cluster.Status.InstanceSets[i].Name {
-				if cluster.Status.InstanceSets[i].DesiredPGDataVolume[instanceName] != "" {
-					desiredRequest, err := resource.ParseQuantity(cluster.Status.InstanceSets[i].DesiredPGDataVolume[instanceName])
-					if err == nil {
-						if desiredRequest.Value() > volumeRequestSize {
-							volumeRequestSize = desiredRequest.Value()
+				for _, v := range cluster.Status.InstanceSets[i].DesiredPGDataVolume {
+					// if cluster.Status.InstanceSets[i].DesiredPGDataVolume[instanceName] != "" {
+					if v != "" {
+						// desiredRequest, err := resource.ParseQuantity(cluster.Status.InstanceSets[i].DesiredPGDataVolume[instanceName])
+						desiredRequest, err := resource.ParseQuantity(v)
+						if err == nil {
+							if desiredRequest.Value() > volumeRequestSize {
+								volumeRequestSize = desiredRequest.Value()
+							}
+						} else {
+							log.Error(err, "Unable to parse volume request: "+
+								// cluster.Status.InstanceSets[i].DesiredPGDataVolume[instanceName])
+								v)
 						}
-					} else {
-						log.Error(err, "Unable to parse volume request: "+
-							cluster.Status.InstanceSets[i].DesiredPGDataVolume[instanceName])
 					}
 				}
 			}
