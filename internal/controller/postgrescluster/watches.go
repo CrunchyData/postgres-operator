@@ -72,8 +72,8 @@ func (*Reconciler) watchPods() handler.Funcs {
 
 			oldAnnotations := e.ObjectOld.GetAnnotations()
 			newAnnotations := e.ObjectNew.GetAnnotations()
-			// If the diskstarved annotation is added or changes, reconcile.
-			if len(cluster) != 0 && oldAnnotations["diskstarved"] != newAnnotations["diskstarved"] {
+			// If the suggested-pgdata-pvc-size annotation is added or changes, reconcile.
+			if len(cluster) != 0 && oldAnnotations["suggested-pgdata-pvc-size"] != newAnnotations["suggested-pgdata-pvc-size"] {
 				q.Add(reconcile.Request{NamespacedName: client.ObjectKey{
 					Namespace: e.ObjectNew.GetNamespace(),
 					Name:      cluster,

@@ -166,12 +166,12 @@ func TestWatchPodsUpdate(t *testing.T) {
 	}, queue)
 	assert.Equal(t, queue.Len(), 0)
 
-	// Pod annotation with diskstarved; reconcile.
+	// Pod annotation with suggested-pgdata-pvc-size; reconcile.
 	update(event.UpdateEvent{
 		ObjectOld: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					"diskstarved": "5000Mi",
+					"suggested-pgdata-pvc-size": "5000Mi",
 				},
 				Labels: map[string]string{
 					"postgres-operator.crunchydata.com/cluster": "starfish",
@@ -181,7 +181,7 @@ func TestWatchPodsUpdate(t *testing.T) {
 		ObjectNew: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
 				Annotations: map[string]string{
-					"diskstarved": "8000Mi",
+					"suggested-pgdata-pvc-size": "8000Mi",
 				},
 				Labels: map[string]string{
 					"postgres-operator.crunchydata.com/cluster": "starfish",

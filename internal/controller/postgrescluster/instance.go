@@ -355,13 +355,13 @@ func (r *Reconciler) observeInstances(
 			}
 			if autogrow {
 				// Store desired pgData volume size for each instance Pod.
-				// The 'diskstarved' annotation value is stored in the PostgresCluster status
-				// so that 1) it is available to the function 'reconcilePostgresDataVolume'
+				// The 'suggested-pgdata-pvc-size' annotation value is stored in the PostgresCluster
+				// status so that 1) it is available to the function 'reconcilePostgresDataVolume'
 				// and 2) so that the value persists after Pod restart and cluster shutdown events.
 				for _, pod := range instance.Pods {
 					// don't set an empty status
-					if pod.Annotations["diskstarved"] != "" {
-						status.DesiredPGDataVolume[instance.Name] = pod.Annotations["diskstarved"]
+					if pod.Annotations["suggested-pgdata-pvc-size"] != "" {
+						status.DesiredPGDataVolume[instance.Name] = pod.Annotations["suggested-pgdata-pvc-size"]
 					}
 				}
 			}

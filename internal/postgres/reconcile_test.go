@@ -207,7 +207,7 @@ containers:
       if [ $triggerExpansion -eq 1 ]; then
         newSize="$(((sizeInt / 2)+sizeInt))"
         newSizeMi="${newSize}Mi"
-        d='[{"op": "add", "path": "/metadata/annotations/diskstarved", "value": "'"$newSizeMi"'"}]'
+        d='[{"op": "add", "path": "/metadata/annotations/suggested-pgdata-pvc-size", "value": "'"$newSizeMi"'"}]'
         curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
       fi
     done
