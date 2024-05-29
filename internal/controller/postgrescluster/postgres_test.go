@@ -429,7 +429,7 @@ volumeMode: Filesystem
 	})
 }
 
-func TestDetermineVolumeSize(t *testing.T) {
+func TestSetVolumeSize(t *testing.T) {
 	ctx := context.Background()
 
 	// Initialize the feature gate
@@ -465,7 +465,6 @@ func TestDetermineVolumeSize(t *testing.T) {
 	}
 
 	// helper functions
-
 	instanceSetSpec := func(request, limit string) *v1beta1.PostgresInstanceSetSpec {
 		return &v1beta1.PostgresInstanceSetSpec{
 			Name: "some-instance",
@@ -490,6 +489,33 @@ func TestDetermineVolumeSize(t *testing.T) {
 			}}}
 	}
 
+	t.Run("RequestAboveLimit", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+		ctx, logs := setupLogCapture(ctx)
+
+		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+		spec := instanceSetSpec("4Gi", "3Gi")
+		pvc.Spec = spec.DataVolumeClaimSpec
+
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+
+		assert.Assert(t, marshalMatches(pvc.Spec, `
+accessModes:
+- ReadWriteOnce
+resources:
+  limits:
+    storage: 3Gi
+  requests:
+    storage: 3Gi
+`))
+		assert.Equal(t, len(*logs), 0)
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "VolumeRequestOverLimit")
+		assert.Equal(t, recorder.Events[0].Note, "pgData volume request (4Gi) for elephant/some-instance is greater than set limit (3Gi). Limit value will be used.")
+	})
+
 	t.Run("NoFeatureGate", func(t *testing.T) {
 		recorder := events.NewRecorder(t, runtime.Scheme)
 		reconciler := &Reconciler{Recorder: recorder}
@@ -509,7 +535,7 @@ func TestDetermineVolumeSize(t *testing.T) {
 
 		pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.determineVolumeSize(ctx, &cluster, pvc, instance.Name, spec.Name)
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
 		assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
@@ -548,7 +574,7 @@ resources:
 		cluster.Status = desiredStatus("2Gi")
 		pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.determineVolumeSize(ctx, &cluster, pvc, instance.Name, spec.Name)
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
 		assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
@@ -573,7 +599,7 @@ resources:
 		spec := instanceSetSpec("1Gi", "2Gi")
 		pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.determineVolumeSize(ctx, &cluster, pvc, instance.Name, spec.Name)
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
 		assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
@@ -598,7 +624,7 @@ resources:
 		cluster.Status = desiredStatus("NotAValidValue")
 		pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.determineVolumeSize(ctx, &cluster, pvc, instance.Name, spec.Name)
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
 		assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
@@ -625,7 +651,7 @@ resources:
 		cluster.Status = desiredStatus("2Gi")
 		pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.determineVolumeSize(ctx, &cluster, pvc, instance.Name, spec.Name)
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
 		assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
@@ -650,7 +676,7 @@ resources:
 		cluster.Status = desiredStatus("2Gi")
 		pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.determineVolumeSize(ctx, &cluster, pvc, instance.Name, spec.Name)
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
 		assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
@@ -667,6 +693,47 @@ resources:
 		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
 		assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
 		assert.Equal(t, recorder.Events[0].Note, "pgData volume(s) for elephant/some-instance are at size limit (2Gi).")
+	})
+
+	t.Run("DesiredStatusOverLimit", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+		ctx, logs := setupLogCapture(ctx)
+
+		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+		spec := instanceSetSpec("4Gi", "5Gi")
+		cluster.Status = desiredStatus("10Gi")
+		pvc.Spec = spec.DataVolumeClaimSpec
+
+		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+
+		assert.Assert(t, marshalMatches(pvc.Spec, `
+accessModes:
+- ReadWriteOnce
+resources:
+  limits:
+    storage: 5Gi
+  requests:
+    storage: 5Gi
+`))
+
+		assert.Equal(t, len(*logs), 0)
+		assert.Equal(t, len(recorder.Events), 2)
+		var found1, found2 bool
+		for _, event := range recorder.Events {
+			if event.Reason == "VolumeLimitReached" {
+				found1 = true
+				assert.Equal(t, event.Regarding.Name, cluster.Name)
+				assert.Equal(t, event.Note, "pgData volume(s) for elephant/some-instance are at size limit (5Gi).")
+			}
+			if event.Reason == "DesiredVolumeAboveLimit" {
+				found2 = true
+				assert.Equal(t, event.Regarding.Name, cluster.Name)
+				assert.Equal(t, event.Note,
+					"The desired size (10Gi) for the elephant/some-instance pgData volume(s) is greater than the size limit (5Gi).")
+			}
+		}
+		assert.Assert(t, found1 && found2)
 	})
 
 }

@@ -327,12 +327,12 @@ func (r *Reconciler) observeInstances(
 	// Save desired volume size values in case the status is removed.
 	// This may happen in cases where the Pod is restarted, the cluster
 	// is shutdown, etc. Only save values for instances defined in the spec.
-	desiredRequestsBackup := make(map[string]string)
+	previousDesiredRequests := make(map[string]string)
 	if autogrow {
 		for _, statusIS := range cluster.Status.InstanceSets {
 			if statusIS.DesiredPGDataVolume != nil {
 				for k, v := range statusIS.DesiredPGDataVolume {
-					desiredRequestsBackup[k] = v
+					previousDesiredRequests[k] = v
 				}
 			}
 		}
@@ -371,7 +371,7 @@ func (r *Reconciler) observeInstances(
 		if autogrow {
 			for _, instance := range observed.bySet[name] {
 				status.DesiredPGDataVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster,
-					name, status.DesiredPGDataVolume[instance.Name], desiredRequestsBackup[instance.Name])
+					name, status.DesiredPGDataVolume[instance.Name], previousDesiredRequests[instance.Name])
 			}
 		}
 
@@ -433,6 +433,8 @@ func (r *Reconciler) storeDesiredRequest(
 	}
 
 	// If the desired size was not observed, update with previously stored value.
+	// This can happen in scenarios where the annotation on the Pod is missing
+	// such as when the cluster is shutdown or a Pod is in the middle of a restart.
 	if desiredRequest == "" {
 		desiredRequest = desiredRequestBackup
 	}
