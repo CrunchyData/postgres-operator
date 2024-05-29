@@ -301,7 +301,6 @@ func (observed *observedInstances) writablePod(container string) (*corev1.Pod, *
 func (r *Reconciler) observeInstances(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*observedInstances, error) {
-	log := logging.FromContext(ctx)
 	pods := &corev1.PodList{}
 	runners := &appsv1.StatefulSetList{}
 
@@ -368,45 +367,11 @@ func (r *Reconciler) observeInstances(
 			}
 		}
 
+		// If autogrow is enabled, get the desired volume size for each instance.
 		if autogrow {
 			for _, instance := range observed.bySet[name] {
-				// these values would need to be converted to int64
-				var current resource.Quantity
-				var previous resource.Quantity
-
-				if status.DesiredPGDataVolume[instance.Name] != "" {
-					current, err = resource.ParseQuantity(status.DesiredPGDataVolume[instance.Name])
-					if err != nil {
-						log.Error(err, "Unable to parse pgData volume request size ("+current.String()+")for "+instance.Name)
-
-					}
-				}
-
-				if desiredRequestsBackup[instance.Name] != "" {
-					previous, err = resource.ParseQuantity(desiredRequestsBackup[instance.Name])
-					if err != nil {
-						log.Error(err, "Unable to parse pgData volume request size ("+previous.String()+") for "+instance.Name)
-
-					}
-				}
-
-				// determine if the limit is set for this instance set
-				var limitSet bool
-				for _, specInstance := range cluster.Spec.InstanceSets {
-					if specInstance.Name == name {
-						limitSet = !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
-					}
-				}
-
-				if limitSet && current.Value() > previous.Value() {
-					r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
-						"pgData volume expansion to %v requested for %s/%s.", current.String(), cluster.Name, name)
-				}
-
-				// If the desired size was not observed, update with previously stored value.
-				if status.DesiredPGDataVolume[instance.Name] == "" {
-					status.DesiredPGDataVolume[instance.Name] = desiredRequestsBackup[instance.Name]
-				}
+				status.DesiredPGDataVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster,
+					name, status.DesiredPGDataVolume[instance.Name], desiredRequestsBackup[instance.Name])
 			}
 		}
 
@@ -414,6 +379,65 @@ func (r *Reconciler) observeInstances(
 	}
 
 	return observed, err
+}
+
+// storeDesiredRequest saves the appropriate request value to the PostgresCluster
+// status. If the value has grown, create an Event.
+func (r *Reconciler) storeDesiredRequest(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	instanceSetName, desiredRequest, desiredRequestBackup string,
+) string {
+	var current resource.Quantity
+	var previous resource.Quantity
+	var err error
+	log := logging.FromContext(ctx)
+
+	// Parse the desired request from the cluster's status.
+	if desiredRequest != "" {
+		current, err = resource.ParseQuantity(desiredRequest)
+		if err != nil {
+			log.Error(err, "Unable to parse pgData volume request from status ("+
+				desiredRequest+") for "+cluster.Name+"/"+instanceSetName)
+			// If there was an error parsing the value, treat as unset (equivalent to zero).
+			desiredRequest = ""
+			current, _ = resource.ParseQuantity("")
+
+		}
+	}
+
+	// Parse the desired request from the status backup.
+	if desiredRequestBackup != "" {
+		previous, err = resource.ParseQuantity(desiredRequestBackup)
+		if err != nil {
+			log.Error(err, "Unable to parse pgData volume request from status backup ("+
+				desiredRequestBackup+") for "+cluster.Name+"/"+instanceSetName)
+			// If there was an error parsing the value, treat as unset (equivalent to zero).
+			desiredRequestBackup = ""
+			previous, _ = resource.ParseQuantity("")
+
+		}
+	}
+
+	// Determine if the limit is set for this instance set.
+	var limitSet bool
+	for _, specInstance := range cluster.Spec.InstanceSets {
+		if specInstance.Name == instanceSetName {
+			limitSet = !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
+		}
+	}
+
+	if limitSet && current.Value() > previous.Value() {
+		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
+			"pgData volume expansion to %v requested for %s/%s.",
+			current.String(), cluster.Name, instanceSetName)
+	}
+
+	// If the desired size was not observed, update with previously stored value.
+	if desiredRequest == "" {
+		desiredRequest = desiredRequestBackup
+	}
+
+	return desiredRequest
 }
 
 // +kubebuilder:rbac:groups="",resources="pods",verbs={list}
