@@ -678,10 +678,7 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 		// limit is not zero, update the request size to the limit value.
 		// If the user manually requests a lower limit that is smaller than the current
 		// or requested volume size, it will be ignored in favor of the limit value.
-		fmt.Println("BEFORE LIMIT CHECK")
 		if volumeRequestSize.Value() >= pvc.Spec.Resources.Limits.Storage().Value() {
-
-			fmt.Println("AFTER LIMIT CHECK")
 
 			r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeLimitReached",
 				"pgData volume(s) for %s/%s are at size limit (%v).", cluster.Name,
