@@ -46,6 +46,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -304,6 +305,8 @@ func (r *Reconciler) observeInstances(
 	pods := &corev1.PodList{}
 	runners := &appsv1.StatefulSetList{}
 
+	autogrow := util.DefaultMutableFeatureGate.Enabled(util.AutoGrowVolumes)
+
 	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
@@ -326,10 +329,12 @@ func (r *Reconciler) observeInstances(
 	// This may happen in cases where the Pod is restarted, the cluster
 	// is shutdown, etc. Only save values for instances defined in the spec.
 	desiredRequestsBackup := make(map[string]string)
-	for _, statusIS := range cluster.Status.InstanceSets {
-		if statusIS.DesiredPGDataVolume != nil {
-			for k, v := range statusIS.DesiredPGDataVolume {
-				desiredRequestsBackup[k] = v
+	if autogrow {
+		for _, statusIS := range cluster.Status.InstanceSets {
+			if statusIS.DesiredPGDataVolume != nil {
+				for k, v := range statusIS.DesiredPGDataVolume {
+					desiredRequestsBackup[k] = v
+				}
 			}
 		}
 	}
@@ -349,44 +354,59 @@ func (r *Reconciler) observeInstances(
 			if matches, known := instance.PodMatchesPodTemplate(); known && matches {
 				status.UpdatedReplicas++
 			}
-			// Store desired pgData volume size for each instance Pod.
-			// The 'diskstarved' annotation value is stored in the PostgresCluster status
-			// so that 1) it is available to the function 'reconcilePostgresDataVolume'
-			// and 2) so that the value persists after Pod restart and cluster shutdown events.
-			for _, pod := range instance.Pods {
-				// don't set an empty status
-				if pod.Annotations["diskstarved"] != "" {
-					status.DesiredPGDataVolume[instance.Name] = pod.Annotations["diskstarved"]
+			if autogrow {
+				// Store desired pgData volume size for each instance Pod.
+				// The 'diskstarved' annotation value is stored in the PostgresCluster status
+				// so that 1) it is available to the function 'reconcilePostgresDataVolume'
+				// and 2) so that the value persists after Pod restart and cluster shutdown events.
+				for _, pod := range instance.Pods {
+					// don't set an empty status
+					if pod.Annotations["diskstarved"] != "" {
+						status.DesiredPGDataVolume[instance.Name] = pod.Annotations["diskstarved"]
+					}
 				}
 			}
 		}
 
-		for _, instance := range observed.bySet[name] {
+		if autogrow {
+			for _, instance := range observed.bySet[name] {
+				// these values would need to be converted to int64
+				var current resource.Quantity
+				var previous resource.Quantity
 
-			// these values would need to be converted to int64
-			var current resource.Quantity
-			var previous resource.Quantity
-			if status.DesiredPGDataVolume[instance.Name] != "" {
-				current, err = resource.ParseQuantity(status.DesiredPGDataVolume[instance.Name])
-				if err != nil {
-					log.Error(err, "Unable to parse pgData volume request size ("+current.String()+")for "+instance.Name)
+				if status.DesiredPGDataVolume[instance.Name] != "" {
+					current, err = resource.ParseQuantity(status.DesiredPGDataVolume[instance.Name])
+					if err != nil {
+						log.Error(err, "Unable to parse pgData volume request size ("+current.String()+")for "+instance.Name)
 
+					}
 				}
-			}
-			if desiredRequestsBackup[instance.Name] != "" {
-				previous, err = resource.ParseQuantity(desiredRequestsBackup[instance.Name])
-				if err != nil {
-					log.Error(err, "Unable to parse pgData volume request size ("+previous.String()+") for "+instance.Name)
 
+				if desiredRequestsBackup[instance.Name] != "" {
+					previous, err = resource.ParseQuantity(desiredRequestsBackup[instance.Name])
+					if err != nil {
+						log.Error(err, "Unable to parse pgData volume request size ("+previous.String()+") for "+instance.Name)
+
+					}
 				}
-			}
-			if current.Value() > previous.Value() {
-				r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
-					"pgData volume expansion to %v requested for %s.", current.String(), name)
-			}
-			// If the desired size was not observed, update with previously stored value.
-			if status.DesiredPGDataVolume[instance.Name] == "" {
-				status.DesiredPGDataVolume[instance.Name] = desiredRequestsBackup[instance.Name]
+
+				// determine if the limit is set for this instance set
+				var limitSet bool
+				for _, specInstance := range cluster.Spec.InstanceSets {
+					if specInstance.Name == name {
+						limitSet = !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
+					}
+				}
+
+				if limitSet && current.Value() > previous.Value() {
+					r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
+						"pgData volume expansion to %v requested for %s/%s.", current.String(), cluster.Name, name)
+				}
+
+				// If the desired size was not observed, update with previously stored value.
+				if status.DesiredPGDataVolume[instance.Name] == "" {
+					status.DesiredPGDataVolume[instance.Name] = desiredRequestsBackup[instance.Name]
+				}
 			}
 		}
 

@@ -665,7 +665,7 @@ resources:
 		assert.Equal(t, len(*logs), 0)
 		assert.Equal(t, len(recorder.Events), 1)
 		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeLimit")
+		assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
 		assert.Equal(t, recorder.Events[0].Note, "pgData volume(s) for elephant/some-instance are at size limit (2Gi).")
 	})
 
