@@ -244,12 +244,6 @@ func (r *Reconciler) Reconcile(
 	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
 	postgres.SetHugePages(cluster, &pgParameters)
 
-	fmt.Println("IN CONTROLLER 1")
-	for _, is := range cluster.Status.InstanceSets {
-		fmt.Println(is.Name)
-		fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
-	}
-
 	if err == nil {
 		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
 	}
@@ -352,12 +346,6 @@ func (r *Reconciler) Reconcile(
 			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig)
 	}
 
-	fmt.Println("IN CONTROLLER 2")
-	for _, is := range cluster.Status.InstanceSets {
-		fmt.Println(is.Name)
-		fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
-	}
-
 	if err == nil {
 		err = r.reconcilePostgresDatabases(ctx, cluster, instances)
 	}
@@ -391,12 +379,6 @@ func (r *Reconciler) Reconcile(
 	cluster.Status.ObservedGeneration = cluster.GetGeneration()
 
 	log.V(1).Info("reconciled cluster")
-
-	fmt.Println("IN CONTROLLER END")
-	for _, is := range cluster.Status.InstanceSets {
-		fmt.Println(is.Name)
-		fmt.Printf("Desired Volume Request: %v\n", is.DesiredPGDataVolume)
-	}
 
 	return patchClusterStatus()
 }

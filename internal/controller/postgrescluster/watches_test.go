@@ -16,7 +16,6 @@
 package postgrescluster
 
 import (
-	"fmt"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -116,7 +115,6 @@ func TestWatchPodsUpdate(t *testing.T) {
 		assert.Equal(t, queue.Len(), 1, "expected one reconcile")
 
 		item, _ := queue.Get()
-		fmt.Println(item, expected)
 		assert.Equal(t, item, expected)
 		queue.Done(item)
 
