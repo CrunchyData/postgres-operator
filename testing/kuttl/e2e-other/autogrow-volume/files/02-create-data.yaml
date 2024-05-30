@@ -1,0 +1,32 @@
+---
+# Create some data that should be present after resizing.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-data
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            - name: PGURI
+              valueFrom: { secretKeyRef: { name: auto-grow-volume-pguser-auto-grow-volume, key: uri } }
+
+            # Do not wait indefinitely, but leave enough time to create the data.
+            - { name: PGCONNECT_TIMEOUT, value: '60' }
+
+          command:
+            - psql
+            - $(PGURI)
+            - --set=ON_ERROR_STOP=1
+            - --command
+            - | # create schema for user and add enough data to get over 75% usage
+              CREATE SCHEMA "auto-grow-volume" AUTHORIZATION "auto-grow-volume";
+              CREATE TABLE big_table AS SELECT 'data' || s AS mydata FROM generate_series(1,6000000) AS s;
