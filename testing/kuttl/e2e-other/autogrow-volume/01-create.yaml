@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/01-create-cluster.yaml
+assert:
+- files/01-cluster-and-pvc-created.yaml

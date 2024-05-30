@@ -1,0 +1,19 @@
+# We know that the PVC sizes have changed so now we can check that they have been
+# updated to have the expected size
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: auto-grow-volume
+    postgres-operator.crunchydata.com/instance-set: instance1
+spec:
+  resources:
+    requests:
+      storage: 1461Mi
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  phase: Bound

@@ -1,0 +1,12 @@
+---
+# Check that annotation is set
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: auto-grow-volume
+    postgres-operator.crunchydata.com/data: postgres
+    postgres-operator.crunchydata.com/instance-set: instance1
+    postgres-operator.crunchydata.com/patroni: auto-grow-volume-ha
+  annotations:
+    suggested-pgdata-pvc-size: 1461Mi

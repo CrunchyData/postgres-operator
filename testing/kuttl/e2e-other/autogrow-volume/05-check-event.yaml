@@ -1,0 +1,12 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+  # Verify expected event has occurred
+  - script: |
+      EVENT=$(
+        kubectl get events --namespace="${NAMESPACE}" \
+          --field-selector reason="VolumeAutoGrow" --output=jsonpath={.items..message}
+      )
+
+      if [[ "${EVENT}" != "pgData volume expansion to 1461Mi requested for auto-grow-volume/instance1." ]]; then exit 1; fi

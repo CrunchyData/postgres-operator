@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/02-create-data.yaml
+assert:
+- files/02-create-data-completed.yaml
