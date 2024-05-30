@@ -642,7 +642,7 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 	log := logging.FromContext(ctx)
 
 	// Capture the largest pgData volume size currently defined for a given instance set.
-	volumeRequestSize := pvc.Spec.Resources.Requests.Storage() //.Value()
+	volumeRequestSize := pvc.Spec.Resources.Requests.Storage()
 
 	// If the request value is greater than the set limit, use the limit and issue
 	// a warning event. A limit of 0 is ignorned.
