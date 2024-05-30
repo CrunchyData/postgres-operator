@@ -641,22 +641,26 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 	pvc *corev1.PersistentVolumeClaim, instanceSpecName string) {
 	log := logging.FromContext(ctx)
 
+	// Store the limit for this instance set. This value will not change below.
+	volumeLimitFromSpec := pvc.Spec.Resources.Limits.Storage()
+
 	// Capture the largest pgData volume size currently defined for a given instance set.
+	// This value will capture our desired update.
 	volumeRequestSize := pvc.Spec.Resources.Requests.Storage()
 
 	// If the request value is greater than the set limit, use the limit and issue
 	// a warning event. A limit of 0 is ignorned.
-	if !pvc.Spec.Resources.Limits.Storage().IsZero() &&
-		pvc.Spec.Resources.Requests.Storage().Value() > pvc.Spec.Resources.Limits.Storage().Value() {
+	if !volumeLimitFromSpec.IsZero() &&
+		volumeRequestSize.Value() > volumeLimitFromSpec.Value() {
 		r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "VolumeRequestOverLimit",
 			"pgData volume request (%v) for %s/%s is greater than set limit (%v). Limit value will be used.",
-			pvc.Spec.Resources.Requests.Storage(), cluster.Name, instanceSpecName, pvc.Spec.Resources.Limits.Storage())
+			volumeRequestSize, cluster.Name, instanceSpecName, volumeLimitFromSpec)
 
 		pvc.Spec.Resources.Requests = corev1.ResourceList{
-			corev1.ResourceStorage: *resource.NewQuantity(pvc.Spec.Resources.Limits.Storage().Value(), resource.BinarySI),
+			corev1.ResourceStorage: *resource.NewQuantity(volumeLimitFromSpec.Value(), resource.BinarySI),
 		}
 		// Otherwise, if the limit is not set or the feature gate is not enabled, do not autogrow.
-	} else if !pvc.Spec.Resources.Limits.Storage().IsZero() && util.DefaultMutableFeatureGate.Enabled(util.AutoGrowVolumes) {
+	} else if !volumeLimitFromSpec.IsZero() && util.DefaultMutableFeatureGate.Enabled(util.AutoGrowVolumes) {
 		for i := range cluster.Status.InstanceSets {
 			if instanceSpecName == cluster.Status.InstanceSets[i].Name {
 				for _, dpv := range cluster.Status.InstanceSets[i].DesiredPGDataVolume {
@@ -678,21 +682,21 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 		// limit is not zero, update the request size to the limit value.
 		// If the user manually requests a lower limit that is smaller than the current
 		// or requested volume size, it will be ignored in favor of the limit value.
-		if volumeRequestSize.Value() >= pvc.Spec.Resources.Limits.Storage().Value() {
+		if volumeRequestSize.Value() >= volumeLimitFromSpec.Value() {
 
 			r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeLimitReached",
 				"pgData volume(s) for %s/%s are at size limit (%v).", cluster.Name,
-				instanceSpecName, pvc.Spec.Resources.Limits.Storage())
+				instanceSpecName, volumeLimitFromSpec)
 
 			// If the volume size request is greater than the limit, issue an
 			// additional event warning.
-			if volumeRequestSize.Value() > pvc.Spec.Resources.Limits.Storage().Value() {
+			if volumeRequestSize.Value() > volumeLimitFromSpec.Value() {
 				r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "DesiredVolumeAboveLimit",
 					"The desired size (%v) for the %s/%s pgData volume(s) is greater than the size limit (%v).",
-					volumeRequestSize, cluster.Name, instanceSpecName, pvc.Spec.Resources.Limits.Storage())
+					volumeRequestSize, cluster.Name, instanceSpecName, volumeLimitFromSpec)
 			}
 
-			volumeRequestSize = pvc.Spec.Resources.Limits.Storage()
+			volumeRequestSize = volumeLimitFromSpec
 		}
 		pvc.Spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize.Value(), resource.BinarySI),
