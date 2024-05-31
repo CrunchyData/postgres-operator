@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
@@ -620,12 +621,87 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 
 	pvc.Spec = instanceSpec.DataVolumeClaimSpec
 
+	r.setVolumeSize(ctx, cluster, pvc, instanceSpec.Name)
+
+	// Clear any set limit before applying PVC. This is needed to allow the limit
+	// value to change later.
+	pvc.Spec.Resources.Limits = nil
+
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,
 			errors.WithStack(r.apply(ctx, pvc)))
 	}
 
 	return pvc, err
+}
+
+// setVolumeSize compares the potential sizes from the instance spec, status
+// and limit and sets the appropriate current value.
+func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.PostgresCluster,
+	pvc *corev1.PersistentVolumeClaim, instanceSpecName string) {
+	log := logging.FromContext(ctx)
+
+	// Store the limit for this instance set. This value will not change below.
+	volumeLimitFromSpec := pvc.Spec.Resources.Limits.Storage()
+
+	// Capture the largest pgData volume size currently defined for a given instance set.
+	// This value will capture our desired update.
+	volumeRequestSize := pvc.Spec.Resources.Requests.Storage()
+
+	// If the request value is greater than the set limit, use the limit and issue
+	// a warning event. A limit of 0 is ignorned.
+	if !volumeLimitFromSpec.IsZero() &&
+		volumeRequestSize.Value() > volumeLimitFromSpec.Value() {
+		r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "VolumeRequestOverLimit",
+			"pgData volume request (%v) for %s/%s is greater than set limit (%v). Limit value will be used.",
+			volumeRequestSize, cluster.Name, instanceSpecName, volumeLimitFromSpec)
+
+		pvc.Spec.Resources.Requests = corev1.ResourceList{
+			corev1.ResourceStorage: *resource.NewQuantity(volumeLimitFromSpec.Value(), resource.BinarySI),
+		}
+		// Otherwise, if the limit is not set or the feature gate is not enabled, do not autogrow.
+	} else if !volumeLimitFromSpec.IsZero() && util.DefaultMutableFeatureGate.Enabled(util.AutoGrowVolumes) {
+		for i := range cluster.Status.InstanceSets {
+			if instanceSpecName == cluster.Status.InstanceSets[i].Name {
+				for _, dpv := range cluster.Status.InstanceSets[i].DesiredPGDataVolume {
+					if dpv != "" {
+						desiredRequest, err := resource.ParseQuantity(dpv)
+						if err == nil {
+							if desiredRequest.Value() > volumeRequestSize.Value() {
+								volumeRequestSize = &desiredRequest
+							}
+						} else {
+							log.Error(err, "Unable to parse volume request: "+dpv)
+						}
+					}
+				}
+			}
+		}
+
+		// If the volume request size is greater than or equal to the limit and the
+		// limit is not zero, update the request size to the limit value.
+		// If the user manually requests a lower limit that is smaller than the current
+		// or requested volume size, it will be ignored in favor of the limit value.
+		if volumeRequestSize.Value() >= volumeLimitFromSpec.Value() {
+
+			r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeLimitReached",
+				"pgData volume(s) for %s/%s are at size limit (%v).", cluster.Name,
+				instanceSpecName, volumeLimitFromSpec)
+
+			// If the volume size request is greater than the limit, issue an
+			// additional event warning.
+			if volumeRequestSize.Value() > volumeLimitFromSpec.Value() {
+				r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "DesiredVolumeAboveLimit",
+					"The desired size (%v) for the %s/%s pgData volume(s) is greater than the size limit (%v).",
+					volumeRequestSize, cluster.Name, instanceSpecName, volumeLimitFromSpec)
+			}
+
+			volumeRequestSize = volumeLimitFromSpec
+		}
+		pvc.Spec.Resources.Requests = corev1.ResourceList{
+			corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize.Value(), resource.BinarySI),
+		}
+	}
 }
 
 // +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,patch}

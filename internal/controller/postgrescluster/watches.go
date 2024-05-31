@@ -69,6 +69,17 @@ func (*Reconciler) watchPods() handler.Funcs {
 				}})
 				return
 			}
+
+			oldAnnotations := e.ObjectOld.GetAnnotations()
+			newAnnotations := e.ObjectNew.GetAnnotations()
+			// If the suggested-pgdata-pvc-size annotation is added or changes, reconcile.
+			if len(cluster) != 0 && oldAnnotations["suggested-pgdata-pvc-size"] != newAnnotations["suggested-pgdata-pvc-size"] {
+				q.Add(reconcile.Request{NamespacedName: client.ObjectKey{
+					Namespace: e.ObjectNew.GetNamespace(),
+					Name:      cluster,
+				}})
+				return
+			}
 		},
 	}
 }

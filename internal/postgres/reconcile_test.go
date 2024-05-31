@@ -177,15 +177,38 @@ containers:
   - --
   - |-
     monitor() {
+    # Parameters for curl when managing autogrow annotation.
+    APISERVER="https://kubernetes.default.svc"
+    SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
+    NAMESPACE=$(cat ${SERVICEACCOUNT}/namespace)
+    TOKEN=$(cat ${SERVICEACCOUNT}/token)
+    CACERT=${SERVICEACCOUNT}/ca.crt
+
     declare -r directory="/pgconf/tls"
     exec {fd}<> <(:)
     while read -r -t 5 -u "${fd}" || true; do
+      # Manage replication certificate.
       if [ "${directory}" -nt "/proc/self/fd/${fd}" ] &&
         install -D --mode=0600 -t "/tmp/replication" "${directory}"/{replication/tls.crt,replication/tls.key,replication/ca.crt} &&
         pkill -HUP --exact --parent=1 postgres
       then
         exec {fd}>&- && exec {fd}<> <(:)
         stat --format='Loaded certificates dated %y' "${directory}"
+      fi
+
+      # Manage autogrow annotation.
+      # Return size in Mebibytes.
+      size=$(df --human-readable --block-size=M /pgdata | awk 'FNR == 2 {print $2}')
+      use=$(df --human-readable /pgdata | awk 'FNR == 2 {print $5}')
+      sizeInt="${size//M/}"
+      # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+      useInt=$(echo $use | sed 's/[[:punct:]]//g')
+      triggerExpansion="$((useInt > 75))"
+      if [ $triggerExpansion -eq 1 ]; then
+        newSize="$(((sizeInt / 2)+sizeInt))"
+        newSizeMi="${newSize}Mi"
+        d='[{"op": "add", "path": "/metadata/annotations/suggested-pgdata-pvc-size", "value": "'"$newSizeMi"'"}]'
+        curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
       fi
     done
     }; export -f monitor; exec -a "$0" bash -ceu monitor
@@ -209,6 +232,8 @@ containers:
   - mountPath: /pgconf/tls
     name: cert-volume
     readOnly: true
+  - mountPath: /pgdata
+    name: postgres-data
 initContainers:
 - command:
   - bash
@@ -532,7 +557,6 @@ volumes:
 	})
 
 	t.Run("WithTablespaces", func(t *testing.T) {
-
 		clusterWithTablespaces := cluster.DeepCopy()
 		clusterWithTablespaces.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{
 			{

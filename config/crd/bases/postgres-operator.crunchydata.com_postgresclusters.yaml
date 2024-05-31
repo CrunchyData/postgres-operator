@@ -15244,6 +15244,11 @@ spec:
                 description: Current state of PostgreSQL instances.
                 items:
                   properties:
+                    desiredPGDataVolume:
+                      additionalProperties:
+                        type: string
+                      description: Desired Size of the pgData volume
+                      type: object
                     name:
                       type: string
                     readyReplicas:
