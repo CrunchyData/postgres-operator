@@ -154,6 +154,26 @@ func pod(
 			},
 		},
 	}
+
+	// Creating a readiness probe that will check that the pgAdmin `/login`
+	// endpoint is reachable at the specified port
+	readinessProbe := &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Port:   *initialize.IntOrStringInt32(pgAdminPort),
+				Path:   "/login",
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+	}
+	gunicornData := inConfigMap.Data[gunicornConfigKey]
+	// Check the configmap to see  if we think TLS is enabled
+	// If so, update the readiness check scheme to HTTPS
+	if strings.Contains(gunicornData, "certfile") && strings.Contains(gunicornData, "keyfile") {
+		readinessProbe.ProbeHandler.HTTPGet.Scheme = corev1.URISchemeHTTPS
+	}
+	container.ReadinessProbe = readinessProbe
+
 	startup := corev1.Container{
 		Name:            naming.ContainerPGAdminStartup,
 		Command:         startupCommand(),

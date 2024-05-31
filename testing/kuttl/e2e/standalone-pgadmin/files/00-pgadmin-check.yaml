@@ -26,6 +26,14 @@ metadata:
     postgres-operator.crunchydata.com/data: pgadmin
     postgres-operator.crunchydata.com/role: pgadmin
     postgres-operator.crunchydata.com/pgadmin: pgadmin
+spec:
+  containers:
+  - name: pgadmin
+    readinessProbe:
+      httpGet:
+        path: /login
+        port: 5050
+        scheme: HTTP
 status:
   containerStatuses:
   - name: pgadmin
