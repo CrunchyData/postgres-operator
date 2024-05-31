@@ -111,6 +111,11 @@ containers:
   - containerPort: 5050
     name: pgadmin
     protocol: TCP
+  readinessProbe:
+    httpGet:
+      path: /login
+      port: 5050
+      scheme: HTTP
   resources: {}
   securityContext:
     allowPrivilegeEscalation: false
@@ -291,6 +296,11 @@ containers:
   - containerPort: 5050
     name: pgadmin
     protocol: TCP
+  readinessProbe:
+    httpGet:
+      path: /login
+      port: 5050
+      scheme: HTTP
   resources:
     requests:
       cpu: 100m
