@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/10-create-cluster-with-replicas.yaml
+assert:
+- files/10-cluster-with-replicas-created.yaml

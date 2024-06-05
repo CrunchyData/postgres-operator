@@ -6,3 +6,5 @@ delete:
   - apiVersion: v1
     kind: Namespace
     name: ${KUTTL_TEST_DELETE_NAMESPACE}
+error:
+- files/01-errors.yaml
