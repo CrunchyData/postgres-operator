@@ -128,8 +128,6 @@ then
     err_check "$?" "pgAdmin4 Database Setup" "Could not create pgAdmin4 database: \n$(cat /tmp/pgadmin4.stderr)"
 fi
 
-cd ${PGADMIN_DIR?}
-
 echo_info "Starting Apache web server.."
 /usr/sbin/httpd -D FOREGROUND &
 echo $! > $APACHE_PIDFILE
