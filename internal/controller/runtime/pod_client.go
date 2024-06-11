@@ -36,7 +36,11 @@ type podExecutor func(
 func newPodClient(config *rest.Config) (rest.Interface, error) {
 	codecs := serializer.NewCodecFactory(scheme.Scheme)
 	gvk, _ := apiutil.GVKForObject(&corev1.Pod{}, scheme.Scheme)
-	return apiutil.RESTClientForGVK(gvk, false, config, codecs)
+	httpClient, err := rest.HTTPClientFor(config)
+	if err != nil {
+		return nil, err
+	}
+	return apiutil.RESTClientForGVK(gvk, false, config, codecs, httpClient)
 }
 
 // +kubebuilder:rbac:groups="",resources="pods/exec",verbs={create}

@@ -40,7 +40,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -489,8 +488,8 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&batchv1.CronJob{}).
 		Owns(&policyv1.PodDisruptionBudget{}).
-		Watches(&source.Kind{Type: &corev1.Pod{}}, r.watchPods()).
-		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
+		Watches(&corev1.Pod{}, r.watchPods()).
+		Watches(&appsv1.StatefulSet{},
 			r.controllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)
 }

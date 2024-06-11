@@ -295,7 +295,7 @@ func TestStoreDesiredRequest(t *testing.T) {
 				Replicas: initialize.Int32(1),
 				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.ResourceRequirements{
+					Resources: corev1.VolumeResourceRequirements{
 						Limits: map[corev1.ResourceName]resource.Quantity{
 							corev1.ResourceStorage: resource.MustParse("1Gi"),
 						}}},

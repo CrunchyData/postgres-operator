@@ -21,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -50,14 +51,23 @@ var refreshInterval = 60 * time.Minute
 func CreateRuntimeManager(namespace string, config *rest.Config,
 	disableMetrics bool) (manager.Manager, error) {
 
+	// Watch all namespaces by default
 	options := manager.Options{
-		Namespace:  namespace, // if empty then watching all namespaces
-		SyncPeriod: &refreshInterval,
-		Scheme:     Scheme,
+		Cache: cache.Options{
+			SyncPeriod: &refreshInterval,
+		},
+
+		Scheme: Scheme,
+	}
+	// If namespace is not empty then add namespace to DefaultNamespaces
+	if len(namespace) > 0 {
+		options.Cache.DefaultNamespaces = map[string]cache.Config{
+			namespace: {},
+		}
 	}
 	if disableMetrics {
 		options.HealthProbeBindAddress = "0"
-		options.MetricsBindAddress = "0"
+		options.Metrics.BindAddress = "0"
 	}
 
 	// create controller runtime manager

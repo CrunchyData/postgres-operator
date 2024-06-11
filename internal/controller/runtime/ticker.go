@@ -22,24 +22,26 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 type ticker struct {
 	time.Duration
 	event.GenericEvent
+	Handler   handler.EventHandler
 	Immediate bool
 }
 
 // NewTicker returns a Source that emits e every d.
-func NewTicker(d time.Duration, e event.GenericEvent) source.Source {
-	return &ticker{Duration: d, GenericEvent: e}
+func NewTicker(d time.Duration, e event.GenericEvent,
+	h handler.EventHandler) source.Source {
+	return &ticker{Duration: d, GenericEvent: e, Handler: h}
 }
 
 // NewTickerImmediate returns a Source that emits e at start and every d.
-func NewTickerImmediate(d time.Duration, e event.GenericEvent) source.Source {
-	return &ticker{Duration: d, GenericEvent: e, Immediate: true}
+func NewTickerImmediate(d time.Duration, e event.GenericEvent,
+	h handler.EventHandler) source.Source {
+	return &ticker{Duration: d, GenericEvent: e, Handler: h, Immediate: true}
 }
 
 func (t ticker) String() string { return "every " + t.Duration.String() }
@@ -47,20 +49,14 @@ func (t ticker) String() string { return "every " + t.Duration.String() }
 // Start is called by controller-runtime Controller and returns quickly.
 // It cleans up when ctx is cancelled.
 func (t ticker) Start(
-	ctx context.Context, h handler.EventHandler,
-	q workqueue.RateLimitingInterface, p ...predicate.Predicate,
+	ctx context.Context, q workqueue.RateLimitingInterface,
 ) error {
 	ticker := time.NewTicker(t.Duration)
 
 	// Pass t.GenericEvent to h when it is not filtered out by p.
 	// - https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/source/internal#EventHandler
 	emit := func() {
-		for _, pp := range p {
-			if !pp.Generic(t.GenericEvent) {
-				return
-			}
-		}
-		h.Generic(t.GenericEvent, q)
+		t.Handler.Generic(ctx, t.GenericEvent, q)
 	}
 
 	if t.Immediate {

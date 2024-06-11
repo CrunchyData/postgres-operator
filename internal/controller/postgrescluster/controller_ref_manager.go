@@ -192,23 +192,21 @@ func (r *Reconciler) releaseObject(ctx context.Context,
 // StatefulSets within the cluster as needed to manage controller ownership refs.
 func (r *Reconciler) controllerRefHandlerFuncs() *handler.Funcs {
 
-	// var err error
-	ctx := context.Background()
-	log := logging.FromContext(ctx)
+	log := logging.FromContext(context.Background())
 	errMsg := "managing StatefulSet controller refs"
 
 	return &handler.Funcs{
-		CreateFunc: func(updateEvent event.CreateEvent, workQueue workqueue.RateLimitingInterface) {
+		CreateFunc: func(ctx context.Context, updateEvent event.CreateEvent, workQueue workqueue.RateLimitingInterface) {
 			if err := r.manageControllerRefs(ctx, updateEvent.Object); err != nil {
 				log.Error(err, errMsg)
 			}
 		},
-		UpdateFunc: func(updateEvent event.UpdateEvent, workQueue workqueue.RateLimitingInterface) {
+		UpdateFunc: func(ctx context.Context, updateEvent event.UpdateEvent, workQueue workqueue.RateLimitingInterface) {
 			if err := r.manageControllerRefs(ctx, updateEvent.ObjectNew); err != nil {
 				log.Error(err, errMsg)
 			}
 		},
-		DeleteFunc: func(updateEvent event.DeleteEvent, workQueue workqueue.RateLimitingInterface) {
+		DeleteFunc: func(ctx context.Context, updateEvent event.DeleteEvent, workQueue workqueue.RateLimitingInterface) {
 			if err := r.manageControllerRefs(ctx, updateEvent.Object); err != nil {
 				log.Error(err, errMsg)
 			}

@@ -31,7 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	pgoRuntime "github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -67,13 +66,12 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 		// Wake periodically to check Bridge API for all CrunchyBridgeClusters.
 		// Potentially replace with different requeue times, remove the Watch function
 		// Smarter: retry after a certain time for each cluster: https://gist.github.com/cbandy/a5a604e3026630c5b08cfbcdfffd2a13
-		Watches(
-			pgoRuntime.NewTickerImmediate(5*time.Minute, event.GenericEvent{}),
-			r.Watch(),
+		WatchesRawSource(
+			pgoRuntime.NewTickerImmediate(5*time.Minute, event.GenericEvent{}, r.Watch()),
 		).
 		// Watch secrets and filter for secrets mentioned by CrunchyBridgeClusters
 		Watches(
-			&source.Kind{Type: &corev1.Secret{}},
+			&corev1.Secret{},
 			r.watchForRelatedSecret(),
 		).
 		Complete(r)

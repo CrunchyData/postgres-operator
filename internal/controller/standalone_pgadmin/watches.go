@@ -29,8 +29,7 @@ import (
 
 // watchPostgresClusters returns a [handler.EventHandler] for PostgresClusters.
 func (r *PGAdminReconciler) watchPostgresClusters() handler.Funcs {
-	handle := func(cluster client.Object, q workqueue.RateLimitingInterface) {
-		ctx := context.Background()
+	handle := func(ctx context.Context, cluster client.Object, q workqueue.RateLimitingInterface) {
 		for _, pgadmin := range r.findPGAdminsForPostgresCluster(ctx, cluster) {
 
 			q.Add(ctrl.Request{
@@ -40,14 +39,14 @@ func (r *PGAdminReconciler) watchPostgresClusters() handler.Funcs {
 	}
 
 	return handler.Funcs{
-		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
+		CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.Object, q)
 		},
-		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.ObjectNew, q)
+		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.ObjectNew, q)
 		},
-		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
+		DeleteFunc: func(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.Object, q)
 		},
 	}
 }
@@ -55,8 +54,7 @@ func (r *PGAdminReconciler) watchPostgresClusters() handler.Funcs {
 // watchForRelatedSecret handles create/update/delete events for secrets,
 // passing the Secret ObjectKey to findPGAdminsForSecret
 func (r *PGAdminReconciler) watchForRelatedSecret() handler.EventHandler {
-	handle := func(secret client.Object, q workqueue.RateLimitingInterface) {
-		ctx := context.Background()
+	handle := func(ctx context.Context, secret client.Object, q workqueue.RateLimitingInterface) {
 		key := client.ObjectKeyFromObject(secret)
 
 		for _, pgadmin := range r.findPGAdminsForSecret(ctx, key) {
@@ -67,11 +65,11 @@ func (r *PGAdminReconciler) watchForRelatedSecret() handler.EventHandler {
 	}
 
 	return handler.Funcs{
-		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
+		CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.Object, q)
 		},
-		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.ObjectNew, q)
+		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.ObjectNew, q)
 		},
 		// If the secret is deleted, we want to reconcile
 		// in order to emit an event/status about this problem.
@@ -79,8 +77,8 @@ func (r *PGAdminReconciler) watchForRelatedSecret() handler.EventHandler {
 		// when we reconcile the cluster and can't find the secret.
 		// That way, users will get two alerts: one when the secret is deleted
 		// and another when the cluster is being reconciled.
-		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
+		DeleteFunc: func(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.Object, q)
 		},
 	}
 }

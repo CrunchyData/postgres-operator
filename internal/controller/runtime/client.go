@@ -23,10 +23,7 @@ import (
 
 // Types that implement single methods of the [client.Reader] interface.
 type (
-	// NOTE: The signature of [client.Client.Get] changes in [sigs.k8s.io/controller-runtime@v0.13.0].
-	// - https://github.com/kubernetes-sigs/controller-runtime/releases/tag/v0.13.0
-
-	ClientGet  func(context.Context, client.ObjectKey, client.Object) error
+	ClientGet  func(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
 	ClientList func(context.Context, client.ObjectList, ...client.ListOption) error
 )
 
@@ -73,8 +70,8 @@ func (fn ClientDeleteAll) DeleteAllOf(ctx context.Context, obj client.Object, op
 	return fn(ctx, obj, opts...)
 }
 
-func (fn ClientGet) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
-	return fn(ctx, key, obj)
+func (fn ClientGet) Get(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
+	return fn(ctx, key, obj, opts...)
 }
 
 func (fn ClientList) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {

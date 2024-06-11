@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/registration"
@@ -59,7 +58,7 @@ func (r *PGUpgradeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&v1beta1.PGUpgrade{}).
 		Owns(&batchv1.Job{}).
 		Watches(
-			&source.Kind{Type: v1beta1.NewPostgresCluster()},
+			v1beta1.NewPostgresCluster(),
 			r.watchPostgresClusters(),
 		).
 		Complete(r)
@@ -92,8 +91,7 @@ func (r *PGUpgradeReconciler) findUpgradesForPostgresCluster(
 
 // watchPostgresClusters returns a [handler.EventHandler] for PostgresClusters.
 func (r *PGUpgradeReconciler) watchPostgresClusters() handler.Funcs {
-	handle := func(cluster client.Object, q workqueue.RateLimitingInterface) {
-		ctx := context.Background()
+	handle := func(ctx context.Context, cluster client.Object, q workqueue.RateLimitingInterface) {
 		key := client.ObjectKeyFromObject(cluster)
 
 		for _, upgrade := range r.findUpgradesForPostgresCluster(ctx, key) {
@@ -104,14 +102,14 @@ func (r *PGUpgradeReconciler) watchPostgresClusters() handler.Funcs {
 	}
 
 	return handler.Funcs{
-		CreateFunc: func(e event.CreateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
+		CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.Object, q)
 		},
-		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-			handle(e.ObjectNew, q)
+		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.ObjectNew, q)
 		},
-		DeleteFunc: func(e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-			handle(e.Object, q)
+		DeleteFunc: func(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
+			handle(ctx, e.Object, q)
 		},
 	}
 }
