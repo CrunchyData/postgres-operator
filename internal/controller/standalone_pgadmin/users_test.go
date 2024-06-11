@@ -76,6 +76,10 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 	t.Run("PodTerminating", func(t *testing.T) {
 		pod := pod.DeepCopy()
 
+		// Must add finalizer when adding deletion timestamp otherwise fake client will panic:
+		// https://github.com/kubernetes-sigs/controller-runtime/pull/2316
+		pod.Finalizers = append(pod.Finalizers, "some-finalizer")
+
 		pod.DeletionTimestamp = new(metav1.Time)
 		*pod.DeletionTimestamp = metav1.Now()
 		pod.Status.ContainerStatuses =

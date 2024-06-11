@@ -43,12 +43,12 @@ type fakeClientWithError struct {
 	errorType string
 }
 
-func (f *fakeClientWithError) Get(ctx context.Context, key types.NamespacedName, obj crclient.Object) error {
+func (f *fakeClientWithError) Get(ctx context.Context, key types.NamespacedName, obj crclient.Object, opts ...crclient.GetOption) error {
 	switch f.errorType {
 	case "get error":
 		return fmt.Errorf("get error")
 	default:
-		return f.Client.Get(ctx, key, obj)
+		return f.Client.Get(ctx, key, obj, opts...)
 	}
 }
 

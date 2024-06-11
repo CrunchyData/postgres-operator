@@ -61,7 +61,7 @@ type Installation struct {
 type InstallationReconciler struct {
 	Owner  client.FieldOwner
 	Reader interface {
-		Get(context.Context, client.ObjectKey, client.Object) error
+		Get(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
 	}
 	Writer interface {
 		Patch(context.Context, client.Object, client.Patch, ...client.PatchOption) error
@@ -102,11 +102,14 @@ func ManagedInstallationReconciler(m manager.Manager, newClient func() *Client) 
 		)).
 		//
 		// Wake periodically even when that Secret does not exist.
-		Watches(
-			runtime.NewTickerImmediate(time.Hour, event.GenericEvent{}),
-			handler.EnqueueRequestsFromMapFunc(func(client.Object) []reconcile.Request {
-				return []reconcile.Request{{NamespacedName: reconciler.SecretRef}}
-			}),
+		WatchesRawSource(
+			runtime.NewTickerImmediate(time.Hour, event.GenericEvent{},
+				handler.EnqueueRequestsFromMapFunc(
+					func(context.Context, client.Object) []reconcile.Request {
+						return []reconcile.Request{{NamespacedName: reconciler.SecretRef}}
+					},
+				),
+			),
 		).
 		//
 		Complete(reconciler)

@@ -16,6 +16,8 @@
 package postgrescluster
 
 import (
+	"context"
+
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -29,7 +31,7 @@ import (
 // watchPods returns a handler.EventHandler for Pods.
 func (*Reconciler) watchPods() handler.Funcs {
 	return handler.Funcs{
-		UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
 			labels := e.ObjectNew.GetLabels()
 			cluster := labels[naming.LabelCluster]
 
