@@ -196,8 +196,7 @@ func TestHandleCreateCluster(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns
 
-		controllerResult, err := reconciler.handleCreateCluster(ctx, testApiKey, testTeamId, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleCreateCluster(ctx, testApiKey, testTeamId, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		assert.Equal(t, cluster.Status.ID, "0")
 
@@ -222,8 +221,7 @@ func TestHandleCreateCluster(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns
 
-		controllerResult, err := reconciler.handleCreateCluster(ctx, "bad_api_key", testTeamId, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleCreateCluster(ctx, "bad_api_key", testTeamId, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{})
 		assert.Equal(t, cluster.Status.ID, "")
 
@@ -485,8 +483,7 @@ func TestHandleUpgrade(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.Plan = "standard-16" // originally "standard-8"
 
-		controllerResult, err := reconciler.handleUpgrade(ctx, testApiKey, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpgrade(ctx, testApiKey, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -508,8 +505,7 @@ func TestHandleUpgrade(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.PostgresVersion = 16 // originally "15"
 
-		controllerResult, err := reconciler.handleUpgrade(ctx, testApiKey, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpgrade(ctx, testApiKey, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -531,8 +527,7 @@ func TestHandleUpgrade(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.Storage = resource.MustParse("15Gi") // originally "10Gi"
 
-		controllerResult, err := reconciler.handleUpgrade(ctx, testApiKey, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpgrade(ctx, testApiKey, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -554,8 +549,7 @@ func TestHandleUpgrade(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.Storage = resource.MustParse("15Gi") // originally "10Gi"
 
-		controllerResult, err := reconciler.handleUpgrade(ctx, "bad_api_key", cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpgrade(ctx, "bad_api_key", cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -597,8 +591,7 @@ func TestHandleUpgradeHA(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.IsHA = true // originally "false"
 
-		controllerResult, err := reconciler.handleUpgradeHA(ctx, testApiKey, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpgradeHA(ctx, testApiKey, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -619,8 +612,7 @@ func TestHandleUpgradeHA(t *testing.T) {
 		cluster.Namespace = ns
 		cluster.Status.ID = "2345"
 
-		controllerResult, err := reconciler.handleUpgradeHA(ctx, testApiKey, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpgradeHA(ctx, testApiKey, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -641,8 +633,7 @@ func TestHandleUpgradeHA(t *testing.T) {
 		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 
-		controllerResult, err := reconciler.handleUpgradeHA(ctx, "bad_api_key", cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpgradeHA(ctx, "bad_api_key", cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -680,8 +671,7 @@ func TestHandleUpdate(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.ClusterName = "new-cluster-name" // originally "hippo-cluster"
 
-		controllerResult, err := reconciler.handleUpdate(ctx, testApiKey, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpdate(ctx, testApiKey, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -699,8 +689,7 @@ func TestHandleUpdate(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.IsProtected = true // originally "false"
 
-		controllerResult, err := reconciler.handleUpdate(ctx, testApiKey, cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpdate(ctx, testApiKey, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
@@ -718,8 +707,7 @@ func TestHandleUpdate(t *testing.T) {
 		cluster.Status.ID = "1234"
 		cluster.Spec.IsProtected = true // originally "false"
 
-		controllerResult, err := reconciler.handleUpdate(ctx, "bad_api_key", cluster)
-		assert.NilError(t, err)
+		controllerResult := reconciler.handleUpdate(ctx, "bad_api_key", cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{})
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
