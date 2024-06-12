@@ -12,18 +12,11 @@ QUERIES_CONFIG_DIR ?= hack/tools/queries
 # Buildah's "build" used to be "bud". Use the alias to be compatible for a while.
 BUILDAH_BUILD ?= buildah bud
 
-DEBUG_BUILD ?= false
 GO ?= go
-GO_BUILD = $(GO_CMD) build -trimpath
-GO_CMD = $(GO_ENV) $(GO)
+GO_BUILD = $(GO) build
 GO_TEST ?= $(GO) test
 KUTTL ?= kubectl-kuttl
 KUTTL_TEST ?= $(KUTTL) test
-
-# Disable optimizations if creating a debug build
-ifeq ("$(DEBUG_BUILD)", "true")
-	GO_BUILD = $(GO_CMD) build -gcflags='all=-N -l'
-endif
 
 ##@ General
 
@@ -143,8 +136,9 @@ deploy-dev: createnamespaces
 ##@ Build - Binary
 .PHONY: build-postgres-operator
 build-postgres-operator: ## Build the postgres-operator binary
-	$(GO_BUILD) -ldflags '-X "main.versionString=$(PGO_VERSION)"' \
-		-o bin/postgres-operator ./cmd/postgres-operator
+	CGO_ENABLED=1 $(GO_BUILD) $(\
+		) --ldflags '-X "main.versionString=$(PGO_VERSION)"' $(\
+		) --trimpath -o bin/postgres-operator ./cmd/postgres-operator
 
 ##@ Build - Images
 .PHONY: build-postgres-operator-image
