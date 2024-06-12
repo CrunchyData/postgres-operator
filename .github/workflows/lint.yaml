@@ -8,16 +8,18 @@ on:
 jobs:
   golangci-lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: stable }
 
-      - uses: golangci/golangci-lint-action@v4
+      - uses: golangci/golangci-lint-action@v6
         with:
           version: latest
           args: --timeout=5m
-          skip-cache: true # https://github.com/golangci/golangci-lint-action/issues/863
 
       # Count issues reported by disabled linters. The command always
       # exits zero to ensure it does not fail the pull request check.

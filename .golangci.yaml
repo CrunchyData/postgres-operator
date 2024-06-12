@@ -6,7 +6,6 @@ linters:
     - errchkjson
     - gci
     - gofumpt
-    - scopelint
   enable:
     - depguard
     - gomodguard
@@ -68,6 +67,6 @@ linters-settings:
         alias: apierrors
     no-unaliased: true
 
-run:
-  skip-dirs:
+issues:
+  exclude-dirs:
     - pkg/generated

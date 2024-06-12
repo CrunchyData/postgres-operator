@@ -9,11 +9,11 @@ linters:
   disable-all: true
   enable:
     - contextcheck
+    - err113
     - errchkjson
     - gocritic
     - godot
     - godox
-    - goerr113
     - gofumpt
     - gosec # exclude-use-default
     - nilnil
