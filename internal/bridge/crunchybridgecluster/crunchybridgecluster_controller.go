@@ -198,7 +198,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		}
 
 		// if we've gotten here then no cluster exists with that name and we're missing the ID, ergo, create cluster
-		return r.handleCreateCluster(ctx, key, team, crunchybridgecluster)
+		return r.handleCreateCluster(ctx, key, team, crunchybridgecluster), nil
 	}
 
 	// If we reach this point, our CrunchyBridgeCluster object has an ID, so we want
@@ -249,14 +249,14 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	if (crunchybridgecluster.Spec.Storage != *crunchybridgecluster.Status.Storage) ||
 		crunchybridgecluster.Spec.Plan != crunchybridgecluster.Status.Plan ||
 		crunchybridgecluster.Spec.PostgresVersion != crunchybridgecluster.Status.MajorVersion {
-		return r.handleUpgrade(ctx, key, crunchybridgecluster)
+		return r.handleUpgrade(ctx, key, crunchybridgecluster), nil
 	}
 
 	// Are there diffs between the cluster response from the Bridge API and the spec?
 	// HA diffs are sent to /clusters/{cluster_id}/actions/[enable|disable]-ha
 	// so have to know (a) to send and (b) which to send to
 	if crunchybridgecluster.Spec.IsHA != *crunchybridgecluster.Status.IsHA {
-		return r.handleUpgradeHA(ctx, key, crunchybridgecluster)
+		return r.handleUpgradeHA(ctx, key, crunchybridgecluster), nil
 	}
 
 	// Check if there's a difference in is_protected, name, maintenance_window_start, etc.
@@ -264,7 +264,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// updates to these fields that hit the PATCH `clusters/<id>` endpoint
 	if crunchybridgecluster.Spec.IsProtected != *crunchybridgecluster.Status.IsProtected ||
 		crunchybridgecluster.Spec.ClusterName != crunchybridgecluster.Status.ClusterName {
-		return r.handleUpdate(ctx, key, crunchybridgecluster)
+		return r.handleUpdate(ctx, key, crunchybridgecluster), nil
 	}
 
 	log.Info("Reconciled")
@@ -370,7 +370,7 @@ func (r *CrunchyBridgeClusterReconciler) handleDuplicateClusterName(ctx context.
 // handleCreateCluster handles creating new Crunchy Bridge Clusters
 func (r *CrunchyBridgeClusterReconciler) handleCreateCluster(ctx context.Context,
 	apiKey, teamId string, crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
-) (ctrl.Result, error) {
+) ctrl.Result {
 	log := ctrl.LoggerFrom(ctx)
 
 	createClusterRequestPayload := &bridge.PostClustersRequestPayload{
@@ -400,7 +400,7 @@ func (r *CrunchyBridgeClusterReconciler) handleCreateCluster(ctx context.Context
 
 		// TODO(crunchybridgecluster): If the payload is wrong, we don't want to requeue, so pass nil error
 		// If the transmission hit a transient problem, we do want to requeue
-		return ctrl.Result{}, nil
+		return ctrl.Result{}
 	}
 	crunchybridgecluster.Status.ID = cluster.ID
 
@@ -420,7 +420,7 @@ func (r *CrunchyBridgeClusterReconciler) handleCreateCluster(ctx context.Context
 		Message:            "The condition of the upgrade(s) is unknown.",
 	})
 
-	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
+	return ctrl.Result{RequeueAfter: 3 * time.Minute}
 }
 
 // handleGetCluster handles getting the cluster details from Bridge and
@@ -539,7 +539,7 @@ func (r *CrunchyBridgeClusterReconciler) handleGetClusterUpgrade(ctx context.Con
 func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 	apiKey string,
 	crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
-) (ctrl.Result, error) {
+) ctrl.Result {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.Info("Handling upgrade request")
@@ -565,7 +565,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 				"Error performing an upgrade: %s", err),
 		})
 		log.Error(err, "Error while attempting cluster upgrade")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}
 	}
 	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
 
@@ -581,7 +581,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 		})
 	}
 
-	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
+	return ctrl.Result{RequeueAfter: 3 * time.Minute}
 }
 
 // handleUpgradeHA handles upgrades that hit the
@@ -589,7 +589,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgrade(ctx context.Context,
 func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 	apiKey string,
 	crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
-) (ctrl.Result, error) {
+) ctrl.Result {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.Info("Handling HA change request")
@@ -613,7 +613,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 				"Error performing an HA upgrade: %s", err),
 		})
 		log.Error(err, "Error while attempting cluster HA change")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}
 	}
 	clusterUpgrade.AddDataToClusterStatus(crunchybridgecluster)
 	if len(clusterUpgrade.Operations) != 0 {
@@ -628,14 +628,14 @@ func (r *CrunchyBridgeClusterReconciler) handleUpgradeHA(ctx context.Context,
 		})
 	}
 
-	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
+	return ctrl.Result{RequeueAfter: 3 * time.Minute}
 }
 
 // handleUpdate handles upgrades that hit the "PATCH /clusters/<id>" endpoint
 func (r *CrunchyBridgeClusterReconciler) handleUpdate(ctx context.Context,
 	apiKey string,
 	crunchybridgecluster *v1beta1.CrunchyBridgeCluster,
-) (ctrl.Result, error) {
+) ctrl.Result {
 	log := ctrl.LoggerFrom(ctx)
 
 	log.Info("Handling update request")
@@ -660,7 +660,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpdate(ctx context.Context,
 				"Error performing an upgrade: %s", err),
 		})
 		log.Error(err, "Error while attempting cluster update")
-		return ctrl.Result{}, nil
+		return ctrl.Result{}
 	}
 	clusterUpdate.AddDataToClusterStatus(crunchybridgecluster)
 	meta.SetStatusCondition(&crunchybridgecluster.Status.Conditions, metav1.Condition{
@@ -673,7 +673,7 @@ func (r *CrunchyBridgeClusterReconciler) handleUpdate(ctx context.Context,
 			clusterUpdate.ClusterName, *clusterUpdate.IsProtected),
 	})
 
-	return ctrl.Result{RequeueAfter: 3 * time.Minute}, nil
+	return ctrl.Result{RequeueAfter: 3 * time.Minute}
 }
 
 // GetSecretKeys gets the secret and returns the expected API key and team id
