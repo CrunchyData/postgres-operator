@@ -231,8 +231,6 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		}
 	}
 
-	// Calculate a hash of the SQL that should be executed in PostgreSQL.
-
 	var pgAuditOK, postgisInstallOK bool
 	create := func(ctx context.Context, exec postgres.Executor) error {
 		if pgAuditOK = pgaudit.EnableInPostgreSQL(ctx, exec) == nil; !pgAuditOK {
@@ -259,6 +257,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, databases.List())
 	}
 
+	// Calculate a hash of the SQL that should be executed in PostgreSQL.
 	revision, err := safeHash32(func(hasher io.Writer) error {
 		// Discard log messages about executing SQL.
 		return create(logging.NewContext(ctx, logging.Discard()), func(
