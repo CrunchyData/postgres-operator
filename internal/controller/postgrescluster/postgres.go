@@ -256,7 +256,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 
 		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, databases.List())
 	}
-	
+
 	// Calculate a hash of the SQL that should be executed in PostgreSQL.
 	revision, err := safeHash32(func(hasher io.Writer) error {
 		// Discard log messages about executing SQL.
