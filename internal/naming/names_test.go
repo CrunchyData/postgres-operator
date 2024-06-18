@@ -76,8 +76,8 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		value metav1.ObjectMeta
 	}
 
-	testUniqueAndValid := func(t *testing.T, tests []test) sets.String {
-		names := sets.NewString()
+	testUniqueAndValid := func(t *testing.T, tests []test) sets.Set[string] {
+		names := sets.Set[string]{}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				assert.Equal(t, tt.value.Namespace, cluster.Namespace)
@@ -170,7 +170,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			assert.Assert(t, nil == validation.IsDNS1123Label(value.Name))
 
 			prefix := PostgresUserSecret(cluster, "").Name
-			for _, name := range names.List() {
+			for _, name := range sets.List(names) {
 				assert.Assert(t, !strings.HasPrefix(name, prefix), "%q may collide", name)
 			}
 		})

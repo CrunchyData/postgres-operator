@@ -211,7 +211,7 @@ type observedInstances struct {
 	byName     map[string]*Instance
 	bySet      map[string][]*Instance
 	forCluster []*Instance
-	setNames   sets.String
+	setNames   sets.Set[string]
 }
 
 // newObservedInstances builds an observedInstances from Kubernetes API objects.
@@ -223,7 +223,7 @@ func newObservedInstances(
 	observed := observedInstances{
 		byName:   make(map[string]*Instance),
 		bySet:    make(map[string][]*Instance),
-		setNames: make(sets.String),
+		setNames: make(sets.Set[string]),
 	}
 
 	sets := make(map[string]*v1beta1.PostgresInstanceSetSpec)
@@ -340,7 +340,7 @@ func (r *Reconciler) observeInstances(
 
 	// Fill out status sorted by set name.
 	cluster.Status.InstanceSets = cluster.Status.InstanceSets[:0]
-	for _, name := range observed.setNames.List() {
+	for _, name := range sets.List(observed.setNames) {
 		status := v1beta1.PostgresInstanceSetStatus{Name: name}
 		status.DesiredPGDataVolume = make(map[string]string)
 
@@ -691,7 +691,7 @@ func (r *Reconciler) cleanupPodDisruptionBudgets(
 	}
 
 	if err == nil {
-		setNames := sets.String{}
+		setNames := sets.Set[string]{}
 		for _, set := range cluster.Spec.InstanceSets {
 			setNames.Insert(set.Name)
 		}
