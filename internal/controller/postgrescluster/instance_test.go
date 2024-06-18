@@ -39,6 +39,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -189,7 +190,7 @@ func TestNewObservedInstances(t *testing.T) {
 		// Lookup based on its labels.
 		assert.Equal(t, observed.byName["the-name"], instance)
 		assert.DeepEqual(t, observed.bySet["missing"], []*Instance{instance})
-		assert.DeepEqual(t, observed.setNames.List(), []string{"missing"})
+		assert.DeepEqual(t, sets.List(observed.setNames), []string{"missing"})
 	})
 
 	t.Run("RunnerMissingOthers", func(t *testing.T) {
@@ -222,7 +223,7 @@ func TestNewObservedInstances(t *testing.T) {
 		// Lookup based on its name and labels.
 		assert.Equal(t, observed.byName["the-name"], instance)
 		assert.DeepEqual(t, observed.bySet["missing"], []*Instance{instance})
-		assert.DeepEqual(t, observed.setNames.List(), []string{"missing"})
+		assert.DeepEqual(t, sets.List(observed.setNames), []string{"missing"})
 	})
 
 	t.Run("Matching", func(t *testing.T) {
@@ -267,7 +268,7 @@ func TestNewObservedInstances(t *testing.T) {
 		// Lookup based on its name and labels.
 		assert.Equal(t, observed.byName["the-name"], instance)
 		assert.DeepEqual(t, observed.bySet["00"], []*Instance{instance})
-		assert.DeepEqual(t, observed.setNames.List(), []string{"00"})
+		assert.DeepEqual(t, sets.List(observed.setNames), []string{"00"})
 	})
 }
 

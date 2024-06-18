@@ -206,7 +206,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 
 	// Gather the list of database that should exist in PostgreSQL.
 
-	databases := sets.String{}
+	databases := sets.Set[string]{}
 	if cluster.Spec.Users == nil {
 		// Users are unspecified; create one database matching the cluster name
 		// if it is also a valid database name.
@@ -254,7 +254,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 				"Unable to install PostGIS")
 		}
 
-		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, databases.List())
+		return postgres.CreateDatabasesInPostgreSQL(ctx, exec, sets.List(databases))
 	}
 
 	// Calculate a hash of the SQL that should be executed in PostgreSQL.

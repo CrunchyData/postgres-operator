@@ -65,7 +65,7 @@ func TestGenerateAlphaNumericPassword(t *testing.T) {
 		assert.Assert(t, cmp.Regexp(`^[A-Za-z0-9]*$`, password))
 	}
 
-	previous := sets.String{}
+	previous := sets.Set[string]{}
 	for i := 0; i < 10; i++ {
 		password, err := GenerateAlphaNumericPassword(5)
 
@@ -90,7 +90,7 @@ func TestGenerateASCIIPassword(t *testing.T) {
 		}
 	}
 
-	previous := sets.String{}
+	previous := sets.Set[string]{}
 	for i := 0; i < 10; i++ {
 		password, err := GenerateASCIIPassword(5)
 
