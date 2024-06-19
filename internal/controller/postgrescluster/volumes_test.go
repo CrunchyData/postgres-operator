@@ -476,7 +476,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.Assert(t, len(clusterVolumes) == 1)
 
 		// observe again, but allow time for the change to be observed
-		err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
+		err = wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*15), false, func(ctx context.Context) (bool, error) {
 			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
 			return len(clusterVolumes) == 1, err
 		})
@@ -542,7 +542,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.Assert(t, len(clusterVolumes) == 2)
 
 		// observe again, but allow time for the change to be observed
-		err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
+		err = wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*15), false, func(ctx context.Context) (bool, error) {
 			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
 			return len(clusterVolumes) == 2, err
 		})
@@ -610,7 +610,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 		assert.Assert(t, len(clusterVolumes) == 3)
 
 		// observe again, but allow time for the change to be observed
-		err = wait.Poll(time.Second/2, Scale(time.Second*15), func() (bool, error) {
+		err = wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*15), false, func(ctx context.Context) (bool, error) {
 			clusterVolumes, err = r.observePersistentVolumeClaims(ctx, cluster)
 			return len(clusterVolumes) == 3, err
 		})

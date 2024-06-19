@@ -416,24 +416,18 @@ topologySpreadConstraints:
 			t.Errorf("status condition PGBackRestRepoHostsReady is missing")
 		}
 
-		events := &corev1.EventList{}
-		if err := wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
-			if err := tClient.List(ctx, events, &client.MatchingFields{
-				"involvedObject.kind":      "PostgresCluster",
-				"involvedObject.name":      clusterName,
-				"involvedObject.namespace": ns.Name,
-				"involvedObject.uid":       clusterUID,
-				"reason":                   "RepoHostCreated",
-			}); err != nil {
-				return false, err
-			}
-			if len(events.Items) != 1 {
-				return false, nil
-			}
-			return true, nil
-		}); err != nil {
-			t.Error(err)
-		}
+		assert.Check(t, wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*2), false,
+			func(ctx context.Context) (bool, error) {
+				events := &corev1.EventList{}
+				err := tClient.List(ctx, events, &client.MatchingFields{
+					"involvedObject.kind":      "PostgresCluster",
+					"involvedObject.name":      clusterName,
+					"involvedObject.namespace": ns.Name,
+					"involvedObject.uid":       clusterUID,
+					"reason":                   "RepoHostCreated",
+				})
+				return len(events.Items) == 1, err
+			}))
 	})
 
 	t.Run("verify pgbackrest repo volumes", func(t *testing.T) {
@@ -730,23 +724,18 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Assert(t, !configHashMismatch)
 
-	events := &corev1.EventList{}
-	err = wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
-		if err := tClient.List(ctx, events, &client.MatchingFields{
-			"involvedObject.kind":      "PostgresCluster",
-			"involvedObject.name":      clusterName,
-			"involvedObject.namespace": ns.Name,
-			"involvedObject.uid":       clusterUID,
-			"reason":                   "StanzasCreated",
-		}); err != nil {
-			return false, err
-		}
-		if len(events.Items) != 1 {
-			return false, nil
-		}
-		return true, nil
-	})
-	assert.NilError(t, err)
+	assert.NilError(t, wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*2), false,
+		func(ctx context.Context) (bool, error) {
+			events := &corev1.EventList{}
+			err := tClient.List(ctx, events, &client.MatchingFields{
+				"involvedObject.kind":      "PostgresCluster",
+				"involvedObject.name":      clusterName,
+				"involvedObject.namespace": ns.Name,
+				"involvedObject.uid":       clusterUID,
+				"reason":                   "StanzasCreated",
+			})
+			return len(events.Items) == 1, err
+		}))
 
 	// status should indicate stanzas were created
 	for _, r := range postgresCluster.Status.PGBackRest.Repos {
@@ -774,23 +763,18 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	assert.Error(t, err, "fake stanza create failed: ")
 	assert.Assert(t, !configHashMismatch)
 
-	events = &corev1.EventList{}
-	err = wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
-		if err := tClient.List(ctx, events, &client.MatchingFields{
-			"involvedObject.kind":      "PostgresCluster",
-			"involvedObject.name":      clusterName,
-			"involvedObject.namespace": ns.Name,
-			"involvedObject.uid":       clusterUID,
-			"reason":                   "UnableToCreateStanzas",
-		}); err != nil {
-			return false, err
-		}
-		if len(events.Items) != 1 {
-			return false, nil
-		}
-		return true, nil
-	})
-	assert.NilError(t, err)
+	assert.NilError(t, wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*2), false,
+		func(ctx context.Context) (bool, error) {
+			events := &corev1.EventList{}
+			err := tClient.List(ctx, events, &client.MatchingFields{
+				"involvedObject.kind":      "PostgresCluster",
+				"involvedObject.name":      clusterName,
+				"involvedObject.namespace": ns.Name,
+				"involvedObject.uid":       clusterUID,
+				"reason":                   "UnableToCreateStanzas",
+			})
+			return len(events.Items) == 1, err
+		}))
 
 	// status should indicate stanza were not created
 	for _, r := range postgresCluster.Status.PGBackRest.Repos {
@@ -1424,23 +1408,18 @@ func TestReconcileManualBackup(t *testing.T) {
 
 					// if an event is expected, the check for it
 					if tc.expectedEventReason != "" {
-						events := &corev1.EventList{}
-						err = wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
-							if err := tClient.List(ctx, events, &client.MatchingFields{
-								"involvedObject.kind":      "PostgresCluster",
-								"involvedObject.name":      clusterName,
-								"involvedObject.namespace": ns.GetName(),
-								"involvedObject.uid":       string(postgresCluster.GetUID()),
-								"reason":                   tc.expectedEventReason,
-							}); err != nil {
-								return false, err
-							}
-							if len(events.Items) != 1 {
-								return false, nil
-							}
-							return true, nil
-						})
-						assert.NilError(t, err)
+						assert.NilError(t, wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*2), false,
+							func(ctx context.Context) (bool, error) {
+								events := &corev1.EventList{}
+								err := tClient.List(ctx, events, &client.MatchingFields{
+									"involvedObject.kind":      "PostgresCluster",
+									"involvedObject.name":      clusterName,
+									"involvedObject.namespace": ns.GetName(),
+									"involvedObject.uid":       string(postgresCluster.GetUID()),
+									"reason":                   tc.expectedEventReason,
+								})
+								return len(events.Items) == 1, err
+							}))
 					}
 					return
 				}
@@ -2035,23 +2014,17 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 
 				if tc.result.invalidSourceCluster || tc.result.invalidSourceRepo ||
 					tc.result.invalidOptions {
-					events := &corev1.EventList{}
-					if err := wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
-						if err := tClient.List(ctx, events, &client.MatchingFields{
-							"involvedObject.kind":      "PostgresCluster",
-							"involvedObject.name":      clusterName,
-							"involvedObject.namespace": namespace,
-							"reason":                   "InvalidDataSource",
-						}); err != nil {
-							return false, err
-						}
-						if len(events.Items) != 1 {
-							return false, nil
-						}
-						return true, nil
-					}); err != nil {
-						t.Error(err)
-					}
+					assert.Check(t, wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*2), false,
+						func(ctx context.Context) (bool, error) {
+							events := &corev1.EventList{}
+							err := tClient.List(ctx, events, &client.MatchingFields{
+								"involvedObject.kind":      "PostgresCluster",
+								"involvedObject.name":      clusterName,
+								"involvedObject.namespace": namespace,
+								"reason":                   "InvalidDataSource",
+							})
+							return len(events.Items) == 1, err
+						}))
 				}
 			})
 		}
@@ -3627,23 +3600,18 @@ func TestReconcileScheduledBackups(t *testing.T) {
 
 					// if an event is expected, the check for it
 					if tc.expectedEventReason != "" {
-						events := &corev1.EventList{}
-						err := wait.Poll(time.Second/2, Scale(time.Second*2), func() (bool, error) {
-							if err := tClient.List(ctx, events, &client.MatchingFields{
-								"involvedObject.kind":      "PostgresCluster",
-								"involvedObject.name":      clusterName,
-								"involvedObject.namespace": ns.GetName(),
-								"involvedObject.uid":       string(postgresCluster.GetUID()),
-								"reason":                   tc.expectedEventReason,
-							}); err != nil {
-								return false, err
-							}
-							if len(events.Items) != 1 {
-								return false, nil
-							}
-							return true, nil
-						})
-						assert.NilError(t, err)
+						assert.NilError(t, wait.PollUntilContextTimeout(ctx, time.Second/2, Scale(time.Second*2), false,
+							func(ctx context.Context) (bool, error) {
+								events := &corev1.EventList{}
+								err := tClient.List(ctx, events, &client.MatchingFields{
+									"involvedObject.kind":      "PostgresCluster",
+									"involvedObject.name":      clusterName,
+									"involvedObject.namespace": ns.GetName(),
+									"involvedObject.uid":       string(postgresCluster.GetUID()),
+									"reason":                   tc.expectedEventReason,
+								})
+								return len(events.Items) == 1, err
+							}))
 					}
 				} else if !tc.expectReconcile && tc.expectRequeue {
 					// expect requeue, no reconcile
