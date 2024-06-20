@@ -785,7 +785,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 		calls := 0
 		r.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++

@@ -144,9 +144,9 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 
 		// Apply the necessary SQL and record its hash in cluster.Status
 		if err == nil {
-			err = action(ctx, func(_ context.Context, stdin io.Reader,
+			err = action(ctx, func(ctx context.Context, stdin io.Reader,
 				stdout, stderr io.Writer, command ...string) error {
-				return r.PodExec(writablePod.Namespace, writablePod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+				return r.PodExec(ctx, writablePod.Namespace, writablePod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 			})
 		}
 		if err == nil {

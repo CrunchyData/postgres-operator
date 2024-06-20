@@ -359,7 +359,7 @@ volumeMode: Filesystem
 
 					expected := errors.New("flop")
 					reconciler.PodExec = func(
-						namespace, pod, container string,
+						ctx context.Context, namespace, pod, container string,
 						_ io.Reader, _, _ io.Writer, command ...string,
 					) error {
 						assert.Equal(t, namespace, "pod-ns")
@@ -376,7 +376,7 @@ volumeMode: Filesystem
 
 					// Files are in the wrong place; expect no changes to the PVC.
 					reconciler.PodExec = func(
-						_, _, _ string, _ io.Reader, stdout, _ io.Writer, _ ...string,
+						ctx context.Context, _, _, _ string, _ io.Reader, stdout, _ io.Writer, _ ...string,
 					) error {
 						assert.Assert(t, stdout != nil)
 						_, err := stdout.Write([]byte("some-place\n"))
@@ -399,7 +399,7 @@ volumeMode: Filesystem
 						new(corev1.ContainerStateRunning)
 
 					reconciler.PodExec = func(
-						_, _, _ string, _ io.Reader, stdout, _ io.Writer, _ ...string,
+						ctx context.Context, _, _, _ string, _ io.Reader, stdout, _ io.Writer, _ ...string,
 					) error {
 						assert.Assert(t, stdout != nil)
 						_, err := stdout.Write([]byte(postgres.WALDirectory(cluster, spec) + "\n"))
@@ -751,8 +751,8 @@ func TestReconcileDatabaseInitSQL(t *testing.T) {
 
 		// Overwrite the PodExec function with a check to ensure the exec
 		// call would have been made
-		PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
-			stderr io.Writer, command ...string) error {
+		PodExec: func(ctx context.Context, namespace, pod, container string, stdin io.Reader,
+			stdout, stderr io.Writer, command ...string) error {
 			called = true
 			return nil
 		},
@@ -875,8 +875,8 @@ func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
 
 		// Overwrite the PodExec function with a check to ensure the exec
 		// call would have been made
-		PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
-			stderr io.Writer, command ...string) error {
+		PodExec: func(ctx context.Context, namespace, pod, container string, stdin io.Reader,
+			stdout, stderr io.Writer, command ...string) error {
 			called = true
 			return nil
 		},

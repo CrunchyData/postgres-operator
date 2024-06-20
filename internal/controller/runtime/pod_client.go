@@ -16,6 +16,7 @@
 package runtime
 
 import (
+	"context"
 	"io"
 
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +30,7 @@ import (
 // podExecutor runs command on container in pod in namespace. Non-nil streams
 // (stdin, stdout, and stderr) are attached the to the remote process.
 type podExecutor func(
-	namespace, pod, container string,
+	ctx context.Context, namespace, pod, container string,
 	stdin io.Reader, stdout, stderr io.Writer, command ...string,
 ) error
 
@@ -49,7 +50,7 @@ func NewPodExecutor(config *rest.Config) (podExecutor, error) {
 	client, err := newPodClient(config)
 
 	return func(
-		namespace, pod, container string,
+		ctx context.Context, namespace, pod, container string,
 		stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
 		request := client.Post().
@@ -66,7 +67,7 @@ func NewPodExecutor(config *rest.Config) (podExecutor, error) {
 		exec, err := remotecommand.NewSPDYExecutor(config, "POST", request.URL())
 
 		if err == nil {
-			err = exec.Stream(remotecommand.StreamOptions{
+			err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 				Stdin:  stdin,
 				Stdout: stdout,
 				Stderr: stderr,

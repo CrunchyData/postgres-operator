@@ -506,8 +506,8 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 			ctx := context.Background()
 			var called bool
 			reconciler := &Reconciler{
-				PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
-					stderr io.Writer, command ...string) error {
+				PodExec: func(ctx context.Context, namespace, pod, container string, stdin io.Reader,
+					stdout, stderr io.Writer, command ...string) error {
 					called = true
 					return nil
 				},
@@ -530,8 +530,8 @@ func TestReconcilePGMonitorExporter(t *testing.T) {
 	ctx := context.Background()
 	var called bool
 	reconciler := &Reconciler{
-		PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
-			stderr io.Writer, command ...string) error {
+		PodExec: func(ctx context.Context, namespace, pod, container string, stdin io.Reader,
+			stdout, stderr io.Writer, command ...string) error {
 			called = true
 			return nil
 		},
@@ -624,8 +624,8 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 
 			// Create reconciler with mock PodExec function
 			reconciler := &Reconciler{
-				PodExec: func(namespace, pod, container string, stdin io.Reader, stdout,
-					stderr io.Writer, command ...string) error {
+				PodExec: func(ctx context.Context, namespace, pod, container string, stdin io.Reader,
+					stdout, stderr io.Writer, command ...string) error {
 					called = true
 					return nil
 				},

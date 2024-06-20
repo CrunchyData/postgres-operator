@@ -199,9 +199,9 @@ func (r *Reconciler) reconcilePostgresDatabases(
 
 	ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
 	podExecutor = func(
-		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+		return r.PodExec(ctx, pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
 	}
 
 	// Gather the list of database that should exist in PostgreSQL.
@@ -515,9 +515,9 @@ func (r *Reconciler) reconcilePostgresUsersInPostgreSQL(
 			ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
 
 			podExecutor = func(
-				_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+				ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 			) error {
-				return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+				return r.PodExec(ctx, pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
 			}
 			break
 		}
@@ -840,7 +840,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 				// This assumes that $PGDATA matches the configured PostgreSQL "data_directory".
 				var stdout bytes.Buffer
 				err = errors.WithStack(r.PodExec(
-					observed.Pods[0].Namespace, observed.Pods[0].Name, naming.ContainerDatabase,
+					ctx, observed.Pods[0].Namespace, observed.Pods[0].Name, naming.ContainerDatabase,
 					nil, &stdout, nil, "bash", "-ceu", "--", `exec realpath "${PGDATA}/pg_wal"`))
 
 				walDirectory = strings.TrimRight(stdout.String(), "\n")
@@ -944,9 +944,9 @@ func (r *Reconciler) reconcileDatabaseInitSQL(ctx context.Context,
 	}
 
 	podExecutor = func(
-		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+		return r.PodExec(ctx, pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
 	// A writable pod executor has been found and we have the sql provided by

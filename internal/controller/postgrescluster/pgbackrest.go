@@ -2634,7 +2634,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	// create a pgBackRest executor and attempt stanza creation
 	exec := func(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer,
 		command ...string) error {
-		return r.PodExec(postgresCluster.GetNamespace(), writableInstanceName,
+		return r.PodExec(ctx, postgresCluster.GetNamespace(), writableInstanceName,
 			naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 

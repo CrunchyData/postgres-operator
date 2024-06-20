@@ -75,7 +75,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 
 		execCalls := 0
 		reconciler.PodExec = func(
-			namespace, pod, container string, stdin io.Reader, _, _ io.Writer, command ...string,
+			ctx context.Context, namespace, pod, container string, stdin io.Reader, _, _ io.Writer, command ...string,
 		) error {
 			execCalls++
 
@@ -134,7 +134,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 			reconciler := &Reconciler{}
 			reconciler.Tracer = otel.Tracer(t.Name())
 			reconciler.PodExec = func(
-				namespace, pod, container string, _ io.Reader, stdout, _ io.Writer, command ...string,
+				ctx context.Context, namespace, pod, container string, _ io.Reader, stdout, _ io.Writer, command ...string,
 			) error {
 				execCalls++
 
@@ -162,7 +162,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 			reconciler := &Reconciler{}
 			reconciler.Tracer = otel.Tracer(t.Name())
 			reconciler.PodExec = func(
-				_, _, _ string, _ io.Reader, _, _ io.Writer, _ ...string,
+				ctx context.Context, _, _, _ string, _ io.Reader, _, _ io.Writer, _ ...string,
 			) error {
 				// Nothing useful in stdout.
 				return nil
