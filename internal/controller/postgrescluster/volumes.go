@@ -130,6 +130,15 @@ func (r *Reconciler) observePersistentVolumeClaims(
 					resizing.LastTransitionTime = minNotZero(
 						resizing.LastTransitionTime, condition.LastTransitionTime)
 				}
+
+			case
+				// The "ModifyingVolume" and "ModifyVolumeError" conditions occur
+				// when the attribute class of a PVC is changing. These attributes
+				// do not affect the size of a volume, so there's nothing to do.
+				// See the "VolumeAttributesClass" feature gate.
+				// - https://git.k8s.io/enhancements/keps/sig-storage/3751-volume-attributes-class
+				corev1.PersistentVolumeClaimVolumeModifyingVolume,
+				corev1.PersistentVolumeClaimVolumeModifyVolumeError:
 			}
 		}
 	}
