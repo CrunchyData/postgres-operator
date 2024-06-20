@@ -181,8 +181,8 @@ func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
 
 	if err == nil {
 		ctx := logging.NewContext(ctx, logging.FromContext(ctx).WithValues("revision", revision))
-		err = action(ctx, func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
-			return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+		err = action(ctx, func(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+			return r.PodExec(ctx, pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 		})
 	}
 	if err == nil {

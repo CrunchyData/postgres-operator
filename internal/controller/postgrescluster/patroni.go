@@ -103,7 +103,7 @@ func (r *Reconciler) handlePatroniRestarts(
 			ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			pod := primaryNeedsRestart.Pods[0]
-			return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+			return r.PodExec(ctx, pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
 		})
 
 		return errors.WithStack(exec.RestartPendingMembers(ctx, "master", naming.PatroniScope(cluster)))
@@ -128,7 +128,7 @@ func (r *Reconciler) handlePatroniRestarts(
 			ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			pod := replicaNeedsRestart.Pods[0]
-			return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+			return r.PodExec(ctx, pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
 		})
 
 		return errors.WithStack(exec.RestartPendingMembers(ctx, "replica", naming.PatroniScope(cluster)))
@@ -212,8 +212,8 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 	// NOTE(cbandy): Despite the guards above, calling PodExec may still fail
 	// due to a missing or stopped container.
 
-	exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
-		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+	exec := func(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+		return r.PodExec(ctx, pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
 	var configuration map[string]any
@@ -535,7 +535,7 @@ func (r *Reconciler) reconcilePatroniSwitchover(ctx context.Context,
 	}
 	exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer,
 		command ...string) error {
-		return r.PodExec(runningPod.Namespace, runningPod.Name, naming.ContainerDatabase, stdin,
+		return r.PodExec(ctx, runningPod.Namespace, runningPod.Name, naming.ContainerDatabase, stdin,
 			stdout, stderr, command...)
 	}
 

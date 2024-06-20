@@ -700,13 +700,13 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		},
 	}})
 
-	stanzaCreateFail := func(namespace, pod, container string, stdin io.Reader, stdout,
-		stderr io.Writer, command ...string) error {
+	stanzaCreateFail := func(ctx context.Context, namespace, pod, container string, stdin io.Reader,
+		stdout, stderr io.Writer, command ...string) error {
 		return errors.New("fake stanza create failed")
 	}
 
-	stanzaCreateSuccess := func(namespace, pod, container string, stdin io.Reader, stdout,
-		stderr io.Writer, command ...string) error {
+	stanzaCreateSuccess := func(ctx context.Context, namespace, pod, container string, stdin io.Reader,
+		stdout, stderr io.Writer, command ...string) error {
 		return nil
 	}
 

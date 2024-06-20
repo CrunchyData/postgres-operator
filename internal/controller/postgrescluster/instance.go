@@ -792,7 +792,7 @@ func (r *Reconciler) rolloutInstance(
 
 	pod := instance.Pods[0]
 	exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
-		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+		return r.PodExec(ctx, pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
 	primary, known := instance.IsPrimary()

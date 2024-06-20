@@ -544,7 +544,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 	var timelineCallNoLeader, timelineCall bool
 	r := Reconciler{
 		Client: client,
-		PodExec: func(namespace, pod, container string,
+		PodExec: func(ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
 			called = true
 			switch {

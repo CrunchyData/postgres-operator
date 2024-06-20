@@ -454,9 +454,9 @@ func (r *Reconciler) reconcilePGAdminUsers(
 		ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
 
 		podExecutor = func(
-			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+			ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
-			return r.PodExec(pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
+			return r.PodExec(ctx, pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
 		}
 	}
 	if podExecutor == nil {

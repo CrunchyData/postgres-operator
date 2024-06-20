@@ -65,7 +65,7 @@ type Reconciler struct {
 	IsOpenShift bool
 	Owner       client.FieldOwner
 	PodExec     func(
-		namespace, pod, container string,
+		ctx context.Context, namespace, pod, container string,
 		stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error
 	Recorder     record.EventRecorder

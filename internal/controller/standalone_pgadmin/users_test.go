@@ -111,7 +111,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 		calls := 0
 		r.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -150,7 +150,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 		calls := 0
 		r.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -176,14 +176,14 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 	reconciler := &PGAdminReconciler{}
 
 	podExecutor := func(
-		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		return reconciler.PodExec(pod.Namespace, pod.Name, "pgadmin", stdin, stdout, stderr, command...)
+		return reconciler.PodExec(ctx, pod.Namespace, pod.Name, "pgadmin", stdin, stdout, stderr, command...)
 	}
 
 	t.Run("SuccessfulRetrieval", func(t *testing.T) {
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			assert.Equal(t, pod, "pgadmin-123-0")
@@ -203,7 +203,7 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 
 	t.Run("FailedRetrieval", func(t *testing.T) {
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			// Simulate the python call giving bad data (not a version int)
@@ -218,7 +218,7 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 
 	t.Run("PodExecError", func(t *testing.T) {
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			return errors.New("PodExecError")
@@ -281,9 +281,9 @@ func TestWritePGAdminUsers(t *testing.T) {
 	pod.Name = fmt.Sprintf("pgadmin-%s-0", pgadmin.UID)
 
 	podExecutor := func(
-		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
-		return reconciler.PodExec(pod.Namespace, pod.Name, "pgadmin", stdin, stdout, stderr, command...)
+		return reconciler.PodExec(ctx, pod.Namespace, pod.Name, "pgadmin", stdin, stdout, stderr, command...)
 	}
 
 	t.Run("CreateOneUser", func(t *testing.T) {
@@ -302,7 +302,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		calls := 0
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -360,7 +360,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		addUserCalls := 0
 		updateUserCalls := 0
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -432,7 +432,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		addUserCalls := 0
 		updateUserCalls := 0
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -485,7 +485,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		}
 		calls := 0
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -526,7 +526,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		// PodExec error
 		calls := 0
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -552,7 +552,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// setup.py error in stderr
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -605,7 +605,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		// PodExec error
 		calls := 0
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -632,7 +632,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// setup.py error in stderr
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -660,7 +660,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// setup.py error in stdout regarding email address
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
@@ -689,7 +689,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// setup.py error in stdout regarding password
 		reconciler.PodExec = func(
-			namespace, pod, container string,
+			ctx context.Context, namespace, pod, container string,
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			calls++
