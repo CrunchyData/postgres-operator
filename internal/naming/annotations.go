@@ -70,4 +70,8 @@ const (
 	// bridge cluster, the user must add this annotation to the CR to allow the CR to take control of
 	// the Bridge Cluster. The Value assigned to the annotation must be the ID of existing cluster.
 	CrunchyBridgeClusterAdoptionAnnotation = annotationPrefix + "adopt-bridge-cluster"
+
+	// Starting with a true/false, but possibly change to a list of users?
+	// Doing this because changes to spec are worse to handle
+	AutoCreateUserSchemaAnnotation = annotationPrefix + "autoCreateUserSchema"
 )

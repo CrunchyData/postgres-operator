@@ -59,7 +59,8 @@ func TestWriteUsersInPostgreSQL(t *testing.T) {
 			return expected
 		}
 
-		assert.Equal(t, expected, WriteUsersInPostgreSQL(ctx, exec, nil, nil))
+		cluster := new(v1beta1.PostgresCluster)
+		assert.Equal(t, expected, WriteUsersInPostgreSQL(ctx, cluster, exec, nil, nil))
 	})
 
 	t.Run("Empty", func(t *testing.T) {
@@ -104,17 +105,19 @@ COMMIT;`))
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec, nil, nil))
+		cluster := new(v1beta1.PostgresCluster)
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec, nil, nil))
 		assert.Equal(t, calls, 1)
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec, []v1beta1.PostgresUserSpec{}, nil))
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec, []v1beta1.PostgresUserSpec{}, nil))
 		assert.Equal(t, calls, 2)
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec, nil, map[string]string{}))
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec, nil, map[string]string{}))
 		assert.Equal(t, calls, 3)
 	})
 
 	t.Run("OptionalFields", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
 		calls := 0
 		exec := func(
 			_ context.Context, stdin io.Reader, _, _ io.Writer, command ...string,
@@ -134,7 +137,7 @@ COMMIT;`))
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec,
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec,
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "user-no-options",
@@ -162,6 +165,7 @@ COMMIT;`))
 
 	t.Run("PostgresSuperuser", func(t *testing.T) {
 		calls := 0
+		cluster := new(v1beta1.PostgresCluster)
 		exec := func(
 			_ context.Context, stdin io.Reader, _, _ io.Writer, command ...string,
 		) error {
@@ -177,7 +181,7 @@ COMMIT;`))
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec,
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec,
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "postgres",
