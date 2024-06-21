@@ -29,6 +29,12 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+var RESERVED_SCHEMA_NAMES = map[string]bool{
+	"public":    true,
+	"pgbouncer": true,
+	"monitor":   true,
+}
+
 func sanitizeAlterRoleOptions(options string) string {
 	const AlterRolePrefix = `ALTER ROLE "any" WITH `
 
@@ -190,6 +196,13 @@ func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 
 	for i := range users {
 		spec := users[i]
+
+		if RESERVED_SCHEMA_NAMES[string(spec.Name)] {
+			log.V(1).Info("Skipping schema creation for user with reserved name",
+				"name", string(spec.Name))
+			continue
+		}
+
 		databases := []string{}
 		for _, db := range spec.Databases {
 			databases = append(databases, string(db))

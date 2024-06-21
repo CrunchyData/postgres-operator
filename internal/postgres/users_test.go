@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -195,4 +196,53 @@ COMMIT;`))
 		))
 		assert.Equal(t, calls, 1)
 	})
+}
+
+func TestWriteUsersSchemasInPostgreSQL(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Mixed users", func(t *testing.T) {
+		calls := 0
+		exec := func(
+			_ context.Context, stdin io.Reader, _, _ io.Writer, command ...string,
+		) error {
+			calls++
+
+			b, err := io.ReadAll(stdin)
+			assert.NilError(t, err)
+
+			// The command strings will contain either of two possibilities, depending on the user called.
+			commands := strings.Join(command, ",")
+			re := regexp.MustCompile("--set=databases=db1,--set=username=user-single-db|--set=databases=db1, db2,--set=username=user-multi-dbs")
+			assert.Assert(t, cmp.Regexp(re, commands))
+
+			assert.Assert(t, cmp.Contains(string(b), `CREATE SCHEMA IF NOT EXISTS AUTHORIZATION :username;`))
+			return nil
+		}
+
+		assert.NilError(t, WriteUsersSchemasInPostgreSQL(ctx, exec,
+			[]v1beta1.PostgresUserSpec{
+				{
+					Name:      "user-single-db",
+					Databases: []v1beta1.PostgresIdentifier{"db1"},
+				},
+				{
+					Name: "user-no-databases",
+				},
+				{
+					Name:      "user-multi-dbs",
+					Databases: []v1beta1.PostgresIdentifier{"db1", "db2"},
+				},
+				{
+					Name:      "public",
+					Databases: []v1beta1.PostgresIdentifier{"db3"},
+				},
+			},
+		))
+		// The spec.users has four elements, but two will be skipped:
+		// 	* the user with the reserved name `public`
+		// 	* the user with 0 databases
+		assert.Equal(t, calls, 2)
+	})
+
 }
