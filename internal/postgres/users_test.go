@@ -213,10 +213,10 @@ func TestWriteUsersSchemasInPostgreSQL(t *testing.T) {
 
 			// The command strings will contain either of two possibilities, depending on the user called.
 			commands := strings.Join(command, ",")
-			re := regexp.MustCompile("--set=databases=db1,--set=username=user-single-db|--set=databases=db1, db2,--set=username=user-multi-dbs")
+			re := regexp.MustCompile("--set=databases=\\[\"db1\"\\],--set=username=user-single-db|--set=databases=\\[\"db1\",\"db2\"\\],--set=username=user-multi-db")
 			assert.Assert(t, cmp.Regexp(re, commands))
 
-			assert.Assert(t, cmp.Contains(string(b), `CREATE SCHEMA IF NOT EXISTS AUTHORIZATION :username;`))
+			assert.Assert(t, cmp.Contains(string(b), `CREATE SCHEMA IF NOT EXISTS :"username" AUTHORIZATION :"username";`))
 			return nil
 		}
 

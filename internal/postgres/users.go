@@ -184,7 +184,6 @@ SELECT pg_catalog.format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
 }
 
 // WriteUsersSchemasInPostgreSQL will create a schema for each user in each database that user has access to
-// NOTE: Does this mean if no dbs are specified, no schemas are created?
 func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 	users []v1beta1.PostgresUserSpec) error {
 
@@ -197,18 +196,15 @@ func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 	for i := range users {
 		spec := users[i]
 
+		// We skip if the user has the name of a reserved schema
 		if RESERVED_SCHEMA_NAMES[string(spec.Name)] {
 			log.V(1).Info("Skipping schema creation for user with reserved name",
 				"name", string(spec.Name))
 			continue
 		}
 
-		databases := []string{}
-		for _, db := range spec.Databases {
-			databases = append(databases, string(db))
-		}
-
-		if len(databases) == 0 {
+		// We skip if the user has no databases
+		if len(spec.Databases) == 0 {
 			continue
 		}
 
@@ -219,7 +215,9 @@ func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 		// - https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-SEARCH-PATH
 		_, _ = sql.WriteString(`SET search_path TO '';`)
 
-		_, _ = sql.WriteString(`SELECT UNNEST(ARRAY[:databases]);`)
+		_, _ = sql.WriteString(`SELECT * FROM json_array_elements_text(:'databases');`)
+
+		databases, _ := json.Marshal(spec.Databases)
 
 		stdout, stderr, err = exec.ExecInDatabasesFromQuery(ctx,
 			sql.String(),
@@ -228,10 +226,18 @@ func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 				// - https://www.postgresql.org/docs/current/runtime-config-client.html
 				`SET client_min_messages = WARNING;`,
 
-				"CREATE SCHEMA IF NOT EXISTS AUTHORIZATION :username;",
+				// Creates a schema named after and owned by the user
+				// - https://www.postgresql.org/docs/current/ddl-schemas.html
+				// - https://www.postgresql.org/docs/current/sql-createschema.html
+
+				// We create a schema named after the user because
+				// the PG search_path does not need to be updated,
+				// since search_path defaults to "$user", public.
+				// - https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH
+				`CREATE SCHEMA IF NOT EXISTS :"username" AUTHORIZATION :"username";`,
 			}, "\n"),
 			map[string]string{
-				"databases": strings.Join(databases, ", "),
+				"databases": string(databases),
 				"username":  string(spec.Name),
 
 				"ON_ERROR_STOP": "on", // Abort when any one statement fails.
