@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/20-create-cluster-with-invalid-version.yaml
+assert:
+- files/20-cluster-with-invalid-version-created.yaml

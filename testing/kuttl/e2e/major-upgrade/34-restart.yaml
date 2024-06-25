@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/34-restart-cluster.yaml
+assert:
+- files/34-cluster-restarted.yaml
