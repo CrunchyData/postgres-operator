@@ -85,7 +85,7 @@ func TestHandleDeleteCluster(t *testing.T) {
 		cluster.Status.ID = "1234"
 		controllerResult, err = reconciler.handleDelete(ctx, cluster, "9012")
 		assert.NilError(t, err)
-		assert.Equal(t, *controllerResult, ctrl.Result{RequeueAfter: 1 * time.Second})
+		assert.Equal(t, controllerResult.RequeueAfter, 1*time.Second)
 		assert.Equal(t, len(testBridgeClient.Clusters), 1)
 		assert.Equal(t, testBridgeClient.Clusters[0].ClusterName, "bridge-cluster-2")
 

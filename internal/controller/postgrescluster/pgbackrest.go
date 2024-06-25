@@ -1308,7 +1308,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources, instances)
 		if err != nil {
 			log.Error(err, "unable to reconcile pgBackRest repo host")
-			result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+			result.Requeue = true
 			return result, nil
 		}
 		repoHostName = repoHost.GetName()
@@ -1319,7 +1319,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 
 	if err := r.reconcilePGBackRestSecret(ctx, postgresCluster, repoHost, rootCA); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest secret")
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		result.Requeue = true
 	}
 
 	// calculate hashes for the external repository configurations in the spec (e.g. for Azure,
@@ -1328,7 +1328,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	configHashes, configHash, err := pgbackrest.CalculateConfigHashes(postgresCluster)
 	if err != nil {
 		log.Error(err, "unable to calculate config hashes")
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		result.Requeue = true
 		return result, nil
 	}
 
@@ -1336,7 +1336,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	replicaCreateRepo, err := r.reconcileRepos(ctx, postgresCluster, configHashes, repoResources)
 	if err != nil {
 		log.Error(err, "unable to reconcile pgBackRest repo host")
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		result.Requeue = true
 		return result, nil
 	}
 
@@ -1351,14 +1351,14 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		configHash, naming.ClusterPodService(postgresCluster).Name,
 		postgresCluster.GetNamespace(), instanceNames); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest configuration")
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		result.Requeue = true
 	}
 
 	// reconcile the RBAC required to run pgBackRest Jobs (e.g. for backups)
 	sa, err := r.reconcilePGBackRestRBAC(ctx, postgresCluster)
 	if err != nil {
 		log.Error(err, "unable to create replica creation backup")
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		result.Requeue = true
 		return result, nil
 	}
 
@@ -1377,14 +1377,14 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// custom configuration and ensure stanzas are still created).
 	if err != nil {
 		log.Error(err, "unable to create stanza")
-		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
+		result.RequeueAfter = 10 * time.Second
 	}
 	// If a config hash mismatch, then log an info message and requeue to try again.  Add some time
 	// to the requeue to give the pgBackRest configuration changes a chance to propagate to the
 	// container.
 	if configHashMismatch {
 		log.Info("pgBackRest config hash mismatch detected, requeuing to reattempt stanza create")
-		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
+		result.RequeueAfter = 10 * time.Second
 	}
 	// reconcile the pgBackRest backup CronJobs
 	requeue := r.reconcileScheduledBackups(ctx, postgresCluster, sa, repoResources.cronjobs)
@@ -1395,7 +1395,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// A potential option to handle this proactively would be to use a webhook:
 	// https://book.kubebuilder.io/cronjob-tutorial/webhook-implementation.html
 	if requeue {
-		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
+		result.RequeueAfter = 10 * time.Second
 	}
 
 	// Reconcile the initial backup that is needed to enable replica creation using pgBackRest.
@@ -1403,7 +1403,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	if err := r.reconcileReplicaCreateBackup(ctx, postgresCluster, instances,
 		repoResources.replicaCreateBackupJobs, sa, configHash, replicaCreateRepo); err != nil {
 		log.Error(err, "unable to reconcile replica creation backup")
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		result.Requeue = true
 	}
 
 	// Reconcile a manual backup as defined in the spec, and triggered by the end-user via
@@ -1411,7 +1411,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	if err := r.reconcileManualBackup(ctx, postgresCluster, repoResources.manualBackupJobs,
 		sa, instances); err != nil {
 		log.Error(err, "unable to reconcile manual backup")
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+		result.Requeue = true
 	}
 
 	return result, nil

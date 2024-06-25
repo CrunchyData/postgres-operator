@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -502,7 +503,7 @@ func (r *Reconciler) deleteInstances(
 		// mistake that something else is deleting objects. Use RequeueAfter to
 		// avoid being rate-limited due to a deluge of delete events.
 		if err != nil {
-			result.RequeueAfter = 10 * time.Second
+			result = runtime.RequeueWithoutBackoff(10 * time.Second)
 		}
 		return client.IgnoreNotFound(err)
 	}

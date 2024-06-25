@@ -26,7 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -318,8 +317,8 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 func (r *Reconciler) reconcilePatroniStatus(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	observedInstances *observedInstances,
-) (reconcile.Result, error) {
-	result := reconcile.Result{}
+) (time.Duration, error) {
+	var requeue time.Duration
 	log := logging.FromContext(ctx)
 
 	var readyInstance bool
@@ -346,12 +345,11 @@ func (r *Reconciler) reconcilePatroniStatus(
 			// is detected in the cluster we assume this is the case, and simply log a message and
 			// requeue in order to try again until the expected value is found.
 			log.Info("detected ready instance but no initialize value")
-			result.RequeueAfter = 1 * time.Second
-			return result, nil
+			requeue = time.Second
 		}
 	}
 
-	return result, err
+	return requeue, err
 }
 
 // reconcileReplicationSecret creates a secret containing the TLS

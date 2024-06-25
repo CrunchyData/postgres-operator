@@ -197,7 +197,7 @@ func TestHandleCreateCluster(t *testing.T) {
 		cluster.Namespace = ns
 
 		controllerResult := reconciler.handleCreateCluster(ctx, testApiKey, testTeamId, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		assert.Equal(t, cluster.Status.ID, "0")
 
 		readyCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionReady)
@@ -484,7 +484,7 @@ func TestHandleUpgrade(t *testing.T) {
 		cluster.Spec.Plan = "standard-16" // originally "standard-8"
 
 		controllerResult := reconciler.handleUpgrade(ctx, testApiKey, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
 			assert.Equal(t, upgradingCondition.Status, metav1.ConditionTrue)
@@ -506,7 +506,7 @@ func TestHandleUpgrade(t *testing.T) {
 		cluster.Spec.PostgresVersion = 16 // originally "15"
 
 		controllerResult := reconciler.handleUpgrade(ctx, testApiKey, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
 			assert.Equal(t, upgradingCondition.Status, metav1.ConditionTrue)
@@ -528,7 +528,7 @@ func TestHandleUpgrade(t *testing.T) {
 		cluster.Spec.Storage = resource.MustParse("15Gi") // originally "10Gi"
 
 		controllerResult := reconciler.handleUpgrade(ctx, testApiKey, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
 			assert.Equal(t, upgradingCondition.Status, metav1.ConditionTrue)
@@ -592,7 +592,7 @@ func TestHandleUpgradeHA(t *testing.T) {
 		cluster.Spec.IsHA = true // originally "false"
 
 		controllerResult := reconciler.handleUpgradeHA(ctx, testApiKey, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
 			assert.Equal(t, upgradingCondition.Status, metav1.ConditionTrue)
@@ -613,7 +613,7 @@ func TestHandleUpgradeHA(t *testing.T) {
 		cluster.Status.ID = "2345"
 
 		controllerResult := reconciler.handleUpgradeHA(ctx, testApiKey, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
 			assert.Equal(t, upgradingCondition.Status, metav1.ConditionTrue)
@@ -672,7 +672,7 @@ func TestHandleUpdate(t *testing.T) {
 		cluster.Spec.ClusterName = "new-cluster-name" // originally "hippo-cluster"
 
 		controllerResult := reconciler.handleUpdate(ctx, testApiKey, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
 			assert.Equal(t, upgradingCondition.Status, metav1.ConditionTrue)
@@ -690,7 +690,7 @@ func TestHandleUpdate(t *testing.T) {
 		cluster.Spec.IsProtected = true // originally "false"
 
 		controllerResult := reconciler.handleUpdate(ctx, testApiKey, cluster)
-		assert.Equal(t, controllerResult, ctrl.Result{RequeueAfter: 3 * time.Minute})
+		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
 		upgradingCondition := meta.FindStatusCondition(cluster.Status.Conditions, v1beta1.ConditionUpgrading)
 		if assert.Check(t, upgradingCondition != nil) {
 			assert.Equal(t, upgradingCondition.Status, metav1.ConditionTrue)

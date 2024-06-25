@@ -17,10 +17,11 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"time"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -40,6 +41,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
@@ -82,15 +84,6 @@ func (r *Reconciler) Reconcile(
 	log := logging.FromContext(ctx)
 	defer span.End()
 
-	// create the result that will be updated following a call to each reconciler
-	result := reconcile.Result{}
-	updateResult := func(next reconcile.Result, err error) error {
-		if err == nil {
-			result = updateReconcileResult(result, next)
-		}
-		return err
-	}
-
 	// get the postgrescluster from the cache
 	cluster := &v1beta1.PostgresCluster{}
 	if err := r.Client.Get(ctx, request.NamespacedName, cluster); err != nil {
@@ -101,7 +94,7 @@ func (r *Reconciler) Reconcile(
 			log.Error(err, "unable to fetch PostgresCluster")
 			span.RecordError(err)
 		}
-		return result, err
+		return runtime.ErrorWithBackoff(err)
 	}
 
 	// Set any defaults that may not have been stored in the API. No DeepCopy
@@ -127,15 +120,10 @@ func (r *Reconciler) Reconcile(
 	if result, err := r.handleDelete(ctx, cluster); err != nil {
 		span.RecordError(err)
 		log.Error(err, "deleting")
-		return reconcile.Result{}, err
+		return runtime.ErrorWithBackoff(err)
 
 	} else if result != nil {
 		if log := log.V(1); log.Enabled() {
-			if result.RequeueAfter > 0 {
-				// RequeueAfter implies Requeue, but set both to make the next
-				// log message more clear.
-				result.Requeue = true
-			}
 			log.Info("deleting", "result", fmt.Sprintf("%+v", *result))
 		}
 		return *result, nil
@@ -152,9 +140,8 @@ func (r *Reconciler) Reconcile(
 			err.Error())
 		// specifically allow reconciliation if the cluster is shutdown to
 		// facilitate upgrades, otherwise return
-		if cluster.Spec.Shutdown == nil ||
-			(cluster.Spec.Shutdown != nil && !*cluster.Spec.Shutdown) {
-			return result, err
+		if !initialize.FromPointer(cluster.Spec.Shutdown) {
+			return runtime.ErrorWithBackoff(err)
 		}
 	}
 
@@ -167,9 +154,8 @@ func (r *Reconciler) Reconcile(
 		// this configuration and provide an event
 		path := field.NewPath("spec", "standby")
 		err := field.Invalid(path, cluster.Name, "Standby requires a host or repoName to be enabled")
-		r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidStandbyConfiguration",
-			err.Error())
-		return result, err
+		r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidStandbyConfiguration", err.Error())
+		return runtime.ErrorWithBackoff(err)
 	}
 
 	var (
@@ -190,21 +176,18 @@ func (r *Reconciler) Reconcile(
 		err                      error
 	)
 
-	// Define a function for updating PostgresCluster status. Returns any error that
-	// occurs while attempting to patch the status, while otherwise simply returning the
-	// Result and error variables that are populated while reconciling the PostgresCluster.
-	patchClusterStatus := func() (reconcile.Result, error) {
+	patchClusterStatus := func() error {
 		if !equality.Semantic.DeepEqual(before.Status, cluster.Status) {
 			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
 			// managed fields on the status subresource: https://issue.k8s.io/88901
-			if err := errors.WithStack(r.Client.Status().Patch(
-				ctx, cluster, client.MergeFrom(before), r.Owner)); err != nil {
+			if err := r.Client.Status().Patch(
+				ctx, cluster, client.MergeFrom(before), r.Owner); err != nil {
 				log.Error(err, "patching cluster status")
-				return result, err
+				return err
 			}
 			log.V(1).Info("patched cluster status")
 		}
-		return result, err
+		return nil
 	}
 
 	if r.Registration != nil && r.Registration.Required(r.Recorder, cluster, &cluster.Status.Conditions) {
@@ -223,7 +206,7 @@ func (r *Reconciler) Reconcile(
 
 			ObservedGeneration: cluster.GetGeneration(),
 		})
-		return patchClusterStatus()
+		return runtime.ErrorWithBackoff(patchClusterStatus())
 	} else {
 		meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.PostgresClusterProgressing)
 	}
@@ -251,10 +234,9 @@ func (r *Reconciler) Reconcile(
 		// return a bool indicating that the controller should return early while any
 		// required Jobs are running, after which it will indicate that an early
 		// return is no longer needed, and reconciliation can proceed normally.
-		var returnEarly bool
-		returnEarly, err = r.reconcileDirMoveJobs(ctx, cluster)
+		returnEarly, err := r.reconcileDirMoveJobs(ctx, cluster)
 		if err != nil || returnEarly {
-			return patchClusterStatus()
+			return runtime.ErrorWithBackoff(errors.Join(err, patchClusterStatus()))
 		}
 	}
 	if err == nil {
@@ -266,8 +248,14 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		instances, err = r.observeInstances(ctx, cluster)
 	}
+
+	result := reconcile.Result{}
+
 	if err == nil {
-		err = updateResult(r.reconcilePatroniStatus(ctx, cluster, instances))
+		var requeue time.Duration
+		if requeue, err = r.reconcilePatroniStatus(ctx, cluster, instances); err == nil && requeue > 0 {
+			result.RequeueAfter = requeue
+		}
 	}
 	if err == nil {
 		err = r.reconcilePatroniSwitchover(ctx, cluster, instances)
@@ -296,10 +284,9 @@ func (r *Reconciler) Reconcile(
 		// the controller should return early while data initialization is in progress, after
 		// which it will indicate that an early return is no longer needed, and reconciliation
 		// can proceed normally.
-		var returnEarly bool
-		returnEarly, err = r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA)
+		returnEarly, err := r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA)
 		if err != nil || returnEarly {
-			return patchClusterStatus()
+			return runtime.ErrorWithBackoff(errors.Join(err, patchClusterStatus()))
 		}
 	}
 	if err == nil {
@@ -350,7 +337,13 @@ func (r *Reconciler) Reconcile(
 	}
 
 	if err == nil {
-		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instances, rootCA))
+		var next reconcile.Result
+		if next, err = r.reconcilePGBackRest(ctx, cluster, instances, rootCA); err == nil && !next.IsZero() {
+			result.Requeue = result.Requeue || next.Requeue
+			if next.RequeueAfter > 0 {
+				result.RequeueAfter = next.RequeueAfter
+			}
+		}
 	}
 	if err == nil {
 		err = r.reconcilePGBouncer(ctx, cluster, instances, primaryCertificate, rootCA)
@@ -376,7 +369,7 @@ func (r *Reconciler) Reconcile(
 
 	log.V(1).Info("reconciled cluster")
 
-	return patchClusterStatus()
+	return result, errors.Join(err, patchClusterStatus())
 }
 
 // deleteControlled safely deletes object when it is controlled by cluster.
