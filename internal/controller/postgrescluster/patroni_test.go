@@ -34,7 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -524,13 +523,13 @@ func TestReconcilePatroniStatus(t *testing.T) {
 		t.Run(fmt.Sprintf("%+v", tc), func(t *testing.T) {
 			postgresCluster, observedInstances := createResources(i, tc.readyReplicas,
 				tc.writeAnnotation)
-			result, err := r.reconcilePatroniStatus(ctx, postgresCluster, observedInstances)
+			requeue, err := r.reconcilePatroniStatus(ctx, postgresCluster, observedInstances)
 			if tc.requeueExpected {
 				assert.NilError(t, err)
-				assert.Assert(t, result.RequeueAfter == 1*time.Second)
+				assert.Equal(t, requeue, time.Second)
 			} else {
 				assert.NilError(t, err)
-				assert.DeepEqual(t, result, reconcile.Result{})
+				assert.Equal(t, requeue, time.Duration(0))
 			}
 		})
 	}

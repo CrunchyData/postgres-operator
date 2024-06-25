@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -493,7 +494,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 
 		// Requeue to verify that Patroni endpoints are deleted
-		return ctrl.Result{Requeue: true}, err // FIXME
+		return runtime.RequeueWithBackoff(), err // FIXME
 	}
 
 	// TODO: write upgradeJob back to world? No, we will wake and see it when it
@@ -501,9 +502,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// TODO: consider what it means to "re-use" the same PGUpgrade for more than
 	// one postgres version. Should the job name include the version number?
 
-	log.Info("Reconciled", "requeue", err != nil ||
-		result.Requeue ||
-		result.RequeueAfter > 0)
+	log.Info("Reconciled", "requeue", !result.IsZero() || err != nil)
 	return
 }
 

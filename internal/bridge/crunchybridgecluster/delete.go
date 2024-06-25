@@ -22,6 +22,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -58,7 +60,7 @@ func (r *CrunchyBridgeClusterReconciler) handleDelete(
 			}
 
 			if !deletedAlready {
-				return &ctrl.Result{RequeueAfter: 1 * time.Second}, err
+				return initialize.Pointer(runtime.RequeueWithoutBackoff(time.Second)), err
 			}
 
 			// Remove finalizer if deleted already
