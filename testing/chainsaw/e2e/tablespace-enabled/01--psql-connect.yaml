@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            - name: PGURI
+              valueFrom: { secretKeyRef: { name: tablespace-enabled-pguser-tablespace-enabled, key: uri } }
+
+            # Do not wait indefinitely.
+            - { name: PGCONNECT_TIMEOUT, value: '5' }
+
+          # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+          # - https://kubernetes.io/docs/tasks/inject-data-application/
+          command:
+            - psql
+            - $(PGURI)
+            - --quiet
+            - --echo-errors
+            - --set=ON_ERROR_STOP=1
+            - --command
+            - |
+              DO $$$$
+              DECLARE
+                tbsp_count integer;
+              BEGIN
+                SELECT COUNT(*) INTO tbsp_count FROM pg_tablespace WHERE spcname = 'trial';
+                ASSERT tbsp_count = 1, 'tablespace not found';
+                SELECT COUNT(*) INTO tbsp_count FROM pg_tablespace WHERE spcname = 'castle';
+                ASSERT tbsp_count = 1, 'tablespace not found';
+              END $$$$;
+            - --command
+            - |
+              CREATE SCHEMA "tablespace-enabled";
+              CREATE TABLE important (data) TABLESPACE trial AS VALUES ('treasure');
+              CREATE TABLE also_important (data) TABLESPACE castle AS VALUES ('treasure');
+              CREATE TABLE moving_important (data) AS VALUES ('treasure');
+              ALTER TABLE moving_important SET TABLESPACE trial;

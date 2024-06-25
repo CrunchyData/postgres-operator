@@ -1,0 +1,21 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: standby-cluster
+status:
+  instances:
+    - name: instance1
+      replicas: 1
+      updatedReplicas: 1
+      # The cluster should not become fully ready in this step, the ccp_monitoring password
+      # on the standby does not match the primary
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: standby-cluster
+    postgres-operator.crunchydata.com/crunchy-postgres-exporter: "true"
+status:
+  phase: Running

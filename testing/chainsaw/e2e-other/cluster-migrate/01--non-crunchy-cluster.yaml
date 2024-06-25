@@ -1,0 +1,193 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: non-crunchy-cluster
+  labels:
+    postgres-operator-test: kuttl
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: non-crunchy-cluster
+type: Opaque
+stringData:
+  postgres-password: "SR6kNAFXvX"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: non-crunchy-cluster-hl
+  labels:
+    postgres-operator-test: kuttl
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: non-crunchy-cluster
+    app.kubernetes.io/component: primary
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: non-crunchy-cluster
+    app.kubernetes.io/component: primary
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: non-crunchy-cluster
+  labels:
+    postgres-operator-test: kuttl
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: non-crunchy-cluster
+    app.kubernetes.io/component: primary
+spec:
+  type: ClusterIP
+  sessionAffinity: None
+  ports:
+    - name: tcp-postgresql
+      port: 5432
+      targetPort: tcp-postgresql
+      nodePort: null
+  selector:
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: non-crunchy-cluster
+    app.kubernetes.io/component: primary
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: non-crunchy-cluster
+  labels:
+    postgres-operator-test: kuttl
+    app.kubernetes.io/name: postgresql
+    app.kubernetes.io/instance: non-crunchy-cluster
+    app.kubernetes.io/component: primary
+spec:
+  replicas: 1
+  serviceName: non-crunchy-cluster-hl
+  updateStrategy:
+    rollingUpdate: {}
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      postgres-operator-test: kuttl
+      app.kubernetes.io/name: postgresql
+      app.kubernetes.io/instance: non-crunchy-cluster
+      app.kubernetes.io/component: primary
+  template:
+    metadata:
+      name: non-crunchy-cluster
+      labels:
+        postgres-operator-test: kuttl
+        app.kubernetes.io/name: postgresql
+        app.kubernetes.io/instance: non-crunchy-cluster
+        app.kubernetes.io/component: primary
+    spec:
+      serviceAccountName: default
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    postgres-operator-test: kuttl
+                    app.kubernetes.io/name: postgresql
+                    app.kubernetes.io/instance: non-crunchy-cluster
+                    app.kubernetes.io/component: primary
+                namespaces:
+                  - "default"
+                topologyKey: kubernetes.io/hostname
+              weight: 1
+      securityContext:
+        fsGroup: 1001
+      hostNetwork: false
+      hostIPC: false
+      containers:
+        - name: postgresql
+          image: docker.io/bitnami/postgresql:${KUTTL_BITNAMI_IMAGE_TAG}
+          imagePullPolicy: "IfNotPresent"
+          securityContext:
+            runAsUser: 1001
+          env:
+            - name: BITNAMI_DEBUG
+              value: "false"
+            - name: POSTGRESQL_PORT_NUMBER
+              value: "5432"
+            - name: POSTGRESQL_VOLUME_DIR
+              value: "/bitnami/postgresql"
+            - name: PGDATA
+              value: "/bitnami/postgresql/data"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: non-crunchy-cluster
+                  key: postgres-password
+            - name: POSTGRESQL_ENABLE_LDAP
+              value: "no"
+            - name: POSTGRESQL_ENABLE_TLS
+              value: "no"
+            - name: POSTGRESQL_LOG_HOSTNAME
+              value: "false"
+            - name: POSTGRESQL_LOG_CONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_LOG_DISCONNECTIONS
+              value: "false"
+            - name: POSTGRESQL_PGAUDIT_LOG_CATALOG
+              value: "off"
+            - name: POSTGRESQL_CLIENT_MIN_MESSAGES
+              value: "error"
+            - name: POSTGRESQL_SHARED_PRELOAD_LIBRARIES
+              value: "pgaudit"
+          ports:
+            - name: tcp-postgresql
+              containerPort: 5432
+          livenessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - exec pg_isready -U "postgres" -h localhost -p 5432
+          readinessProbe:
+            failureThreshold: 6
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - -e
+                - |
+                  exec pg_isready -U "postgres" -h localhost -p 5432
+                  [ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]
+          resources:
+            limits: {}
+            requests:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: dshm
+              mountPath: /dev/shm
+            - name: data
+              mountPath: /bitnami/postgresql
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "1Gi"

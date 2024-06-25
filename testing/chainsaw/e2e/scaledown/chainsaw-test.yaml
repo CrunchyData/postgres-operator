@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: scaledown
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: 00--create-cluster.yaml
+    - assert:
+        file: 00-assert.yaml
+  - name: step-01
+    try:
+    - apply:
+        file: 01--update-cluster.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-02
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: scaledown
+  - name: step-10
+    try:
+    - apply:
+        file: 10--create-cluster.yaml
+    - assert:
+        file: 10-assert.yaml
+  - name: step-11
+    try:
+    - script:
+        content: |
+          kubectl label --namespace="${NAMESPACE}" pods \
+            --selector='postgres-operator.crunchydata.com/role=master' \
+            'testing/role-before=master'
+    - script:
+        content: |
+          kubectl label --namespace="${NAMESPACE}" pods \
+            --selector='postgres-operator.crunchydata.com/role=replica' \
+            'testing/role-before=replica'
+  - name: step-12
+    try:
+    - apply:
+        file: 12--update-cluster.yaml
+    - assert:
+        file: 12-assert.yaml
+  - name: step-13
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: scaledown1
+  - name: step-20
+    try:
+    - apply:
+        file: 20--create-cluster.yaml
+    - assert:
+        file: 20-assert.yaml
+  - name: step-21
+    try:
+    - apply:
+        file: 21--update-cluster.yaml
+    - assert:
+        file: 21-assert.yaml
