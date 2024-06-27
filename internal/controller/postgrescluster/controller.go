@@ -19,8 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -36,7 +34,6 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -457,24 +454,8 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		}
 	}
 
-	var opts controller.Options
-
-	// TODO(cbandy): Move this to main with controller-runtime v0.9+
-	// - https://github.com/kubernetes-sigs/controller-runtime/commit/82fc2564cf
-	if s := os.Getenv("PGO_WORKERS"); s != "" {
-		if i, err := strconv.Atoi(s); err == nil && i > 0 {
-			opts.MaxConcurrentReconciles = i
-		} else {
-			mgr.GetLogger().Error(err, "PGO_WORKERS must be a positive number")
-		}
-	}
-	if opts.MaxConcurrentReconciles == 0 {
-		opts.MaxConcurrentReconciles = 2
-	}
-
 	return builder.ControllerManagedBy(mgr).
 		For(&v1beta1.PostgresCluster{}).
-		WithOptions(opts).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Endpoints{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
