@@ -71,7 +71,8 @@ const (
 	// the Bridge Cluster. The Value assigned to the annotation must be the ID of existing cluster.
 	CrunchyBridgeClusterAdoptionAnnotation = annotationPrefix + "adopt-bridge-cluster"
 
-	// Starting with a true/false, but possibly change to a list of users?
-	// Doing this because changes to spec are worse to handle
+	// AutoCreateUserSchemaAnnotation is an annotation used to allow users to control whether the cluster
+	// has schemas automatically created for the users defined in `spec.users` for all of the databases
+	// listed for that user.
 	AutoCreateUserSchemaAnnotation = annotationPrefix + "autoCreateUserSchema"
 )

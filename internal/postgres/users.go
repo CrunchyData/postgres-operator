@@ -30,7 +30,7 @@ import (
 )
 
 var RESERVED_SCHEMA_NAMES = map[string]bool{
-	"public":    true,
+	"public":    true, // This is here for documentation; Postgres will reject a role named `public` as reserved
 	"pgbouncer": true,
 	"monitor":   true,
 }
