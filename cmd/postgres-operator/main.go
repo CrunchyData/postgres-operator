@@ -24,8 +24,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
-	cruntime "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/bridge/crunchybridgecluster"
@@ -62,6 +60,9 @@ func initLogging() {
 }
 
 func main() {
+	// This context is canceled by SIGINT, SIGTERM, or by calling shutdown.
+	ctx, shutdown := context.WithCancel(runtime.SignalHandler())
+
 	// Set any supplied feature gates; panic on any unrecognized feature gate
 	err := util.AddAndSetFeatureGates(os.Getenv("PGO_FEATURE_GATES"))
 	assertNoError(err)
@@ -72,9 +73,6 @@ func main() {
 
 	initLogging()
 
-	// create a context that will be used to stop all controllers on a SIGTERM or SIGINT
-	ctx := cruntime.SetupSignalHandler()
-	ctx, shutdown := context.WithCancel(ctx)
 	log := logging.FromContext(ctx)
 	log.V(1).Info("debug flag set to true")
 
@@ -136,7 +134,7 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr manager.Manager, openshift bool, log logging.Logger, reg registration.Registration) {
+func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:       mgr.GetClient(),
 		IsOpenShift:  openshift,
