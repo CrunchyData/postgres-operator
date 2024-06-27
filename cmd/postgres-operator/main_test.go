@@ -16,6 +16,7 @@ limitations under the License.
 package main
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -32,8 +33,21 @@ func TestInitManager(t *testing.T) {
 			assert.Equal(t, *options.Cache.SyncPeriod, time.Hour)
 		}
 
+		assert.DeepEqual(t, options.Controller.GroupKindConcurrency,
+			map[string]int{
+				"PostgresCluster.postgres-operator.crunchydata.com": 2,
+			})
+
 		assert.Assert(t, options.Cache.DefaultNamespaces == nil)
 		assert.Assert(t, options.LeaderElection == false)
+
+		{
+			options.Cache.SyncPeriod = nil
+			options.Controller.GroupKindConcurrency = nil
+
+			assert.Assert(t, reflect.ValueOf(options).IsZero(),
+				"expected remaining fields to be unset:\n%+v", options)
+		}
 	})
 
 	t.Run("PGO_CONTROLLER_LEASE_NAME", func(t *testing.T) {
@@ -72,5 +86,31 @@ func TestInitManager(t *testing.T) {
 		for k := range options.Cache.DefaultNamespaces {
 			assert.Equal(t, k, "some-such")
 		}
+	})
+
+	t.Run("PGO_WORKERS", func(t *testing.T) {
+		t.Run("Invalid", func(t *testing.T) {
+			for _, v := range []string{"-3", "0", "3.14"} {
+				t.Setenv("PGO_WORKERS", v)
+
+				options, err := initManager()
+				assert.NilError(t, err)
+				assert.DeepEqual(t, options.Controller.GroupKindConcurrency,
+					map[string]int{
+						"PostgresCluster.postgres-operator.crunchydata.com": 2,
+					})
+			}
+		})
+
+		t.Run("Valid", func(t *testing.T) {
+			t.Setenv("PGO_WORKERS", "19")
+
+			options, err := initManager()
+			assert.NilError(t, err)
+			assert.DeepEqual(t, options.Controller.GroupKindConcurrency,
+				map[string]int{
+					"PostgresCluster.postgres-operator.crunchydata.com": 19,
+				})
+		})
 	})
 }

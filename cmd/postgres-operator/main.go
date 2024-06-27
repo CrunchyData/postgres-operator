@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,6 +41,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/internal/util"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var versionString string
@@ -66,6 +68,8 @@ func initLogging() {
 //+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update}
 
 func initManager() (runtime.Options, error) {
+	log := logging.FromContext(context.Background())
+
 	options := runtime.Options{}
 	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
 
@@ -84,6 +88,18 @@ func initManager() (runtime.Options, error) {
 
 	if namespace := os.Getenv("PGO_TARGET_NAMESPACE"); len(namespace) > 0 {
 		options.Cache.DefaultNamespaces = map[string]runtime.CacheConfig{namespace: {}}
+	}
+
+	options.Controller.GroupKindConcurrency = map[string]int{
+		"PostgresCluster." + v1beta1.GroupVersion.Group: 2,
+	}
+
+	if s := os.Getenv("PGO_WORKERS"); s != "" {
+		if i, err := strconv.Atoi(s); err == nil && i > 0 {
+			options.Controller.GroupKindConcurrency["PostgresCluster."+v1beta1.GroupVersion.Group] = i
+		} else {
+			log.Error(err, "PGO_WORKERS must be a positive number")
+		}
 	}
 
 	return options, nil
