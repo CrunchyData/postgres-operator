@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -129,3 +130,6 @@ func addLeaderElectionOptions(opts manager.Options) (manager.Options, error) {
 
 	return opts, nil
 }
+
+// SetLogger assigns the default Logger used by [sigs.k8s.io/controller-runtime].
+func SetLogger(logger logging.Logger) { log.SetLogger(logger) }
