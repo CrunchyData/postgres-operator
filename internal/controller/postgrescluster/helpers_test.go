@@ -158,15 +158,15 @@ func testCluster() *v1beta1.PostgresCluster {
 // setupManager creates the runtime manager used during controller testing
 func setupManager(t *testing.T, cfg *rest.Config,
 	controllerSetup func(mgr manager.Manager)) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(context.Background())
 
-	mgr, err := runtime.CreateRuntimeManager("", cfg, true)
+	mgr, err := runtime.CreateRuntimeManager(ctx, "", cfg, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	controllerSetup(mgr)
 
-	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		if err := mgr.Start(ctx); err != nil {
 			t.Error(err)

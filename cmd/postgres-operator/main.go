@@ -91,7 +91,7 @@ func main() {
 	// deprecation warnings when using an older version of a resource for backwards compatibility).
 	rest.SetDefaultWarningHandler(rest.NoWarnings{})
 
-	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
+	mgr, err := runtime.CreateRuntimeManager(ctx, os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
 	assertNoError(err)
 
 	openshift := isOpenshift(cfg)
