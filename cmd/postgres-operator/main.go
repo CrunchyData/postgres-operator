@@ -21,7 +21,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"go.opentelemetry.io/otel"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
@@ -51,12 +50,15 @@ func assertNoError(err error) {
 }
 
 func initLogging() {
-	// Configure a singleton that treats logr.Logger.V(1) as logrus.DebugLevel.
+	// Configure a singleton that treats logging.Logger.V(1) as logrus.DebugLevel.
 	var verbosity int
 	if strings.EqualFold(os.Getenv("CRUNCHY_DEBUG"), "true") {
 		verbosity = 1
 	}
 	logging.SetLogSink(logging.Logrus(os.Stdout, versionString, 1, verbosity))
+
+	global := logging.FromContext(context.Background())
+	runtime.SetLogger(global)
 }
 
 func main() {
@@ -78,8 +80,6 @@ func main() {
 
 	log.Info("feature gates enabled",
 		"PGO_FEATURE_GATES", os.Getenv("PGO_FEATURE_GATES"))
-
-	cruntime.SetLogger(log)
 
 	cfg, err := runtime.GetConfig()
 	assertNoError(err)
@@ -136,7 +136,7 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr manager.Manager, openshift bool, log logr.Logger, reg registration.Registration) {
+func addControllersToManager(mgr manager.Manager, openshift bool, log logging.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:       mgr.GetClient(),
 		IsOpenShift:  openshift,
