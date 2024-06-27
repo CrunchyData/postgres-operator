@@ -89,6 +89,15 @@ rules:
   - patch
   - watch
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
+  - watch
+- apiGroups:
   - policy
   resources:
   - poddisruptionbudgets
