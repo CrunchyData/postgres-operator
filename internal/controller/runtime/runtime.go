@@ -30,10 +30,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+type Manager = manager.Manager
 
 // Scheme associates standard Kubernetes API objects and PGO API objects with Go structs.
 var Scheme *runtime.Scheme = runtime.NewScheme()
@@ -133,3 +136,6 @@ func addLeaderElectionOptions(opts manager.Options) (manager.Options, error) {
 
 // SetLogger assigns the default Logger used by [sigs.k8s.io/controller-runtime].
 func SetLogger(logger logging.Logger) { log.SetLogger(logger) }
+
+// SignalHandler returns a Context that is canceled on SIGINT or SIGTERM.
+func SignalHandler() context.Context { return signals.SetupSignalHandler() }
