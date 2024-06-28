@@ -174,7 +174,8 @@ SELECT pg_catalog.format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
 	// 	* the feature gate is enabled and
 	// 	* the cluster is annotated.
 	if util.DefaultMutableFeatureGate.Enabled(util.AutoCreateUserSchema) {
-		if _, annotationExists := cluster.Annotations[naming.AutoCreateUserSchemaAnnotation]; annotationExists {
+		autoCreateUserSchemaAnnotationValue, annotationExists := cluster.Annotations[naming.AutoCreateUserSchemaAnnotation]
+		if annotationExists && strings.EqualFold(autoCreateUserSchemaAnnotationValue, "true") {
 			log.V(1).Info("Writing schemas for users.")
 			err = WriteUsersSchemasInPostgreSQL(ctx, exec, users)
 		}
