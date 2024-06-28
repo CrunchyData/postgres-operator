@@ -17,11 +17,14 @@ limitations under the License.
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/otel"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 
@@ -31,6 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
@@ -57,6 +61,32 @@ func initLogging() {
 
 	global := logging.FromContext(context.Background())
 	runtime.SetLogger(global)
+}
+
+//+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update}
+
+func initManager() (runtime.Options, error) {
+	options := runtime.Options{}
+	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
+
+	// Enable leader elections when configured with a valid Lease.coordination.k8s.io name.
+	// - https://docs.k8s.io/concepts/architecture/leases
+	// - https://releases.k8s.io/v1.30.0/pkg/apis/coordination/validation/validation.go#L26
+	if lease := os.Getenv("PGO_CONTROLLER_LEASE_NAME"); len(lease) > 0 {
+		if errs := validation.IsDNS1123Subdomain(lease); len(errs) > 0 {
+			return options, fmt.Errorf("value for PGO_CONTROLLER_LEASE_NAME is invalid: %v", errs)
+		}
+
+		options.LeaderElection = true
+		options.LeaderElectionID = lease
+		options.LeaderElectionNamespace = os.Getenv("PGO_NAMESPACE")
+	}
+
+	if namespace := os.Getenv("PGO_TARGET_NAMESPACE"); len(namespace) > 0 {
+		options.Cache.DefaultNamespaces = map[string]runtime.CacheConfig{namespace: {}}
+	}
+
+	return options, nil
 }
 
 func main() {
@@ -89,7 +119,10 @@ func main() {
 	// deprecation warnings when using an older version of a resource for backwards compatibility).
 	rest.SetDefaultWarningHandler(rest.NoWarnings{})
 
-	mgr, err := runtime.CreateRuntimeManager(ctx, os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
+	options, err := initManager()
+	assertNoError(err)
+
+	mgr, err := runtime.NewManager(cfg, options)
 	assertNoError(err)
 
 	openshift := isOpenshift(cfg)

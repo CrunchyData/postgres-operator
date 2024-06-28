@@ -300,7 +300,7 @@ generate-rbac: ## Generate RBAC
 generate-rbac: tools/controller-gen
 	$(CONTROLLER) \
 		rbac:roleName='generated' \
-		paths='./internal/...' \
+		paths='./cmd/...' paths='./internal/...' \
 		output:dir='config/rbac' # ${directory}/role.yaml
 	./hack/generate-rbac.sh 'config/rbac'
 

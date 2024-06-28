@@ -160,7 +160,12 @@ func setupManager(t *testing.T, cfg *rest.Config,
 	controllerSetup func(mgr manager.Manager)) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	mgr, err := runtime.CreateRuntimeManager(ctx, "", cfg, true)
+	// Disable health endpoints
+	options := runtime.Options{}
+	options.HealthProbeBindAddress = "0"
+	options.Metrics.BindAddress = "0"
+
+	mgr, err := runtime.NewManager(cfg, options)
 	if err != nil {
 		t.Fatal(err)
 	}
