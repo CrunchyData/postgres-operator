@@ -17,13 +17,8 @@ package runtime
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"os"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -36,7 +31,11 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-type Manager = manager.Manager
+type (
+	CacheConfig = cache.Config
+	Manager     = manager.Manager
+	Options     = manager.Options
+)
 
 // Scheme associates standard Kubernetes API objects and PGO API objects with Go structs.
 var Scheme *runtime.Scheme = runtime.NewScheme()
@@ -50,88 +49,30 @@ func init() {
 	}
 }
 
-// default refresh interval in minutes
-var refreshInterval = 60 * time.Minute
-
-// CreateRuntimeManager creates a new controller runtime manager for the PostgreSQL Operator.  The
-// manager returned is configured specifically for the PostgreSQL Operator, and includes any
-// controllers that will be responsible for managing PostgreSQL clusters using the
-// 'postgrescluster' custom resource.  Additionally, the manager will only watch for resources in
-// the namespace specified, with an empty string resulting in the manager watching all namespaces.
-
-// +kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update}
-
-func CreateRuntimeManager(ctx context.Context, namespace string, config *rest.Config,
-	disableMetrics bool) (manager.Manager, error) {
-	log := log.FromContext(ctx)
-
-	// Watch all namespaces by default
-	options := manager.Options{
-		Cache: cache.Options{
-			SyncPeriod: &refreshInterval,
-		},
-
-		Scheme: Scheme,
-	}
-	// If namespace is not empty then add namespace to DefaultNamespaces
-	if len(namespace) > 0 {
-		options.Cache.DefaultNamespaces = map[string]cache.Config{
-			namespace: {},
-		}
-	}
-	if disableMetrics {
-		options.HealthProbeBindAddress = "0"
-		options.Metrics.BindAddress = "0"
-	}
-
-	// Add leader election options
-	options, err := addLeaderElectionOptions(options)
-	if err != nil {
-		return nil, err
-	} else {
-		log.Info("Leader election enabled.")
-	}
-
-	// create controller runtime manager
-	mgr, err := manager.New(config, options)
-	if err != nil {
-		return nil, err
-	}
-
-	return mgr, nil
-}
-
-// GetConfig creates a *rest.Config for talking to a Kubernetes API server.
+// GetConfig returns a Kubernetes client configuration from KUBECONFIG or the
+// service account Kubernetes gives to pods.
 func GetConfig() (*rest.Config, error) { return config.GetConfig() }
 
-// addLeaderElectionOptions takes the manager.Options as an argument and will
-// add leader election options if PGO_CONTROLLER_LEASE_NAME is set and valid.
-// If PGO_CONTROLLER_LEASE_NAME is not valid, the function will return the
-// original options and an error. If PGO_CONTROLLER_LEASE_NAME is not set at all,
-// the function will return the original options.
-func addLeaderElectionOptions(opts manager.Options) (manager.Options, error) {
-	errs := []error{}
+// NewManager returns a Manager that interacts with the Kubernetes API of config.
+// When config is nil, it reads from KUBECONFIG or the local service account.
+// When options.Scheme is nil, it uses the Scheme from this package.
+func NewManager(config *rest.Config, options manager.Options) (manager.Manager, error) {
+	var m manager.Manager
+	var err error
 
-	leaderLeaseName := os.Getenv("PGO_CONTROLLER_LEASE_NAME")
-	if len(leaderLeaseName) > 0 {
-		// If no errors are returned by IsDNS1123Subdomain(), turn on leader election,
-		// otherwise, return the errors
-		dnsSubdomainErrors := validation.IsDNS1123Subdomain(leaderLeaseName)
-		if len(dnsSubdomainErrors) == 0 {
-			opts.LeaderElection = true
-			opts.LeaderElectionNamespace = os.Getenv("PGO_NAMESPACE")
-			opts.LeaderElectionID = leaderLeaseName
-		} else {
-			for _, errString := range dnsSubdomainErrors {
-				err := errors.New(errString)
-				errs = append(errs, err)
-			}
-
-			return opts, fmt.Errorf("value for PGO_CONTROLLER_LEASE_NAME is invalid: %v", errs)
-		}
+	if config == nil {
+		config, err = GetConfig()
 	}
 
-	return opts, nil
+	if options.Scheme == nil {
+		options.Scheme = Scheme
+	}
+
+	if err == nil {
+		m, err = manager.New(config, options)
+	}
+
+	return m, err
 }
 
 // SetLogger assigns the default Logger used by [sigs.k8s.io/controller-runtime].
