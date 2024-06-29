@@ -345,16 +345,16 @@ loadServerCommand
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check mtimes.
 	// - https://unix.stackexchange.com/a/407383
 	var reloadScript = `
-exec {fd}<> <(:)
-while read -r -t 5 -u "${fd}" || true; do
-    if [ "${cluster_file}" -nt "/proc/self/fd/${fd}" ] && loadServerCommand
+exec {fd}<> <(:||:)
+while read -r -t 5 -u "${fd}" ||:; do
+    if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand
     then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded shared servers dated %y' "${cluster_file}"
     fi
-    if [ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]
+    if [[ ! -d /proc/$(cat $PGADMIN4_PIDFILE) ]]
     then
-        if [ $APP_RELEASE -eq 7 ]; then
+        if [[ $APP_RELEASE -eq 7 ]]; then
             ` + startCommandV7 + `
         else
             ` + startCommandV8 + `

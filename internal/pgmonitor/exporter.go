@@ -160,11 +160,11 @@ func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []stri
 
 		// Create a file descriptor with a no-op process that will not get
 		// cleaned up
-		`exec {fd}<> <(:)`,
+		`exec {fd}<> <(:||:)`,
 
 		// Set up loop. Use read's timeout setting instead of sleep,
 		// which uses up a lot of memory
-		`while read -r -t 3 -u "${fd}" || true; do`,
+		`while read -r -t 3 -u "${fd}" ||:; do`,
 
 		// If either directories' modify time is newer than our file descriptor's,
 		// something must have changed, so kill the postgres_exporter
@@ -174,14 +174,14 @@ func ExporterStartCommand(builtinCollectors bool, commandFlags ...string) []stri
 		// When something changes we want to get rid of the old file descriptor, get a fresh one
 		// and restart the loop
 		`    echo "Something changed..."`,
-		`    exec {fd}>&- && exec {fd}<> <(:)`,
+		`    exec {fd}>&- && exec {fd}<> <(:||:)`,
 		`    stat --format='Latest queries file dated %y' "/conf"`,
 		`    stat --format='Latest password file dated %y' "/opt/crunchy/password"`,
 		`  fi`,
 
 		// If postgres_exporter is not running, restart it
 		// Use the recorded pid as a proxy for checking if postgres_exporter is running
-		`  if [ ! -e /proc/$(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) ] ; then`,
+		`  if [[ ! -e /proc/$(head -1 ${POSTGRES_EXPORTER_PIDFILE?}) ]] ; then`,
 		`    start_postgres_exporter`,
 		`  fi`,
 		`done`,

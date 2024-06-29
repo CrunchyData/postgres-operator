@@ -708,21 +708,21 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   - --
   - |-
     monitor() {
-    exec {fd}<> <(:)
+    exec {fd}<> <(:||:)
     until read -r -t 5 -u "${fd}"; do
       if
-        [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+        [[ "${filename}" -nt "/proc/self/fd/${fd}" ]] &&
         pkill -HUP --exact --parent=0 pgbackrest
       then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --dereference --format='Loaded configuration dated %y' "${filename}"
       elif
-        { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
-          [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+        { [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] ||
+          [[ "${authority}" -nt "/proc/self/fd/${fd}" ]]
         } &&
         pkill -HUP --exact --parent=0 pgbackrest
       then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded certificates dated %y' "${directory}"
       fi
     done
@@ -820,21 +820,21 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   - --
   - |-
     monitor() {
-    exec {fd}<> <(:)
+    exec {fd}<> <(:||:)
     until read -r -t 5 -u "${fd}"; do
       if
-        [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+        [[ "${filename}" -nt "/proc/self/fd/${fd}" ]] &&
         pkill -HUP --exact --parent=0 pgbackrest
       then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --dereference --format='Loaded configuration dated %y' "${filename}"
       elif
-        { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
-          [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+        { [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] ||
+          [[ "${authority}" -nt "/proc/self/fd/${fd}" ]]
         } &&
         pkill -HUP --exact --parent=0 pgbackrest
       then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded certificates dated %y' "${directory}"
       fi
     done

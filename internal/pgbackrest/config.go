@@ -232,8 +232,8 @@ bash -xc "pgbackrest restore ${opts}"
 rm -f "${pgdata}/patroni.dynamic.json"
 export PGDATA="${pgdata}" PGHOST='/tmp'
 
-until [ "${recovery=}" = 'f' ]; do
-if [ -z "${recovery}" ]; then
+until [[ "${recovery=}" == 'f' ]]; do
+if [[ -z "${recovery}" ]]; then
 control=$(pg_controldata)
 read -r max_conn <<< "${control##*max_connections setting:}"
 read -r max_lock <<< "${control##*max_locks_per_xact setting:}"
@@ -253,7 +253,7 @@ unix_socket_directories = '/tmp'` +
 		ekc + `
 huge_pages = ` + hugePagesSetting + `
 EOF
-if [ "$(< "${pgdata}/PG_VERSION")" -ge 12 ]; then
+if [[ "$(< "${pgdata}/PG_VERSION")" -ge 12 ]]; then
 read -r max_wals <<< "${control##*max_wal_senders setting:}"
 echo >> /tmp/postgres.restore.conf "max_wal_senders = '${max_wals}'"
 fi
@@ -265,7 +265,7 @@ recovery=$(psql -Atc "SELECT CASE
   WHEN NOT pg_catalog.pg_is_in_recovery() THEN false
   WHEN NOT pg_catalog.pg_is_wal_replay_paused() THEN true
   ELSE pg_catalog.pg_wal_replay_resume()::text = ''
-END recovery" && sleep 1) || true
+END recovery" && sleep 1) ||:
 done
 
 pg_ctl stop --silent --wait --timeout=31536000
@@ -451,21 +451,21 @@ func reloadCommand(name string) []string {
 	// mtimes.
 	// - https://unix.stackexchange.com/a/407383
 	const script = `
-exec {fd}<> <(:)
+exec {fd}<> <(:||:)
 until read -r -t 5 -u "${fd}"; do
   if
-    [ "${filename}" -nt "/proc/self/fd/${fd}" ] &&
+    [[ "${filename}" -nt "/proc/self/fd/${fd}" ]] &&
     pkill -HUP --exact --parent=0 pgbackrest
   then
-    exec {fd}>&- && exec {fd}<> <(:)
+    exec {fd}>&- && exec {fd}<> <(:||:)
     stat --dereference --format='Loaded configuration dated %y' "${filename}"
   elif
-    { [ "${directory}" -nt "/proc/self/fd/${fd}" ] ||
-      [ "${authority}" -nt "/proc/self/fd/${fd}" ]
+    { [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] ||
+      [[ "${authority}" -nt "/proc/self/fd/${fd}" ]]
     } &&
     pkill -HUP --exact --parent=0 pgbackrest
   then
-    exec {fd}>&- && exec {fd}<> <(:)
+    exec {fd}>&- && exec {fd}<> <(:||:)
     stat --format='Loaded certificates dated %y' "${directory}"
   fi
 done
