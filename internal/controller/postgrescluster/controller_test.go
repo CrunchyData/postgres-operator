@@ -43,7 +43,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -142,9 +141,6 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		test.Namespace = &corev1.Namespace{}
 		test.Namespace.Name = "postgres-operator-test-" + rand.String(6)
 		Expect(suite.Client.Create(ctx, test.Namespace)).To(Succeed())
-
-		// Initialize the feature gate
-		Expect(util.AddAndSetFeatureGates("")).To(Succeed())
 
 		test.Recorder = record.NewFakeRecorder(100)
 		test.Recorder.IncludeObject = true

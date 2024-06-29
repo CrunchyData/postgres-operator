@@ -134,7 +134,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 	repoHostName string, repoResources *RepoResources,
 	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
 
-	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName, repoResources, observedInstances)
+	repo, err := r.generateRepoHostIntent(ctx, postgresCluster, repoHostName, repoResources, observedInstances)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +498,7 @@ func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
 // generateRepoHostIntent creates and populates StatefulSet with the PostgresCluster's full intent
 // as needed to create and reconcile a pgBackRest dedicated repository host within the kubernetes
 // cluster.
-func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresCluster,
+func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string, repoResources *RepoResources, observedInstances *observedInstances,
 ) (*appsv1.StatefulSet, error) {
 
@@ -613,7 +613,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	repo.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 
-	pgbackrest.AddServerToRepoPod(postgresCluster, &repo.Spec.Template.Spec)
+	pgbackrest.AddServerToRepoPod(ctx, postgresCluster, &repo.Spec.Template.Spec)
 
 	// add the init container to make the pgBackRest repo volume log directory
 	pgbackrest.MakePGBackrestLogDir(&repo.Spec.Template, postgresCluster)

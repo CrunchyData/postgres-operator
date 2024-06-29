@@ -35,12 +35,12 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -109,10 +109,6 @@ func main() {
 	// This context is canceled by SIGINT, SIGTERM, or by calling shutdown.
 	ctx, shutdown := context.WithCancel(runtime.SignalHandler())
 
-	// Set any supplied feature gates; panic on any unrecognized feature gate
-	err := util.AddAndSetFeatureGates(os.Getenv("PGO_FEATURE_GATES"))
-	assertNoError(err)
-
 	otelFlush, err := initOpenTelemetry()
 	assertNoError(err)
 	defer otelFlush()
@@ -122,8 +118,9 @@ func main() {
 	log := logging.FromContext(ctx)
 	log.V(1).Info("debug flag set to true")
 
-	log.Info("feature gates enabled",
-		"PGO_FEATURE_GATES", os.Getenv("PGO_FEATURE_GATES"))
+	features := feature.NewGate()
+	assertNoError(features.Set(os.Getenv("PGO_FEATURE_GATES")))
+	log.Info("feature gates enabled", "PGO_FEATURE_GATES", features.String())
 
 	cfg, err := runtime.GetConfig()
 	assertNoError(err)
@@ -137,6 +134,14 @@ func main() {
 
 	options, err := initManager()
 	assertNoError(err)
+
+	// Add to the Context that Manager passes to Reconciler.Start, Runnable.Start,
+	// and eventually Reconciler.Reconcile.
+	options.BaseContext = func() context.Context {
+		ctx := context.Background()
+		ctx = feature.NewContext(ctx, features)
+		return ctx
+	}
 
 	mgr, err := runtime.NewManager(cfg, options)
 	assertNoError(err)
@@ -154,7 +159,7 @@ func main() {
 	// add all PostgreSQL Operator controllers to the runtime manager
 	addControllersToManager(mgr, openshift, log, registrar)
 
-	if util.DefaultMutableFeatureGate.Enabled(util.BridgeIdentifiers) {
+	if features.Enabled(feature.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
 			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
 			client.Transport = otelTransportWrapper()(http.DefaultTransport)

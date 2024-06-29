@@ -23,9 +23,9 @@ import (
 
 	pg_query "github.com/pganalyze/pg_query_go/v5"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -173,7 +173,7 @@ SELECT pg_catalog.format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
 	// The operator will attemtp to write schemas for the users in the spec if
 	// 	* the feature gate is enabled and
 	// 	* the cluster is annotated.
-	if util.DefaultMutableFeatureGate.Enabled(util.AutoCreateUserSchema) {
+	if feature.Enabled(ctx, feature.AutoCreateUserSchema) {
 		autoCreateUserSchemaAnnotationValue, annotationExists := cluster.Annotations[naming.AutoCreateUserSchemaAnnotation]
 		if annotationExists && strings.EqualFold(autoCreateUserSchemaAnnotationValue, "true") {
 			log.V(1).Info("Writing schemas for users.")
