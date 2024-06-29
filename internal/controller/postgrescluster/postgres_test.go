@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -41,7 +42,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -430,11 +430,9 @@ volumeMode: Filesystem
 }
 
 func TestSetVolumeSize(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
-
-	// Initialize the feature gate
-	assert.NilError(t, util.AddAndSetFeatureGates(""))
-
 	cluster := v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "elephant",
@@ -554,54 +552,58 @@ resources:
 		cluster.Status = v1beta1.PostgresClusterStatus{}
 	})
 
-	t.Run("StatusNoLimit", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
+	t.Run("FeatureEnabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.AutoGrowVolumes: true,
+		}))
+		ctx := feature.NewContext(ctx, gate)
 
-		// only need to set once for this and remaining tests
-		assert.NilError(t, util.AddAndSetFeatureGates(string(util.AutoGrowVolumes+"=true")))
+		t.Run("StatusNoLimit", func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
 
-		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
-		spec := &v1beta1.PostgresInstanceSetSpec{
-			Name: "some-instance",
-			DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
-				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-				Resources: corev1.VolumeResourceRequirements{
-					Requests: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceStorage: resource.MustParse("1Gi"),
-					}}}}
-		cluster.Status = desiredStatus("2Gi")
-		pvc.Spec = spec.DataVolumeClaimSpec
+			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+			spec := &v1beta1.PostgresInstanceSetSpec{
+				Name: "some-instance",
+				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.VolumeResourceRequirements{
+						Requests: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceStorage: resource.MustParse("1Gi"),
+						}}}}
+			cluster.Status = desiredStatus("2Gi")
+			pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
   requests:
     storage: 1Gi
 `))
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 0)
+			assert.Equal(t, len(recorder.Events), 0)
+			assert.Equal(t, len(*logs), 0)
 
-		// clear status for other tests
-		cluster.Status = v1beta1.PostgresClusterStatus{}
-	})
+			// clear status for other tests
+			cluster.Status = v1beta1.PostgresClusterStatus{}
+		})
 
-	t.Run("LimitNoStatus", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
+		t.Run("LimitNoStatus", func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
 
-		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
-		spec := instanceSetSpec("1Gi", "2Gi")
-		pvc.Spec = spec.DataVolumeClaimSpec
+			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+			spec := instanceSetSpec("1Gi", "2Gi")
+			pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -610,23 +612,23 @@ resources:
   requests:
     storage: 1Gi
 `))
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 0)
-	})
+			assert.Equal(t, len(recorder.Events), 0)
+			assert.Equal(t, len(*logs), 0)
+		})
 
-	t.Run("BadStatusWithLimit", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
+		t.Run("BadStatusWithLimit", func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
 
-		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
-		spec := instanceSetSpec("1Gi", "3Gi")
-		cluster.Status = desiredStatus("NotAValidValue")
-		pvc.Spec = spec.DataVolumeClaimSpec
+			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+			spec := instanceSetSpec("1Gi", "3Gi")
+			cluster.Status = desiredStatus("NotAValidValue")
+			pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -636,24 +638,24 @@ resources:
     storage: 1Gi
 `))
 
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse volume request: NotAValidValue"))
-	})
+			assert.Equal(t, len(recorder.Events), 0)
+			assert.Equal(t, len(*logs), 1)
+			assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse volume request: NotAValidValue"))
+		})
 
-	t.Run("StatusWithLimit", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
+		t.Run("StatusWithLimit", func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
 
-		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
-		spec := instanceSetSpec("1Gi", "3Gi")
-		cluster.Status = desiredStatus("2Gi")
-		pvc.Spec = spec.DataVolumeClaimSpec
+			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+			spec := instanceSetSpec("1Gi", "3Gi")
+			cluster.Status = desiredStatus("2Gi")
+			pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -662,23 +664,23 @@ resources:
   requests:
     storage: 2Gi
 `))
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 0)
-	})
+			assert.Equal(t, len(recorder.Events), 0)
+			assert.Equal(t, len(*logs), 0)
+		})
 
-	t.Run("StatusWithLimitGrowToLimit", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
+		t.Run("StatusWithLimitGrowToLimit", func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
 
-		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
-		spec := instanceSetSpec("1Gi", "2Gi")
-		cluster.Status = desiredStatus("2Gi")
-		pvc.Spec = spec.DataVolumeClaimSpec
+			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+			spec := instanceSetSpec("1Gi", "2Gi")
+			cluster.Status = desiredStatus("2Gi")
+			pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -688,26 +690,26 @@ resources:
     storage: 2Gi
 `))
 
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
-		assert.Equal(t, recorder.Events[0].Note, "pgData volume(s) for elephant/some-instance are at size limit (2Gi).")
-	})
+			assert.Equal(t, len(*logs), 0)
+			assert.Equal(t, len(recorder.Events), 1)
+			assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+			assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
+			assert.Equal(t, recorder.Events[0].Note, "pgData volume(s) for elephant/some-instance are at size limit (2Gi).")
+		})
 
-	t.Run("DesiredStatusOverLimit", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
+		t.Run("DesiredStatusOverLimit", func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
 
-		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
-		spec := instanceSetSpec("4Gi", "5Gi")
-		cluster.Status = desiredStatus("10Gi")
-		pvc.Spec = spec.DataVolumeClaimSpec
+			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+			spec := instanceSetSpec("4Gi", "5Gi")
+			cluster.Status = desiredStatus("10Gi")
+			pvc.Spec = spec.DataVolumeClaimSpec
 
-		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
+			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, marshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -717,25 +719,26 @@ resources:
     storage: 5Gi
 `))
 
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 2)
-		var found1, found2 bool
-		for _, event := range recorder.Events {
-			if event.Reason == "VolumeLimitReached" {
-				found1 = true
-				assert.Equal(t, event.Regarding.Name, cluster.Name)
-				assert.Equal(t, event.Note, "pgData volume(s) for elephant/some-instance are at size limit (5Gi).")
+			assert.Equal(t, len(*logs), 0)
+			assert.Equal(t, len(recorder.Events), 2)
+			var found1, found2 bool
+			for _, event := range recorder.Events {
+				if event.Reason == "VolumeLimitReached" {
+					found1 = true
+					assert.Equal(t, event.Regarding.Name, cluster.Name)
+					assert.Equal(t, event.Note, "pgData volume(s) for elephant/some-instance are at size limit (5Gi).")
+				}
+				if event.Reason == "DesiredVolumeAboveLimit" {
+					found2 = true
+					assert.Equal(t, event.Regarding.Name, cluster.Name)
+					assert.Equal(t, event.Note,
+						"The desired size (10Gi) for the elephant/some-instance pgData volume(s) is greater than the size limit (5Gi).")
+				}
 			}
-			if event.Reason == "DesiredVolumeAboveLimit" {
-				found2 = true
-				assert.Equal(t, event.Regarding.Name, cluster.Name)
-				assert.Equal(t, event.Note,
-					"The desired size (10Gi) for the elephant/some-instance pgData volume(s) is greater than the size limit (5Gi).")
-			}
-		}
-		assert.Assert(t, found1 && found2)
-	})
+			assert.Assert(t, found1 && found2)
+		})
 
+	})
 }
 
 func TestReconcileDatabaseInitSQL(t *testing.T) {

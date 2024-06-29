@@ -22,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -207,7 +207,7 @@ func InstancePod(ctx context.Context,
 	startup := corev1.Container{
 		Name: naming.ContainerPostgresStartup,
 
-		Command: startupCommand(inCluster, inInstanceSpec),
+		Command: startupCommand(ctx, inCluster, inInstanceSpec),
 		Env:     Environment(inCluster),
 
 		Image:           container.Image,
@@ -276,7 +276,7 @@ func InstancePod(ctx context.Context,
 
 	// If the InstanceSidecars feature gate is enabled and instance sidecars are
 	// defined, add the defined container to the Pod.
-	if util.DefaultMutableFeatureGate.Enabled(util.InstanceSidecars) &&
+	if feature.Enabled(ctx, feature.InstanceSidecars) &&
 		inInstanceSpec.Containers != nil {
 		outInstancePod.Containers = append(outInstancePod.Containers, inInstanceSpec.Containers...)
 	}
