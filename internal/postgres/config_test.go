@@ -17,6 +17,7 @@ package postgres
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -31,7 +32,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -466,13 +466,14 @@ func TestBashSafeLink(t *testing.T) {
 
 func TestStartupCommand(t *testing.T) {
 	shellcheck := require.ShellCheck(t)
+	t.Parallel()
 
-	assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=false")))
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Spec.PostgresVersion = 13
 	instance := new(v1beta1.PostgresInstanceSetSpec)
 
-	command := startupCommand(cluster, instance)
+	ctx := context.Background()
+	command := startupCommand(ctx, cluster, instance)
 
 	// Expect a bash command with an inline script.
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
@@ -507,7 +508,7 @@ func TestStartupCommand(t *testing.T) {
 				},
 			},
 		}
-		command := startupCommand(cluster, instance)
+		command := startupCommand(ctx, cluster, instance)
 		assert.Assert(t, len(command) > 3)
 		assert.Assert(t, strings.Contains(command[3], `cat << "EOF" > /tmp/pg_rewind_tde.sh
 #!/bin/sh

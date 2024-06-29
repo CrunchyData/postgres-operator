@@ -16,14 +16,15 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -224,6 +225,7 @@ done
 // startupCommand returns an entrypoint that prepares the filesystem for
 // PostgreSQL.
 func startupCommand(
+	ctx context.Context,
 	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
 ) []string {
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
@@ -232,7 +234,7 @@ func startupCommand(
 	// If the user requests tablespaces, we want to make sure the directories exist with the
 	// correct owner and permissions.
 	tablespaceCmd := ""
-	if util.DefaultMutableFeatureGate.Enabled(util.TablespaceVolumes) {
+	if feature.Enabled(ctx, feature.TablespaceVolumes) {
 		// This command checks if a dir exists and if not, creates it;
 		// if the dir does exist, then we `recreate` it to make sure the owner is correct;
 		// if the dir exists with the wrong owner and is not writeable, we error.

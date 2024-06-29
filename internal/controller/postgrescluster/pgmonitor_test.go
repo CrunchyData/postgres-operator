@@ -31,15 +31,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-func testExporterCollectorsAnnotation(t *testing.T, cluster *v1beta1.PostgresCluster, queriesConfig, webConfig *corev1.ConfigMap) {
+func testExporterCollectorsAnnotation(t *testing.T, ctx context.Context, cluster *v1beta1.PostgresCluster, queriesConfig, webConfig *corev1.ConfigMap) {
 	t.Helper()
 
 	t.Run("ExporterCollectorsAnnotation", func(t *testing.T) {
@@ -50,7 +50,7 @@ func testExporterCollectorsAnnotation(t *testing.T, cluster *v1beta1.PostgresClu
 				naming.PostgresExporterCollectorsAnnotation: "wrong-value",
 			})
 
-			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, queriesConfig, webConfig))
+			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig))
 
 			assert.Equal(t, len(template.Spec.Containers), 1)
 			container := template.Spec.Containers[0]
@@ -67,7 +67,7 @@ func testExporterCollectorsAnnotation(t *testing.T, cluster *v1beta1.PostgresClu
 				naming.PostgresExporterCollectorsAnnotation: "None",
 			})
 
-			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, queriesConfig, webConfig))
+			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig))
 
 			assert.Equal(t, len(template.Spec.Containers), 1)
 			container := template.Spec.Containers[0]
@@ -82,7 +82,7 @@ func testExporterCollectorsAnnotation(t *testing.T, cluster *v1beta1.PostgresClu
 					naming.PostgresExporterCollectorsAnnotation: "none",
 				})
 
-				assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, queriesConfig, webConfig))
+				assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig))
 				assert.Assert(t, cmp.Contains(strings.Join(template.Spec.Containers[0].Command, "\n"), "--[no-]collector"))
 			})
 		})
@@ -90,6 +90,9 @@ func testExporterCollectorsAnnotation(t *testing.T, cluster *v1beta1.PostgresClu
 }
 
 func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
 	image := "test/image:tag"
 
 	cluster := &v1beta1.PostgresCluster{}
@@ -108,13 +111,11 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		template := &corev1.PodTemplateSpec{}
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, nil, nil))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, nil, nil))
 		assert.DeepEqual(t, template, &corev1.PodTemplateSpec{})
 	})
 
 	t.Run("ExporterEnabled", func(t *testing.T) {
-		assert.NilError(t, util.AddAndSetFeatureGates(string(util.AppendCustomQueries+"=false")))
-
 		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
 			PGMonitor: &v1beta1.PGMonitorSpec{
 				Exporter: &v1beta1.ExporterSpec{
@@ -131,7 +132,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 			},
 		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, nil))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil))
 
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
@@ -189,12 +190,10 @@ volumeMounts:
     secretName: pg1-monitoring
 		`))
 
-		testExporterCollectorsAnnotation(t, cluster, exporterQueriesConfig, nil)
+		testExporterCollectorsAnnotation(t, ctx, cluster, exporterQueriesConfig, nil)
 	})
 
 	t.Run("CustomConfigAppendCustomQueriesOff", func(t *testing.T) {
-		assert.NilError(t, util.AddAndSetFeatureGates(string(util.AppendCustomQueries+"=false")))
-
 		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
 			PGMonitor: &v1beta1.PGMonitorSpec{
 				Exporter: &v1beta1.ExporterSpec{
@@ -217,7 +216,7 @@ volumeMounts:
 			},
 		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, nil))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil))
 
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
@@ -239,7 +238,11 @@ name: exporter-config
 	})
 
 	t.Run("CustomConfigAppendCustomQueriesOn", func(t *testing.T) {
-		assert.NilError(t, util.AddAndSetFeatureGates(string(util.AppendCustomQueries+"=true")))
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.AppendCustomQueries: true,
+		}))
+		ctx := feature.NewContext(ctx, gate)
 
 		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
 			PGMonitor: &v1beta1.PGMonitorSpec{
@@ -263,7 +266,7 @@ name: exporter-config
 			},
 		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, nil))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil))
 
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
@@ -287,8 +290,6 @@ name: exporter-config
 	})
 
 	t.Run("CustomTLS", func(t *testing.T) {
-		assert.NilError(t, util.AddAndSetFeatureGates(string(util.AppendCustomQueries+"=false")))
-
 		cluster.Spec.Monitoring = &v1beta1.MonitoringSpec{
 			PGMonitor: &v1beta1.PGMonitorSpec{
 				Exporter: &v1beta1.ExporterSpec{
@@ -311,7 +312,7 @@ name: exporter-config
 		testConfigMap := new(corev1.ConfigMap)
 		testConfigMap.Name = "test-web-conf"
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, testConfigMap))
+		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, testConfigMap))
 
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
@@ -340,7 +341,7 @@ name: exporter-config
 		assert.Assert(t, cmp.Contains(command, "postgres_exporter"))
 		assert.Assert(t, cmp.Contains(command, "--web.config.file"))
 
-		testExporterCollectorsAnnotation(t, cluster, exporterQueriesConfig, testConfigMap)
+		testExporterCollectorsAnnotation(t, ctx, cluster, exporterQueriesConfig, testConfigMap)
 	})
 }
 
