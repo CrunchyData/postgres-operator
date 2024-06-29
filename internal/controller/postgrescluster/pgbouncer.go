@@ -357,7 +357,7 @@ func (r *Reconciler) reconcilePGBouncerService(
 
 // generatePGBouncerDeployment returns an appsv1.Deployment that runs PgBouncer pods.
 func (r *Reconciler) generatePGBouncerDeployment(
-	cluster *v1beta1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	primaryCertificate *corev1.SecretProjection,
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
 ) (*appsv1.Deployment, bool, error) {
@@ -461,7 +461,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	err := errors.WithStack(r.setControllerReference(cluster, deploy))
 
 	if err == nil {
-		pgbouncer.Pod(cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)
+		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)
 	}
 
 	return deploy, true, err
@@ -477,7 +477,7 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
 ) error {
 	deploy, specified, err := r.generatePGBouncerDeployment(
-		cluster, primaryCertificate, configmap, secret)
+		ctx, cluster, primaryCertificate, configmap, secret)
 
 	// Set observations whether the deployment exists or not.
 	defer func() {

@@ -24,11 +24,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -289,6 +289,7 @@ func addConfigVolumeAndMounts(
 // addServerContainerAndVolume adds the TLS server container and certificate
 // projections to pod. Any PostgreSQL data and WAL volumes in pod are also mounted.
 func addServerContainerAndVolume(
+	ctx context.Context,
 	cluster *v1beta1.PostgresCluster, pod *corev1.PodSpec,
 	certificates []corev1.VolumeProjection, resources *corev1.ResourceRequirements,
 ) {
@@ -332,7 +333,7 @@ func addServerContainerAndVolume(
 		postgres.DataVolumeMount().Name: postgres.DataVolumeMount(),
 		postgres.WALVolumeMount().Name:  postgres.WALVolumeMount(),
 	}
-	if util.DefaultMutableFeatureGate.Enabled(util.TablespaceVolumes) {
+	if feature.Enabled(ctx, feature.TablespaceVolumes) {
 		for _, instance := range cluster.Spec.InstanceSets {
 			for _, vol := range instance.TablespaceVolumes {
 				tablespaceVolumeMount := postgres.TablespaceVolumeMount(vol.Name)
@@ -370,6 +371,7 @@ func addServerContainerAndVolume(
 // AddServerToInstancePod adds the TLS server container and volume to pod for
 // an instance of cluster. Any PostgreSQL volumes must already be in pod.
 func AddServerToInstancePod(
+	ctx context.Context,
 	cluster *v1beta1.PostgresCluster, pod *corev1.PodSpec,
 	instanceCertificateSecretName string,
 ) {
@@ -387,12 +389,13 @@ func AddServerToInstancePod(
 		resources = sidecars.PGBackRest.Resources
 	}
 
-	addServerContainerAndVolume(cluster, pod, certificates, resources)
+	addServerContainerAndVolume(ctx, cluster, pod, certificates, resources)
 }
 
 // AddServerToRepoPod adds the TLS server container and volume to pod for
 // the dedicated repository host of cluster.
 func AddServerToRepoPod(
+	ctx context.Context,
 	cluster *v1beta1.PostgresCluster, pod *corev1.PodSpec,
 ) {
 	certificates := []corev1.VolumeProjection{{
@@ -409,7 +412,7 @@ func AddServerToRepoPod(
 		resources = &cluster.Spec.Backups.PGBackRest.RepoHost.Resources
 	}
 
-	addServerContainerAndVolume(cluster, pod, certificates, resources)
+	addServerContainerAndVolume(ctx, cluster, pod, certificates, resources)
 }
 
 // InstanceCertificates populates the shared Secret with certificates needed to run pgBackRest.

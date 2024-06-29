@@ -23,11 +23,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -114,6 +114,7 @@ func Secret(ctx context.Context,
 
 // Pod populates a PodSpec with the container and volumes needed to run PgBouncer.
 func Pod(
+	ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	inConfigMap *corev1.ConfigMap,
 	inPostgreSQLCertificate *corev1.SecretProjection,
@@ -191,7 +192,7 @@ func Pod(
 
 	// If the PGBouncerSidecars feature gate is enabled and custom pgBouncer
 	// sidecars are defined, add the defined container to the Pod.
-	if util.DefaultMutableFeatureGate.Enabled(util.PGBouncerSidecars) &&
+	if feature.Enabled(ctx, feature.PGBouncerSidecars) &&
 		inCluster.Spec.Proxy.PGBouncer.Containers != nil {
 		outPod.Containers = append(outPod.Containers, inCluster.Spec.Proxy.PGBouncer.Containers...)
 	}

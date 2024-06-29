@@ -28,9 +28,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -551,6 +551,9 @@ func TestAddConfigToRestorePod(t *testing.T) {
 }
 
 func TestAddServerToInstancePod(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
 	cluster := v1beta1.PostgresCluster{}
 	cluster.Name = "hippo"
 	cluster.Default()
@@ -568,7 +571,6 @@ func TestAddServerToInstancePod(t *testing.T) {
 	}
 
 	t.Run("CustomResources", func(t *testing.T) {
-		assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=false")))
 		cluster := cluster.DeepCopy()
 		cluster.Spec.Backups.PGBackRest.Sidecars = &v1beta1.PGBackRestSidecars{
 			PGBackRest: &v1beta1.Sidecar{
@@ -588,7 +590,7 @@ func TestAddServerToInstancePod(t *testing.T) {
 		}
 
 		out := pod.DeepCopy()
-		AddServerToInstancePod(cluster, out, "instance-secret-name")
+		AddServerToInstancePod(ctx, cluster, out, "instance-secret-name")
 
 		// Only Containers and Volumes fields have changed.
 		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
@@ -700,7 +702,12 @@ func TestAddServerToInstancePod(t *testing.T) {
 	})
 
 	t.Run("AddTablespaces", func(t *testing.T) {
-		assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=true")))
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.TablespaceVolumes: true,
+		}))
+		ctx := feature.NewContext(ctx, gate)
+
 		clusterWithTablespaces := cluster.DeepCopy()
 		clusterWithTablespaces.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{
 			{
@@ -713,7 +720,7 @@ func TestAddServerToInstancePod(t *testing.T) {
 
 		out := pod.DeepCopy()
 		out.Volumes = append(out.Volumes, corev1.Volume{Name: "tablespace-trial"}, corev1.Volume{Name: "tablespace-castle"})
-		AddServerToInstancePod(clusterWithTablespaces, out, "instance-secret-name")
+		AddServerToInstancePod(ctx, clusterWithTablespaces, out, "instance-secret-name")
 
 		// Only Containers and Volumes fields have changed.
 		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
@@ -804,6 +811,9 @@ func TestAddServerToInstancePod(t *testing.T) {
 }
 
 func TestAddServerToRepoPod(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
 	cluster := v1beta1.PostgresCluster{}
 	cluster.Name = "hippo"
 	cluster.Default()
@@ -834,7 +844,7 @@ func TestAddServerToRepoPod(t *testing.T) {
 		}
 
 		out := pod.DeepCopy()
-		AddServerToRepoPod(cluster, out)
+		AddServerToRepoPod(ctx, cluster, out)
 
 		// Only Containers and Volumes fields have changed.
 		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))

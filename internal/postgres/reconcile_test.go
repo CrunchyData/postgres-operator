@@ -23,9 +23,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -70,11 +70,9 @@ func TestTablespaceVolumeMount(t *testing.T) {
 }
 
 func TestInstancePod(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
-
-	// Initialize the feature gate
-	assert.NilError(t, util.AddAndSetFeatureGates(""))
-
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	cluster.Spec.ImagePullPolicy = corev1.PullAlways
@@ -539,7 +537,12 @@ volumes:
 		})
 
 		t.Run("SidecarEnabled", func(t *testing.T) {
-			assert.NilError(t, util.AddAndSetFeatureGates(string(util.InstanceSidecars+"=true")))
+			gate := feature.NewGate()
+			assert.NilError(t, gate.SetFromMap(map[string]bool{
+				feature.InstanceSidecars: true,
+			}))
+			ctx := feature.NewContext(ctx, gate)
+
 			InstancePod(ctx, cluster, sidecarInstance,
 				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 

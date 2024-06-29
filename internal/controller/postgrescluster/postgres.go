@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -659,7 +660,7 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 			corev1.ResourceStorage: *resource.NewQuantity(volumeLimitFromSpec.Value(), resource.BinarySI),
 		}
 		// Otherwise, if the limit is not set or the feature gate is not enabled, do not autogrow.
-	} else if !volumeLimitFromSpec.IsZero() && util.DefaultMutableFeatureGate.Enabled(util.AutoGrowVolumes) {
+	} else if !volumeLimitFromSpec.IsZero() && feature.Enabled(ctx, feature.AutoGrowVolumes) {
 		for i := range cluster.Status.InstanceSets {
 			if instanceSpecName == cluster.Status.InstanceSets[i].Name {
 				for _, dpv := range cluster.Status.InstanceSets[i].DesiredPGDataVolume {
@@ -713,7 +714,7 @@ func (r *Reconciler) reconcileTablespaceVolumes(
 	clusterVolumes []corev1.PersistentVolumeClaim,
 ) (tablespaceVolumes []*corev1.PersistentVolumeClaim, err error) {
 
-	if !util.DefaultMutableFeatureGate.Enabled(util.TablespaceVolumes) {
+	if !feature.Enabled(ctx, feature.TablespaceVolumes) {
 		return
 	}
 

@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -240,11 +241,12 @@ func (r *Reconciler) reconcileMonitoringSecret(
 // addPGMonitorToInstancePodSpec performs the necessary setup to add
 // pgMonitor resources on a PodTemplateSpec
 func addPGMonitorToInstancePodSpec(
+	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	template *corev1.PodTemplateSpec,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
 
-	err := addPGMonitorExporterToInstancePodSpec(cluster, template, exporterQueriesConfig, exporterWebConfig)
+	err := addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, exporterWebConfig)
 
 	return err
 }
@@ -255,6 +257,7 @@ func addPGMonitorToInstancePodSpec(
 // the exporter container cannot be created; Testing relies on ensuring the
 // monitoring secret is available
 func addPGMonitorExporterToInstancePodSpec(
+	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	template *corev1.PodTemplateSpec,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
@@ -323,7 +326,7 @@ func addPGMonitorExporterToInstancePodSpec(
 	// Therefore, we only want to add the default queries ConfigMap as a source for the
 	// "exporter-config" volume if the AppendCustomQueries feature gate is turned on OR if the
 	// user has not provided any custom configuration.
-	if util.DefaultMutableFeatureGate.Enabled(util.AppendCustomQueries) ||
+	if feature.Enabled(ctx, feature.AppendCustomQueries) ||
 		cluster.Spec.Monitoring.PGMonitor.Exporter.Configuration == nil {
 
 		defaultConfigVolumeProjection := corev1.VolumeProjection{

@@ -52,7 +52,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -536,8 +535,9 @@ func TestWritablePod(t *testing.T) {
 }
 
 func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
-	assert.NilError(t, util.AddAndSetFeatureGates(string(util.TablespaceVolumes+"=false")))
+	t.Parallel()
 
+	ctx := context.Background()
 	cluster := v1beta1.PostgresCluster{}
 	cluster.Name = "hippo"
 	cluster.Default()
@@ -562,7 +562,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		cluster.Spec.Backups.PGBackRest.Repos = nil
 
 		out := pod.DeepCopy()
-		addPGBackRestToInstancePodSpec(cluster, &certificates, out)
+		addPGBackRestToInstancePodSpec(ctx, cluster, &certificates, out)
 
 		// Only Containers and Volumes fields have changed.
 		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
@@ -657,7 +657,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		}
 
 		out := pod.DeepCopy()
-		addPGBackRestToInstancePodSpec(cluster, &certificates, out)
+		addPGBackRestToInstancePodSpec(ctx, cluster, &certificates, out)
 		alwaysExpect(t, out)
 
 		// The TLS server is added and configuration mounted.
@@ -769,7 +769,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 			before := out.DeepCopy()
 			out := pod.DeepCopy()
-			addPGBackRestToInstancePodSpec(cluster, &certificates, out)
+			addPGBackRestToInstancePodSpec(ctx, cluster, &certificates, out)
 			alwaysExpect(t, out)
 
 			// Only the TLS server container changed.
@@ -1252,9 +1252,6 @@ func TestDeleteInstance(t *testing.T) {
 		Recorder: new(record.FakeRecorder),
 		Tracer:   otel.Tracer(t.Name()),
 	}
-
-	// Initialize the feature gate
-	assert.NilError(t, util.AddAndSetFeatureGates(""))
 
 	// Define, Create, and Reconcile a cluster to get an instance running in kube
 	cluster := testCluster()

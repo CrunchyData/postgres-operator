@@ -40,6 +40,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -47,7 +48,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -305,7 +305,7 @@ func (r *Reconciler) observeInstances(
 	pods := &corev1.PodList{}
 	runners := &appsv1.StatefulSetList{}
 
-	autogrow := util.DefaultMutableFeatureGate.Enabled(util.AutoGrowVolumes)
+	autogrow := feature.Enabled(ctx, feature.AutoGrowVolumes)
 
 	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 	if err == nil {
@@ -1199,7 +1199,7 @@ func (r *Reconciler) reconcileInstance(
 			&instance.Spec.Template.Spec)
 
 		addPGBackRestToInstancePodSpec(
-			cluster, instanceCertificates, &instance.Spec.Template.Spec)
+			ctx, cluster, instanceCertificates, &instance.Spec.Template.Spec)
 
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
@@ -1208,7 +1208,7 @@ func (r *Reconciler) reconcileInstance(
 
 	// Add pgMonitor resources to the instance Pod spec
 	if err == nil {
-		err = addPGMonitorToInstancePodSpec(cluster, &instance.Spec.Template, exporterQueriesConfig, exporterWebConfig)
+		err = addPGMonitorToInstancePodSpec(ctx, cluster, &instance.Spec.Template, exporterQueriesConfig, exporterWebConfig)
 	}
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
@@ -1372,11 +1372,12 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 
 // addPGBackRestToInstancePodSpec adds pgBackRest configurations and sidecars
 // to the PodSpec.
-func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
+func addPGBackRestToInstancePodSpec(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceCertificates *corev1.Secret, instancePod *corev1.PodSpec,
 ) {
 	if pgbackrest.DedicatedRepoHostEnabled(cluster) {
-		pgbackrest.AddServerToInstancePod(cluster, instancePod,
+		pgbackrest.AddServerToInstancePod(ctx, cluster, instancePod,
 			instanceCertificates.Name)
 	}
 
