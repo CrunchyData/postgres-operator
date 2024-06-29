@@ -160,11 +160,11 @@ containers:
   - --
   - |-
     monitor() {
-    exec {fd}<> <(:)
-    while read -r -t 5 -u "${fd}" || true; do
-      if [ "${directory}" -nt "/proc/self/fd/${fd}" ] && pkill -HUP --exact pgbouncer
+    exec {fd}<> <(:||:)
+    while read -r -t 5 -u "${fd}" ||:; do
+      if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && pkill -HUP --exact pgbouncer
       then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded configuration dated %y' "${directory}"
       fi
     done
@@ -274,11 +274,11 @@ containers:
   - --
   - |-
     monitor() {
-    exec {fd}<> <(:)
-    while read -r -t 5 -u "${fd}" || true; do
-      if [ "${directory}" -nt "/proc/self/fd/${fd}" ] && pkill -HUP --exact pgbouncer
+    exec {fd}<> <(:||:)
+    while read -r -t 5 -u "${fd}" ||:; do
+      if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && pkill -HUP --exact pgbouncer
       then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded configuration dated %y' "${directory}"
       fi
     done
@@ -384,11 +384,11 @@ containers:
   - --
   - |-
     monitor() {
-    exec {fd}<> <(:)
-    while read -r -t 5 -u "${fd}" || true; do
-      if [ "${directory}" -nt "/proc/self/fd/${fd}" ] && pkill -HUP --exact pgbouncer
+    exec {fd}<> <(:||:)
+    while read -r -t 5 -u "${fd}" ||:; do
+      if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && pkill -HUP --exact pgbouncer
       then
-        exec {fd}>&- && exec {fd}<> <(:)
+        exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded configuration dated %y' "${directory}"
       fi
     done
