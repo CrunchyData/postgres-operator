@@ -534,7 +534,7 @@ func (r *Reconciler) reconcilePostgresUsersInPostgreSQL(
 	}
 
 	write := func(ctx context.Context, exec postgres.Executor) error {
-		return postgres.WriteUsersInPostgreSQL(ctx, exec, specUsers, verifiers)
+		return postgres.WriteUsersInPostgreSQL(ctx, cluster, exec, specUsers, verifiers)
 	}
 
 	revision, err := safeHash32(func(hasher io.Writer) error {
