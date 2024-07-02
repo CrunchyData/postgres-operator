@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-        with: { go-version: 1.21 }
+        with: { go-version: stable }
       - run: make check
       - run: make check-generate
 
