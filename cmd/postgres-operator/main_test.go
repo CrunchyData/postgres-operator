@@ -33,6 +33,8 @@ func TestInitManager(t *testing.T) {
 			assert.Equal(t, *options.Cache.SyncPeriod, time.Hour)
 		}
 
+		assert.Assert(t, options.HealthProbeBindAddress == ":8081")
+
 		assert.DeepEqual(t, options.Controller.GroupKindConcurrency,
 			map[string]int{
 				"PostgresCluster.postgres-operator.crunchydata.com": 2,
@@ -44,6 +46,7 @@ func TestInitManager(t *testing.T) {
 		{
 			options.Cache.SyncPeriod = nil
 			options.Controller.GroupKindConcurrency = nil
+			options.HealthProbeBindAddress = ""
 
 			assert.Assert(t, reflect.ValueOf(options).IsZero(),
 				"expected remaining fields to be unset:\n%+v", options)

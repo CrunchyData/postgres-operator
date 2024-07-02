@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/bridge/crunchybridgecluster"
@@ -72,6 +73,8 @@ func initManager() (runtime.Options, error) {
 
 	options := runtime.Options{}
 	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
+
+	options.HealthProbeBindAddress = ":8081"
 
 	// Enable leader elections when configured with a valid Lease.coordination.k8s.io name.
 	// - https://docs.k8s.io/concepts/architecture/leases
@@ -174,6 +177,10 @@ func main() {
 	} else {
 		log.Info("upgrade checking disabled")
 	}
+
+	// Enable health probes
+	assertNoError(mgr.AddHealthzCheck("health", healthz.Ping))
+	assertNoError(mgr.AddReadyzCheck("check", healthz.Ping))
 
 	log.Info("starting controller runtime manager and will wait for signal to exit")
 
