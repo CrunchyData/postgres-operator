@@ -43,8 +43,6 @@ RED="\033[0;31m"
 GREEN="\033[0;32m"
 RESET="\033[0m"
 
-CRUNCHY_DIR=${CRUNCHY_DIR:-'/opt/crunchy'}
-
 function enable_debugging() {
     if [[ ${CRUNCHY_DEBUG:-false} == "true" ]]
     then
@@ -129,8 +127,6 @@ then
     python3 setup.py > /tmp/pgadmin4.stdout 2> /tmp/pgadmin4.stderr
     err_check "$?" "pgAdmin4 Database Setup" "Could not create pgAdmin4 database: \n$(cat /tmp/pgadmin4.stderr)"
 fi
-
-cd ${PGADMIN_DIR?}
 
 echo_info "Starting Apache web server.."
 /usr/sbin/httpd -D FOREGROUND &
