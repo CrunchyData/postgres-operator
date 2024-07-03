@@ -24,8 +24,16 @@ import (
 	pg_query "github.com/pganalyze/pg_query_go/v5"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+var RESERVED_SCHEMA_NAMES = map[string]bool{
+	"public":    true, // This is here for documentation; Postgres will reject a role named `public` as reserved
+	"pgbouncer": true,
+	"monitor":   true,
+}
 
 func sanitizeAlterRoleOptions(options string) string {
 	const AlterRolePrefix = `ALTER ROLE "any" WITH `
@@ -61,7 +69,7 @@ func sanitizeAlterRoleOptions(options string) string {
 // grants them access to their specified databases. The databases must already
 // exist.
 func WriteUsersInPostgreSQL(
-	ctx context.Context, exec Executor,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, exec Executor,
 	users []v1beta1.PostgresUserSpec, verifiers map[string]string,
 ) error {
 	log := logging.FromContext(ctx)
@@ -162,5 +170,83 @@ SELECT pg_catalog.format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
 
 	log.V(1).Info("wrote PostgreSQL users", "stdout", stdout, "stderr", stderr)
 
+	// The operator will attemtp to write schemas for the users in the spec if
+	// 	* the feature gate is enabled and
+	// 	* the cluster is annotated.
+	if util.DefaultMutableFeatureGate.Enabled(util.AutoCreateUserSchema) {
+		autoCreateUserSchemaAnnotationValue, annotationExists := cluster.Annotations[naming.AutoCreateUserSchemaAnnotation]
+		if annotationExists && strings.EqualFold(autoCreateUserSchemaAnnotationValue, "true") {
+			log.V(1).Info("Writing schemas for users.")
+			err = WriteUsersSchemasInPostgreSQL(ctx, exec, users)
+		}
+	}
+
+	return err
+}
+
+// WriteUsersSchemasInPostgreSQL will create a schema for each user in each database that user has access to
+func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
+	users []v1beta1.PostgresUserSpec) error {
+
+	log := logging.FromContext(ctx)
+
+	var err error
+	var stdout string
+	var stderr string
+
+	for i := range users {
+		spec := users[i]
+
+		// We skip if the user has the name of a reserved schema
+		if RESERVED_SCHEMA_NAMES[string(spec.Name)] {
+			log.V(1).Info("Skipping schema creation for user with reserved name",
+				"name", string(spec.Name))
+			continue
+		}
+
+		// We skip if the user has no databases
+		if len(spec.Databases) == 0 {
+			continue
+		}
+
+		var sql bytes.Buffer
+
+		// Prevent unexpected dereferences by emptying "search_path". The "pg_catalog"
+		// schema is still searched, and only temporary objects can be created.
+		// - https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-SEARCH-PATH
+		_, _ = sql.WriteString(`SET search_path TO '';`)
+
+		_, _ = sql.WriteString(`SELECT * FROM json_array_elements_text(:'databases');`)
+
+		databases, _ := json.Marshal(spec.Databases)
+
+		stdout, stderr, err = exec.ExecInDatabasesFromQuery(ctx,
+			sql.String(),
+			strings.Join([]string{
+				// Quiet NOTICE messages from IF EXISTS statements.
+				// - https://www.postgresql.org/docs/current/runtime-config-client.html
+				`SET client_min_messages = WARNING;`,
+
+				// Creates a schema named after and owned by the user
+				// - https://www.postgresql.org/docs/current/ddl-schemas.html
+				// - https://www.postgresql.org/docs/current/sql-createschema.html
+
+				// We create a schema named after the user because
+				// the PG search_path does not need to be updated,
+				// since search_path defaults to "$user", public.
+				// - https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PATH
+				`CREATE SCHEMA IF NOT EXISTS :"username" AUTHORIZATION :"username";`,
+			}, "\n"),
+			map[string]string{
+				"databases": string(databases),
+				"username":  string(spec.Name),
+
+				"ON_ERROR_STOP": "on", // Abort when any one statement fails.
+				"QUIET":         "on", // Do not print successful commands to stdout.
+			},
+		)
+
+		log.V(1).Info("wrote PostgreSQL schemas", "stdout", stdout, "stderr", stderr)
+	}
 	return err
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -59,7 +60,8 @@ func TestWriteUsersInPostgreSQL(t *testing.T) {
 			return expected
 		}
 
-		assert.Equal(t, expected, WriteUsersInPostgreSQL(ctx, exec, nil, nil))
+		cluster := new(v1beta1.PostgresCluster)
+		assert.Equal(t, expected, WriteUsersInPostgreSQL(ctx, cluster, exec, nil, nil))
 	})
 
 	t.Run("Empty", func(t *testing.T) {
@@ -104,17 +106,19 @@ COMMIT;`))
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec, nil, nil))
+		cluster := new(v1beta1.PostgresCluster)
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec, nil, nil))
 		assert.Equal(t, calls, 1)
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec, []v1beta1.PostgresUserSpec{}, nil))
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec, []v1beta1.PostgresUserSpec{}, nil))
 		assert.Equal(t, calls, 2)
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec, nil, map[string]string{}))
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec, nil, map[string]string{}))
 		assert.Equal(t, calls, 3)
 	})
 
 	t.Run("OptionalFields", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
 		calls := 0
 		exec := func(
 			_ context.Context, stdin io.Reader, _, _ io.Writer, command ...string,
@@ -134,7 +138,7 @@ COMMIT;`))
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec,
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec,
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "user-no-options",
@@ -162,6 +166,7 @@ COMMIT;`))
 
 	t.Run("PostgresSuperuser", func(t *testing.T) {
 		calls := 0
+		cluster := new(v1beta1.PostgresCluster)
 		exec := func(
 			_ context.Context, stdin io.Reader, _, _ io.Writer, command ...string,
 		) error {
@@ -177,7 +182,7 @@ COMMIT;`))
 			return nil
 		}
 
-		assert.NilError(t, WriteUsersInPostgreSQL(ctx, exec,
+		assert.NilError(t, WriteUsersInPostgreSQL(ctx, cluster, exec,
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "postgres",
@@ -191,4 +196,53 @@ COMMIT;`))
 		))
 		assert.Equal(t, calls, 1)
 	})
+}
+
+func TestWriteUsersSchemasInPostgreSQL(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Mixed users", func(t *testing.T) {
+		calls := 0
+		exec := func(
+			_ context.Context, stdin io.Reader, _, _ io.Writer, command ...string,
+		) error {
+			calls++
+
+			b, err := io.ReadAll(stdin)
+			assert.NilError(t, err)
+
+			// The command strings will contain either of two possibilities, depending on the user called.
+			commands := strings.Join(command, ",")
+			re := regexp.MustCompile("--set=databases=\\[\"db1\"\\],--set=username=user-single-db|--set=databases=\\[\"db1\",\"db2\"\\],--set=username=user-multi-db")
+			assert.Assert(t, cmp.Regexp(re, commands))
+
+			assert.Assert(t, cmp.Contains(string(b), `CREATE SCHEMA IF NOT EXISTS :"username" AUTHORIZATION :"username";`))
+			return nil
+		}
+
+		assert.NilError(t, WriteUsersSchemasInPostgreSQL(ctx, exec,
+			[]v1beta1.PostgresUserSpec{
+				{
+					Name:      "user-single-db",
+					Databases: []v1beta1.PostgresIdentifier{"db1"},
+				},
+				{
+					Name: "user-no-databases",
+				},
+				{
+					Name:      "user-multi-dbs",
+					Databases: []v1beta1.PostgresIdentifier{"db1", "db2"},
+				},
+				{
+					Name:      "public",
+					Databases: []v1beta1.PostgresIdentifier{"db3"},
+				},
+			},
+		))
+		// The spec.users has four elements, but two will be skipped:
+		// 	* the user with the reserved name `public`
+		// 	* the user with 0 databases
+		assert.Equal(t, calls, 2)
+	})
+
 }
