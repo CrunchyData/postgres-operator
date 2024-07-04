@@ -1,3 +1,4 @@
+apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
 collectors:
 - type: command
