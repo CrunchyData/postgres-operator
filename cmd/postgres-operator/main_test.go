@@ -83,9 +83,19 @@ func TestInitManager(t *testing.T) {
 		assert.Assert(t, cmp.Len(options.Cache.DefaultNamespaces, 1),
 			"expected only one configured namespace")
 
-		for k := range options.Cache.DefaultNamespaces {
-			assert.Equal(t, k, "some-such")
-		}
+		assert.Assert(t, cmp.Contains(options.Cache.DefaultNamespaces, "some-such"))
+	})
+
+	t.Run("PGO_TARGET_NAMESPACES", func(t *testing.T) {
+		t.Setenv("PGO_TARGET_NAMESPACES", "some-such,another-one")
+
+		options, err := initManager()
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Len(options.Cache.DefaultNamespaces, 2),
+			"expect two configured namespaces")
+
+		assert.Assert(t, cmp.Contains(options.Cache.DefaultNamespaces, "some-such"))
+		assert.Assert(t, cmp.Contains(options.Cache.DefaultNamespaces, "another-one"))
 	})
 
 	t.Run("PGO_WORKERS", func(t *testing.T) {
