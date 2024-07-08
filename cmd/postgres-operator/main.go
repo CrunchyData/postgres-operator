@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -89,8 +90,29 @@ func initManager() (runtime.Options, error) {
 		options.LeaderElectionNamespace = os.Getenv("PGO_NAMESPACE")
 	}
 
-	if namespace := os.Getenv("PGO_TARGET_NAMESPACE"); len(namespace) > 0 {
-		options.Cache.DefaultNamespaces = map[string]runtime.CacheConfig{namespace: {}}
+	// Check PGO_TARGET_NAMESPACE for backwards compatibility with
+	// "singlenamespace" installations
+	singlenamespace := strings.TrimSpace(os.Getenv("PGO_TARGET_NAMESPACE"))
+
+	// Check PGO_TARGET_NAMESPACES for non-cluster-wide, multi-namespace
+	// installations
+	multinamespace := strings.TrimSpace(os.Getenv("PGO_TARGET_NAMESPACES"))
+
+	// Initialize DefaultNamespaces if any target namespaces are set
+	if len(singlenamespace) > 0 || len(multinamespace) > 0 {
+		options.Cache.DefaultNamespaces = map[string]runtime.CacheConfig{}
+	}
+
+	if len(singlenamespace) > 0 {
+		options.Cache.DefaultNamespaces[singlenamespace] = runtime.CacheConfig{}
+	}
+
+	if len(multinamespace) > 0 {
+		for _, namespace := range strings.FieldsFunc(multinamespace, func(c rune) bool {
+			return c != '-' && !unicode.IsLetter(c) && !unicode.IsNumber(c)
+		}) {
+			options.Cache.DefaultNamespaces[namespace] = runtime.CacheConfig{}
+		}
 	}
 
 	options.Controller.GroupKindConcurrency = map[string]int{
