@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: major-upgrade-missing-image
+spec:
+  steps:
+  - name: step-01
+    try:
+    - apply:
+        file: 01--valid-upgrade.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-10
+    try:
+    - apply:
+        file: 10--cluster.yaml
+    - assert:
+        file: 10-assert.yaml
+  - name: step-11
+    try:
+    - apply:
+        file: 11--shutdown-cluster.yaml
+    - assert:
+        file: 11-assert.yaml
+  - name: step-12
+    try:
+    - apply:
+        file: 12--start-and-update-version.yaml
+    - assert:
+        file: 12-assert.yaml
+  - name: step-13
+    try:
+    - apply:
+        file: 13--shutdown-cluster.yaml
+    - assert:
+        file: 13-assert.yaml
+  - name: step-14
+    try:
+    - apply:
+        file: 14--annotate-cluster.yaml
+    - assert:
+        file: 14-assert.yaml
+  - name: step-15
+    try:
+    - apply:
+        file: 15--start-cluster.yaml
+    - assert:
+        file: 15-assert.yaml
+  - name: step-16
+    try:
+    - script:
+        content: |
+          kubectl -n "${NAMESPACE}" exec "statefulset.apps/major-upgrade-empty-image-repo-host" -c pgbackrest -- pgbackrest check --stanza=db
+  - name: step-17
+    try:
+    - apply:
+        file: 17--check-version.yaml
+    - assert:
+        file: 17-assert.yaml

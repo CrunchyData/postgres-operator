@@ -1,3 +1,4 @@
 .DS_Store
 /vendor/
+/testing/chainsaw/e2e-generated*/
 /testing/kuttl/e2e-generated*/
