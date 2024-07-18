@@ -1,10 +1,7 @@
----
-apiVersion: postgres-operator.crunchydata.com/v1beta1
-kind: PGUpgrade
-metadata:
-  name: major-upgrade-do-it
-status:
-  conditions:
-  - type:   "Progressing"
-    status: "False"
-    reason: "PGUpgradeInvalid"
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pgupgrade major-upgrade-do-it
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/pgupgrade=major-upgrade-do-it
