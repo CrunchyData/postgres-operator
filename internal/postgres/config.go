@@ -103,12 +103,17 @@ func DataDirectory(cluster *v1beta1.PostgresCluster) string {
 func WALDirectory(
 	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
 ) string {
-	// When no WAL volume is specified, store WAL files on the main data volume.
-	walStorage := dataMountPath
+	return fmt.Sprintf("%s/pg%d_wal", WALStorage(instance), cluster.Spec.PostgresVersion)
+}
+
+// WALStorage returns the absolute path to the disk where an instance stores its
+// WAL files. Use [WALDirectory] for the exact directory that Postgres uses.
+func WALStorage(instance *v1beta1.PostgresInstanceSetSpec) string {
 	if instance.WALVolumeClaimSpec != nil {
-		walStorage = walMountPath
+		return walMountPath
 	}
-	return fmt.Sprintf("%s/pg%d_wal", walStorage, cluster.Spec.PostgresVersion)
+	// When no WAL volume is specified, store WAL files on the main data volume.
+	return dataMountPath
 }
 
 // Environment returns the environment variables required to invoke PostgreSQL
@@ -306,6 +311,12 @@ chmod +x /tmp/pg_rewind_tde.sh
 		// Log the effective user ID and all the group IDs.
 		`echo Initializing ...`,
 		`results 'uid' "$(id -u ||:)" 'gid' "$(id -G ||:)"`,
+
+		// The pgbackrest spool path should be co-located with wal.
+		// If a wal volume exists, link the spool-path to it.
+		`if [[ "${pgwal_directory}" == *"pgwal/"* ]] && [[ ! -d "/pgwal/pgbackrest-spool" ]];then rm -rf "/pgdata/pgbackrest-spool" && mkdir -p "/pgwal/pgbackrest-spool" && ln --force --symbolic "/pgwal/pgbackrest-spool" "/pgdata/pgbackrest-spool";fi`,
+		// When a pgwal volume is removed, force pgbackrest to recreate spool-path.
+		`if [[ ! "${pgwal_directory}" == *"pgwal/"* ]];then rm -rf /pgdata/pgbackrest-spool;fi`,
 
 		// Abort when the PostgreSQL version installed in the image does not
 		// match the cluster spec.

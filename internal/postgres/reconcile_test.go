@@ -255,6 +255,8 @@ initContainers:
     )
     echo Initializing ...
     results 'uid' "$(id -u ||:)" 'gid' "$(id -G ||:)"
+    if [[ "${pgwal_directory}" == *"pgwal/"* ]] && [[ ! -d "/pgwal/pgbackrest-spool" ]];then rm -rf "/pgdata/pgbackrest-spool" && mkdir -p "/pgwal/pgbackrest-spool" && ln --force --symbolic "/pgwal/pgbackrest-spool" "/pgdata/pgbackrest-spool";fi
+    if [[ ! "${pgwal_directory}" == *"pgwal/"* ]];then rm -rf /pgdata/pgbackrest-spool;fi
     results 'postgres path' "$(command -v postgres ||:)"
     results 'postgres version' "${postgres_version:=$(postgres --version ||:)}"
     [[ "${postgres_version}" =~ ") ${expected_major_version}"($|[^0-9]) ]] ||
