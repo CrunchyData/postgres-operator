@@ -13,5 +13,7 @@ commands:
       ls -l /pgdata
     )
 
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
     # Confirm that the pgbackrest spool-path has been symlinked to the wal volume.
-    [[ $LIST == *"pgbackrest-spool -> /pgwal/pgbackrest-spool"* ]] || exit 1
+    contains "$LIST" "pgbackrest-spool -> /pgwal/pgbackrest-spool" || exit 1

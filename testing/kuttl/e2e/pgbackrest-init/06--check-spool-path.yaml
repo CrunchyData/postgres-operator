@@ -13,4 +13,5 @@ commands:
       ls -l /pgdata
     )
 
-    [[ "$LIST" =~ "pgbackrest-spool" ]] || exit 1
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    contains "$LIST" "pgbackrest-spool" || exit 1
