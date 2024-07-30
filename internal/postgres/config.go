@@ -312,11 +312,10 @@ chmod +x /tmp/pg_rewind_tde.sh
 		`echo Initializing ...`,
 		`results 'uid' "$(id -u ||:)" 'gid' "$(id -G ||:)"`,
 
-		// The pgbackrest spool path should be co-located with wal.
-		// If a wal volume exists, link the spool-path to it.
+		// The pgbackrest spool path should be co-located with wal. If a wal volume exists, symlink the spool-path to it.
 		`if [[ "${pgwal_directory}" == *"pgwal/"* ]] && [[ ! -d "/pgwal/pgbackrest-spool" ]];then rm -rf "/pgdata/pgbackrest-spool" && mkdir -p "/pgwal/pgbackrest-spool" && ln --force --symbolic "/pgwal/pgbackrest-spool" "/pgdata/pgbackrest-spool";fi`,
-		// When a pgwal volume is removed, force pgbackrest to recreate spool-path.
-		`if [[ ! "${pgwal_directory}" == *"pgwal/"* ]];then rm -rf /pgdata/pgbackrest-spool;fi`,
+		// When a pgwal volume is removed, the symlink will be broken; force pgbackrest to recreate spool-path.
+		`if [[ ! -e "/pgdata/pgbackrest-spool" ]];then rm -rf /pgdata/pgbackrest-spool;fi`,
 
 		// Abort when the PostgreSQL version installed in the image does not
 		// match the cluster spec.
