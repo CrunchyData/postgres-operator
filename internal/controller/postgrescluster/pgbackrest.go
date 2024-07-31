@@ -2716,13 +2716,19 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.
 	// the new repository status that will be generated and returned
 	updatedRepoStatus := []v1beta1.RepoStatus{}
 
+	// statusMap combines simultaneous status changes on the same repo, without duplicating status keys.
+	statusMap := map[string]v1beta1.RepoStatus{}
+	for _, rs := range repoStatus {
+		statusMap[rs.Name] = rs
+	}
+
 	// Update the repo status based on the repo volumes (PVCs) that were reconciled.  This includes
 	// updating the status for any existing repository volumes, and adding status for any new
 	// repository volumes.
 	for _, rv := range repoVolumes {
 		newRepoVolStatus := true
 		repoName := rv.Labels[naming.LabelPGBackRestRepo]
-		for _, rs := range repoStatus {
+		for k, rs := range statusMap {
 			// treat as new status if contains properties of a cloud (s3, gcr or azure) repo
 			if rs.Name == repoName && rs.RepoOptionsHash == "" {
 				newRepoVolStatus = false
@@ -2748,17 +2754,18 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.
 					rs.ReplicaCreateBackupComplete = false
 				}
 				rs.VolumeName = rv.Spec.VolumeName
-
-				updatedRepoStatus = append(updatedRepoStatus, rs)
+				statusMap[k] = rs
 				break
 			}
 		}
 		if newRepoVolStatus {
-			updatedRepoStatus = append(updatedRepoStatus, v1beta1.RepoStatus{
+			vrs := v1beta1.RepoStatus{
 				Bound:      (rv.Status.Phase == corev1.ClaimBound),
 				Name:       repoName,
 				VolumeName: rv.Spec.VolumeName,
-			})
+			}
+
+			statusMap[vrs.Name] = vrs
 		}
 	}
 
@@ -2767,8 +2774,9 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.
 	// updating the status for any existing external repositories, and adding status for any new
 	// external repositories.
 	for repoName, hash := range configHashes {
+
 		newExtRepoStatus := true
-		for _, rs := range repoStatus {
+		for k, rs := range statusMap {
 			// treat as new status if contains properties of a "volume" repo
 			if rs.Name == repoName && !rs.Bound && rs.VolumeName == "" {
 				newExtRepoStatus = false
@@ -2790,16 +2798,21 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.
 					rs.ReplicaCreateBackupComplete = false
 				}
 
-				updatedRepoStatus = append(updatedRepoStatus, rs)
+				statusMap[k] = rs
 				break
 			}
 		}
 		if newExtRepoStatus {
-			updatedRepoStatus = append(updatedRepoStatus, v1beta1.RepoStatus{
+			rn := v1beta1.RepoStatus{
 				Name:            repoName,
 				RepoOptionsHash: hash,
-			})
+			}
+			statusMap[rn.Name] = rn
 		}
+	}
+
+	for _, rs := range statusMap {
+		updatedRepoStatus = append(updatedRepoStatus, rs)
 	}
 
 	// sort to ensure repo status always displays in a consistent order according to repo name

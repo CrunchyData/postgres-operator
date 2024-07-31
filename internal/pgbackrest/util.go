@@ -59,21 +59,21 @@ func CalculateConfigHashes(
 	var err error
 	repoConfigHashes := make(map[string]string)
 	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-		// hashes are only calculated for external repo configs
-		if repo.Volume != nil {
-			continue
-		}
+		// hashes are calculated for external repo configs and volume names
 
 		var hash, name string
 		switch {
 		case repo.Azure != nil:
-			hash, err = hashFunc([]string{repo.Azure.Container})
+			hash, err = hashFunc([]string{repo.Name, repo.Azure.Container})
 			name = repo.Name
 		case repo.GCS != nil:
-			hash, err = hashFunc([]string{repo.GCS.Bucket})
+			hash, err = hashFunc([]string{repo.Name, repo.GCS.Bucket})
 			name = repo.Name
 		case repo.S3 != nil:
-			hash, err = hashFunc([]string{repo.S3.Bucket, repo.S3.Endpoint, repo.S3.Region})
+			hash, err = hashFunc([]string{repo.Name, repo.S3.Bucket, repo.S3.Endpoint, repo.S3.Region})
+			name = repo.Name
+		case repo.Volume != nil:
+			hash, err = hashFunc([]string{repo.Name})
 			name = repo.Name
 		default:
 			return map[string]string{}, "", errors.New("found unexpected repo type")

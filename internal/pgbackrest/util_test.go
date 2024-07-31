@@ -17,7 +17,7 @@ package pgbackrest
 
 import (
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"testing"
 
@@ -41,11 +41,11 @@ func TestCalculateConfigHashes(t *testing.T) {
 	azureOpts, gcsOpts := []string{"container"}, []string{"container"}
 	s3Opts := []string{"bucket", "endpoint", "region"}
 
-	preCalculatedRepo1AzureHash, err := hashFunc(azureOpts)
+	preCalculatedRepo1AzureHash, err := hashFunc(append([]string{"repo1"}, azureOpts...))
 	assert.NilError(t, err)
-	preCalculatedRepo2GCSHash, err := hashFunc(gcsOpts)
+	preCalculatedRepo2GCSHash, err := hashFunc(append([]string{"repo2"}, gcsOpts...))
 	assert.NilError(t, err)
-	preCalculatedRepo3S3Hash, err := hashFunc(s3Opts)
+	preCalculatedRepo3S3Hash, err := hashFunc(append([]string{"repo3"}, s3Opts...))
 	assert.NilError(t, err)
 	preCalculatedConfigHash, err := hashFunc([]string{preCalculatedRepo1AzureHash,
 		preCalculatedRepo2GCSHash, preCalculatedRepo3S3Hash})
