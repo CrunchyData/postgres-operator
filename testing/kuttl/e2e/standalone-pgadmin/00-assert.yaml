@@ -1,0 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/pgadmin=pgadmin
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/pgadmin=pgadmin
