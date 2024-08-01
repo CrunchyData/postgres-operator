@@ -131,6 +131,7 @@ pg1-socket-path = /tmp/postgres
 # Your changes will not be saved.
 
 [global]
+archive-async = y
 log-path = /pgdata/pgbackrest/log
 repo1-host = repo-hostname-0.pod-service-name.test-ns.svc.`+domain+`
 repo1-host-ca-file = /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
@@ -151,6 +152,7 @@ repo4-s3-bucket = s-bucket
 repo4-s3-endpoint = endpoint-s
 repo4-s3-region = earth
 repo4-type = s3
+spool-path = /pgdata/pgbackrest-spool
 
 [db]
 pg1-path = /pgdata/pg12

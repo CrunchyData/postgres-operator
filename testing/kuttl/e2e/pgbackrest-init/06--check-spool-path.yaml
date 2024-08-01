@@ -1,0 +1,17 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+- script: |
+    PRIMARY=$(
+        kubectl get pod --namespace "${NAMESPACE}" \
+          --output name --selector '
+            postgres-operator.crunchydata.com/role=master'
+      )
+
+    LIST=$(
+    kubectl exec --namespace "${NAMESPACE}" -c database "${PRIMARY}" -- \
+      ls -l /pgdata
+    )
+
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+    contains "$LIST" "pgbackrest-spool" || exit 1
