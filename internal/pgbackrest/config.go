@@ -101,7 +101,6 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	// create an empty map for the config data
 	initialize.StringMap(&cm.Data)
 
-	addDedicatedHost := DedicatedRepoHostEnabled(postgresCluster)
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	// Port will always be populated, since the API will set a default of 5432 if not provided
 	pgPort := *postgresCluster.Spec.Port
@@ -114,13 +113,14 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
 		).String()
 
-	// As the cluster transitions from having a repository host to having none,
 	// PostgreSQL instances that have not rolled out expect to mount a server
 	// config file. Always populate that file so those volumes stay valid and
-	// Kubernetes propagates their contents to those pods.
+	// Kubernetes propagates their contents to those pods. The repo host name
+	// given below should always be set, but this guards for cases when it might
+	// not be.
 	cm.Data[serverConfigMapKey] = ""
 
-	if addDedicatedHost && repoHostName != "" {
+	if repoHostName != "" {
 		cm.Data[serverConfigMapKey] = iniGeneratedWarning +
 			serverConfig(postgresCluster).String()
 
@@ -372,11 +372,16 @@ func populateRepoHostConfigurationMap(
 		if !pgBackRestLogPathSet && repo.Volume != nil {
 			// pgBackRest will log to the first configured repo volume when commands
 			// are run on the pgBackRest repo host. With our previous check in
-			// DedicatedRepoHostEnabled(), we've already validated that at least one
+			// RepoHostVolumeDefined(), we've already validated that at least one
 			// defined repo has a volume.
 			global.Set("log-path", fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name))
 			pgBackRestLogPathSet = true
 		}
+	}
+
+	// If no log path was set, don't log because the default path is not writable.
+	if !pgBackRestLogPathSet {
+		global.Set("log-level-file", "off")
 	}
 
 	for option, val := range globalConfig {

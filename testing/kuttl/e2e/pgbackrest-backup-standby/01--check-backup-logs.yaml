@@ -1,0 +1,20 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+# First, find at least one backup job pod.
+# Then, check the logs for the 'unable to find standby cluster' line.
+# If this line isn't found, exit 1.
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=pgbackrest-backup-standby \
+      -l postgres-operator.crunchydata.com/pgbackrest-backup=replica-create)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}")
+    { contains "${logs}" 'unable to find standby cluster - cannot proceed'; } || {
+      echo 'did not find expected standby cluster error '
+      exit 1
+    }

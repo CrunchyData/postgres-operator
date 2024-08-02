@@ -30,9 +30,9 @@ import (
 // multi-repository solution implemented within pgBackRest
 const maxPGBackrestRepos = 4
 
-// DedicatedRepoHostEnabled determines whether not a pgBackRest dedicated repository host is
-// enabled according to the provided PostgresCluster
-func DedicatedRepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
+// RepoHostVolumeDefined determines whether not at least one pgBackRest dedicated
+// repository host volume has been defined in the PostgresCluster manifest.
+func RepoHostVolumeDefined(postgresCluster *v1beta1.PostgresCluster) bool {
 	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		if repo.Volume != nil {
 			return true
