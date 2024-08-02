@@ -31,6 +31,8 @@ As shown, the settings with the `cfgSectionGlobal` designation are
 
 `log-path`: The log path provides a location for pgBackRest to store log files.
 
+`log-level-file`: Level for file logging. Set to 'off' when the repo host has no volume.
+
 `repo-path`: Path where backups and archive are stored. 
              The repository is where pgBackRest stores backups and archives WAL segments.
 
@@ -75,6 +77,7 @@ pg1-socket-path
 [global]
 log-path
 repo1-path
+log-level-file
 
 [stanza]
 pg1-host

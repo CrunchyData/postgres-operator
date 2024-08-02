@@ -116,22 +116,15 @@ func AddConfigToInstancePod(
 		{Key: ConfigHashKey, Path: ConfigHashKey},
 	}
 
-	// As the cluster transitions from having a repository host to having none,
-	// PostgreSQL instances that have not rolled out expect to mount client
-	// certificates. Specify those files are optional so the configuration
-	// volumes stay valid and Kubernetes propagates their contents to those pods.
 	secret := corev1.VolumeProjection{Secret: &corev1.SecretProjection{}}
 	secret.Secret.Name = naming.PGBackRestSecret(cluster).Name
-	secret.Secret.Optional = initialize.Bool(true)
 
-	if DedicatedRepoHostEnabled(cluster) {
-		configmap.ConfigMap.Items = append(
-			configmap.ConfigMap.Items, corev1.KeyToPath{
-				Key:  serverConfigMapKey,
-				Path: serverConfigProjectionPath,
-			})
-		secret.Secret.Items = append(secret.Secret.Items, clientCertificates()...)
-	}
+	configmap.ConfigMap.Items = append(
+		configmap.ConfigMap.Items, corev1.KeyToPath{
+			Key:  serverConfigMapKey,
+			Path: serverConfigProjectionPath,
+		})
+	secret.Secret.Items = append(secret.Secret.Items, clientCertificates()...)
 
 	// Start with a copy of projections specified in the cluster. Items later in
 	// the list take precedence over earlier items (that is, last write wins).
@@ -424,15 +417,13 @@ func InstanceCertificates(ctx context.Context,
 ) error {
 	var err error
 
-	if DedicatedRepoHostEnabled(inCluster) {
-		initialize.ByteMap(&outInstanceCertificates.Data)
+	initialize.ByteMap(&outInstanceCertificates.Data)
 
-		if err == nil {
-			outInstanceCertificates.Data[certInstanceSecretKey], err = certFile(inDNS)
-		}
-		if err == nil {
-			outInstanceCertificates.Data[certInstancePrivateKeySecretKey], err = certFile(inDNSKey)
-		}
+	if err == nil {
+		outInstanceCertificates.Data[certInstanceSecretKey], err = certFile(inDNS)
+	}
+	if err == nil {
+		outInstanceCertificates.Data[certInstancePrivateKeySecretKey], err = certFile(inDNSKey)
 	}
 
 	return err

@@ -147,16 +147,6 @@ func TestClusterPostgresUsers(t *testing.T) {
 	assert.ErrorContains(t, err, "Invalid")
 }
 
-func TestClusterPrimary(t *testing.T) {
-	s, err := AsSelector(ClusterPrimary("something"))
-	assert.NilError(t, err)
-	assert.DeepEqual(t, s.String(), strings.Join([]string{
-		"postgres-operator.crunchydata.com/cluster=something",
-		"postgres-operator.crunchydata.com/instance",
-		"postgres-operator.crunchydata.com/role=master",
-	}, ","))
-}
-
 func TestCrunchyBridgeClusterPostgresRoles(t *testing.T) {
 	s, err := AsSelector(CrunchyBridgeClusterPostgresRoles("something"))
 	assert.NilError(t, err)

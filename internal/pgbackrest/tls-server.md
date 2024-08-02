@@ -21,8 +21,10 @@ on different pods:
 - [dedicated repository host](https://pgbackrest.org/user-guide.html#repo-host)
 - [backup from standby](https://pgbackrest.org/user-guide.html#standby-backup)
 
-When a PostgresCluster is configured to store backups on a PVC, we start a dedicated
-repository host to make that PVC available to all PostgreSQL instances in the cluster.
+When a PostgresCluster is configured to store backups on a PVC, the dedicated
+repository host is used to make that PVC available to all PostgreSQL instances
+in the cluster. Regardless of whether the repo host has a defined PVC, it
+functions as the server for the pgBackRest clients that run on the Instances.
 
 The repository host runs a `pgbackrest` server that is secured through TLS and
 [certificates][]. When performing backups, it connects to `pgbackrest` servers

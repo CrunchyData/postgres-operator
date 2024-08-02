@@ -139,13 +139,6 @@ func ClusterPostgresUsers(cluster string) metav1.LabelSelector {
 	}
 }
 
-// ClusterPrimary selects things for the Primary PostgreSQL instance.
-func ClusterPrimary(cluster string) metav1.LabelSelector {
-	s := ClusterInstances(cluster)
-	s.MatchLabels[LabelRole] = RolePatroniLeader
-	return s
-}
-
 // CrunchyBridgeClusterPostgresRoles selects things labeled for CrunchyBridgeCluster
 // PostgreSQL roles in cluster.
 func CrunchyBridgeClusterPostgresRoles(clusterName string) metav1.LabelSelector {
