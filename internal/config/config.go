@@ -60,7 +60,10 @@ func FetchKeyCommand(spec *v1beta1.PostgresClusterSpec) string {
 
 // PGBackRestContainerImage returns the container image to use for pgBackRest.
 func PGBackRestContainerImage(cluster *v1beta1.PostgresCluster) string {
-	image := cluster.Spec.Backups.PGBackRest.Image
+	var image string
+	if cluster.Spec.Backups != nil {
+		image = cluster.Spec.Backups.PGBackRest.Image
+	}
 
 	return defaultFromEnv(image, "RELATED_IMAGE_PGBACKREST")
 }

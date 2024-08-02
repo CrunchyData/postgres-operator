@@ -307,33 +307,39 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 		case hasLabel(naming.LabelPGBackRestRepoVolume):
 			// If a volume (PVC) is identified for a repo that no longer exists in the
 			// spec then delete it.  Otherwise add it to the slice and continue.
-			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-				// we only care about cleaning up local repo volumes (PVCs), and ignore other repo
-				// types (e.g. for external Azure, GCS or S3 repositories)
-				if repo.Volume != nil &&
-					(repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo]) {
-					ownedNoDelete = append(ownedNoDelete, owned)
-					delete = false
+			if postgresCluster.Spec.Backups != nil {
+				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+					// we only care about cleaning up local repo volumes (PVCs), and ignore other repo
+					// types (e.g. for external Azure, GCS or S3 repositories)
+					if repo.Volume != nil &&
+						(repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo]) {
+						ownedNoDelete = append(ownedNoDelete, owned)
+						delete = false
+					}
 				}
 			}
 		case hasLabel(naming.LabelPGBackRestBackup):
 			// If a Job is identified for a repo that no longer exists in the spec then
 			// delete it.  Otherwise add it to the slice and continue.
-			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
-					ownedNoDelete = append(ownedNoDelete, owned)
-					delete = false
+			if postgresCluster.Spec.Backups != nil {
+				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+					if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
+						ownedNoDelete = append(ownedNoDelete, owned)
+						delete = false
+					}
 				}
 			}
 		case hasLabel(naming.LabelPGBackRestCronJob):
-			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
-					if backupScheduleFound(repo,
-						owned.GetLabels()[naming.LabelPGBackRestCronJob]) {
-						delete = false
-						ownedNoDelete = append(ownedNoDelete, owned)
+			if postgresCluster.Spec.Backups != nil {
+				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+					if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
+						if backupScheduleFound(repo,
+							owned.GetLabels()[naming.LabelPGBackRestCronJob]) {
+							delete = false
+							ownedNoDelete = append(ownedNoDelete, owned)
+						}
+						break
 					}
-					break
 				}
 			}
 		case hasLabel(naming.LabelPGBackRestRestore):
@@ -1947,12 +1953,20 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Type = corev1.SecretTypeOpaque
 
+	annotations := map[string]string{}
+	if cluster.Spec.Backups != nil {
+		annotations = cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil()
+	}
 	intent.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
-		cluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+		annotations)
+	labels := map[string]string{}
+	if cluster.Spec.Backups != nil {
+		labels = cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil()
+	}
 	intent.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
-		cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		labels,
 		naming.PGBackRestConfigLabels(cluster.Name),
 	)
 
@@ -2008,20 +2022,14 @@ func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
 		return nil, errors.WithStack(err)
 	}
 
-	sa.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	sa.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil())
 	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
-	binding.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	binding.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil())
 	binding.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
-	role.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	role.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil())
 	role.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
 
 	binding.RoleRef = rbacv1.RoleRef{
@@ -2515,24 +2523,26 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	errMsg := "reconciling repository volume"
 	repoVols := []*corev1.PersistentVolumeClaim{}
 	var replicaCreateRepo v1beta1.PGBackRestRepo
-	for i, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-		// the repo at index 0 is the replica creation repo
-		if i == 0 {
-			replicaCreateRepo = postgresCluster.Spec.Backups.PGBackRest.Repos[i]
-		}
-		// we only care about reconciling repo volumes, so ignore everything else
-		if repo.Volume == nil {
-			continue
-		}
-		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, repo.Volume.VolumeClaimSpec,
-			repo.Name, repoResources)
-		if err != nil {
-			log.Error(err, errMsg)
-			errors = append(errors, err)
-			continue
-		}
-		if repo != nil {
-			repoVols = append(repoVols, repo)
+	if postgresCluster.Spec.Backups != nil {
+		for i, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+			// the repo at index 0 is the replica creation repo
+			if i == 0 {
+				replicaCreateRepo = postgresCluster.Spec.Backups.PGBackRest.Repos[i]
+			}
+			// we only care about reconciling repo volumes, so ignore everything else
+			if repo.Volume == nil {
+				continue
+			}
+			repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, repo.Volume.VolumeClaimSpec,
+				repo.Name, repoResources)
+			if err != nil {
+				log.Error(err, errMsg)
+				errors = append(errors, err)
+				continue
+			}
+			if repo != nil {
+				repoVols = append(repoVols, repo)
+			}
 		}
 	}
 
@@ -2559,7 +2569,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	// ensure conditions are set before returning as needed by subsequent reconcile functions
 	defer func() {
 		var replicaCreateRepoStatus *v1beta1.RepoStatus
-		if len(postgresCluster.Spec.Backups.PGBackRest.Repos) == 0 {
+		if postgresCluster.Spec.Backups == nil || len(postgresCluster.Spec.Backups.PGBackRest.Repos) == 0 {
 			return
 		}
 		replicaCreateRepoName := postgresCluster.Spec.Backups.PGBackRest.Repos[0].Name
@@ -2612,10 +2622,12 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	}
 
 	stanzasCreated := true
-	for _, repoStatus := range postgresCluster.Status.PGBackRest.Repos {
-		if !repoStatus.StanzaCreated {
-			stanzasCreated = false
-			break
+	if postgresCluster.Spec.Backups != nil {
+		for _, repoStatus := range postgresCluster.Status.PGBackRest.Repos {
+			if !repoStatus.StanzaCreated {
+				stanzasCreated = false
+				break
+			}
 		}
 	}
 
@@ -2820,30 +2832,32 @@ func (r *Reconciler) reconcileScheduledBackups(
 	// requeue if there is an error during creation
 	var requeue bool
 
-	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
-		// if the repo level backup schedules block has not been created,
-		// there are no schedules defined
-		if repo.BackupSchedules != nil {
-			// next if the repo level schedule is not nil, create the CronJob.
-			if repo.BackupSchedules.Full != nil {
-				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
-					full, repo.BackupSchedules.Full, sa, cronjobs); err != nil {
-					log.Error(err, "unable to reconcile Full backup for "+repo.Name)
-					requeue = true
+	if cluster.Spec.Backups != nil {
+		for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
+			// if the repo level backup schedules block has not been created,
+			// there are no schedules defined
+			if repo.BackupSchedules != nil {
+				// next if the repo level schedule is not nil, create the CronJob.
+				if repo.BackupSchedules.Full != nil {
+					if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
+						full, repo.BackupSchedules.Full, sa, cronjobs); err != nil {
+						log.Error(err, "unable to reconcile Full backup for "+repo.Name)
+						requeue = true
+					}
 				}
-			}
-			if repo.BackupSchedules.Differential != nil {
-				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
-					differential, repo.BackupSchedules.Differential, sa, cronjobs); err != nil {
-					log.Error(err, "unable to reconcile Differential backup for "+repo.Name)
-					requeue = true
+				if repo.BackupSchedules.Differential != nil {
+					if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
+						differential, repo.BackupSchedules.Differential, sa, cronjobs); err != nil {
+						log.Error(err, "unable to reconcile Differential backup for "+repo.Name)
+						requeue = true
+					}
 				}
-			}
-			if repo.BackupSchedules.Incremental != nil {
-				if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
-					incremental, repo.BackupSchedules.Incremental, sa, cronjobs); err != nil {
-					log.Error(err, "unable to reconcile Incremental backup for "+repo.Name)
-					requeue = true
+				if repo.BackupSchedules.Incremental != nil {
+					if err := r.reconcilePGBackRestCronJob(ctx, cluster, repo,
+						incremental, repo.BackupSchedules.Incremental, sa, cronjobs); err != nil {
+						log.Error(err, "unable to reconcile Incremental backup for "+repo.Name)
+						requeue = true
+					}
 				}
 			}
 		}

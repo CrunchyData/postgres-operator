@@ -136,8 +136,11 @@ func AddConfigToInstancePod(
 	// Start with a copy of projections specified in the cluster. Items later in
 	// the list take precedence over earlier items (that is, last write wins).
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
-	sources := append([]corev1.VolumeProjection{},
-		cluster.Spec.Backups.PGBackRest.Configuration...)
+	sources := []corev1.VolumeProjection{}
+	if cluster.Spec.Backups != nil {
+		sources = append([]corev1.VolumeProjection{},
+			cluster.Spec.Backups.PGBackRest.Configuration...)
+	}
 
 	if len(secret.Secret.Items) > 0 {
 		sources = append(sources, configmap, secret)

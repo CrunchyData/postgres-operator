@@ -324,8 +324,8 @@ func (r *Reconciler) configureExistingRepoVolumes(
 		}
 	}
 
-	if len(cluster.Spec.Backups.PGBackRest.Repos) > 0 {
-		// there must be at least on pgBackrest repo defined
+	if cluster.Spec.Backups != nil && len(cluster.Spec.Backups.PGBackRest.Repos) > 0 {
+		// there must be at least one pgBackrest repo defined
 		if volName := cluster.Spec.DataSource.Volumes.
 			PGBackRestVolume.PVCName; volName != "" {
 			volume := &corev1.PersistentVolumeClaim{

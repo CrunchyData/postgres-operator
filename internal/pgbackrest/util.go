@@ -33,9 +33,11 @@ const maxPGBackrestRepos = 4
 // DedicatedRepoHostEnabled determines whether not a pgBackRest dedicated repository host is
 // enabled according to the provided PostgresCluster
 func DedicatedRepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
-	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-		if repo.Volume != nil {
-			return true
+	if postgresCluster.Spec.Backups != nil {
+		for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+			if repo.Volume != nil {
+				return true
+			}
 		}
 	}
 	return false
@@ -58,30 +60,32 @@ func CalculateConfigHashes(
 
 	var err error
 	repoConfigHashes := make(map[string]string)
-	for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-		// hashes are only calculated for external repo configs
-		if repo.Volume != nil {
-			continue
-		}
+	if postgresCluster.Spec.Backups != nil {
+		for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+			// hashes are only calculated for external repo configs
+			if repo.Volume != nil {
+				continue
+			}
 
-		var hash, name string
-		switch {
-		case repo.Azure != nil:
-			hash, err = hashFunc([]string{repo.Azure.Container})
-			name = repo.Name
-		case repo.GCS != nil:
-			hash, err = hashFunc([]string{repo.GCS.Bucket})
-			name = repo.Name
-		case repo.S3 != nil:
-			hash, err = hashFunc([]string{repo.S3.Bucket, repo.S3.Endpoint, repo.S3.Region})
-			name = repo.Name
-		default:
-			return map[string]string{}, "", errors.New("found unexpected repo type")
+			var hash, name string
+			switch {
+			case repo.Azure != nil:
+				hash, err = hashFunc([]string{repo.Azure.Container})
+				name = repo.Name
+			case repo.GCS != nil:
+				hash, err = hashFunc([]string{repo.GCS.Bucket})
+				name = repo.Name
+			case repo.S3 != nil:
+				hash, err = hashFunc([]string{repo.S3.Bucket, repo.S3.Endpoint, repo.S3.Region})
+				name = repo.Name
+			default:
+				return map[string]string{}, "", errors.New("found unexpected repo type")
+			}
+			if err != nil {
+				return map[string]string{}, "", errors.WithStack(err)
+			}
+			repoConfigHashes[name] = hash
 		}
-		if err != nil {
-			return map[string]string{}, "", errors.WithStack(err)
-		}
-		repoConfigHashes[name] = hash
 	}
 
 	configHashes := []string{}

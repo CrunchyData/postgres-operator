@@ -39,6 +39,11 @@ func PostgreSQL(
 	// - https://pgbackrest.org/command.html#command-archive-push
 	// - https://www.postgresql.org/docs/current/runtime-config-wal.html
 	archive := `pgbackrest --stanza=` + DefaultStanzaName + ` archive-push "%p"`
+
+	if inCluster.Spec.Backups == nil {
+		archive = `true`
+		// outParameters.Mandatory.Add("archive_check", "n") # Not needed?
+	}
 	outParameters.Mandatory.Add("archive_mode", "on")
 	outParameters.Mandatory.Add("archive_command", archive)
 

@@ -81,12 +81,20 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	instanceNames []string) *corev1.ConfigMap {
 
 	meta := naming.PGBackRestConfig(postgresCluster)
+	annotations := map[string]string{}
+	if postgresCluster.Spec.Backups != nil {
+		annotations = postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil()
+	}
 	meta.Annotations = naming.Merge(
 		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+		annotations)
+	labels := map[string]string{}
+	if postgresCluster.Spec.Backups != nil {
+		labels = postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil()
+	}
 	meta.Labels = naming.Merge(
 		postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		labels,
 		naming.PGBackRestConfigLabels(postgresCluster.GetName()),
 	)
 
@@ -110,8 +118,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 			serviceName, serviceNamespace, repoHostName, pgdataDir,
 			config.FetchKeyCommand(&postgresCluster.Spec),
 			strconv.Itoa(postgresCluster.Spec.PostgresVersion),
-			pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
-			postgresCluster.Spec.Backups.PGBackRest.Global,
+			pgPort, postgresCluster.Spec.Backups,
 		).String()
 
 	// As the cluster transitions from having a repository host to having none,
@@ -279,9 +286,15 @@ mv "${pgdata}" "${pgdata}_bootstrap"`
 func populatePGInstanceConfigurationMap(
 	serviceName, serviceNamespace, repoHostName, pgdataDir,
 	fetchKeyCommand, postgresVersion string,
-	pgPort int32, repos []v1beta1.PGBackRestRepo,
-	globalConfig map[string]string,
+	pgPort int32, backups *v1beta1.Backups,
 ) iniSectionSet {
+
+	repos := []v1beta1.PGBackRestRepo{}
+	globalConfig := map[string]string{}
+	if backups != nil {
+		repos = backups.PGBackRest.Repos
+		globalConfig = backups.PGBackRest.Global
+	}
 
 	// TODO(cbandy): pass a FQDN in already.
 	repoHostFQDN := repoHostName + "-0." +
