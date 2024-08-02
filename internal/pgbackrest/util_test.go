@@ -58,7 +58,7 @@ func TestCalculateConfigHashes(t *testing.T) {
 			Namespace: "calculate-config-hashes",
 		},
 		Spec: v1beta1.PostgresClusterSpec{
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
