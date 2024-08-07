@@ -39,16 +39,17 @@ func TestStanzaCreateOrUpgrade(t *testing.T) {
 	ctx := context.Background()
 	configHash := "7f5d4d5bdc"
 	expectedCommand := []string{"bash", "-ceu", "--", `
-declare -r hash="$1" stanza="$2" message="$3" cmd="$4" check_repo_cmd="$5"
+declare -r hash="$1" stanza="$2" hash_msg="$3" vol_msg="$4" cmd="$5" check_repo_cmd="$6"
 if [[ "$(< /etc/pgbackrest/conf.d/config-hash)" != "${hash}" ]]; then
-    printf >&2 "%s" "${message}"; exit 1;
+    printf >&2 "%s" "${hash_msg}"; exit 1;
 elif ! bash -c "${check_repo_cmd}"; then
-		printf >&2 "%s" "${message}"; exit 1;
+ 	 printf >&2 "%s" "${vol_msg}"; exit 1;
 else
     pgbackrest "${cmd}" --stanza="${stanza}"
 fi
 `,
 		"-", "7f5d4d5bdc", "db", "postgres operator error: pgBackRest config hash mismatch",
+		"postgres operator error: pgBackRest stale volume-backed repo configuration",
 		"stanza-create",
 		"grep repo1-path /etc/pgbackrest/conf.d/pgbackrest_instance.conf",
 	}
