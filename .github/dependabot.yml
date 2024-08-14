@@ -1,0 +1,13 @@
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates/customizing-dependency-updates
+---
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: .github
+    schedule:
+      interval: weekly
+      day: tuesday
+    groups:
+      all-github-actions:
+        patterns: ['*']
