@@ -2678,8 +2678,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	}
 
 	// Always attempt to create pgBackRest stanza first
-	configHashMismatch, err := pgbackrest.Executor(exec).StanzaCreateOrUpgrade(ctx, configHash,
-		false, postgresCluster)
+	configHashMismatch, err := pgbackrest.Executor(exec).StanzaCreateOrUpgrade(ctx, configHash, postgresCluster)
 	if err != nil {
 		// record and log any errors resulting from running the stanza-create command
 		r.Recorder.Event(postgresCluster, corev1.EventTypeWarning, EventUnableToCreateStanzas,
