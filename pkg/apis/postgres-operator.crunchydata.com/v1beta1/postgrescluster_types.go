@@ -324,6 +324,10 @@ type Backups struct {
 	// pgBackRest archive configuration
 	// +kubebuilder:validation:Required
 	PGBackRest PGBackRestArchive `json:"pgbackrest"`
+
+	// VolumeSnapshot configuration
+	// +optional
+	Snapshots *VolumeSnapshots `json:"snapshots,omitempty"`
 }
 
 // PostgresClusterStatus defines the observed state of PostgresCluster
@@ -695,4 +699,11 @@ func NewPostgresCluster() *PostgresCluster {
 	cluster := &PostgresCluster{}
 	cluster.SetGroupVersionKind(GroupVersion.WithKind("PostgresCluster"))
 	return cluster
+}
+
+// VolumeSnapshots defines the configuration for VolumeSnapshots
+type VolumeSnapshots struct {
+	// Name of the VolumeSnapshotClass that should be used by VolumeSnapshots
+	// +kubebuilder:validation:Required
+	VolumeSnapshotClassName string `json:"volumeSnapshotClassName"`
 }

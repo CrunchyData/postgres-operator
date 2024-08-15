@@ -46,6 +46,18 @@ func Cluster(cluster string) metav1.LabelSelector {
 	}
 }
 
+// ClusterBackupJobs selects things for all existing backup jobs in cluster.
+func ClusterBackupJobs(cluster string) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster: cluster,
+		},
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{Key: LabelPGBackRestBackup, Operator: metav1.LabelSelectorOpExists},
+		},
+	}
+}
+
 // ClusterDataForPostgresAndPGBackRest selects things for PostgreSQL data and
 // things for pgBackRest data.
 func ClusterDataForPostgresAndPGBackRest(cluster string) metav1.LabelSelector {

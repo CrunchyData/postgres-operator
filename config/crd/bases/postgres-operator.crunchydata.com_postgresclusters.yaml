@@ -4324,6 +4324,16 @@ spec:
                     required:
                     - repos
                     type: object
+                  snapshots:
+                    description: VolumeSnapshot configuration
+                    properties:
+                      volumeSnapshotClassName:
+                        description: Name of the VolumeSnapshotClass that should be
+                          used by VolumeSnapshots
+                        type: string
+                    required:
+                    - volumeSnapshotClassName
+                    type: object
                 required:
                 - pgbackrest
                 type: object

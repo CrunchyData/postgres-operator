@@ -260,6 +260,15 @@ func ClusterReplicaService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// ClusterVolumeSnapshot returns the ObjectMeta, including a random name, for a
+// new pgdata VolumeSnapshot.
+func ClusterVolumeSnapshot(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-pgdata-snapshot-" + rand.String(4),
+	}
+}
+
 // GenerateInstance returns a random name for a member of cluster and set.
 func GenerateInstance(
 	cluster *v1beta1.PostgresCluster, set *v1beta1.PostgresInstanceSetSpec,

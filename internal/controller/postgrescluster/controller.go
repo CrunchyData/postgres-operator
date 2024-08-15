@@ -29,9 +29,11 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,10 +62,11 @@ const (
 
 // Reconciler holds resources for the PostgresCluster reconciler
 type Reconciler struct {
-	Client      client.Client
-	IsOpenShift bool
-	Owner       client.FieldOwner
-	PodExec     func(
+	Client          client.Client
+	DiscoveryClient *discovery.DiscoveryClient
+	IsOpenShift     bool
+	Owner           client.FieldOwner
+	PodExec         func(
 		ctx context.Context, namespace, pod, container string,
 		stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error
@@ -346,6 +349,9 @@ func (r *Reconciler) Reconcile(
 		}
 	}
 	if err == nil {
+		err = r.reconcileVolumeSnapshots(ctx, cluster, instances, clusterVolumes)
+	}
+	if err == nil {
 		err = r.reconcilePGBouncer(ctx, cluster, instances, primaryCertificate, rootCA)
 	}
 	if err == nil {
@@ -447,6 +453,14 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		}
 	}
 
+	if r.DiscoveryClient == nil {
+		var err error
+		r.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(mgr.GetConfig())
+		if err != nil {
+			return err
+		}
+	}
+
 	return builder.ControllerManagedBy(mgr).
 		For(&v1beta1.PostgresCluster{}).
 		Owns(&corev1.ConfigMap{}).
@@ -466,4 +480,29 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Watches(&appsv1.StatefulSet{},
 			r.controllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)
+}
+
+// GroupVersionKindExists checks to see whether a given Kind for a given
+// GroupVersion exists in the Kubernetes API Server.
+func (r *Reconciler) GroupVersionKindExists(groupVersion, kind string) (*bool, error) {
+	if r.DiscoveryClient == nil {
+		return initialize.Bool(false), nil
+	}
+
+	resourceList, err := r.DiscoveryClient.ServerResourcesForGroupVersion(groupVersion)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return initialize.Bool(false), nil
+		}
+
+		return nil, err
+	}
+
+	for _, resource := range resourceList.APIResources {
+		if resource.Kind == kind {
+			return initialize.Bool(true), nil
+		}
+	}
+
+	return initialize.Bool(false), nil
 }

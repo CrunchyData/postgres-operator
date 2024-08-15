@@ -94,6 +94,9 @@ const (
 
 	// Support tablespace volumes
 	TablespaceVolumes = "TablespaceVolumes"
+
+	// Support VolumeSnapshots
+	VolumeSnapshots = "VolumeSnapshots"
 )
 
 // NewGate returns a MutableGate with the Features defined in this package.
@@ -108,6 +111,7 @@ func NewGate() MutableGate {
 		InstanceSidecars:     {Default: false, PreRelease: featuregate.Alpha},
 		PGBouncerSidecars:    {Default: false, PreRelease: featuregate.Alpha},
 		TablespaceVolumes:    {Default: false, PreRelease: featuregate.Alpha},
+		VolumeSnapshots:      {Default: false, PreRelease: featuregate.Alpha},
 	}); err != nil {
 		panic(err)
 	}

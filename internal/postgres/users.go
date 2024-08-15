@@ -170,7 +170,7 @@ SELECT pg_catalog.format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
 
 	log.V(1).Info("wrote PostgreSQL users", "stdout", stdout, "stderr", stderr)
 
-	// The operator will attemtp to write schemas for the users in the spec if
+	// The operator will attempt to write schemas for the users in the spec if
 	// 	* the feature gate is enabled and
 	// 	* the cluster is annotated.
 	if feature.Enabled(ctx, feature.AutoCreateUserSchema) {
