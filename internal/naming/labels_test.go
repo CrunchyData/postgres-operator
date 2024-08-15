@@ -62,7 +62,9 @@ func TestLabelValuesValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePostgresWAL))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RolePrimary))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RoleReplica))
+	assert.Assert(t, nil == validation.IsValidLabelValue(string(BackupManual)))
 	assert.Assert(t, nil == validation.IsValidLabelValue(string(BackupReplicaCreate)))
+	assert.Assert(t, nil == validation.IsValidLabelValue(string(BackupScheduled)))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RoleMonitoring))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RoleCrunchyBridgeClusterPostgresRole))
 }
@@ -193,6 +195,7 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 	assert.Equal(t, pgBackRestCronJobLabels.Get(LabelCluster), clusterName)
 	assert.Check(t, pgBackRestCronJobLabels.Has(LabelPGBackRest))
 	assert.Equal(t, pgBackRestCronJobLabels.Get(LabelPGBackRestRepo), repoName)
+	assert.Equal(t, pgBackRestCronJobLabels.Get(LabelPGBackRestBackup), string(BackupScheduled))
 
 	// verify the labels that identify pgBackRest dedicated repository host resources
 	pgBackRestDedicatedLabels := PGBackRestDedicatedLabels(clusterName)
