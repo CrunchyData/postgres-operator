@@ -121,6 +121,7 @@ func kubernetes3(t testing.TB) (*envtest.Environment, client.Client) {
 			ErrorIfPathMissing: true,
 			Paths: []string{
 				filepath.Join(base, "config", "crd", "bases"),
+				filepath.Join(base, "hack", "tools", "external-snapshotter", "client", "config", "crd"),
 			},
 			Scheme: runtime.Scheme,
 		})

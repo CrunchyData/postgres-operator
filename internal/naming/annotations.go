@@ -32,6 +32,11 @@ const (
 	// ID associated with a specific manual backup Job.
 	PGBackRestBackup = annotationPrefix + "pgbackrest-backup"
 
+	// PGBackRestBackupJobId is the annotation that is added to a VolumeSnapshot to identify the
+	// backup job that is associated with it (a backup is always taken right before a
+	// VolumeSnapshot is taken).
+	PGBackRestBackupJobId = annotationPrefix + "pgbackrest-backup-job-id"
+
 	// PGBackRestConfigHash is an annotation used to specify the hash value associated with a
 	// repo configuration as needed to detect configuration changes that invalidate running Jobs
 	// (and therefore must be recreated)

@@ -209,6 +209,12 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PGBackRestRepoVolume", PGBackRestRepoVolume(cluster, repoName)},
 		})
 	})
+
+	t.Run("VolumeSnapshots", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"ClusterVolumeSnapshot", ClusterVolumeSnapshot(cluster)},
+		})
+	})
 }
 
 func TestInstanceNamesUniqueAndValid(t *testing.T) {

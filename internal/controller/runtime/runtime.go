@@ -29,6 +29,8 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+
+	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
 )
 
 type (
@@ -45,6 +47,9 @@ func init() {
 		panic(err)
 	}
 	if err := v1beta1.AddToScheme(Scheme); err != nil {
+		panic(err)
+	}
+	if err := volumesnapshotv1.AddToScheme(Scheme); err != nil {
 		panic(err)
 	}
 }
