@@ -151,6 +151,9 @@ const (
 	// BackupReplicaCreate is the backup type for the backup taken to enable pgBackRest replica
 	// creation
 	BackupReplicaCreate BackupJobType = "replica-create"
+
+	// BackupScheduled is the backup type utilized for scheduled backups
+	BackupScheduled BackupJobType = "scheduled"
 )
 
 const (
@@ -270,6 +273,7 @@ func PGBackRestCronJobLabels(clusterName, repoName, backupType string) labels.Se
 	cronJobLabels := map[string]string{
 		LabelPGBackRestRepo:    repoName,
 		LabelPGBackRestCronJob: backupType,
+		LabelPGBackRestBackup:  string(BackupScheduled),
 	}
 	return labels.Merge(commonLabels, cronJobLabels)
 }
