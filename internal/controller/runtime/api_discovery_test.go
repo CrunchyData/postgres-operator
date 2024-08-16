@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 func TestAPISet(t *testing.T) {
@@ -73,4 +74,12 @@ func TestAPIContext(t *testing.T) {
 	// The stored value is mutable within the context.
 	set[API{Group: "snapshot.storage.k8s.io"}] = struct{}{}
 	assert.Assert(t, Kubernetes(ctx).Has(API{Group: "snapshot.storage.k8s.io"}))
+}
+
+func TestAPIDiscoveryRunnerInterfaces(t *testing.T) {
+	var _ APIs = new(APIDiscoveryRunner)
+	var _ manager.Runnable = new(APIDiscoveryRunner)
+
+	var runnable manager.LeaderElectionRunnable = new(APIDiscoveryRunner)
+	assert.Assert(t, false == runnable.NeedLeaderElection())
 }

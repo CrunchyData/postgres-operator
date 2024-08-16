@@ -185,6 +185,7 @@ func (r *Runner) Start(ctx context.Context) error {
 				r.changed()
 			}
 		case <-ctx.Done():
+			// TODO(controller-runtime): Fixed in v0.19.0
 			// https://github.com/kubernetes-sigs/controller-runtime/issues/1927
 			if errors.Is(ctx.Err(), context.Canceled) {
 				return nil

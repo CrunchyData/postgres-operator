@@ -27,7 +27,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
@@ -157,6 +156,10 @@ func main() {
 	// deprecation warnings when using an older version of a resource for backwards compatibility).
 	rest.SetDefaultWarningHandler(rest.NoWarnings{})
 
+	apis, err := runtime.NewAPIDiscoveryRunner(cfg)
+	assertNoError(err)
+	assertNoError(apis.Read())
+
 	options, err := initManager()
 	assertNoError(err)
 
@@ -165,13 +168,17 @@ func main() {
 	options.BaseContext = func() context.Context {
 		ctx := context.Background()
 		ctx = feature.NewContext(ctx, features)
+		ctx = runtime.NewAPIContext(ctx, apis)
 		return ctx
 	}
 
 	mgr, err := runtime.NewManager(cfg, options)
 	assertNoError(err)
+	assertNoError(mgr.Add(apis))
 
-	openshift := isOpenshift(cfg)
+	openshift := apis.Has(runtime.API{
+		Group: "security.openshift.io", Kind: "SecurityContextConstraints",
+	})
 	if openshift {
 		log.Info("detected OpenShift environment")
 	}
@@ -274,34 +281,4 @@ func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Lo
 		log.Error(err, "unable to create CrunchyBridgeCluster controller")
 		os.Exit(1)
 	}
-}
-
-func isOpenshift(cfg *rest.Config) bool {
-	const sccGroupName, sccKind = "security.openshift.io", "SecurityContextConstraints"
-
-	client, err := discovery.NewDiscoveryClientForConfig(cfg)
-	assertNoError(err)
-
-	groups, err := client.ServerGroups()
-	if err != nil {
-		assertNoError(err)
-	}
-	for _, g := range groups.Groups {
-		if g.Name != sccGroupName {
-			continue
-		}
-		for _, v := range g.Versions {
-			resourceList, err := client.ServerResourcesForGroupVersion(v.GroupVersion)
-			if err != nil {
-				assertNoError(err)
-			}
-			for _, r := range resourceList.APIResources {
-				if r.Kind == sccKind {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
 }
