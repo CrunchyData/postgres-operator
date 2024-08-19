@@ -17,6 +17,7 @@ package v1beta1
 
 import (
 	"fmt"
+	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,8 +34,8 @@ type PostgresClusterSpec struct {
 	DataSource *DataSource `json:"dataSource,omitempty"`
 
 	// PostgreSQL backup configuration
-	// +kubebuilder:validation:Required
-	Backups Backups `json:"backups"`
+	// +optional
+	Backups Backups `json:"backups, omitempty"`
 
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the
@@ -322,7 +323,7 @@ func (s *PostgresClusterSpec) Default() {
 type Backups struct {
 
 	// pgBackRest archive configuration
-	// +kubebuilder:validation:Required
+	// +optional
 	PGBackRest PGBackRestArchive `json:"pgbackrest"`
 
 	// VolumeSnapshot configuration
@@ -667,6 +668,10 @@ func (c *PostgresCluster) Default() {
 		c.Kind = "PostgresCluster"
 	}
 	c.Spec.Default()
+}
+func (c *PostgresCluster) BackupsEnabled() bool {
+	emptyBackupsSection := reflect.DeepEqual(c.Spec.Backups, Backups{PGBackRest: PGBackRestArchive{}})
+	return !emptyBackupsSection
 }
 
 // +kubebuilder:object:root=true
