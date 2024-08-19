@@ -217,6 +217,7 @@ func (r *Reconciler) Reconcile(
 
 	pgParameters := postgres.NewParameters()
 	pgaudit.PostgreSQLParameters(&pgParameters)
+
 	pgbackrest.PostgreSQL(cluster, &pgParameters)
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 

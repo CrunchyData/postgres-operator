@@ -1297,7 +1297,6 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		result.Requeue = true
 		return result, nil
 	}
-	repoHostName = repoHost.GetName()
 
 	if err := r.reconcilePGBackRestSecret(ctx, postgresCluster, repoHost, rootCA); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest secret")
@@ -1327,8 +1326,15 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	for _, instance := range instances.forCluster {
 		instanceNames = append(instanceNames, instance.Name)
 	}
+
+	if !postgresCluster.BackupsEnabled() {
+		// Return before reconciliation expects a repo host to exist.
+		return result, nil
+	}
+
 	// sort to ensure consistent ordering of hosts when creating pgBackRest configs
 	sort.Strings(instanceNames)
+	repoHostName = repoHost.GetName()
 	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, repoHostName,
 		configHash, naming.ClusterPodService(postgresCluster).Name,
 		postgresCluster.GetNamespace(), instanceNames); err != nil {
@@ -1896,6 +1902,19 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) error {
 
+	// Remove the existing pgBackRest config map, if backups have been turned off.
+	if !postgresCluster.BackupsEnabled() {
+		existing := &corev1.ConfigMap{}
+		intent := &corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(postgresCluster)}
+		err := errors.WithStack(client.IgnoreNotFound(
+			r.Client.Get(ctx, client.ObjectKeyFromObject(intent), existing)))
+		if err != nil {
+			return err
+		}
+		err = errors.WithStack(client.IgnoreNotFound(r.deleteControlled(ctx, postgresCluster, existing)))
+		return err
+	}
+
 	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, instanceNames)
 	if err := controllerutil.SetControllerReference(postgresCluster, backrestConfig,
@@ -1933,6 +1952,13 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 	existing := &corev1.Secret{}
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(intent), existing)))
+
+	// If backups have been turned off, remove the pgBackRest secret.
+	if !cluster.BackupsEnabled() {
+		err = errors.WithStack(client.IgnoreNotFound(
+			r.deleteControlled(ctx, cluster, existing)))
+		return err
+	}
 
 	if err == nil {
 		err = r.setControllerReference(cluster, intent)
@@ -2030,6 +2056,22 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoHost")
+
+	if !postgresCluster.BackupsEnabled() {
+		// When backups are disabled, remove the backrest StatefulSet, if one exists.
+		name := fmt.Sprintf("%s-%s", postgresCluster.GetName(), "repo-host")
+		existing := &appsv1.StatefulSet{}
+		sts := &appsv1.StatefulSet{ObjectMeta: metav1.ObjectMeta{Namespace: postgresCluster.Namespace, Name: name}}
+		err := errors.WithStack(client.IgnoreNotFound(
+			r.Client.Get(ctx, client.ObjectKeyFromObject(sts), existing)))
+		if err != nil {
+			return nil, err
+		}
+		err = errors.WithStack(client.IgnoreNotFound(
+			r.deleteControlled(ctx, postgresCluster, existing)))
+
+		return nil, err
+	}
 
 	// ensure conditions are set before returning as needed by subsequent reconcile functions
 	defer func() {
@@ -2514,7 +2556,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	// ensure conditions are set before returning as needed by subsequent reconcile functions
 	defer func() {
 		var replicaCreateRepoStatus *v1beta1.RepoStatus
-		if len(postgresCluster.Spec.Backups.PGBackRest.Repos) == 0 {
+		if !postgresCluster.BackupsEnabled() || len(postgresCluster.Spec.Backups.PGBackRest.Repos) == 0 {
 			return
 		}
 		replicaCreateRepoName := postgresCluster.Spec.Backups.PGBackRest.Repos[0].Name
