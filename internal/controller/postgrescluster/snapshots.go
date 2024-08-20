@@ -60,16 +60,7 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 	}
 
 	// Get all snapshots for this cluster
-	selectSnapshots, err := naming.AsSelector(naming.Cluster(postgrescluster.Name))
-	if err != nil {
-		return err
-	}
-	snapshots := &volumesnapshotv1.VolumeSnapshotList{}
-	err = errors.WithStack(
-		r.Client.List(ctx, snapshots,
-			client.InNamespace(postgrescluster.Namespace),
-			client.MatchingLabelsSelector{Selector: selectSnapshots},
-		))
+	snapshots, err := r.getSnapshotsForCluster(ctx, postgrescluster)
 	if err != nil {
 		return err
 	}
@@ -233,7 +224,6 @@ func (r *Reconciler) generateVolumeSnapshot(postgrescluster *v1beta1.PostgresClu
 // most recently completed backup job. If no completed backup job exists
 // then it returns nil.
 func getLatestCompleteBackupJob(jobs *batchv1.JobList) *batchv1.Job {
-
 	zeroTime := metav1.NewTime(time.Time{})
 	latestCompleteBackupJob := batchv1.Job{
 		Status: batchv1.JobStatus{
@@ -248,7 +238,7 @@ func getLatestCompleteBackupJob(jobs *batchv1.JobList) *batchv1.Job {
 		}
 	}
 
-	if latestCompleteBackupJob.UID == "" {
+	if latestCompleteBackupJob.Status.CompletionTime.Equal(&zeroTime) {
 		return nil
 	}
 
@@ -272,9 +262,49 @@ func getLatestSnapshotWithError(snapshots *volumesnapshotv1.VolumeSnapshotList) 
 		}
 	}
 
-	if latestSnapshotWithError.UID == "" {
+	if latestSnapshotWithError.Status.CreationTime.Equal(&zeroTime) {
 		return nil
 	}
 
 	return &latestSnapshotWithError
+}
+
+// getSnapshotsForCluster gets all the VolumeSnapshots for a given postgrescluster
+func (r *Reconciler) getSnapshotsForCluster(ctx context.Context, cluster *v1beta1.PostgresCluster) (
+	*volumesnapshotv1.VolumeSnapshotList, error) {
+
+	selectSnapshots, err := naming.AsSelector(naming.Cluster(cluster.Name))
+	if err != nil {
+		return nil, err
+	}
+	snapshots := &volumesnapshotv1.VolumeSnapshotList{}
+	err = errors.WithStack(
+		r.Client.List(ctx, snapshots,
+			client.InNamespace(cluster.Namespace),
+			client.MatchingLabelsSelector{Selector: selectSnapshots},
+		))
+
+	return snapshots, err
+}
+
+// getLatestReadySnapshot takes a VolumeSnapshotList and returns the latest ready VolumeSnapshot
+func getLatestReadySnapshot(snapshots *volumesnapshotv1.VolumeSnapshotList) *volumesnapshotv1.VolumeSnapshot {
+	zeroTime := metav1.NewTime(time.Time{})
+	latestReadySnapshot := volumesnapshotv1.VolumeSnapshot{
+		Status: &volumesnapshotv1.VolumeSnapshotStatus{
+			CreationTime: &zeroTime,
+		},
+	}
+	for _, snapshot := range snapshots.Items {
+		if *snapshot.Status.ReadyToUse &&
+			latestReadySnapshot.Status.CreationTime.Before(snapshot.Status.CreationTime) {
+			latestReadySnapshot = snapshot
+		}
+	}
+
+	if latestReadySnapshot.Status.CreationTime.Equal(&zeroTime) {
+		return nil
+	}
+
+	return &latestReadySnapshot
 }

@@ -580,7 +580,7 @@ func (r *Reconciler) reconcilePostgresUsersInPostgreSQL(
 func (r *Reconciler) reconcilePostgresDataVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []corev1.PersistentVolumeClaim, sourceCluster *v1beta1.PostgresCluster,
 ) (*corev1.PersistentVolumeClaim, error) {
 
 	labelMap := map[string]string{
@@ -620,6 +620,32 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	)
 
 	pvc.Spec = instanceSpec.DataVolumeClaimSpec
+
+	// If a source cluster was provided and VolumeSnapshots are turned on in the source cluster and
+	// there is a VolumeSnapshot available for the source cluster that is ReadyToUse, use it as the
+	// source for the PVC. If there is an error when retrieving VolumeSnapshots, or no ReadyToUse
+	// snapshots were found, create a warning event, but continue creating PVC in the usual fashion.
+	if sourceCluster != nil && sourceCluster.Spec.Backups.Snapshots != nil && feature.Enabled(ctx, feature.VolumeSnapshots) {
+		snapshots, err := r.getSnapshotsForCluster(ctx, sourceCluster)
+		if err == nil {
+			snapshot := getLatestReadySnapshot(snapshots)
+			if snapshot != nil {
+				r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "BootstrappingWithSnapshot",
+					"Snapshot found for %v; bootstrapping cluster with snapshot.", sourceCluster.Name)
+				pvc.Spec.DataSource = &corev1.TypedLocalObjectReference{
+					APIGroup: initialize.String("snapshot.storage.k8s.io"),
+					Kind:     snapshot.Kind,
+					Name:     snapshot.Name,
+				}
+			} else {
+				r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SnapshotNotFound",
+					"No ReadyToUse snapshots were found for %v; proceeding with typical restore process.", sourceCluster.Name)
+			}
+		} else {
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SnapshotNotFound",
+				"Could not get snapshots for %v, proceeding with typical restore process.", sourceCluster.Name)
+		}
+	}
 
 	r.setVolumeSize(ctx, cluster, pvc, instanceSpec.Name)
 

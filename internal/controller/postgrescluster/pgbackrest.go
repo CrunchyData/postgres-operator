@@ -1631,7 +1631,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		Namespace: cluster.GetNamespace(),
 	}}
 	// Reconcile the PGDATA and WAL volumes for the restore
-	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS, clusterVolumes)
+	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS, clusterVolumes, sourceCluster)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -1726,7 +1726,7 @@ func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 		Namespace: cluster.GetNamespace(),
 	}}
 	// Reconcile the PGDATA and WAL volumes for the restore
-	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS, clusterVolumes)
+	pgdata, err := r.reconcilePostgresDataVolume(ctx, cluster, instanceSet, fakeSTS, clusterVolumes, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}

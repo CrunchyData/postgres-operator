@@ -261,7 +261,6 @@ func TestGenerateVolumeSnapshot(t *testing.T) {
 }
 
 func TestGetLatestCompleteBackupJob(t *testing.T) {
-
 	t.Run("NoJobs", func(t *testing.T) {
 		jobList := &batchv1.JobList{}
 		latestCompleteBackupJob := getLatestCompleteBackupJob(jobList)
@@ -433,5 +432,224 @@ func TestGetLatestSnapshotWithError(t *testing.T) {
 		}
 		latestSnapshotWithError := getLatestSnapshotWithError(snapshotList)
 		assert.Equal(t, latestSnapshotWithError.ObjectMeta.Name, "second-bad-snapshot")
+	})
+}
+
+func TestGetLatestReadySnapshot(t *testing.T) {
+	t.Run("NoSnapshots", func(t *testing.T) {
+		snapshotList := &volumesnapshotv1.VolumeSnapshotList{}
+		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		assert.Check(t, latestReadySnapshot == nil)
+	})
+
+	t.Run("NoReadySnapshots", func(t *testing.T) {
+		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
+			Items: []volumesnapshotv1.VolumeSnapshot{
+				{
+					Status: &volumesnapshotv1.VolumeSnapshotStatus{
+						ReadyToUse: initialize.Bool(false),
+					},
+				},
+				{
+					Status: &volumesnapshotv1.VolumeSnapshotStatus{
+						ReadyToUse: initialize.Bool(false),
+					},
+				},
+			},
+		}
+		latestSnapshotWithError := getLatestReadySnapshot(snapshotList)
+		assert.Check(t, latestSnapshotWithError == nil)
+	})
+
+	t.Run("OneReadySnapshot", func(t *testing.T) {
+		currentTime := metav1.Now()
+		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
+		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
+			Items: []volumesnapshotv1.VolumeSnapshot{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "good-snapshot",
+						UID:  "the-uid-123",
+					},
+					Status: &volumesnapshotv1.VolumeSnapshotStatus{
+						CreationTime: &earlierTime,
+						ReadyToUse:   initialize.Bool(true),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "bad-snapshot",
+						UID:  "the-uid-456",
+					},
+					Status: &volumesnapshotv1.VolumeSnapshotStatus{
+						CreationTime: &currentTime,
+						ReadyToUse:   initialize.Bool(false),
+					},
+				},
+			},
+		}
+		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		assert.Equal(t, latestReadySnapshot.ObjectMeta.Name, "good-snapshot")
+	})
+
+	t.Run("TwoReadySnapshots", func(t *testing.T) {
+		currentTime := metav1.Now()
+		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
+		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
+			Items: []volumesnapshotv1.VolumeSnapshot{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "first-good-snapshot",
+						UID:  "the-uid-123",
+					},
+					Status: &volumesnapshotv1.VolumeSnapshotStatus{
+						CreationTime: &earlierTime,
+						ReadyToUse:   initialize.Bool(true),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "second-good-snapshot",
+						UID:  "the-uid-456",
+					},
+					Status: &volumesnapshotv1.VolumeSnapshotStatus{
+						CreationTime: &currentTime,
+						ReadyToUse:   initialize.Bool(true),
+					},
+				},
+			},
+		}
+		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		assert.Equal(t, latestReadySnapshot.ObjectMeta.Name, "second-good-snapshot")
+	})
+}
+
+func TestGetSnapshotsForCluster(t *testing.T) {
+	ctx := context.Background()
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
+
+	r := &Reconciler{
+		Client: cc,
+		Owner:  client.FieldOwner(t.Name()),
+	}
+	ns := setupNamespace(t, cc)
+
+	cluster := testCluster()
+	cluster.Namespace = ns.Name
+
+	t.Run("NoSnapshots", func(t *testing.T) {
+		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
+		assert.NilError(t, err)
+		assert.Equal(t, len(snapshots.Items), 0)
+	})
+
+	t.Run("NoSnapshotsForCluster", func(t *testing.T) {
+		snapshot := &volumesnapshotv1.VolumeSnapshot{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: volumesnapshotv1.SchemeGroupVersion.String(),
+				Kind:       "VolumeSnapshot",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-snapshot",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					naming.LabelCluster: "rhino",
+				},
+			},
+		}
+		snapshot.Spec.Source.PersistentVolumeClaimName = initialize.String("some-pvc-name")
+		snapshot.Spec.VolumeSnapshotClassName = initialize.String("some-class-name")
+		err := r.apply(ctx, snapshot)
+		assert.NilError(t, err)
+
+		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
+		assert.NilError(t, err)
+		assert.Equal(t, len(snapshots.Items), 0)
+	})
+
+	t.Run("OneSnapshotForCluster", func(t *testing.T) {
+		snapshot1 := &volumesnapshotv1.VolumeSnapshot{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: volumesnapshotv1.SchemeGroupVersion.String(),
+				Kind:       "VolumeSnapshot",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-snapshot",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					naming.LabelCluster: "rhino",
+				},
+			},
+		}
+		snapshot1.Spec.Source.PersistentVolumeClaimName = initialize.String("some-pvc-name")
+		snapshot1.Spec.VolumeSnapshotClassName = initialize.String("some-class-name")
+		err := r.apply(ctx, snapshot1)
+		assert.NilError(t, err)
+
+		snapshot2 := &volumesnapshotv1.VolumeSnapshot{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: volumesnapshotv1.SchemeGroupVersion.String(),
+				Kind:       "VolumeSnapshot",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "another-snapshot",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					naming.LabelCluster: "hippo",
+				},
+			},
+		}
+		snapshot2.Spec.Source.PersistentVolumeClaimName = initialize.String("another-pvc-name")
+		snapshot2.Spec.VolumeSnapshotClassName = initialize.String("another-class-name")
+		err = r.apply(ctx, snapshot2)
+		assert.NilError(t, err)
+
+		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
+		assert.NilError(t, err)
+		assert.Equal(t, len(snapshots.Items), 1)
+		assert.Equal(t, snapshots.Items[0].Name, "another-snapshot")
+	})
+
+	t.Run("TwoSnapshotsForCluster", func(t *testing.T) {
+		snapshot1 := &volumesnapshotv1.VolumeSnapshot{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: volumesnapshotv1.SchemeGroupVersion.String(),
+				Kind:       "VolumeSnapshot",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-snapshot",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					naming.LabelCluster: "hippo",
+				},
+			},
+		}
+		snapshot1.Spec.Source.PersistentVolumeClaimName = initialize.String("some-pvc-name")
+		snapshot1.Spec.VolumeSnapshotClassName = initialize.String("some-class-name")
+		err := r.apply(ctx, snapshot1)
+		assert.NilError(t, err)
+
+		snapshot2 := &volumesnapshotv1.VolumeSnapshot{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: volumesnapshotv1.SchemeGroupVersion.String(),
+				Kind:       "VolumeSnapshot",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "another-snapshot",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					naming.LabelCluster: "hippo",
+				},
+			},
+		}
+		snapshot2.Spec.Source.PersistentVolumeClaimName = initialize.String("another-pvc-name")
+		snapshot2.Spec.VolumeSnapshotClassName = initialize.String("another-class-name")
+		err = r.apply(ctx, snapshot2)
+		assert.NilError(t, err)
+
+		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
+		assert.NilError(t, err)
+		assert.Equal(t, len(snapshots.Items), 2)
 	})
 }

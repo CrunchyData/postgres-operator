@@ -1189,7 +1189,7 @@ func (r *Reconciler) reconcileInstance(
 			ctx, cluster, spec, instance, rootCA)
 	}
 	if err == nil {
-		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance, clusterVolumes)
+		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance, clusterVolumes, nil)
 	}
 	if err == nil {
 		postgresWALVolume, err = r.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, clusterVolumes)
