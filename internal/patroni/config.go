@@ -450,6 +450,19 @@ func instanceEnvironment(
 			Name:  "PATRONICTL_CONFIG_FILE",
 			Value: configDirectory,
 		},
+		// This allows a custom CA certificate to be mounted for Postgres LDAP
+		// authentication via spec.config.files.
+		// - https://wiki.postgresql.org/wiki/LDAP_Authentication_against_AD
+		//
+		// When setting the TLS_CACERT for LDAP as an environment variable, 'LDAP'
+		// must be appended as a prefix.
+		// - https://www.openldap.org/software/man.cgi?query=ldap.conf
+		//
+		// Testing with LDAPTLS_CACERTDIR did not work as expected during testing.
+		{
+			Name:  "LDAPTLS_CACERT",
+			Value: "/etc/postgres/ldap/ca.crt",
+		},
 	}
 
 	return variables
