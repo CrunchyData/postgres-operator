@@ -26,6 +26,7 @@ import (
 func PostgreSQL(
 	inCluster *v1beta1.PostgresCluster,
 	outParameters *postgres.Parameters,
+	backupsEnabled bool,
 ) {
 	if outParameters.Mandatory == nil {
 		outParameters.Mandatory = postgres.NewParameterSet()
@@ -39,7 +40,7 @@ func PostgreSQL(
 	// - https://pgbackrest.org/command.html#command-archive-push
 	// - https://www.postgresql.org/docs/current/runtime-config-wal.html
 	outParameters.Mandatory.Add("archive_mode", "on")
-	if inCluster.BackupsEnabled() {
+	if backupsEnabled {
 		archive := `pgbackrest --stanza=` + DefaultStanzaName + ` archive-push "%p"`
 		outParameters.Mandatory.Add("archive_command", archive)
 	} else {

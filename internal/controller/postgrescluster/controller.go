@@ -218,7 +218,11 @@ func (r *Reconciler) Reconcile(
 	pgParameters := postgres.NewParameters()
 	pgaudit.PostgreSQLParameters(&pgParameters)
 
-	pgbackrest.PostgreSQL(cluster, &pgParameters)
+	backupsEnabled, err := r.BackupsEnabled(ctx, cluster)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsEnabled)
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
 	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
