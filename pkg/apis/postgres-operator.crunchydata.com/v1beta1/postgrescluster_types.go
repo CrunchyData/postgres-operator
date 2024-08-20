@@ -17,7 +17,6 @@ package v1beta1
 
 import (
 	"fmt"
-	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -668,10 +667,6 @@ func (c *PostgresCluster) Default() {
 		c.Kind = "PostgresCluster"
 	}
 	c.Spec.Default()
-}
-func (c *PostgresCluster) BackupsEnabled() bool {
-	emptyBackupsSection := reflect.DeepEqual(c.Spec.Backups, Backups{PGBackRest: PGBackRestArchive{}})
-	return !emptyBackupsSection
 }
 
 // +kubebuilder:object:root=true

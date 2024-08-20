@@ -1198,7 +1198,11 @@ func (r *Reconciler) reconcileInstance(
 			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
 			&instance.Spec.Template.Spec)
 
-		if cluster.BackupsEnabled() {
+		backupsEnabled, err := r.BackupsEnabled(ctx, cluster)
+		if err != nil {
+			return err
+		}
+		if backupsEnabled {
 			addPGBackRestToInstancePodSpec(
 				ctx, cluster, instanceCertificates, &instance.Spec.Template.Spec)
 		}
