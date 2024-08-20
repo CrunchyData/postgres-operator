@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-logr/logr/funcr"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
 	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -251,26 +252,26 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 		Owner:  client.FieldOwner(t.Name()),
 	}
 
-	cluster := testCluster()
-	cluster.Namespace = setupNamespace(t, tClient).Name
+	t.Run("DataVolumeNoSourceCluster", func(t *testing.T) {
+		cluster := testCluster()
+		ns := setupNamespace(t, tClient)
+		cluster.Namespace = ns.Name
 
-	assert.NilError(t, tClient.Create(ctx, cluster))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
+		assert.NilError(t, tClient.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
-	spec := &v1beta1.PostgresInstanceSetSpec{}
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
-		name: "some-instance",
-		dataVolumeClaimSpec: {
-			accessModes: [ReadWriteOnce],
-			resources: { requests: { storage: 1Gi } },
-			storageClassName: "storage-class-for-data",
-		},
-	}`), spec))
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			name: "some-instance",
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
+				storageClassName: "storage-class-for-data",
+			},
+		}`), spec))
+		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
-	instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
-
-	t.Run("DataVolume", func(t *testing.T) {
-		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance, nil)
+		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance, nil, nil)
 		assert.NilError(t, err)
 
 		assert.Assert(t, metav1.IsControlledBy(pvc, cluster))
@@ -291,7 +292,190 @@ volumeMode: Filesystem
 		`))
 	})
 
+	t.Run("DataVolumeSourceClusterWithGoodSnapshot", func(t *testing.T) {
+		cluster := testCluster()
+		ns := setupNamespace(t, tClient)
+		cluster.Namespace = ns.Name
+
+		assert.NilError(t, tClient.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			name: "some-instance",
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
+				storageClassName: "storage-class-for-data",
+			},
+		}`), spec))
+		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
+
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler.Recorder = recorder
+
+		// Turn on VolumeSnapshots feature gate
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.VolumeSnapshots: true,
+		}))
+		ctx := feature.NewContext(ctx, gate)
+
+		// Create source cluster and enable snapshots
+		sourceCluster := testCluster()
+		sourceCluster.Namespace = ns.Name
+		sourceCluster.Name = "rhino"
+		sourceCluster.Spec.Backups.Snapshots = &v1beta1.VolumeSnapshots{
+			VolumeSnapshotClassName: "some-class-name",
+		}
+
+		// Create a snapshot
+		snapshot := &volumesnapshotv1.VolumeSnapshot{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: volumesnapshotv1.SchemeGroupVersion.String(),
+				Kind:       "VolumeSnapshot",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "some-snapshot",
+				Namespace: ns.Name,
+				Labels: map[string]string{
+					naming.LabelCluster: "rhino",
+				},
+			},
+		}
+		snapshot.Spec.Source.PersistentVolumeClaimName = initialize.String("some-pvc-name")
+		snapshot.Spec.VolumeSnapshotClassName = initialize.String("some-class-name")
+		err := reconciler.apply(ctx, snapshot)
+		assert.NilError(t, err)
+
+		// Get snapshot and update Status.ReadyToUse and CreationTime
+		err = reconciler.Client.Get(ctx, client.ObjectKeyFromObject(snapshot), snapshot)
+		assert.NilError(t, err)
+
+		currentTime := metav1.Now()
+		snapshot.Status = &volumesnapshotv1.VolumeSnapshotStatus{
+			ReadyToUse:   initialize.Bool(true),
+			CreationTime: &currentTime,
+		}
+		err = reconciler.Client.Status().Update(ctx, snapshot)
+		assert.NilError(t, err)
+
+		// Reconcile volume
+		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance, nil, sourceCluster)
+		assert.NilError(t, err)
+
+		assert.Assert(t, metav1.IsControlledBy(pvc, cluster))
+
+		assert.Equal(t, pvc.Labels[naming.LabelCluster], cluster.Name)
+		assert.Equal(t, pvc.Labels[naming.LabelInstance], instance.Name)
+		assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], spec.Name)
+		assert.Equal(t, pvc.Labels[naming.LabelRole], "pgdata")
+
+		assert.Assert(t, marshalMatches(pvc.Spec, `
+accessModes:
+- ReadWriteOnce
+dataSource:
+  apiGroup: snapshot.storage.k8s.io
+  kind: VolumeSnapshot
+  name: some-snapshot
+dataSourceRef:
+  apiGroup: snapshot.storage.k8s.io
+  kind: VolumeSnapshot
+  name: some-snapshot
+resources:
+  requests:
+    storage: 1Gi
+storageClassName: storage-class-for-data
+volumeMode: Filesystem
+		`))
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "BootstrappingWithSnapshot")
+		assert.Equal(t, recorder.Events[0].Note, "Snapshot found for rhino; bootstrapping cluster with snapshot.")
+	})
+
+	t.Run("DataVolumeSourceClusterSnapshotsEnabledNoSnapshots", func(t *testing.T) {
+		cluster := testCluster()
+		ns := setupNamespace(t, tClient)
+		cluster.Namespace = ns.Name
+
+		assert.NilError(t, tClient.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			name: "some-instance",
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
+				storageClassName: "storage-class-for-data",
+			},
+		}`), spec))
+		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
+
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler.Recorder = recorder
+
+		// Turn on VolumeSnapshots feature gate
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.VolumeSnapshots: true,
+		}))
+		ctx := feature.NewContext(ctx, gate)
+
+		// Create source cluster and enable snapshots
+		sourceCluster := testCluster()
+		sourceCluster.Namespace = ns.Name
+		sourceCluster.Name = "rhino"
+		sourceCluster.Spec.Backups.Snapshots = &v1beta1.VolumeSnapshots{
+			VolumeSnapshotClassName: "some-class-name",
+		}
+
+		// Reconcile volume
+		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance, nil, sourceCluster)
+		assert.NilError(t, err)
+
+		assert.Assert(t, metav1.IsControlledBy(pvc, cluster))
+
+		assert.Equal(t, pvc.Labels[naming.LabelCluster], cluster.Name)
+		assert.Equal(t, pvc.Labels[naming.LabelInstance], instance.Name)
+		assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], spec.Name)
+		assert.Equal(t, pvc.Labels[naming.LabelRole], "pgdata")
+
+		assert.Assert(t, marshalMatches(pvc.Spec, `
+accessModes:
+- ReadWriteOnce
+resources:
+  requests:
+    storage: 1Gi
+storageClassName: storage-class-for-data
+volumeMode: Filesystem
+		`))
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "SnapshotNotFound")
+		assert.Equal(t, recorder.Events[0].Note, "No ReadyToUse snapshots were found for rhino; proceeding with typical restore process.")
+	})
+
 	t.Run("WALVolume", func(t *testing.T) {
+		cluster := testCluster()
+		ns := setupNamespace(t, tClient)
+		cluster.Namespace = ns.Name
+
+		assert.NilError(t, tClient.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			name: "some-instance",
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
+				storageClassName: "storage-class-for-data",
+			},
+		}`), spec))
+		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
+
 		observed := &Instance{}
 
 		t.Run("None", func(t *testing.T) {
