@@ -1198,16 +1198,16 @@ func (r *Reconciler) reconcileInstance(
 			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
 			&instance.Spec.Template.Spec)
 
-		backupsEnabled, _, err := r.BackupsEnabled(ctx, cluster)
-		if err != nil {
+		backupsSpecFound, backupsReconciliationAllowed, err := r.BackupsEnabled(ctx, cluster)
+		if err != nil || !backupsReconciliationAllowed {
 			return err
 		}
-		if backupsEnabled {
+		if backupsSpecFound {
 			addPGBackRestToInstancePodSpec(
 				ctx, cluster, instanceCertificates, &instance.Spec.Template.Spec)
 		}
 
-		err = patroni.InstancePod(
+		_ = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
