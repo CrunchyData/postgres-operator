@@ -2111,7 +2111,7 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	}
 
 	// Do we want to get the existing STS and return it?
-	// What we don't want to do is generate one from the hobbled spec
+	// What we don't want to do is generate a new STS from the hobbled spec
 	if !backupReconciliationAllowed {
 		return nil, err
 	}
