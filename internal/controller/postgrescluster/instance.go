@@ -1198,7 +1198,7 @@ func (r *Reconciler) reconcileInstance(
 			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
 			&instance.Spec.Template.Spec)
 
-		backupsEnabled, err := r.BackupsEnabled(ctx, cluster)
+		backupsEnabled, _, err := r.BackupsEnabled(ctx, cluster)
 		if err != nil {
 			return err
 		}

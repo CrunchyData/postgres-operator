@@ -218,7 +218,7 @@ func (r *Reconciler) Reconcile(
 	pgParameters := postgres.NewParameters()
 	pgaudit.PostgreSQLParameters(&pgParameters)
 
-	backupsEnabled, err := r.BackupsEnabled(ctx, cluster)
+	backupsEnabled, _, err := r.BackupsEnabled(ctx, cluster)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
