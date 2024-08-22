@@ -1356,7 +1356,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// add some additional context about what component is being reconciled
 	log := logging.FromContext(ctx).WithValues("reconciler", "pgBackRest")
 
-	// if nil and backups are enabled, create the pgBackRest status that will be updated when
+	// if nil, create the pgBackRest status that will be updated when
 	// reconciling various pgBackRest resources
 	if postgresCluster.Status.PGBackRest == nil {
 		postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{}
@@ -1391,8 +1391,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		return result, nil
 	}
 
-	if err := r.reconcilePGBackRestSecret(ctx, postgresCluster, repoHost,
-		rootCA); err != nil {
+	if err := r.reconcilePGBackRestSecret(ctx, postgresCluster, repoHost, rootCA); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest secret")
 		result.Requeue = true
 	}
@@ -1426,8 +1425,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	repoHostName = repoHost.GetName()
 	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, repoHostName,
 		configHash, naming.ClusterPodService(postgresCluster).Name,
-		postgresCluster.GetNamespace(), instanceNames,
-	); err != nil {
+		postgresCluster.GetNamespace(), instanceNames); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest configuration")
 		result.Requeue = true
 	}
@@ -1664,8 +1662,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 // data source, i.e., S3, etc.
 func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, dataSource *v1beta1.PGBackRestDataSource,
-	configHash string, clusterVolumes []corev1.PersistentVolumeClaim,
-) error {
+	configHash string, clusterVolumes []corev1.PersistentVolumeClaim) error {
 
 	// Ensure the proper instance and instance set can be identified via the status.  The
 	// StartupInstance and StartupInstanceSet values should be populated when the cluster
@@ -1768,8 +1765,7 @@ func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 
 // createRestoreConfig creates a configmap struct with pgBackRest pgbackrest.conf settings
 // in the data field, for use with restoring from cloud-based data sources
-func (r *Reconciler) createRestoreConfig(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster,
+func (r *Reconciler) createRestoreConfig(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	configHash string) error {
 
 	postgresClusterWithMockedBackups := postgresCluster.DeepCopy()
@@ -1994,8 +1990,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
-	instanceNames []string,
-) error {
+	instanceNames []string) error {
 	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, instanceNames)
 	if err := controllerutil.SetControllerReference(postgresCluster, backrestConfig,
@@ -2015,8 +2010,7 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 // reconcilePGBackRestSecret reconciles the pgBackRest Secret.
 func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, repoHost *appsv1.StatefulSet,
-	rootCA *pki.RootCertificateAuthority,
-) error {
+	rootCA *pki.RootCertificateAuthority) error {
 
 	intent := &corev1.Secret{ObjectMeta: naming.PGBackRestSecret(cluster)}
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
@@ -2034,10 +2028,6 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 	existing := &corev1.Secret{}
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(intent), existing)))
-
-	if err != nil {
-		return err
-	}
 
 	if err == nil {
 		err = r.setControllerReference(cluster, intent)
@@ -2066,8 +2056,7 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 // reconcileInstanceRBAC reconciles the Role, RoleBinding, and ServiceAccount for
 // pgBackRest
 func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster,
-) (*corev1.ServiceAccount, error) {
+	postgresCluster *v1beta1.PostgresCluster) (*corev1.ServiceAccount, error) {
 	sa := &corev1.ServiceAccount{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
 	sa.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ServiceAccount"))
 	role := &rbacv1.Role{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
@@ -2130,8 +2119,7 @@ func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
 func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoResources *RepoResources,
-	observedInstances *observedInstances,
-) (*appsv1.StatefulSet, error) {
+	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoHost")
 
@@ -2178,7 +2166,6 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 		return nil, err
 	}
 
-	// TODO: Why do we hit this line when backups should not be enabled?
 	postgresCluster.Status.PGBackRest.RepoHost = getRepoHostStatus(repoHost)
 
 	if isCreate {
@@ -2614,8 +2601,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 // propagated to the Pod).
 func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
-	instances *observedInstances, configHash string,
-) (bool, error) {
+	instances *observedInstances, configHash string) (bool, error) {
 
 	// ensure conditions are set before returning as needed by subsequent reconcile functions
 	defer func() {

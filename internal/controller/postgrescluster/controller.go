@@ -240,6 +240,7 @@ func (r *Reconciler) Reconcile(
 	pgHBAs := postgres.NewHBAs()
 	pgmonitor.PostgreSQLHBAs(cluster, &pgHBAs)
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
+
 	pgParameters := postgres.NewParameters()
 	pgaudit.PostgreSQLParameters(&pgParameters)
 	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)

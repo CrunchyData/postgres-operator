@@ -44,7 +44,6 @@ func PostgreSQL(
 		archive := `pgbackrest --stanza=` + DefaultStanzaName + ` archive-push "%p"`
 		outParameters.Mandatory.Add("archive_command", archive)
 	} else {
-		//TODO: outParameters.Mandatory.Add("archive_check", "n") # Not needed?
 		// If backups are disabled, keep archive_mode on (to avoid a Postgres restart)
 		// and throw away WAL.
 		outParameters.Mandatory.Add("archive_command", `true`)

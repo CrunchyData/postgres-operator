@@ -24,4 +24,3 @@ metadata:
     postgres-operator.crunchydata.com/cluster: created-without-backups
     postgres-operator.crunchydata.com/data: postgres
     postgres-operator.crunchydata.com/instance-set: instance1
----
