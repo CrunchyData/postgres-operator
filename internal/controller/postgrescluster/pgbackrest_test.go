@@ -206,7 +206,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
 
 	// create a service account to test with
-	serviceAccount, err := r.reconcilePGBackRestRBAC(ctx, postgresCluster)
+	serviceAccount, err := r.reconcilePGBackRestRBAC(ctx, postgresCluster, true)
 	assert.NilError(t, err)
 	assert.Assert(t, serviceAccount != nil)
 
@@ -243,7 +243,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	rootCA, err := pki.NewRootCertificateAuthority()
 	assert.NilError(t, err)
 
-	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instances, rootCA)
+	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instances, rootCA, true, true)
 	if err != nil || result != (reconcile.Result{}) {
 		t.Errorf("unable to reconcile pgBackRest: %v", err)
 	}
@@ -626,7 +626,7 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
 
-	serviceAccount, err := r.reconcilePGBackRestRBAC(ctx, postgresCluster)
+	serviceAccount, err := r.reconcilePGBackRestRBAC(ctx, postgresCluster, true)
 	assert.NilError(t, err)
 	assert.Assert(t, serviceAccount != nil)
 
@@ -720,7 +720,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		Message:            "pgBackRest dedicated repository host is ready",
 	})
 
-	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
+	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345", true, true)
 	assert.NilError(t, err)
 	assert.Assert(t, !configHashMismatch)
 
@@ -759,7 +759,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		SystemIdentifier: "6952526174828511264",
 	}
 
-	configHashMismatch, err = r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345")
+	configHashMismatch, err = r.reconcileStanzaCreate(ctx, postgresCluster, instances, "abcde12345", true, true)
 	assert.Error(t, err, "fake stanza create failed: ")
 	assert.Assert(t, !configHashMismatch)
 
@@ -1641,7 +1641,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				assert.NilError(t, err)
 				assert.NilError(t, tClient.Create(ctx, resource))
 
-				resources, err := r.getPGBackRestResources(ctx, tc.cluster)
+				resources, err := r.getPGBackRestResources(ctx, tc.cluster, true, true)
 				assert.NilError(t, err)
 
 				assert.Assert(t, tc.result.jobCount == len(resources.replicaCreateBackupJobs))
@@ -1878,7 +1878,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 					pgclusterDataSource = tc.dataSource.PostgresCluster
 				}
 				err := r.reconcilePostgresClusterDataSource(ctx, cluster, pgclusterDataSource,
-					"testhash", nil, rootCA)
+					"testhash", nil, rootCA, true, true)
 				assert.NilError(t, err)
 
 				restoreConfig := &corev1.ConfigMap{}
@@ -2072,6 +2072,7 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 					pgclusterDataSource,
 					"testhash",
 					nil,
+					true,
 				)
 				assert.NilError(t, err)
 

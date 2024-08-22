@@ -604,6 +604,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	primaryCertificate *corev1.SecretProjection,
 	clusterVolumes []corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
+	backupsSpecFound, backupsReconciliationAllowed bool,
 ) error {
 
 	// Go through the observed instances and check if a primary has been determined.
@@ -640,7 +641,9 @@ func (r *Reconciler) reconcileInstanceSets(
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate,
 			findAvailableInstanceNames(*set, instances, clusterVolumes),
-			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig)
+			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
+			backupsSpecFound, backupsReconciliationAllowed,
+		)
 
 		if err == nil {
 			err = r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, set)
@@ -1079,6 +1082,7 @@ func (r *Reconciler) scaleUpInstances(
 	numInstancePods int,
 	clusterVolumes []corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
+	backupsSpecFound, backupsReconciliationAllowed bool,
 ) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
@@ -1123,6 +1127,7 @@ func (r *Reconciler) scaleUpInstances(
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate, instances[i],
 			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
+			backupsSpecFound, backupsReconciliationAllowed,
 		)
 	}
 	if err == nil {
@@ -1152,6 +1157,7 @@ func (r *Reconciler) reconcileInstance(
 	numInstancePods int,
 	clusterVolumes []corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
+	backupsSpecFound, backupsReconciliationAllowed bool,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
 	ctx = logging.NewContext(ctx, log)
@@ -1198,11 +1204,7 @@ func (r *Reconciler) reconcileInstance(
 			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
 			&instance.Spec.Template.Spec)
 
-		backupsSpecFound, backupsReconciliationAllowed, err := r.BackupsEnabled(ctx, cluster)
-		if err != nil || !backupsReconciliationAllowed {
-			return err
-		}
-		if backupsSpecFound {
+		if backupsSpecFound || !backupsReconciliationAllowed {
 			addPGBackRestToInstancePodSpec(
 				ctx, cluster, instanceCertificates, &instance.Spec.Template.Spec)
 		}

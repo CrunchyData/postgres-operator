@@ -222,10 +222,11 @@ func (r *Reconciler) Reconcile(
 	pgaudit.PostgreSQLParameters(&pgParameters)
 
 	backupsSpecFound, backupsReconciliationAllowed, err := r.BackupsEnabled(ctx, cluster)
-	if err != nil || !backupsReconciliationAllowed {
+	// Alternatively, we could just bail here if backup reconciliation is paused?
+	if err != nil {
 		return reconcile.Result{}, err
 	}
-	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)
+	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound || !backupsReconciliationAllowed)
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
 	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
@@ -292,7 +293,7 @@ func (r *Reconciler) Reconcile(
 		// the controller should return early while data initialization is in progress, after
 		// which it will indicate that an early return is no longer needed, and reconciliation
 		// can proceed normally.
-		returnEarly, err := r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA)
+		returnEarly, err := r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA, backupsSpecFound, backupsReconciliationAllowed)
 		if err != nil || returnEarly {
 			return runtime.ErrorWithBackoff(errors.Join(err, patchClusterStatus()))
 		}
@@ -334,7 +335,9 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret, rootCA,
 			clusterPodService, instanceServiceAccount, instances, patroniLeaderService,
-			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig)
+			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
+			backupsSpecFound, backupsReconciliationAllowed,
+		)
 	}
 
 	if err == nil {
@@ -346,7 +349,9 @@ func (r *Reconciler) Reconcile(
 
 	if err == nil {
 		var next reconcile.Result
-		if next, err = r.reconcilePGBackRest(ctx, cluster, instances, rootCA); err == nil && !next.IsZero() {
+		if next, err = r.reconcilePGBackRest(ctx, cluster,
+			instances, rootCA,
+			backupsSpecFound, backupsReconciliationAllowed); err == nil && !next.IsZero() {
 			result.Requeue = result.Requeue || next.Requeue
 			if next.RequeueAfter > 0 {
 				result.RequeueAfter = next.RequeueAfter
