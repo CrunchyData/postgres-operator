@@ -1,3 +1,4 @@
+# It should be possible to turn backups back on.
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
@@ -24,15 +25,3 @@ metadata:
     postgres-operator.crunchydata.com/data: postgres
     postgres-operator.crunchydata.com/instance-set: instance1
 ---
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-      postgres-operator.crunchydata.com/cluster: created-without-backups
-      postgres-operator.crunchydata.com/data: postgres
-      postgres-operator.crunchydata.com/instance-set: instance1
-      postgres-operator.crunchydata.com/role: master
-status:
-  containerStatuses:
-  - ready: true
-  - ready: true

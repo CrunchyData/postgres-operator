@@ -1,0 +1,15 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+- script: |
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=created-without-backups)
+
+    kubectl exec --stdin "${pod}" --namespace "${NAMESPACE}" -c database \
+      -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'
+      DO $$
+      BEGIN
+        ASSERT current_setting('archive_command') LIKE 'true',
+          format('expected "true", got %L', current_setting('archive_command'));
+      END $$
+    SQL

@@ -6,6 +6,7 @@ spec:
   postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - name: instance1
+      replicas: 1
       dataVolumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"

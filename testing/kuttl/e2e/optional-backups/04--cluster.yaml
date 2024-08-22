@@ -1,0 +1,16 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: created-without-backups
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      replicas: 2
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+

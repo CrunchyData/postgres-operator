@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	llog "log"
 	"reflect"
 	"regexp"
 	"sort"
@@ -349,7 +348,6 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 
 		// If nothing has specified that the resource should not be deleted, then delete
 		if delete {
-			llog.Println("Are we deleting the object here", ownedResources[i].GetName())
 			if err := r.Client.Delete(ctx, &ownedResources[i],
 				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 				return []unstructured.Unstructured{}, errors.WithStack(err)
@@ -1364,7 +1362,8 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	}
 
 	if !backupsSpecFound {
-		// Return before reconciliation expects a repo host to exist.
+		// Clear the status and exit
+		postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{}
 		return result, nil
 	}
 
@@ -2161,7 +2160,6 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	}
 
 	if !backupsSpecFound {
-		llog.Println("Backups are disabled in reconcileDedicatedRepoHost")
 		// When backups are disabled, remove the backrest StatefulSet, if one exists.
 		name := fmt.Sprintf("%s-%s", postgresCluster.GetName(), "repo-host")
 		existing := &appsv1.StatefulSet{}
@@ -3134,7 +3132,6 @@ func (r *Reconciler) ObserveBackupUniverse(ctx context.Context, postgresCluster 
 
 	// // No spec, sts unsure... what do we do?
 	// if err != nil && !stsNotFound {
-	// 	llog.Println("We shouldn't be here, because why would we error?")
 	// 	return true, false, err // FIXME: what's the correct behavior if we get an error
 	// }
 
@@ -3148,11 +3145,9 @@ func (r *Reconciler) ObserveBackupUniverse(ctx context.Context, postgresCluster 
 func (r *Reconciler) DestroyBackupsAnnotationPresent(postgresCluster *v1beta1.PostgresCluster) bool {
 	annotations := postgresCluster.GetAnnotations()
 	for annotation := range annotations {
-		if annotation == "destroy-backup-volumes" {
-			llog.Println("We shouldn't be here, because the annotation doesn't exist", annotations["destroy-backup-volumes"])
-			return annotations["destroy-backup-volumes"] == "true"
+		if annotation == naming.AuthorizeBackupRemovalAnnotation {
+			return annotations[naming.AuthorizeBackupRemovalAnnotation] == "true"
 		}
 	}
-	llog.Println("We should be here, because the annotation doesn't exist")
 	return false
 }
