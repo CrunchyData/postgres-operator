@@ -346,7 +346,7 @@ func (r *Reconciler) observeInstances(
 		status.DesiredPGDataVolume = make(map[string]string)
 
 		for _, instance := range observed.bySet[name] {
-			status.Replicas += int32(len(instance.Pods))
+			status.Replicas += int32(len(instance.Pods)) //nolint:gosec
 
 			if ready, known := instance.IsReady(); known && ready {
 				status.ReadyReplicas++
