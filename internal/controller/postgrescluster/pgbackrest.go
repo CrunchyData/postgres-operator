@@ -1390,6 +1390,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		result.Requeue = true
 		return result, nil
 	}
+	repoHostName = repoHost.GetName()
 
 	if err := r.reconcilePGBackRestSecret(ctx, postgresCluster, repoHost, rootCA); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest secret")
@@ -1419,10 +1420,8 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	for _, instance := range instances.forCluster {
 		instanceNames = append(instanceNames, instance.Name)
 	}
-
 	// sort to ensure consistent ordering of hosts when creating pgBackRest configs
 	sort.Strings(instanceNames)
-	repoHostName = repoHost.GetName()
 	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, repoHostName,
 		configHash, naming.ClusterPodService(postgresCluster).Name,
 		postgresCluster.GetNamespace(), instanceNames); err != nil {
@@ -1991,6 +1990,7 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) error {
+
 	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, instanceNames)
 	if err := controllerutil.SetControllerReference(postgresCluster, backrestConfig,
@@ -2057,10 +2057,13 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 // pgBackRest
 func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster) (*corev1.ServiceAccount, error) {
+
 	sa := &corev1.ServiceAccount{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
 	sa.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ServiceAccount"))
+
 	role := &rbacv1.Role{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
 	role.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("Role"))
+
 	binding := &rbacv1.RoleBinding{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
 	binding.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("RoleBinding"))
 
@@ -3009,7 +3012,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 }
 
 // BackupsEnabled checks the state of the backups (i.e., if backups are in the spec,
-// if a repo-host StatefulSet exists, if the annotation permitting backup deletion exist)
+// if a repo-host StatefulSet exists, if the annotation permitting backup deletion exists)
 // and determines whether reconciliation is allowed.
 // Reconciliation of backup-related Kubernetes objects is paused if
 //   - a user created a cluster with backups;
@@ -3049,7 +3052,7 @@ func (r *Reconciler) BackupsEnabled(
 }
 
 // ObserveBackupUniverse returns
-//   - wheterh the spec has backups defined;
+//   - whether the spec has backups defined;
 func (r *Reconciler) ObserveBackupUniverse(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 ) (

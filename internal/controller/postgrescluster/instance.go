@@ -1209,7 +1209,7 @@ func (r *Reconciler) reconcileInstance(
 				ctx, cluster, instanceCertificates, &instance.Spec.Template.Spec)
 		}
 
-		_ = patroni.InstancePod(
+		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
