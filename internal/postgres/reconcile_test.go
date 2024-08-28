@@ -142,6 +142,8 @@ containers:
     value: /etc/postgres/krb5.conf
   - name: KRB5RCACHEDIR
     value: /tmp
+  - name: LDAPTLS_CACERT
+    value: /etc/postgres/ldap/ca.crt
   imagePullPolicy: Always
   name: database
   ports:
@@ -306,6 +308,8 @@ initContainers:
     value: /etc/postgres/krb5.conf
   - name: KRB5RCACHEDIR
     value: /tmp
+  - name: LDAPTLS_CACERT
+    value: /etc/postgres/ldap/ca.crt
   imagePullPolicy: Always
   name: postgres-startup
   resources:
