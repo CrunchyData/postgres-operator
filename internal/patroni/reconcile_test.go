@@ -184,8 +184,6 @@ containers:
     value: '*:8008'
   - name: PATRONICTL_CONFIG_FILE
     value: /etc/patroni
-  - name: LDAPTLS_CACERT
-    value: /etc/postgres/ldap/ca.crt
   livenessProbe:
     failureThreshold: 3
     httpGet:

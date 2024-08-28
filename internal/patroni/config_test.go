@@ -838,8 +838,6 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
-- name: LDAPTLS_CACERT
-  value: /etc/postgres/ldap/ca.crt
 	`))
 
 	t.Run("MatchingPorts", func(t *testing.T) {
@@ -882,8 +880,6 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
-- name: LDAPTLS_CACERT
-  value: /etc/postgres/ldap/ca.crt
 		`))
 	})
 }
