@@ -13,14 +13,3 @@ spec:
           requests:
             storage: 1Gi
       replicas: 2
-  backups:
-    pgbackrest:
-      repos:
-      - name: repo1
-        volume:
-          volumeClaimSpec:
-            accessModes:
-            - "ReadWriteOnce"
-            resources:
-              requests:
-                storage: 1Gi
