@@ -3053,6 +3053,8 @@ func (r *Reconciler) BackupsEnabled(
 
 // ObserveBackupUniverse returns
 //   - whether the spec has backups defined;
+//   - whether the repo-host statefulset exists;
+//   - whether the cluster has the annotation authorizing backup removal.
 func (r *Reconciler) ObserveBackupUniverse(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 ) (
