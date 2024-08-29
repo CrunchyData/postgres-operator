@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+      postgres-operator.crunchydata.com/cluster: created-without-backups
+      postgres-operator.crunchydata.com/data: postgres
+      postgres-operator.crunchydata.com/instance-set: instance1
+      postgres-operator.crunchydata.com/role: replica
+status:
+  containerStatuses:
+  - ready: true
+  - ready: true

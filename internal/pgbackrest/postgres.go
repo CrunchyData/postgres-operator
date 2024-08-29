@@ -26,6 +26,7 @@ import (
 func PostgreSQL(
 	inCluster *v1beta1.PostgresCluster,
 	outParameters *postgres.Parameters,
+	backupsEnabled bool,
 ) {
 	if outParameters.Mandatory == nil {
 		outParameters.Mandatory = postgres.NewParameterSet()
@@ -38,9 +39,15 @@ func PostgreSQL(
 	// - https://pgbackrest.org/user-guide.html#quickstart/configure-archiving
 	// - https://pgbackrest.org/command.html#command-archive-push
 	// - https://www.postgresql.org/docs/current/runtime-config-wal.html
-	archive := `pgbackrest --stanza=` + DefaultStanzaName + ` archive-push "%p"`
 	outParameters.Mandatory.Add("archive_mode", "on")
-	outParameters.Mandatory.Add("archive_command", archive)
+	if backupsEnabled {
+		archive := `pgbackrest --stanza=` + DefaultStanzaName + ` archive-push "%p"`
+		outParameters.Mandatory.Add("archive_command", archive)
+	} else {
+		// If backups are disabled, keep archive_mode on (to avoid a Postgres restart)
+		// and throw away WAL.
+		outParameters.Mandatory.Add("archive_command", `true`)
+	}
 
 	// archive_timeout is used to determine at what point a WAL file is switched,
 	// if the WAL archive has not reached its full size in # of transactions

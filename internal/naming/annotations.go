@@ -72,4 +72,10 @@ const (
 	// has schemas automatically created for the users defined in `spec.users` for all of the databases
 	// listed for that user.
 	AutoCreateUserSchemaAnnotation = annotationPrefix + "autoCreateUserSchema"
+
+	// AuthorizeBackupRemovalAnnotation is an annotation used to allow users
+	// to delete PVC-based backups when changing from a cluster with backups
+	// to a cluster without backups. As usual with the operator, we do not
+	// touch cloud-based backups.
+	AuthorizeBackupRemovalAnnotation = annotationPrefix + "authorizeBackupRemoval"
 )

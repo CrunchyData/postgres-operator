@@ -162,21 +162,23 @@ func (r *Reconciler) Reconcile(
 	}
 
 	var (
-		clusterConfigMap         *corev1.ConfigMap
-		clusterReplicationSecret *corev1.Secret
-		clusterPodService        *corev1.Service
-		clusterVolumes           []corev1.PersistentVolumeClaim
-		instanceServiceAccount   *corev1.ServiceAccount
-		instances                *observedInstances
-		patroniLeaderService     *corev1.Service
-		primaryCertificate       *corev1.SecretProjection
-		primaryService           *corev1.Service
-		replicaService           *corev1.Service
-		rootCA                   *pki.RootCertificateAuthority
-		monitoringSecret         *corev1.Secret
-		exporterQueriesConfig    *corev1.ConfigMap
-		exporterWebConfig        *corev1.ConfigMap
-		err                      error
+		clusterConfigMap             *corev1.ConfigMap
+		clusterReplicationSecret     *corev1.Secret
+		clusterPodService            *corev1.Service
+		clusterVolumes               []corev1.PersistentVolumeClaim
+		instanceServiceAccount       *corev1.ServiceAccount
+		instances                    *observedInstances
+		patroniLeaderService         *corev1.Service
+		primaryCertificate           *corev1.SecretProjection
+		primaryService               *corev1.Service
+		replicaService               *corev1.Service
+		rootCA                       *pki.RootCertificateAuthority
+		monitoringSecret             *corev1.Secret
+		exporterQueriesConfig        *corev1.ConfigMap
+		exporterWebConfig            *corev1.ConfigMap
+		err                          error
+		backupsSpecFound             bool
+		backupsReconciliationAllowed bool
 	)
 
 	patchClusterStatus := func() error {
@@ -214,13 +216,34 @@ func (r *Reconciler) Reconcile(
 		meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.PostgresClusterProgressing)
 	}
 
+	if err == nil {
+		backupsSpecFound, backupsReconciliationAllowed, err = r.BackupsEnabled(ctx, cluster)
+
+		// If we cannot reconcile because the backup reconciliation is paused, set a condition and exit
+		if !backupsReconciliationAllowed {
+			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
+				Type:   v1beta1.PostgresClusterProgressing,
+				Status: metav1.ConditionFalse,
+				Reason: "Paused",
+				Message: "Reconciliation is paused: please fill in spec.backups " +
+					"or add the postgres-operator.crunchydata.com/authorizeBackupRemoval " +
+					"annotation to authorize backup removal.",
+
+				ObservedGeneration: cluster.GetGeneration(),
+			})
+			return runtime.ErrorWithBackoff(patchClusterStatus())
+		} else {
+			meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.PostgresClusterProgressing)
+		}
+	}
+
 	pgHBAs := postgres.NewHBAs()
 	pgmonitor.PostgreSQLHBAs(cluster, &pgHBAs)
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
 	pgParameters := postgres.NewParameters()
 	pgaudit.PostgreSQLParameters(&pgParameters)
-	pgbackrest.PostgreSQL(cluster, &pgParameters)
+	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
 	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
@@ -287,7 +310,7 @@ func (r *Reconciler) Reconcile(
 		// the controller should return early while data initialization is in progress, after
 		// which it will indicate that an early return is no longer needed, and reconciliation
 		// can proceed normally.
-		returnEarly, err := r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA)
+		returnEarly, err := r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA, backupsSpecFound)
 		if err != nil || returnEarly {
 			return runtime.ErrorWithBackoff(errors.Join(err, patchClusterStatus()))
 		}
@@ -329,7 +352,9 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret, rootCA,
 			clusterPodService, instanceServiceAccount, instances, patroniLeaderService,
-			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig)
+			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
+			backupsSpecFound,
+		)
 	}
 
 	if err == nil {
@@ -341,7 +366,8 @@ func (r *Reconciler) Reconcile(
 
 	if err == nil {
 		var next reconcile.Result
-		if next, err = r.reconcilePGBackRest(ctx, cluster, instances, rootCA); err == nil && !next.IsZero() {
+		if next, err = r.reconcilePGBackRest(ctx, cluster,
+			instances, rootCA, backupsSpecFound); err == nil && !next.IsZero() {
 			result.Requeue = result.Requeue || next.Requeue
 			if next.RequeueAfter > 0 {
 				result.RequeueAfter = next.RequeueAfter

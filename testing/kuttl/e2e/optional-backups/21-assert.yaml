@@ -1,0 +1,18 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+- script: |
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=created-without-backup \
+      -l postgres-operator.crunchydata.com/instance-set=instance1 \
+      -l postgres-operator.crunchydata.com/patroni=created-without-backups-ha \
+      -l postgres-operator.crunchydata.com/role=master)
+
+    kubectl exec --stdin "${pod}" --namespace "${NAMESPACE}" -c database \
+      -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'
+      DO $$
+      BEGIN
+        ASSERT current_setting('archive_command') LIKE 'pgbackrest --stanza=db archive-push "%p"',
+          format('expected "pgbackrest --stanza=db archive-push \"%p\"", got %L', current_setting('archive_command'));
+      END $$
+    SQL

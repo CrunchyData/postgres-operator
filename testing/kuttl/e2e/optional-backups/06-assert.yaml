@@ -1,0 +1,18 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+- script: |
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=created-without-backups \
+      -l postgres-operator.crunchydata.com/role=replica)
+
+    kubectl exec --stdin "${pod}" --namespace "${NAMESPACE}" -c database \
+      -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'
+      DO $$
+        DECLARE
+          everything jsonb;
+        BEGIN
+          SELECT jsonb_agg(important) INTO everything FROM important;
+          ASSERT everything = '[{"data":"treasure"}]', format('got %L', everything);
+      END $$
+    SQL

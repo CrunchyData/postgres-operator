@@ -290,7 +290,9 @@ func (r *Reconciler) reconcileClusterReplicaService(
 func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, observed *observedInstances,
 	clusterVolumes []corev1.PersistentVolumeClaim,
-	rootCA *pki.RootCertificateAuthority) (bool, error) {
+	rootCA *pki.RootCertificateAuthority,
+	backupsSpecFound bool,
+) (bool, error) {
 
 	// a hash func to hash the pgBackRest restore options
 	hashFunc := func(jobConfigs []string) (string, error) {
@@ -413,7 +415,8 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	switch {
 	case dataSource != nil:
 		if err := r.reconcilePostgresClusterDataSource(ctx, cluster, dataSource,
-			configHash, clusterVolumes, rootCA); err != nil {
+			configHash, clusterVolumes, rootCA,
+			backupsSpecFound); err != nil {
 			return true, err
 		}
 	case cloudDataSource != nil:
