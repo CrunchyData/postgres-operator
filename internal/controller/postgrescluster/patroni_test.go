@@ -37,6 +37,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -56,11 +57,11 @@ func TestGeneratePatroniLeaderLeaseService(t *testing.T) {
 	cluster.Spec.Port = initialize.Int32(9876)
 
 	alwaysExpect := func(t testing.TB, service *corev1.Service) {
-		assert.Assert(t, marshalMatches(service.TypeMeta, `
+		assert.Assert(t, cmp.MarshalMatches(service.TypeMeta, `
 apiVersion: v1
 kind: Service
 		`))
-		assert.Assert(t, marshalMatches(service.ObjectMeta, `
+		assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
 creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: pg2
@@ -88,7 +89,7 @@ ownerReferences:
 		alwaysExpect(t, service)
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
-		assert.Assert(t, marshalMatches(service.Spec.Ports, `
+		assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: postgres
   port: 9876
   protocol: TCP
@@ -177,7 +178,7 @@ ownerReferences:
 			assert.NilError(t, err)
 			alwaysExpect(t, service)
 			test.Expect(t, service)
-			assert.Assert(t, marshalMatches(service.Spec.Ports, `
+			assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: postgres
   port: 9876
   protocol: TCP
@@ -202,7 +203,7 @@ ownerReferences:
 				assert.NilError(t, err)
 				alwaysExpect(t, service)
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
-				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+				assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: postgres
   nodePort: 32001
   port: 9876
@@ -215,7 +216,7 @@ ownerReferences:
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
 				assert.NilError(t, err)
 				alwaysExpect(t, service)
-				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+				assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: postgres
   nodePort: 32002
   port: 9876

@@ -32,7 +32,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
-	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -61,11 +60,6 @@ func init() {
 			return time.Duration(factor * float64(d))
 		}
 	}
-}
-
-// marshalMatches converts actual to YAML and compares that to expected.
-func marshalMatches(actual interface{}, expected string) cmp.Comparison {
-	return cmp.MarshalMatches(actual, expected)
 }
 
 // setupKubernetes starts or connects to a Kubernetes API and returns a client

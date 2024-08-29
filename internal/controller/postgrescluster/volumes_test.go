@@ -800,7 +800,7 @@ volumes:
     claimName: testpgdata
 	`
 
-				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
+				assert.Assert(t, cmp.MarshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
 			}
 		}
 
@@ -860,7 +860,7 @@ volumes:
     claimName: testwal
 	`
 
-				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
+				assert.Assert(t, cmp.MarshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
 			}
 		}
 
@@ -921,7 +921,7 @@ volumes:
   persistentVolumeClaim:
     claimName: testrepo
 	`
-				assert.Assert(t, marshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
+				assert.Assert(t, cmp.MarshalMatches(moveJobs.Items[i].Spec.Template.Spec, compare+"\n"))
 			}
 		}
 

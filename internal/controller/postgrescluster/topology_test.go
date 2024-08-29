@@ -20,6 +20,8 @@ import (
 
 	"gotest.tools/v3/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func TestDefaultTopologySpreadConstraints(t *testing.T) {
@@ -31,7 +33,7 @@ func TestDefaultTopologySpreadConstraints(t *testing.T) {
 	})
 
 	// Entire selector, hostname, zone, and ScheduleAnyway.
-	assert.Assert(t, marshalMatches(constraints, `
+	assert.Assert(t, cmp.MarshalMatches(constraints, `
 - labelSelector:
     matchExpressions:
     - key: k1

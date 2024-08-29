@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -150,7 +151,7 @@ func TestPodConfigFiles(t *testing.T) {
 
 	t.Run("Default", func(t *testing.T) {
 		projections := podConfigFiles(config, configmap, secret)
-		assert.Assert(t, marshalMatches(projections, `
+		assert.Assert(t, cmp.MarshalMatches(projections, `
 - configMap:
     items:
     - key: pgbouncer-empty
@@ -183,7 +184,7 @@ func TestPodConfigFiles(t *testing.T) {
 		}
 
 		projections := podConfigFiles(config, configmap, secret)
-		assert.Assert(t, marshalMatches(projections, `
+		assert.Assert(t, cmp.MarshalMatches(projections, `
 - configMap:
     items:
     - key: pgbouncer-empty

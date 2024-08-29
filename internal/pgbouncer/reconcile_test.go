@@ -19,7 +19,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
+	gocmp "github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -129,7 +130,7 @@ func TestPod(t *testing.T) {
 
 		call()
 
-		assert.Assert(t, marshalMatches(pod, `
+		assert.Assert(t, cmp.MarshalMatches(pod, `
 containers:
 - command:
   - pgbouncer
@@ -239,7 +240,7 @@ volumes:
 
 		call()
 
-		assert.Assert(t, marshalMatches(pod, `
+		assert.Assert(t, cmp.MarshalMatches(pod, `
 containers:
 - command:
   - pgbouncer
@@ -349,7 +350,7 @@ volumes:
 
 		call()
 
-		assert.Assert(t, marshalMatches(pod, `
+		assert.Assert(t, cmp.MarshalMatches(pod, `
 containers:
 - command:
   - pgbouncer
@@ -501,6 +502,6 @@ func TestPostgreSQL(t *testing.T) {
 				Mandatory: postgresqlHBAs(),
 			},
 			// postgres.HostBasedAuthentication has unexported fields. Call String() to compare.
-			cmp.Transformer("", postgres.HostBasedAuthentication.String))
+			gocmp.Transformer("", postgres.HostBasedAuthentication.String))
 	})
 }

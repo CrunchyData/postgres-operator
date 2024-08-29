@@ -52,6 +52,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -327,7 +328,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 			// TODO(tjmoore4): Add additional tests to test appending existing
 			// topology spread constraints and spec.disableDefaultPodScheduling being
 			// set to true (as done in instance StatefulSet tests).
-			assert.Assert(t, marshalMatches(template.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 affinity: {}
 automountServiceAccountToken: false
 containers: null
@@ -2157,7 +2158,7 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 					assert.Assert(t, apierrors.IsNotFound(err), "expected NotFound, got %#v", err)
 				} else {
 					assert.NilError(t, err)
-					assert.Assert(t, marshalMatches(restoreConfig.Data["pgbackrest_instance.conf"], tc.result.conf))
+					assert.Assert(t, cmp.MarshalMatches(restoreConfig.Data["pgbackrest_instance.conf"], tc.result.conf))
 				}
 
 				restoreJobs := &batchv1.JobList{}
@@ -2454,7 +2455,7 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 			"",
 			nil, nil,
 		)
-		assert.Assert(t, marshalMatches(spec.Template.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
 containers:
 - command:
   - /opt/crunchy/bin/pgbackrest
