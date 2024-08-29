@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -128,7 +129,7 @@ func TestInstancePod(t *testing.T) {
 	InstancePod(ctx, cluster, instance,
 		serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
-	assert.Assert(t, marshalMatches(pod, `
+	assert.Assert(t, cmp.MarshalMatches(pod, `
 containers:
 - env:
   - name: PGDATA
@@ -395,7 +396,7 @@ volumes:
 		assert.Assert(t, len(pod.InitContainers) > 0)
 
 		// Container has all mountPaths, including downwardAPI
-		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -408,7 +409,7 @@ volumes:
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
 
 		// InitContainer has all mountPaths, except downwardAPI
-		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -417,7 +418,7 @@ volumes:
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
 
-		assert.Assert(t, marshalMatches(pod.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Volumes, `
 - name: cert-volume
   projected:
     defaultMode: 384
@@ -503,7 +504,7 @@ volumes:
 
 		// Container has all mountPaths, including downwardAPI,
 		// and the postgres-config
-		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -517,7 +518,7 @@ volumes:
   readOnly: true`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
 
 		// InitContainer has all mountPaths, except downwardAPI and additionalConfig
-		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -585,7 +586,7 @@ volumes:
 		InstancePod(ctx, cluster, instance,
 			serverSecretProjection, clientSecretProjection, dataVolume, nil, tablespaceVolumes, pod)
 
-		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -600,7 +601,7 @@ volumes:
   name: tablespace-trial`), "expected tablespace mount(s) in %q container", pod.Containers[0].Name)
 
 		// InitContainer has all mountPaths, except downwardAPI and additionalConfig
-		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -626,7 +627,7 @@ volumes:
 		assert.Assert(t, len(pod.Containers) > 0)
 		assert.Assert(t, len(pod.InitContainers) > 0)
 
-		assert.Assert(t, marshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -638,7 +639,7 @@ volumes:
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
 
-		assert.Assert(t, marshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -647,7 +648,7 @@ volumes:
 - mountPath: /pgwal
   name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
 
-		assert.Assert(t, marshalMatches(pod.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Volumes, `
 - name: cert-volume
   projected:
     defaultMode: 384
@@ -717,23 +718,23 @@ func TestPodSecurityContext(t *testing.T) {
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 
-	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(cluster), `
 fsGroup: 26
 fsGroupChangePolicy: OnRootMismatch
 	`))
 
 	cluster.Spec.OpenShift = initialize.Bool(true)
-	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(cluster), `
 fsGroupChangePolicy: OnRootMismatch
 	`))
 
 	cluster.Spec.SupplementalGroups = []int64{}
-	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(cluster), `
 fsGroupChangePolicy: OnRootMismatch
 	`))
 
 	cluster.Spec.SupplementalGroups = []int64{999, 65000}
-	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(cluster), `
 fsGroupChangePolicy: OnRootMismatch
 supplementalGroups:
 - 999
@@ -741,7 +742,7 @@ supplementalGroups:
 	`))
 
 	*cluster.Spec.OpenShift = false
-	assert.Assert(t, marshalMatches(PodSecurityContext(cluster), `
+	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(cluster), `
 fsGroup: 26
 fsGroupChangePolicy: OnRootMismatch
 supplementalGroups:

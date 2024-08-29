@@ -152,7 +152,7 @@ func TestGeneratePGAdminService(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Assert(t, !specified)
 
-			assert.Assert(t, marshalMatches(service.ObjectMeta, `
+			assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
 creationTimestamp: null
 name: my-cluster-pgadmin
 namespace: my-ns
@@ -165,11 +165,11 @@ namespace: my-ns
 	}
 
 	alwaysExpect := func(t testing.TB, service *corev1.Service) {
-		assert.Assert(t, marshalMatches(service.TypeMeta, `
+		assert.Assert(t, cmp.MarshalMatches(service.TypeMeta, `
 apiVersion: v1
 kind: Service
 		`))
-		assert.Assert(t, marshalMatches(service.ObjectMeta, `
+		assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
 creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: my-cluster
@@ -263,7 +263,7 @@ ownerReferences:
 		alwaysExpect(t, service)
 		// Defaults to ClusterIP.
 		assert.Equal(t, service.Spec.Type, corev1.ServiceTypeClusterIP)
-		assert.Assert(t, marshalMatches(service.Spec.Ports, `
+		assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: pgadmin
   port: 5050
   protocol: TCP
@@ -296,7 +296,7 @@ ownerReferences:
 			assert.Assert(t, specified)
 			alwaysExpect(t, service)
 			test.Expect(t, service)
-			assert.Assert(t, marshalMatches(service.Spec.Ports, `
+			assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: pgadmin
   port: 5050
   protocol: TCP
@@ -321,7 +321,7 @@ ownerReferences:
 				assert.NilError(t, err)
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeNodePort)
 				alwaysExpect(t, service)
-				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+				assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: pgadmin
   nodePort: 32001
   port: 5050
@@ -334,7 +334,7 @@ ownerReferences:
 				assert.NilError(t, err)
 				assert.Equal(t, service.Spec.Type, corev1.ServiceTypeLoadBalancer)
 				alwaysExpect(t, service)
-				assert.Assert(t, marshalMatches(service.Spec.Ports, `
+				assert.Assert(t, cmp.MarshalMatches(service.Spec.Ports, `
 - name: pgadmin
   nodePort: 32002
   port: 5050
@@ -698,7 +698,7 @@ func TestReconcilePGAdminDataVolume(t *testing.T) {
 		assert.Equal(t, pvc.Labels[naming.LabelRole], naming.RolePGAdmin)
 		assert.Equal(t, pvc.Labels[naming.LabelData], naming.DataPGAdmin)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:

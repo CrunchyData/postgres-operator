@@ -281,7 +281,7 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 		assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], spec.Name)
 		assert.Equal(t, pvc.Labels[naming.LabelRole], "pgdata")
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -371,7 +371,7 @@ volumeMode: Filesystem
 		assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], spec.Name)
 		assert.Equal(t, pvc.Labels[naming.LabelRole], "pgdata")
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 dataSource:
@@ -442,7 +442,7 @@ volumeMode: Filesystem
 		assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], spec.Name)
 		assert.Equal(t, pvc.Labels[naming.LabelRole], "pgdata")
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -504,7 +504,7 @@ volumeMode: Filesystem
 			assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], spec.Name)
 			assert.Equal(t, pvc.Labels[naming.LabelRole], "pgwal")
 
-			assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteMany
 resources:
@@ -682,7 +682,7 @@ func TestSetVolumeSize(t *testing.T) {
 
 		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -719,7 +719,7 @@ resources:
 
 		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-		assert.Assert(t, marshalMatches(pvc.Spec, `
+		assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -762,7 +762,7 @@ resources:
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-			assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -787,7 +787,7 @@ resources:
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-			assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -812,7 +812,7 @@ resources:
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-			assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -839,7 +839,7 @@ resources:
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-			assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -864,7 +864,7 @@ resources:
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-			assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:
@@ -893,7 +893,7 @@ resources:
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
-			assert.Assert(t, marshalMatches(pvc.Spec, `
+			assert.Assert(t, cmp.MarshalMatches(pvc.Spec, `
 accessModes:
 - ReadWriteOnce
 resources:

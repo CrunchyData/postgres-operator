@@ -569,7 +569,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 		// Only database container has mounts.
 		// Other containers are ignored.
-		assert.Assert(t, marshalMatches(out.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(out.Containers, `
 - name: database
   resources: {}
   volumeMounts:
@@ -661,7 +661,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 		// Instance configuration files with certificates.
 		// Other volumes are ignored.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: other
 - name: postgres-data
 - name: postgres-wal
@@ -709,7 +709,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			// Instance configuration files plus client and server certificates.
 			// The server certificate comes from the instance Secret.
 			// Other volumes are untouched.
-			assert.Assert(t, marshalMatches(result.Volumes, `
+			assert.Assert(t, cmp.MarshalMatches(result.Volumes, `
 - name: other
 - name: postgres-data
 - name: postgres-wal
@@ -763,7 +763,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
 		// The TLS server is added and configuration mounted.
 		// It has PostgreSQL volumes mounted while other volumes are ignored.
-		assert.Assert(t, marshalMatches(out.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(out.Containers, `
 - name: database
   resources: {}
   volumeMounts:
@@ -879,7 +879,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			assert.DeepEqual(t, before.Containers[:2], out.Containers[:2])
 
 			// It has the custom resources.
-			assert.Assert(t, marshalMatches(out.Containers[2:], `
+			assert.Assert(t, cmp.MarshalMatches(out.Containers[2:], `
 - command:
   - pgbackrest
   - server
@@ -1576,7 +1576,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		name: "check default scheduling constraints are added",
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 2)
-			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints, `
+			assert.Assert(t, cmp.MarshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints, `
 - labelSelector:
     matchExpressions:
     - key: postgres-operator.crunchydata.com/data
@@ -1623,7 +1623,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 3)
-			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints, `
+			assert.Assert(t, cmp.MarshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints, `
 - labelSelector:
     matchExpressions:
     - key: postgres-operator.crunchydata.com/cluster
@@ -1706,7 +1706,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, len(ss.Spec.Template.Spec.TopologySpreadConstraints), 1)
-			assert.Assert(t, marshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints,
+			assert.Assert(t, cmp.MarshalMatches(ss.Spec.Template.Spec.TopologySpreadConstraints,
 				`- labelSelector:
     matchExpressions:
     - key: postgres-operator.crunchydata.com/cluster

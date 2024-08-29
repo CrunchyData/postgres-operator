@@ -21,24 +21,15 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
-
-// marshalMatches converts actual to YAML and compares that to expected.
-func marshalMatches(actual interface{}, expected string) cmp.Comparison {
-	b, err := yaml.Marshal(actual)
-	if err != nil {
-		return func() cmp.Result { return cmp.ResultFromError(err) }
-	}
-	return cmp.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
-}
 
 func TestGenerateUpgradeJob(t *testing.T) {
 	ctx := context.Background()
@@ -77,7 +68,7 @@ func TestGenerateUpgradeJob(t *testing.T) {
 	}
 
 	job := reconciler.generateUpgradeJob(ctx, upgrade, startup, "")
-	assert.Assert(t, marshalMatches(job, `
+	assert.Assert(t, cmp.MarshalMatches(job, `
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -208,7 +199,7 @@ func TestGenerateRemoveDataJob(t *testing.T) {
 	}
 
 	job := reconciler.generateRemoveDataJob(ctx, upgrade, sts)
-	assert.Assert(t, marshalMatches(job, `
+	assert.Assert(t, cmp.MarshalMatches(job, `
 apiVersion: batch/v1
 kind: Job
 metadata:

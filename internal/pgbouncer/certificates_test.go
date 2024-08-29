@@ -20,6 +20,8 @@ import (
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func TestBackendAuthority(t *testing.T) {
@@ -27,7 +29,7 @@ func TestBackendAuthority(t *testing.T) {
 	projection := &corev1.SecretProjection{
 		LocalObjectReference: corev1.LocalObjectReference{Name: "some-name"},
 	}
-	assert.Assert(t, marshalMatches(backendAuthority(projection), `
+	assert.Assert(t, cmp.MarshalMatches(backendAuthority(projection), `
 secret:
   items:
   - key: ca.crt
@@ -40,7 +42,7 @@ secret:
 		{Key: "some-crt-key", Path: "tls.crt"},
 		{Key: "some-ca-key", Path: "ca.crt"},
 	}
-	assert.Assert(t, marshalMatches(backendAuthority(projection), `
+	assert.Assert(t, cmp.MarshalMatches(backendAuthority(projection), `
 secret:
   items:
   - key: some-ca-key
@@ -54,7 +56,7 @@ func TestFrontendCertificate(t *testing.T) {
 	secret.Name = "op-secret"
 
 	t.Run("Generated", func(t *testing.T) {
-		assert.Assert(t, marshalMatches(frontendCertificate(nil, secret), `
+		assert.Assert(t, cmp.MarshalMatches(frontendCertificate(nil, secret), `
 secret:
   items:
   - key: pgbouncer-frontend.ca-roots
@@ -72,7 +74,7 @@ secret:
 		custom.Name = "some-other"
 
 		// No items; assume Key matches Path.
-		assert.Assert(t, marshalMatches(frontendCertificate(custom, secret), `
+		assert.Assert(t, cmp.MarshalMatches(frontendCertificate(custom, secret), `
 secret:
   items:
   - key: ca.crt
@@ -91,7 +93,7 @@ secret:
 			{Key: "some-cert-key", Path: "tls.crt"},
 			{Key: "some-key-key", Path: "tls.key"},
 		}
-		assert.Assert(t, marshalMatches(frontendCertificate(custom, secret), `
+		assert.Assert(t, cmp.MarshalMatches(frontendCertificate(custom, secret), `
 secret:
   items:
   - key: some-ca-key

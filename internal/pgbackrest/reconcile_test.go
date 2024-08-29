@@ -31,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -197,7 +198,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
 		assert.DeepEqual(t, pod, *result, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
 
 		// Only database and pgBackRest containers have mounts.
-		assert.Assert(t, marshalMatches(result.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(result.Containers, `
 - name: database
   resources: {}
   volumeMounts:
@@ -229,7 +230,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
 		alwaysExpect(t, out)
 
 		// Instance configuration files after custom projections.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
     sources:
@@ -266,7 +267,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
 		alwaysExpect(t, out)
 
 		// Instance configuration and certificates.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
     sources:
@@ -306,7 +307,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
 		alwaysExpect(t, out)
 
 		// Instance configuration files, server config, and optional client certificates.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
     sources:
@@ -350,7 +351,7 @@ func TestAddConfigToRepoPod(t *testing.T) {
 		assert.DeepEqual(t, pod, *result, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
 
 		// Only pgBackRest containers have mounts.
-		assert.Assert(t, marshalMatches(result.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(result.Containers, `
 - name: other
   resources: {}
 - name: pgbackrest
@@ -377,7 +378,7 @@ func TestAddConfigToRepoPod(t *testing.T) {
 
 		// Repository configuration files, server config, and client certificates
 		// after custom projections.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
     sources:
@@ -423,7 +424,7 @@ func TestAddConfigToRestorePod(t *testing.T) {
 		assert.DeepEqual(t, pod, *result, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
 
 		// Only pgBackRest containers have mounts.
-		assert.Assert(t, marshalMatches(result.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(result.Containers, `
 - name: other
   resources: {}
 - name: pgbackrest
@@ -458,7 +459,7 @@ func TestAddConfigToRestorePod(t *testing.T) {
 
 		// Instance configuration files and optional client certificates
 		// after custom projections.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
     sources:
@@ -502,7 +503,7 @@ func TestAddConfigToRestorePod(t *testing.T) {
 
 		// Instance configuration files and optional client certificates
 		// after custom projections.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: pgbackrest-config
   projected:
     sources:
@@ -544,7 +545,7 @@ func TestAddConfigToRestorePod(t *testing.T) {
 
 		// Instance configuration files and optional configuration files
 		// after custom projections.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: postgres-config
   projected:
     sources:
@@ -620,7 +621,7 @@ func TestAddServerToInstancePod(t *testing.T) {
 
 		// The TLS server is added while other containers are untouched.
 		// It has PostgreSQL volumes mounted while other volumes are ignored.
-		assert.Assert(t, marshalMatches(out.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(out.Containers, `
 - name: database
   resources: {}
 - name: other
@@ -706,7 +707,7 @@ func TestAddServerToInstancePod(t *testing.T) {
 
 		// The server certificate comes from the instance Secret.
 		// Other volumes are untouched.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: other
 - name: postgres-data
 - name: postgres-wal
@@ -747,7 +748,7 @@ func TestAddServerToInstancePod(t *testing.T) {
 
 		// Only Containers and Volumes fields have changed.
 		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
-		assert.Assert(t, marshalMatches(out.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(out.Containers, `
 - name: database
   resources: {}
 - name: other
@@ -873,7 +874,7 @@ func TestAddServerToRepoPod(t *testing.T) {
 		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
 
 		// The TLS server is added while other containers are untouched.
-		assert.Assert(t, marshalMatches(out.Containers, `
+		assert.Assert(t, cmp.MarshalMatches(out.Containers, `
 - name: other
   resources: {}
 - command:
@@ -952,7 +953,7 @@ func TestAddServerToRepoPod(t *testing.T) {
 		`))
 
 		// The server certificate comes from the pgBackRest Secret.
-		assert.Assert(t, marshalMatches(out.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: pgbackrest-server
   projected:
     sources:
