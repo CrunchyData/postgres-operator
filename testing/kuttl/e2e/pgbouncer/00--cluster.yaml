@@ -7,7 +7,7 @@ spec:
   postgresVersion: ${KUTTL_PG_VERSION}
   instances:
     - name: instance1
-      replicas: 2
+      replicas: 1
       dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
   proxy:
     pgBouncer:
