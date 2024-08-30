@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,6 +22,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -99,6 +101,7 @@ func testVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {
 		},
 	}
 }
+
 func testCluster() *v1beta1.PostgresCluster {
 	// Defines a base cluster spec that can be used by tests to generate a
 	// cluster with an expected number of instances
@@ -136,6 +139,58 @@ func testCluster() *v1beta1.PostgresCluster {
 		},
 	}
 	return cluster.DeepCopy()
+}
+
+func testBackupJob(cluster *v1beta1.PostgresCluster) *batchv1.Job {
+	job := batchv1.Job{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: batchv1.SchemeGroupVersion.String(),
+			Kind:       "Job",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "backup-job-1",
+			Namespace: cluster.Namespace,
+			Labels: map[string]string{
+				naming.LabelCluster:          cluster.Name,
+				naming.LabelPGBackRestBackup: "",
+				naming.LabelPGBackRestRepo:   "repo1",
+			},
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers:    []corev1.Container{{Name: "test", Image: "test"}},
+					RestartPolicy: corev1.RestartPolicyNever,
+				},
+			},
+		},
+	}
+
+	return job.DeepCopy()
+}
+
+func testRestoreJob(cluster *v1beta1.PostgresCluster) *batchv1.Job {
+	job := batchv1.Job{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: batchv1.SchemeGroupVersion.String(),
+			Kind:       "Job",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "restore-job-1",
+			Namespace: cluster.Namespace,
+			Labels:    naming.PGBackRestRestoreJobLabels(cluster.Name),
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					Containers:    []corev1.Container{{Name: "test", Image: "test"}},
+					RestartPolicy: corev1.RestartPolicyNever,
+				},
+			},
+		},
+	}
+
+	return job.DeepCopy()
 }
 
 // setupManager creates the runtime manager used during controller testing

@@ -249,6 +249,15 @@ func ClusterReplicaService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// ClusterDedicatedSnapshotVolume returns the ObjectMeta for the dedicated Snapshot
+// volume for a cluster.
+func ClusterDedicatedSnapshotVolume(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name:      cluster.GetName() + "-snapshot",
+	}
+}
+
 // ClusterVolumeSnapshot returns the ObjectMeta, including a random name, for a
 // new pgdata VolumeSnapshot.
 func ClusterVolumeSnapshot(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {

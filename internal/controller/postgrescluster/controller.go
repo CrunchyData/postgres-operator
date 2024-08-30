@@ -168,6 +168,7 @@ func (r *Reconciler) Reconcile(
 		err                          error
 		backupsSpecFound             bool
 		backupsReconciliationAllowed bool
+		dedicatedSnapshotPVC         *corev1.PersistentVolumeClaim
 	)
 
 	patchClusterStatus := func() error {
@@ -364,7 +365,10 @@ func (r *Reconciler) Reconcile(
 		}
 	}
 	if err == nil {
-		err = r.reconcileVolumeSnapshots(ctx, cluster, instances, clusterVolumes)
+		dedicatedSnapshotPVC, err = r.reconcileDedicatedSnapshotVolume(ctx, cluster, clusterVolumes)
+	}
+	if err == nil {
+		err = r.reconcileVolumeSnapshots(ctx, cluster, dedicatedSnapshotPVC)
 	}
 	if err == nil {
 		err = r.reconcilePGBouncer(ctx, cluster, instances, primaryCertificate, rootCA)

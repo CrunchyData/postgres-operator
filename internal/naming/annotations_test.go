@@ -12,13 +12,15 @@ import (
 )
 
 func TestAnnotationsValid(t *testing.T) {
+	assert.Assert(t, nil == validation.IsQualifiedName(AuthorizeBackupRemovalAnnotation))
+	assert.Assert(t, nil == validation.IsQualifiedName(AutoCreateUserSchemaAnnotation))
+	assert.Assert(t, nil == validation.IsQualifiedName(CrunchyBridgeClusterAdoptionAnnotation))
 	assert.Assert(t, nil == validation.IsQualifiedName(Finalizer))
 	assert.Assert(t, nil == validation.IsQualifiedName(PatroniSwitchover))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestBackup))
-	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestBackupJobId))
+	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestBackupJobCompletion))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestConfigHash))
-	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestRestore))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestIPVersion))
+	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestRestore))
 	assert.Assert(t, nil == validation.IsQualifiedName(PostgresExporterCollectorsAnnotation))
-	assert.Assert(t, nil == validation.IsQualifiedName(CrunchyBridgeClusterAdoptionAnnotation))
 }

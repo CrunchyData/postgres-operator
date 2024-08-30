@@ -108,6 +108,9 @@ const (
 
 	// RoleMonitoring is the LabelRole applied to Monitoring resources
 	RoleMonitoring = "monitoring"
+
+	// RoleSnapshot is the LabelRole applied to Snapshot resources.
+	RoleSnapshot = "snapshot"
 )
 
 const (
