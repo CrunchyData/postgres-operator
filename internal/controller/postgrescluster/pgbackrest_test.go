@@ -2438,8 +2438,9 @@ func TestCopyConfigurationResources(t *testing.T) {
 }
 
 func TestGenerateBackupJobIntent(t *testing.T) {
+	ctx := context.Background()
 	t.Run("empty", func(t *testing.T) {
-		spec := generateBackupJobSpecIntent(
+		spec := generateBackupJobSpecIntent(ctx,
 			&v1beta1.PostgresCluster{}, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
@@ -2512,7 +2513,7 @@ volumes:
 				ImagePullPolicy: corev1.PullAlways,
 			},
 		}
-		job := generateBackupJobSpecIntent(
+		job := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
@@ -2527,7 +2528,7 @@ volumes:
 			cluster.Spec.Backups = v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{},
 			}
-			job := generateBackupJobSpecIntent(
+			job := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{},
 				"",
 				nil, nil,
@@ -2544,7 +2545,7 @@ volumes:
 					},
 				},
 			}
-			job := generateBackupJobSpecIntent(
+			job := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{},
 				"",
 				nil, nil,
@@ -2583,7 +2584,7 @@ volumes:
 				},
 			},
 		}
-		job := generateBackupJobSpecIntent(
+		job := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
@@ -2596,7 +2597,7 @@ volumes:
 		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
 			PriorityClassName: initialize.String("some-priority-class"),
 		}
-		job := generateBackupJobSpecIntent(
+		job := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
@@ -2614,7 +2615,7 @@ volumes:
 		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
 			Tolerations: tolerations,
 		}
-		job := generateBackupJobSpecIntent(
+		job := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
@@ -2628,14 +2629,14 @@ volumes:
 		t.Run("Undefined", func(t *testing.T) {
 			cluster.Spec.Backups.PGBackRest.Jobs = nil
 
-			spec := generateBackupJobSpecIntent(
+			spec := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
 			assert.Assert(t, spec.TTLSecondsAfterFinished == nil)
 
 			cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{}
 
-			spec = generateBackupJobSpecIntent(
+			spec = generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
 			assert.Assert(t, spec.TTLSecondsAfterFinished == nil)
@@ -2646,7 +2647,7 @@ volumes:
 				TTLSecondsAfterFinished: initialize.Int32(0),
 			}
 
-			spec := generateBackupJobSpecIntent(
+			spec := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
 			if assert.Check(t, spec.TTLSecondsAfterFinished != nil) {
@@ -2659,7 +2660,7 @@ volumes:
 				TTLSecondsAfterFinished: initialize.Int32(100),
 			}
 
-			spec := generateBackupJobSpecIntent(
+			spec := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
 			if assert.Check(t, spec.TTLSecondsAfterFinished != nil) {

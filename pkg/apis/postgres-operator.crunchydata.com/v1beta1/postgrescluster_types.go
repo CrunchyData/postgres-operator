@@ -694,5 +694,6 @@ func NewPostgresCluster() *PostgresCluster {
 type VolumeSnapshots struct {
 	// Name of the VolumeSnapshotClass that should be used by VolumeSnapshots
 	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
 	VolumeSnapshotClassName string `json:"volumeSnapshotClassName"`
 }

@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -197,7 +198,7 @@ func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
 // getPGBackRestResources returns the existing pgBackRest resources that should utilized by the
 // PostgresCluster controller during reconciliation.  Any items returned are verified to be owned
 // by the PostgresCluster controller and still applicable per the current PostgresCluster spec.
-// Additionally, and resources identified that no longer correspond to any current configuration
+// Additionally, any resources identified that no longer correspond to any current configuration
 // are deleted.
 func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
@@ -374,6 +375,15 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			if !backupsSpecFound {
 				break
 			}
+
+			// If the restore job has the PGBackRestBackupJobCompletion annotation, it is
+			// used for volume snapshots and should not be deleted (volume snapshots code
+			// will clean it up when appropriate).
+			if _, ok := owned.GetAnnotations()[naming.PGBackRestBackupJobCompletion]; ok {
+				ownedNoDelete = append(ownedNoDelete, owned)
+				delete = false
+			}
+
 			// When a cluster is prepared for restore, the system identifier is removed from status
 			// and the cluster is therefore no longer bootstrapped.  Only once the restore Job is
 			// complete will the cluster then be bootstrapped again, which means by the time we
@@ -762,7 +772,7 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 }
 
 // generateBackupJobSpecIntent generates a JobSpec for a pgBackRest backup job
-func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
+func generateBackupJobSpecIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repo v1beta1.PGBackRestRepo, serviceAccountName string,
 	labels, annotations map[string]string, opts ...string) *batchv1.JobSpec {
 
@@ -771,6 +781,11 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 		"--stanza=" + pgbackrest.DefaultStanzaName,
 		"--repo=" + repoIndex,
 	}
+	// If VolumeSnapshots are enabled, use archive-copy and archive-check options
+	if postgresCluster.Spec.Backups.Snapshots != nil && feature.Enabled(ctx, feature.VolumeSnapshots) {
+		cmdOpts = append(cmdOpts, "--archive-copy=y", "--archive-check=y")
+	}
+
 	cmdOpts = append(cmdOpts, opts...)
 
 	container := corev1.Container{
@@ -1634,6 +1649,9 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 		return errors.WithStack(err)
 	}
 
+	// TODO(snapshots): If pgdata is being sourced by a VolumeSnapshot then don't perform a typical restore job;
+	// we only want to replay the WAL.
+
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory
 	if err := r.reconcileRestoreJob(ctx, cluster, sourceCluster, pgdata, pgwal, pgtablespaces,
 		dataSource, instanceName, instanceSetName, configHash, pgbackrest.DefaultStanzaName); err != nil {
@@ -2362,7 +2380,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
-	spec := generateBackupJobSpecIntent(postgresCluster, repo,
+	spec := generateBackupJobSpecIntent(ctx, postgresCluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
 
 	backupJob.Spec = *spec
@@ -2523,7 +2541,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
-	spec := generateBackupJobSpecIntent(postgresCluster, replicaCreateRepo,
+	spec := generateBackupJobSpecIntent(ctx, postgresCluster, replicaCreateRepo,
 		serviceAccount.GetName(), labels, annotations)
 
 	backupJob.Spec = *spec
@@ -2886,8 +2904,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 	labels := naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		cluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
-		naming.PGBackRestCronJobLabels(cluster.Name, repo.Name, backupType),
-	)
+		naming.PGBackRestCronJobLabels(cluster.Name, repo.Name, backupType))
 	objectmeta := naming.PGBackRestCronJob(cluster, backupType, repo.Name)
 
 	// Look for an existing CronJob by the associated Labels. If one exists,
@@ -2951,7 +2968,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 	// set backup type (i.e. "full", "diff", "incr")
 	backupOpts := []string{"--type=" + backupType}
 
-	jobSpec := generateBackupJobSpecIntent(cluster, repo,
+	jobSpec := generateBackupJobSpecIntent(ctx, cluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
 
 	// Suspend cronjobs when shutdown or read-only. Any jobs that have already
