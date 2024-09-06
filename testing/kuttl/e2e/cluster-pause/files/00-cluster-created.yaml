@@ -3,19 +3,6 @@ kind: PostgresCluster
 metadata:
   name: cluster-pause
 status:
-  conditions:
-    - message: pgBackRest dedicated repository host is ready
-      reason: RepoHostReady
-      status: "True"
-      type: PGBackRestRepoHostReady
-    - message: pgBackRest replica create repo is ready for backups
-      reason: StanzaCreated
-      status: "True"
-      type: PGBackRestReplicaRepoReady
-    - message: pgBackRest replica creation is now possible
-      reason: RepoBackupComplete
-      status: "True"
-      type: PGBackRestReplicaCreate
   instances:
     - name: instance1
       readyReplicas: 1
