@@ -8,6 +8,7 @@ linters:
     - gofumpt
   enable:
     - depguard
+    - goheader
     - gomodguard
     - gosimple
     - importas
@@ -42,6 +43,15 @@ linters-settings:
 
   exhaustive:
     default-signifies-exhaustive: true
+
+  goheader:
+    template: |-
+      Copyright {{ DATES }} Crunchy Data Solutions, Inc.
+
+      SPDX-License-Identifier: Apache-2.0
+    values:
+      regexp:
+        DATES: '((201[7-9]|202[0-3]) - 2024|2024)'
 
   goimports:
     local-prefixes: github.com/crunchydata/postgres-operator
