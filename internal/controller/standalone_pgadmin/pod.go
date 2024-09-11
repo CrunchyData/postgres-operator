@@ -118,6 +118,19 @@ func pod(
 				Name:  "PGADMIN_LISTEN_PORT",
 				Value: fmt.Sprintf("%d", pgAdminPort),
 			},
+			// Setting the KRB5_CONFIG for kerberos
+			// - https://web.mit.edu/kerberos/krb5-current/doc/admin/conf_files/krb5_conf.html
+			{
+				Name:  "KRB5_CONFIG",
+				Value: configMountPath + "/krb5.conf",
+			},
+			// In testing it was determined that we need to set this env var for the replay cache
+			// otherwise it defaults to the read-only location `/var/tmp/`
+			// - https://web.mit.edu/kerberos/krb5-current/doc/basic/rcache_def.html#replay-cache-types
+			{
+				Name:  "KRB5RCACHEDIR",
+				Value: "/tmp",
+			},
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{

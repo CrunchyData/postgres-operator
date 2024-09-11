@@ -96,6 +96,10 @@ containers:
     value: admin@pgadmin.postgres-operator.svc
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
+  - name: KRB5_CONFIG
+    value: /etc/pgadmin/conf.d/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   name: pgadmin
   ports:
   - containerPort: 5050
@@ -279,6 +283,10 @@ containers:
     value: admin@pgadmin.postgres-operator.svc
   - name: PGADMIN_LISTEN_PORT
     value: "5050"
+  - name: KRB5_CONFIG
+    value: /etc/pgadmin/conf.d/krb5.conf
+  - name: KRB5RCACHEDIR
+    value: /tmp
   image: new-image
   imagePullPolicy: Always
   name: pgadmin
