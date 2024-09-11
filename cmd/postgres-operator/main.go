@@ -168,7 +168,7 @@ func main() {
 	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), shutdown)
 	assertNoError(err)
 	assertNoError(mgr.Add(registrar))
-	_ = registrar.CheckToken()
+	token, _ := registrar.CheckToken()
 
 	// add all PostgreSQL Operator controllers to the runtime manager
 	addControllersToManager(mgr, openshift, log, registrar)
@@ -188,8 +188,14 @@ func main() {
 	if !upgradeCheckingDisabled {
 		log.Info("upgrade checking enabled")
 		// get the URL for the check for upgrades endpoint if set in the env
-		assertNoError(upgradecheck.ManagedScheduler(mgr,
-			openshift, os.Getenv("CHECK_FOR_UPGRADES_URL"), versionString))
+		assertNoError(
+			upgradecheck.ManagedScheduler(
+				mgr,
+				openshift,
+				os.Getenv("CHECK_FOR_UPGRADES_URL"),
+				versionString,
+				token,
+			))
 	} else {
 		log.Info("upgrade checking disabled")
 	}

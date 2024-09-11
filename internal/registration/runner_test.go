@@ -101,19 +101,22 @@ func TestRunnerCheckToken(t *testing.T) {
 
 	t.Run("SafeToCallDisabled", func(t *testing.T) {
 		r := Runner{enabled: false}
-		assert.NilError(t, r.CheckToken())
+		_, err := r.CheckToken()
+		assert.NilError(t, err)
 	})
 
 	t.Run("FileMissing", func(t *testing.T) {
 		r := Runner{enabled: true, tokenPath: filepath.Join(dir, "nope")}
-		assert.NilError(t, r.CheckToken())
+		_, err := r.CheckToken()
+		assert.NilError(t, err)
 	})
 
 	t.Run("FileUnreadable", func(t *testing.T) {
 		r := Runner{enabled: true, tokenPath: filepath.Join(dir, "nope")}
 		assert.NilError(t, os.WriteFile(r.tokenPath, nil, 0o200)) // Writeable
 
-		assert.ErrorContains(t, r.CheckToken(), "permission")
+		_, err := r.CheckToken()
+		assert.ErrorContains(t, err, "permission")
 		assert.Assert(t, r.token.ExpiresAt == nil)
 	})
 
@@ -121,7 +124,8 @@ func TestRunnerCheckToken(t *testing.T) {
 		r := Runner{enabled: true, tokenPath: filepath.Join(dir, "empty")}
 		assert.NilError(t, os.WriteFile(r.tokenPath, nil, 0o400)) // Readable
 
-		assert.ErrorContains(t, r.CheckToken(), "malformed")
+		_, err := r.CheckToken()
+		assert.ErrorContains(t, err, "malformed")
 		assert.Assert(t, r.token.ExpiresAt == nil)
 	})
 
@@ -140,7 +144,8 @@ func TestRunnerCheckToken(t *testing.T) {
 		assert.NilError(t, err)
 		assert.NilError(t, os.WriteFile(r.tokenPath, []byte(data), 0o400)) // Readable
 
-		assert.Assert(t, r.CheckToken() != nil, "HMAC algorithm should be rejected")
+		_, err = r.CheckToken()
+		assert.Assert(t, err != nil, "HMAC algorithm should be rejected")
 		assert.Assert(t, r.token.ExpiresAt == nil)
 	})
 
@@ -155,7 +160,7 @@ func TestRunnerCheckToken(t *testing.T) {
 		assert.NilError(t, err)
 		assert.NilError(t, os.WriteFile(r.tokenPath, []byte(data), 0o400)) // Readable
 
-		err = r.CheckToken()
+		_, err = r.CheckToken()
 		assert.ErrorContains(t, err, "exp claim is required")
 		assert.Assert(t, r.token.ExpiresAt == nil)
 	})
@@ -173,7 +178,7 @@ func TestRunnerCheckToken(t *testing.T) {
 		assert.NilError(t, err)
 		assert.NilError(t, os.WriteFile(r.tokenPath, []byte(data), 0o400)) // Readable
 
-		err = r.CheckToken()
+		_, err = r.CheckToken()
 		assert.ErrorContains(t, err, "is expired")
 		assert.Assert(t, r.token.ExpiresAt == nil)
 	})
@@ -185,14 +190,20 @@ func TestRunnerCheckToken(t *testing.T) {
 			tokenPath: filepath.Join(dir, "valid"),
 		}
 
+		expiration := jwt.NewNumericDate(time.Now().Add(time.Hour))
 		data, err := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-			"exp": jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			"exp": expiration,
 		}).SignedString(key)
 		assert.NilError(t, err)
 		assert.NilError(t, os.WriteFile(r.tokenPath, []byte(data), 0o400)) // Readable
 
-		assert.NilError(t, r.CheckToken())
+		token, err := r.CheckToken()
+		assert.NilError(t, err)
 		assert.Assert(t, r.token.ExpiresAt != nil)
+		assert.Assert(t, token.Valid)
+		exp, err := token.Claims.GetExpirationTime()
+		assert.NilError(t, err)
+		assert.Equal(t, exp.Time, expiration.Time)
 	})
 }
 
@@ -547,7 +558,8 @@ func TestRunnerStart(t *testing.T) {
 
 		// Begin with an invalid token.
 		assert.NilError(t, os.WriteFile(runner.tokenPath, nil, 0o600))
-		assert.Assert(t, runner.CheckToken() != nil)
+		_, err = runner.CheckToken()
+		assert.Assert(t, err != nil)
 
 		// Replace it with a valid token.
 		assert.NilError(t, os.WriteFile(runner.tokenPath, []byte(token), 0o600))

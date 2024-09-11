@@ -14,30 +14,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-func saveEnv(t testing.TB, key string) {
-	t.Helper()
-	previous, ok := os.LookupEnv(key)
-	t.Cleanup(func() {
-		if ok {
-			os.Setenv(key, previous)
-		} else {
-			os.Unsetenv(key)
-		}
-	})
-}
-
-func setEnv(t testing.TB, key, value string) {
-	t.Helper()
-	saveEnv(t, key)
-	assert.NilError(t, os.Setenv(key, value))
-}
-
-func unsetEnv(t testing.TB, key string) {
-	t.Helper()
-	saveEnv(t, key)
-	assert.NilError(t, os.Unsetenv(key))
-}
-
 func TestFetchKeyCommand(t *testing.T) {
 
 	spec1 := v1beta1.PostgresClusterSpec{}
@@ -106,13 +82,14 @@ func TestFetchKeyCommand(t *testing.T) {
 func TestPGAdminContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 
-	unsetEnv(t, "RELATED_IMAGE_PGADMIN")
+	t.Setenv("RELATED_IMAGE_PGADMIN", "")
+	os.Unsetenv("RELATED_IMAGE_PGADMIN")
 	assert.Equal(t, PGAdminContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGADMIN", "")
+	t.Setenv("RELATED_IMAGE_PGADMIN", "")
 	assert.Equal(t, PGAdminContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGADMIN", "env-var-pgadmin")
+	t.Setenv("RELATED_IMAGE_PGADMIN", "env-var-pgadmin")
 	assert.Equal(t, PGAdminContainerImage(cluster), "env-var-pgadmin")
 
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
@@ -124,13 +101,14 @@ func TestPGAdminContainerImage(t *testing.T) {
 func TestPGBackRestContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 
-	unsetEnv(t, "RELATED_IMAGE_PGBACKREST")
+	t.Setenv("RELATED_IMAGE_PGBACKREST", "")
+	os.Unsetenv("RELATED_IMAGE_PGBACKREST")
 	assert.Equal(t, PGBackRestContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGBACKREST", "")
+	t.Setenv("RELATED_IMAGE_PGBACKREST", "")
 	assert.Equal(t, PGBackRestContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGBACKREST", "env-var-pgbackrest")
+	t.Setenv("RELATED_IMAGE_PGBACKREST", "env-var-pgbackrest")
 	assert.Equal(t, PGBackRestContainerImage(cluster), "env-var-pgbackrest")
 
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
@@ -142,13 +120,14 @@ func TestPGBackRestContainerImage(t *testing.T) {
 func TestPGBouncerContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 
-	unsetEnv(t, "RELATED_IMAGE_PGBOUNCER")
+	t.Setenv("RELATED_IMAGE_PGBOUNCER", "")
+	os.Unsetenv("RELATED_IMAGE_PGBOUNCER")
 	assert.Equal(t, PGBouncerContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGBOUNCER", "")
+	t.Setenv("RELATED_IMAGE_PGBOUNCER", "")
 	assert.Equal(t, PGBouncerContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGBOUNCER", "env-var-pgbouncer")
+	t.Setenv("RELATED_IMAGE_PGBOUNCER", "env-var-pgbouncer")
 	assert.Equal(t, PGBouncerContainerImage(cluster), "env-var-pgbouncer")
 
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
@@ -160,13 +139,14 @@ func TestPGBouncerContainerImage(t *testing.T) {
 func TestPGExporterContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 
-	unsetEnv(t, "RELATED_IMAGE_PGEXPORTER")
+	t.Setenv("RELATED_IMAGE_PGEXPORTER", "")
+	os.Unsetenv("RELATED_IMAGE_PGEXPORTER")
 	assert.Equal(t, PGExporterContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGEXPORTER", "")
+	t.Setenv("RELATED_IMAGE_PGEXPORTER", "")
 	assert.Equal(t, PGExporterContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_PGEXPORTER", "env-var-pgexporter")
+	t.Setenv("RELATED_IMAGE_PGEXPORTER", "env-var-pgexporter")
 	assert.Equal(t, PGExporterContainerImage(cluster), "env-var-pgexporter")
 
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
@@ -178,13 +158,14 @@ func TestPGExporterContainerImage(t *testing.T) {
 func TestStandalonePGAdminContainerImage(t *testing.T) {
 	pgadmin := &v1beta1.PGAdmin{}
 
-	unsetEnv(t, "RELATED_IMAGE_STANDALONE_PGADMIN")
+	t.Setenv("RELATED_IMAGE_STANDALONE_PGADMIN", "")
+	os.Unsetenv("RELATED_IMAGE_STANDALONE_PGADMIN")
 	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "")
 
-	setEnv(t, "RELATED_IMAGE_STANDALONE_PGADMIN", "")
+	t.Setenv("RELATED_IMAGE_STANDALONE_PGADMIN", "")
 	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "")
 
-	setEnv(t, "RELATED_IMAGE_STANDALONE_PGADMIN", "env-var-pgadmin")
+	t.Setenv("RELATED_IMAGE_STANDALONE_PGADMIN", "env-var-pgadmin")
 	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "env-var-pgadmin")
 
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
@@ -197,13 +178,14 @@ func TestPostgresContainerImage(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Spec.PostgresVersion = 12
 
-	unsetEnv(t, "RELATED_IMAGE_POSTGRES_12")
+	t.Setenv("RELATED_IMAGE_POSTGRES_12", "")
+	os.Unsetenv("RELATED_IMAGE_POSTGRES_12")
 	assert.Equal(t, PostgresContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_POSTGRES_12", "")
+	t.Setenv("RELATED_IMAGE_POSTGRES_12", "")
 	assert.Equal(t, PostgresContainerImage(cluster), "")
 
-	setEnv(t, "RELATED_IMAGE_POSTGRES_12", "env-var-postgres")
+	t.Setenv("RELATED_IMAGE_POSTGRES_12", "env-var-postgres")
 	assert.Equal(t, PostgresContainerImage(cluster), "env-var-postgres")
 
 	cluster.Spec.Image = "spec-image"
@@ -211,7 +193,7 @@ func TestPostgresContainerImage(t *testing.T) {
 
 	cluster.Spec.Image = ""
 	cluster.Spec.PostGISVersion = "3.0"
-	setEnv(t, "RELATED_IMAGE_POSTGRES_12_GIS_3.0", "env-var-postgis")
+	t.Setenv("RELATED_IMAGE_POSTGRES_12_GIS_3.0", "env-var-postgis")
 	assert.Equal(t, PostgresContainerImage(cluster), "env-var-postgis")
 
 	cluster.Spec.Image = "spec-image"
@@ -222,7 +204,9 @@ func TestVerifyImageValues(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 
 	verifyImageCheck := func(t *testing.T, envVar, errString string, cluster *v1beta1.PostgresCluster) {
-		unsetEnv(t, envVar)
+
+		t.Setenv(envVar, "")
+		os.Unsetenv(envVar)
 		err := VerifyImageValues(cluster)
 		assert.ErrorContains(t, err, errString)
 	}
