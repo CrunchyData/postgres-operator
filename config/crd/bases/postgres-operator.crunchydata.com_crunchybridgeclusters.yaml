@@ -68,8 +68,8 @@ spec:
               majorVersion:
                 description: |-
                   The ID of the cluster's major Postgres version.
-                  Currently Bridge offers 13-16
-                maximum: 16
+                  Currently Bridge offers 13-17
+                maximum: 17
                 minimum: 13
                 type: integer
               metadata:
