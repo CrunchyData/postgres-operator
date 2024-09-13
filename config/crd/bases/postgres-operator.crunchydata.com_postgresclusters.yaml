@@ -7599,6 +7599,19 @@ spec:
                   scheduling constraints will be used in addition to any custom constraints
                   provided.
                 type: boolean
+              environment:
+                default: production
+                description: |-
+                  Environment allows PGO to adapt its behavior according to the specific infrastructure
+                  and/or stage of development the PostgresCluster is associated with.  This includes
+                  requiring and/or loosening the requirements for certain components and settings, while
+                  also providing deeper insights, events and status that more closely align with
+                  PostgresCluster's intended use.
+                  Defaults to “production”.  Acceptable values are "development" and "production".
+                enum:
+                - production
+                - development
+                type: string
               image:
                 description: |-
                   The image name to use for PostgreSQL containers. When omitted, the value
@@ -16874,6 +16887,10 @@ spec:
             - instances
             - postgresVersion
             type: object
+            x-kubernetes-validations:
+            - message: Backups must be enabled for production PostgresCluster's.
+              rule: '(self.environment == ''production'') ? self.backups.pgbackrest
+                != null : true'
           status:
             description: PostgresClusterStatus defines the observed state of PostgresCluster
             properties:

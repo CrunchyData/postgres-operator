@@ -43,6 +43,7 @@ spec:
     pgbackrest:
       repos: null
   config: {}
+  environment: production
   instances: null
   patroni:
     leaderLeaseDurationSeconds: 30
@@ -76,6 +77,7 @@ spec:
     pgbackrest:
       repos: null
   config: {}
+  environment: production
   instances:
   - dataVolumeClaimSpec:
       resources: {}

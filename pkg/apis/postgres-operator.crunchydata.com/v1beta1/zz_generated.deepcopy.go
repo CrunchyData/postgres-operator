@@ -1681,6 +1681,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.Environment != nil {
+		in, out := &in.Environment, &out.Environment
+		*out = new(string)
+		**out = **in
+	}
 	if in.ImagePullSecrets != nil {
 		in, out := &in.ImagePullSecrets, &out.ImagePullSecrets
 		*out = make([]corev1.LocalObjectReference, len(*in))

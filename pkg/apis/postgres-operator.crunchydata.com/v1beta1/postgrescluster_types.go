@@ -13,6 +13,7 @@ import (
 )
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
+// +kubebuilder:validation:XValidation:rule="(self.environment == 'production') ? self.backups.pgbackrest != null : true", message="Backups must be enabled for production PostgresCluster's."
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
@@ -57,6 +58,17 @@ type PostgresClusterSpec struct {
 	// provided.
 	// +optional
 	DisableDefaultPodScheduling *bool `json:"disableDefaultPodScheduling,omitempty"`
+
+	// Environment allows PGO to adapt its behavior according to the specific infrastructure
+	// and/or stage of development the PostgresCluster is associated with.  This includes
+	// requiring and/or loosening the requirements for certain components and settings, while
+	// also providing deeper insights, events and status that more closely align with
+	// PostgresCluster's intended use.
+	// Defaults to “production”.  Acceptable values are "development" and "production".
+	// +kubebuilder:validation:Enum={production,development}
+	// +kubebuilder:default=production
+	// +optional
+	Environment *string `json:"environment,omitempty"`
 
 	// The image name to use for PostgreSQL containers. When omitted, the value
 	// comes from an operator environment variable. For standard PostgreSQL images,
@@ -304,6 +316,11 @@ func (s *PostgresClusterSpec) Default() {
 
 	if s.UserInterface != nil {
 		s.UserInterface.Default()
+	}
+
+	if s.Environment == nil {
+		s.Environment = new(string)
+		*s.Environment = "production"
 	}
 }
 
