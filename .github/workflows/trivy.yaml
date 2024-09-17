@@ -1,5 +1,3 @@
-# Uses Trivy to scan every pull request, rejecting those with severe, fixable vulnerabilities.
-# Scans on PR to master and weekly with same behavior.
 name: Trivy
 
 on:
@@ -11,7 +9,29 @@ on:
       - master
 
 jobs:
-  scan:
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Trivy needs a populated Go module cache to detect Go module licenses.
+      - uses: actions/setup-go@v5
+        with: { go-version: stable }
+      - run: go mod download
+
+      # Report success only when detected licenses are listed in [/trivy.yaml].
+      # The "aquasecurity/trivy-action" action cannot access the Go module cache,
+      # so run Trivy from an image with the cache and local configuration mounted.
+      # - https://github.com/aquasecurity/trivy-action/issues/219
+      # - https://github.com/aquasecurity/trivy/pkgs/container/trivy
+      - run: >
+          docker run
+          --env 'GOPATH=/go' --volume "$(go env GOPATH):/go"
+          --workdir '/mnt' --volume "$(pwd):/mnt"
+          'ghcr.io/aquasecurity/trivy:latest'
+          filesystem --exit-code=1 --scanners=license .
+
+  vulnerabilities:
     if: ${{ github.repository == 'CrunchyData/postgres-operator' }}
 
     permissions:
@@ -30,10 +50,11 @@ jobs:
       - name: Log all detected vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: fs
+          scan-type: filesystem
           hide-progress: true
           ignore-unfixed: true
-      
+          scanners: secret,vuln
+
       # Upload actionable results to the GitHub Security tab.
       # Pull request checks fail according to repository settings.
       # - https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
@@ -41,10 +62,11 @@ jobs:
       - name: Report actionable vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: fs
+          scan-type: filesystem
           ignore-unfixed: true
           format: 'sarif'
           output: 'trivy-results.sarif'
+          scanners: secret,vuln
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
