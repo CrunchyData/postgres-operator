@@ -1,0 +1,14 @@
+# https://aquasecurity.github.io/trivy/latest/docs/references/configuration/config-file/
+---
+# Specify an exact list of recognized and acceptable licenses.
+# [A GitHub workflow](/.github/workflows/trivy.yaml) rejects pull requests that
+# import licenses not in this list.
+#
+# https://aquasecurity.github.io/trivy/latest/docs/scanner/license/
+license:
+  ignored:
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - MIT
