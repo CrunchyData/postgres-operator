@@ -114,10 +114,6 @@ func pod(
 				Name:  "PGADMIN_SETUP_EMAIL",
 				Value: fmt.Sprintf("admin@%s.%s.svc", inPGAdmin.Name, inPGAdmin.Namespace),
 			},
-			{
-				Name:  "PGADMIN_LISTEN_PORT",
-				Value: fmt.Sprintf("%d", pgAdminPort),
-			},
 			// Setting the KRB5_CONFIG for kerberos
 			// - https://web.mit.edu/kerberos/krb5-current/doc/admin/conf_files/krb5_conf.html
 			{
