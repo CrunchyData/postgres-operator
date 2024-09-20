@@ -181,6 +181,8 @@ func (r *Reconciler) generatePGAdminService(
 			}
 			servicePort.NodePort = *spec.NodePort
 		}
+		service.Spec.ExternalTrafficPolicy = initialize.FromPointer(spec.ExternalTrafficPolicy)
+		service.Spec.InternalTrafficPolicy = spec.InternalTrafficPolicy
 	}
 	service.Spec.Ports = []corev1.ServicePort{servicePort}
 
