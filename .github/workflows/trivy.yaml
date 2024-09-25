@@ -19,13 +19,27 @@ jobs:
         with: { go-version: stable }
       - run: go mod download
 
+      # Login to the GitHub Packages registry to avoid rate limiting.
+      # - https://aquasecurity.github.io/trivy/v0.55/docs/references/troubleshooting/#github-rate-limiting
+      # - https://github.com/aquasecurity/trivy/issues/7580
+      # - https://github.com/aquasecurity/trivy-action/issues/389
+      # - https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+      # - https://docs.github.com/en/packages/managing-github-packages-using-github-actions-workflows/publishing-and-installing-a-package-with-github-actions
+      - name: Login to GitHub Packages
+        run: >
+          docker login ghcr.io
+          --username '${{ github.actor }}'
+          --password-stdin <<< '${{ secrets.GITHUB_TOKEN }}'
+
       # Report success only when detected licenses are listed in [/trivy.yaml].
       # The "aquasecurity/trivy-action" action cannot access the Go module cache,
       # so run Trivy from an image with the cache and local configuration mounted.
       # - https://github.com/aquasecurity/trivy-action/issues/219
       # - https://github.com/aquasecurity/trivy/pkgs/container/trivy
-      - run: >
+      - name: Scan licenses
+        run: >
           docker run
+          --env 'DOCKER_CONFIG=/docker' --volume "${HOME}/.docker:/docker"
           --env 'GOPATH=/go' --volume "$(go env GOPATH):/go"
           --workdir '/mnt' --volume "$(pwd):/mnt"
           'ghcr.io/aquasecurity/trivy:latest'
