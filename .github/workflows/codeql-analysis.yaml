@@ -1,6 +1,9 @@
 name: CodeQL
 
 on:
+  pull_request:
+    branches:
+      - master
   push:
     branches:
       - master
@@ -9,7 +12,6 @@ on:
 
 jobs:
   analyze:
-    name: Analyze
     runs-on: ubuntu-latest
     permissions:
       actions: read
