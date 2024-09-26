@@ -32,7 +32,8 @@ const (
 
 // postgres_exporter command flags
 var (
-	ExporterWebConfigFileFlag = "--web.config.file=/web-config/web-config.yml"
+	ExporterWebConfigFileFlag          = "--web.config.file=/web-config/web-config.yml"
+	ExporterDeactivateStatBGWriterFlag = "--no-collector.stat_bgwriter"
 )
 
 // Defaults for certain values used in queries.yml

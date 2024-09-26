@@ -259,13 +259,32 @@ func addPGMonitorExporterToInstancePodSpec(
 	withBuiltInCollectors :=
 		!strings.EqualFold(cluster.Annotations[naming.PostgresExporterCollectorsAnnotation], "None")
 
+	var cmd []string
+	// PG 17 does not include some of the columns found in stat_bgwriter with older PGs.
+	// Selectively turn off the collector for stat_bgwriter in PG 17, unless the user
+	// requests all collectors to be turned off.
+	switch {
+	case cluster.Spec.PostgresVersion == 17 && withBuiltInCollectors && certSecret == nil:
+		cmd = pgmonitor.ExporterStartCommand(withBuiltInCollectors,
+			pgmonitor.ExporterDeactivateStatBGWriterFlag)
+	case cluster.Spec.PostgresVersion == 17 && withBuiltInCollectors && certSecret != nil:
+		cmd = pgmonitor.ExporterStartCommand(withBuiltInCollectors,
+			pgmonitor.ExporterWebConfigFileFlag,
+			pgmonitor.ExporterDeactivateStatBGWriterFlag)
+	case cluster.Spec.PostgresVersion != 17 && certSecret != nil:
+		cmd = pgmonitor.ExporterStartCommand(withBuiltInCollectors,
+			pgmonitor.ExporterWebConfigFileFlag)
+	default:
+		cmd = pgmonitor.ExporterStartCommand(withBuiltInCollectors)
+	}
+
 	securityContext := initialize.RestrictedSecurityContext()
 	exporterContainer := corev1.Container{
 		Name:            naming.ContainerPGMonitorExporter,
 		Image:           config.PGExporterContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Resources:       cluster.Spec.Monitoring.PGMonitor.Exporter.Resources,
-		Command:         pgmonitor.ExporterStartCommand(withBuiltInCollectors),
+		Command:         cmd,
 		Env: []corev1.EnvVar{
 			{Name: "DATA_SOURCE_URI", Value: fmt.Sprintf("%s:%d/%s", pgmonitor.ExporterHost, *cluster.Spec.Port, pgmonitor.ExporterDB)},
 			{Name: "DATA_SOURCE_USER", Value: pgmonitor.MonitoringUser},
@@ -357,8 +376,6 @@ func addPGMonitorExporterToInstancePodSpec(
 		}}
 
 		exporterContainer.VolumeMounts = append(exporterContainer.VolumeMounts, mounts...)
-		exporterContainer.Command = pgmonitor.ExporterStartCommand(
-			withBuiltInCollectors, pgmonitor.ExporterWebConfigFileFlag)
 	}
 
 	template.Spec.Containers = append(template.Spec.Containers, exporterContainer)
