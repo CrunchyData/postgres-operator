@@ -16814,9 +16814,11 @@ spec:
             - postgresVersion
             type: object
             x-kubernetes-validations:
-            - message: Backups must be enabled in a production environment.
-              rule: '(self.environment == ''production'') ? has(self.backups.pgbackrest)
-                : true'
+            - fieldPath: .backups
+              message: Backups must be enabled in a production environment.
+              reason: FieldValueRequired
+              rule: '(self.environment == ''production'') ? (has(self.backups) &&
+                has(self.backups.pgbackrest)) : true'
           status:
             description: PostgresClusterStatus defines the observed state of PostgresCluster
             properties:

@@ -13,7 +13,7 @@ import (
 )
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
-// +kubebuilder:validation:XValidation:rule="(self.environment == 'production') ? has(self.backups.pgbackrest) : true", message="Backups must be enabled in a production environment."
+// +kubebuilder:validation:XValidation:rule="(self.environment == 'production') ? (has(self.backups) && has(self.backups.pgbackrest)) : true", message="Backups must be enabled in a production environment.",fieldPath=".backups",reason="FieldValueRequired"
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
