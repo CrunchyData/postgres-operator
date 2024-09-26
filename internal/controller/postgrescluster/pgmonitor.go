@@ -271,7 +271,9 @@ func addPGMonitorExporterToInstancePodSpec(
 		cmd = pgmonitor.ExporterStartCommand(withBuiltInCollectors,
 			pgmonitor.ExporterWebConfigFileFlag,
 			pgmonitor.ExporterDeactivateStatBGWriterFlag)
-	case cluster.Spec.PostgresVersion != 17 && certSecret != nil:
+	// If you're turning off all built-in collectors, we don't care which
+	// version of PG you're using.
+	case certSecret != nil:
 		cmd = pgmonitor.ExporterStartCommand(withBuiltInCollectors,
 			pgmonitor.ExporterWebConfigFileFlag)
 	default:
