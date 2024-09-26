@@ -13,7 +13,7 @@ import (
 )
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
-// +kubebuilder:validation:XValidation:rule="(self.environment == 'production') ? self.backups.pgbackrest != null : true", message="Backups must be enabled for production PostgresCluster's."
+// +kubebuilder:validation:XValidation:rule="(self.environment == 'production') ? has(self.backups.pgbackrest) : true", message="Backups must be enabled in a production environment."
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
@@ -59,11 +59,9 @@ type PostgresClusterSpec struct {
 	// +optional
 	DisableDefaultPodScheduling *bool `json:"disableDefaultPodScheduling,omitempty"`
 
-	// Environment allows PGO to adapt its behavior according to the specific infrastructure
-	// and/or stage of development the PostgresCluster is associated with.  This includes
-	// requiring and/or loosening the requirements for certain components and settings, while
-	// also providing deeper insights, events and status that more closely align with
-	// PostgresCluster's intended use.
+	// Environment allows PGO to adapt its behavior according to the intended use of this cluster.
+	// This includes adjusting requirements for different components, providing deeper insights,
+	// and emitting events and status that better align with its purpose.
 	// Defaults to “production”.  Acceptable values are "development" and "production".
 	// +kubebuilder:validation:Enum={production,development}
 	// +kubebuilder:default=production

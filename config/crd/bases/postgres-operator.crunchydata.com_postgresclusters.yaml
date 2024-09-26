@@ -7602,11 +7602,9 @@ spec:
               environment:
                 default: production
                 description: |-
-                  Environment allows PGO to adapt its behavior according to the specific infrastructure
-                  and/or stage of development the PostgresCluster is associated with.  This includes
-                  requiring and/or loosening the requirements for certain components and settings, while
-                  also providing deeper insights, events and status that more closely align with
-                  PostgresCluster's intended use.
+                  Environment allows PGO to adapt its behavior according to the intended use of this cluster.
+                  This includes adjusting requirements for different components, providing deeper insights,
+                  and emitting events and status that better align with its purpose.
                   Defaults to “production”.  Acceptable values are "development" and "production".
                 enum:
                 - production
@@ -16888,9 +16886,9 @@ spec:
             - postgresVersion
             type: object
             x-kubernetes-validations:
-            - message: Backups must be enabled for production PostgresCluster's.
-              rule: '(self.environment == ''production'') ? self.backups.pgbackrest
-                != null : true'
+            - message: Backups must be enabled in a production environment.
+              rule: '(self.environment == ''production'') ? has(self.backups.pgbackrest)
+                : true'
           status:
             description: PostgresClusterStatus defines the observed state of PostgresCluster
             properties:
