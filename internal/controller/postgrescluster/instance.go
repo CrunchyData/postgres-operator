@@ -1298,15 +1298,11 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	sts.Spec.Template.Spec.Affinity = spec.Affinity
 	sts.Spec.Template.Spec.Tolerations = spec.Tolerations
 	sts.Spec.Template.Spec.TopologySpreadConstraints = spec.TopologySpreadConstraints
-	if spec.PriorityClassName != nil {
-		sts.Spec.Template.Spec.PriorityClassName = *spec.PriorityClassName
-	}
+	sts.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(spec.PriorityClassName)
 
 	// if default pod scheduling is not explicitly disabled, add the default
 	// pod topology spread constraints
-	if cluster.Spec.DisableDefaultPodScheduling == nil ||
-		(cluster.Spec.DisableDefaultPodScheduling != nil &&
-			!*cluster.Spec.DisableDefaultPodScheduling) {
+	if !initialize.FromPointer(cluster.Spec.DisableDefaultPodScheduling) {
 		sts.Spec.Template.Spec.TopologySpreadConstraints = append(
 			sts.Spec.Template.Spec.TopologySpreadConstraints,
 			defaultTopologySpreadConstraints(

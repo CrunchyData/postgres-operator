@@ -16,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
-	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -34,11 +33,11 @@ func (r *CrunchyBridgeClusterReconciler) generatePostgresRoleSecret(
 		Name:      secretName,
 	}}
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
-	initialize.StringMap(&intent.StringData)
-
-	intent.StringData["name"] = clusterRole.Name
-	intent.StringData["password"] = clusterRole.Password
-	intent.StringData["uri"] = clusterRole.URI
+	intent.StringData = map[string]string{
+		"name":     clusterRole.Name,
+		"password": clusterRole.Password,
+		"uri":      clusterRole.URI,
+	}
 
 	intent.Annotations = cluster.Spec.Metadata.GetAnnotationsOrNil()
 	intent.Labels = naming.Merge(

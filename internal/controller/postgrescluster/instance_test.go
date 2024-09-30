@@ -1972,7 +1972,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns.Name
 		spec := &cluster.Spec.InstanceSets[0]
-		spec.MinAvailable = initialize.IntOrStringInt32(0)
+		spec.MinAvailable = initialize.Pointer(intstr.FromInt32(0))
 		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
 		assert.Assert(t, !foundPDB(cluster, spec))
 	})
@@ -1981,7 +1981,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns.Name
 		spec := &cluster.Spec.InstanceSets[0]
-		spec.MinAvailable = initialize.IntOrStringInt32(1)
+		spec.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
 		assert.NilError(t, r.Client.Create(ctx, cluster))
 		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
@@ -1990,7 +1990,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		assert.Assert(t, foundPDB(cluster, spec))
 
 		t.Run("deleted", func(t *testing.T) {
-			spec.MinAvailable = initialize.IntOrStringInt32(0)
+			spec.MinAvailable = initialize.Pointer(intstr.FromInt32(0))
 			err := r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
 			if apierrors.IsConflict(err) {
 				// When running in an existing environment another controller will sometimes update
@@ -2008,7 +2008,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns.Name
 		spec := &cluster.Spec.InstanceSets[0]
-		spec.MinAvailable = initialize.IntOrStringString("50%")
+		spec.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
 		assert.NilError(t, r.Client.Create(ctx, cluster))
 		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
@@ -2017,7 +2017,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		assert.Assert(t, foundPDB(cluster, spec))
 
 		t.Run("deleted", func(t *testing.T) {
-			spec.MinAvailable = initialize.IntOrStringString("0%")
+			spec.MinAvailable = initialize.Pointer(intstr.FromString("0%"))
 			err := r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
 			if apierrors.IsConflict(err) {
 				// When running in an existing environment another controller will sometimes update
@@ -2031,13 +2031,13 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		})
 
 		t.Run("delete with 00%", func(t *testing.T) {
-			spec.MinAvailable = initialize.IntOrStringString("50%")
+			spec.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
 			assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
 			assert.Assert(t, foundPDB(cluster, spec))
 
 			t.Run("deleted", func(t *testing.T) {
-				spec.MinAvailable = initialize.IntOrStringString("00%")
+				spec.MinAvailable = initialize.Pointer(intstr.FromString("00%"))
 				err := r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec)
 				if apierrors.IsConflict(err) {
 					// When running in an existing environment another controller will sometimes update
@@ -2110,13 +2110,13 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns.Name
 		spec := &cluster.Spec.InstanceSets[0]
-		spec.MinAvailable = initialize.IntOrStringInt32(1)
+		spec.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
 		assert.NilError(t, r.Client.Create(ctx, cluster))
 		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
 
 		expectedPDB := generatePDB(t, cluster, spec,
-			initialize.IntOrStringInt32(1))
+			initialize.Pointer(intstr.FromInt32(1)))
 		assert.NilError(t, createPDB(expectedPDB))
 
 		t.Run("no instances were removed", func(t *testing.T) {
@@ -2129,7 +2129,7 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 			leftoverPDB := generatePDB(t, cluster, &v1beta1.PostgresInstanceSetSpec{
 				Name:     "old-instance",
 				Replicas: initialize.Int32(1),
-			}, initialize.IntOrStringInt32(1))
+			}, initialize.Pointer(intstr.FromInt32(1)))
 			assert.NilError(t, createPDB(leftoverPDB))
 
 			assert.Assert(t, foundPDB(expectedPDB))

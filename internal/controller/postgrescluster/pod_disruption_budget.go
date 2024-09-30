@@ -64,5 +64,5 @@ func getMinAvailable(
 	}
 
 	// If more than one replica is not defined, we will default to '0'
-	return initialize.IntOrStringInt32(expect)
+	return initialize.Pointer(intstr.FromInt32(expect))
 }

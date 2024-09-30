@@ -610,16 +610,12 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		repo.Spec.Template.Spec.Affinity = repoHost.Affinity
 		repo.Spec.Template.Spec.Tolerations = repoHost.Tolerations
 		repo.Spec.Template.Spec.TopologySpreadConstraints = repoHost.TopologySpreadConstraints
-		if repoHost.PriorityClassName != nil {
-			repo.Spec.Template.Spec.PriorityClassName = *repoHost.PriorityClassName
-		}
+		repo.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(repoHost.PriorityClassName)
 	}
 
 	// if default pod scheduling is not explicitly disabled, add the default
 	// pod topology spread constraints
-	if postgresCluster.Spec.DisableDefaultPodScheduling == nil ||
-		(postgresCluster.Spec.DisableDefaultPodScheduling != nil &&
-			!*postgresCluster.Spec.DisableDefaultPodScheduling) {
+	if !initialize.FromPointer(postgresCluster.Spec.DisableDefaultPodScheduling) {
 		repo.Spec.Template.Spec.TopologySpreadConstraints = append(
 			repo.Spec.Template.Spec.TopologySpreadConstraints,
 			defaultTopologySpreadConstraints(
@@ -821,12 +817,10 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster,
 
 	// set the priority class name, tolerations, and affinity, if they exist
 	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
-		if postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName != nil {
-			jobSpec.Template.Spec.PriorityClassName =
-				*postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName
-		}
 		jobSpec.Template.Spec.Tolerations = postgresCluster.Spec.Backups.PGBackRest.Jobs.Tolerations
 		jobSpec.Template.Spec.Affinity = postgresCluster.Spec.Backups.PGBackRest.Jobs.Affinity
+		jobSpec.Template.Spec.PriorityClassName =
+			initialize.FromPointer(postgresCluster.Spec.Backups.PGBackRest.Jobs.PriorityClassName)
 	}
 
 	// Set the image pull secrets, if any exist.
@@ -1318,9 +1312,7 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	job.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(cluster)
 
 	// set the priority class name, if it exists
-	if dataSource.PriorityClassName != nil {
-		job.Spec.Template.Spec.PriorityClassName = *dataSource.PriorityClassName
-	}
+	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(dataSource.PriorityClassName)
 
 	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
 	if err := errors.WithStack(r.setControllerReference(cluster, job)); err != nil {

@@ -10,6 +10,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -159,7 +160,7 @@ func pod(
 	readinessProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
-				Port:   *initialize.IntOrStringInt32(pgAdminPort),
+				Port:   intstr.FromInt32(pgAdminPort),
 				Path:   "/login",
 				Scheme: corev1.URISchemeHTTP,
 			},

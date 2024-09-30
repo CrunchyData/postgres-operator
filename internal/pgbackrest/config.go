@@ -88,7 +88,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	}
 
 	// create an empty map for the config data
-	initialize.StringMap(&cm.Data)
+	initialize.Map(&cm.Data)
 
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	// Port will always be populated, since the API will set a default of 5432 if not provided

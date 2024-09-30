@@ -158,7 +158,7 @@ func (r *Reconciler) generatePGAdminService(
 	// requires updates to the pgAdmin service configuration.
 	servicePort := corev1.ServicePort{
 		Name:       naming.PortPGAdmin,
-		Port:       *initialize.Int32(5050),
+		Port:       5050,
 		Protocol:   corev1.ProtocolTCP,
 		TargetPort: intstr.FromString(naming.PortPGAdmin),
 	}
@@ -294,11 +294,8 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	// Use scheduling constraints from the cluster spec.
 	sts.Spec.Template.Spec.Affinity = cluster.Spec.UserInterface.PGAdmin.Affinity
 	sts.Spec.Template.Spec.Tolerations = cluster.Spec.UserInterface.PGAdmin.Tolerations
-
-	if cluster.Spec.UserInterface.PGAdmin.PriorityClassName != nil {
-		sts.Spec.Template.Spec.PriorityClassName = *cluster.Spec.UserInterface.PGAdmin.PriorityClassName
-	}
-
+	sts.Spec.Template.Spec.PriorityClassName =
+		initialize.FromPointer(cluster.Spec.UserInterface.PGAdmin.PriorityClassName)
 	sts.Spec.Template.Spec.TopologySpreadConstraints =
 		cluster.Spec.UserInterface.PGAdmin.TopologySpreadConstraints
 

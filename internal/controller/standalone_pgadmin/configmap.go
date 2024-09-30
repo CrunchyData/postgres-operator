@@ -53,7 +53,7 @@ func configmap(pgadmin *v1beta1.PGAdmin,
 		naming.StandalonePGAdminLabels(pgadmin.Name))
 
 	// TODO(tjmoore4): Populate configuration details.
-	initialize.StringMap(&configmap.Data)
+	initialize.Map(&configmap.Data)
 	configSettings, err := generateConfig(pgadmin)
 	if err == nil {
 		configmap.Data[settingsConfigMapKey] = configSettings

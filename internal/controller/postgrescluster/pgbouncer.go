@@ -395,25 +395,20 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	// - https://docs.k8s.io/concepts/workloads/controllers/deployment/#rolling-update-deployment
 	deploy.Spec.Strategy.Type = appsv1.RollingUpdateDeploymentStrategyType
 	deploy.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
-		MaxUnavailable: intstr.ValueOrDefault(nil, intstr.FromInt(0)),
+		MaxUnavailable: initialize.Pointer(intstr.FromInt32(0)),
 	}
 
 	// Use scheduling constraints from the cluster spec.
 	deploy.Spec.Template.Spec.Affinity = cluster.Spec.Proxy.PGBouncer.Affinity
 	deploy.Spec.Template.Spec.Tolerations = cluster.Spec.Proxy.PGBouncer.Tolerations
-
-	if cluster.Spec.Proxy.PGBouncer.PriorityClassName != nil {
-		deploy.Spec.Template.Spec.PriorityClassName = *cluster.Spec.Proxy.PGBouncer.PriorityClassName
-	}
-
+	deploy.Spec.Template.Spec.PriorityClassName =
+		initialize.FromPointer(cluster.Spec.Proxy.PGBouncer.PriorityClassName)
 	deploy.Spec.Template.Spec.TopologySpreadConstraints =
 		cluster.Spec.Proxy.PGBouncer.TopologySpreadConstraints
 
 	// if default pod scheduling is not explicitly disabled, add the default
 	// pod topology spread constraints
-	if cluster.Spec.DisableDefaultPodScheduling == nil ||
-		(cluster.Spec.DisableDefaultPodScheduling != nil &&
-			!*cluster.Spec.DisableDefaultPodScheduling) {
+	if !initialize.FromPointer(cluster.Spec.DisableDefaultPodScheduling) {
 		deploy.Spec.Template.Spec.TopologySpreadConstraints = append(
 			deploy.Spec.Template.Spec.TopologySpreadConstraints,
 			defaultTopologySpreadConstraints(*deploy.Spec.Selector)...)

@@ -499,10 +499,9 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 		},
 	}
 	// set the priority class name, if it exists
-	if len(cluster.Spec.InstanceSets) > 0 &&
-		cluster.Spec.InstanceSets[0].PriorityClassName != nil {
+	if len(cluster.Spec.InstanceSets) > 0 {
 		jobSpec.Template.Spec.PriorityClassName =
-			*cluster.Spec.InstanceSets[0].PriorityClassName
+			initialize.FromPointer(cluster.Spec.InstanceSets[0].PriorityClassName)
 	}
 	moveDirJob.Spec = *jobSpec
 
@@ -617,10 +616,9 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 		},
 	}
 	// set the priority class name, if it exists
-	if len(cluster.Spec.InstanceSets) > 0 &&
-		cluster.Spec.InstanceSets[0].PriorityClassName != nil {
+	if len(cluster.Spec.InstanceSets) > 0 {
 		jobSpec.Template.Spec.PriorityClassName =
-			*cluster.Spec.InstanceSets[0].PriorityClassName
+			initialize.FromPointer(cluster.Spec.InstanceSets[0].PriorityClassName)
 	}
 	moveDirJob.Spec = *jobSpec
 
@@ -740,9 +738,7 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 	}
 	// set the priority class name, if it exists
 	if repoHost := cluster.Spec.Backups.PGBackRest.RepoHost; repoHost != nil {
-		if repoHost.PriorityClassName != nil {
-			jobSpec.Template.Spec.PriorityClassName = *repoHost.PriorityClassName
-		}
+		jobSpec.Template.Spec.PriorityClassName = initialize.FromPointer(repoHost.PriorityClassName)
 	}
 	moveDirJob.Spec = *jobSpec
 

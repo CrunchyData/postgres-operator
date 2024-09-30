@@ -15,6 +15,7 @@ import (
 	policyv1 "k8s.io/api/policy/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -551,7 +552,7 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns.Name
 		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
-		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringInt32(0)
+		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromInt32(0))
 		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
 		assert.Assert(t, !foundPDB(cluster))
 	})
@@ -560,7 +561,7 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns.Name
 		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
-		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringInt32(1)
+		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
 		assert.NilError(t, r.Client.Create(ctx, cluster))
 		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
@@ -569,7 +570,7 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		assert.Assert(t, foundPDB(cluster))
 
 		t.Run("deleted", func(t *testing.T) {
-			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringInt32(0)
+			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromInt32(0))
 			err := r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
 			if apierrors.IsConflict(err) {
 				// When running in an existing environment another controller will sometimes update
@@ -587,7 +588,7 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		cluster := testCluster()
 		cluster.Namespace = ns.Name
 		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
-		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("50%")
+		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
 		assert.NilError(t, r.Client.Create(ctx, cluster))
 		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
@@ -596,7 +597,7 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		assert.Assert(t, foundPDB(cluster))
 
 		t.Run("deleted", func(t *testing.T) {
-			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("0%")
+			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromString("0%"))
 			err := r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
 			if apierrors.IsConflict(err) {
 				// When running in an existing environment another controller will sometimes update
@@ -610,13 +611,13 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		})
 
 		t.Run("delete with 00%", func(t *testing.T) {
-			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("50%")
+			cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
 			assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
 			assert.Assert(t, foundPDB(cluster))
 
 			t.Run("deleted", func(t *testing.T) {
-				cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.IntOrStringString("00%")
+				cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromString("00%"))
 				err := r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
 				if apierrors.IsConflict(err) {
 					// When running in an existing environment another controller will sometimes update

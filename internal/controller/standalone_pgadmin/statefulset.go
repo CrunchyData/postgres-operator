@@ -94,10 +94,7 @@ func statefulset(
 	// Use scheduling constraints from the cluster spec.
 	sts.Spec.Template.Spec.Affinity = pgadmin.Spec.Affinity
 	sts.Spec.Template.Spec.Tolerations = pgadmin.Spec.Tolerations
-
-	if pgadmin.Spec.PriorityClassName != nil {
-		sts.Spec.Template.Spec.PriorityClassName = *pgadmin.Spec.PriorityClassName
-	}
+	sts.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(pgadmin.Spec.PriorityClassName)
 
 	// Restart containers any time they stop, die, are killed, etc.
 	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
