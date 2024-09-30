@@ -406,7 +406,7 @@ func InstanceCertificates(ctx context.Context,
 ) error {
 	var err error
 
-	initialize.ByteMap(&outInstanceCertificates.Data)
+	initialize.Map(&outInstanceCertificates.Data)
 
 	if err == nil {
 		outInstanceCertificates.Data[certInstanceSecretKey], err = certFile(inDNS)
@@ -473,7 +473,7 @@ func RestoreConfig(
 	sourceConfigMap, targetConfigMap *corev1.ConfigMap,
 	sourceSecret, targetSecret *corev1.Secret,
 ) {
-	initialize.StringMap(&targetConfigMap.Data)
+	initialize.Map(&targetConfigMap.Data)
 
 	// Use the repository definitions from the source cluster.
 	//
@@ -485,7 +485,7 @@ func RestoreConfig(
 	targetConfigMap.Data[CMInstanceKey] = sourceConfigMap.Data[CMInstanceKey]
 
 	if sourceSecret != nil && targetSecret != nil {
-		initialize.ByteMap(&targetSecret.Data)
+		initialize.Map(&targetSecret.Data)
 
 		// - https://golang.org/issue/45038
 		bytesClone := func(b []byte) []byte { return append([]byte(nil), b...) }
@@ -509,7 +509,7 @@ func Secret(ctx context.Context,
 
 	// Save the CA and generate a TLS client certificate for the entire cluster.
 	if inRepoHost != nil {
-		initialize.ByteMap(&outSecret.Data)
+		initialize.Map(&outSecret.Data)
 
 		// The server verifies its "tls-server-auth" option contains the common
 		// name (CN) of the certificate presented by a client. The entire

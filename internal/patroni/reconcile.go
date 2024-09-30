@@ -35,7 +35,7 @@ func ClusterConfigMap(ctx context.Context,
 ) error {
 	var err error
 
-	initialize.StringMap(&outClusterConfigMap.Data)
+	initialize.Map(&outClusterConfigMap.Data)
 
 	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inHBAs,
 		inParameters)
@@ -51,7 +51,7 @@ func InstanceConfigMap(ctx context.Context,
 ) error {
 	var err error
 
-	initialize.StringMap(&outInstanceConfigMap.Data)
+	initialize.Map(&outInstanceConfigMap.Data)
 
 	command := pgbackrest.ReplicaCreateCommand(inCluster, inInstanceSpec)
 
@@ -66,7 +66,7 @@ func InstanceCertificates(ctx context.Context,
 	inRoot pki.Certificate, inDNS pki.Certificate,
 	inDNSKey pki.PrivateKey, outInstanceCertificates *corev1.Secret,
 ) error {
-	initialize.ByteMap(&outInstanceCertificates.Data)
+	initialize.Map(&outInstanceCertificates.Data)
 
 	var err error
 	outInstanceCertificates.Data[certAuthorityFileKey], err = certFile(inRoot)

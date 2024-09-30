@@ -45,7 +45,7 @@ func (r *Reconciler) generatePostgresUserSecret(
 	username := string(spec.Name)
 	intent := &corev1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster, username)}
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
-	initialize.ByteMap(&intent.Data)
+	initialize.Map(&intent.Data)
 
 	// Populate the Secret with libpq keywords for connecting through
 	// the primary Service.

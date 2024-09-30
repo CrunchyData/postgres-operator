@@ -133,7 +133,7 @@ func ConfigMap(
 		return nil
 	}
 
-	initialize.StringMap(&outConfigMap.Data)
+	initialize.Map(&outConfigMap.Data)
 
 	// To avoid spurious reconciles, the following value must not change when
 	// the spec does not change. [json.Encoder] and [json.Marshal] do this by

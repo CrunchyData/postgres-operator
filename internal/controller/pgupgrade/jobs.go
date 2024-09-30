@@ -182,8 +182,8 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 
 	// The following will set these fields to null if not set in the spec
 	job.Spec.Template.Spec.Affinity = upgrade.Spec.Affinity
-	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(
-		upgrade.Spec.PriorityClassName)
+	job.Spec.Template.Spec.PriorityClassName =
+		initialize.FromPointer(upgrade.Spec.PriorityClassName)
 	job.Spec.Template.Spec.Tolerations = upgrade.Spec.Tolerations
 
 	r.setControllerReference(upgrade, job)
@@ -292,8 +292,8 @@ func (r *PGUpgradeReconciler) generateRemoveDataJob(
 
 	// The following will set these fields to null if not set in the spec
 	job.Spec.Template.Spec.Affinity = upgrade.Spec.Affinity
-	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(
-		upgrade.Spec.PriorityClassName)
+	job.Spec.Template.Spec.PriorityClassName =
+		initialize.FromPointer(upgrade.Spec.PriorityClassName)
 	job.Spec.Template.Spec.Tolerations = upgrade.Spec.Tolerations
 
 	r.setControllerReference(upgrade, job)

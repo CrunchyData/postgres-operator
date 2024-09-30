@@ -30,7 +30,7 @@ func ConfigMap(
 		return
 	}
 
-	initialize.StringMap(&outConfigMap.Data)
+	initialize.Map(&outConfigMap.Data)
 
 	outConfigMap.Data[emptyConfigMapKey] = ""
 	outConfigMap.Data[iniFileConfigMapKey] = clusterINI(inCluster)
@@ -50,7 +50,7 @@ func Secret(ctx context.Context,
 	}
 
 	var err error
-	initialize.ByteMap(&outSecret.Data)
+	initialize.Map(&outSecret.Data)
 
 	// Use the existing password and verifier. Generate both when either is missing.
 	// NOTE(cbandy): We don't have a function to compare a plaintext password

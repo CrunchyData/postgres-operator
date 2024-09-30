@@ -50,7 +50,7 @@ func TestGeneratePodDisruptionBudget(t *testing.T) {
 				"anno-key": "anno-value",
 			},
 		}
-		minAvailable = initialize.IntOrStringInt32(1)
+		minAvailable = initialize.Pointer(intstr.FromInt32(1))
 		selector := metav1.LabelSelector{
 			MatchLabels: map[string]string{
 				"key": "value",
@@ -78,19 +78,19 @@ func TestGeneratePodDisruptionBudget(t *testing.T) {
 func TestGetMinAvailable(t *testing.T) {
 	t.Run("minAvailable provided", func(t *testing.T) {
 		// minAvailable is defined so use that value
-		ma := initialize.IntOrStringInt32(0)
+		ma := initialize.Pointer(intstr.FromInt32(0))
 		expect := getMinAvailable(ma, 1)
 		assert.Equal(t, *expect, intstr.FromInt(0))
 
-		ma = initialize.IntOrStringInt32(1)
+		ma = initialize.Pointer(intstr.FromInt32(1))
 		expect = getMinAvailable(ma, 2)
 		assert.Equal(t, *expect, intstr.FromInt(1))
 
-		ma = initialize.IntOrStringString("50%")
+		ma = initialize.Pointer(intstr.FromString("50%"))
 		expect = getMinAvailable(ma, 3)
 		assert.Equal(t, *expect, intstr.FromString("50%"))
 
-		ma = initialize.IntOrStringString("200%")
+		ma = initialize.Pointer(intstr.FromString("200%"))
 		expect = getMinAvailable(ma, 2147483647)
 		assert.Equal(t, *expect, intstr.FromString("200%"))
 	})
