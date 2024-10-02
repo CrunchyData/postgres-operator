@@ -94,7 +94,7 @@ func NewGate() MutableGate {
 
 	if err := gate.Add(map[Feature]featuregate.FeatureSpec{
 		AppendCustomQueries:  {Default: false, PreRelease: featuregate.Alpha},
-		AutoCreateUserSchema: {Default: false, PreRelease: featuregate.Alpha},
+		AutoCreateUserSchema: {Default: true, PreRelease: featuregate.Beta},
 		AutoGrowVolumes:      {Default: false, PreRelease: featuregate.Alpha},
 		BridgeIdentifiers:    {Default: false, PreRelease: featuregate.Alpha},
 		InstanceSidecars:     {Default: false, PreRelease: featuregate.Alpha},
