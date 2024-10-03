@@ -430,12 +430,11 @@ with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
 
 	script := strings.Join([]string{
 		// Use the initContainer to create this path to avoid the error noted here:
-		// - https://github.com/kubernetes/kubernetes/issues/121294
-		`mkdir -p /etc/pgadmin/conf.d`,
-		// Write the system configuration into a read-only file.
-		`(umask a-w && echo "$1" > ` + scriptMountPath + `/config_system.py` + `)`,
-		// Write the server configuration into a read-only file.
-		`(umask a-w && echo "$2" > ` + scriptMountPath + `/gunicorn_config.py` + `)`,
+		// - https://issue.k8s.io/121294
+		`mkdir -p ` + configMountPath,
+		// Write the system and server configurations.
+		`echo "$1" > ` + scriptMountPath + `/config_system.py`,
+		`echo "$2" > ` + scriptMountPath + `/gunicorn_config.py`,
 	}, "\n")
 
 	return append([]string{"bash", "-ceu", "--", script, "startup"}, args...)

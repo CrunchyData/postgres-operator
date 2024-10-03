@@ -139,8 +139,8 @@ initContainers:
   - --
   - |-
     mkdir -p /etc/pgadmin/conf.d
-    (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
-    (umask a-w && echo "$2" > /etc/pgadmin/gunicorn_config.py)
+    echo "$1" > /etc/pgadmin/config_system.py
+    echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
   - |
     import glob, json, re, os
@@ -328,8 +328,8 @@ initContainers:
   - --
   - |-
     mkdir -p /etc/pgadmin/conf.d
-    (umask a-w && echo "$1" > /etc/pgadmin/config_system.py)
-    (umask a-w && echo "$2" > /etc/pgadmin/gunicorn_config.py)
+    echo "$1" > /etc/pgadmin/config_system.py
+    echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
   - |
     import glob, json, re, os
