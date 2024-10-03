@@ -121,3 +121,12 @@ func Enabled(ctx context.Context, f Feature) bool {
 func NewContext(ctx context.Context, gate Gate) context.Context {
 	return context.WithValue(ctx, contextKey{}, gate)
 }
+
+func ShowGates(ctx context.Context) string {
+	featuresEnabled := ""
+	gate, ok := ctx.Value(contextKey{}).(Gate)
+	if ok {
+		featuresEnabled = gate.String()
+	}
+	return featuresEnabled
+}

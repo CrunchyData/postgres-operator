@@ -12,6 +12,10 @@ spec:
       - name: operator
         image: postgres-operator
         env:
+        - name: PGO_INSTALLER
+          value: kustomize
+        - name: PGO_INSTALLER_ORIGIN
+          value: postgres-operator-repo
         - name: PGO_NAMESPACE
           valueFrom:
             fieldRef:

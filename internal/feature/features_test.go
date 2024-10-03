@@ -53,10 +53,13 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 	gate := NewGate()
 	ctx := NewContext(context.Background(), gate)
+	assert.Equal(t, ShowGates(ctx), "")
 
 	assert.NilError(t, gate.Set("TablespaceVolumes=true"))
 	assert.Assert(t, true == Enabled(ctx, TablespaceVolumes))
+	assert.Equal(t, ShowGates(ctx), "TablespaceVolumes=true")
 
 	assert.NilError(t, gate.SetFromMap(map[string]bool{TablespaceVolumes: false}))
 	assert.Assert(t, false == Enabled(ctx, TablespaceVolumes))
+	assert.Equal(t, ShowGates(ctx), "TablespaceVolumes=false")
 }

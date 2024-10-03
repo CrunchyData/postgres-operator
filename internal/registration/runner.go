@@ -76,8 +76,14 @@ func NewRunner(publicKey, tokenPath string, changed func()) (*Runner, error) {
 }
 
 // CheckToken loads and verifies the configured token, returning an error when
-// the file exists but cannot be verified.
-func (r *Runner) CheckToken() error {
+// the file exists but cannot be verified, and
+// returning the token if it can be verified.
+// NOTE(upgradecheck): return the token/nil so that we can use the token
+// in upgradecheck; currently a refresh of the token will cause a restart of the pod
+// meaning that the token used in upgradecheck is always the current token.
+// But if the restart behavior changes, we might drop the token return in main.go
+// and change upgradecheck to retrieve the token itself
+func (r *Runner) CheckToken() (*jwt.Token, error) {
 	data, errFile := os.ReadFile(r.tokenPath)
 	key := func(*jwt.Token) (any, error) { return r.publicKey, nil }
 
@@ -86,7 +92,7 @@ func (r *Runner) CheckToken() error {
 	r.token.Lock()
 	defer r.token.Unlock()
 
-	_, errToken := jwt.ParseWithClaims(string(data), &r.token, key,
+	token, errToken := jwt.ParseWithClaims(string(data), &r.token, key,
 		jwt.WithExpirationRequired(),
 		jwt.WithValidMethods([]string{"RS256"}),
 	)
@@ -102,11 +108,11 @@ func (r *Runner) CheckToken() error {
 
 	switch {
 	case !r.enabled || !r.token.Exists:
-		return nil
+		return nil, nil
 	case errFile != nil:
-		return errFile
+		return nil, errFile
 	default:
-		return errToken
+		return token, errToken
 	}
 }
 
@@ -168,7 +174,7 @@ func (r *Runner) Start(ctx context.Context) error {
 		select {
 		case <-ticks:
 			_, before := r.state()
-			if err := r.CheckToken(); err != nil {
+			if _, err := r.CheckToken(); err != nil {
 				log.Error(err, "Unable to validate token")
 			}
 			if _, after := r.state(); before != after && r.changed != nil {

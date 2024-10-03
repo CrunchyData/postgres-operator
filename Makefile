@@ -136,6 +136,9 @@ deploy-dev: createnamespaces
 		CHECK_FOR_UPGRADES='$(if $(CHECK_FOR_UPGRADES),$(CHECK_FOR_UPGRADES),false)' \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		PGO_NAMESPACE='postgres-operator' \
+		PGO_INSTALLER='deploy-dev' \
+		PGO_INSTALLER_ORIGIN='postgres-operator-repo' \
+		BUILD_SOURCE='build-postgres-operator' \
 		$(shell kubectl kustomize ./config/dev | \
 			sed -ne '/^kind: Deployment/,/^---/ { \
 				/RELATED_IMAGE_/ { N; s,.*\(RELATED_[^[:space:]]*\).*value:[[:space:]]*\([^[:space:]]*\),\1="\2",; p; }; \
