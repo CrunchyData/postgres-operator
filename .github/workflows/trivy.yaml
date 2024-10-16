@@ -21,7 +21,7 @@ jobs:
 
       # Report success only when detected licenses are listed in [/trivy.yaml].
       - name: Scan licenses
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         env:
           TRIVY_DEBUG: true
         with:
@@ -46,7 +46,7 @@ jobs:
       # and is a convenience/redundant effort for those who prefer to
       # read logs and/or if anything goes wrong with the upload.
       - name: Log all detected vulnerabilities
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: filesystem
           hide-progress: true
@@ -58,7 +58,7 @@ jobs:
       # - https://docs.github.com/en/code-security/code-scanning/integrating-with-code-scanning/uploading-a-sarif-file-to-github
       # - https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning
       - name: Report actionable vulnerabilities
-        uses: aquasecurity/trivy-action@0.27.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: filesystem
           ignore-unfixed: true
