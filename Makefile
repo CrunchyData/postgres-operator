@@ -119,7 +119,7 @@ undeploy: ## Undeploy the PostgreSQL Operator
 
 .PHONY: deploy-dev
 deploy-dev: ## Deploy the PostgreSQL Operator locally
-deploy-dev: PGO_FEATURE_GATES ?= "TablespaceVolumes=true,VolumeSnapshots=true"
+deploy-dev: PGO_FEATURE_GATES ?= "AllAlpha=true"
 deploy-dev: get-pgmonitor
 deploy-dev: build-postgres-operator
 deploy-dev: createnamespaces
