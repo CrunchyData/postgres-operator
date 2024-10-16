@@ -1,19 +1,10 @@
-PGO_IMAGE_NAME ?= postgres-operator
-PGO_IMAGE_MAINTAINER ?= Crunchy Data
-PGO_IMAGE_SUMMARY ?= Crunchy PostgreSQL Operator
-PGO_IMAGE_DESCRIPTION ?= $(PGO_IMAGE_SUMMARY)
-PGO_IMAGE_URL ?= https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes
-PGO_IMAGE_PREFIX ?= localhost
 
 PGMONITOR_DIR ?= hack/tools/pgmonitor
 PGMONITOR_VERSION ?= v5.2.1
 QUERIES_CONFIG_DIR ?= hack/tools/queries
 
-# Buildah's "build" used to be "bud". Use the alias to be compatible for a while.
-BUILDAH_BUILD ?= buildah bud
-
+BUILDAH ?= buildah
 GO ?= go
-GO_BUILD = $(GO) build
 GO_TEST ?= $(GO) test
 
 # Ensure modules imported by `postgres-operator` and `controller-gen` are compatible
@@ -25,27 +16,11 @@ ENVTEST ?= $(GO) run sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/pkg/kuttlctl/cmd/kubectl-kuttl@latest
 KUTTL_TEST ?= $(KUTTL) test
 
-
 ##@ General
-
-# The help target prints out all targets with their descriptions organized
-# beneath their categories. The categories are represented by '##@' and the
-# target descriptions by '##'. The awk command is responsible for reading the
-# entire set of makefiles included in this invocation, looking for lines of the
-# file as xyz: ## something, and then pretty-formatting the target and help. Then,
-# if there's a line with ##@ something, that gets pretty-printed as a category.
-# More info on the usage of ANSI control characters for terminal formatting:
-# https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
-# More info on the awk command:
-# http://linuxcommand.org/lc3_adv_awk.php
 
 .PHONY: help
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
-
-.PHONY: all
-all: ## Build all images
-all: build-postgres-operator-image
 
 .PHONY: setup
 setup: ## Run Setup needed to build images
@@ -103,6 +78,7 @@ clean-deprecated: ## Clean deprecated resources
 
 
 ##@ Deployment
+
 .PHONY: createnamespaces
 createnamespaces: ## Create operator and target namespaces
 	kubectl apply -k ./config/namespace
@@ -131,7 +107,6 @@ undeploy: ## Undeploy the PostgreSQL Operator
 deploy-dev: ## Deploy the PostgreSQL Operator locally
 deploy-dev: PGO_FEATURE_GATES ?= "AllAlpha=true"
 deploy-dev: get-pgmonitor
-deploy-dev: build-postgres-operator
 deploy-dev: createnamespaces
 	kubectl apply --server-side -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
@@ -150,54 +125,22 @@ deploy-dev: createnamespaces
 				/RELATED_IMAGE_/ { N; s,.*\(RELATED_[^[:space:]]*\).*value:[[:space:]]*\([^[:space:]]*\),\1="\2",; p; }; \
 			}') \
 		$(foreach v,$(filter RELATED_IMAGE_%,$(.VARIABLES)),$(v)="$($(v))") \
-		bin/postgres-operator
+		$(GO) run ./cmd/postgres-operator
 
-##@ Build - Binary
-.PHONY: build-postgres-operator
-build-postgres-operator: ## Build the postgres-operator binary
-	$(GO_BUILD) $(\
-		) --ldflags '-X "main.versionString=$(PGO_VERSION)"' $(\
-		) --trimpath -o bin/postgres-operator ./cmd/postgres-operator
+##@ Build
 
-##@ Build - Images
-.PHONY: build-postgres-operator-image
-build-postgres-operator-image: ## Build the postgres-operator image
-build-postgres-operator-image: PGO_IMAGE_REVISION := $(shell git rev-parse HEAD)
-build-postgres-operator-image: PGO_IMAGE_TIMESTAMP := $(shell date -u +%FT%TZ)
-build-postgres-operator-image: build-postgres-operator
-build-postgres-operator-image: build/postgres-operator/Dockerfile
-	$(if $(shell (echo 'buildah version 1.24'; $(word 1,$(BUILDAH_BUILD)) --version) | sort -Vc 2>&1), \
-		$(warning WARNING: old buildah does not invalidate its cache for changed labels: \
-			https://github.com/containers/buildah/issues/3517))
-	$(if $(IMAGE_TAG),,	$(error missing IMAGE_TAG))
-	$(strip $(BUILDAH_BUILD)) \
-		--tag $(BUILDAH_TRANSPORT)$(PGO_IMAGE_PREFIX)/$(PGO_IMAGE_NAME):$(IMAGE_TAG) \
-		--label name='$(PGO_IMAGE_NAME)' \
-		--label build-date='$(PGO_IMAGE_TIMESTAMP)' \
-		--label description='$(PGO_IMAGE_DESCRIPTION)' \
-		--label maintainer='$(PGO_IMAGE_MAINTAINER)' \
-		--label summary='$(PGO_IMAGE_SUMMARY)' \
-		--label url='$(PGO_IMAGE_URL)' \
-		--label vcs-ref='$(PGO_IMAGE_REVISION)' \
-		--label vendor='$(PGO_IMAGE_MAINTAINER)' \
-		--label io.k8s.display-name='$(PGO_IMAGE_NAME)' \
-		--label io.k8s.description='$(PGO_IMAGE_DESCRIPTION)' \
-		--label io.openshift.tags="postgresql,postgres,sql,nosql,crunchy" \
-		--annotation org.opencontainers.image.authors='$(PGO_IMAGE_MAINTAINER)' \
-		--annotation org.opencontainers.image.vendor='$(PGO_IMAGE_MAINTAINER)' \
-		--annotation org.opencontainers.image.created='$(PGO_IMAGE_TIMESTAMP)' \
-		--annotation org.opencontainers.image.description='$(PGO_IMAGE_DESCRIPTION)' \
-		--annotation org.opencontainers.image.revision='$(PGO_IMAGE_REVISION)' \
-		--annotation org.opencontainers.image.title='$(PGO_IMAGE_SUMMARY)' \
-		--annotation org.opencontainers.image.url='$(PGO_IMAGE_URL)' \
-		$(if $(PGO_VERSION),$(strip \
-			--label release='$(PGO_VERSION)' \
-			--label version='$(PGO_VERSION)' \
-			--annotation org.opencontainers.image.version='$(PGO_VERSION)' \
-		)) \
-		--file $< --format docker --layers .
+.PHONY: build
+build: ## Build a postgres-operator image
+	$(BUILDAH) build --tag localhost/postgres-operator \
+		--label org.opencontainers.image.authors='Crunchy Data' \
+		--label org.opencontainers.image.description='Crunchy PostgreSQL Operator' \
+		--label org.opencontainers.image.revision='$(shell git rev-parse HEAD)' \
+		--label org.opencontainers.image.source='https://github.com/CrunchyData/postgres-operator' \
+		--label org.opencontainers.image.title='Crunchy PostgreSQL Operator' \
+		.
 
 ##@ Test
+
 .PHONY: check
 check: ## Run basic go tests with coverage output
 check: get-pgmonitor
@@ -301,23 +244,3 @@ generate-rbac: ## Generate RBAC
 		rbac:roleName='postgres-operator' \
 		paths='./cmd/...' paths='./internal/...' \
 		output:dir='config/rbac' # {directory}/role.yaml
-
-
-##@ Release
-
-.PHONY: license licenses
-license: licenses
-licenses: ## Aggregate license files
-	./bin/license_aggregator.sh ./cmd/...
-
-.PHONY: release-postgres-operator-image release-postgres-operator-image-labels
-release-postgres-operator-image: ## Build the postgres-operator image and all its prerequisites
-release-postgres-operator-image: release-postgres-operator-image-labels
-release-postgres-operator-image: licenses
-release-postgres-operator-image: build-postgres-operator-image
-release-postgres-operator-image-labels:
-	$(if $(PGO_IMAGE_DESCRIPTION),,	$(error missing PGO_IMAGE_DESCRIPTION))
-	$(if $(PGO_IMAGE_MAINTAINER),, 	$(error missing PGO_IMAGE_MAINTAINER))
-	$(if $(PGO_IMAGE_NAME),,       	$(error missing PGO_IMAGE_NAME))
-	$(if $(PGO_IMAGE_SUMMARY),,    	$(error missing PGO_IMAGE_SUMMARY))
-	$(if $(PGO_VERSION),,			$(error missing PGO_VERSION))

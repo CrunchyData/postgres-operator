@@ -1,0 +1,6 @@
+# https://docs.docker.com/build/concepts/context/#dockerignore-files
+# https://docs.podman.io/en/latest/markdown/podman-build.1.html#files
+/.git
+/bin
+/hack
+!/hack/tools/queries
