@@ -112,9 +112,6 @@ jobs:
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.9-3.4-2520
             registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.5-2520
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.5-3.4-2520
-      - run: go mod download
-      - name: Build executable
-        run: PGO_VERSION='${{ github.sha }}' make build-postgres-operator
 
       - name: Get pgMonitor files.
         run: make get-pgmonitor
@@ -123,13 +120,14 @@ jobs:
           QUERIES_CONFIG_DIR: "${{ github.workspace }}/hack/tools/queries"
 
       # Start a Docker container with the working directory mounted.
+      - run: make build BUILDAH=docker
       - name: Start PGO
         run: |
           kubectl apply --server-side -k ./config/namespace
           kubectl apply --server-side -k ./config/dev
           hack/create-kubeconfig.sh postgres-operator pgo
           docker run --detach --network host --read-only \
-            --volume "$(pwd):/mnt" --workdir '/mnt' --env 'PATH=/mnt/bin' \
+            --volume "$(pwd):/mnt" --workdir '/mnt' \
             --env 'CHECK_FOR_UPGRADES=false' \
             --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
             --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
@@ -145,8 +143,7 @@ jobs:
             --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.2-2520' \
             --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.2-0' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
-            --name 'postgres-operator' ubuntu \
-            postgres-operator
+            --name 'postgres-operator' localhost/postgres-operator
       - name: Install kuttl
         run: |
           curl -Lo /usr/local/bin/kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.13.0/kubectl-kuttl_0.13.0_linux_x86_64
