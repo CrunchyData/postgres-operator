@@ -65,7 +65,6 @@ get-external-snapshotter:
 clean: ## Clean resources
 clean: clean-deprecated
 	rm -f bin/postgres-operator
-	rm -f config/rbac/role.yaml
 	rm -rf licenses/*/
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
@@ -312,10 +311,9 @@ generate-deepcopy: tools/controller-gen
 generate-rbac: ## Generate RBAC
 generate-rbac: tools/controller-gen
 	$(CONTROLLER) \
-		rbac:roleName='generated' \
+		rbac:roleName='postgres-operator' \
 		paths='./cmd/...' paths='./internal/...' \
 		output:dir='config/rbac' # ${directory}/role.yaml
-	./hack/generate-rbac.sh 'config/rbac'
 
 ##@ Tools
 
