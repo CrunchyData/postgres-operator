@@ -11,7 +11,7 @@ labels:
 
 resources:
 - ../crd
-- ../rbac/cluster
+- ../rbac
 - ../manager
 
 images:
