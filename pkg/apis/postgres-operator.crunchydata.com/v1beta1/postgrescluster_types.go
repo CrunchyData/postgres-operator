@@ -155,7 +155,17 @@ type PostgresClusterSpec struct {
 	// A list of group IDs applied to the process of a container. These can be
 	// useful when accessing shared file systems with constrained permissions.
 	// More info: https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#security-context
-	// +optional
+	// ---
+	// +kubebuilder:validation:Optional
+	//
+	// Containers should not run with a root GID.
+	// - https://kubernetes.io/docs/concepts/security/pod-security-standards/
+	// +kubebuilder:validation:items:Minimum=1
+	//
+	// Supplementary GIDs must fit within int32.
+	// - https://releases.k8s.io/v1.18.0/pkg/apis/core/validation/validation.go#L3659-L3663
+	// - https://releases.k8s.io/v1.22.0/pkg/apis/core/validation/validation.go#L3923-L3927
+	// +kubebuilder:validation:items:Maximum=2147483647
 	SupplementalGroups []int64 `json:"supplementalGroups,omitempty"`
 
 	// Users to create inside PostgreSQL and the databases they should access.
