@@ -2913,7 +2913,6 @@ spec:
                                         More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
                                       items:
                                         type: string
-                                      minItems: 1
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     dataSource:
@@ -3027,11 +3026,7 @@ spec:
                                             If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
                                             otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                             More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                                          required:
-                                          - storage
                                           type: object
-                                      required:
-                                      - requests
                                       type: object
                                     selector:
                                       description: selector is a label query over
@@ -3110,10 +3105,14 @@ spec:
                                       description: volumeName is the binding reference
                                         to the PersistentVolume backing this claim.
                                       type: string
-                                  required:
-                                  - accessModes
-                                  - resources
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: missing accessModes
+                                    rule: has(self.accessModes) && size(self.accessModes)
+                                      > 0
+                                  - message: missing storage request
+                                    rule: has(self.resources) && has(self.resources.requests)
+                                      && has(self.resources.requests.storage)
                               required:
                               - volumeClaimSpec
                               type: object
@@ -6365,6 +6364,13 @@ spec:
                                       to the PersistentVolume backing this claim.
                                     type: string
                                 type: object
+                                x-kubernetes-validations:
+                                - message: missing accessModes
+                                  rule: has(self.accessModes) && size(self.accessModes)
+                                    > 0
+                                - message: missing storage request
+                                  rule: has(self.resources) && has(self.resources.requests)
+                                    && has(self.resources.requests.storage)
                             required:
                             - volumeClaimSpec
                             type: object
@@ -10039,7 +10045,6 @@ spec:
                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
                           items:
                             type: string
-                          minItems: 1
                           type: array
                           x-kubernetes-list-type: atomic
                         dataSource:
@@ -10149,11 +10154,7 @@ spec:
                                 If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
                                 otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                              required:
-                              - storage
                               type: object
-                          required:
-                          - requests
                           type: object
                         selector:
                           description: selector is a label query over volumes to consider
@@ -10231,10 +10232,13 @@ spec:
                           description: volumeName is the binding reference to the
                             PersistentVolume backing this claim.
                           type: string
-                      required:
-                      - accessModes
-                      - resources
                       type: object
+                      x-kubernetes-validations:
+                      - message: missing accessModes
+                        rule: has(self.accessModes) && size(self.accessModes) > 0
+                      - message: missing storage request
+                        rule: has(self.resources) && has(self.resources.requests)
+                          && has(self.resources.requests.storage)
                     metadata:
                       description: Metadata contains metadata for custom resources
                       properties:
@@ -10602,6 +10606,13 @@ spec:
                                   the PersistentVolume backing this claim.
                                 type: string
                             type: object
+                            x-kubernetes-validations:
+                            - message: missing accessModes
+                              rule: has(self.accessModes) && size(self.accessModes)
+                                > 0
+                            - message: missing storage request
+                              rule: has(self.resources) && has(self.resources.requests)
+                                && has(self.resources.requests.storage)
                           name:
                             description: |-
                               The name for the tablespace, used as the path name for the volume.
@@ -10848,7 +10859,6 @@ spec:
                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
                           items:
                             type: string
-                          minItems: 1
                           type: array
                           x-kubernetes-list-type: atomic
                         dataSource:
@@ -10958,11 +10968,7 @@ spec:
                                 If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
                                 otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                              required:
-                              - storage
                               type: object
-                          required:
-                          - requests
                           type: object
                         selector:
                           description: selector is a label query over volumes to consider
@@ -11040,10 +11046,13 @@ spec:
                           description: volumeName is the binding reference to the
                             PersistentVolume backing this claim.
                           type: string
-                      required:
-                      - accessModes
-                      - resources
                       type: object
+                      x-kubernetes-validations:
+                      - message: missing accessModes
+                        rule: has(self.accessModes) && size(self.accessModes) > 0
+                      - message: missing storage request
+                        rule: has(self.resources) && has(self.resources.requests)
+                          && has(self.resources.requests.storage)
                   required:
                   - dataVolumeClaimSpec
                   type: object
