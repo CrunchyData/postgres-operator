@@ -342,7 +342,20 @@ type RepoHostStatus struct {
 type RepoPVC struct {
 
 	// Defines a PersistentVolumeClaim spec used to create and/or bind a volume
+	// ---
 	// +kubebuilder:validation:Required
+	//
+	// NOTE(validation): Every PVC must have at least one accessMode. NOTE(KEP-4153)
+	// TODO(k8s-1.28): fieldPath=`.accessModes`,reason="FieldValueRequired"
+	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2098-L2100
+	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2292-L2294
+	// +kubebuilder:validation:XValidation:rule=`has(self.accessModes) && size(self.accessModes) > 0`,message=`missing accessModes`
+	//
+	// NOTE(validation): Every PVC must have a positive storage request. NOTE(KEP-4153)
+	// TODO(k8s-1.28): fieldPath=`.resources.requests.storage`,reason="FieldValueRequired"
+	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2126-L2133
+	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2318-L2325
+	// +kubebuilder:validation:XValidation:rule=`has(self.resources) && has(self.resources.requests) && has(self.resources.requests.storage)`,message=`missing storage request`
 	VolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"volumeClaimSpec"`
 }
 

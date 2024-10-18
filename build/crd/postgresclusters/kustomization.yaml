@@ -10,12 +10,6 @@ patches:
     version: v1
     kind: CustomResourceDefinition
     name: postgresclusters.postgres-operator.crunchydata.com
-  path: validation.yaml
-- target:
-    group: apiextensions.k8s.io
-    version: v1
-    kind: CustomResourceDefinition
-    name: postgresclusters.postgres-operator.crunchydata.com
   patch: |-
     - op: add
       path: "/metadata/labels"
