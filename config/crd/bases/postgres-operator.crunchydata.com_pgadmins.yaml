@@ -3,9 +3,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.4
-  labels:
-    app.kubernetes.io/name: pgo
-    app.kubernetes.io/version: latest
   name: pgadmins.postgres-operator.crunchydata.com
 spec:
   group: postgres-operator.crunchydata.com

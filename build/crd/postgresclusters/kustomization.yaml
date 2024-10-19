@@ -5,14 +5,3 @@ resources:
 - generated/postgres-operator.crunchydata.com_postgresclusters.yaml
 
 patches:
-- target:
-    group: apiextensions.k8s.io
-    version: v1
-    kind: CustomResourceDefinition
-    name: postgresclusters.postgres-operator.crunchydata.com
-  patch: |-
-    - op: add
-      path: "/metadata/labels"
-      value:
-        app.kubernetes.io/name: pgo
-        app.kubernetes.io/version: latest

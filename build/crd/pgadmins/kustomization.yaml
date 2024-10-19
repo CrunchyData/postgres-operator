@@ -5,15 +5,3 @@ resources:
 - generated/postgres-operator.crunchydata.com_pgadmins.yaml
 
 patches:
-- target:
-    group: apiextensions.k8s.io
-    version: v1
-    kind: CustomResourceDefinition
-    name: pgadmins.postgres-operator.crunchydata.com
-# The version below should match the version on the PostgresCluster CRD
-  patch: |-
-    - op: add
-      path: "/metadata/labels"
-      value:
-        app.kubernetes.io/name: pgo
-        app.kubernetes.io/version: latest
