@@ -11581,7 +11581,7 @@ spec:
                 description: The major version of PostgreSQL installed in the PostgreSQL
                   image
                 maximum: 17
-                minimum: 10
+                minimum: 11
                 type: integer
               proxy:
                 description: The specification of a proxy that connects to PostgreSQL.

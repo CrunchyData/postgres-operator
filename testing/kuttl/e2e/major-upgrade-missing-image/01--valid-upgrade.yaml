@@ -6,6 +6,6 @@ metadata:
   name: empty-image-upgrade
 spec:
   # postgres version that is no longer available
-  fromPostgresVersion: 10
+  fromPostgresVersion: 11
   toPostgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
   postgresClusterName: major-upgrade-empty-image

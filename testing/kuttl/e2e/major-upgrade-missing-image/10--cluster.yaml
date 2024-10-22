@@ -7,7 +7,7 @@ metadata:
   name: major-upgrade-empty-image
 spec:
   # postgres version that is no longer available
-  postgresVersion: 10
+  postgresVersion: 11
   patroni:
     dynamicConfiguration:
       postgresql:
