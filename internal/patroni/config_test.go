@@ -705,24 +705,6 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "pg version 10",
-			cluster: &v1beta1.PostgresCluster{
-				Spec: v1beta1.PostgresClusterSpec{
-					PostgresVersion: 10,
-				},
-			},
-			expected: map[string]any{
-				"loop_wait": int32(10),
-				"ttl":       int32(30),
-				"postgresql": map[string]any{
-					"parameters":    map[string]any{},
-					"pg_hba":        []string{},
-					"use_pg_rewind": false,
-					"use_slots":     false,
-				},
-			},
-		},
-		{
 			name: "tde enabled",
 			cluster: &v1beta1.PostgresCluster{
 				Spec: v1beta1.PostgresClusterSpec{

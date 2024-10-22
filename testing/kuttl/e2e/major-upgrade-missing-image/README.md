@@ -11,7 +11,7 @@ PostgresCluster spec or via the RELATED_IMAGES environment variables.
 
 ### Verify new statuses for missing required container images
 
-* 10--cluster: create the cluster with an unavailable image (i.e. Postgres 10)
+* 10--cluster: create the cluster with an unavailable image (i.e. Postgres 11)
 * 10-assert: check that the PGUpgrade instance has the expected reason: "PGClusterNotShutdown"
 * 11-shutdown-cluster: set the spec.shutdown value to 'true' as required for upgrade
 * 11-assert: check that the new reason is set, "PGClusterPrimaryNotIdentified"
