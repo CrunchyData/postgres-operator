@@ -27,7 +27,10 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// +kubebuilder:rbac:groups="snapshot.storage.k8s.io",resources="volumesnapshots",verbs={get,list,create,patch,delete}
+//+kubebuilder:rbac:groups="snapshot.storage.k8s.io",resources="volumesnapshots",verbs={get,list,create,patch,delete}
+
+// The controller-runtime client sets up a cache that watches anything we "get" or "list".
+//+kubebuilder:rbac:groups="snapshot.storage.k8s.io",resources="volumesnapshots",verbs={watch}
 
 // reconcileVolumeSnapshots creates and manages VolumeSnapshots if the proper VolumeSnapshot CRDs
 // are installed and VolumeSnapshots are enabled for the PostgresCluster. A VolumeSnapshot of the

@@ -34,6 +34,7 @@ type PGAdminReconciler struct {
 	IsOpenShift bool
 }
 
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={list,watch}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
 //+kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={list,watch}
 //+kubebuilder:rbac:groups="",resources="secrets",verbs={list,watch}

@@ -65,11 +65,9 @@ get-external-snapshotter:
 clean: ## Clean resources
 clean: clean-deprecated
 	rm -f bin/postgres-operator
-	rm -f config/rbac/role.yaml
 	rm -rf licenses/*/
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
-	rm -rf build/crd/generated build/crd/*/generated
 	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
 	[ ! -d hack/tools/envtest ] || { chmod -R u+w hack/tools/envtest && rm -r hack/tools/envtest; }
 	[ ! -d hack/tools/pgmonitor ] || rm -rf hack/tools/pgmonitor
@@ -94,6 +92,8 @@ clean-deprecated: ## Clean deprecated resources
 	@# crunchy-postgres-exporter used to live in this repo
 	[ ! -d bin/crunchy-postgres-exporter ] || rm -r bin/crunchy-postgres-exporter
 	[ ! -d build/crunchy-postgres-exporter ] || rm -r build/crunchy-postgres-exporter
+	@# CRDs used to require patching
+	[ ! -d build/crd ] || rm -r build/crd
 
 
 ##@ Deployment
@@ -279,27 +279,7 @@ generate-crd: tools/controller-gen
 	$(CONTROLLER) \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
-		output:dir='build/crd/postgresclusters/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
-	@
-	$(CONTROLLER) \
-		crd:crdVersions='v1' \
-		paths='./pkg/apis/...' \
-		output:dir='build/crd/pgupgrades/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
-	@
-	$(CONTROLLER) \
-		crd:crdVersions='v1' \
-		paths='./pkg/apis/...' \
-		output:dir='build/crd/pgadmins/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
-	@
-	$(CONTROLLER) \
-		crd:crdVersions='v1' \
-		paths='./pkg/apis/...' \
-		output:dir='build/crd/crunchybridgeclusters/generated' # build/crd/{plural}/generated/{group}_{plural}.yaml
-	@
-	kubectl kustomize ./build/crd/postgresclusters > ./config/crd/bases/postgres-operator.crunchydata.com_postgresclusters.yaml
-	kubectl kustomize ./build/crd/pgupgrades > ./config/crd/bases/postgres-operator.crunchydata.com_pgupgrades.yaml
-	kubectl kustomize ./build/crd/pgadmins > ./config/crd/bases/postgres-operator.crunchydata.com_pgadmins.yaml
-	kubectl kustomize ./build/crd/crunchybridgeclusters > ./config/crd/bases/postgres-operator.crunchydata.com_crunchybridgeclusters.yaml
+		output:dir='config/crd/bases' # {directory}/{group}_{plural}.yaml
 
 .PHONY: generate-deepcopy
 generate-deepcopy: ## Generate DeepCopy functions
@@ -312,10 +292,9 @@ generate-deepcopy: tools/controller-gen
 generate-rbac: ## Generate RBAC
 generate-rbac: tools/controller-gen
 	$(CONTROLLER) \
-		rbac:roleName='generated' \
+		rbac:roleName='postgres-operator' \
 		paths='./cmd/...' paths='./internal/...' \
-		output:dir='config/rbac' # ${directory}/role.yaml
-	./hack/generate-rbac.sh 'config/rbac'
+		output:dir='config/rbac' # {directory}/role.yaml
 
 ##@ Tools
 
@@ -330,7 +309,7 @@ endef
 CONTROLLER ?= hack/tools/controller-gen
 tools: tools/controller-gen
 tools/controller-gen:
-	$(call go-get-tool,$(CONTROLLER),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0)
+	$(call go-get-tool,$(CONTROLLER),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.4)
 
 ENVTEST ?= hack/tools/setup-envtest
 tools: tools/setup-envtest

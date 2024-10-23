@@ -56,7 +56,7 @@ func initLogging() {
 	runtime.SetLogger(global)
 }
 
-//+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update}
+//+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update,watch}
 
 func initManager() (runtime.Options, error) {
 	log := logging.FromContext(context.Background())

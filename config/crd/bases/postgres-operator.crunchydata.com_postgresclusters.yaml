@@ -1,11 +1,9 @@
+---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
-  labels:
-    app.kubernetes.io/name: pgo
-    app.kubernetes.io/version: latest
+    controller-gen.kubebuilder.io/version: v0.16.4
   name: postgresclusters.postgres-operator.crunchydata.com
 spec:
   group: postgres-operator.crunchydata.com
@@ -62,13 +60,10 @@ spec:
                                 ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
                                 of ClusterTrustBundle objects in an auto-updating file.
 
-
                                 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
                                 ClusterTrustBundle objects can either be selected by name, or by the
                                 combination of signer name and a label selector.
-
 
                                 Kubelet performs aggressive normalization of the PEM contents written
                                 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -198,7 +193,12 @@ spec:
                                   x-kubernetes-list-type: atomic
                                 name:
                                   default: ""
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
                                 optional:
                                   description: optional specify whether the ConfigMap
@@ -329,7 +329,12 @@ spec:
                                   x-kubernetes-list-type: atomic
                                 name:
                                   default: ""
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
                                 optional:
                                   description: optional field specify whether the
@@ -1340,10 +1345,8 @@ spec:
                                   Claims lists the names of resources, defined in spec.resourceClaims,
                                   that are used by this container.
 
-
                                   This is an alpha field and requires enabling the
                                   DynamicResourceAllocation feature gate.
-
 
                                   This field is immutable. It can only be set for containers.
                                 items:
@@ -2428,10 +2431,8 @@ spec:
                                   Claims lists the names of resources, defined in spec.resourceClaims,
                                   that are used by this container.
 
-
                                   This is an alpha field and requires enabling the
                                   DynamicResourceAllocation feature gate.
-
 
                                   This field is immutable. It can only be set for containers.
                                 items:
@@ -2522,7 +2523,12 @@ spec:
                                 x-kubernetes-list-type: atomic
                               name:
                                 default: ""
-                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                description: |-
+                                  Name of the referent.
+                                  This field is effectively required, but due to backwards compatibility is
+                                  allowed to be empty. Instances of this type with an empty value here are
+                                  almost certainly wrong.
+                                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                 type: string
                               optional:
                                 description: optional specify whether the ConfigMap
@@ -2576,7 +2582,12 @@ spec:
                                 x-kubernetes-list-type: atomic
                               name:
                                 default: ""
-                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                description: |-
+                                  Name of the referent.
+                                  This field is effectively required, but due to backwards compatibility is
+                                  allowed to be empty. Instances of this type with an empty value here are
+                                  almost certainly wrong.
+                                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                 type: string
                               optional:
                                 description: optional field specify whether the Secret
@@ -2695,7 +2706,6 @@ spec:
                                     Keys that don't exist in the incoming pod labels will
                                     be ignored. A null or empty list means only match against labelSelector.
 
-
                                     This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).
                                   items:
                                     type: string
@@ -2735,7 +2745,6 @@ spec:
                                     Valid values are integers greater than 0.
                                     When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
 
-
                                     For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
                                     labelSelector spread as 2/2/2:
                                     | zone1 | zone2 | zone3 |
@@ -2753,7 +2762,6 @@ spec:
                                     - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
                                     - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
-
                                     If this value is nil, the behavior is equivalent to the Honor policy.
                                     This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
                                   type: string
@@ -2764,7 +2772,6 @@ spec:
                                     - Honor: nodes without taints, along with tainted nodes for which the incoming pod
                                     has a toleration, are included.
                                     - Ignore: node taints are ignored. All nodes are included.
-
 
                                     If this value is nil, the behavior is equivalent to the Ignore policy.
                                     This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
@@ -2904,7 +2911,6 @@ spec:
                                         More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
                                       items:
                                         type: string
-                                      minItems: 1
                                       type: array
                                       x-kubernetes-list-type: atomic
                                     dataSource:
@@ -3018,11 +3024,7 @@ spec:
                                             If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
                                             otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                             More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                                          required:
-                                          - storage
                                           type: object
-                                      required:
-                                      - requests
                                       type: object
                                     selector:
                                       description: selector is a label query over
@@ -3101,10 +3103,14 @@ spec:
                                       description: volumeName is the binding reference
                                         to the PersistentVolume backing this claim.
                                       type: string
-                                  required:
-                                  - accessModes
-                                  - resources
                                   type: object
+                                  x-kubernetes-validations:
+                                  - message: missing accessModes
+                                    rule: has(self.accessModes) && size(self.accessModes)
+                                      > 0
+                                  - message: missing storage request
+                                    rule: has(self.resources) && has(self.resources.requests)
+                                      && has(self.resources.requests.storage)
                               required:
                               - volumeClaimSpec
                               type: object
@@ -4102,10 +4108,8 @@ spec:
                                   Claims lists the names of resources, defined in spec.resourceClaims,
                                   that are used by this container.
 
-
                                   This is an alpha field and requires enabling the
                                   DynamicResourceAllocation feature gate.
-
 
                                   This field is immutable. It can only be set for containers.
                                 items:
@@ -4210,10 +4214,8 @@ spec:
                                       Claims lists the names of resources, defined in spec.resourceClaims,
                                       that are used by this container.
 
-
                                       This is an alpha field and requires enabling the
                                       DynamicResourceAllocation feature gate.
-
 
                                       This field is immutable. It can only be set for containers.
                                     items:
@@ -4271,10 +4273,8 @@ spec:
                                       Claims lists the names of resources, defined in spec.resourceClaims,
                                       that are used by this container.
 
-
                                       This is an alpha field and requires enabling the
                                       DynamicResourceAllocation feature gate.
-
 
                                       This field is immutable. It can only be set for containers.
                                     items:
@@ -4348,13 +4348,10 @@ spec:
                             ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
                             of ClusterTrustBundle objects in an auto-updating file.
 
-
                             Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
                             ClusterTrustBundle objects can either be selected by name, or by the
                             combination of signer name and a label selector.
-
 
                             Kubelet performs aggressive normalization of the PEM contents written
                             into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -4483,7 +4480,12 @@ spec:
                               x-kubernetes-list-type: atomic
                             name:
                               default: ""
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                              description: |-
+                                Name of the referent.
+                                This field is effectively required, but due to backwards compatibility is
+                                allowed to be empty. Instances of this type with an empty value here are
+                                almost certainly wrong.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                               type: string
                             optional:
                               description: optional specify whether the ConfigMap
@@ -4610,7 +4612,12 @@ spec:
                               x-kubernetes-list-type: atomic
                             name:
                               default: ""
-                              description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                              description: |-
+                                Name of the referent.
+                                This field is effectively required, but due to backwards compatibility is
+                                allowed to be empty. Instances of this type with an empty value here are
+                                almost certainly wrong.
+                                More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                               type: string
                             optional:
                               description: optional field specify whether the Secret
@@ -4699,7 +4706,12 @@ spec:
                     x-kubernetes-list-type: atomic
                   name:
                     default: ""
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    description: |-
+                      Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     type: string
                   optional:
                     description: optional field specify whether the Secret or its
@@ -4759,7 +4771,12 @@ spec:
                     x-kubernetes-list-type: atomic
                   name:
                     default: ""
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    description: |-
+                      Name of the referent.
+                      This field is effectively required, but due to backwards compatibility is
+                      allowed to be empty. Instances of this type with an empty value here are
+                      almost certainly wrong.
+                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                     type: string
                   optional:
                     description: optional field specify whether the Secret or its
@@ -5727,13 +5744,10 @@ spec:
                                 ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
                                 of ClusterTrustBundle objects in an auto-updating file.
 
-
                                 Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
                                 ClusterTrustBundle objects can either be selected by name, or by the
                                 combination of signer name and a label selector.
-
 
                                 Kubelet performs aggressive normalization of the PEM contents written
                                 into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -5863,7 +5877,12 @@ spec:
                                   x-kubernetes-list-type: atomic
                                 name:
                                   default: ""
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
                                 optional:
                                   description: optional specify whether the ConfigMap
@@ -5994,7 +6013,12 @@ spec:
                                   x-kubernetes-list-type: atomic
                                 name:
                                   default: ""
-                                  description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                  description: |-
+                                    Name of the referent.
+                                    This field is effectively required, but due to backwards compatibility is
+                                    allowed to be empty. Instances of this type with an empty value here are
+                                    almost certainly wrong.
+                                    More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                   type: string
                                 optional:
                                   description: optional field specify whether the
@@ -6338,6 +6362,13 @@ spec:
                                       to the PersistentVolume backing this claim.
                                     type: string
                                 type: object
+                                x-kubernetes-validations:
+                                - message: missing accessModes
+                                  rule: has(self.accessModes) && size(self.accessModes)
+                                    > 0
+                                - message: missing storage request
+                                  rule: has(self.resources) && has(self.resources.requests)
+                                    && has(self.resources.requests.storage)
                             required:
                             - volumeClaimSpec
                             type: object
@@ -6353,10 +6384,8 @@ spec:
                               Claims lists the names of resources, defined in spec.resourceClaims,
                               that are used by this container.
 
-
                               This is an alpha field and requires enabling the
                               DynamicResourceAllocation feature gate.
-
 
                               This field is immutable. It can only be set for containers.
                             items:
@@ -7431,10 +7460,8 @@ spec:
                               Claims lists the names of resources, defined in spec.resourceClaims,
                               that are used by this container.
 
-
                               This is an alpha field and requires enabling the
                               DynamicResourceAllocation feature gate.
-
 
                               This field is immutable. It can only be set for containers.
                             items:
@@ -7631,7 +7658,12 @@ spec:
                   properties:
                     name:
                       default: ""
-                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                      description: |-
+                        Name of the referent.
+                        This field is effectively required, but due to backwards compatibility is
+                        allowed to be empty. Instances of this type with an empty value here are
+                        almost certainly wrong.
+                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                       type: string
                   type: object
                   x-kubernetes-map-type: atomic
@@ -8645,8 +8677,12 @@ spec:
                                           type: string
                                         name:
                                           default: ""
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                          description: |-
+                                            Name of the referent.
+                                            This field is effectively required, but due to backwards compatibility is
+                                            allowed to be empty. Instances of this type with an empty value here are
+                                            almost certainly wrong.
+                                            More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                           type: string
                                         optional:
                                           description: Specify whether the ConfigMap
@@ -8708,8 +8744,12 @@ spec:
                                           type: string
                                         name:
                                           default: ""
-                                          description: 'Name of the referent. More
-                                            info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                          description: |-
+                                            Name of the referent.
+                                            This field is effectively required, but due to backwards compatibility is
+                                            allowed to be empty. Instances of this type with an empty value here are
+                                            almost certainly wrong.
+                                            More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                           type: string
                                         optional:
                                           description: Specify whether the Secret
@@ -8744,8 +8784,12 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: Specify whether the ConfigMap must
@@ -8762,8 +8806,12 @@ spec:
                                   properties:
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: Specify whether the Secret must
@@ -9052,10 +9100,10 @@ spec:
                                     format: int32
                                     type: integer
                                   service:
+                                    default: ""
                                     description: |-
                                       Service is the name of the service to place in the gRPC HealthCheckRequest
                                       (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
-
 
                                       If this is not specified, the default behavior is defined by gRPC.
                                     type: string
@@ -9267,10 +9315,10 @@ spec:
                                     format: int32
                                     type: integer
                                   service:
+                                    default: ""
                                     description: |-
                                       Service is the name of the service to place in the gRPC HealthCheckRequest
                                       (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
-
 
                                       If this is not specified, the default behavior is defined by gRPC.
                                     type: string
@@ -9420,10 +9468,8 @@ spec:
                                   Claims lists the names of resources, defined in spec.resourceClaims,
                                   that are used by this container.
 
-
                                   This is an alpha field and requires enabling the
                                   DynamicResourceAllocation feature gate.
-
 
                                   This field is immutable. It can only be set for containers.
                                 items:
@@ -9637,12 +9683,13 @@ spec:
                                       Must be set if type is "Localhost". Must NOT be set for any other type.
                                     type: string
                                   type:
-                                    description: 'type indicates which kind of seccomp
-                                      profile will be applied. Valid options are:
-                                      Localhost - a profile defined in a file on the
-                                      node should be used. RuntimeDefault - the container
-                                      runtime default profile should be used. Unconfined
-                                      - no profile should be applied.'
+                                    description: |-
+                                      type indicates which kind of seccomp profile will be applied.
+                                      Valid options are:
+
+                                      Localhost - a profile defined in a file on the node should be used.
+                                      RuntimeDefault - the container runtime default profile should be used.
+                                      Unconfined - no profile should be applied.
                                     type: string
                                 required:
                                 - type
@@ -9721,10 +9768,10 @@ spec:
                                     format: int32
                                     type: integer
                                   service:
+                                    default: ""
                                     description: |-
                                       Service is the name of the service to place in the gRPC HealthCheckRequest
                                       (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
-
 
                                       If this is not specified, the default behavior is defined by gRPC.
                                     type: string
@@ -9940,9 +9987,7 @@ spec:
                                     RecursiveReadOnly specifies whether read-only mounts should be handled
                                     recursively.
 
-
                                     If ReadOnly is false, this field has no meaning and must be unspecified.
-
 
                                     If ReadOnly is true, and this field is set to Disabled, the mount is not made
                                     recursively read-only.  If this field is set to IfPossible, the mount is made
@@ -9951,10 +9996,8 @@ spec:
                                     supported by the container runtime, otherwise the pod will not be started and
                                     an error will be generated to indicate the reason.
 
-
                                     If this field is set to IfPossible or Enabled, MountPropagation must be set to
                                     None (or be unspecified, which defaults to None).
-
 
                                     If this field is not specified, it is treated as an equivalent of Disabled.
                                   type: string
@@ -10000,7 +10043,6 @@ spec:
                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
                           items:
                             type: string
-                          minItems: 1
                           type: array
                           x-kubernetes-list-type: atomic
                         dataSource:
@@ -10110,11 +10152,7 @@ spec:
                                 If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
                                 otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                              required:
-                              - storage
                               type: object
-                          required:
-                          - requests
                           type: object
                         selector:
                           description: selector is a label query over volumes to consider
@@ -10192,10 +10230,13 @@ spec:
                           description: volumeName is the binding reference to the
                             PersistentVolume backing this claim.
                           type: string
-                      required:
-                      - accessModes
-                      - resources
                       type: object
+                      x-kubernetes-validations:
+                      - message: missing accessModes
+                        rule: has(self.accessModes) && size(self.accessModes) > 0
+                      - message: missing storage request
+                        rule: has(self.resources) && has(self.resources.requests)
+                          && has(self.resources.requests.storage)
                     metadata:
                       description: Metadata contains metadata for custom resources
                       properties:
@@ -10245,10 +10286,8 @@ spec:
                             Claims lists the names of resources, defined in spec.resourceClaims,
                             that are used by this container.
 
-
                             This is an alpha field and requires enabling the
                             DynamicResourceAllocation feature gate.
-
 
                             This field is immutable. It can only be set for containers.
                           items:
@@ -10307,10 +10346,8 @@ spec:
                                     Claims lists the names of resources, defined in spec.resourceClaims,
                                     that are used by this container.
 
-
                                     This is an alpha field and requires enabling the
                                     DynamicResourceAllocation feature gate.
-
 
                                     This field is immutable. It can only be set for containers.
                                   items:
@@ -10567,6 +10604,13 @@ spec:
                                   the PersistentVolume backing this claim.
                                 type: string
                             type: object
+                            x-kubernetes-validations:
+                            - message: missing accessModes
+                              rule: has(self.accessModes) && size(self.accessModes)
+                                > 0
+                            - message: missing storage request
+                              rule: has(self.resources) && has(self.resources.requests)
+                                && has(self.resources.requests.storage)
                           name:
                             description: |-
                               The name for the tablespace, used as the path name for the volume.
@@ -10692,7 +10736,6 @@ spec:
                               Keys that don't exist in the incoming pod labels will
                               be ignored. A null or empty list means only match against labelSelector.
 
-
                               This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).
                             items:
                               type: string
@@ -10732,7 +10775,6 @@ spec:
                               Valid values are integers greater than 0.
                               When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
 
-
                               For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
                               labelSelector spread as 2/2/2:
                               | zone1 | zone2 | zone3 |
@@ -10750,7 +10792,6 @@ spec:
                               - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
                               - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
-
                               If this value is nil, the behavior is equivalent to the Honor policy.
                               This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
                             type: string
@@ -10761,7 +10802,6 @@ spec:
                               - Honor: nodes without taints, along with tainted nodes for which the incoming pod
                               has a toleration, are included.
                               - Ignore: node taints are ignored. All nodes are included.
-
 
                               If this value is nil, the behavior is equivalent to the Ignore policy.
                               This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
@@ -10817,7 +10857,6 @@ spec:
                             More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#access-modes-1
                           items:
                             type: string
-                          minItems: 1
                           type: array
                           x-kubernetes-list-type: atomic
                         dataSource:
@@ -10927,11 +10966,7 @@ spec:
                                 If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
                                 otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                 More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
-                              required:
-                              - storage
                               type: object
-                          required:
-                          - requests
                           type: object
                         selector:
                           description: selector is a label query over volumes to consider
@@ -11009,10 +11044,13 @@ spec:
                           description: volumeName is the binding reference to the
                             PersistentVolume backing this claim.
                           type: string
-                      required:
-                      - accessModes
-                      - resources
                       type: object
+                      x-kubernetes-validations:
+                      - message: missing accessModes
+                        rule: has(self.accessModes) && size(self.accessModes) > 0
+                      - message: missing storage request
+                        rule: has(self.resources) && has(self.resources.requests)
+                          && has(self.resources.requests.storage)
                   required:
                   - dataVolumeClaimSpec
                   type: object
@@ -11059,13 +11097,10 @@ spec:
                                     ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
                                     of ClusterTrustBundle objects in an auto-updating file.
 
-
                                     Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
                                     ClusterTrustBundle objects can either be selected by name, or by the
                                     combination of signer name and a label selector.
-
 
                                     Kubelet performs aggressive normalization of the PEM contents written
                                     into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -11195,8 +11230,12 @@ spec:
                                       x-kubernetes-list-type: atomic
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: optional specify whether the ConfigMap
@@ -11329,8 +11368,12 @@ spec:
                                       x-kubernetes-list-type: atomic
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: optional field specify whether
@@ -11415,7 +11458,12 @@ spec:
                                 x-kubernetes-list-type: atomic
                               name:
                                 default: ""
-                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                description: |-
+                                  Name of the referent.
+                                  This field is effectively required, but due to backwards compatibility is
+                                  allowed to be empty. Instances of this type with an empty value here are
+                                  almost certainly wrong.
+                                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                 type: string
                               optional:
                                 description: optional field specify whether the Secret
@@ -11438,10 +11486,8 @@ spec:
                                   Claims lists the names of resources, defined in spec.resourceClaims,
                                   that are used by this container.
 
-
                                   This is an alpha field and requires enabling the
                                   DynamicResourceAllocation feature gate.
-
 
                                   This field is immutable. It can only be set for containers.
                                 items:
@@ -12559,13 +12605,10 @@ spec:
                                     ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
                                     of ClusterTrustBundle objects in an auto-updating file.
 
-
                                     Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
                                     ClusterTrustBundle objects can either be selected by name, or by the
                                     combination of signer name and a label selector.
-
 
                                     Kubelet performs aggressive normalization of the PEM contents written
                                     into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -12695,8 +12738,12 @@ spec:
                                       x-kubernetes-list-type: atomic
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: optional specify whether the ConfigMap
@@ -12829,8 +12876,12 @@ spec:
                                       x-kubernetes-list-type: atomic
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: optional field specify whether
@@ -12956,8 +13007,12 @@ spec:
                                             type: string
                                           name:
                                             default: ""
-                                            description: 'Name of the referent. More
-                                              info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                           optional:
                                             description: Specify whether the ConfigMap
@@ -13021,8 +13076,12 @@ spec:
                                             type: string
                                           name:
                                             default: ""
-                                            description: 'Name of the referent. More
-                                              info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                            description: |-
+                                              Name of the referent.
+                                              This field is effectively required, but due to backwards compatibility is
+                                              allowed to be empty. Instances of this type with an empty value here are
+                                              almost certainly wrong.
+                                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                             type: string
                                           optional:
                                             description: Specify whether the Secret
@@ -13057,8 +13116,12 @@ spec:
                                     properties:
                                       name:
                                         default: ""
-                                        description: 'Name of the referent. More info:
-                                          https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                        description: |-
+                                          Name of the referent.
+                                          This field is effectively required, but due to backwards compatibility is
+                                          allowed to be empty. Instances of this type with an empty value here are
+                                          almost certainly wrong.
+                                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                         type: string
                                       optional:
                                         description: Specify whether the ConfigMap
@@ -13075,8 +13138,12 @@ spec:
                                     properties:
                                       name:
                                         default: ""
-                                        description: 'Name of the referent. More info:
-                                          https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                        description: |-
+                                          Name of the referent.
+                                          This field is effectively required, but due to backwards compatibility is
+                                          allowed to be empty. Instances of this type with an empty value here are
+                                          almost certainly wrong.
+                                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                         type: string
                                       optional:
                                         description: Specify whether the Secret must
@@ -13367,10 +13434,10 @@ spec:
                                       format: int32
                                       type: integer
                                     service:
+                                      default: ""
                                       description: |-
                                         Service is the name of the service to place in the gRPC HealthCheckRequest
                                         (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
-
 
                                         If this is not specified, the default behavior is defined by gRPC.
                                       type: string
@@ -13582,10 +13649,10 @@ spec:
                                       format: int32
                                       type: integer
                                     service:
+                                      default: ""
                                       description: |-
                                         Service is the name of the service to place in the gRPC HealthCheckRequest
                                         (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
-
 
                                         If this is not specified, the default behavior is defined by gRPC.
                                       type: string
@@ -13735,10 +13802,8 @@ spec:
                                     Claims lists the names of resources, defined in spec.resourceClaims,
                                     that are used by this container.
 
-
                                     This is an alpha field and requires enabling the
                                     DynamicResourceAllocation feature gate.
-
 
                                     This field is immutable. It can only be set for containers.
                                   items:
@@ -13952,13 +14017,13 @@ spec:
                                         Must be set if type is "Localhost". Must NOT be set for any other type.
                                       type: string
                                     type:
-                                      description: 'type indicates which kind of seccomp
-                                        profile will be applied. Valid options are:
-                                        Localhost - a profile defined in a file on
-                                        the node should be used. RuntimeDefault -
-                                        the container runtime default profile should
-                                        be used. Unconfined - no profile should be
-                                        applied.'
+                                      description: |-
+                                        type indicates which kind of seccomp profile will be applied.
+                                        Valid options are:
+
+                                        Localhost - a profile defined in a file on the node should be used.
+                                        RuntimeDefault - the container runtime default profile should be used.
+                                        Unconfined - no profile should be applied.
                                       type: string
                                   required:
                                   - type
@@ -14037,10 +14102,10 @@ spec:
                                       format: int32
                                       type: integer
                                     service:
+                                      default: ""
                                       description: |-
                                         Service is the name of the service to place in the gRPC HealthCheckRequest
                                         (see https://github.com/grpc/grpc/blob/master/doc/health-checking.md).
-
 
                                         If this is not specified, the default behavior is defined by gRPC.
                                       type: string
@@ -14257,9 +14322,7 @@ spec:
                                       RecursiveReadOnly specifies whether read-only mounts should be handled
                                       recursively.
 
-
                                       If ReadOnly is false, this field has no meaning and must be unspecified.
-
 
                                       If ReadOnly is true, and this field is set to Disabled, the mount is not made
                                       recursively read-only.  If this field is set to IfPossible, the mount is made
@@ -14268,10 +14331,8 @@ spec:
                                       supported by the container runtime, otherwise the pod will not be started and
                                       an error will be generated to indicate the reason.
 
-
                                       If this field is set to IfPossible or Enabled, MountPropagation must be set to
                                       None (or be unspecified, which defaults to None).
-
 
                                       If this field is not specified, it is treated as an equivalent of Disabled.
                                     type: string
@@ -14354,7 +14415,12 @@ spec:
                             x-kubernetes-list-type: atomic
                           name:
                             default: ""
-                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                            description: |-
+                              Name of the referent.
+                              This field is effectively required, but due to backwards compatibility is
+                              allowed to be empty. Instances of this type with an empty value here are
+                              almost certainly wrong.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                             type: string
                           optional:
                             description: optional field specify whether the Secret
@@ -14420,10 +14486,8 @@ spec:
                               Claims lists the names of resources, defined in spec.resourceClaims,
                               that are used by this container.
 
-
                               This is an alpha field and requires enabling the
                               DynamicResourceAllocation feature gate.
-
 
                               This field is immutable. It can only be set for containers.
                             items:
@@ -14526,10 +14590,8 @@ spec:
                                       Claims lists the names of resources, defined in spec.resourceClaims,
                                       that are used by this container.
 
-
                                       This is an alpha field and requires enabling the
                                       DynamicResourceAllocation feature gate.
-
 
                                       This field is immutable. It can only be set for containers.
                                     items:
@@ -14687,7 +14749,6 @@ spec:
                                 Keys that don't exist in the incoming pod labels will
                                 be ignored. A null or empty list means only match against labelSelector.
 
-
                                 This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).
                               items:
                                 type: string
@@ -14727,7 +14788,6 @@ spec:
                                 Valid values are integers greater than 0.
                                 When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
 
-
                                 For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
                                 labelSelector spread as 2/2/2:
                                 | zone1 | zone2 | zone3 |
@@ -14745,7 +14805,6 @@ spec:
                                 - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
                                 - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
-
                                 If this value is nil, the behavior is equivalent to the Honor policy.
                                 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
                               type: string
@@ -14756,7 +14815,6 @@ spec:
                                 - Honor: nodes without taints, along with tainted nodes for which the incoming pod
                                 has a toleration, are included.
                                 - Ignore: node taints are ignored. All nodes are included.
-
 
                                 If this value is nil, the behavior is equivalent to the Ignore policy.
                                 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
@@ -15901,13 +15959,10 @@ spec:
                                     ClusterTrustBundle allows a pod to access the `.spec.trustBundle` field
                                     of ClusterTrustBundle objects in an auto-updating file.
 
-
                                     Alpha, gated by the ClusterTrustBundleProjection feature gate.
-
 
                                     ClusterTrustBundle objects can either be selected by name, or by the
                                     combination of signer name and a label selector.
-
 
                                     Kubelet performs aggressive normalization of the PEM contents written
                                     into the pod filesystem.  Esoteric PEM features such as inter-block
@@ -16037,8 +16092,12 @@ spec:
                                       x-kubernetes-list-type: atomic
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: optional specify whether the ConfigMap
@@ -16171,8 +16230,12 @@ spec:
                                       x-kubernetes-list-type: atomic
                                     name:
                                       default: ""
-                                      description: 'Name of the referent. More info:
-                                        https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                      description: |-
+                                        Name of the referent.
+                                        This field is effectively required, but due to backwards compatibility is
+                                        allowed to be empty. Instances of this type with an empty value here are
+                                        almost certainly wrong.
+                                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                       type: string
                                     optional:
                                       description: optional field specify whether
@@ -16222,7 +16285,12 @@ spec:
                                 type: string
                               name:
                                 default: ""
-                                description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                                description: |-
+                                  Name of the referent.
+                                  This field is effectively required, but due to backwards compatibility is
+                                  allowed to be empty. Instances of this type with an empty value here are
+                                  almost certainly wrong.
+                                  More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                                 type: string
                               optional:
                                 description: Specify whether the Secret or its key
@@ -16482,10 +16550,8 @@ spec:
                               Claims lists the names of resources, defined in spec.resourceClaims,
                               that are used by this container.
 
-
                               This is an alpha field and requires enabling the
                               DynamicResourceAllocation feature gate.
-
 
                               This field is immutable. It can only be set for containers.
                             items:
@@ -16683,7 +16749,6 @@ spec:
                                 Keys that don't exist in the incoming pod labels will
                                 be ignored. A null or empty list means only match against labelSelector.
 
-
                                 This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).
                               items:
                                 type: string
@@ -16723,7 +16788,6 @@ spec:
                                 Valid values are integers greater than 0.
                                 When value is not nil, WhenUnsatisfiable must be DoNotSchedule.
 
-
                                 For example, in a 3-zone cluster, MaxSkew is set to 2, MinDomains is set to 5 and pods with the same
                                 labelSelector spread as 2/2/2:
                                 | zone1 | zone2 | zone3 |
@@ -16741,7 +16805,6 @@ spec:
                                 - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations.
                                 - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations.
 
-
                                 If this value is nil, the behavior is equivalent to the Honor policy.
                                 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
                               type: string
@@ -16752,7 +16815,6 @@ spec:
                                 - Honor: nodes without taints, along with tainted nodes for which the incoming pod
                                 has a toleration, are included.
                                 - Ignore: node taints are ignored. All nodes are included.
-
 
                                 If this value is nil, the behavior is equivalent to the Ignore policy.
                                 This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.
@@ -16926,7 +16988,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: type of condition in CamelCase.
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string

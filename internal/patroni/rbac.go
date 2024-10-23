@@ -12,25 +12,25 @@ import (
 )
 
 // "list", "patch", and "watch" are required. Include "get" for good measure.
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="pods",verbs={get}
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="pods",verbs={list,watch}
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="pods",verbs={patch}
+// +kubebuilder:rbac:groups="",resources="pods",verbs={get}
+// +kubebuilder:rbac:groups="",resources="pods",verbs={list,watch}
+// +kubebuilder:rbac:groups="",resources="pods",verbs={patch}
 
 // TODO(cbandy): Separate these so that one can choose ConfigMap over Endpoints.
 
 // When using Endpoints for DCS, "create", "list", "patch", and "watch" are
 // required. Include "get" for good measure. The `patronictl scaffold` and
 // `patronictl remove` commands require "deletecollection".
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="endpoints",verbs={get}
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="endpoints",verbs={create,deletecollection}
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="endpoints",verbs={list,watch}
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="endpoints",verbs={patch}
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="services",verbs={create}
+// +kubebuilder:rbac:groups="",resources="endpoints",verbs={get}
+// +kubebuilder:rbac:groups="",resources="endpoints",verbs={create,deletecollection}
+// +kubebuilder:rbac:groups="",resources="endpoints",verbs={list,watch}
+// +kubebuilder:rbac:groups="",resources="endpoints",verbs={patch}
+// +kubebuilder:rbac:groups="",resources="services",verbs={create}
 
 // The OpenShift RestrictedEndpointsAdmission plugin requires special
 // authorization to create Endpoints that contain Pod IPs.
 // - https://github.com/openshift/origin/pull/9383
-// +kubebuilder:rbac:namespace=patroni,groups="",resources="endpoints/restricted",verbs={create}
+// +kubebuilder:rbac:groups="",resources="endpoints/restricted",verbs={create}
 
 // Permissions returns the RBAC rules Patroni needs for cluster.
 func Permissions(cluster *v1beta1.PostgresCluster) []rbacv1.PolicyRule {
