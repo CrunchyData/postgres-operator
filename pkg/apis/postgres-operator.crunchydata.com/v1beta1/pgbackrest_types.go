@@ -49,15 +49,15 @@ type PGBackRestJobStatus struct {
 type PGBackRestScheduledBackupStatus struct {
 
 	// The name of the associated pgBackRest scheduled backup CronJob
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	CronJobName string `json:"cronJobName,omitempty"`
 
 	// The name of the associated pgBackRest repository
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	RepoName string `json:"repo,omitempty"`
 
 	// The pgBackRest backup type for this Job
-	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Optional
 	Type string `json:"type,omitempty"`
 
 	// Represents the time the manual backup Job was acknowledged by the Job controller.
