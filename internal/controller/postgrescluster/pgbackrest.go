@@ -549,8 +549,9 @@ func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
 	for _, job := range jobList.Items {
 		// we only care about the scheduled backup Jobs created by the
 		// associated CronJobs
-		sbs := v1beta1.PGBackRestScheduledBackupStatus{}
 		if job.GetLabels()[naming.LabelPGBackRestCronJob] != "" {
+			sbs := v1beta1.PGBackRestScheduledBackupStatus{}
+
 			if len(job.OwnerReferences) > 0 {
 				sbs.CronJobName = job.OwnerReferences[0].Name
 			}

@@ -23,7 +23,7 @@ type CrunchyBridgeClusterSpec struct {
 
 	// Whether the cluster is protected. Protected clusters can't be destroyed until
 	// their protected flag is removed
-	// +optional
+	// +kubebuilder:validation:Optional
 	IsProtected bool `json:"isProtected,omitempty"`
 
 	// The name of the cluster
@@ -65,14 +65,14 @@ type CrunchyBridgeClusterSpec struct {
 	// are retrieved from the Bridge API. An empty list creates no role secrets.
 	// Removing a role from this list does NOT drop the role nor revoke their
 	// access, but it will delete that role's secret from the kube cluster.
+	// +kubebuilder:validation:Optional
 	// +listType=map
 	// +listMapKey=name
-	// +optional
 	Roles []*CrunchyBridgeClusterRoleSpec `json:"roles,omitempty"`
 
 	// The name of the secret containing the API key and team id
 	// +kubebuilder:validation:Required
-	Secret string `json:"secret,omitempty"`
+	Secret string `json:"secret"`
 
 	// The amount of storage available to the cluster in gigabytes.
 	// The amount must be an integer, followed by Gi (gibibytes) or G (gigabytes) to match Kubernetes conventions.
@@ -86,9 +86,11 @@ type CrunchyBridgeClusterSpec struct {
 type CrunchyBridgeClusterRoleSpec struct {
 	// Name of the role within Crunchy Bridge.
 	// More info: https://docs.crunchybridge.com/concepts/users
+	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 
 	// The name of the Secret that will hold the role credentials.
+	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
 	// +kubebuilder:validation:MaxLength=253
 	// +kubebuilder:validation:Type=string
