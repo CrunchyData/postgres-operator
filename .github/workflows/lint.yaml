@@ -2,8 +2,6 @@ name: Linters
 
 on:
   pull_request:
-    branches:
-      - master
 
 jobs:
   golangci-lint:
