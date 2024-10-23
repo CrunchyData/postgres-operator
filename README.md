@@ -185,21 +185,17 @@ In addition to the above, the geospatially enhanced PostgreSQL + PostGIS contain
 
 For more information about which versions of the PostgreSQL Operator include which components, please visit the [compatibility](https://access.crunchydata.com/documentation/postgres-operator/v5/references/components/) section of the documentation.
 
-## Supported Platforms
+## [Supported Platforms](https://access.crunchydata.com/documentation/postgres-operator/latest/overview/supported-platforms)
 
 PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
-- Kubernetes v1.28 - v1.31
-- OpenShift v4.12 - v4.16
+- Kubernetes
+- OpenShift
 - Rancher
 - Google Kubernetes Engine (GKE), including Anthos
 - Amazon EKS
 - Microsoft AKS
 - VMware Tanzu
-
-This list only includes the platforms that the Postgres Operator is specifically
-tested on as part of the release process: PGO works on other Kubernetes
-distributions as well.
 
 # Contributing to the Project
 
@@ -214,7 +210,7 @@ Once you are ready to submit a Pull Request, please ensure you do the following:
    that you have followed the commit message format, added testing where
    appropriate, documented your changes, etc.
 1. Open up a pull request based upon the guidelines. If you are adding a new
-   feature, please open up the pull request on the `master` branch.
+   feature, please open up the pull request on the `main` branch.
 1. Please be as descriptive in your pull request as possible. If you are
    referencing an issue, please be sure to include the issue in your pull request
 

@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - master
 
 env:
   # Use the Go toolchain installed by setup-go
