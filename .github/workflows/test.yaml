@@ -128,6 +128,7 @@ jobs:
           hack/create-kubeconfig.sh postgres-operator pgo
           docker run --detach --network host --read-only \
             --volume "$(pwd):/mnt" --workdir '/mnt' --env 'PATH=/mnt/bin' \
+            --env 'CHECK_FOR_UPGRADES=false' \
             --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
             --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
             --env 'RELATED_IMAGE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-4.30-26' \
