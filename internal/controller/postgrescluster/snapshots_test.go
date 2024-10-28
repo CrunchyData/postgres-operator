@@ -978,6 +978,17 @@ func TestGetSnapshotWithLatestError(t *testing.T) {
 		assert.Check(t, snapshotWithLatestError == nil)
 	})
 
+	t.Run("NoSnapshotsWithStatus", func(t *testing.T) {
+		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
+			Items: []volumesnapshotv1.VolumeSnapshot{
+				{},
+				{},
+			},
+		}
+		snapshotWithLatestError := getSnapshotWithLatestError(snapshotList)
+		assert.Check(t, snapshotWithLatestError == nil)
+	})
+
 	t.Run("NoSnapshotsWithErrors", func(t *testing.T) {
 		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
 			Items: []volumesnapshotv1.VolumeSnapshot{
@@ -1199,6 +1210,17 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 func TestGetLatestReadySnapshot(t *testing.T) {
 	t.Run("NoSnapshots", func(t *testing.T) {
 		snapshotList := &volumesnapshotv1.VolumeSnapshotList{}
+		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		assert.Assert(t, latestReadySnapshot == nil)
+	})
+
+	t.Run("NoSnapshotsWithStatus", func(t *testing.T) {
+		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
+			Items: []volumesnapshotv1.VolumeSnapshot{
+				{},
+				{},
+			},
+		}
 		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
 		assert.Assert(t, latestReadySnapshot == nil)
 	})
