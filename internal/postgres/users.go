@@ -2,6 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+// [pg_query.Parse] requires CGO to compile and call https://github.com/pganalyze/libpg_query
+//go:build cgo
+
 package postgres
 
 import (
