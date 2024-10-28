@@ -103,7 +103,7 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 		r.Recorder.Event(postgrescluster, corev1.EventTypeWarning, "VolumeSnapshotError",
 			*snapshotWithLatestError.Status.Error.Message)
 		for _, snapshot := range snapshots.Items {
-			if snapshot.Status.Error != nil &&
+			if snapshot.Status != nil && snapshot.Status.Error != nil &&
 				snapshot.Status.Error.Time.Before(snapshotWithLatestError.Status.Error.Time) {
 				err = r.deleteControlled(ctx, postgrescluster, &snapshot)
 				if err != nil {
@@ -537,7 +537,7 @@ func getSnapshotWithLatestError(snapshots *volumesnapshotv1.VolumeSnapshotList) 
 		},
 	}
 	for _, snapshot := range snapshots.Items {
-		if snapshot.Status.Error != nil &&
+		if snapshot.Status != nil && snapshot.Status.Error != nil &&
 			snapshotWithLatestError.Status.Error.Time.Before(snapshot.Status.Error.Time) {
 			snapshotWithLatestError = snapshot
 		}
@@ -577,7 +577,7 @@ func getLatestReadySnapshot(snapshots *volumesnapshotv1.VolumeSnapshotList) *vol
 		},
 	}
 	for _, snapshot := range snapshots.Items {
-		if snapshot.Status.ReadyToUse != nil && *snapshot.Status.ReadyToUse &&
+		if snapshot.Status != nil && snapshot.Status.ReadyToUse != nil && *snapshot.Status.ReadyToUse &&
 			latestReadySnapshot.Status.CreationTime.Before(snapshot.Status.CreationTime) {
 			latestReadySnapshot = snapshot
 		}
