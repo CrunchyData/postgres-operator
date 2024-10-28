@@ -145,7 +145,7 @@ deploy-dev: createnamespaces
 ##@ Build - Binary
 .PHONY: build-postgres-operator
 build-postgres-operator: ## Build the postgres-operator binary
-	CGO_ENABLED=1 $(GO_BUILD) $(\
+	$(GO_BUILD) $(\
 		) --ldflags '-X "main.versionString=$(PGO_VERSION)"' $(\
 		) --trimpath -o bin/postgres-operator ./cmd/postgres-operator
 
