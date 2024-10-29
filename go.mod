@@ -2,8 +2,6 @@ module github.com/crunchydata/postgres-operator
 
 go 1.22.0
 
-toolchain go1.22.4
-
 require (
 	github.com/go-logr/logr v1.4.2
 	github.com/golang-jwt/jwt/v5 v5.2.1
