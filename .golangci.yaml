@@ -3,7 +3,6 @@
 linters:
   disable:
     - contextcheck
-    - errchkjson
     - gci
     - gofumpt
   enable:
@@ -40,6 +39,9 @@ linters-settings:
 
           - pkg: github.com/crunchydata/postgres-operator/internal/testing/*
             desc: The "internal/testing" packages should be used only in tests.
+
+  errchkjson:
+    check-error-free-encoding: true
 
   exhaustive:
     default-signifies-exhaustive: true

@@ -77,7 +77,7 @@ func checkForUpgrades(ctx context.Context, url, versionString string, backoff wa
 		// in case some of the checks return errors
 		headerPayloadStruct = generateHeader(ctx, cfg, crclient,
 			versionString, isOpenShift, registrationToken)
-		req, err = addHeader(req, headerPayloadStruct)
+		req = addHeader(req, headerPayloadStruct)
 	}
 
 	// wait.ExponentialBackoff will retry the func according to the backoff object until

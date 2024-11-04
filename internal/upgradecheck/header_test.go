@@ -596,12 +596,11 @@ func TestAddHeader(t *testing.T) {
 			PGOVersion: versionString,
 		}
 
-		result, err := addHeader(req, upgradeInfo)
-		assert.NilError(t, err)
+		result := addHeader(req, upgradeInfo)
 		header := result.Header[clientHeader]
 
 		passedThroughData := &clientUpgradeData{}
-		err = json.Unmarshal([]byte(header[0]), passedThroughData)
+		err := json.Unmarshal([]byte(header[0]), passedThroughData)
 		assert.NilError(t, err)
 
 		assert.Equal(t, passedThroughData.PGOVersion, "1.2.3")
