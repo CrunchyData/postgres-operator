@@ -5,6 +5,8 @@
 package postgres
 
 import (
+	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -124,3 +126,21 @@ func (ps *ParameterSet) Value(name string) string {
 	value, _ := ps.Get(name)
 	return value
 }
+
+func (ps *ParameterSet) String() string {
+	keys := make([]string, 0, len(ps.values))
+	for k := range ps.values {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+
+	var b strings.Builder
+	for _, k := range keys {
+		_, _ = fmt.Fprintf(&b, "%s = '%s'\n", k, escapeParameterQuotes(ps.values[k]))
+	}
+	return b.String()
+}
+
+// escapeParameterQuotes is used by [ParameterSet.String].
+var escapeParameterQuotes = strings.NewReplacer(`'`, `''`).Replace
