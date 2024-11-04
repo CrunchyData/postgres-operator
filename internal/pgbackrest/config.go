@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,100 +172,121 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 //   - Renames the data directory as needed to bootstrap the cluster using the restored database.
 //     This ensures compatibility with the "existing" bootstrap method that is included in the
 //     Patroni config when bootstrapping a cluster using an existing data directory.
-func RestoreCommand(pgdata, hugePagesSetting, fetchKeyCommand string, tablespaceVolumes []*corev1.PersistentVolumeClaim, args ...string) []string {
+func RestoreCommand(pgdata, hugePagesSetting, fetchKeyCommand string, _ []*corev1.PersistentVolumeClaim, args ...string) []string {
+	ps := postgres.NewParameterSet()
+	ps.Add("data_directory", pgdata)
+	ps.Add("huge_pages", hugePagesSetting)
 
-	// After pgBackRest restores files, PostgreSQL starts in recovery to finish
-	// replaying WAL files. "hot_standby" is "on" so we can detect
-	// when recovery has finished. In that mode, some parameters cannot be
-	// smaller than they were when PostgreSQL was backed up. Configure them to
-	// match the values reported by "pg_controldata". Those parameters are also
-	// written to WAL files and may change during recovery. When they increase,
-	// PostgreSQL exits and we reconfigure and restart it.
-	// For PG14, when some parameters from WAL require a restart, the behavior is
-	// to pause unless a restart is requested. For this edge case, we run a CASE
-	// query to check
-	// (a) if the instance is in recovery;
-	// (b) if so, if the WAL replay is paused;
-	// (c) if so, to unpause WAL replay, allowing our expected behavior to resume.
-	// A note on the PostgreSQL code: we cast `pg_catalog.pg_wal_replay_resume()` as text
-	// because that method returns a void (which is a non-NULL but empty result). When
-	// that void is cast as a string, it is an ''
-	// - https://www.postgresql.org/docs/current/hot-standby.html
-	// - https://www.postgresql.org/docs/current/app-pgcontroldata.html
+	// Keep history and WAL files until the cluster starts with its normal
+	// archiving enabled.
+	ps.Add("archive_command", "false -- store WAL files locally for now")
+	ps.Add("archive_mode", "on")
 
-	// The postmaster.pid file is removed, if it exists, before attempting a restore.
-	// This allows the restore to be tried more than once without the causing an
-	// error due to the presence of the file in subsequent attempts.
+	// Enable "hot_standby" so we can connect to Postgres and observe its
+	// progress during recovery.
+	ps.Add("hot_standby", "on")
 
-	// The 'pg_ctl' timeout is set to a very large value (1 year) to ensure there
-	// are no timeouts when starting or stopping Postgres.
-
-	tablespaceCmd := ""
-	for _, tablespaceVolume := range tablespaceVolumes {
-		tablespaceCmd = tablespaceCmd + fmt.Sprintf(
-			"\ninstall --directory --mode=0700 '/tablespaces/%s/data'",
-			tablespaceVolume.Labels[naming.LabelData])
-	}
-
-	// If the fetch key command is not empty, save the GUC variable and value
-	// to a new string.
-	var ekc string
 	if fetchKeyCommand != "" {
-		ekc = `
-encryption_key_command = '` + fetchKeyCommand + `'`
+		ps.Add("encryption_key_command", fetchKeyCommand)
 	}
 
-	restoreScript := `declare -r pgdata="$1" opts="$2"
-install --directory --mode=0700 "${pgdata}"` + tablespaceCmd + `
-rm -f "${pgdata}/postmaster.pid"
-bash -xc "pgbackrest restore ${opts}"
-rm -f "${pgdata}/patroni.dynamic.json"
-export PGDATA="${pgdata}" PGHOST='/tmp'
+	configure := strings.Join([]string{
+		// With "hot_standby" on, some parameters cannot be smaller than they were
+		// when Postgres was backed up. Configure these to match values reported by
+		// "pg_controldata" before starting Postgres. These parameters are also
+		// written to WAL files and may change during recovery. When they increase,
+		// Postgres exits and we reconfigure it here.
+		// - https://www.postgresql.org/docs/current/app-pgcontroldata.html
+		`control=$(LC_ALL=C pg_controldata)`,
+		`read -r max_conn <<< "${control##*max_connections setting:}"`,
+		`read -r max_lock <<< "${control##*max_locks_per_xact setting:}"`,
+		`read -r max_ptxn <<< "${control##*max_prepared_xacts setting:}"`,
+		`read -r max_work <<< "${control##*max_worker_processes setting:}"`,
 
-until [[ "${recovery=}" == 'f' ]]; do
-if [[ -z "${recovery}" ]]; then
-control=$(pg_controldata)
-read -r max_conn <<< "${control##*max_connections setting:}"
-read -r max_lock <<< "${control##*max_locks_per_xact setting:}"
-read -r max_ptxn <<< "${control##*max_prepared_xacts setting:}"
-read -r max_work <<< "${control##*max_worker_processes setting:}"
-echo > /tmp/pg_hba.restore.conf 'local all "postgres" peer'
-cat > /tmp/postgres.restore.conf <<EOF
-archive_command = 'false'
-archive_mode = 'on'
-hba_file = '/tmp/pg_hba.restore.conf'
-hot_standby = 'on'
-max_connections = '${max_conn}'
-max_locks_per_transaction = '${max_lock}'
-max_prepared_transactions = '${max_ptxn}'
-max_worker_processes = '${max_work}'
-unix_socket_directories = '/tmp'` +
-		// Add the encryption key command setting, if provided.
-		ekc + `
-huge_pages = ` + hugePagesSetting + `
-EOF
-if [[ "$(< "${pgdata}/PG_VERSION")" -ge 12 ]]; then
-read -r max_wals <<< "${control##*max_wal_senders setting:}"
-echo >> /tmp/postgres.restore.conf "max_wal_senders = '${max_wals}'"
-fi
+		// During recovery, only allow connections over the the domain socket.
+		`echo > /tmp/pg_hba.restore.conf 'local all "postgres" peer'`,
 
-read -r stopped <<< "${control##*recovery ending location:}"
-pg_ctl start --silent --timeout=31536000 --wait --options='--config-file=/tmp/postgres.restore.conf' || failed=$?
-[[ "${started-}" == "${stopped}" && -n "${failed-}" ]] && exit "${failed}"
-started="${stopped}" && [[ -n "${failed-}" ]] && failed= && continue
-fi
+		// Combine parameters from Go with those detected in Bash.
+		`cat >  /tmp/postgres.restore.conf <<'EOF'`, ps.String(), `EOF`,
+		`cat >> /tmp/postgres.restore.conf <<EOF`,
+		`hba_file = '/tmp/pg_hba.restore.conf'`,
+		`max_connections = '${max_conn}'`,
+		`max_locks_per_transaction = '${max_lock}'`,
+		`max_prepared_transactions = '${max_ptxn}'`,
+		`max_worker_processes = '${max_work}'`,
+		`EOF`,
 
-recovery=$(psql -Atc "SELECT CASE
-  WHEN NOT pg_catalog.pg_is_in_recovery() THEN false
-  WHEN NOT pg_catalog.pg_is_wal_replay_paused() THEN true
-  ELSE pg_catalog.pg_wal_replay_resume()::text = ''
-END recovery" && sleep 1) ||:
-done
+		`version=$(< "${PGDATA}/PG_VERSION")`,
 
-pg_ctl stop --silent --wait --timeout=31536000
-mv "${pgdata}" "${pgdata}_bootstrap"`
+		// PostgreSQL v12 introduced the "max_wal_senders" parameter.
+		`if [[ "${version}" -ge 12 ]]; then`,
+		`read -r max_wals <<< "${control##*max_wal_senders setting:}"`,
+		`echo >> /tmp/postgres.restore.conf "max_wal_senders = '${max_wals}'"`,
+		`fi`,
 
-	return append([]string{"bash", "-ceu", "--", restoreScript, "-", pgdata}, args...)
+		// TODO(sockets): PostgreSQL v14 is able to connect over abstract sockets in the network namespace.
+		`PGHOST=$([[ "${version}" -ge 14 ]] && echo '/tmp' || echo '/tmp')`,
+		`echo >> /tmp/postgres.restore.conf "unix_socket_directories = '${PGHOST}'"`,
+	}, "\n")
+
+	script := strings.Join([]string{
+		`declare -r PGDATA="$1" opts="$2"; export PGDATA PGHOST`,
+
+		// Remove any "postmaster.pid" file leftover from a prior failure.
+		`rm -f "${PGDATA}/postmaster.pid"`,
+
+		// Run the restore and print its arguments.
+		`bash -xc "pgbackrest restore ${opts}"`,
+
+		// Ignore any Patroni settings present in the backup.
+		`rm -f "${PGDATA}/patroni.dynamic.json"`,
+
+		// By default, pg_ctl waits 60 seconds for Postgres to stop or start.
+		// We want to be certain when Postgres is running or not, so we use
+		// a very large timeout (365 days) to effectively wait forever. With
+		// this, the result of "pg_ctl --wait" indicates the state of Postgres.
+		// - https://www.postgresql.org/docs/current/app-pg-ctl.html
+		fmt.Sprintf(`export PGCTLTIMEOUT=%d`, 365*24*time.Hour/time.Second),
+
+		// Configure and start Postgres until we can see that it has finished
+		// replaying WAL.
+		//
+		// PostgreSQL v13 and earlier exit when they need reconfiguration with
+		// "hot_standby" on. This can cause pg_ctl to fail, so we compare the
+		// LSN from before and after calling it. If the LSN changed, Postgres
+		// ran and was able to replay WAL before exiting. In that case, configure
+		// Postgres and start it again to see if it can make more progress.
+		//
+		// If Postgres exits after pg_ctl succeeds, psql returns nothing which
+		// resets the "recovering" variable. Configure Postgres and start it again.
+		`until [[ "${recovering=}" == 'f' ]]; do`,
+		`  if [[ -z "${recovering}" ]]; then`, configure,
+		`    read -r stopped <<< "${control##*recovery ending location:}"`,
+		`    pg_ctl start --silent --wait --options='-c config_file=/tmp/postgres.restore.conf' || failed=$?`,
+		`    [[ "${started-}" == "${stopped}" && -n "${failed-}" ]] && exit "${failed}"`,
+		`    started="${stopped}" && [[ -n "${failed-}" ]] && failed= && continue`,
+		`  fi`,
+		// Ask Postgres if it is still recovering. PostgreSQL v14 pauses when it
+		// needs reconfiguration with "hot_standby" on, and resuming replay causes
+		// it to exit like prior versions.
+		// - https://www.postgresql.org/docs/current/hot-standby.html
+		//
+		// NOTE: "pg_wal_replay_resume()" returns void which cannot be compared to
+		// null. Instead, cast it to text and compare that for a boolean result.
+		`  recovering=$(psql -Atc "SELECT CASE`,
+		`    WHEN NOT pg_catalog.pg_is_in_recovery() THEN false`,
+		`    WHEN NOT pg_catalog.pg_is_wal_replay_paused() THEN true`,
+		`    ELSE pg_catalog.pg_wal_replay_resume()::text = ''`,
+		`  END" && sleep 1) ||:`,
+		`done`,
+
+		// Replay is done. Stop Postgres gracefully and move the data directory
+		// into position for our Patroni bootstrap method.
+		`pg_ctl stop --silent --wait`,
+		`mv "${PGDATA}" "${PGDATA}_bootstrap"`,
+	}, "\n")
+
+	return append([]string{"bash", "-ceu", "--", script, "-", pgdata}, args...)
 }
 
 // DedicatedSnapshotVolumeRestoreCommand returns the command for performing a pgBackRest delta restore

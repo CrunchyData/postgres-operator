@@ -56,6 +56,10 @@ func TestParameterSet(t *testing.T) {
 
 	ps2.Add("x", "n")
 	assert.Assert(t, ps2.Value("x") != ps.Value("x"))
+
+	assert.DeepEqual(t, ps.String(), ``+
+		`abc = 'j''l'`+"\n"+
+		`x = 'z'`+"\n")
 }
 
 func TestParameterSetAppendToList(t *testing.T) {
