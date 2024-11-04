@@ -51,6 +51,9 @@ jobs:
           scan-type: filesystem
           hide-progress: true
           scanners: secret,vuln
+          # Manage the cache only once during this workflow.
+          # - https://github.com/aquasecurity/trivy-action#cache
+          cache: true
 
       # Produce a SARIF report of actionable results. This step fails only when
       # Trivy is unable to scan.
@@ -62,6 +65,9 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           scanners: secret,vuln
+          # Use the cache downloaded in a prior step.
+          # - https://github.com/aquasecurity/trivy-action#cache
+          cache: false
 
       # Submit the SARIF report to GitHub code scanning. Pull requests checks
       # succeed or fail according to branch protection rules.
