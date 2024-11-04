@@ -209,11 +209,8 @@ func getServerVersion(ctx context.Context, cfg *rest.Config) string {
 	return versionInfo.String()
 }
 
-func addHeader(req *http.Request, upgradeInfo *clientUpgradeData) (*http.Request, error) {
-	marshaled, err := json.Marshal(upgradeInfo)
-	if err == nil {
-		upgradeInfoString := string(marshaled)
-		req.Header.Add(clientHeader, upgradeInfoString)
-	}
-	return req, err
+func addHeader(req *http.Request, upgradeInfo *clientUpgradeData) *http.Request {
+	marshaled, _ := json.Marshal(upgradeInfo)
+	req.Header.Add(clientHeader, string(marshaled))
+	return req
 }

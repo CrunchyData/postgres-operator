@@ -10,7 +10,6 @@ linters:
   enable:
     - contextcheck
     - err113
-    - errchkjson
     - gocritic
     - godot
     - godox
@@ -31,9 +30,6 @@ issues:
   exclude-use-default: false
 
 linters-settings:
-  errchkjson:
-    check-error-free-encoding: true
-
   thelper:
     # https://github.com/kulti/thelper/issues/27
     tb:   { begin: true, first: true }
