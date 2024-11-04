@@ -174,7 +174,7 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 func RestoreCommand(pgdata, hugePagesSetting, fetchKeyCommand string, tablespaceVolumes []*corev1.PersistentVolumeClaim, args ...string) []string {
 
 	// After pgBackRest restores files, PostgreSQL starts in recovery to finish
-	// replaying WAL files. "hot_standby" is "on" (by default) so we can detect
+	// replaying WAL files. "hot_standby" is "on" so we can detect
 	// when recovery has finished. In that mode, some parameters cannot be
 	// smaller than they were when PostgreSQL was backed up. Configure them to
 	// match the values reported by "pg_controldata". Those parameters are also
@@ -233,6 +233,7 @@ cat > /tmp/postgres.restore.conf <<EOF
 archive_command = 'false'
 archive_mode = 'on'
 hba_file = '/tmp/pg_hba.restore.conf'
+hot_standby = 'on'
 max_connections = '${max_conn}'
 max_locks_per_transaction = '${max_lock}'
 max_prepared_transactions = '${max_ptxn}'
