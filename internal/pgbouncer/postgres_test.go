@@ -19,14 +19,14 @@ import (
 func TestSQLAuthenticationQuery(t *testing.T) {
 	assert.Equal(t, sqlAuthenticationQuery("some.fn_name"),
 		`CREATE OR REPLACE FUNCTION some.fn_name(username TEXT)
-RETURNS TABLE(username TEXT, password TEXT) AS '
+RETURNS TABLE(username TEXT, password TEXT) AS  E'
   SELECT rolname::TEXT, rolpassword::TEXT
   FROM pg_catalog.pg_authid
   WHERE pg_authid.rolname = $1
     AND pg_authid.rolcanlogin
     AND NOT pg_authid.rolsuper
     AND NOT pg_authid.rolreplication
-    AND pg_authid.rolname <> ''_crunchypgbouncer''
+    AND pg_authid.rolname <>  E''_crunchypgbouncer''
     AND (pg_authid.rolvaliduntil IS NULL OR pg_authid.rolvaliduntil >= CURRENT_TIMESTAMP)'
 LANGUAGE SQL STABLE SECURITY DEFINER;`)
 }
@@ -150,14 +150,14 @@ REVOKE ALL PRIVILEGES
  GRANT USAGE
     ON SCHEMA :"namespace" TO :"username";
 CREATE OR REPLACE FUNCTION :"namespace".get_auth(username TEXT)
-RETURNS TABLE(username TEXT, password TEXT) AS '
+RETURNS TABLE(username TEXT, password TEXT) AS  E'
   SELECT rolname::TEXT, rolpassword::TEXT
   FROM pg_catalog.pg_authid
   WHERE pg_authid.rolname = $1
     AND pg_authid.rolcanlogin
     AND NOT pg_authid.rolsuper
     AND NOT pg_authid.rolreplication
-    AND pg_authid.rolname <> ''_crunchypgbouncer''
+    AND pg_authid.rolname <>  E''_crunchypgbouncer''
     AND (pg_authid.rolvaliduntil IS NULL OR pg_authid.rolvaliduntil >= CURRENT_TIMESTAMP)'
 LANGUAGE SQL STABLE SECURITY DEFINER;
 REVOKE ALL PRIVILEGES
