@@ -112,7 +112,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
 			// podexec call in reconcilePGAdminMajorVersion
-			stdout.Write([]byte("7"))
+			_, _ = stdout.Write([]byte("7"))
 			return nil
 		}
 
@@ -147,7 +147,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
 			// podexec call in reconcilePGAdminMajorVersion
-			stdout.Write([]byte("7"))
+			_, _ = stdout.Write([]byte("7"))
 			return nil
 		}
 
@@ -182,7 +182,7 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 
 			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
 			// podexec call in reconcilePGAdminMajorVersion
-			stdout.Write([]byte("7"))
+			_, _ = stdout.Write([]byte("7"))
 			return nil
 		}
 
@@ -197,7 +197,7 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			// Simulate the python call giving bad data (not a version int)
-			stdout.Write([]byte("asdfjkl;"))
+			_, _ = stdout.Write([]byte("asdfjkl;"))
 			return nil
 		}
 
@@ -547,7 +547,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stderr.Write([]byte("issue running setup.py update-user command"))
+			_, _ = stderr.Write([]byte("issue running setup.py update-user command"))
 
 			return nil
 		}
@@ -627,7 +627,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stderr.Write([]byte("issue running setup.py add-user command"))
+			_, _ = stderr.Write([]byte("issue running setup.py add-user command"))
 
 			return nil
 		}
@@ -655,7 +655,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stdout.Write([]byte("Invalid email address"))
+			_, _ = stdout.Write([]byte("Invalid email address"))
 
 			return nil
 		}
@@ -684,7 +684,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stdout.Write([]byte("Password must be at least 6 characters long"))
+			_, _ = stdout.Write([]byte("Password must be at least 6 characters long"))
 
 			return nil
 		}
