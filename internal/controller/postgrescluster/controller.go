@@ -136,6 +136,16 @@ func (r *Reconciler) Reconcile(
 			return runtime.ErrorWithBackoff(err)
 		}
 	}
+	// Issue Warning Event if postgres version is EOL according to PostgreSQL:
+	// https://www.postgresql.org/support/versioning/
+	currentTime := time.Now()
+	if postgres.ReleaseIsFinal(cluster.Spec.PostgresVersion, currentTime) {
+		r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "EndOfLifePostgresVersion",
+			"The last minor version of Postgres %[1]v has been released."+
+				" PG %[1]v will no longer receive updates. We recommend upgrading."+
+				" See https://www.postgresql.org/support/versioning",
+			cluster.Spec.PostgresVersion)
+	}
 
 	if cluster.Spec.Standby != nil &&
 		cluster.Spec.Standby.Enabled &&
