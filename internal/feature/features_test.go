@@ -53,13 +53,21 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 	gate := NewGate()
 	ctx := NewContext(context.Background(), gate)
-	assert.Equal(t, ShowGates(ctx), "")
+
+	// ShowGates returns all fields that are turned on, whether explicitly
+	// by the user or implicitly due to feature default.
+	// Currently, the only feature defaulting to true is `AutoCreateUserSchema`.
+	assert.Equal(t, ShowGates(ctx), "AutoCreateUserSchema=true")
 
 	assert.NilError(t, gate.Set("TablespaceVolumes=true"))
 	assert.Assert(t, true == Enabled(ctx, TablespaceVolumes))
-	assert.Equal(t, ShowGates(ctx), "TablespaceVolumes=true")
+	assert.Equal(t, ShowGates(ctx), "AutoCreateUserSchema=true,TablespaceVolumes=true")
 
-	assert.NilError(t, gate.SetFromMap(map[string]bool{TablespaceVolumes: false}))
+	assert.NilError(t, gate.SetFromMap(map[string]bool{
+		TablespaceVolumes:    false,
+		AutoCreateUserSchema: false,
+	}))
 	assert.Assert(t, false == Enabled(ctx, TablespaceVolumes))
-	assert.Equal(t, ShowGates(ctx), "TablespaceVolumes=false")
+	assert.Assert(t, false == Enabled(ctx, AutoCreateUserSchema))
+	assert.Equal(t, ShowGates(ctx), "")
 }

@@ -42,6 +42,9 @@ package feature
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
 
 	"k8s.io/component-base/featuregate"
 )
@@ -52,6 +55,7 @@ type Feature = featuregate.Feature
 type Gate interface {
 	Enabled(Feature) bool
 	String() string
+	GetAll() map[Feature]featuregate.FeatureSpec
 }
 
 // MutableGate contains features that can be enabled or disabled.
@@ -122,11 +126,23 @@ func NewContext(ctx context.Context, gate Gate) context.Context {
 	return context.WithValue(ctx, contextKey{}, gate)
 }
 
+// ShowGates returns all the gates that are on by default
+// (if not turned off by the user) or were explicitly set
+// on by the user.
 func ShowGates(ctx context.Context) string {
-	featuresEnabled := ""
+	featuresEnabled := []string{}
 	gate, ok := ctx.Value(contextKey{}).(Gate)
 	if ok {
-		featuresEnabled = gate.String()
+		specs := gate.GetAll()
+		for feature := range specs {
+			// `gate.Enabled` first checks if the feature is enabled;
+			// then (if not explicitly set by the user),
+			// it checks if the feature is on/true by default
+			if gate.Enabled(feature) {
+				featuresEnabled = append(featuresEnabled, fmt.Sprintf("%s=true", feature))
+			}
+		}
 	}
-	return featuresEnabled
+	sort.Strings(featuresEnabled)
+	return strings.Join(featuresEnabled, ",")
 }
