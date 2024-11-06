@@ -1,0 +1,83 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: verify-02-data
+spec:
+  bindings:
+    - name: target
+      value: 'The name of the PostgresCluster'
+
+  try:
+    # Create bindings derived from the template input.
+    - command:
+        entrypoint: 'true'
+        skipCommandOutput: true
+        outputs:
+          - name: job
+            value: (join('-', [$target, 'data']))
+          - name: secret
+            value: (join('-', [$target, 'pguser', $target]))
+
+    -
+      description: >
+        Confirm that all the data was restored
+      apply:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ($job)
+          spec:
+            backoffLimit: 3
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: psql
+                    image: ($psql.image)
+                    env:
+                      - ($psql.connect)
+                      # Connect to the cluster using the restored database and original credentials.
+                      - name: PGHOST
+                        valueFrom: { secretKeyRef: { name: ($secret), key: host } }
+                      - name: PGPORT
+                        valueFrom: { secretKeyRef: { name: ($secret), key: port } }
+                      - name: PGDATABASE
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: dbname } }
+                      - name: PGUSER
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: user } }
+                      - name: PGPASSWORD
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: password } }
+
+                    # Confirm that all the data was restored.
+                    # NOTE: the `$$$$` is reduced to `$$` by Kubernetes.
+                    command:
+                      - psql
+                      - -qa
+                      - --set=ON_ERROR_STOP=1
+                      - --command
+                      - |
+                        DO $$$$
+                        DECLARE
+                          restored jsonb;
+                        BEGIN
+                          SELECT jsonb_agg(important) INTO restored FROM important;
+                          ASSERT restored = '[{"data":"treasure"}]', format('got %L', restored);
+                        END $$$$;
+
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ($job)
+          status:
+            succeeded: 1
+
+  catch:
+    -
+      description: >
+        Read all log lines from the job pods
+      podLogs:
+        selector: (join('', ['batch.kubernetes.io/job-name in (', $job, ')']))
+        tail: -1

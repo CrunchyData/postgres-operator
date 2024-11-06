@@ -1,0 +1,52 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: 02-create-data
+spec:
+  try:
+    -
+      description: >
+        Create some data that will be restored
+      apply:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: original-data
+          spec:
+            backoffLimit: 3
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: psql
+                    image: ($psql.image)
+                    env:
+                      - ($psql.connect)
+                      - name: PGURI
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: uri } }
+                    command:
+                      - psql
+                      - $(PGURI)
+                      - --set=ON_ERROR_STOP=1
+                      - --command
+                      - |
+                        CREATE SCHEMA IF NOT EXISTS "original";
+                        CREATE TABLE important (data) AS VALUES ('treasure');
+
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: original-data
+          status:
+            succeeded: 1
+
+  catch:
+    -
+      description: >
+        Read all log lines from the job pods
+      podLogs:
+        selector: batch.kubernetes.io/job-name in (original-data)
+        tail: -1

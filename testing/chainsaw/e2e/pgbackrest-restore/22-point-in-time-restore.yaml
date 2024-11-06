@@ -1,0 +1,70 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: 22-point-in-time-restore
+spec:
+  try:
+    -
+      description: >
+        Read the recovery objective from a prior step
+      # https://github.com/kyverno/chainsaw/issues/1034
+      command:
+        outputs:
+          - name: objective
+            value: ($stdout)
+        entrypoint: kubectl
+        args:
+          - get
+          - --namespace=${NAMESPACE}
+          - postgrescluster/original
+          - --output
+          - go-template={{ index .metadata.annotations "testing/objective" }}
+
+    -
+      description: >
+        Trigger an in-place point-in-time restore (PITR)
+      patch:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+            annotations:
+              postgres-operator.crunchydata.com/pgbackrest-restore: one
+          spec:
+            backups:
+              pgbackrest:
+                restore:
+                  enabled: true
+                  repoName: repo1
+                  options:
+                    - --type=time
+                    - (join(`"'"`, ['--target=', $objective, '']))
+
+    -
+      description: >
+        Wait for the restore to complete and the cluster to come online
+      assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+          status:
+            instances:
+              - name: '00'
+                replicas: 2
+                readyReplicas: 2
+                updatedReplicas: 2
+            pgbackrest:
+              restore:
+                id: one
+                finished: true
+
+  catch:
+    -
+      description: >
+        Read all log lines from the restore job pods
+      podLogs:
+        selector: postgres-operator.crunchydata.com/pgbackrest-restore
+        tail: -1

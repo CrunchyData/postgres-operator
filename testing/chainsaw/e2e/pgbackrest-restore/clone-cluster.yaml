@@ -1,0 +1,50 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: clone-cluster
+spec:
+  bindings:
+    - name: target
+      value: 'The name of the new PostgresCluster'
+
+  try:
+    -
+      description: >
+        Clone the cluster using a pgBackRest restore
+      apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($target)
+          spec:
+            dataSource:
+              postgresCluster:
+                clusterName: original
+                repoName: repo1
+
+            postgresVersion: ($postgres.version)
+            instances:
+              - dataVolumeClaimSpec: ($volume)
+            backups:
+              pgbackrest:
+                repos:
+                  - name: repo1
+                    volume:
+                      volumeClaimSpec: ($volume)
+
+    -
+      description: >
+        Wait for the cluster to come online
+      assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($target)
+          status:
+            instances:
+              - name: '00'
+                replicas: 1
+                readyReplicas: 1
+                updatedReplicas: 1

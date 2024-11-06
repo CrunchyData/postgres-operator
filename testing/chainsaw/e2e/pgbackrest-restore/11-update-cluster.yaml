@@ -1,0 +1,83 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: 11-update-cluster
+spec:
+  try:
+    -
+      description: >
+        Find the primary pod
+      command:
+        outputs:
+          - name: primary
+            value: (trim_space($stdout))
+        entrypoint: kubectl
+        args:
+          - get
+          - pod
+          - --namespace=${NAMESPACE}
+          - --output=name
+          - --selector
+          - >-
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/role=master
+
+    -
+      description: >
+        Read the timestamp at which PostgreSQL last started
+      command:
+        outputs:
+          - name: start_before
+            value: (trim_space($stdout))
+        env:
+          - name: PRIMARY
+            value: ($primary)
+        entrypoint: kubectl
+        args:
+          - exec
+          - --namespace=${NAMESPACE}
+          - ${PRIMARY}
+          - --
+          - psql
+          - -qAt
+          - --command
+          - SELECT pg_postmaster_start_time()
+
+    -
+      description: >
+        Update the cluster with parameters that require attention during recovery
+      patch:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+          spec:
+            config:
+              parameters:
+                max_connections: 1000
+
+    -
+      description: >
+        Wait for Postgres to restart
+      script:
+        skipCommandOutput: true
+        timeout: 30s
+        env:
+          - name: BEFORE
+            value: ($start_before)
+          - name: PRIMARY
+            value: ($primary)
+        content: |
+          while true; do
+            START=$(
+              kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+                -- psql -qAt --command 'SELECT pg_postmaster_start_time()'
+            )
+            if [ "${START}" ] && [ "${START}" != "${BEFORE}" ]; then break; else sleep 1; fi
+          done
+          echo "${START} != ${BEFORE}"
+
+          # Reset counters in the "pg_stat_archiver" view.
+          kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qb --command "SELECT pg_stat_reset_shared('archiver')" --output /dev/null

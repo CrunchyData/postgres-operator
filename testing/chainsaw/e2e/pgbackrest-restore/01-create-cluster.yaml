@@ -1,0 +1,55 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: 01-create-cluster
+spec:
+  try:
+    -
+      description: >
+        Create a cluster with a single pgBackRest repository
+        and some parameters that require attention during PostgreSQL recovery
+      apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+          spec:
+            postgresVersion: ($postgres.version)
+            config:
+              parameters:
+                archive_timeout: 15
+                checkpoint_timeout: 30
+                max_connections: 200
+            instances:
+              - dataVolumeClaimSpec: ($volume)
+                replicas: 2
+            backups:
+              pgbackrest:
+                manual:
+                  repoName: repo1
+                repos:
+                  - name: repo1
+                    volume:
+                      volumeClaimSpec: ($volume)
+
+    -
+      description: >
+        Wait for the replica backup to complete
+      assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+          status:
+            pgbackrest:
+              repos:
+              - name: repo1
+                replicaCreateBackupComplete: true
+                stanzaCreated: true
+
+  catch:
+    - podLogs:
+        selector: postgres-operator.crunchydata.com/cluster in (original)
+        tail: 50
