@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -14,6 +15,7 @@ import (
 func TestDefaults(t *testing.T) {
 	t.Parallel()
 	gate := NewGate()
+	ctx := NewContext(context.Background(), gate)
 
 	assert.Assert(t, false == gate.Enabled(AppendCustomQueries))
 	assert.Assert(t, true == gate.Enabled(AutoCreateUserSchema))
@@ -24,16 +26,17 @@ func TestDefaults(t *testing.T) {
 	assert.Assert(t, false == gate.Enabled(TablespaceVolumes))
 	assert.Assert(t, false == gate.Enabled(VolumeSnapshots))
 
-	assert.Equal(t, gate.String(), "")
+	assert.Equal(t, ShowAssigned(ctx), "")
 }
 
 func TestStringFormat(t *testing.T) {
 	t.Parallel()
 	gate := NewGate()
+	ctx := NewContext(context.Background(), gate)
 
 	assert.NilError(t, gate.Set(""))
 	assert.NilError(t, gate.Set("TablespaceVolumes=true"))
-	assert.Equal(t, gate.String(), "TablespaceVolumes=true")
+	assert.Equal(t, ShowAssigned(ctx), "TablespaceVolumes=true")
 	assert.Assert(t, true == gate.Enabled(TablespaceVolumes))
 
 	err := gate.Set("NotAGate=true")
@@ -54,20 +57,20 @@ func TestContext(t *testing.T) {
 	gate := NewGate()
 	ctx := NewContext(context.Background(), gate)
 
-	// ShowGates returns all fields that are turned on, whether explicitly
-	// by the user or implicitly due to feature default.
-	// Currently, the only feature defaulting to true is `AutoCreateUserSchema`.
-	assert.Equal(t, ShowGates(ctx), "AutoCreateUserSchema=true")
+	assert.Equal(t, ShowAssigned(ctx), "")
+	assert.Assert(t, ShowEnabled(ctx) != "") // This assumes some feature is enabled by default.
 
 	assert.NilError(t, gate.Set("TablespaceVolumes=true"))
-	assert.Assert(t, true == Enabled(ctx, TablespaceVolumes))
-	assert.Equal(t, ShowGates(ctx), "AutoCreateUserSchema=true,TablespaceVolumes=true")
+	assert.Assert(t, Enabled(ctx, TablespaceVolumes))
+	assert.Equal(t, ShowAssigned(ctx), "TablespaceVolumes=true")
+	assert.Assert(t,
+		strings.Contains(ShowEnabled(ctx), "TablespaceVolumes=true"),
+		"got: %v", ShowEnabled(ctx))
 
-	assert.NilError(t, gate.SetFromMap(map[string]bool{
-		TablespaceVolumes:    false,
-		AutoCreateUserSchema: false,
-	}))
-	assert.Assert(t, false == Enabled(ctx, TablespaceVolumes))
-	assert.Assert(t, false == Enabled(ctx, AutoCreateUserSchema))
-	assert.Equal(t, ShowGates(ctx), "")
+	assert.NilError(t, gate.SetFromMap(map[string]bool{TablespaceVolumes: false}))
+	assert.Assert(t, !Enabled(ctx, TablespaceVolumes))
+	assert.Equal(t, ShowAssigned(ctx), "TablespaceVolumes=false")
+	assert.Assert(t,
+		!strings.Contains(ShowEnabled(ctx), "TablespaceVolumes"),
+		"got: %v", ShowEnabled(ctx))
 }
