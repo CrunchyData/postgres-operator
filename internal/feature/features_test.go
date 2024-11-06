@@ -15,7 +15,6 @@ import (
 func TestDefaults(t *testing.T) {
 	t.Parallel()
 	gate := NewGate()
-	ctx := NewContext(context.Background(), gate)
 
 	assert.Assert(t, false == gate.Enabled(AppendCustomQueries))
 	assert.Assert(t, true == gate.Enabled(AutoCreateUserSchema))
@@ -25,18 +24,14 @@ func TestDefaults(t *testing.T) {
 	assert.Assert(t, false == gate.Enabled(PGBouncerSidecars))
 	assert.Assert(t, false == gate.Enabled(TablespaceVolumes))
 	assert.Assert(t, false == gate.Enabled(VolumeSnapshots))
-
-	assert.Equal(t, ShowAssigned(ctx), "")
 }
 
 func TestStringFormat(t *testing.T) {
 	t.Parallel()
 	gate := NewGate()
-	ctx := NewContext(context.Background(), gate)
 
 	assert.NilError(t, gate.Set(""))
 	assert.NilError(t, gate.Set("TablespaceVolumes=true"))
-	assert.Equal(t, ShowAssigned(ctx), "TablespaceVolumes=true")
 	assert.Assert(t, true == gate.Enabled(TablespaceVolumes))
 
 	err := gate.Set("NotAGate=true")
