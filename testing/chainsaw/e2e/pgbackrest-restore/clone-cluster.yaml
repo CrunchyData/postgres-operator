@@ -26,6 +26,8 @@ spec:
             postgresVersion: ($postgres.version)
             instances:
               - dataVolumeClaimSpec: ($volume)
+                tablespaceVolumes:
+                  - { name: barn, dataVolumeClaimSpec: ($volume) }
             backups:
               pgbackrest:
                 repos:

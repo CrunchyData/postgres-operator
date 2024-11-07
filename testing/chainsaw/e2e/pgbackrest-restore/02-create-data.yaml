@@ -6,6 +6,24 @@ spec:
   try:
     -
       description: >
+        Create a tablespace and grant access to all Postgres users
+      script:
+        skipCommandOutput: true
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -q --file=- <<'SQL'
+            CREATE TABLESPACE barn LOCATION '/tablespaces/barn/data';
+            GRANT ALL ON TABLESPACE barn TO public;
+          SQL
+
+    -
+      description: >
         Create some data that will be restored
       apply:
         resource:
@@ -33,6 +51,7 @@ spec:
                       - |
                         CREATE SCHEMA IF NOT EXISTS "original";
                         CREATE TABLE important (data) AS VALUES ('treasure');
+                        CREATE TABLE cows (name) TABLESPACE barn AS VALUES ('nellie');
 
     - assert:
         resource:

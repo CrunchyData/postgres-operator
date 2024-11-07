@@ -23,6 +23,8 @@ spec:
                 max_connections: 200
             instances:
               - dataVolumeClaimSpec: ($volume)
+                tablespaceVolumes:
+                  - { name: barn, dataVolumeClaimSpec: ($volume) }
                 replicas: 2
             backups:
               pgbackrest:

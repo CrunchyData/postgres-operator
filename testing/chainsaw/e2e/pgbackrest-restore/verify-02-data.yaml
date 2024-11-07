@@ -63,6 +63,9 @@ spec:
                         BEGIN
                           SELECT jsonb_agg(important) INTO restored FROM important;
                           ASSERT restored = '[{"data":"treasure"}]', format('got %L', restored);
+
+                          SELECT jsonb_agg(cows) INTO restored FROM cows;
+                          ASSERT restored = '[{"name":"nellie"}]', format('got %L', restored);
                         END $$$$;
 
     - assert:
