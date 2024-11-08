@@ -147,7 +147,7 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 
 	job.Annotations = Merge(upgrade.Spec.Metadata.GetAnnotationsOrNil(),
 		map[string]string{
-			naming.DefaultContainerLabel: database.Name,
+			naming.DefaultContainerAnnotation: database.Name,
 		})
 
 	// Copy the pod template from the startup instance StatefulSet. This includes
@@ -260,7 +260,7 @@ func (r *PGUpgradeReconciler) generateRemoveDataJob(
 
 	job.Annotations = Merge(upgrade.Spec.Metadata.GetAnnotationsOrNil(),
 		map[string]string{
-			naming.DefaultContainerLabel: database.Name,
+			naming.DefaultContainerAnnotation: database.Name,
 		})
 
 	// Copy the pod template from the sts instance StatefulSet. This includes

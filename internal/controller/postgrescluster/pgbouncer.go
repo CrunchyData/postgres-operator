@@ -373,7 +373,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
 		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil(),
 		map[string]string{
-			naming.DefaultContainerLabel: naming.ContainerPGBouncer,
+			naming.DefaultContainerAnnotation: naming.ContainerPGBouncer,
 		},
 	)
 	deploy.Spec.Template.Labels = naming.Merge(

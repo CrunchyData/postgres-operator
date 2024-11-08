@@ -77,7 +77,7 @@ func statefulset(
 	sts.Spec.Template.Annotations = naming.Merge(
 		pgadmin.Spec.Metadata.GetAnnotationsOrNil(),
 		map[string]string{
-			naming.DefaultContainerLabel: naming.ContainerPGAdmin,
+			naming.DefaultContainerAnnotation: naming.ContainerPGAdmin,
 		},
 	)
 	sts.Spec.Template.Labels = naming.Merge(
