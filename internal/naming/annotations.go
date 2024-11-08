@@ -68,4 +68,8 @@ const (
 	// to a cluster without backups. As usual with the operator, we do not
 	// touch cloud-based backups.
 	AuthorizeBackupRemovalAnnotation = annotationPrefix + "authorizeBackupRemoval"
+
+	// Used from Kubernetes v1.21+ to define a default container used when the
+	// `-c` flag is not passed
+	DefaultContainerLabel = "kubectl.kubernetes.io/default-container"
 )

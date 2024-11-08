@@ -469,7 +469,9 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 
 	jobSpec := &batchv1.JobSpec{
 		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: labels},
+			ObjectMeta: metav1.ObjectMeta{Labels: labels, Annotations: map[string]string{
+				naming.DefaultContainerLabel: naming.ContainerJobMovePGDataDir,
+			}},
 			Spec: corev1.PodSpec{
 				// Set the image pull secrets, if any exist.
 				// This is set here rather than using the service account due to the lack
@@ -586,7 +588,9 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 
 	jobSpec := &batchv1.JobSpec{
 		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: labels},
+			ObjectMeta: metav1.ObjectMeta{Labels: labels, Annotations: map[string]string{
+				naming.DefaultContainerLabel: naming.ContainerJobMovePGWALDir,
+			}},
 			Spec: corev1.PodSpec{
 				// Set the image pull secrets, if any exist.
 				// This is set here rather than using the service account due to the lack
@@ -708,7 +712,9 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 
 	jobSpec := &batchv1.JobSpec{
 		Template: corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: labels},
+			ObjectMeta: metav1.ObjectMeta{Labels: labels, Annotations: map[string]string{
+				naming.DefaultContainerLabel: naming.ContainerJobMovePGBackRestRepoDir,
+			}},
 			Spec: corev1.PodSpec{
 				// Set the image pull secrets, if any exist.
 				// This is set here rather than using the service account due to the lack

@@ -62,6 +62,8 @@ func TestGenerateUpgradeJob(t *testing.T) {
 apiVersion: batch/v1
 kind: Job
 metadata:
+  annotations:
+    kubectl.kubernetes.io/default-container: database
   creationTimestamp: null
   labels:
     postgres-operator.crunchydata.com/cluster: pg5
@@ -81,6 +83,8 @@ spec:
   backoffLimit: 0
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: database
       creationTimestamp: null
       labels:
         postgres-operator.crunchydata.com/cluster: pg5
@@ -193,6 +197,8 @@ func TestGenerateRemoveDataJob(t *testing.T) {
 apiVersion: batch/v1
 kind: Job
 metadata:
+  annotations:
+    kubectl.kubernetes.io/default-container: database
   creationTimestamp: null
   labels:
     postgres-operator.crunchydata.com/cluster: pg5
@@ -211,6 +217,8 @@ spec:
   backoffLimit: 0
   template:
     metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: database
       creationTimestamp: null
       labels:
         postgres-operator.crunchydata.com/cluster: pg5

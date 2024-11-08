@@ -258,7 +258,11 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	}
 	sts.Spec.Template.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
-		cluster.Spec.UserInterface.PGAdmin.Metadata.GetAnnotationsOrNil())
+		cluster.Spec.UserInterface.PGAdmin.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.DefaultContainerLabel: naming.ContainerPGAdmin,
+		},
+	)
 	sts.Spec.Template.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		cluster.Spec.UserInterface.PGAdmin.Metadata.GetLabelsOrNil(),
