@@ -248,7 +248,10 @@ read -r max_wals <<< "${control##*max_wal_senders setting:}"
 echo >> /tmp/postgres.restore.conf "max_wal_senders = '${max_wals}'"
 fi
 
-pg_ctl start --silent --timeout=31536000 --wait --options='--config-file=/tmp/postgres.restore.conf'
+read -r stopped <<< "${control##*recovery ending location:}"
+pg_ctl start --silent --timeout=31536000 --wait --options='--config-file=/tmp/postgres.restore.conf' || failed=$?
+[[ "${started-}" == "${stopped}" && -n "${failed-}" ]] && exit "${failed}"
+started="${stopped}" && [[ -n "${failed-}" ]] && failed= && continue
 fi
 
 recovery=$(psql -Atc "SELECT CASE
