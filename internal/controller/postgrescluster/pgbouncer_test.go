@@ -6,10 +6,10 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"testing"
 
-	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"

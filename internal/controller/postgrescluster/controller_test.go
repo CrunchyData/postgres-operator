@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"github.com/pkg/errors"
+	"github.com/pkg/errors" //nolint:depguard // This legacy test covers so much code, it logs the origin of unexpected errors.
 
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
