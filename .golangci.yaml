@@ -40,6 +40,12 @@ linters-settings:
           - pkg: github.com/crunchydata/postgres-operator/internal/testing/*
             desc: The "internal/testing" packages should be used only in tests.
 
+      tests:
+        files: ['$test']
+        deny:
+          - pkg: github.com/pkg/errors
+            desc: Use the "errors" package unless you are interacting with stack traces.
+
   errchkjson:
     check-error-free-encoding: true
 

@@ -8,7 +8,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -90,7 +89,7 @@ func TestCustomLabels(t *testing.T) {
 	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
-		assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
+		assert.NilError(t, reconciler.Client.Create(ctx, cluster))
 		t.Cleanup(func() {
 			// Remove finalizers, if any, so the namespace can terminate.
 			assert.Check(t, client.IgnoreNotFound(
@@ -329,7 +328,7 @@ func TestCustomAnnotations(t *testing.T) {
 	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
-		assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
+		assert.NilError(t, reconciler.Client.Create(ctx, cluster))
 		t.Cleanup(func() {
 			// Remove finalizers, if any, so the namespace can terminate.
 			assert.Check(t, client.IgnoreNotFound(

@@ -6,6 +6,7 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/go-logr/logr/funcr"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -1346,7 +1346,7 @@ func TestDeleteInstance(t *testing.T) {
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
 
-	assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
+	assert.NilError(t, reconciler.Client.Create(ctx, cluster))
 	t.Cleanup(func() {
 		// Remove finalizers, if any, so the namespace can terminate.
 		assert.Check(t, client.IgnoreNotFound(
@@ -1396,9 +1396,9 @@ func TestDeleteInstance(t *testing.T) {
 			err := wait.PollUntilContextTimeout(ctx, time.Second*3, Scale(time.Second*30), false, func(ctx context.Context) (bool, error) {
 				uList := &unstructured.UnstructuredList{}
 				uList.SetGroupVersionKind(gvk)
-				assert.NilError(t, errors.WithStack(reconciler.Client.List(ctx, uList,
+				assert.NilError(t, reconciler.Client.List(ctx, uList,
 					client.InNamespace(cluster.Namespace),
-					client.MatchingLabelsSelector{Selector: selector})))
+					client.MatchingLabelsSelector{Selector: selector}))
 
 				if len(uList.Items) == 0 {
 					return true, nil
