@@ -16,7 +16,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
@@ -146,6 +146,10 @@ func main() {
 	// deprecation warnings when using an older version of a resource for backwards compatibility).
 	rest.SetDefaultWarningHandler(rest.NoWarnings{})
 
+	k8s, err := kubernetes.NewDiscoveryRunner(cfg)
+	assertNoError(err)
+	assertNoError(k8s.Read(ctx))
+
 	options, err := initManager()
 	assertNoError(err)
 
@@ -159,11 +163,12 @@ func main() {
 
 	mgr, err := runtime.NewManager(cfg, options)
 	assertNoError(err)
+	assertNoError(mgr.Add(k8s))
 
-	openshift := isOpenshift(cfg)
-	if openshift {
-		log.Info("detected OpenShift environment")
-	}
+	openshift := k8s.Has(kubernetes.API{
+		Group: "security.openshift.io", Kind: "SecurityContextConstraints",
+	})
+	log.Info("Connected to Kubernetes", "api", k8s.Version().String(), "openshift", openshift)
 
 	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), shutdown)
 	assertNoError(err)
@@ -269,34 +274,4 @@ func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Lo
 		log.Error(err, "unable to create CrunchyBridgeCluster controller")
 		os.Exit(1)
 	}
-}
-
-func isOpenshift(cfg *rest.Config) bool {
-	const sccGroupName, sccKind = "security.openshift.io", "SecurityContextConstraints"
-
-	client, err := discovery.NewDiscoveryClientForConfig(cfg)
-	assertNoError(err)
-
-	groups, err := client.ServerGroups()
-	if err != nil {
-		assertNoError(err)
-	}
-	for _, g := range groups.Groups {
-		if g.Name != sccGroupName {
-			continue
-		}
-		for _, v := range g.Versions {
-			resourceList, err := client.ServerResourcesForGroupVersion(v.GroupVersion)
-			if err != nil {
-				assertNoError(err)
-			}
-			for _, r := range resourceList.APIResources {
-				if r.Kind == sccKind {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
 }
