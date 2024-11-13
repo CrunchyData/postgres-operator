@@ -5,6 +5,7 @@
 package standalone_pgadmin
 
 import (
+	"context"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -13,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -434,14 +436,16 @@ func TestPodConfigFiles(t *testing.T) {
 }
 
 func TestPodSecurityContext(t *testing.T) {
-	pgAdminReconciler := &PGAdminReconciler{}
-
-	assert.Assert(t, cmp.MarshalMatches(podSecurityContext(pgAdminReconciler), `
+	ctx := context.Background()
+	assert.Assert(t, cmp.MarshalMatches(podSecurityContext(ctx), `
 fsGroup: 2
 fsGroupChangePolicy: OnRootMismatch
 	`))
 
-	pgAdminReconciler.IsOpenShift = true
-	assert.Assert(t, cmp.MarshalMatches(podSecurityContext(pgAdminReconciler),
+	ctx = kubernetes.NewAPIContext(ctx, kubernetes.NewAPISet(kubernetes.API{
+		Group: "security.openshift.io", Version: "v1",
+		Kind: "SecurityContextConstraints",
+	}))
+	assert.Assert(t, cmp.MarshalMatches(podSecurityContext(ctx),
 		`fsGroupChangePolicy: OnRootMismatch`))
 }

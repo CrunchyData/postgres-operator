@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -56,14 +57,11 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 		return nil
 	}
 
-	// Check if the Kube cluster has VolumeSnapshots installed. If VolumeSnapshots
-	// are not installed, we need to return early. If user is attempting to use
-	// VolumeSnapshots, return an error, otherwise return nil.
-	volumeSnapshotKindExists, err := r.GroupVersionKindExists("snapshot.storage.k8s.io/v1", "VolumeSnapshot")
-	if err != nil {
-		return err
-	}
-	if !*volumeSnapshotKindExists {
+	// Return early when VolumeSnapshots are not installed in Kubernetes.
+	// If user is attempting to use VolumeSnapshots, return an error.
+	if !kubernetes.Has(
+		ctx, volumesnapshotv1.SchemeGroupVersion.WithKind("VolumeSnapshot"),
+	) {
 		if postgrescluster.Spec.Backups.Snapshots != nil {
 			return errors.New("VolumeSnapshots are not installed/enabled in this Kubernetes cluster; cannot create snapshot.")
 		} else {

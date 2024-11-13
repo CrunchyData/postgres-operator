@@ -174,7 +174,7 @@ func main() {
 	token, _ := registrar.CheckToken()
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, k8s.IsOpenShift(), log, registrar)
+	addControllersToManager(mgr, log, registrar)
 
 	if features.Enabled(feature.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -214,10 +214,9 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Logger, reg registration.Registration) {
+func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:       mgr.GetClient(),
-		IsOpenShift:  openshift,
 		Owner:        postgrescluster.ControllerName,
 		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
 		Registration: reg,
@@ -242,10 +241,9 @@ func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Lo
 	}
 
 	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
-		Client:      mgr.GetClient(),
-		Owner:       "pgadmin-controller",
-		Recorder:    mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-		IsOpenShift: openshift,
+		Client:   mgr.GetClient(),
+		Owner:    "pgadmin-controller",
+		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
 	}
 
 	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
