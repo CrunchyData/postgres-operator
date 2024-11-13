@@ -91,6 +91,12 @@ func (r *DiscoveryRunner) HasAny(api ...API) bool {
 	return r.have.HasAny(api...)
 }
 
+// IsOpenShift returns true if this Kubernetes might be OpenShift. The result
+// may not be accurate.
+func (r *DiscoveryRunner) IsOpenShift() bool {
+	return r.Has(API{Group: "security.openshift.io", Kind: "SecurityContextConstraints"})
+}
+
 // NeedLeaderElection returns false so that r runs on any [manager.Manager],
 // regardless of which is elected leader in the Kubernetes namespace.
 func (r *DiscoveryRunner) NeedLeaderElection() bool { return false }
@@ -205,4 +211,23 @@ func (r *DiscoveryRunner) Version() Version {
 	r.have.RLock()
 	defer r.have.RUnlock()
 	return r.have.Version
+}
+
+// IsOpenShift returns true if the detected Kubernetes might be OpenShift.
+// The result may not be accurate. When possible, use another technique to
+// detect specific behavior. Use [Has] to check for specific APIs.
+func IsOpenShift(ctx context.Context) bool {
+	if i, ok := ctx.Value(apiContextKey{}).(interface{ IsOpenShift() bool }); ok {
+		return i.IsOpenShift()
+	}
+	return false
+}
+
+// VersionString returns a textual representation of the detected Kubernetes
+// version, if any.
+func VersionString(ctx context.Context) string {
+	if i, ok := ctx.Value(apiContextKey{}).(interface{ Version() Version }); ok {
+		return i.Version().String()
+	}
+	return ""
 }

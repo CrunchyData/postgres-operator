@@ -6,17 +6,13 @@ package upgradecheck
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/go-logr/logr/funcr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/apimachinery/pkg/version"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -115,31 +111,6 @@ func setupFakeClientWithPGOScheme(t *testing.T, includeCluster bool) crclient.Cl
 			Build()
 	}
 	return fake.NewClientBuilder().WithScheme(runtime.Scheme).Build()
-}
-
-// setupVersionServer sets up and tears down a server and version info for testing
-func setupVersionServer(t *testing.T, works bool) (version.Info, *httptest.Server) {
-	t.Helper()
-	expect := version.Info{
-		Major:     "1",
-		Minor:     "22",
-		GitCommit: "v1.22.2",
-	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
-		req *http.Request) {
-		if works {
-			output, _ := json.Marshal(expect)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			// We don't need to check the error output from this
-			_, _ = w.Write(output)
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	return expect, server
 }
 
 // setupLogCapture captures the logs and keeps count of the logs captured

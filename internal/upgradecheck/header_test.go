@@ -14,14 +14,12 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/client-go/discovery"
 
 	// Google Kubernetes Engine / Google Cloud Platform authentication provider
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
@@ -33,12 +31,10 @@ func TestGenerateHeader(t *testing.T) {
 	ctx := context.Background()
 	cfg, cc := require.Kubernetes2(t)
 
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	discovery, err := kubernetes.NewDiscoveryRunner(cfg)
 	assert.NilError(t, err)
-	server, err := dc.ServerVersion()
-	assert.NilError(t, err)
-
-	reconciler := postgrescluster.Reconciler{Client: cc}
+	assert.NilError(t, discovery.Read(ctx))
+	ctx = kubernetes.NewAPIContext(ctx, discovery)
 
 	t.Setenv("PGO_INSTALLER", "test")
 	t.Setenv("PGO_INSTALLER_ORIGIN", "test-origin")
@@ -51,11 +47,10 @@ func TestGenerateHeader(t *testing.T) {
 		}
 		ctx, calls := setupLogCapture(ctx)
 
-		res := generateHeader(ctx, cfg, fakeClientWithOptionalError,
-			"1.2.3", reconciler.IsOpenShift, "")
+		res := generateHeader(ctx, fakeClientWithOptionalError, "1.2.3", "")
 		assert.Equal(t, len(*calls), 1)
 		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not apply configmap`))
-		assert.Equal(t, res.IsOpenShift, reconciler.IsOpenShift)
+		assert.Equal(t, discovery.IsOpenShift(), res.IsOpenShift)
 		assert.Equal(t, deploymentID, res.DeploymentID)
 		pgoList := v1beta1.PostgresClusterList{}
 		err := cc.List(ctx, &pgoList)
@@ -66,7 +61,7 @@ func TestGenerateHeader(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, len(bridgeList.Items), res.BridgeClustersTotal)
 		assert.Equal(t, "1.2.3", res.PGOVersion)
-		assert.Equal(t, server.String(), res.KubernetesEnv)
+		assert.Equal(t, discovery.Version().String(), res.KubernetesEnv)
 		assert.Equal(t, "test", res.PGOInstaller)
 		assert.Equal(t, "test-origin", res.PGOInstallerOrigin)
 		assert.Equal(t, "developer", res.BuildSource)
@@ -78,40 +73,18 @@ func TestGenerateHeader(t *testing.T) {
 		}
 		ctx, calls := setupLogCapture(ctx)
 
-		res := generateHeader(ctx, cfg, fakeClientWithOptionalError,
-			"1.2.3", reconciler.IsOpenShift, "")
+		res := generateHeader(ctx, fakeClientWithOptionalError, "1.2.3", "")
 		assert.Equal(t, len(*calls), 2)
 		// Aggregating the logs since we cannot determine which call will be first
 		callsAggregate := strings.Join(*calls, " ")
 		assert.Assert(t, cmp.Contains(callsAggregate, `upgrade check issue: could not count postgres clusters`))
 		assert.Assert(t, cmp.Contains(callsAggregate, `upgrade check issue: could not count bridge clusters`))
-		assert.Equal(t, res.IsOpenShift, reconciler.IsOpenShift)
+		assert.Equal(t, discovery.IsOpenShift(), res.IsOpenShift)
 		assert.Equal(t, deploymentID, res.DeploymentID)
 		assert.Equal(t, 0, res.PGOClustersTotal)
 		assert.Equal(t, 0, res.BridgeClustersTotal)
 		assert.Equal(t, "1.2.3", res.PGOVersion)
-		assert.Equal(t, server.String(), res.KubernetesEnv)
-		assert.Equal(t, "test", res.PGOInstaller)
-		assert.Equal(t, "test-origin", res.PGOInstallerOrigin)
-		assert.Equal(t, "developer", res.BuildSource)
-	})
-
-	t.Run("error getting server version info", func(t *testing.T) {
-		ctx, calls := setupLogCapture(ctx)
-		badcfg := &rest.Config{}
-
-		res := generateHeader(ctx, badcfg, cc,
-			"1.2.3", reconciler.IsOpenShift, "")
-		assert.Equal(t, len(*calls), 1)
-		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not retrieve server version`))
-		assert.Equal(t, res.IsOpenShift, reconciler.IsOpenShift)
-		assert.Equal(t, deploymentID, res.DeploymentID)
-		pgoList := v1beta1.PostgresClusterList{}
-		err := cc.List(ctx, &pgoList)
-		assert.NilError(t, err)
-		assert.Equal(t, len(pgoList.Items), res.PGOClustersTotal)
-		assert.Equal(t, "1.2.3", res.PGOVersion)
-		assert.Equal(t, "", res.KubernetesEnv)
+		assert.Equal(t, discovery.Version().String(), res.KubernetesEnv)
 		assert.Equal(t, "test", res.PGOInstaller)
 		assert.Equal(t, "test-origin", res.PGOInstallerOrigin)
 		assert.Equal(t, "developer", res.BuildSource)
@@ -125,17 +98,16 @@ func TestGenerateHeader(t *testing.T) {
 		}))
 		ctx = feature.NewContext(ctx, gate)
 
-		res := generateHeader(ctx, cfg, cc,
-			"1.2.3", reconciler.IsOpenShift, "")
+		res := generateHeader(ctx, cc, "1.2.3", "")
 		assert.Equal(t, len(*calls), 0)
-		assert.Equal(t, res.IsOpenShift, reconciler.IsOpenShift)
+		assert.Equal(t, discovery.IsOpenShift(), res.IsOpenShift)
 		assert.Equal(t, deploymentID, res.DeploymentID)
 		pgoList := v1beta1.PostgresClusterList{}
 		err := cc.List(ctx, &pgoList)
 		assert.NilError(t, err)
 		assert.Equal(t, len(pgoList.Items), res.PGOClustersTotal)
 		assert.Equal(t, "1.2.3", res.PGOVersion)
-		assert.Equal(t, server.String(), res.KubernetesEnv)
+		assert.Equal(t, discovery.Version().String(), res.KubernetesEnv)
 		assert.Equal(t, "TablespaceVolumes=true", res.FeatureGatesEnabled)
 		assert.Equal(t, "test", res.PGOInstaller)
 		assert.Equal(t, "test-origin", res.PGOInstallerOrigin)
@@ -558,31 +530,6 @@ func TestGetBridgeClusters(t *testing.T) {
 		assert.Assert(t, len(*calls) > 0)
 		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not count bridge clusters`))
 		assert.Assert(t, count == 0)
-	})
-}
-
-func TestGetServerVersion(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		expect, server := setupVersionServer(t, true)
-		ctx, calls := setupLogCapture(context.Background())
-
-		got := getServerVersion(ctx, &rest.Config{
-			Host: server.URL,
-		})
-		assert.Equal(t, len(*calls), 0)
-		assert.Equal(t, got, expect.String())
-	})
-
-	t.Run("failure", func(t *testing.T) {
-		_, server := setupVersionServer(t, false)
-		ctx, calls := setupLogCapture(context.Background())
-
-		got := getServerVersion(ctx, &rest.Config{
-			Host: server.URL,
-		})
-		assert.Equal(t, len(*calls), 1)
-		assert.Assert(t, cmp.Contains((*calls)[0], `upgrade check issue: could not retrieve server version`))
-		assert.Equal(t, got, "")
 	})
 }
 

@@ -150,6 +150,8 @@ func main() {
 	assertNoError(err)
 	assertNoError(k8s.Read(ctx))
 
+	log.Info("Connected to Kubernetes", "api", k8s.Version().String(), "openshift", k8s.IsOpenShift())
+
 	options, err := initManager()
 	assertNoError(err)
 
@@ -158,6 +160,7 @@ func main() {
 	options.BaseContext = func() context.Context {
 		ctx := context.Background()
 		ctx = feature.NewContext(ctx, features)
+		ctx = kubernetes.NewAPIContext(ctx, k8s)
 		return ctx
 	}
 
@@ -165,18 +168,13 @@ func main() {
 	assertNoError(err)
 	assertNoError(mgr.Add(k8s))
 
-	openshift := k8s.Has(kubernetes.API{
-		Group: "security.openshift.io", Kind: "SecurityContextConstraints",
-	})
-	log.Info("Connected to Kubernetes", "api", k8s.Version().String(), "openshift", openshift)
-
 	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), shutdown)
 	assertNoError(err)
 	assertNoError(mgr.Add(registrar))
 	token, _ := registrar.CheckToken()
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, openshift, log, registrar)
+	addControllersToManager(mgr, k8s.IsOpenShift(), log, registrar)
 
 	if features.Enabled(feature.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -196,7 +194,6 @@ func main() {
 		assertNoError(
 			upgradecheck.ManagedScheduler(
 				mgr,
-				openshift,
 				os.Getenv("CHECK_FOR_UPGRADES_URL"),
 				versionString,
 				token,
