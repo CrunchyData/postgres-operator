@@ -19,6 +19,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -43,7 +44,7 @@ func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 		err = errors.WithStack(r.setControllerReference(pgadmin, configmap))
 	}
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, configmap))
+		err = errors.WithStack(runtime.Apply(ctx, r.Writer, configmap))
 	}
 
 	return configmap, err

@@ -50,7 +50,7 @@ func FromUnstructuredObject[
 		FromUnstructured(object.UnstructuredContent(), result)
 }
 
-// ToUnstructuredList returns a copy of list by marshaling through JSON.
+// ToUnstructuredList returns a copy of list using reflection.
 func ToUnstructuredList(list client.ObjectList) (*unstructured.UnstructuredList, error) {
 	content, err := runtime.
 		DefaultUnstructuredConverter.
@@ -61,7 +61,7 @@ func ToUnstructuredList(list client.ObjectList) (*unstructured.UnstructuredList,
 	return result, err
 }
 
-// ToUnstructuredObject returns a copy of object by marshaling through JSON.
+// ToUnstructuredObject returns a copy of object using reflection.
 func ToUnstructuredObject(object client.Object) (*unstructured.Unstructured, error) {
 	content, err := runtime.
 		DefaultUnstructuredConverter.

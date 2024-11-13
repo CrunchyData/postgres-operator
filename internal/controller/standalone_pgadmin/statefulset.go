@@ -16,6 +16,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -55,7 +56,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	if err := errors.WithStack(r.setControllerReference(pgadmin, sts)); err != nil {
 		return err
 	}
-	return errors.WithStack(r.apply(ctx, sts))
+	return errors.WithStack(runtime.Apply(ctx, r.Writer, sts))
 }
 
 // statefulset defines the StatefulSet needed to run pgAdmin.

@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -100,7 +101,7 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 			return err
 		}
 
-		return errors.WithStack(r.apply(ctx, service))
+		return errors.WithStack(runtime.Apply(ctx, r.Writer, service))
 	}
 
 	// If we get here then ServiceName was not provided through the spec

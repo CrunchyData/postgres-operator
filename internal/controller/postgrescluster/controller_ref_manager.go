@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -31,7 +31,7 @@ func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1beta1.P
 		return err
 	}
 
-	patchBytes, err := kubeapi.NewMergePatch().
+	patchBytes, err := runtime.NewMergePatch().
 		Add("metadata", "ownerReferences")(obj.GetOwnerReferences()).Bytes()
 	if err != nil {
 		return err
@@ -160,8 +160,8 @@ func (r *Reconciler) manageControllerRefs(ctx context.Context,
 func (r *Reconciler) releaseObject(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster, obj client.Object) error {
 
-	// TODO create a strategic merge type in kubeapi instead of using Merge7386
-	patch, err := kubeapi.NewMergePatch().
+	// TODO create a strategic merge type instead of using Merge7386
+	patch, err := runtime.NewMergePatch().
 		Add("metadata", "ownerReferences")([]map[string]string{{
 		"$patch": "delete",
 		"uid":    string(postgresCluster.GetUID()),
