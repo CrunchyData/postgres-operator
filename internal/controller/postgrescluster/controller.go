@@ -33,6 +33,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/registration"
@@ -40,10 +41,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-const (
-	// ControllerName is the name of the PostgresCluster controller
-	ControllerName = "postgrescluster-controller"
-)
+const controllerName = naming.ControllerPostgresCluster
 
 // Reconciler holds resources for the PostgresCluster reconciler
 type Reconciler struct {

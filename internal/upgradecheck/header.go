@@ -16,7 +16,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -128,7 +127,7 @@ func manageUpgradeCheckConfigMap(ctx context.Context, crClient crclient.Client,
 		}
 	}
 
-	err = applyConfigMap(ctx, crClient, cm, postgrescluster.ControllerName)
+	err = applyConfigMap(ctx, crClient, cm, naming.ControllerPostgresCluster)
 	if err != nil {
 		log.V(1).Info("upgrade check issue: could not apply configmap",
 			"response", err.Error())

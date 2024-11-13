@@ -41,7 +41,7 @@ func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1beta1.P
 
 	return r.Client.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType,
 		patchBytes), &client.PatchOptions{
-		FieldManager: ControllerName,
+		FieldManager: controllerName,
 	})
 }
 
