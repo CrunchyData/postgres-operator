@@ -30,8 +30,7 @@ type PGAdminReconciler struct {
 		ctx context.Context, namespace, pod, container string,
 		stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error
-	Recorder    record.EventRecorder
-	IsOpenShift bool
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={list,watch}

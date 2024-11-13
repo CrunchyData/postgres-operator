@@ -16,12 +16,12 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/events"
@@ -33,26 +33,26 @@ import (
 
 func TestReconcileVolumeSnapshots(t *testing.T) {
 	ctx := context.Background()
-	cfg, cc := setupKubernetes(t)
+	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	assert.NilError(t, err)
 
 	recorder := events.NewRecorder(t, runtime.Scheme)
 	r := &Reconciler{
-		Client:          cc,
-		Owner:           client.FieldOwner(t.Name()),
-		DiscoveryClient: discoveryClient,
-		Recorder:        recorder,
+		Client:   cc,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: recorder,
 	}
 	ns := setupNamespace(t, cc)
 
-	// Enable snapshots feature gate
+	// Enable snapshots feature gate and API
 	gate := feature.NewGate()
 	assert.NilError(t, gate.SetFromMap(map[string]bool{
 		feature.VolumeSnapshots: true,
 	}))
 	ctx = feature.NewContext(ctx, gate)
+	ctx = kubernetes.NewAPIContext(ctx, kubernetes.NewAPISet(
+		volumesnapshotv1.SchemeGroupVersion.WithKind("VolumeSnapshot"),
+	))
 
 	t.Run("SnapshotsDisabledDeleteSnapshots", func(t *testing.T) {
 		// Create cluster (without snapshots spec)
@@ -348,16 +348,13 @@ func TestReconcileVolumeSnapshots(t *testing.T) {
 
 func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 	ctx := context.Background()
-	cfg, cc := setupKubernetes(t)
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	assert.NilError(t, err)
+	_, cc := setupKubernetes(t)
 
 	recorder := events.NewRecorder(t, runtime.Scheme)
 	r := &Reconciler{
-		Client:          cc,
-		Owner:           client.FieldOwner(t.Name()),
-		DiscoveryClient: discoveryClient,
-		Recorder:        recorder,
+		Client:   cc,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: recorder,
 	}
 
 	// Enable snapshots feature gate
@@ -1253,14 +1250,11 @@ func TestGetLatestReadySnapshot(t *testing.T) {
 
 func TestDeleteSnapshots(t *testing.T) {
 	ctx := context.Background()
-	cfg, cc := setupKubernetes(t)
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	assert.NilError(t, err)
+	_, cc := setupKubernetes(t)
 
 	r := &Reconciler{
-		Client:          cc,
-		Owner:           client.FieldOwner(t.Name()),
-		DiscoveryClient: discoveryClient,
+		Client: cc,
+		Owner:  client.FieldOwner(t.Name()),
 	}
 	ns := setupNamespace(t, cc)
 
