@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"k8s.io/apimachinery/pkg/version"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
@@ -52,4 +53,26 @@ func TestDiscoveryRunnerVersion(t *testing.T) {
 	assert.Assert(t, version.Major != "", "got %#v", version)
 	assert.Assert(t, version.Minor != "", "got %#v", version)
 	assert.Assert(t, version.String() != "", "got %q", version.String())
+}
+
+func TestIsOpenShift(t *testing.T) {
+	ctx := context.Background()
+	assert.Assert(t, !IsOpenShift(ctx))
+
+	runner := new(DiscoveryRunner)
+	runner.have.APISet = NewAPISet(
+		API{Group: "security.openshift.io", Kind: "SecurityContextConstraints"},
+	)
+	assert.Assert(t, IsOpenShift(NewAPIContext(ctx, runner)))
+}
+
+func TestVersionString(t *testing.T) {
+	ctx := context.Background()
+	assert.Equal(t, "", VersionString(ctx))
+
+	runner := new(DiscoveryRunner)
+	runner.have.Version = version.Info{
+		Major: "1", Minor: "2", GitVersion: "asdf",
+	}
+	assert.Equal(t, "asdf", VersionString(NewAPIContext(ctx, runner)))
 }
