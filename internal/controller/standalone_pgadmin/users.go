@@ -18,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -297,7 +298,7 @@ cd $PGADMIN_DIR
 
 	err = errors.WithStack(r.setControllerReference(pgadmin, intentUserSecret))
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, intentUserSecret))
+		err = errors.WithStack(runtime.Apply(ctx, r.Writer, intentUserSecret))
 	}
 
 	return err

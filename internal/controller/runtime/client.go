@@ -76,6 +76,7 @@ func (fn ClientUpdate) Update(ctx context.Context, obj client.Object, opts ...cl
 	return fn(ctx, obj, opts...)
 }
 
+// WarningHandler implements [rest.WarningHandler] and [rest.WarningHandlerWithContext] as a single function.
 type WarningHandler func(ctx context.Context, code int, agent string, text string)
 
 func (fn WarningHandler) HandleWarningHeader(code int, agent string, text string) {

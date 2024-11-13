@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package postgrescluster
+package runtime_test
 
 import (
-	"context"
 	"errors"
 	"regexp"
 	"strings"
@@ -23,17 +22,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestServerSideApply(t *testing.T) {
-	ctx := context.Background()
-	cfg, cc := setupKubernetes(t)
+	ctx := t.Context()
+	config, base := require.Kubernetes2(t)
 	require.ParallelCapacity(t, 0)
 
-	ns := setupNamespace(t, cc)
+	ns := require.Namespace(t, base)
 
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	dc, err := discovery.NewDiscoveryClientForConfig(config)
 	assert.NilError(t, err)
 
 	server, err := dc.ServerVersion()
@@ -43,8 +43,7 @@ func TestServerSideApply(t *testing.T) {
 	assert.NilError(t, err)
 
 	t.Run("ObjectMeta", func(t *testing.T) {
-		cc := client.WithFieldOwner(cc, t.Name())
-		reconciler := Reconciler{Writer: cc}
+		cc := client.WithFieldOwner(base, t.Name())
 		constructor := func() *corev1.ConfigMap {
 			var cm corev1.ConfigMap
 			cm.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -78,17 +77,16 @@ func TestServerSideApply(t *testing.T) {
 			assert.Assert(t, after.GetResourceVersion() == before.GetResourceVersion())
 		}
 
-		// Our apply method generates the correct apply-patch.
+		// Our [runtime.Apply] generates the correct apply-patch.
 		again := constructor()
-		assert.NilError(t, reconciler.apply(ctx, again))
+		assert.NilError(t, runtime.Apply(ctx, cc, again))
 		assert.Assert(t, again.GetResourceVersion() != "")
 		assert.Assert(t, again.GetResourceVersion() == after.GetResourceVersion(),
 			"expected to correctly no-op")
 	})
 
 	t.Run("ControllerReference", func(t *testing.T) {
-		cc := client.WithFieldOwner(cc, t.Name())
-		reconciler := Reconciler{Writer: cc}
+		cc := client.WithFieldOwner(base, t.Name())
 
 		// Setup two possible controllers.
 		controller1 := new(corev1.ConfigMap)
@@ -128,8 +126,8 @@ func TestServerSideApply(t *testing.T) {
 		assert.Assert(t, len(status.ErrStatus.Details.Causes) != 0)
 		assert.Equal(t, status.ErrStatus.Details.Causes[0].Field, "metadata.ownerReferences")
 
-		// Try to change the controller using our apply method.
-		err2 := reconciler.apply(ctx, applied)
+		// Try to change the controller using our [runtime.Apply].
+		err2 := runtime.Apply(ctx, cc, applied)
 
 		// Same result; patch not accepted.
 		assert.DeepEqual(t, err1, err2,
@@ -162,8 +160,7 @@ func TestServerSideApply(t *testing.T) {
 			{"empty", make(map[string]string)},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
-				cc := client.WithFieldOwner(cc, t.Name())
-				reconciler := Reconciler{Writer: cc}
+				cc := client.WithFieldOwner(base, t.Name())
 
 				intent := constructor(tt.name + "-selector")
 				intent.Spec.Selector = tt.selector
@@ -190,9 +187,9 @@ func TestServerSideApply(t *testing.T) {
 				assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
 					"got %v", after.Spec.Selector)
 
-				// Our apply method corrects it.
+				// Our [runtime.Apply] corrects it.
 				again := intent.DeepCopy()
-				assert.NilError(t, reconciler.apply(ctx, again))
+				assert.NilError(t, runtime.Apply(ctx, cc, again))
 				assert.Assert(t,
 					equality.Semantic.DeepEqual(again.Spec.Selector, intent.Spec.Selector),
 					"\n--- again.Spec.Selector\n+++ intent.Spec.Selector\n%v",
