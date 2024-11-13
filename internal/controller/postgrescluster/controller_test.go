@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -340,59 +339,32 @@ spec:
 			//
 			// The "metadata.finalizers" field is also okay.
 			// - https://book.kubebuilder.io/reference/using-finalizers.html
-			//
-			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
-			// managed fields on the status subresource: https://issue.k8s.io/88901
-			switch {
-			case suite.ServerVersion.LessThan(version.MustParseGeneric("1.22")):
-
-				// Kubernetes 1.22 began tracking subresources in managed fields.
-				// - https://pr.k8s.io/100970
-				Expect(existing.ManagedFields).To(ContainElement(
-					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(test.Owner),
-						"FieldsV1": PointTo(MatchAllFields(Fields{
-							"Raw": WithTransform(func(in []byte) (out map[string]any) {
-								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
-								return out
-							}, MatchAllKeys(Keys{
-								"f:metadata": MatchAllKeys(Keys{
-									"f:finalizers": Not(BeZero()),
-								}),
-								"f:status": Not(BeZero()),
-							})),
+			Expect(existing.ManagedFields).To(ContainElements(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager": Equal(test.Owner),
+					"FieldsV1": PointTo(MatchAllFields(Fields{
+						"Raw": WithTransform(func(in []byte) (out map[string]any) {
+							Expect(yaml.Unmarshal(in, &out)).To(Succeed())
+							return out
+						}, MatchAllKeys(Keys{
+							"f:metadata": MatchAllKeys(Keys{
+								"f:finalizers": Not(BeZero()),
+							}),
 						})),
-					}),
-				), `controller should manage only "finalizers" and "status"`)
-
-			default:
-				Expect(existing.ManagedFields).To(ContainElements(
-					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(test.Owner),
-						"FieldsV1": PointTo(MatchAllFields(Fields{
-							"Raw": WithTransform(func(in []byte) (out map[string]any) {
-								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
-								return out
-							}, MatchAllKeys(Keys{
-								"f:metadata": MatchAllKeys(Keys{
-									"f:finalizers": Not(BeZero()),
-								}),
-							})),
+					})),
+				}),
+				MatchFields(IgnoreExtras, Fields{
+					"Manager": Equal(test.Owner),
+					"FieldsV1": PointTo(MatchAllFields(Fields{
+						"Raw": WithTransform(func(in []byte) (out map[string]any) {
+							Expect(yaml.Unmarshal(in, &out)).To(Succeed())
+							return out
+						}, MatchAllKeys(Keys{
+							"f:status": Not(BeZero()),
 						})),
-					}),
-					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(test.Owner),
-						"FieldsV1": PointTo(MatchAllFields(Fields{
-							"Raw": WithTransform(func(in []byte) (out map[string]any) {
-								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
-								return out
-							}, MatchAllKeys(Keys{
-								"f:status": Not(BeZero()),
-							})),
-						})),
-					}),
-				), `controller should manage only "finalizers" and "status"`)
-			}
+					})),
+				}),
+			), `controller should manage only "finalizers" and "status"`)
 		})
 
 		Specify("Patroni Distributed Configuration", func() {
