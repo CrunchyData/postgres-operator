@@ -14,7 +14,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -144,41 +143,6 @@ func TestServerSideApply(t *testing.T) {
 		)
 	})
 
-	t.Run("StatefulSetStatus", func(t *testing.T) {
-		constructor := func(name string) *appsv1.StatefulSet {
-			var sts appsv1.StatefulSet
-			sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
-			sts.Namespace, sts.Name = ns.Name, name
-			sts.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: map[string]string{"select": name},
-			}
-			sts.Spec.Template.Labels = map[string]string{"select": name}
-			sts.Spec.Template.Spec.Containers = []corev1.Container{{Name: "test", Image: "test"}}
-			return &sts
-		}
-
-		cc := client.WithFieldOwner(cc, t.Name())
-		reconciler := Reconciler{Writer: cc}
-		upstream := constructor("status-upstream")
-
-		// The structs defined in "k8s.io/api/apps/v1" marshal empty status fields.
-		switch {
-		case serverVersion.LessThan(version.MustParseGeneric("1.22")):
-			assert.ErrorContains(t,
-				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership),
-				"field not declared in schema",
-				"expected https://issue.k8s.io/109210")
-
-		default:
-			assert.NilError(t,
-				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership))
-		}
-
-		// Our apply method generates the correct apply-patch.
-		again := constructor("status-local")
-		assert.NilError(t, reconciler.apply(ctx, again))
-	})
-
 	t.Run("ServiceSelector", func(t *testing.T) {
 		constructor := func(name string) *corev1.Service {
 			var service corev1.Service
@@ -189,61 +153,6 @@ func TestServerSideApply(t *testing.T) {
 			}}
 			return &service
 		}
-
-		t.Run("wrong-keys", func(t *testing.T) {
-			cc := client.WithFieldOwner(cc, t.Name())
-			reconciler := Reconciler{Writer: cc}
-
-			intent := constructor("some-selector")
-			intent.Spec.Selector = map[string]string{"k1": "v1"}
-
-			// Create the Service.
-			before := intent.DeepCopy()
-			assert.NilError(t,
-				cc.Patch(ctx, before, client.Apply, client.ForceOwnership))
-
-			// Something external mucks it up.
-			assert.NilError(t,
-				cc.Patch(ctx, before,
-					client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"selector":{"bad":"v2"}}}`)),
-					client.FieldOwner("wrong")))
-
-			// client.Apply cannot correct it in old versions of Kubernetes.
-			after := intent.DeepCopy()
-			assert.NilError(t,
-				cc.Patch(ctx, after, client.Apply, client.ForceOwnership))
-
-			switch {
-			case serverVersion.LessThan(version.MustParseGeneric("1.22")):
-
-				assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
-					"expected https://issue.k8s.io/97970, got %v", after.Spec.Selector)
-
-			default:
-				assert.DeepEqual(t, after.Spec.Selector, intent.Spec.Selector)
-			}
-
-			// Our apply method corrects it.
-			again := intent.DeepCopy()
-			assert.NilError(t, reconciler.apply(ctx, again))
-			assert.DeepEqual(t, again.Spec.Selector, intent.Spec.Selector)
-
-			var count int
-			var managed *metav1.ManagedFieldsEntry
-			for i := range again.ManagedFields {
-				if again.ManagedFields[i].Manager == t.Name() {
-					count++
-					managed = &again.ManagedFields[i]
-				}
-			}
-
-			assert.Equal(t, count, 1, "expected manager once in %v", again.ManagedFields)
-			assert.Equal(t, managed.Operation, metav1.ManagedFieldsOperationApply)
-
-			assert.Assert(t, managed.FieldsV1 != nil)
-			assert.Assert(t, strings.Contains(string(managed.FieldsV1.Raw), `"f:selector":{`),
-				"expected f:selector in %s", managed.FieldsV1.Raw)
-		})
 
 		for _, tt := range []struct {
 			name     string
@@ -275,6 +184,9 @@ func TestServerSideApply(t *testing.T) {
 				assert.NilError(t,
 					cc.Patch(ctx, after, client.Apply, client.ForceOwnership))
 
+				// Perhaps one of:
+				// - https://issue.k8s.io/117447
+				// - https://github.com/kubernetes-sigs/structured-merge-diff/issues/259
 				assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
 					"got %v", after.Spec.Selector)
 

@@ -54,8 +54,7 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 func applyServiceSpec(
 	patch *kubeapi.JSON6902, actual, intent corev1.ServiceSpec, path ...string,
 ) {
-	// Service.Spec.Selector is not +mapType=atomic until Kubernetes 1.22.
-	// - https://issue.k8s.io/97970
+	// Service.Spec.Selector cannot be unset; perhaps https://issue.k8s.io/117447
 	if !equality.Semantic.DeepEqual(actual.Selector, intent.Selector) {
 		patch.Replace(append(path, "selector")...)(intent.Selector)
 	}
