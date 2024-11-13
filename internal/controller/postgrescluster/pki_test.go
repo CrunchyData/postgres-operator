@@ -43,7 +43,7 @@ func TestReconcileCerts(t *testing.T) {
 
 	r := &Reconciler{
 		Client: tClient,
-		Owner:  ControllerName,
+		Owner:  controllerName,
 	}
 
 	// set up cluster1

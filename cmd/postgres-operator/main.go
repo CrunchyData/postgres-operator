@@ -307,8 +307,8 @@ func main() {
 func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:       mgr.GetClient(),
-		Owner:        postgrescluster.ControllerName,
-		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
+		Owner:        naming.ControllerPostgresCluster,
+		Recorder:     mgr.GetEventRecorderFor(naming.ControllerPostgresCluster),
 		Registration: reg,
 	}
 
@@ -319,8 +319,8 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 
 	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
 		Client:       mgr.GetClient(),
-		Owner:        "pgupgrade-controller",
-		Recorder:     mgr.GetEventRecorderFor("pgupgrade-controller"),
+		Owner:        naming.ControllerPGUpgrade,
+		Recorder:     mgr.GetEventRecorderFor(naming.ControllerPGUpgrade),
 		Registration: reg,
 	}
 
@@ -331,7 +331,7 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 
 	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
 		Client:   mgr.GetClient(),
-		Owner:    "pgadmin-controller",
+		Owner:    naming.ControllerPGAdmin,
 		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
 	}
 
@@ -347,10 +347,8 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 	}
 
 	crunchyBridgeClusterReconciler := &crunchybridgecluster.CrunchyBridgeClusterReconciler{
-		Client: mgr.GetClient(),
-		Owner:  "crunchybridgecluster-controller",
-		// TODO(crunchybridgecluster): recorder?
-		// Recorder: mgr.GetEventRecorderFor(naming...),
+		Client:    mgr.GetClient(),
+		Owner:     naming.ControllerCrunchyBridgeCluster,
 		NewClient: constructor,
 	}
 

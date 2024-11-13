@@ -179,8 +179,8 @@ func TestReconcilePGBackRest(t *testing.T) {
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -778,8 +778,8 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -1060,8 +1060,8 @@ func TestReconcileManualBackup(t *testing.T) {
 	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -1804,8 +1804,8 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -2183,8 +2183,8 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -2608,7 +2608,7 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 
 	r := &Reconciler{
 		Client: cc,
-		Owner:  ControllerName,
+		Owner:  controllerName,
 	}
 
 	ctx := context.Background()
@@ -3904,8 +3904,8 @@ func TestReconcileScheduledBackups(t *testing.T) {
 	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -4240,8 +4240,8 @@ func TestBackupsEnabled(t *testing.T) {
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
