@@ -32,7 +32,6 @@ func TestGenerateHeader(t *testing.T) {
 	setupDeploymentID(t)
 	ctx := context.Background()
 	cfg, cc := require.Kubernetes2(t)
-	setupNamespace(t, cc)
 
 	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
 	assert.NilError(t, err)
@@ -43,6 +42,7 @@ func TestGenerateHeader(t *testing.T) {
 
 	t.Setenv("PGO_INSTALLER", "test")
 	t.Setenv("PGO_INSTALLER_ORIGIN", "test-origin")
+	t.Setenv("PGO_NAMESPACE", require.Namespace(t, cc).Name)
 	t.Setenv("BUILD_SOURCE", "developer")
 
 	t.Run("error ensuring ID", func(t *testing.T) {
@@ -146,7 +146,7 @@ func TestGenerateHeader(t *testing.T) {
 func TestEnsureID(t *testing.T) {
 	ctx := context.Background()
 	cc := require.Kubernetes(t)
-	setupNamespace(t, cc)
+	t.Setenv("PGO_NAMESPACE", require.Namespace(t, cc).Name)
 
 	t.Run("success, no id set in mem or configmap", func(t *testing.T) {
 		deploymentID = ""
@@ -282,7 +282,7 @@ func TestEnsureID(t *testing.T) {
 func TestManageUpgradeCheckConfigMap(t *testing.T) {
 	ctx := context.Background()
 	cc := require.Kubernetes(t)
-	setupNamespace(t, cc)
+	t.Setenv("PGO_NAMESPACE", require.Namespace(t, cc).Name)
 
 	t.Run("no namespace given", func(t *testing.T) {
 		ctx, calls := setupLogCapture(ctx)
@@ -408,7 +408,7 @@ func TestManageUpgradeCheckConfigMap(t *testing.T) {
 func TestApplyConfigMap(t *testing.T) {
 	ctx := context.Background()
 	cc := require.Kubernetes(t)
-	setupNamespace(t, cc)
+	t.Setenv("PGO_NAMESPACE", require.Namespace(t, cc).Name)
 
 	t.Run("successful create", func(t *testing.T) {
 		cmRetrieved := &corev1.ConfigMap{}

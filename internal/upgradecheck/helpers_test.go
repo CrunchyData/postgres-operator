@@ -13,8 +13,6 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr/funcr"
-	"gotest.tools/v3/assert"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -153,27 +151,4 @@ func setupLogCapture(ctx context.Context) (context.Context, *[]string) {
 		Verbosity: 1,
 	})
 	return logging.NewContext(ctx, testlog), &calls
-}
-
-// setupNamespace creates a namespace that will be deleted by t.Cleanup.
-// For upgradechecking, this namespace is set to `postgres-operator`,
-// which sometimes is created by other parts of the testing apparatus,
-// cf., the createnamespace call in `make check-envtest-existing`.
-// When creation fails, it calls t.Fatal. The caller may delete the namespace
-// at any time.
-func setupNamespace(t testing.TB, cc crclient.Client) {
-	t.Helper()
-	ns := &corev1.Namespace{}
-	ns.Name = "postgres-operator"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
-
-	ctx := context.Background()
-	exists := &corev1.Namespace{}
-	assert.NilError(t, crclient.IgnoreNotFound(
-		cc.Get(ctx, crclient.ObjectKeyFromObject(ns), exists)))
-	if exists.Name != "" {
-		return
-	}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, crclient.IgnoreNotFound(cc.Delete(ctx, ns))) })
 }
