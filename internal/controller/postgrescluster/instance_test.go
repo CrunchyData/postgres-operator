@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -1377,7 +1376,7 @@ func TestDeleteInstance(t *testing.T) {
 	// Use the instance name to delete the single instance
 	assert.NilError(t, reconciler.deleteInstance(ctx, cluster, instanceName))
 
-	gvks := []schema.GroupVersionKind{
+	gvks := []runtime.GVK{
 		corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"),
 		corev1.SchemeGroupVersion.WithKind("ConfigMap"),
 		corev1.SchemeGroupVersion.WithKind("Secret"),
