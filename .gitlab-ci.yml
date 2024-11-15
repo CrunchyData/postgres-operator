@@ -54,9 +54,9 @@ variables:
 # | golangci-lint@v1.59.1 | killed    | killed    | panic    | typecheck |
 # | golangci-lint@v1.60.3 | go1.22.1  | go1.23.0  | pass     | typecheck |
 # | golangci-lint@v1.61.0 | go1.22.1  | go1.23.0  | pass     | typecheck |
-# | golangci-lint@v1.62.2 | go1.22.1  | go1.23.0  | pass     | recvcheck |
-# | golangci-lint@v1.63.4 | go1.22.1  | go1.23.0  | pass     | recvcheck |
-# | golangci-lint@v1.64.8 | go1.23.0  | go1.23.0  | pass     | recvcheck |
+# | golangci-lint@v1.62.2 | go1.22.1  | go1.23.0  | pass     | pass      |
+# | golangci-lint@v1.63.4 | go1.22.1  | go1.23.0  | pass     | pass      |
+# | golangci-lint@v1.64.8 | go1.23.0  | go1.23.0  | pass     | pass      |
 golang-lint:
   stage: build
   needs: []
@@ -74,7 +74,7 @@ golang-lint:
 
     # Produce a report for the GitLab UI. This only fails when the tool crashes.
     - >-
-      go run "${TOOL}" run --disable recvcheck
+      go run "${TOOL}" run
       --concurrency 2
       --timeout 5m
       --issues-exit-code 0
@@ -84,7 +84,7 @@ golang-lint:
 
     # Fail the job if there are any issues found and print a handful to the log.
     - >-
-      go run "${TOOL}" run --disable recvcheck
+      go run "${TOOL}" run
       --concurrency 2
       --timeout 5m
       --verbose

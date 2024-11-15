@@ -83,5 +83,10 @@ linters-settings:
     no-unaliased: true
 
 issues:
-  exclude-dirs:
-    - pkg/generated
+  exclude-generated: strict
+  exclude-rules:
+    # These value types have unmarshal methods.
+    # https://github.com/raeperd/recvcheck/issues/7
+    - linters: [recvcheck]
+      path: internal/pki/pki.go
+      text: 'methods of "(Certificate|PrivateKey)"'

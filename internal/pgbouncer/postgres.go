@@ -218,14 +218,14 @@ func generatePassword() (plaintext, verifier string, err error) {
 	return
 }
 
-func postgresqlHBAs() []postgres.HostBasedAuthentication {
+func postgresqlHBAs() []*postgres.HostBasedAuthentication {
 	// PgBouncer must connect over TLS using a SCRAM password. Other network
 	// connections are forbidden.
 	// - https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
 	// - https://www.postgresql.org/docs/current/auth-password.html
 
-	return []postgres.HostBasedAuthentication{
-		*postgres.NewHBA().User(postgresqlUser).TLS().Method("scram-sha-256"),
-		*postgres.NewHBA().User(postgresqlUser).TCP().Method("reject"),
+	return []*postgres.HostBasedAuthentication{
+		postgres.NewHBA().User(postgresqlUser).TLS().Method("scram-sha-256"),
+		postgres.NewHBA().User(postgresqlUser).TCP().Method("reject"),
 	}
 }

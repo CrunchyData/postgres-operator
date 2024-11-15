@@ -18,12 +18,10 @@ var escapeJSONPointer = strings.NewReplacer(
 	"/", "~1",
 ).Replace
 
-// JSON6902 represents a JSON Patch according to RFC 6902; the same as
-// k8s.io/apimachinery/pkg/types.JSONPatchType.
-type JSON6902 []interface{}
+// JSON6902 represents a JSON Patch according to RFC 6902; the same as [types.JSONPatchType].
+type JSON6902 []any
 
-// NewJSONPatch creates a new JSON Patch according to RFC 6902; the same as
-// k8s.io/apimachinery/pkg/types.JSONPatchType.
+// NewJSONPatch creates a new JSON Patch according to RFC 6902; the same as [types.JSONPatchType].
 func NewJSONPatch() *JSON6902 { return &JSON6902{} }
 
 func (*JSON6902) pointer(tokens ...string) string {
@@ -50,10 +48,10 @@ func (*JSON6902) pointer(tokens ...string) string {
 // >
 // > o  If the target location specifies an object member that does exist,
 // >    that member's value is replaced.
-func (patch *JSON6902) Add(path ...string) func(value interface{}) *JSON6902 {
+func (patch *JSON6902) Add(path ...string) func(value any) *JSON6902 {
 	i := len(*patch)
-	f := func(value interface{}) *JSON6902 {
-		(*patch)[i] = map[string]interface{}{
+	f := func(value any) *JSON6902 {
+		(*patch)[i] = map[string]any{
 			"op":    "add",
 			"path":  patch.pointer(path...),
 			"value": value,
@@ -72,7 +70,7 @@ func (patch *JSON6902) Add(path ...string) func(value interface{}) *JSON6902 {
 // >
 // > The target location MUST exist for the operation to be successful.
 func (patch *JSON6902) Remove(path ...string) *JSON6902 {
-	*patch = append(*patch, map[string]interface{}{
+	*patch = append(*patch, map[string]any{
 		"op":   "remove",
 		"path": patch.pointer(path...),
 	})
@@ -86,10 +84,10 @@ func (patch *JSON6902) Remove(path ...string) *JSON6902 {
 // > with a new value.
 // >
 // > The target location MUST exist for the operation to be successful.
-func (patch *JSON6902) Replace(path ...string) func(value interface{}) *JSON6902 {
+func (patch *JSON6902) Replace(path ...string) func(value any) *JSON6902 {
 	i := len(*patch)
-	f := func(value interface{}) *JSON6902 {
-		(*patch)[i] = map[string]interface{}{
+	f := func(value any) *JSON6902 {
+		(*patch)[i] = map[string]any{
 			"op":    "replace",
 			"path":  patch.pointer(path...),
 			"value": value,
@@ -103,23 +101,21 @@ func (patch *JSON6902) Replace(path ...string) func(value interface{}) *JSON6902
 }
 
 // Bytes returns the JSON representation of patch.
-func (patch JSON6902) Bytes() ([]byte, error) { return patch.Data(nil) }
+func (patch *JSON6902) Bytes() ([]byte, error) { return patch.Data(nil) }
 
 // Data returns the JSON representation of patch.
-func (patch JSON6902) Data(client.Object) ([]byte, error) { return json.Marshal(patch) }
+func (patch *JSON6902) Data(client.Object) ([]byte, error) { return json.Marshal(*patch) }
 
 // IsEmpty returns true when patch has no operations.
-func (patch JSON6902) IsEmpty() bool { return len(patch) == 0 }
+func (patch *JSON6902) IsEmpty() bool { return len(*patch) == 0 }
 
-// Type returns k8s.io/apimachinery/pkg/types.JSONPatchType.
-func (patch JSON6902) Type() types.PatchType { return types.JSONPatchType }
+// Type returns [types.JSONPatchType].
+func (patch *JSON6902) Type() types.PatchType { return types.JSONPatchType }
 
-// Merge7386 represents a JSON Merge Patch according to RFC 7386; the same as
-// k8s.io/apimachinery/pkg/types.MergePatchType.
-type Merge7386 map[string]interface{}
+// Merge7386 represents a JSON Merge Patch according to RFC 7386; the same as [types.MergePatchType].
+type Merge7386 map[string]any
 
-// NewMergePatch creates a new JSON Merge Patch according to RFC 7386; the same
-// as k8s.io/apimachinery/pkg/types.MergePatchType.
+// NewMergePatch creates a new JSON Merge Patch according to RFC 7386; the same as [types.MergePatchType].
 func NewMergePatch() *Merge7386 { return &Merge7386{} }
 
 // Add modifies patch to indicate that the member at path should be added or
@@ -130,7 +126,7 @@ func NewMergePatch() *Merge7386 { return &Merge7386{} }
 // > contain the member, the value is replaced.  Null values in the merge
 // > patch are given special meaning to indicate the removal of existing
 // > values in the target.
-func (patch *Merge7386) Add(path ...string) func(value interface{}) *Merge7386 {
+func (patch *Merge7386) Add(path ...string) func(value any) *Merge7386 {
 	position := *patch
 
 	for len(path) > 1 {
@@ -145,10 +141,10 @@ func (patch *Merge7386) Add(path ...string) func(value interface{}) *Merge7386 {
 	}
 
 	if len(path) < 1 {
-		return func(interface{}) *Merge7386 { return patch }
+		return func(any) *Merge7386 { return patch }
 	}
 
-	f := func(value interface{}) *Merge7386 {
+	f := func(value any) *Merge7386 {
 		position[path[0]] = value
 		return patch
 	}
@@ -165,13 +161,13 @@ func (patch *Merge7386) Remove(path ...string) *Merge7386 {
 }
 
 // Bytes returns the JSON representation of patch.
-func (patch Merge7386) Bytes() ([]byte, error) { return patch.Data(nil) }
+func (patch *Merge7386) Bytes() ([]byte, error) { return patch.Data(nil) }
 
 // Data returns the JSON representation of patch.
-func (patch Merge7386) Data(client.Object) ([]byte, error) { return json.Marshal(patch) }
+func (patch *Merge7386) Data(client.Object) ([]byte, error) { return json.Marshal(*patch) }
 
 // IsEmpty returns true when patch has no modifications.
-func (patch Merge7386) IsEmpty() bool { return len(patch) == 0 }
+func (patch *Merge7386) IsEmpty() bool { return len(*patch) == 0 }
 
-// Type returns k8s.io/apimachinery/pkg/types.MergePatchType.
-func (patch Merge7386) Type() types.PatchType { return types.MergePatchType }
+// Type returns [types.MergePatchType].
+func (patch *Merge7386) Type() types.PatchType { return types.MergePatchType }

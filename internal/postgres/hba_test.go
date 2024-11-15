@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewHBAs(t *testing.T) {
-	matches := func(actual []HostBasedAuthentication, expected string) cmp.Comparison {
+	matches := func(actual []*HostBasedAuthentication, expected string) cmp.Comparison {
 		printed := make([]string, len(actual))
 		for i := range actual {
 			printed[i] = actual[i].String()
