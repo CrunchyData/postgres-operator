@@ -51,12 +51,12 @@ type sink struct {
 	depth     int
 	verbosity int
 	names     []string
-	values    []interface{}
+	values    []any
 
 	// TODO(cbandy): add names or frame to the functions below.
 
-	fnError func(error, string, ...interface{})
-	fnInfo  func(int, string, ...interface{})
+	fnError func(error, string, ...any)
+	fnInfo  func(int, string, ...any)
 }
 
 var _ logr.LogSink = (*sink)(nil)
@@ -64,7 +64,7 @@ var _ logr.LogSink = (*sink)(nil)
 func (s *sink) Enabled(level int) bool     { return level <= s.verbosity }
 func (s *sink) Init(info logr.RuntimeInfo) { s.depth = info.CallDepth }
 
-func (s sink) combineValues(kv ...interface{}) []interface{} {
+func (s *sink) combineValues(kv ...any) []any {
 	if len(kv) == 0 {
 		return s.values
 	}
@@ -74,11 +74,11 @@ func (s sink) combineValues(kv ...interface{}) []interface{} {
 	return kv
 }
 
-func (s *sink) Error(err error, msg string, kv ...interface{}) {
+func (s *sink) Error(err error, msg string, kv ...any) {
 	s.fnError(err, msg, s.combineValues(kv...)...)
 }
 
-func (s *sink) Info(level int, msg string, kv ...interface{}) {
+func (s *sink) Info(level int, msg string, kv ...any) {
 	s.fnInfo(level, msg, s.combineValues(kv...)...)
 }
 
@@ -89,7 +89,7 @@ func (s *sink) WithName(name string) logr.LogSink {
 	return &out
 }
 
-func (s *sink) WithValues(kv ...interface{}) logr.LogSink {
+func (s *sink) WithValues(kv ...any) logr.LogSink {
 	n := len(s.values)
 	out := *s
 	out.values = append(out.values[:n:n], kv...)

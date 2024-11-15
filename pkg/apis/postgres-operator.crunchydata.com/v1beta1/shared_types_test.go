@@ -15,11 +15,8 @@ import (
 func TestSchemalessObjectDeepCopy(t *testing.T) {
 	t.Parallel()
 
-	var n *SchemalessObject
-	assert.DeepEqual(t, n, n.DeepCopy())
-
 	var z SchemalessObject
-	assert.DeepEqual(t, z, *z.DeepCopy())
+	assert.DeepEqual(t, z, z.DeepCopy())
 
 	var one SchemalessObject
 	assert.NilError(t, yaml.Unmarshal(
@@ -27,31 +24,31 @@ func TestSchemalessObjectDeepCopy(t *testing.T) {
 	))
 
 	// reflect and go-cmp agree the original and copy are equivalent.
-	same := *one.DeepCopy()
+	same := one.DeepCopy()
 	assert.DeepEqual(t, one, same)
 	assert.Assert(t, reflect.DeepEqual(one, same))
 
 	// Changes to the copy do not affect the original.
 	{
-		change := *one.DeepCopy()
+		change := one.DeepCopy()
 		change["str"] = "banana"
 		assert.Assert(t, reflect.DeepEqual(one, same))
 		assert.Assert(t, !reflect.DeepEqual(one, change))
 	}
 	{
-		change := *one.DeepCopy()
+		change := one.DeepCopy()
 		change["num"] = 99
 		assert.Assert(t, reflect.DeepEqual(one, same))
 		assert.Assert(t, !reflect.DeepEqual(one, change))
 	}
 	{
-		change := *one.DeepCopy()
+		change := one.DeepCopy()
 		change["arr"].([]any)[0] = "rock"
 		assert.Assert(t, reflect.DeepEqual(one, same))
 		assert.Assert(t, !reflect.DeepEqual(one, change))
 	}
 	{
-		change := *one.DeepCopy()
+		change := one.DeepCopy()
 		change["arr"] = append(change["arr"].([]any), "more")
 		assert.Assert(t, reflect.DeepEqual(one, same))
 		assert.Assert(t, !reflect.DeepEqual(one, change))
