@@ -12,8 +12,58 @@ env:
   # https://github.com/actions/setup-go/issues/457
   GOTOOLCHAIN: local
 
+  # Manage the Trivy data directory until upstream can do it reliably
+  # https://github.com/aquasecurity/trivy-action/issues/389
+  #
+  # NOTE: This must match the default "cache-dir" upstream:
+  # https://github.com/aquasecurity/trivy-action/blob/-/action.yaml
+  TRIVY_CACHE_DIR: ${{ github.workspace }}/.cache/trivy
+
 jobs:
+  cache:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aquasecurity/setup-trivy@v0.2.2
+        with:
+          cache: true
+          version: v0.57.0
+
+      # The "aquasecurity/trivy-action" looks for data in the GitHub action
+      # cache under a key with today's date.
+      # - https://github.com/actions/cache/blob/-/restore#readme
+      # - https://github.com/aquasecurity/trivy-action/blob/-/action.yaml
+      - id: values
+        run: |
+          (
+            date +'date=%Y-%m-%d'
+            echo "glob=${TRIVY_CACHE_DIR}/*/metadata.json"
+          ) |
+          tee --append $GITHUB_OUTPUT
+      - id: restore
+        uses: actions/cache/restore@v4
+        with:
+          key: cache-trivy-${{ steps.values.outputs.date }}
+          path: ${{ env.TRIVY_CACHE_DIR }}
+          restore-keys: cache-trivy-
+
+      # Validate or update the Trivy data cache.
+      - id: validate
+        env:
+          METADATA_HASH: ${{ hashFiles(steps.values.outputs.glob) }}
+        run: |
+          <<< "before=${METADATA_HASH}" tee --append $GITHUB_OUTPUT
+          trivy filesystem --download-db-only --scanners license,secret,vuln --quiet
+
+      # Save any successful changes back to the GitHub action cache.
+      # - https://github.com/actions/cache/blob/-/save#readme
+      - if: ${{ hashFiles(steps.values.outputs.glob) != steps.validate.outputs.before }}
+        uses: actions/cache/save@v4
+        with:
+          key: ${{ steps.restore.outputs.cache-primary-key }}
+          path: ${{ env.TRIVY_CACHE_DIR }}
+
   licenses:
+    needs: [cache]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,6 +88,7 @@ jobs:
     permissions:
       security-events: write
 
+    needs: [cache]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,11 +100,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: filesystem
-          hide-progress: true
           scanners: secret,vuln
-          # Manage the cache only once during this workflow.
-          # - https://github.com/aquasecurity/trivy-action#cache
-          cache: true
 
       # Produce a SARIF report of actionable results. This step fails only when
       # Trivy is unable to scan.
@@ -65,9 +112,6 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           scanners: secret,vuln
-          # Use the cache downloaded in a prior step.
-          # - https://github.com/aquasecurity/trivy-action#cache
-          cache: false
 
       # Submit the SARIF report to GitHub code scanning. Pull requests checks
       # succeed or fail according to branch protection rules.
