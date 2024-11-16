@@ -12,55 +12,21 @@ env:
   # https://github.com/actions/setup-go/issues/457
   GOTOOLCHAIN: local
 
-  # Manage the Trivy data directory until upstream can do it reliably
-  # https://github.com/aquasecurity/trivy-action/issues/389
-  #
-  # NOTE: This must match the default "cache-dir" upstream:
-  # https://github.com/aquasecurity/trivy-action/blob/-/action.yaml
-  TRIVY_CACHE_DIR: ${{ github.workspace }}/.cache/trivy
-
 jobs:
   cache:
+    # Run only one of these jobs at a time across the entire project.
+    concurrency: { group: trivy-cache }
+
     runs-on: ubuntu-latest
     steps:
-      - uses: aquasecurity/setup-trivy@v0.2.2
-        with:
-          cache: true
-          version: v0.57.0
-
-      # The "aquasecurity/trivy-action" looks for data in the GitHub action
-      # cache under a key with today's date.
-      # - https://github.com/actions/cache/blob/-/restore#readme
-      # - https://github.com/aquasecurity/trivy-action/blob/-/action.yaml
-      - id: values
-        run: |
-          (
-            date +'date=%Y-%m-%d'
-            echo "glob=${TRIVY_CACHE_DIR}/*/metadata.json"
-          ) |
-          tee --append $GITHUB_OUTPUT
-      - id: restore
-        uses: actions/cache/restore@v4
-        with:
-          key: cache-trivy-${{ steps.values.outputs.date }}
-          path: ${{ env.TRIVY_CACHE_DIR }}
-          restore-keys: cache-trivy-
-
-      # Validate or update the Trivy data cache.
-      - id: validate
+      - uses: actions/checkout@v4
+      - name: Download Trivy
+        uses: ./.github/actions/trivy
         env:
-          METADATA_HASH: ${{ hashFiles(steps.values.outputs.glob) }}
-        run: |
-          <<< "before=${METADATA_HASH}" tee --append $GITHUB_OUTPUT
-          trivy filesystem --download-db-only --scanners license,secret,vuln --quiet
-
-      # Save any successful changes back to the GitHub action cache.
-      # - https://github.com/actions/cache/blob/-/save#readme
-      - if: ${{ hashFiles(steps.values.outputs.glob) != steps.validate.outputs.before }}
-        uses: actions/cache/save@v4
-        with:
-          key: ${{ steps.restore.outputs.cache-primary-key }}
-          path: ${{ env.TRIVY_CACHE_DIR }}
+          TRIVY_DEBUG: true
+          TRIVY_DOWNLOAD_DB_ONLY: true
+          TRIVY_NO_PROGRESS: true
+          TRIVY_SCANNERS: license,secret,vuln
 
   licenses:
     needs: [cache]
@@ -75,13 +41,13 @@ jobs:
 
       # Report success only when detected licenses are listed in [/trivy.yaml].
       - name: Scan licenses
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: ./.github/actions/trivy
         env:
           TRIVY_DEBUG: true
+          TRIVY_EXIT_CODE: 1
+          TRIVY_SCANNERS: license
         with:
-          scan-type: filesystem
-          scanners: license
-          exit-code: 1
+          cache: restore,use
 
   vulnerabilities:
     if: ${{ github.repository == 'CrunchyData/postgres-operator' }}
@@ -97,21 +63,24 @@ jobs:
       # human consumption. This step fails only when Trivy is unable to scan.
       # A later step uploads results to GitHub as a pull request check.
       - name: Log detected vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: ./.github/actions/trivy
+        env:
+          TRIVY_SCANNERS: secret,vuln
         with:
-          scan-type: filesystem
-          scanners: secret,vuln
+          cache: restore,use
 
       # Produce a SARIF report of actionable results. This step fails only when
       # Trivy is unable to scan.
       - name: Report actionable vulnerabilities
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: ./.github/actions/trivy
+        env:
+          TRIVY_IGNORE_UNFIXED: true
+          TRIVY_FORMAT: 'sarif'
+          TRIVY_OUTPUT: 'trivy-results.sarif'
+          TRIVY_SCANNERS: secret,vuln
         with:
-          scan-type: filesystem
-          ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          scanners: secret,vuln
+          cache: use
+          setup: none
 
       # Submit the SARIF report to GitHub code scanning. Pull requests checks
       # succeed or fail according to branch protection rules.

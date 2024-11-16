@@ -1,0 +1,99 @@
+name: Trivy
+description: Scan this project using Trivy
+
+# The Trivy team maintains an action, but it has trouble caching its vulnerability data:
+# https://github.com/aquasecurity/trivy-action/issues/389
+#
+# The action below uses any recent cache matching `cache-prefix` and calculates a cache key
+# derived from the data Trivy downloads.
+
+inputs:
+  cache:
+    default: restore,success,use
+    description: >-
+      What Trivy data to cache; one or more of restore, save, success, or use.
+
+  setup:
+    default: v0.57.0,cache
+    description: >-
+      How to install Trivy; one or more of version, none, or cache.
+
+  cache-directory:
+    default: ${{ github.workspace }}/.cache/trivy
+
+  cache-prefix:
+    default: cache-trivy
+
+  scan-target:
+    default: .
+
+  scan-type:
+    default: filesystem
+
+runs:
+  using: composite
+  steps:
+    # Parse list inputs as separated by commas and spaces.
+    # Select the maximum version-looking string from `inputs.setup`.
+    - id: parsed
+      shell: bash
+      run: |
+        # Validate inputs
+        (
+          <<< '${{ inputs.cache }}' jq -rRsS '"cache=\(split("[,\\s]+"; "") - [""])"'
+          <<< '${{ inputs.setup }}' jq -rRsS '
+            "setup=\(split("[,\\s]+"; "") - [""])",
+            "version=\(split("[,\\s]+"; "") | max_by(split("[v.]"; "") | map(tonumber?)))"
+          '
+        ) | tee --append $GITHUB_OUTPUT
+
+    # Install Trivy as requested.
+    - if: ${{ ! contains(fromJSON(steps.parsed.outputs.setup), 'none') }}
+      uses: aquasecurity/setup-trivy@v0.2.2
+      with:
+        cache: ${{ contains(fromJSON(steps.parsed.outputs.setup), 'cache') }}
+        version: ${{ steps.parsed.outputs.version }}
+
+    # Restore a recent cache beginning with the prefix.
+    - id: restore
+      if: ${{ contains(fromJSON(steps.parsed.outputs.cache), 'restore') }}
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ inputs.cache-directory }}
+        key: ${{ inputs.cache-prefix }}-
+
+    - id: trivy
+      shell: bash
+      env:
+        TRIVY_CACHE_DIR: >-
+          ${{ contains(fromJSON(steps.parsed.outputs.cache), 'use') && inputs.cache-directory || '' }}
+      run: |
+        # Run Trivy
+        trivy '${{ inputs.scan-type }}' '${{ inputs.scan-target }}' || result=$?
+
+        checksum=$([[ -z "${TRIVY_CACHE_DIR}" ]] || cat "${TRIVY_CACHE_DIR}/"*/metadata.json | sha256sum)
+        echo 'cache-key=${{ inputs.cache-prefix }}-'"${checksum%% *}" >> $GITHUB_OUTPUT
+
+        exit "${result-0}"
+
+    # Save updated data to the cache when requested.
+    - if: >-
+        ${{
+          steps.restore.outcome == 'success' &&
+          steps.restore.outputs.cache-matched-key == steps.trivy.outputs.cache-key
+        }}
+      shell: bash
+      run: |
+        # Cache hit on ${{ steps.restore.outputs.cache-matched-key }}
+    - if: >-
+        ${{
+          steps.restore.outputs.cache-matched-key != steps.trivy.outputs.cache-key &&
+          (
+            (contains(fromJSON(steps.parsed.outputs.cache), 'save') && !cancelled()) ||
+            (contains(fromJSON(steps.parsed.outputs.cache), 'success') && success())
+          )
+        }}
+      uses: actions/cache/save@v4
+      with:
+        key: ${{ steps.trivy.outputs.cache-key }}
+        path: ${{ inputs.cache-directory }}
