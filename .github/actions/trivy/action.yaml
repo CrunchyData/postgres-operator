@@ -13,6 +13,11 @@ inputs:
     description: >-
       What Trivy data to cache; one or more of restore, save, success, or use.
 
+  database:
+    default: update
+    description: >-
+      How Trivy should handle its data; one of update or skip.
+
   setup:
     default: v0.57.0,cache
     description: >-
@@ -67,6 +72,9 @@ runs:
       env:
         TRIVY_CACHE_DIR: >-
           ${{ contains(fromJSON(steps.parsed.outputs.cache), 'use') && inputs.cache-directory || '' }}
+        TRIVY_SKIP_CHECK_UPDATE: ${{ inputs.database == 'skip' }}
+        TRIVY_SKIP_DB_UPDATE: ${{ inputs.database == 'skip' }}
+        TRIVY_SKIP_JAVA_DB_UPDATE: ${{ inputs.database == 'skip' }}
       run: |
         # Run Trivy
         trivy '${{ inputs.scan-type }}' '${{ inputs.scan-target }}' || result=$?

@@ -16,6 +16,8 @@ jobs:
   cache:
     # Run only one of these jobs at a time across the entire project.
     concurrency: { group: trivy-cache }
+    # Do not fail this workflow when this job fails.
+    continue-on-error: true
 
     runs-on: ubuntu-latest
     steps:
@@ -29,7 +31,11 @@ jobs:
           TRIVY_SCANNERS: license,secret,vuln
 
   licenses:
+    # Run this job after the cache job regardless of its success or failure.
     needs: [cache]
+    if: >-
+      ${{ !cancelled() }}
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,13 +54,16 @@ jobs:
           TRIVY_SCANNERS: license
         with:
           cache: restore,use
+          database: skip
 
   vulnerabilities:
-    if: ${{ github.repository == 'CrunchyData/postgres-operator' }}
+    # Run this job after the cache job regardless of its success or failure.
+    needs: [cache]
+    if: >-
+      ${{ github.repository == 'CrunchyData/postgres-operator' && !cancelled() }}
     permissions:
       security-events: write
 
-    needs: [cache]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +77,7 @@ jobs:
           TRIVY_SCANNERS: secret,vuln
         with:
           cache: restore,use
+          database: skip
 
       # Produce a SARIF report of actionable results. This step fails only when
       # Trivy is unable to scan.
@@ -80,6 +90,7 @@ jobs:
           TRIVY_SCANNERS: secret,vuln
         with:
           cache: use
+          database: skip
           setup: none
 
       # Submit the SARIF report to GitHub code scanning. Pull requests checks
