@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/36-check-data-and-version.yaml
+assert:
+- files/36-data-and-version-checked.yaml

@@ -1,5 +1,5 @@
 apiVersion: kuttl.dev/v1beta1
-kind: TestStep
+kind: TestAssert
 commands:
 # Check that the pgbackrest setup has successfully completed
 - script: |
@@ -9,3 +9,10 @@ commands:
     # Check that the old pg folders do not exist on the replica
     REPLICA=$(kubectl get pod -l=postgres-operator.crunchydata.com/role=replica -n "${NAMESPACE}" -o=jsonpath='{ .items[0].metadata.name }')
     kubectl -n "${NAMESPACE}" exec "${REPLICA}" -c database -- [ ! -d "pgdata/pg${KUTTL_PG_UPGRADE_FROM_VERSION}" ]
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=major-upgrade
+- type: command
+  command: kubectl -n $NAMESPACE describe pgupgrade major-upgrade-do-it
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/cluster=major-upgrade
