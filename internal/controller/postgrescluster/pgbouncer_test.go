@@ -443,6 +443,7 @@ namespace: ns3
 		// Annotations present in the pod template.
 		assert.DeepEqual(t, deploy.Spec.Template.Annotations, map[string]string{
 			"a": "v1",
+			"kubectl.kubernetes.io/default-container": "pgbouncer",
 		})
 
 		// Labels present in the pod template.

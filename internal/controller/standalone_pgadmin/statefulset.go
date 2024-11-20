@@ -74,7 +74,12 @@ func statefulset(
 	sts.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: naming.StandalonePGAdminLabels(pgadmin.Name),
 	}
-	sts.Spec.Template.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()
+	sts.Spec.Template.Annotations = naming.Merge(
+		pgadmin.Spec.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.DefaultContainerAnnotation: naming.ContainerPGAdmin,
+		},
+	)
 	sts.Spec.Template.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
 		naming.StandalonePGAdminDataLabels(pgadmin.Name),
