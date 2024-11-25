@@ -19,7 +19,7 @@ inputs:
       How Trivy should handle its data; one of update or skip.
 
   setup:
-    default: v0.57.0,cache
+    default: v0.57.1,cache
     description: >-
       How to install Trivy; one or more of version, none, or cache.
 
