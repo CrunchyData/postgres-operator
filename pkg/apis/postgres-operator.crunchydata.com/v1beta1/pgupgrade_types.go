@@ -68,6 +68,11 @@ type PGUpgradeSpec struct {
 	// +optional
 	ToPostgresImage string `json:"toPostgresImage,omitempty"`
 
+	// Jobs specifies the number of parallel jobs pg_upgrade should use.
+	// If set to 0 or not provided, pg_upgrade will use its default behavior.
+	//TODO: Should we include kubebuilder:validation:Minimum/Maximum?
+	Jobs int `json:"jobs,omitempty"`
+
 	// Resource requirements for the PGUpgrade container.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
