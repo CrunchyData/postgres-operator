@@ -7,11 +7,11 @@ package standalone_pgadmin
 import (
 	"context"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -56,33 +56,31 @@ func (r *PGAdminReconciler) findPGAdminsForPostgresCluster(
 func (r *PGAdminReconciler) getClustersForPGAdmin(
 	ctx context.Context,
 	pgAdmin *v1beta1.PGAdmin,
-) (map[string]*v1beta1.PostgresClusterList, error) {
-	matching := make(map[string]*v1beta1.PostgresClusterList)
+) (map[string][]*v1beta1.PostgresCluster, error) {
+	matching := make(map[string][]*v1beta1.PostgresCluster)
 	var err error
 	var selector labels.Selector
 
 	for _, serverGroup := range pgAdmin.Spec.ServerGroups {
-		cluster := &v1beta1.PostgresCluster{}
+		var cluster v1beta1.PostgresCluster
 		if serverGroup.PostgresClusterName != "" {
-			err = r.Get(ctx, types.NamespacedName{
+			err = r.Get(ctx, client.ObjectKey{
 				Name:      serverGroup.PostgresClusterName,
 				Namespace: pgAdmin.GetNamespace(),
-			}, cluster)
+			}, &cluster)
 			if err == nil {
-				matching[serverGroup.Name] = &v1beta1.PostgresClusterList{
-					Items: []v1beta1.PostgresCluster{*cluster},
-				}
+				matching[serverGroup.Name] = []*v1beta1.PostgresCluster{&cluster}
 			}
 			continue
 		}
 		if selector, err = naming.AsSelector(serverGroup.PostgresClusterSelector); err == nil {
-			var filteredList v1beta1.PostgresClusterList
-			err = r.List(ctx, &filteredList,
+			var list v1beta1.PostgresClusterList
+			err = r.List(ctx, &list,
 				client.InNamespace(pgAdmin.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			)
 			if err == nil {
-				matching[serverGroup.Name] = &filteredList
+				matching[serverGroup.Name] = initialize.Pointers(list.Items...)
 			}
 		}
 	}

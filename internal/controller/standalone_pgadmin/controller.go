@@ -110,7 +110,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	var (
 		configmap  *corev1.ConfigMap
 		dataVolume *corev1.PersistentVolumeClaim
-		clusters   map[string]*v1beta1.PostgresClusterList
+		clusters   map[string][]*v1beta1.PostgresCluster
 		_          *corev1.Service
 	)
 
