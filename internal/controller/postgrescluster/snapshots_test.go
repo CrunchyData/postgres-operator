@@ -917,106 +917,98 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 
 func TestGetSnapshotWithLatestError(t *testing.T) {
 	t.Run("NoSnapshots", func(t *testing.T) {
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{}
-		snapshotWithLatestError := getSnapshotWithLatestError(snapshotList)
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{}
+		snapshotWithLatestError := getSnapshotWithLatestError(snapshots)
 		assert.Check(t, snapshotWithLatestError == nil)
 	})
 
 	t.Run("NoSnapshotsWithStatus", func(t *testing.T) {
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{},
-				{},
-			},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{},
+			{},
 		}
-		snapshotWithLatestError := getSnapshotWithLatestError(snapshotList)
+		snapshotWithLatestError := getSnapshotWithLatestError(snapshots)
 		assert.Check(t, snapshotWithLatestError == nil)
 	})
 
 	t.Run("NoSnapshotsWithErrors", func(t *testing.T) {
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						ReadyToUse: initialize.Bool(true),
-					},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					ReadyToUse: initialize.Bool(true),
 				},
-				{
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						ReadyToUse: initialize.Bool(false),
-					},
+			},
+			{
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					ReadyToUse: initialize.Bool(false),
 				},
 			},
 		}
-		snapshotWithLatestError := getSnapshotWithLatestError(snapshotList)
+		snapshotWithLatestError := getSnapshotWithLatestError(snapshots)
 		assert.Check(t, snapshotWithLatestError == nil)
 	})
 
 	t.Run("OneSnapshotWithError", func(t *testing.T) {
 		currentTime := metav1.Now()
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "good-snapshot",
-						UID:  "the-uid-123",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						CreationTime: &currentTime,
-						ReadyToUse:   initialize.Bool(true),
-					},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "good-snapshot",
+					UID:  "the-uid-123",
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "bad-snapshot",
-						UID:  "the-uid-456",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						ReadyToUse: initialize.Bool(false),
-						Error: &volumesnapshotv1.VolumeSnapshotError{
-							Time: &earlierTime,
-						},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					CreationTime: &currentTime,
+					ReadyToUse:   initialize.Bool(true),
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "bad-snapshot",
+					UID:  "the-uid-456",
+				},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					ReadyToUse: initialize.Bool(false),
+					Error: &volumesnapshotv1.VolumeSnapshotError{
+						Time: &earlierTime,
 					},
 				},
 			},
 		}
-		snapshotWithLatestError := getSnapshotWithLatestError(snapshotList)
+		snapshotWithLatestError := getSnapshotWithLatestError(snapshots)
 		assert.Equal(t, snapshotWithLatestError.ObjectMeta.Name, "bad-snapshot")
 	})
 
 	t.Run("TwoSnapshotsWithErrors", func(t *testing.T) {
 		currentTime := metav1.Now()
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "first-bad-snapshot",
-						UID:  "the-uid-123",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						ReadyToUse: initialize.Bool(false),
-						Error: &volumesnapshotv1.VolumeSnapshotError{
-							Time: &earlierTime,
-						},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "first-bad-snapshot",
+					UID:  "the-uid-123",
+				},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					ReadyToUse: initialize.Bool(false),
+					Error: &volumesnapshotv1.VolumeSnapshotError{
+						Time: &earlierTime,
 					},
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "second-bad-snapshot",
-						UID:  "the-uid-456",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						ReadyToUse: initialize.Bool(false),
-						Error: &volumesnapshotv1.VolumeSnapshotError{
-							Time: &currentTime,
-						},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "second-bad-snapshot",
+					UID:  "the-uid-456",
+				},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					ReadyToUse: initialize.Bool(false),
+					Error: &volumesnapshotv1.VolumeSnapshotError{
+						Time: &currentTime,
 					},
 				},
 			},
 		}
-		snapshotWithLatestError := getSnapshotWithLatestError(snapshotList)
+		snapshotWithLatestError := getSnapshotWithLatestError(snapshots)
 		assert.Equal(t, snapshotWithLatestError.ObjectMeta.Name, "second-bad-snapshot")
 	})
 }
@@ -1038,7 +1030,7 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 	t.Run("NoSnapshots", func(t *testing.T) {
 		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
 		assert.NilError(t, err)
-		assert.Equal(t, len(snapshots.Items), 0)
+		assert.Equal(t, len(snapshots), 0)
 	})
 
 	t.Run("NoSnapshotsForCluster", func(t *testing.T) {
@@ -1061,7 +1053,7 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 
 		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
 		assert.NilError(t, err)
-		assert.Equal(t, len(snapshots.Items), 0)
+		assert.Equal(t, len(snapshots), 0)
 	})
 
 	t.Run("OneSnapshotForCluster", func(t *testing.T) {
@@ -1102,8 +1094,8 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 
 		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
 		assert.NilError(t, err)
-		assert.Equal(t, len(snapshots.Items), 1)
-		assert.Equal(t, snapshots.Items[0].Name, "another-snapshot")
+		assert.Equal(t, len(snapshots), 1)
+		assert.Equal(t, snapshots[0].Name, "another-snapshot")
 	})
 
 	t.Run("TwoSnapshotsForCluster", func(t *testing.T) {
@@ -1144,106 +1136,98 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 
 		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
 		assert.NilError(t, err)
-		assert.Equal(t, len(snapshots.Items), 2)
+		assert.Equal(t, len(snapshots), 2)
 	})
 }
 
 func TestGetLatestReadySnapshot(t *testing.T) {
 	t.Run("NoSnapshots", func(t *testing.T) {
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{}
-		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{}
+		latestReadySnapshot := getLatestReadySnapshot(snapshots)
 		assert.Assert(t, latestReadySnapshot == nil)
 	})
 
 	t.Run("NoSnapshotsWithStatus", func(t *testing.T) {
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{},
-				{},
-			},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{},
+			{},
 		}
-		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		latestReadySnapshot := getLatestReadySnapshot(snapshots)
 		assert.Assert(t, latestReadySnapshot == nil)
 	})
 
 	t.Run("NoReadySnapshots", func(t *testing.T) {
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						ReadyToUse: initialize.Bool(false),
-					},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					ReadyToUse: initialize.Bool(false),
 				},
-				{
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						ReadyToUse: initialize.Bool(false),
-					},
+			},
+			{
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					ReadyToUse: initialize.Bool(false),
 				},
 			},
 		}
-		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		latestReadySnapshot := getLatestReadySnapshot(snapshots)
 		assert.Assert(t, latestReadySnapshot == nil)
 	})
 
 	t.Run("OneReadySnapshot", func(t *testing.T) {
 		currentTime := metav1.Now()
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "good-snapshot",
-						UID:  "the-uid-123",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						CreationTime: &earlierTime,
-						ReadyToUse:   initialize.Bool(true),
-					},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "good-snapshot",
+					UID:  "the-uid-123",
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "bad-snapshot",
-						UID:  "the-uid-456",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						CreationTime: &currentTime,
-						ReadyToUse:   initialize.Bool(false),
-					},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					CreationTime: &earlierTime,
+					ReadyToUse:   initialize.Bool(true),
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "bad-snapshot",
+					UID:  "the-uid-456",
+				},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					CreationTime: &currentTime,
+					ReadyToUse:   initialize.Bool(false),
 				},
 			},
 		}
-		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		latestReadySnapshot := getLatestReadySnapshot(snapshots)
 		assert.Equal(t, latestReadySnapshot.ObjectMeta.Name, "good-snapshot")
 	})
 
 	t.Run("TwoReadySnapshots", func(t *testing.T) {
 		currentTime := metav1.Now()
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "first-good-snapshot",
-						UID:  "the-uid-123",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						CreationTime: &earlierTime,
-						ReadyToUse:   initialize.Bool(true),
-					},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "first-good-snapshot",
+					UID:  "the-uid-123",
 				},
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "second-good-snapshot",
-						UID:  "the-uid-456",
-					},
-					Status: &volumesnapshotv1.VolumeSnapshotStatus{
-						CreationTime: &currentTime,
-						ReadyToUse:   initialize.Bool(true),
-					},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					CreationTime: &earlierTime,
+					ReadyToUse:   initialize.Bool(true),
+				},
+			},
+			{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "second-good-snapshot",
+					UID:  "the-uid-456",
+				},
+				Status: &volumesnapshotv1.VolumeSnapshotStatus{
+					CreationTime: &currentTime,
+					ReadyToUse:   initialize.Bool(true),
 				},
 			},
 		}
-		latestReadySnapshot := getLatestReadySnapshot(snapshotList)
+		latestReadySnapshot := getLatestReadySnapshot(snapshots)
 		assert.Equal(t, latestReadySnapshot.ObjectMeta.Name, "second-good-snapshot")
 	})
 }
@@ -1275,8 +1259,8 @@ func TestDeleteSnapshots(t *testing.T) {
 	})
 
 	t.Run("NoSnapshots", func(t *testing.T) {
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{}
-		err := r.deleteSnapshots(ctx, cluster, snapshotList)
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{}
+		err := r.deleteSnapshots(ctx, cluster, snapshots)
 		assert.NilError(t, err)
 	})
 
@@ -1300,12 +1284,10 @@ func TestDeleteSnapshots(t *testing.T) {
 		assert.NilError(t, r.setControllerReference(rhinoCluster, snapshot1))
 		assert.NilError(t, r.apply(ctx, snapshot1))
 
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				*snapshot1,
-			},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			snapshot1,
 		}
-		assert.NilError(t, r.deleteSnapshots(ctx, cluster, snapshotList))
+		assert.NilError(t, r.deleteSnapshots(ctx, cluster, snapshots))
 		existingSnapshots := &volumesnapshotv1.VolumeSnapshotList{}
 		assert.NilError(t,
 			r.Client.List(ctx, existingSnapshots,
@@ -1352,12 +1334,10 @@ func TestDeleteSnapshots(t *testing.T) {
 		assert.NilError(t, r.setControllerReference(cluster, snapshot2))
 		assert.NilError(t, r.apply(ctx, snapshot2))
 
-		snapshotList := &volumesnapshotv1.VolumeSnapshotList{
-			Items: []volumesnapshotv1.VolumeSnapshot{
-				*snapshot1, *snapshot2,
-			},
+		snapshots := []*volumesnapshotv1.VolumeSnapshot{
+			snapshot1, snapshot2,
 		}
-		assert.NilError(t, r.deleteSnapshots(ctx, cluster, snapshotList))
+		assert.NilError(t, r.deleteSnapshots(ctx, cluster, snapshots))
 		existingSnapshots := &volumesnapshotv1.VolumeSnapshotList{}
 		assert.NilError(t,
 			r.Client.List(ctx, existingSnapshots,
