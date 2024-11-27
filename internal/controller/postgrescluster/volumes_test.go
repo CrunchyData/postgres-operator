@@ -16,6 +16,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -295,7 +296,7 @@ func TestGetPVCNameMethods(t *testing.T) {
 		naming.LabelInstance:    "testinstance1-abcd",
 		naming.LabelRole:        naming.RolePostgresWAL,
 	}
-	clusterVolumes := []corev1.PersistentVolumeClaim{*pgDataPVC, *walPVC}
+	clusterVolumes := []*corev1.PersistentVolumeClaim{pgDataPVC, walPVC}
 
 	repoPVC1 := pvc.DeepCopy()
 	repoPVC1.Name = "testrepovol1"
@@ -319,26 +320,24 @@ func TestGetPVCNameMethods(t *testing.T) {
 
 	t.Run("get pgdata PVC", func(t *testing.T) {
 
-		pvcNames, err := getPGPVCName(map[string]string{
+		pvcNames := getPVCName(clusterVolumes, labels.SelectorFromSet(map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: "testinstance1",
 			naming.LabelInstance:    "testinstance1-abcd",
 			naming.LabelRole:        naming.RolePostgresData,
-		}, clusterVolumes)
-		assert.NilError(t, err)
+		}))
 
 		assert.Assert(t, pvcNames == "testpgdatavol")
 	})
 
 	t.Run("get wal PVC", func(t *testing.T) {
 
-		pvcNames, err := getPGPVCName(map[string]string{
+		pvcNames := getPVCName(clusterVolumes, labels.SelectorFromSet(map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: "testinstance1",
 			naming.LabelInstance:    "testinstance1-abcd",
 			naming.LabelRole:        naming.RolePostgresWAL,
-		}, clusterVolumes)
-		assert.NilError(t, err)
+		}))
 
 		assert.Assert(t, pvcNames == "testwalvol")
 	})

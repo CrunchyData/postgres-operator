@@ -162,7 +162,7 @@ func (r *Reconciler) Reconcile(
 		clusterConfigMap             *corev1.ConfigMap
 		clusterReplicationSecret     *corev1.Secret
 		clusterPodService            *corev1.Service
-		clusterVolumes               []corev1.PersistentVolumeClaim
+		clusterVolumes               []*corev1.PersistentVolumeClaim
 		instanceServiceAccount       *corev1.ServiceAccount
 		instances                    *observedInstances
 		patroniLeaderService         *corev1.Service

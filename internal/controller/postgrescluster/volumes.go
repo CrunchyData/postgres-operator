@@ -34,7 +34,7 @@ import (
 // API and sets the PersistentVolumeResizing condition as appropriate.
 func (r *Reconciler) observePersistentVolumeClaims(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) ([]corev1.PersistentVolumeClaim, error) {
+) ([]*corev1.PersistentVolumeClaim, error) {
 	volumes := &corev1.PersistentVolumeClaimList{}
 
 	selector, err := naming.AsSelector(naming.Cluster(cluster.Name))
@@ -140,7 +140,7 @@ func (r *Reconciler) observePersistentVolumeClaims(
 		meta.RemoveStatusCondition(&cluster.Status.Conditions, resizing.Type)
 	}
 
-	return volumes.Items, err
+	return initialize.Pointers(volumes.Items...), err
 }
 
 // configureExistingPVCs configures the defined pgData, pg_wal and pgBackRest
@@ -151,8 +151,8 @@ func (r *Reconciler) observePersistentVolumeClaims(
 // bootstrapping.
 func (r *Reconciler) configureExistingPVCs(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	volumes []corev1.PersistentVolumeClaim,
-) ([]corev1.PersistentVolumeClaim, error) {
+	volumes []*corev1.PersistentVolumeClaim,
+) ([]*corev1.PersistentVolumeClaim, error) {
 
 	var err error
 
@@ -197,9 +197,9 @@ func (r *Reconciler) configureExistingPVCs(
 func (r *Reconciler) configureExistingPGVolumes(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
-	volumes []corev1.PersistentVolumeClaim,
+	volumes []*corev1.PersistentVolumeClaim,
 	instanceName string,
-) ([]corev1.PersistentVolumeClaim, error) {
+) ([]*corev1.PersistentVolumeClaim, error) {
 
 	// if the volume is already in the list, move on
 	for i := range volumes {
@@ -235,7 +235,7 @@ func (r *Reconciler) configureExistingPGVolumes(
 			if err := errors.WithStack(r.apply(ctx, volume)); err != nil {
 				return volumes, err
 			}
-			volumes = append(volumes, *volume)
+			volumes = append(volumes, volume)
 		}
 	}
 	return volumes, nil
@@ -250,9 +250,9 @@ func (r *Reconciler) configureExistingPGVolumes(
 func (r *Reconciler) configureExistingPGWALVolume(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
-	volumes []corev1.PersistentVolumeClaim,
+	volumes []*corev1.PersistentVolumeClaim,
 	instanceName string,
-) ([]corev1.PersistentVolumeClaim, error) {
+) ([]*corev1.PersistentVolumeClaim, error) {
 
 	// if the volume is already in the list, move on
 	for i := range volumes {
@@ -288,7 +288,7 @@ func (r *Reconciler) configureExistingPGWALVolume(
 		if err := errors.WithStack(r.apply(ctx, volume)); err != nil {
 			return volumes, err
 		}
-		volumes = append(volumes, *volume)
+		volumes = append(volumes, volume)
 	}
 	return volumes, nil
 }
@@ -302,8 +302,8 @@ func (r *Reconciler) configureExistingPGWALVolume(
 func (r *Reconciler) configureExistingRepoVolumes(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
-	volumes []corev1.PersistentVolumeClaim,
-) ([]corev1.PersistentVolumeClaim, error) {
+	volumes []*corev1.PersistentVolumeClaim,
+) ([]*corev1.PersistentVolumeClaim, error) {
 
 	// if the volume is already in the list, move on
 	for i := range volumes {
@@ -337,7 +337,7 @@ func (r *Reconciler) configureExistingRepoVolumes(
 			if err := errors.WithStack(r.apply(ctx, volume)); err != nil {
 				return volumes, err
 			}
-			volumes = append(volumes, *volume)
+			volumes = append(volumes, volume)
 		}
 	}
 	return volumes, nil
@@ -859,23 +859,12 @@ func getRepoPVCNames(
 	return repoPVCs
 }
 
-// getPGPVCName returns the name of a PVC that has the provided labels, if found.
-func getPGPVCName(labelMap map[string]string,
-	clusterVolumes []corev1.PersistentVolumeClaim,
-) (string, error) {
-
-	selector, err := naming.AsSelector(metav1.LabelSelector{
-		MatchLabels: labelMap,
-	})
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-
-	for _, pvc := range clusterVolumes {
+// getPVCName returns the name of a PVC that matches the selector, if any.
+func getPVCName(volumes []*corev1.PersistentVolumeClaim, selector labels.Selector) string {
+	for _, pvc := range volumes {
 		if selector.Matches(labels.Set(pvc.GetLabels())) {
-			return pvc.GetName(), nil
+			return pvc.GetName()
 		}
 	}
-
-	return "", nil
+	return ""
 }

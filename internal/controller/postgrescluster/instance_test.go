@@ -1758,7 +1758,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 	testCases := []struct {
 		set                   v1beta1.PostgresInstanceSetSpec
 		fakeObservedInstances *observedInstances
-		fakeClusterVolumes    []corev1.PersistentVolumeClaim
+		fakeClusterVolumes    []*corev1.PersistentVolumeClaim
 		expectedInstanceNames []string
 	}{{
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1769,7 +1769,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 			[]appsv1.StatefulSet{{}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes:    []corev1.PersistentVolumeClaim{{}},
+		fakeClusterVolumes:    []*corev1.PersistentVolumeClaim{{}},
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1783,7 +1783,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-abc-def",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,
@@ -1802,7 +1802,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes:    []corev1.PersistentVolumeClaim{},
+		fakeClusterVolumes:    []*corev1.PersistentVolumeClaim{},
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1816,7 +1816,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-abc-def",
 				Labels: map[string]string{
@@ -1843,7 +1843,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-abc-def",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,
@@ -1863,7 +1863,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-abc-def",
 				Labels: map[string]string{
@@ -1887,7 +1887,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 			[]appsv1.StatefulSet{},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-def-ghi",
 				Labels: map[string]string{
@@ -1911,7 +1911,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 			[]appsv1.StatefulSet{},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-def-ghi",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,

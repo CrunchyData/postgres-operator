@@ -190,6 +190,60 @@ func TestPointer(t *testing.T) {
 	})
 }
 
+func TestPointers(t *testing.T) {
+	t.Run("arguments", func(t *testing.T) {
+		assert.Assert(t, nil != initialize.Pointers[int](), "does not return nil slice")
+		assert.DeepEqual(t, []*int{}, initialize.Pointers[int]())
+
+		s1 := initialize.Pointers(0, -99, 42)
+		if assert.Check(t, len(s1) == 3, "got %#v", s1) {
+			if assert.Check(t, s1[0] != nil) {
+				assert.Equal(t, *s1[0], 0)
+			}
+			if assert.Check(t, s1[1] != nil) {
+				assert.Equal(t, *s1[1], -99)
+			}
+			if assert.Check(t, s1[2] != nil) {
+				assert.Equal(t, *s1[2], 42)
+			}
+		}
+
+		// Values are the same, but pointers differ.
+		s2 := initialize.Pointers(0, -99, 42)
+		assert.DeepEqual(t, s1, s2)
+		assert.Assert(t, s1[0] != s2[0])
+		assert.Assert(t, s1[1] != s2[1])
+		assert.Assert(t, s1[2] != s2[2])
+	})
+
+	t.Run("slice", func(t *testing.T) {
+		var z []string
+		assert.Assert(t, nil != initialize.Pointers(z...), "does not return nil slice")
+		assert.DeepEqual(t, []*string{}, initialize.Pointers(z...))
+
+		v := []string{"doot", "", "baz"}
+		s1 := initialize.Pointers(v...)
+		if assert.Check(t, len(s1) == 3, "got %#v", s1) {
+			if assert.Check(t, s1[0] != nil) {
+				assert.Equal(t, *s1[0], "doot")
+			}
+			if assert.Check(t, s1[1] != nil) {
+				assert.Equal(t, *s1[1], "")
+			}
+			if assert.Check(t, s1[2] != nil) {
+				assert.Equal(t, *s1[2], "baz")
+			}
+		}
+
+		// Values and pointers are the same.
+		s2 := initialize.Pointers(v...)
+		assert.DeepEqual(t, s1, s2)
+		assert.Assert(t, s1[0] == s2[0])
+		assert.Assert(t, s1[1] == s2[1])
+		assert.Assert(t, s1[2] == s2[2])
+	})
+}
+
 func TestString(t *testing.T) {
 	z := initialize.String("")
 	if assert.Check(t, z != nil) {

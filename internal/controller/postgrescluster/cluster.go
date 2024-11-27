@@ -281,7 +281,7 @@ func (r *Reconciler) reconcileClusterReplicaService(
 // `dataSource.pgbackrest` fields
 func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, observed *observedInstances,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 	rootCA *pki.RootCertificateAuthority,
 	backupsSpecFound bool,
 ) (bool, error) {

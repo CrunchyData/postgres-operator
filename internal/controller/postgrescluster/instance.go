@@ -588,7 +588,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	instances *observedInstances,
 	patroniLeaderService *corev1.Service,
 	primaryCertificate *corev1.SecretProjection,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 ) error {
@@ -706,12 +706,12 @@ func (r *Reconciler) cleanupPodDisruptionBudgets(
 // for the instance set specified that are not currently associated with an instance, and then
 // returning the instance names associated with those PVC's.
 func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
-	observedInstances *observedInstances, clusterVolumes []corev1.PersistentVolumeClaim) []string {
+	observedInstances *observedInstances, clusterVolumes []*corev1.PersistentVolumeClaim) []string {
 
 	availableInstanceNames := []string{}
 
 	// first identify any PGDATA volumes for the instance set specified
-	setVolumes := []corev1.PersistentVolumeClaim{}
+	setVolumes := []*corev1.PersistentVolumeClaim{}
 	for _, pvc := range clusterVolumes {
 		// ignore PGDATA PVCs that are terminating
 		if pvc.GetDeletionTimestamp() != nil {
@@ -729,7 +729,7 @@ func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
 	// any available PGDATA volumes for the instance set that have no corresponding WAL
 	// volumes (which means new PVCs will simply be reconciled instead).
 	if set.WALVolumeClaimSpec != nil {
-		setVolumesWithWAL := []corev1.PersistentVolumeClaim{}
+		setVolumesWithWAL := []*corev1.PersistentVolumeClaim{}
 		for _, setVol := range setVolumes {
 			setVolInstance := setVol.GetLabels()[naming.LabelInstance]
 			for _, pvc := range clusterVolumes {
@@ -1066,7 +1066,7 @@ func (r *Reconciler) scaleUpInstances(
 	primaryCertificate *corev1.SecretProjection,
 	availableInstanceNames []string,
 	numInstancePods int,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 ) ([]*appsv1.StatefulSet, error) {
@@ -1141,7 +1141,7 @@ func (r *Reconciler) reconcileInstance(
 	primaryCertificate *corev1.SecretProjection,
 	instance *appsv1.StatefulSet,
 	numInstancePods int,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 ) error {

@@ -405,7 +405,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		assert.Equal(t, len(pvcs.Items), 1)
 
 		// Create volumes for reconcile
-		clusterVolumes := []corev1.PersistentVolumeClaim{*pvc}
+		clusterVolumes := []*corev1.PersistentVolumeClaim{pvc}
 
 		// Reconcile
 		returned, err := r.reconcileDedicatedSnapshotVolume(ctx, cluster, clusterVolumes)
@@ -434,7 +434,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
 
 		// Create volumes for reconcile
-		clusterVolumes := []corev1.PersistentVolumeClaim{}
+		clusterVolumes := []*corev1.PersistentVolumeClaim{}
 
 		// Reconcile
 		pvc, err := r.reconcileDedicatedSnapshotVolume(ctx, cluster, clusterVolumes)
@@ -480,7 +480,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		// Create instance set and volumes for reconcile
 		sts := &appsv1.StatefulSet{}
 		generateInstanceStatefulSetIntent(ctx, cluster, &cluster.Spec.InstanceSets[0], "pod-service", "service-account", sts, 1)
-		clusterVolumes := []corev1.PersistentVolumeClaim{}
+		clusterVolumes := []*corev1.PersistentVolumeClaim{}
 
 		// Reconcile
 		pvc, err := r.reconcileDedicatedSnapshotVolume(ctx, cluster, clusterVolumes)
@@ -544,7 +544,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		// Create instance set and volumes for reconcile
 		sts := &appsv1.StatefulSet{}
 		generateInstanceStatefulSetIntent(ctx, cluster, &cluster.Spec.InstanceSets[0], "pod-service", "service-account", sts, 1)
-		clusterVolumes := []corev1.PersistentVolumeClaim{}
+		clusterVolumes := []*corev1.PersistentVolumeClaim{}
 
 		// Reconcile
 		pvc, err := r.reconcileDedicatedSnapshotVolume(ctx, cluster, clusterVolumes)
@@ -611,7 +611,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		// Setup instances and volumes for reconcile
 		sts := &appsv1.StatefulSet{}
 		generateInstanceStatefulSetIntent(ctx, cluster, &cluster.Spec.InstanceSets[0], "pod-service", "service-account", sts, 1)
-		clusterVolumes := []corev1.PersistentVolumeClaim{}
+		clusterVolumes := []*corev1.PersistentVolumeClaim{}
 
 		// Reconcile
 		pvc, err := r.reconcileDedicatedSnapshotVolume(ctx, cluster, clusterVolumes)
