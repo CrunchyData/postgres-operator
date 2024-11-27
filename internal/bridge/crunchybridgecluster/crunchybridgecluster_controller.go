@@ -20,10 +20,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	pgoRuntime "github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -54,15 +55,23 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 		For(&v1beta1.CrunchyBridgeCluster{}).
 		Owns(&corev1.Secret{}).
 		// Wake periodically to check Bridge API for all CrunchyBridgeClusters.
-		// Potentially replace with different requeue times, remove the Watch function
-		// Smarter: retry after a certain time for each cluster: https://gist.github.com/cbandy/a5a604e3026630c5b08cfbcdfffd2a13
+		// Potentially replace with different requeue times
+		// Smarter: retry after a certain time for each cluster
 		WatchesRawSource(
-			pgoRuntime.NewTickerImmediate(5*time.Minute, event.GenericEvent{}, r.Watch()),
+			runtime.NewTickerImmediate(5*time.Minute, event.GenericEvent{},
+				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []ctrl.Request {
+					var list v1beta1.CrunchyBridgeClusterList
+					_ = r.List(ctx, &list)
+					return runtime.Requests(initialize.Pointers(list.Items...)...)
+				}),
+			),
 		).
 		// Watch secrets and filter for secrets mentioned by CrunchyBridgeClusters
 		Watches(
 			&corev1.Secret{},
-			r.watchForRelatedSecret(),
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []ctrl.Request {
+				return runtime.Requests(r.findCrunchyBridgeClustersForSecret(ctx, client.ObjectKeyFromObject(secret))...)
+			}),
 		).
 		Complete(r)
 }

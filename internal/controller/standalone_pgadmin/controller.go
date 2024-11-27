@@ -16,8 +16,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
-	controllerruntime "github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -46,7 +47,7 @@ type PGAdminReconciler struct {
 func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if r.PodExec == nil {
 		var err error
-		r.PodExec, err = controllerruntime.NewPodExecutor(mgr.GetConfig())
+		r.PodExec, err = runtime.NewPodExecutor(mgr.GetConfig())
 		if err != nil {
 			return err
 		}
@@ -61,11 +62,15 @@ func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Watches(
 			v1beta1.NewPostgresCluster(),
-			r.watchPostgresClusters(),
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, cluster client.Object) []ctrl.Request {
+				return runtime.Requests(r.findPGAdminsForPostgresCluster(ctx, cluster)...)
+			}),
 		).
 		Watches(
 			&corev1.Secret{},
-			r.watchForRelatedSecret(),
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []ctrl.Request {
+				return runtime.Requests(r.findPGAdminsForSecret(ctx, client.ObjectKeyFromObject(secret))...)
+			}),
 		).
 		Complete(r)
 }
