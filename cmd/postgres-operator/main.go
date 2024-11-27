@@ -250,6 +250,7 @@ func main() {
 
 	// add all PostgreSQL Operator controllers to the runtime manager
 	addControllersToManager(manager, log, registrar)
+	must(standalone_pgadmin.ManagedReconciler(manager))
 
 	if features.Enabled(feature.BridgeIdentifiers) {
 		url := os.Getenv("PGO_BRIDGE_URL")
@@ -326,17 +327,6 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 
 	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create PGUpgrade controller")
-		os.Exit(1)
-	}
-
-	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
-		Client:   mgr.GetClient(),
-		Owner:    naming.ControllerPGAdmin,
-		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-	}
-
-	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PGAdmin controller")
 		os.Exit(1)
 	}
 

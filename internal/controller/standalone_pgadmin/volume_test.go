@@ -30,8 +30,7 @@ func TestReconcilePGAdminDataVolume(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &PGAdminReconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)

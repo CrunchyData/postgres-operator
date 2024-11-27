@@ -22,7 +22,7 @@ func TestFindPGAdminsForSecret(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient)
-	reconciler := &PGAdminReconciler{Client: tClient}
+	reconciler := &PGAdminReconciler{Reader: tClient}
 
 	secret1 := &corev1.Secret{}
 	secret1.Namespace = ns.Name
