@@ -1499,7 +1499,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 // for the PostgresCluster being reconciled using the backups of another PostgresCluster.
 func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, dataSource *v1beta1.PostgresClusterDataSource,
-	configHash string, clusterVolumes []corev1.PersistentVolumeClaim,
+	configHash string, clusterVolumes []*corev1.PersistentVolumeClaim,
 	rootCA *pki.RootCertificateAuthority,
 	backupsSpecFound bool,
 ) error {
@@ -1663,7 +1663,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 // data source, i.e., S3, etc.
 func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 	cluster *v1beta1.PostgresCluster, dataSource *v1beta1.PGBackRestDataSource,
-	configHash string, clusterVolumes []corev1.PersistentVolumeClaim) error {
+	configHash string, clusterVolumes []*corev1.PersistentVolumeClaim) error {
 
 	// Ensure the proper instance and instance set can be identified via the status.  The
 	// StartupInstance and StartupInstanceSet values should be populated when the cluster

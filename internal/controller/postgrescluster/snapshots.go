@@ -14,6 +14,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
@@ -164,7 +165,7 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 // after a successful backup.
 func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 ) (*corev1.PersistentVolumeClaim, error) {
 
 	// If VolumeSnapshots feature gate is disabled, do nothing and return early.
@@ -181,10 +182,7 @@ func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 
 	// If volume already exists, use existing name. Otherwise, generate a name.
 	var pvc *corev1.PersistentVolumeClaim
-	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	existingPVCName := getPVCName(clusterVolumes, labels.SelectorFromSet(labelMap))
 	if existingPVCName != "" {
 		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
 			Namespace: cluster.GetNamespace(),
@@ -208,7 +206,7 @@ func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 
 	// If we've got this far, snapshots are enabled so we should create/update/get
 	// the dedicated snapshot volume
-	pvc, err = r.createDedicatedSnapshotVolume(ctx, cluster, labelMap, pvc)
+	pvc, err := r.createDedicatedSnapshotVolume(ctx, cluster, labelMap, pvc)
 	if err != nil {
 		return pvc, err
 	}

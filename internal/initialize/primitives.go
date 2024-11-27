@@ -35,5 +35,14 @@ func Map[M ~map[K]V, K comparable, V any](m *M) {
 // Pointer returns a pointer to v.
 func Pointer[T any](v T) *T { return &v }
 
+// Pointers returns a slice of pointers to the items in v.
+func Pointers[T any](v ...T) []*T {
+	p := make([]*T, len(v))
+	for i := range v {
+		p[i] = &v[i]
+	}
+	return p
+}
+
 // String returns a pointer to v.
 func String(v string) *string { return &v }
