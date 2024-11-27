@@ -354,8 +354,8 @@ func (r *Reconciler) reconcileDirMoveJobs(ctx context.Context,
 	if cluster.Spec.DataSource != nil &&
 		cluster.Spec.DataSource.Volumes != nil {
 
-		moveJobs := &batchv1.JobList{}
-		if err := r.Client.List(ctx, moveJobs, &client.ListOptions{
+		var list batchv1.JobList
+		if err := r.Client.List(ctx, &list, &client.ListOptions{
 			Namespace:     cluster.Namespace,
 			LabelSelector: naming.DirectoryMoveJobLabels(cluster.Name).AsSelector(),
 		}); err != nil {
@@ -364,6 +364,7 @@ func (r *Reconciler) reconcileDirMoveJobs(ctx context.Context,
 
 		var err error
 		var pgDataReturn, pgWALReturn, repoReturn bool
+		var moveJobs = initialize.Pointers(list.Items...)
 
 		if cluster.Spec.DataSource.Volumes.PGDataVolume != nil &&
 			cluster.Spec.DataSource.Volumes.PGDataVolume.
@@ -405,19 +406,19 @@ func (r *Reconciler) reconcileDirMoveJobs(ctx context.Context,
 // main control loop should continue or return early to allow time for the job
 // to complete.
 func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
-	cluster *v1beta1.PostgresCluster, moveJobs *batchv1.JobList) (bool, error) {
+	cluster *v1beta1.PostgresCluster, moveJobs []*batchv1.Job) (bool, error) {
 
 	moveDirJob := &batchv1.Job{}
 	moveDirJob.ObjectMeta = naming.MovePGDataDirJob(cluster)
 
 	// check for an existing Job
-	for i := range moveJobs.Items {
-		if moveJobs.Items[i].Name == moveDirJob.Name {
-			if jobCompleted(&moveJobs.Items[i]) {
+	for i := range moveJobs {
+		if moveJobs[i].Name == moveDirJob.Name {
+			if jobCompleted(moveJobs[i]) {
 				// if the Job is completed, return as this only needs to run once
 				return false, nil
 			}
-			if !jobFailed(&moveJobs.Items[i]) {
+			if !jobFailed(moveJobs[i]) {
 				// if the Job otherwise exists and has not failed, return and
 				// give the Job time to finish
 				return true, nil
@@ -530,19 +531,19 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 // main control loop should continue or return early to allow time for the job
 // to complete.
 func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
-	cluster *v1beta1.PostgresCluster, moveJobs *batchv1.JobList) (bool, error) {
+	cluster *v1beta1.PostgresCluster, moveJobs []*batchv1.Job) (bool, error) {
 
 	moveDirJob := &batchv1.Job{}
 	moveDirJob.ObjectMeta = naming.MovePGWALDirJob(cluster)
 
 	// check for an existing Job
-	for i := range moveJobs.Items {
-		if moveJobs.Items[i].Name == moveDirJob.Name {
-			if jobCompleted(&moveJobs.Items[i]) {
+	for i := range moveJobs {
+		if moveJobs[i].Name == moveDirJob.Name {
+			if jobCompleted(moveJobs[i]) {
 				// if the Job is completed, return as this only needs to run once
 				return false, nil
 			}
-			if !jobFailed(&moveJobs.Items[i]) {
+			if !jobFailed(moveJobs[i]) {
 				// if the Job otherwise exists and has not failed, return and
 				// give the Job time to finish
 				return true, nil
@@ -649,19 +650,19 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 // indicating whether the main control loop should continue or return early
 // to allow time for the job to complete.
 func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
-	cluster *v1beta1.PostgresCluster, moveJobs *batchv1.JobList) (bool, error) {
+	cluster *v1beta1.PostgresCluster, moveJobs []*batchv1.Job) (bool, error) {
 
 	moveDirJob := &batchv1.Job{}
 	moveDirJob.ObjectMeta = naming.MovePGBackRestRepoDirJob(cluster)
 
 	// check for an existing Job
-	for i := range moveJobs.Items {
-		if moveJobs.Items[i].Name == moveDirJob.Name {
-			if jobCompleted(&moveJobs.Items[i]) {
+	for i := range moveJobs {
+		if moveJobs[i].Name == moveDirJob.Name {
+			if jobCompleted(moveJobs[i]) {
 				// if the Job is completed, return as this only needs to run once
 				return false, nil
 			}
-			if !jobFailed(&moveJobs.Items[i]) {
+			if !jobFailed(moveJobs[i]) {
 				// if the Job otherwise exists and has not failed, return and
 				// give the Job time to finish
 				return true, nil
