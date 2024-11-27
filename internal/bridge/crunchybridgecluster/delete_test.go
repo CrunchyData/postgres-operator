@@ -32,8 +32,7 @@ func TestHandleDeleteCluster(t *testing.T) {
 	secondClusterInBridge.ID = "2345"
 
 	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
+		Writer: client.WithFieldOwner(tClient, t.Name()),
 	}
 	testBridgeClient := &TestBridgeClient{
 		ApiKey:   "9012",

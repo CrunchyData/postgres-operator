@@ -248,19 +248,22 @@ func main() {
 	must(manager.Add(registrar))
 	token, _ := registrar.CheckToken()
 
+	bridgeURL := os.Getenv("PGO_BRIDGE_URL")
+	bridgeClient := func() *bridge.Client {
+		client := bridge.NewClient(bridgeURL, versionString)
+		client.Transport = otelTransportWrapper()(http.DefaultTransport)
+		return client
+	}
+
 	// add all PostgreSQL Operator controllers to the runtime manager
 	addControllersToManager(manager, log, registrar)
 	must(standalone_pgadmin.ManagedReconciler(manager))
+	must(crunchybridgecluster.ManagedReconciler(manager, func() bridge.ClientInterface {
+		return bridgeClient()
+	}))
 
 	if features.Enabled(feature.BridgeIdentifiers) {
-		url := os.Getenv("PGO_BRIDGE_URL")
-		constructor := func() *bridge.Client {
-			client := bridge.NewClient(url, versionString)
-			client.Transport = otelTransportWrapper()(http.DefaultTransport)
-			return client
-		}
-
-		must(bridge.ManagedInstallationReconciler(manager, constructor))
+		must(bridge.ManagedInstallationReconciler(manager, bridgeClient))
 	}
 
 	// Enable upgrade checking
@@ -327,23 +330,6 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 
 	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create PGUpgrade controller")
-		os.Exit(1)
-	}
-
-	constructor := func() bridge.ClientInterface {
-		client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
-		client.Transport = otelTransportWrapper()(http.DefaultTransport)
-		return client
-	}
-
-	crunchyBridgeClusterReconciler := &crunchybridgecluster.CrunchyBridgeClusterReconciler{
-		Client:    mgr.GetClient(),
-		Owner:     naming.ControllerCrunchyBridgeCluster,
-		NewClient: constructor,
-	}
-
-	if err := crunchyBridgeClusterReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create CrunchyBridgeCluster controller")
 		os.Exit(1)
 	}
 }
