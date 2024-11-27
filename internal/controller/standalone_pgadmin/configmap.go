@@ -9,8 +9,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -27,7 +29,7 @@ import (
 // reconcilePGAdminConfigMap writes the ConfigMap for pgAdmin.
 func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
-	clusters map[string]*v1beta1.PostgresClusterList,
+	clusters map[string][]*v1beta1.PostgresCluster,
 ) (*corev1.ConfigMap, error) {
 	configmap, err := configmap(pgadmin, clusters)
 	if err == nil {
@@ -42,7 +44,7 @@ func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 
 // configmap returns a v1.ConfigMap for pgAdmin.
 func configmap(pgadmin *v1beta1.PGAdmin,
-	clusters map[string]*v1beta1.PostgresClusterList,
+	clusters map[string][]*v1beta1.PostgresCluster,
 ) (*corev1.ConfigMap, error) {
 	configmap := &corev1.ConfigMap{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
 	configmap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -126,7 +128,7 @@ func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
 //		}
 //	}
 func generateClusterConfig(
-	clusters map[string]*v1beta1.PostgresClusterList,
+	clusters map[string][]*v1beta1.PostgresCluster,
 ) (string, error) {
 	// To avoid spurious reconciles, the following value must not change when
 	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
@@ -149,11 +151,10 @@ func generateClusterConfig(
 
 	clusterServers := map[int]any{}
 	for _, serverGroupName := range keys {
-		sort.Slice(clusters[serverGroupName].Items,
-			func(i, j int) bool {
-				return clusters[serverGroupName].Items[i].Name < clusters[serverGroupName].Items[j].Name
-			})
-		for _, cluster := range clusters[serverGroupName].Items {
+		slices.SortFunc(clusters[serverGroupName], func(a, b *v1beta1.PostgresCluster) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		for _, cluster := range clusters[serverGroupName] {
 			object := map[string]any{
 				"Name":          cluster.Name,
 				"Group":         serverGroupName,

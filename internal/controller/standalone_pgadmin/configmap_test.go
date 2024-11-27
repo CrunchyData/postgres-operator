@@ -78,13 +78,10 @@ func TestGenerateClusterConfig(t *testing.T) {
 
 	cluster := testCluster()
 	cluster.Namespace = "postgres-operator"
-	clusterList := &v1beta1.PostgresClusterList{
-		Items: []v1beta1.PostgresCluster{*cluster, *cluster},
-	}
-	clusters := map[string]*v1beta1.PostgresClusterList{
-		"shared": clusterList,
-		"test":   clusterList,
-		"hello":  clusterList,
+	clusters := map[string][]*v1beta1.PostgresCluster{
+		"shared": {cluster, cluster},
+		"test":   {cluster, cluster},
+		"hello":  {cluster, cluster},
 	}
 
 	expectedString := `{
@@ -163,7 +160,7 @@ func TestGeneratePGAdminConfigMap(t *testing.T) {
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Namespace = "some-ns"
 	pgadmin.Name = "pg1"
-	clusters := map[string]*v1beta1.PostgresClusterList{}
+	clusters := map[string][]*v1beta1.PostgresCluster{}
 	t.Run("Data,ObjectMeta,TypeMeta", func(t *testing.T) {
 		pgadmin := pgadmin.DeepCopy()
 
