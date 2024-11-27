@@ -30,7 +30,7 @@ func (r *PGAdminReconciler) findPGAdminsForPostgresCluster(
 	// namespace, we can configure the [manager.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
-	if r.List(ctx, &pgadmins, &client.ListOptions{
+	if r.Reader.List(ctx, &pgadmins, &client.ListOptions{
 		Namespace: cluster.GetNamespace(),
 	}) == nil {
 		for i := range pgadmins.Items {
@@ -64,7 +64,7 @@ func (r *PGAdminReconciler) findPGAdminsForSecret(
 	// namespace, we can configure the [manager.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
-	if err := r.List(ctx, &pgadmins, &client.ListOptions{
+	if err := r.Reader.List(ctx, &pgadmins, &client.ListOptions{
 		Namespace: secret.Namespace,
 	}); err == nil {
 		for i := range pgadmins.Items {
@@ -93,7 +93,7 @@ func (r *PGAdminReconciler) getClustersForPGAdmin(
 	for _, serverGroup := range pgAdmin.Spec.ServerGroups {
 		var cluster v1beta1.PostgresCluster
 		if serverGroup.PostgresClusterName != "" {
-			err = r.Get(ctx, client.ObjectKey{
+			err = r.Reader.Get(ctx, client.ObjectKey{
 				Name:      serverGroup.PostgresClusterName,
 				Namespace: pgAdmin.GetNamespace(),
 			}, &cluster)
@@ -104,7 +104,7 @@ func (r *PGAdminReconciler) getClustersForPGAdmin(
 		}
 		if selector, err = naming.AsSelector(serverGroup.PostgresClusterSelector); err == nil {
 			var list v1beta1.PostgresClusterList
-			err = r.List(ctx, &list,
+			err = r.Reader.List(ctx, &list,
 				client.InNamespace(pgAdmin.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			)
