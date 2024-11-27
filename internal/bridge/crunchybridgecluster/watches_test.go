@@ -21,7 +21,7 @@ func TestFindCrunchyBridgeClustersForSecret(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	ns := setupNamespace(t, tClient)
-	reconciler := &CrunchyBridgeClusterReconciler{Client: tClient}
+	reconciler := &CrunchyBridgeClusterReconciler{Reader: tClient}
 
 	secret := &corev1.Secret{}
 	secret.Namespace = ns.Name

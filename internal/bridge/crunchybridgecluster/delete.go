@@ -31,7 +31,7 @@ func (r *CrunchyBridgeClusterReconciler) handleDelete(
 	if crunchybridgecluster.DeletionTimestamp.IsZero() {
 		if !controllerutil.ContainsFinalizer(crunchybridgecluster, finalizer) {
 			controllerutil.AddFinalizer(crunchybridgecluster, finalizer)
-			if err := r.Update(ctx, crunchybridgecluster); err != nil {
+			if err := r.Writer.Update(ctx, crunchybridgecluster); err != nil {
 				return nil, err
 			}
 		}
@@ -57,7 +57,7 @@ func (r *CrunchyBridgeClusterReconciler) handleDelete(
 				log.Info("cluster deleted", "clusterName", crunchybridgecluster.Spec.ClusterName)
 
 				controllerutil.RemoveFinalizer(crunchybridgecluster, finalizer)
-				if err := r.Update(ctx, crunchybridgecluster); err != nil {
+				if err := r.Writer.Update(ctx, crunchybridgecluster); err != nil {
 					return &ctrl.Result{}, err
 				}
 			}

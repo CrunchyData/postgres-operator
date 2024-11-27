@@ -36,8 +36,7 @@ func TestReconcileBridgeConnectionSecret(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
+		Reader: tClient,
 	}
 
 	ns := setupNamespace(t, tClient).Name
@@ -87,15 +86,10 @@ func TestReconcileBridgeConnectionSecret(t *testing.T) {
 
 func TestHandleDuplicateClusterName(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
 
 	clusterInBridge := testClusterApiResource()
 	clusterInBridge.ClusterName = "bridge-cluster-1" // originally "hippo-cluster"
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey:   testApiKey,
@@ -104,11 +98,8 @@ func TestHandleDuplicateClusterName(t *testing.T) {
 		}
 	}
 
-	ns := setupNamespace(t, tClient).Name
-
 	t.Run("FailureToListClusters", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 
 		controllerResult, err := reconciler.handleDuplicateClusterName(ctx, "bad_api_key", testTeamId, cluster)
 		assert.Check(t, err != nil)
@@ -124,7 +115,6 @@ func TestHandleDuplicateClusterName(t *testing.T) {
 
 	t.Run("NoDuplicateFound", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 
 		controllerResult, err := reconciler.handleDuplicateClusterName(ctx, testApiKey, testTeamId, cluster)
 		assert.NilError(t, err)
@@ -133,7 +123,6 @@ func TestHandleDuplicateClusterName(t *testing.T) {
 
 	t.Run("DuplicateFoundAdoptionAnnotationNotPresent", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Spec.ClusterName = "bridge-cluster-1" // originally "hippo-cluster"
 
 		controllerResult, err := reconciler.handleDuplicateClusterName(ctx, testApiKey, testTeamId, cluster)
@@ -150,7 +139,6 @@ func TestHandleDuplicateClusterName(t *testing.T) {
 
 	t.Run("DuplicateFoundAdoptionAnnotationPresent", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Spec.ClusterName = "bridge-cluster-1" // originally "hippo-cluster"
 		cluster.Annotations = map[string]string{}
 		cluster.Annotations[naming.CrunchyBridgeClusterAdoptionAnnotation] = "1234"
@@ -164,15 +152,8 @@ func TestHandleDuplicateClusterName(t *testing.T) {
 
 func TestHandleCreateCluster(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
 
-	ns := setupNamespace(t, tClient).Name
-
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey:   testApiKey,
@@ -183,7 +164,6 @@ func TestHandleCreateCluster(t *testing.T) {
 
 	t.Run("SuccessfulCreate", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 
 		controllerResult := reconciler.handleCreateCluster(ctx, testApiKey, testTeamId, cluster)
 		assert.Equal(t, controllerResult.RequeueAfter, 3*time.Minute)
@@ -208,7 +188,6 @@ func TestHandleCreateCluster(t *testing.T) {
 
 	t.Run("UnsuccessfulCreate", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 
 		controllerResult := reconciler.handleCreateCluster(ctx, "bad_api_key", testTeamId, cluster)
 		assert.Equal(t, controllerResult, ctrl.Result{})
@@ -229,19 +208,13 @@ func TestHandleCreateCluster(t *testing.T) {
 
 func TestHandleGetCluster(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
 
-	ns := setupNamespace(t, tClient).Name
 	firstClusterInBridge := testClusterApiResource()
 	secondClusterInBridge := testClusterApiResource()
 	secondClusterInBridge.ID = "2345"                     // originally "1234"
 	secondClusterInBridge.ClusterName = "hippo-cluster-2" // originally "hippo-cluster"
 
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey:   testApiKey,
@@ -252,7 +225,6 @@ func TestHandleGetCluster(t *testing.T) {
 
 	t.Run("SuccessfulGet", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 
 		err := reconciler.handleGetCluster(ctx, testApiKey, cluster)
@@ -269,7 +241,6 @@ func TestHandleGetCluster(t *testing.T) {
 
 	t.Run("UnsuccessfulGet", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "bad_cluster_id"
 
 		err := reconciler.handleGetCluster(ctx, testApiKey, cluster)
@@ -287,20 +258,14 @@ func TestHandleGetCluster(t *testing.T) {
 
 func TestHandleGetClusterStatus(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
 
-	ns := setupNamespace(t, tClient).Name
 	readyClusterId := "1234"
 	creatingClusterId := "7890"
 	readyClusterStatusInBridge := testClusterStatusApiResource(readyClusterId)
 	creatingClusterStatusInBridge := testClusterStatusApiResource(creatingClusterId)
 	creatingClusterStatusInBridge.State = "creating" // originally "ready"
 
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey: testApiKey,
@@ -314,7 +279,6 @@ func TestHandleGetClusterStatus(t *testing.T) {
 
 	t.Run("SuccessReadyState", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = readyClusterId
 
 		err := reconciler.handleGetClusterStatus(ctx, testApiKey, cluster)
@@ -331,7 +295,6 @@ func TestHandleGetClusterStatus(t *testing.T) {
 
 	t.Run("SuccessNonReadyState", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = creatingClusterId
 
 		err := reconciler.handleGetClusterStatus(ctx, testApiKey, cluster)
@@ -348,7 +311,6 @@ func TestHandleGetClusterStatus(t *testing.T) {
 
 	t.Run("UnsuccessfulGet", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = creatingClusterId
 
 		err := reconciler.handleGetClusterStatus(ctx, "bad_api_key", cluster)
@@ -366,20 +328,14 @@ func TestHandleGetClusterStatus(t *testing.T) {
 
 func TestHandleGetClusterUpgrade(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
 
-	ns := setupNamespace(t, tClient).Name
 	upgradingClusterId := "1234"
 	notUpgradingClusterId := "7890"
 	upgradingClusterUpgradeInBridge := testClusterUpgradeApiResource(upgradingClusterId)
 	notUpgradingClusterUpgradeInBridge := testClusterUpgradeApiResource(notUpgradingClusterId)
 	notUpgradingClusterUpgradeInBridge.Operations = []*v1beta1.UpgradeOperation{}
 
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey: testApiKey,
@@ -393,7 +349,6 @@ func TestHandleGetClusterUpgrade(t *testing.T) {
 
 	t.Run("SuccessUpgrading", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = upgradingClusterId
 
 		err := reconciler.handleGetClusterUpgrade(ctx, testApiKey, cluster)
@@ -414,7 +369,6 @@ func TestHandleGetClusterUpgrade(t *testing.T) {
 
 	t.Run("SuccessNotUpgrading", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = notUpgradingClusterId
 
 		err := reconciler.handleGetClusterUpgrade(ctx, testApiKey, cluster)
@@ -431,7 +385,6 @@ func TestHandleGetClusterUpgrade(t *testing.T) {
 
 	t.Run("UnsuccessfulGet", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = notUpgradingClusterId
 
 		err := reconciler.handleGetClusterUpgrade(ctx, "bad_api_key", cluster)
@@ -448,16 +401,9 @@ func TestHandleGetClusterUpgrade(t *testing.T) {
 
 func TestHandleUpgrade(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	ns := setupNamespace(t, tClient).Name
 	clusterInBridge := testClusterApiResource()
 
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey:   testApiKey,
@@ -468,7 +414,6 @@ func TestHandleUpgrade(t *testing.T) {
 
 	t.Run("UpgradePlan", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.Plan = "standard-16" // originally "standard-8"
 
@@ -490,7 +435,6 @@ func TestHandleUpgrade(t *testing.T) {
 
 	t.Run("UpgradePostgres", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.PostgresVersion = 16 // originally "15"
 
@@ -512,7 +456,6 @@ func TestHandleUpgrade(t *testing.T) {
 
 	t.Run("UpgradeStorage", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.Storage = resource.MustParse("15Gi") // originally "10Gi"
 
@@ -534,7 +477,6 @@ func TestHandleUpgrade(t *testing.T) {
 
 	t.Run("UpgradeFailure", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.Storage = resource.MustParse("15Gi") // originally "10Gi"
 
@@ -552,19 +494,13 @@ func TestHandleUpgrade(t *testing.T) {
 
 func TestHandleUpgradeHA(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
 
-	ns := setupNamespace(t, tClient).Name
 	clusterInBridgeWithHaDisabled := testClusterApiResource()
 	clusterInBridgeWithHaEnabled := testClusterApiResource()
 	clusterInBridgeWithHaEnabled.ID = "2345"                  // originally "1234"
 	clusterInBridgeWithHaEnabled.IsHA = initialize.Bool(true) // originally "false"
 
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey: testApiKey,
@@ -576,7 +512,6 @@ func TestHandleUpgradeHA(t *testing.T) {
 
 	t.Run("EnableHA", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.IsHA = true // originally "false"
 
@@ -598,7 +533,6 @@ func TestHandleUpgradeHA(t *testing.T) {
 
 	t.Run("DisableHA", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "2345"
 
 		controllerResult := reconciler.handleUpgradeHA(ctx, testApiKey, cluster)
@@ -619,7 +553,6 @@ func TestHandleUpgradeHA(t *testing.T) {
 
 	t.Run("UpgradeFailure", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 
 		controllerResult := reconciler.handleUpgradeHA(ctx, "bad_api_key", cluster)
@@ -636,16 +569,9 @@ func TestHandleUpgradeHA(t *testing.T) {
 
 func TestHandleUpdate(t *testing.T) {
 	ctx := context.Background()
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	ns := setupNamespace(t, tClient).Name
 	clusterInBridge := testClusterApiResource()
 
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 	reconciler.NewClient = func() bridge.ClientInterface {
 		return &TestBridgeClient{
 			ApiKey:   testApiKey,
@@ -656,7 +582,6 @@ func TestHandleUpdate(t *testing.T) {
 
 	t.Run("UpdateName", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.ClusterName = "new-cluster-name" // originally "hippo-cluster"
 
@@ -674,7 +599,6 @@ func TestHandleUpdate(t *testing.T) {
 
 	t.Run("UpdateIsProtected", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.IsProtected = true // originally "false"
 
@@ -692,7 +616,6 @@ func TestHandleUpdate(t *testing.T) {
 
 	t.Run("UpgradeFailure", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.Namespace = ns
 		cluster.Status.ID = "1234"
 		cluster.Spec.IsProtected = true // originally "false"
 
@@ -713,8 +636,7 @@ func TestGetSecretKeys(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
+		Reader: tClient,
 	}
 
 	ns := setupNamespace(t, tClient).Name
@@ -796,8 +718,7 @@ func TestDeleteControlled(t *testing.T) {
 
 	ns := setupNamespace(t, tClient)
 	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
+		Writer: client.WithFieldOwner(tClient, t.Name()),
 	}
 
 	cluster := testCluster()
