@@ -10,8 +10,35 @@ import (
 	"time"
 
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+func TestRequests(t *testing.T) {
+	none := Requests[client.Object]()
+	assert.Assert(t, none != nil, "does not return nil slice")
+	assert.DeepEqual(t, none, []reconcile.Request{})
+
+	assert.Assert(t, cmp.Panics(func() {
+		Requests[client.Object](nil)
+	}), "expected nil pointer dereference")
+
+	// Empty request when no metadata.
+	assert.DeepEqual(t, Requests(new(corev1.Secret)), []reconcile.Request{{}})
+
+	secret := new(corev1.Secret)
+	secret.Namespace = "asdf"
+
+	expected := reconcile.Request{}
+	expected.Namespace = "asdf"
+	assert.DeepEqual(t, Requests(secret), []reconcile.Request{expected})
+
+	secret.Name = "123"
+	expected.Name = "123"
+	assert.DeepEqual(t, Requests(secret), []reconcile.Request{expected})
+}
 
 func TestErrorWithBackoff(t *testing.T) {
 	result, err := ErrorWithBackoff(nil)
