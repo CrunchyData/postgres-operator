@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unicode"
 
@@ -58,8 +60,8 @@ func initLogging() {
 
 //+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update,watch}
 
-func initManager() (runtime.Options, error) {
-	log := logging.FromContext(context.Background())
+func initManager(ctx context.Context) (runtime.Options, error) {
+	log := logging.FromContext(ctx)
 
 	options := runtime.Options{}
 	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
@@ -120,33 +122,51 @@ func initManager() (runtime.Options, error) {
 }
 
 func main() {
-	// This context is canceled by SIGINT, SIGTERM, or by calling shutdown.
-	ctx, shutdown := context.WithCancel(runtime.SignalHandler())
-
-	otelFlush, err := initOpenTelemetry()
-	assertNoError(err)
-	defer otelFlush()
+	running, stopRunning := context.WithCancel(context.Background())
+	defer stopRunning()
 
 	initLogging()
-
-	log := logging.FromContext(ctx)
+	log := logging.FromContext(running)
 	log.V(1).Info("debug flag set to true")
+
+	// Start a goroutine that waits for SIGINT or SIGTERM.
+	{
+		signals := []os.Signal{os.Interrupt, syscall.SIGTERM}
+		receive := make(chan os.Signal, len(signals))
+		signal.Notify(receive, signals...)
+		go func() {
+			// Wait for a signal then immediately restore the default signal handlers.
+			// After this, a SIGHUP, SIGINT, or SIGTERM causes the program to exit.
+			// - https://pkg.go.dev/os/signal#hdr-Default_behavior_of_signals_in_Go_programs
+			s := <-receive
+			signal.Stop(receive)
+
+			log.Info("received signal from OS", "signal", s.String())
+			stopRunning()
+		}()
+	}
 
 	features := feature.NewGate()
 	assertNoError(features.Set(os.Getenv("PGO_FEATURE_GATES")))
 
-	ctx = feature.NewContext(ctx, features)
+	running = feature.NewContext(running, features)
 	log.Info("feature gates",
 		// These are set by the user
-		"PGO_FEATURE_GATES", feature.ShowAssigned(ctx),
+		"PGO_FEATURE_GATES", feature.ShowAssigned(running),
 		// These are enabled, including features that are on by default
-		"enabled", feature.ShowEnabled(ctx))
+		"enabled", feature.ShowEnabled(running))
+
+	// Initialize OpenTelemetry and flush data when there is a panic.
+	otelFinish, err := initOpenTelemetry(running)
+	assertNoError(err)
+	defer otelFinish(running)
 
 	cfg, err := runtime.GetConfig()
 	assertNoError(err)
 
 	cfg.Wrap(otelTransportWrapper())
 
+	// TODO(controller-runtime): Set config.WarningHandler instead after v0.19.0.
 	// Configure client-go to suppress warnings when warning headers are encountered. This prevents
 	// warnings from being logged over and over again during reconciliation (e.g. this will suppress
 	// deprecation warnings when using an older version of a resource for backwards compatibility).
@@ -154,11 +174,11 @@ func main() {
 
 	k8s, err := kubernetes.NewDiscoveryRunner(cfg)
 	assertNoError(err)
-	assertNoError(k8s.Read(ctx))
+	assertNoError(k8s.Read(running))
 
-	log.Info("Connected to Kubernetes", "api", k8s.Version().String(), "openshift", k8s.IsOpenShift())
+	log.Info("connected to Kubernetes", "api", k8s.Version().String(), "openshift", k8s.IsOpenShift())
 
-	options, err := initManager()
+	options, err := initManager(running)
 	assertNoError(err)
 
 	// Add to the Context that Manager passes to Reconciler.Start, Runnable.Start,
@@ -174,7 +194,7 @@ func main() {
 	assertNoError(err)
 	assertNoError(mgr.Add(k8s))
 
-	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), shutdown)
+	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning)
 	assertNoError(err)
 	assertNoError(mgr.Add(registrar))
 	token, _ := registrar.CheckToken()
@@ -212,10 +232,30 @@ func main() {
 	assertNoError(mgr.AddHealthzCheck("health", healthz.Ping))
 	assertNoError(mgr.AddReadyzCheck("check", healthz.Ping))
 
-	log.Info("starting controller runtime manager and will wait for signal to exit")
+	// Start the manager and wait for its context to be canceled.
+	stopped := make(chan error, 1)
+	go func() { stopped <- mgr.Start(running) }()
+	<-running.Done()
 
-	assertNoError(mgr.Start(ctx))
-	log.Info("signal received, exiting")
+	// Set a deadline for graceful termination.
+	log.Info("shutting down")
+	stopping, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	// Wait for the manager to return or the deadline to pass.
+	select {
+	case err = <-stopped:
+	case <-stopping.Done():
+		err = stopping.Err()
+	}
+
+	// Flush any telemetry with the remaining time we have.
+	otelFinish(stopping)
+	if err != nil {
+		log.Error(err, "shutdown failed")
+	} else {
+		log.Info("shutdown complete")
+	}
 }
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller

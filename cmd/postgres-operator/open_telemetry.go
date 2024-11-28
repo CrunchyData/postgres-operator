@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
-func initOpenTelemetry() (func(), error) {
+func initOpenTelemetry(ctx context.Context) (func(context.Context), error) {
 	// At the time of this writing, the SDK (go.opentelemetry.io/otel@v1.2.0)
 	// does not automatically initialize any exporter. We import the OTLP and
 	// stdout exporters and configure them below. Much of the OTLP exporter can
@@ -49,8 +49,8 @@ func initOpenTelemetry() (func(), error) {
 		}
 
 		provider := trace.NewTracerProvider(trace.WithBatcher(exporter))
-		flush := func() {
-			_ = provider.Shutdown(context.TODO())
+		flush := func(ctx context.Context) {
+			_ = provider.Shutdown(ctx)
 			if closer != nil {
 				_ = closer.Close()
 			}
@@ -67,8 +67,8 @@ func initOpenTelemetry() (func(), error) {
 		}
 
 		provider := trace.NewTracerProvider(trace.WithBatcher(exporter))
-		flush := func() {
-			_ = provider.Shutdown(context.TODO())
+		flush := func(ctx context.Context) {
+			_ = provider.Shutdown(ctx)
 		}
 
 		otel.SetTracerProvider(provider)
@@ -78,7 +78,7 @@ func initOpenTelemetry() (func(), error) {
 	// $OTEL_TRACES_EXPORTER is unset or unknown, so no TracerProvider has been assigned.
 	// The default at this time is a single "no-op" tracer.
 
-	return func() {}, nil
+	return func(context.Context) {}, nil
 }
 
 // otelTransportWrapper creates a function that wraps the provided net/http.RoundTripper
