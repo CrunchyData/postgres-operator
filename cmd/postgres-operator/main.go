@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,7 +17,6 @@ import (
 	"time"
 	"unicode"
 
-	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -33,11 +33,10 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
-
-var versionString string
 
 // assertNoError panics when err is not nil.
 func assertNoError(err error) {
@@ -125,6 +124,7 @@ func main() {
 	running, stopRunning := context.WithCancel(context.Background())
 	defer stopRunning()
 
+	initVersion()
 	initLogging()
 	log := logging.FromContext(running)
 	log.V(1).Info("debug flag set to true")
@@ -159,11 +159,14 @@ func main() {
 	// Initialize OpenTelemetry and flush data when there is a panic.
 	otelFinish, err := initOpenTelemetry(running)
 	assertNoError(err)
-	defer otelFinish(running)
+	defer func(ctx context.Context) { _ = otelFinish(ctx) }(running)
+
+	tracing.SetDefaultTracer(tracing.New("github.com/CrunchyData/postgres-operator"))
 
 	cfg, err := runtime.GetConfig()
 	assertNoError(err)
 
+	cfg.UserAgent = userAgent
 	cfg.Wrap(otelTransportWrapper())
 
 	// TODO(controller-runtime): Set config.WarningHandler instead after v0.19.0.
@@ -250,8 +253,7 @@ func main() {
 	}
 
 	// Flush any telemetry with the remaining time we have.
-	otelFinish(stopping)
-	if err != nil {
+	if err = errors.Join(err, otelFinish(stopping)); err != nil {
 		log.Error(err, "shutdown failed")
 	} else {
 		log.Info("shutdown complete")
@@ -266,7 +268,6 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 		Owner:        postgrescluster.ControllerName,
 		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
 		Registration: reg,
-		Tracer:       otel.Tracer(postgrescluster.ControllerName),
 	}
 
 	if err := pgReconciler.SetupWithManager(mgr); err != nil {

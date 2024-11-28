@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -180,7 +179,6 @@ func TestReconcilePGBackRest(t *testing.T) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
@@ -735,7 +733,6 @@ func TestReconcileStanzaCreate(t *testing.T) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
@@ -1014,7 +1011,6 @@ func TestReconcileManualBackup(t *testing.T) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
@@ -1724,7 +1720,6 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
@@ -2018,7 +2013,6 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 		r = &Reconciler{
 			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
@@ -3393,7 +3387,6 @@ func TestReconcileScheduledBackups(t *testing.T) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
@@ -3730,7 +3723,6 @@ func TestBackupsEnabled(t *testing.T) {
 		r = &Reconciler{
 			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})

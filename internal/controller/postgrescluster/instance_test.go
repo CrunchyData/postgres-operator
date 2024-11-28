@@ -16,7 +16,6 @@ import (
 
 	"github.com/go-logr/logr/funcr"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -1339,7 +1338,6 @@ func TestDeleteInstance(t *testing.T) {
 		Client:   cc,
 		Owner:    client.FieldOwner(t.Name()),
 		Recorder: new(record.FakeRecorder),
-		Tracer:   otel.Tracer(t.Name()),
 	}
 
 	// Define, Create, and Reconcile a cluster to get an instance running in kube

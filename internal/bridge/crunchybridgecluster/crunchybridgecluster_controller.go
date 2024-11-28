@@ -25,7 +25,9 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -100,7 +102,9 @@ func (r *CrunchyBridgeClusterReconciler) setControllerReference(
 // Reconcile does the work to move the current state of the world toward the
 // desired state described in a [v1beta1.CrunchyBridgeCluster] identified by req.
 func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := ctrl.LoggerFrom(ctx)
+	ctx, span := tracing.Start(ctx, "reconcile-crunchybridgecluster")
+	log := logging.FromContext(ctx)
+	defer span.End()
 
 	// Retrieve the crunchybridgecluster from the client cache, if it exists. A deferred
 	// function below will send any changes to its Status field.

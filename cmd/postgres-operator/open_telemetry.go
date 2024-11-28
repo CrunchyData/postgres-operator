@@ -6,79 +6,91 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"io"
+	"errors"
 	"net/http"
 	"os"
 
+	"go.opentelemetry.io/contrib/exporters/autoexport"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
+
+	"github.com/crunchydata/postgres-operator/internal/logging"
 )
 
-func initOpenTelemetry(ctx context.Context) (func(context.Context), error) {
-	// At the time of this writing, the SDK (go.opentelemetry.io/otel@v1.2.0)
-	// does not automatically initialize any exporter. We import the OTLP and
-	// stdout exporters and configure them below. Much of the OTLP exporter can
-	// be configured through environment variables.
-	//
-	// - https://github.com/open-telemetry/opentelemetry-go/issues/2310
-	// - https://github.com/open-telemetry/opentelemetry-specification/blob/v1.8.0/specification/sdk-environment-variables.md
+func initOpenTelemetry(ctx context.Context) (func(context.Context) error, error) {
+	var started []interface{ Shutdown(context.Context) error }
 
-	switch os.Getenv("OTEL_TRACES_EXPORTER") {
-	case "json":
-		var closer io.Closer
-		filename := os.Getenv("OTEL_JSON_FILE")
-		options := []stdouttrace.Option{}
-
-		if filename != "" {
-			file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-			if err != nil {
-				return nil, fmt.Errorf("unable to open exporter file: %w", err)
-			}
-			closer = file
-			options = append(options, stdouttrace.WithWriter(file))
+	// shutdown returns the results of calling all the Shutdown methods in started.
+	var shutdown = func(ctx context.Context) error {
+		var err error
+		for _, s := range started {
+			err = errors.Join(err, s.Shutdown(ctx))
 		}
-
-		exporter, err := stdouttrace.New(options...)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize stdout exporter: %w", err)
-		}
-
-		provider := trace.NewTracerProvider(trace.WithBatcher(exporter))
-		flush := func(ctx context.Context) {
-			_ = provider.Shutdown(ctx)
-			if closer != nil {
-				_ = closer.Close()
-			}
-		}
-
-		otel.SetTracerProvider(provider)
-		return flush, nil
-
-	case "otlp":
-		client := otlptracehttp.NewClient()
-		exporter, err := otlptrace.New(context.TODO(), client)
-		if err != nil {
-			return nil, fmt.Errorf("unable to initialize OTLP exporter: %w", err)
-		}
-
-		provider := trace.NewTracerProvider(trace.WithBatcher(exporter))
-		flush := func(ctx context.Context) {
-			_ = provider.Shutdown(ctx)
-		}
-
-		otel.SetTracerProvider(provider)
-		return flush, nil
+		started = nil
+		return err
 	}
 
-	// $OTEL_TRACES_EXPORTER is unset or unknown, so no TracerProvider has been assigned.
-	// The default at this time is a single "no-op" tracer.
+	// The default for OTEL_PROPAGATORS is "tracecontext,baggage".
+	otel.SetTextMapPropagator(autoprop.NewTextMapPropagator())
 
-	return func(context.Context) {}, nil
+	// Skip any remaining setup when OTEL_SDK_DISABLED is exactly "true".
+	// - https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables
+	if os.Getenv("OTEL_SDK_DISABLED") == "true" {
+		return shutdown, nil
+	}
+
+	log := logging.FromContext(ctx).WithName("open-telemetry")
+	otel.SetLogger(log)
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		// TODO(events): Emit this as an event instead.
+		log.V(1).Info(semconv.ExceptionEventName,
+			string(semconv.ExceptionMessageKey), err)
+	}))
+
+	// Build a resource from the OTEL_RESOURCE_ATTRIBUTES and OTEL_SERVICE_NAME environment variables.
+	// - https://opentelemetry.io/docs/languages/go/resources
+	self, _ := resource.Merge(resource.NewSchemaless(
+		semconv.ServiceVersion(versionString),
+	), resource.Default())
+
+	// Provide defaults for some other detectable attributes.
+	if r, err := resource.New(ctx,
+		resource.WithProcessRuntimeName(),
+		resource.WithProcessRuntimeVersion(),
+		resource.WithProcessRuntimeDescription(),
+	); err == nil {
+		self, _ = resource.Merge(r, self)
+	}
+	if r, err := resource.New(ctx,
+		resource.WithHost(),
+		resource.WithOS(),
+	); err == nil {
+		self, _ = resource.Merge(r, self)
+	}
+
+	// The default for OTEL_TRACES_EXPORTER is "otlp" but we prefer "none".
+	// Only assign an exporter when the environment variable is set.
+	if os.Getenv("OTEL_TRACES_EXPORTER") != "" {
+		exporter, err := autoexport.NewSpanExporter(ctx)
+		if err != nil {
+			return nil, errors.Join(err, shutdown(ctx))
+		}
+
+		// The defaults for this batch processor come from the OTEL_BSP_* environment variables.
+		// - https://pkg.go.dev/go.opentelemetry.io/otel/sdk/internal/env
+		provider := trace.NewTracerProvider(
+			trace.WithBatcher(exporter),
+			trace.WithResource(self),
+		)
+		started = append(started, provider)
+		otel.SetTracerProvider(provider)
+	}
+
+	return shutdown, nil
 }
 
 // otelTransportWrapper creates a function that wraps the provided net/http.RoundTripper

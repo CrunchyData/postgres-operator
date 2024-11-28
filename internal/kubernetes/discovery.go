@@ -26,6 +26,7 @@ type Version = version.Info
 type DiscoveryRunner struct {
 	// NOTE(tracing): The methods of [discovery.DiscoveryClient] do not take
 	// a Context so their API calls won't have a parent span.
+	// - https://issue.k8s.io/126379
 	Client interface {
 		ServerGroups() (*metav1.APIGroupList, error)
 		ServerResourcesForGroupVersion(string) (*metav1.APIResourceList, error)
