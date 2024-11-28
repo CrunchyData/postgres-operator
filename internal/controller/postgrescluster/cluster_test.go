@@ -8,7 +8,6 @@ import (
 	"context"
 	"testing"
 
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -83,7 +82,6 @@ func TestCustomLabels(t *testing.T) {
 		Client:   cc,
 		Owner:    client.FieldOwner(t.Name()),
 		Recorder: new(record.FakeRecorder),
-		Tracer:   otel.Tracer(t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)
@@ -322,7 +320,6 @@ func TestCustomAnnotations(t *testing.T) {
 		Client:   cc,
 		Owner:    client.FieldOwner(t.Name()),
 		Recorder: new(record.FakeRecorder),
-		Tracer:   otel.Tracer(t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)

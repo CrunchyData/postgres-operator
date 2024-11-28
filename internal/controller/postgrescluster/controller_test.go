@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors" //nolint:depguard // This legacy test covers so much code, it logs the origin of unexpected errors.
 
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -138,7 +137,6 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		test.Reconciler.Owner = "asdf"
 		test.Reconciler.Recorder = test.Recorder
 		test.Reconciler.Registration = nil
-		test.Reconciler.Tracer = otel.Tracer("asdf")
 	})
 
 	AfterEach(func() {

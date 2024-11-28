@@ -11,7 +11,6 @@ import (
 	"io"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +39,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/registration"
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -58,7 +58,6 @@ type Reconciler struct {
 	) error
 	Recorder     record.EventRecorder
 	Registration registration.Registration
-	Tracer       trace.Tracer
 }
 
 // +kubebuilder:rbac:groups="",resources="events",verbs={create,patch}
@@ -69,7 +68,7 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(
 	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
 ) {
-	ctx, span := r.Tracer.Start(ctx, "Reconcile")
+	ctx, span := tracing.Start(ctx, "reconcile-postgrescluster")
 	log := logging.FromContext(ctx)
 	defer span.End()
 

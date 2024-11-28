@@ -31,11 +31,11 @@ func TestFromContext(t *testing.T) {
 }
 
 func TestFromContextTraceContext(t *testing.T) {
-	var calls []map[string]interface{}
+	var calls []map[string]any
 
 	SetLogSink(&sink{
-		fnInfo: func(_ int, _ string, kv ...interface{}) {
-			m := make(map[string]interface{})
+		fnInfo: func(_ int, _ string, kv ...any) {
+			m := make(map[string]any)
 			for i := 0; i < len(kv); i += 2 {
 				m[kv[i].(string)] = kv[i+1]
 			}
@@ -47,23 +47,23 @@ func TestFromContextTraceContext(t *testing.T) {
 
 	// Nothing when there's no trace.
 	FromContext(ctx).Info("")
-	assert.Equal(t, calls[0]["spanid"], nil)
-	assert.Equal(t, calls[0]["traceid"], nil)
+	assert.Equal(t, calls[0]["span_id"], nil)
+	assert.Equal(t, calls[0]["trace_id"], nil)
 
 	ctx, span := trace.NewTracerProvider().Tracer("").Start(ctx, "test-span")
 	defer span.End()
 
 	// OpenTelemetry trace context when there is.
 	FromContext(ctx).Info("")
-	assert.Equal(t, calls[1]["spanid"], span.SpanContext().SpanID())
-	assert.Equal(t, calls[1]["traceid"], span.SpanContext().TraceID())
+	assert.Equal(t, calls[1]["span_id"], span.SpanContext().SpanID())
+	assert.Equal(t, calls[1]["trace_id"], span.SpanContext().TraceID())
 }
 
 func TestSetLogSink(t *testing.T) {
 	var calls []string
 
 	SetLogSink(&sink{
-		fnInfo: func(_ int, m string, _ ...interface{}) {
+		fnInfo: func(_ int, m string, _ ...any) {
 			calls = append(calls, m)
 		},
 	})
