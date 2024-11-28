@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"reflect"
 	"testing"
 	"time"
@@ -14,8 +15,10 @@ import (
 )
 
 func TestInitManager(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("Defaults", func(t *testing.T) {
-		options, err := initManager()
+		options, err := initManager(ctx)
 		assert.NilError(t, err)
 
 		if assert.Check(t, options.Cache.SyncPeriod != nil) {
@@ -48,7 +51,7 @@ func TestInitManager(t *testing.T) {
 		t.Run("Invalid", func(t *testing.T) {
 			t.Setenv("PGO_CONTROLLER_LEASE_NAME", "INVALID_NAME")
 
-			options, err := initManager()
+			options, err := initManager(ctx)
 			assert.ErrorContains(t, err, "PGO_CONTROLLER_LEASE_NAME")
 			assert.ErrorContains(t, err, "invalid")
 
@@ -59,7 +62,7 @@ func TestInitManager(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
 			t.Setenv("PGO_CONTROLLER_LEASE_NAME", "valid-name")
 
-			options, err := initManager()
+			options, err := initManager(ctx)
 			assert.NilError(t, err)
 			assert.Assert(t, options.LeaderElection == true)
 			assert.Equal(t, options.LeaderElectionNamespace, "test-namespace")
@@ -70,7 +73,7 @@ func TestInitManager(t *testing.T) {
 	t.Run("PGO_TARGET_NAMESPACE", func(t *testing.T) {
 		t.Setenv("PGO_TARGET_NAMESPACE", "some-such")
 
-		options, err := initManager()
+		options, err := initManager(ctx)
 		assert.NilError(t, err)
 		assert.Assert(t, cmp.Len(options.Cache.DefaultNamespaces, 1),
 			"expected only one configured namespace")
@@ -81,7 +84,7 @@ func TestInitManager(t *testing.T) {
 	t.Run("PGO_TARGET_NAMESPACES", func(t *testing.T) {
 		t.Setenv("PGO_TARGET_NAMESPACES", "some-such,another-one")
 
-		options, err := initManager()
+		options, err := initManager(ctx)
 		assert.NilError(t, err)
 		assert.Assert(t, cmp.Len(options.Cache.DefaultNamespaces, 2),
 			"expect two configured namespaces")
@@ -95,7 +98,7 @@ func TestInitManager(t *testing.T) {
 			for _, v := range []string{"-3", "0", "3.14"} {
 				t.Setenv("PGO_WORKERS", v)
 
-				options, err := initManager()
+				options, err := initManager(ctx)
 				assert.NilError(t, err)
 				assert.DeepEqual(t, options.Controller.GroupKindConcurrency,
 					map[string]int{
@@ -107,7 +110,7 @@ func TestInitManager(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
 			t.Setenv("PGO_WORKERS", "19")
 
-			options, err := initManager()
+			options, err := initManager(ctx)
 			assert.NilError(t, err)
 			assert.DeepEqual(t, options.Controller.GroupKindConcurrency,
 				map[string]int{
