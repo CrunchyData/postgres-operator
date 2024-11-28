@@ -11,6 +11,8 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 )
 
 // InstancePodDNSNames returns the possible DNS names for instance. The first
@@ -68,7 +70,7 @@ func ServiceDNSNames(ctx context.Context, service *corev1.Service) []string {
 
 // KubernetesClusterDomain looks up the Kubernetes cluster domain name.
 func KubernetesClusterDomain(ctx context.Context) string {
-	ctx, span := tracer.Start(ctx, "kubernetes-domain-lookup")
+	ctx, span := tracing.Start(ctx, "kubernetes-domain-lookup")
 	defer span.End()
 
 	// Lookup an existing Service to determine its fully qualified domain name.

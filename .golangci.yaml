@@ -22,7 +22,13 @@ linters-settings:
   depguard:
     rules:
       everything:
+        list-mode: lax
+        allow:
+          - go.opentelemetry.io/otel/semconv/v1.27.0
         deny:
+          - pkg: go.opentelemetry.io/otel/semconv
+            desc: Use "go.opentelemetry.io/otel/semconv/v1.27.0" instead.
+
           - pkg: io/ioutil
             desc: >
               Use the "io" and "os" packages instead.
@@ -92,6 +98,10 @@ linters-settings:
       - pkg: k8s.io/apimachinery/pkg/api/errors
         alias: apierrors
     no-unaliased: true
+
+  spancheck:
+    extra-start-span-signatures:
+      - 'github.com/crunchydata/postgres-operator/internal/tracing.Start:opentelemetry'
 
 issues:
   exclude-generated: strict
