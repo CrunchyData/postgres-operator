@@ -93,7 +93,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// NotFound cannot be fixed by requeuing so ignore it. During background
 		// deletion, we receive delete events from pgadmin's dependents after
 		// pgadmin is deleted.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, tracing.Escape(span, client.IgnoreNotFound(err))
 	}
 
 	// Write any changes to the pgadmin status on the way out.
@@ -148,7 +148,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		log.V(1).Info("Reconciled pgAdmin")
 	}
 
-	return ctrl.Result{}, err
+	return ctrl.Result{}, tracing.Escape(span, err)
 }
 
 // The owner reference created by controllerutil.SetControllerReference blocks

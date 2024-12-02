@@ -79,11 +79,10 @@ func KubernetesClusterDomain(ctx context.Context) string {
 	api := "kubernetes.default.svc"
 	cname, err := net.DefaultResolver.LookupCNAME(ctx, api)
 
-	if err == nil {
+	if tracing.Check(span, err) {
 		return strings.TrimPrefix(cname, api+".")
 	}
 
-	span.RecordError(err)
 	// The kubeadm default is "cluster.local" and is adequate when not running
 	// in an actual Kubernetes cluster.
 	return "cluster.local."
