@@ -137,7 +137,9 @@ func main() {
 
 	ctx = feature.NewContext(ctx, features)
 	// This logs just the feature gates as set by the user
-	log.Info("feature gates enabled during deployment", "PGO_FEATURE_GATES", feature.ShowAssigned(ctx))
+	log.Info("feature gates set during deployment", "PGO_FEATURE_GATES", feature.ShowAssigned(ctx))
+	// This logs the feature gates that are enabled, including gates that are on by default
+	log.Info(fmt.Sprintf("feature gates enabled: %s", feature.ShowEnabled(ctx)))
 
 	cfg, err := runtime.GetConfig()
 	assertNoError(err)
