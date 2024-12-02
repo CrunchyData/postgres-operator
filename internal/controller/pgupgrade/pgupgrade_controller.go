@@ -98,6 +98,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	ctx, span := tracing.Start(ctx, "reconcile-pgupgrade")
 	log := logging.FromContext(ctx)
 	defer span.End()
+	defer func(s tracing.Span) { _ = tracing.Escape(s, err) }(span)
 
 	// Retrieve the upgrade from the client cache, if it exists. A deferred
 	// function below will send any changes to its Status field.

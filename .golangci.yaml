@@ -100,8 +100,11 @@ linters-settings:
     no-unaliased: true
 
   spancheck:
+    checks: [end, record-error]
     extra-start-span-signatures:
       - 'github.com/crunchydata/postgres-operator/internal/tracing.Start:opentelemetry'
+    ignore-check-signatures:
+      - 'tracing.Escape'
 
 issues:
   exclude-generated: strict

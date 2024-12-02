@@ -807,8 +807,7 @@ func (r *Reconciler) rolloutInstance(
 			err = errors.New("unable to switchover")
 		}
 
-		span.RecordError(err)
-		return err
+		return tracing.Escape(span, err)
 	}
 
 	// When the cluster has only one instance for failover, perform a series of
@@ -840,8 +839,7 @@ func (r *Reconciler) rolloutInstance(
 			logging.FromContext(ctx).V(1).Info("attempted checkpoint",
 				"duration", elapsed, "stdout", stdout, "stderr", stderr)
 
-			span.RecordError(err)
-			return elapsed, err
+			return elapsed, tracing.Escape(span, err)
 		}
 
 		duration, err := checkpoint(ctx)
@@ -950,8 +948,7 @@ func (r *Reconciler) rolloutInstances(
 		}
 	}
 
-	span.RecordError(err)
-	return err
+	return tracing.Escape(span, err)
 }
 
 // scaleDownInstances removes extra instances from a cluster until it matches
@@ -1081,20 +1078,23 @@ func (r *Reconciler) scaleUpInstances(
 	// While there are fewer instances than specified, generate another empty one
 	// and append it.
 	for len(instances) < int(*set.Replicas) {
-		_, span := tracing.Start(ctx, "generate-instance-name")
-		next := naming.GenerateInstance(cluster, set)
-		// if there are any available instance names (as determined by observing any PVCs for the
-		// instance set that are not currently associated with an instance, e.g. in the event the
-		// instance STS was deleted), then reuse them instead of generating a new name
-		if len(availableInstanceNames) > 0 {
-			next.Name = availableInstanceNames[0]
-			availableInstanceNames = availableInstanceNames[1:]
-		} else {
-			for instanceNames.Has(next.Name) {
-				next = naming.GenerateInstance(cluster, set)
+		next := func() metav1.ObjectMeta {
+			_, span := tracing.Start(ctx, "generate-instance-name")
+			defer span.End()
+			n := naming.GenerateInstance(cluster, set)
+			// if there are any available instance names (as determined by observing any PVCs for the
+			// instance set that are not currently associated with an instance, e.g. in the event the
+			// instance STS was deleted), then reuse them instead of generating a new name
+			if len(availableInstanceNames) > 0 {
+				n.Name = availableInstanceNames[0]
+				availableInstanceNames = availableInstanceNames[1:]
+			} else {
+				for instanceNames.Has(n.Name) {
+					n = naming.GenerateInstance(cluster, set)
+				}
 			}
-		}
-		span.End()
+			return n
+		}()
 
 		instanceNames.Insert(next.Name)
 		instances = append(instances, &appsv1.StatefulSet{ObjectMeta: next})
