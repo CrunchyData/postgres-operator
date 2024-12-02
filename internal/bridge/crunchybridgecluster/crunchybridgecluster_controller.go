@@ -133,7 +133,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		// NotFound cannot be fixed by requeuing so ignore it. During background
 		// deletion, we receive delete events from crunchybridgecluster's dependents after
 		// crunchybridgecluster is deleted.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, tracing.Escape(span, client.IgnoreNotFound(err))
 	}
 
 	// Get and validate connection secret for requests
@@ -152,12 +152,12 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// is not being deleted.
 	if result, err := r.handleDelete(ctx, crunchybridgecluster, key); err != nil {
 		log.Error(err, "deleting")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, tracing.Escape(span, err)
 	} else if result != nil {
 		if log := log.V(1); log.Enabled() {
 			log.Info("deleting", "result", fmt.Sprintf("%+v", *result))
 		}
-		return *result, err
+		return *result, tracing.Escape(span, err)
 	}
 
 	// Wonder if there's a better way to handle adding/checking/removing statuses
@@ -190,7 +190,7 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 		// Check if a cluster with the same name already exists
 		controllerResult, err := r.handleDuplicateClusterName(ctx, key, team, crunchybridgecluster)
 		if err != nil || controllerResult != nil {
-			return *controllerResult, err
+			return *controllerResult, tracing.Escape(span, err)
 		}
 
 		// if we've gotten here then no cluster exists with that name and we're missing the ID, ergo, create cluster
@@ -204,26 +204,26 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// Get Cluster
 	err = r.handleGetCluster(ctx, key, crunchybridgecluster)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, tracing.Escape(span, err)
 	}
 
 	// Get Cluster Status
 	err = r.handleGetClusterStatus(ctx, key, crunchybridgecluster)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, tracing.Escape(span, err)
 	}
 
 	// Get Cluster Upgrade
 	err = r.handleGetClusterUpgrade(ctx, key, crunchybridgecluster)
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{}, tracing.Escape(span, err)
 	}
 
 	// Reconcile roles and their secrets
 	err = r.reconcilePostgresRoles(ctx, key, crunchybridgecluster)
 	if err != nil {
 		log.Error(err, "issue reconciling postgres user roles/secrets")
-		return ctrl.Result{}, err
+		return ctrl.Result{}, tracing.Escape(span, err)
 	}
 
 	// For now, we skip updating until the upgrade status is cleared.
