@@ -5,8 +5,6 @@
 package runtime
 
 import (
-	"context"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -14,7 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -71,6 +68,3 @@ func NewManager(config *rest.Config, options manager.Options) (manager.Manager, 
 
 // SetLogger assigns the default Logger used by [sigs.k8s.io/controller-runtime].
 func SetLogger(logger logging.Logger) { log.SetLogger(logger) }
-
-// SignalHandler returns a Context that is canceled on SIGINT or SIGTERM.
-func SignalHandler() context.Context { return signals.SetupSignalHandler() }

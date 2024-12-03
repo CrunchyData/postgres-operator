@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -36,6 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -800,8 +799,7 @@ func (r *Reconciler) rolloutInstance(
 	// NOTE(cbandy): The StatefulSet controlling this Pod reflects this change
 	// in its Status and triggers another reconcile.
 	if primary && len(instances.forCluster) > 1 {
-		var span trace.Span
-		ctx, span = r.Tracer.Start(ctx, "patroni-change-primary")
+		ctx, span := tracing.Start(ctx, "patroni-change-primary")
 		defer span.End()
 
 		success, err := patroni.Executor(exec).ChangePrimaryAndWait(ctx, pod.Name, "")
@@ -809,8 +807,7 @@ func (r *Reconciler) rolloutInstance(
 			err = errors.New("unable to switchover")
 		}
 
-		span.RecordError(err)
-		return err
+		return tracing.Escape(span, err)
 	}
 
 	// When the cluster has only one instance for failover, perform a series of
@@ -824,7 +821,7 @@ func (r *Reconciler) rolloutInstance(
 		}
 
 		checkpoint := func(ctx context.Context) (time.Duration, error) {
-			ctx, span := r.Tracer.Start(ctx, "postgresql-checkpoint")
+			ctx, span := tracing.Start(ctx, "postgresql-checkpoint")
 			defer span.End()
 
 			start := time.Now()
@@ -842,8 +839,7 @@ func (r *Reconciler) rolloutInstance(
 			logging.FromContext(ctx).V(1).Info("attempted checkpoint",
 				"duration", elapsed, "stdout", stdout, "stderr", stderr)
 
-			span.RecordError(err)
-			return elapsed, err
+			return elapsed, tracing.Escape(span, err)
 		}
 
 		duration, err := checkpoint(ctx)
@@ -894,7 +890,7 @@ func (r *Reconciler) rolloutInstances(
 	var numAvailable int
 	var numSpecified int
 
-	ctx, span := r.Tracer.Start(ctx, "rollout-instances")
+	ctx, span := tracing.Start(ctx, "rollout-instances")
 	defer span.End()
 
 	for _, set := range cluster.Spec.InstanceSets {
@@ -933,12 +929,10 @@ func (r *Reconciler) rolloutInstances(
 		sort.Sort(byPriority(consider))
 	}
 
-	span.SetAttributes(
-		attribute.Int("instances", len(instances.forCluster)),
-		attribute.Int("specified", numSpecified),
-		attribute.Int("available", numAvailable),
-		attribute.Int("considering", len(consider)),
-	)
+	tracing.Int(span, "instances", len(instances.forCluster))
+	tracing.Int(span, "specified", numSpecified)
+	tracing.Int(span, "available", numAvailable)
+	tracing.Int(span, "considering", len(consider))
 
 	// Redeploy instances up to the allowed maximum while "rolling over" any
 	// unavailable instances.
@@ -954,8 +948,7 @@ func (r *Reconciler) rolloutInstances(
 		}
 	}
 
-	span.RecordError(err)
-	return err
+	return tracing.Escape(span, err)
 }
 
 // scaleDownInstances removes extra instances from a cluster until it matches
@@ -1085,21 +1078,23 @@ func (r *Reconciler) scaleUpInstances(
 	// While there are fewer instances than specified, generate another empty one
 	// and append it.
 	for len(instances) < int(*set.Replicas) {
-		var span trace.Span
-		ctx, span = r.Tracer.Start(ctx, "generateInstanceName")
-		next := naming.GenerateInstance(cluster, set)
-		// if there are any available instance names (as determined by observing any PVCs for the
-		// instance set that are not currently associated with an instance, e.g. in the event the
-		// instance STS was deleted), then reuse them instead of generating a new name
-		if len(availableInstanceNames) > 0 {
-			next.Name = availableInstanceNames[0]
-			availableInstanceNames = availableInstanceNames[1:]
-		} else {
-			for instanceNames.Has(next.Name) {
-				next = naming.GenerateInstance(cluster, set)
+		next := func() metav1.ObjectMeta {
+			_, span := tracing.Start(ctx, "generate-instance-name")
+			defer span.End()
+			n := naming.GenerateInstance(cluster, set)
+			// if there are any available instance names (as determined by observing any PVCs for the
+			// instance set that are not currently associated with an instance, e.g. in the event the
+			// instance STS was deleted), then reuse them instead of generating a new name
+			if len(availableInstanceNames) > 0 {
+				n.Name = availableInstanceNames[0]
+				availableInstanceNames = availableInstanceNames[1:]
+			} else {
+				for instanceNames.Has(n.Name) {
+					n = naming.GenerateInstance(cluster, set)
+				}
 			}
-		}
-		span.End()
+			return n
+		}()
 
 		instanceNames.Insert(next.Name)
 		instances = append(instances, &appsv1.StatefulSet{ObjectMeta: next})

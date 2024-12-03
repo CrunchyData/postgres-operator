@@ -20,6 +20,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -83,14 +84,16 @@ func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 
 	var err error
+	ctx, span := tracing.Start(ctx, "reconcile-pgadmin")
 	log := logging.FromContext(ctx)
+	defer span.End()
 
 	pgAdmin := &v1beta1.PGAdmin{}
 	if err := r.Get(ctx, req.NamespacedName, pgAdmin); err != nil {
 		// NotFound cannot be fixed by requeuing so ignore it. During background
 		// deletion, we receive delete events from pgadmin's dependents after
 		// pgadmin is deleted.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, tracing.Escape(span, client.IgnoreNotFound(err))
 	}
 
 	// Write any changes to the pgadmin status on the way out.
@@ -145,7 +148,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		log.V(1).Info("Reconciled pgAdmin")
 	}
 
-	return ctrl.Result{}, err
+	return ctrl.Result{}, tracing.Escape(span, err)
 }
 
 // The owner reference created by controllerutil.SetControllerReference blocks

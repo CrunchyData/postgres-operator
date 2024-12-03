@@ -11,7 +11,6 @@ import (
 	"io"
 	"time"
 
-	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -40,6 +39,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/registration"
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -58,7 +58,6 @@ type Reconciler struct {
 	) error
 	Recorder     record.EventRecorder
 	Registration registration.Registration
-	Tracer       trace.Tracer
 }
 
 // +kubebuilder:rbac:groups="",resources="events",verbs={create,patch}
@@ -69,7 +68,7 @@ type Reconciler struct {
 func (r *Reconciler) Reconcile(
 	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
 ) {
-	ctx, span := r.Tracer.Start(ctx, "Reconcile")
+	ctx, span := tracing.Start(ctx, "reconcile-postgrescluster")
 	log := logging.FromContext(ctx)
 	defer span.End()
 
@@ -81,9 +80,8 @@ func (r *Reconciler) Reconcile(
 		// cluster is deleted.
 		if err = client.IgnoreNotFound(err); err != nil {
 			log.Error(err, "unable to fetch PostgresCluster")
-			span.RecordError(err)
 		}
-		return runtime.ErrorWithBackoff(err)
+		return runtime.ErrorWithBackoff(tracing.Escape(span, err))
 	}
 
 	// Set any defaults that may not have been stored in the API. No DeepCopy
@@ -108,9 +106,8 @@ func (r *Reconciler) Reconcile(
 	// Check for and handle deletion of cluster. Return early if it is being
 	// deleted or there was an error.
 	if result, err := r.handleDelete(ctx, cluster); err != nil {
-		span.RecordError(err)
 		log.Error(err, "deleting")
-		return runtime.ErrorWithBackoff(err)
+		return runtime.ErrorWithBackoff(tracing.Escape(span, err))
 
 	} else if result != nil {
 		if log := log.V(1); log.Enabled() {
@@ -131,7 +128,7 @@ func (r *Reconciler) Reconcile(
 		// specifically allow reconciliation if the cluster is shutdown to
 		// facilitate upgrades, otherwise return
 		if !initialize.FromPointer(cluster.Spec.Shutdown) {
-			return runtime.ErrorWithBackoff(err)
+			return runtime.ErrorWithBackoff(tracing.Escape(span, err))
 		}
 	}
 	// Issue Warning Event if postgres version is EOL according to PostgreSQL:
@@ -155,7 +152,7 @@ func (r *Reconciler) Reconcile(
 		path := field.NewPath("spec", "standby")
 		err := field.Invalid(path, cluster.Name, "Standby requires a host or repoName to be enabled")
 		r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidStandbyConfiguration", err.Error())
-		return runtime.ErrorWithBackoff(err)
+		return runtime.ErrorWithBackoff(tracing.Escape(span, err))
 	}
 
 	var (
@@ -209,7 +206,7 @@ func (r *Reconciler) Reconcile(
 
 			ObservedGeneration: cluster.GetGeneration(),
 		})
-		return runtime.ErrorWithBackoff(patchClusterStatus())
+		return runtime.ErrorWithBackoff(tracing.Escape(span, patchClusterStatus()))
 	} else {
 		meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.PostgresClusterProgressing)
 	}
@@ -229,7 +226,7 @@ func (r *Reconciler) Reconcile(
 
 				ObservedGeneration: cluster.GetGeneration(),
 			})
-			return runtime.ErrorWithBackoff(patchClusterStatus())
+			return runtime.ErrorWithBackoff(tracing.Escape(span, patchClusterStatus()))
 		} else {
 			meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.PostgresClusterProgressing)
 		}
@@ -260,7 +257,8 @@ func (r *Reconciler) Reconcile(
 		// return is no longer needed, and reconciliation can proceed normally.
 		returnEarly, err := r.reconcileDirMoveJobs(ctx, cluster)
 		if err != nil || returnEarly {
-			return runtime.ErrorWithBackoff(errors.Join(err, patchClusterStatus()))
+			return runtime.ErrorWithBackoff(tracing.Escape(span,
+				errors.Join(err, patchClusterStatus())))
 		}
 	}
 	if err == nil {
@@ -310,7 +308,7 @@ func (r *Reconciler) Reconcile(
 		// can proceed normally.
 		returnEarly, err := r.reconcileDataSource(ctx, cluster, instances, clusterVolumes, rootCA, backupsSpecFound)
 		if err != nil || returnEarly {
-			return runtime.ErrorWithBackoff(errors.Join(err, patchClusterStatus()))
+			return runtime.ErrorWithBackoff(tracing.Escape(span, errors.Join(err, patchClusterStatus())))
 		}
 	}
 	if err == nil {
@@ -402,7 +400,7 @@ func (r *Reconciler) Reconcile(
 
 	log.V(1).Info("reconciled cluster")
 
-	return result, errors.Join(err, patchClusterStatus())
+	return result, tracing.Escape(span, errors.Join(err, patchClusterStatus()))
 }
 
 // deleteControlled safely deletes object when it is controlled by cluster.

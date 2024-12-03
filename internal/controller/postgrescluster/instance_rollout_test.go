@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
@@ -25,6 +24,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -60,7 +60,6 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 		key := client.ObjectKey{Namespace: "ns1", Name: "one-pod-bruh"}
 		reconciler := &Reconciler{}
 		reconciler.Client = fake.NewClientBuilder().WithObjects(instances[0].Pods[0]).Build()
-		reconciler.Tracer = otel.Tracer(t.Name())
 
 		execCalls := 0
 		reconciler.PodExec = func(
@@ -121,7 +120,6 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 		t.Run("Success", func(t *testing.T) {
 			execCalls := 0
 			reconciler := &Reconciler{}
-			reconciler.Tracer = otel.Tracer(t.Name())
 			reconciler.PodExec = func(
 				ctx context.Context, namespace, pod, container string, _ io.Reader, stdout, _ io.Writer, command ...string,
 			) error {
@@ -149,7 +147,6 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 
 		t.Run("Failure", func(t *testing.T) {
 			reconciler := &Reconciler{}
-			reconciler.Tracer = otel.Tracer(t.Name())
 			reconciler.PodExec = func(
 				ctx context.Context, _, _, _ string, _ io.Reader, _, _ io.Writer, _ ...string,
 			) error {
@@ -165,26 +162,25 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 
 func TestReconcilerRolloutInstances(t *testing.T) {
 	ctx := context.Background()
-	reconciler := &Reconciler{Tracer: otel.Tracer(t.Name())}
+	reconciler := &Reconciler{}
 
 	accumulate := func(on *[]*Instance) func(context.Context, *Instance) error {
 		return func(_ context.Context, i *Instance) error { *on = append(*on, i); return nil }
 	}
 
-	logSpanAttributes := func(t testing.TB) {
+	logSpanAttributes := func(t testing.TB, ctx context.Context) context.Context {
 		recorder := tracetest.NewSpanRecorder()
 		provider := trace.NewTracerProvider(trace.WithSpanProcessor(recorder))
-
-		former := reconciler.Tracer
-		reconciler.Tracer = provider.Tracer(t.Name())
+		tracer := provider.Tracer(t.Name())
 
 		t.Cleanup(func() {
-			reconciler.Tracer = former
 			for _, span := range recorder.Ended() {
 				attr := attribute.NewSet(span.Attributes()...)
 				t.Log(span.Name(), attr.Encoded(attribute.DefaultEncoder()))
 			}
 		})
+
+		return tracing.NewContext(ctx, tracer)
 	}
 
 	// Nothing specified, nothing observed, nothing to do.
@@ -192,7 +188,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 		cluster := new(v1beta1.PostgresCluster)
 		observed := new(observedInstances)
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed,
 			func(context.Context, *Instance) error {
 				t.Fatal("expected no redeploys")
@@ -237,7 +233,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 		}
 		observed := &observedInstances{forCluster: instances}
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed,
 			func(context.Context, *Instance) error {
 				t.Fatal("expected no redeploys")
@@ -284,7 +280,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 
 		var redeploys []*Instance
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed, accumulate(&redeploys)))
 		assert.Equal(t, len(redeploys), 1)
 		assert.Equal(t, redeploys[0].Name, "one")
@@ -354,7 +350,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 
 		var redeploys []*Instance
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed, accumulate(&redeploys)))
 		assert.Equal(t, len(redeploys), 1)
 		assert.Equal(t, redeploys[0].Name, "one", `expected the "lowest" name`)
@@ -425,7 +421,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 
 		var redeploys []*Instance
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed, accumulate(&redeploys)))
 		assert.Equal(t, len(redeploys), 1)
 		assert.Equal(t, redeploys[0].Name, "not-primary")
@@ -495,7 +491,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 
 		var redeploys []*Instance
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed, accumulate(&redeploys)))
 		assert.Equal(t, len(redeploys), 1)
 		assert.Equal(t, redeploys[0].Name, "not-ready")
@@ -564,7 +560,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 		}
 		observed := &observedInstances{forCluster: instances}
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed,
 			func(context.Context, *Instance) error {
 				t.Fatal("expected no redeploys")
@@ -633,7 +629,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 		}
 		observed := &observedInstances{forCluster: instances}
 
-		logSpanAttributes(t)
+		ctx := logSpanAttributes(t, ctx)
 		assert.NilError(t, reconciler.rolloutInstances(ctx, cluster, observed,
 			func(context.Context, *Instance) error {
 				t.Fatal("expected no redeploys")
