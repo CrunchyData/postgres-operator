@@ -18,13 +18,8 @@ import (
 type SchemalessObject map[string]any
 
 // DeepCopy creates a new SchemalessObject by copying the receiver.
-func (in *SchemalessObject) DeepCopy() *SchemalessObject {
-	if in == nil {
-		return nil
-	}
-	out := new(SchemalessObject)
-	*out = runtime.DeepCopyJSON(*in)
-	return out
+func (in SchemalessObject) DeepCopy() SchemalessObject {
+	return runtime.DeepCopyJSON(in)
 }
 
 type ServiceSpec struct {

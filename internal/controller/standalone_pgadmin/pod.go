@@ -5,6 +5,7 @@
 package standalone_pgadmin
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -443,8 +445,8 @@ with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
 
 // podSecurityContext returns a v1.PodSecurityContext for pgadmin that can write
 // to PersistentVolumes.
-func podSecurityContext(r *PGAdminReconciler) *corev1.PodSecurityContext {
-	podSecurityContext := initialize.PodSecurityContext()
+func podSecurityContext(ctx context.Context) *corev1.PodSecurityContext {
+	psc := initialize.PodSecurityContext()
 
 	// TODO (dsessler7): Add ability to add supplemental groups
 
@@ -454,9 +456,11 @@ func podSecurityContext(r *PGAdminReconciler) *corev1.PodSecurityContext {
 	// - https://cloud.redhat.com/blog/a-guide-to-openshift-and-uids
 	// - https://docs.k8s.io/tasks/configure-pod-container/security-context/
 	// - https://docs.openshift.com/container-platform/4.14/authentication/managing-security-context-constraints.html
-	if !r.IsOpenShift {
-		podSecurityContext.FSGroup = initialize.Int64(2)
+	if !kubernetes.Has(ctx, kubernetes.API{
+		Group: "security.openshift.io", Kind: "SecurityContextConstraints",
+	}) {
+		psc.FSGroup = initialize.Int64(2)
 	}
 
-	return podSecurityContext
+	return psc
 }

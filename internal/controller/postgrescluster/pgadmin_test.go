@@ -6,11 +6,11 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strconv"
 	"testing"
 
-	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -500,6 +500,8 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 		template.Spec.Volumes = nil
 
 		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
+annotations:
+  kubectl.kubernetes.io/default-container: pgadmin
 creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: test-cluster
@@ -613,6 +615,7 @@ terminationGracePeriodSeconds: 30
 		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 annotations:
   annotation1: annotationvalue
+  kubectl.kubernetes.io/default-container: pgadmin
 creationTimestamp: null
 labels:
   label1: labelvalue

@@ -12,31 +12,31 @@ import (
 // NewHBAs returns HostBasedAuthentication records required by this package.
 func NewHBAs() HBAs {
 	return HBAs{
-		Mandatory: []HostBasedAuthentication{
+		Mandatory: []*HostBasedAuthentication{
 			// The "postgres" superuser must always be able to connect locally.
-			*NewHBA().Local().User("postgres").Method("peer"),
+			NewHBA().Local().User("postgres").Method("peer"),
 
 			// The replication user must always connect over TLS using certificate
 			// authentication. Patroni also connects to the "postgres" database
 			// when calling `pg_rewind`.
 			// - https://www.postgresql.org/docs/current/warm-standby.html#STREAMING-REPLICATION-AUTHENTICATION
-			*NewHBA().TLS().User(ReplicationUser).Method("cert").Replication(),
-			*NewHBA().TLS().User(ReplicationUser).Method("cert").Database("postgres"),
-			*NewHBA().TCP().User(ReplicationUser).Method("reject"),
+			NewHBA().TLS().User(ReplicationUser).Method("cert").Replication(),
+			NewHBA().TLS().User(ReplicationUser).Method("cert").Database("postgres"),
+			NewHBA().TCP().User(ReplicationUser).Method("reject"),
 		},
 
-		Default: []HostBasedAuthentication{
+		Default: []*HostBasedAuthentication{
 			// Allow TLS connections to any database using passwords. The "md5"
 			// authentication method automatically verifies passwords encrypted
 			// using either MD5 or SCRAM-SHA-256.
 			// - https://www.postgresql.org/docs/current/auth-password.html
-			*NewHBA().TLS().Method("md5"),
+			NewHBA().TLS().Method("md5"),
 		},
 	}
 }
 
 // HBAs is a pairing of HostBasedAuthentication records.
-type HBAs struct{ Mandatory, Default []HostBasedAuthentication }
+type HBAs struct{ Mandatory, Default []*HostBasedAuthentication }
 
 // HostBasedAuthentication represents a single record for pg_hba.conf.
 // - https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
@@ -49,7 +49,7 @@ func NewHBA() *HostBasedAuthentication {
 	return new(HostBasedAuthentication).AllDatabases().AllNetworks().AllUsers()
 }
 
-func (HostBasedAuthentication) quote(value string) string {
+func (*HostBasedAuthentication) quote(value string) string {
 	return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`
 }
 
@@ -148,7 +148,7 @@ func (hba *HostBasedAuthentication) User(name string) *HostBasedAuthentication {
 }
 
 // String returns hba formatted for the pg_hba.conf file without a newline.
-func (hba HostBasedAuthentication) String() string {
+func (hba *HostBasedAuthentication) String() string {
 	if hba.origin == "local" {
 		return strings.TrimSpace(fmt.Sprintf("local %s %s %s %s",
 			hba.database, hba.user, hba.method, hba.options))

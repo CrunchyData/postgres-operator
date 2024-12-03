@@ -13,7 +13,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -66,8 +65,8 @@ func init() {
 }
 
 func checkForUpgrades(ctx context.Context, url, versionString string, backoff wait.Backoff,
-	crclient crclient.Client, cfg *rest.Config,
-	isOpenShift bool, registrationToken string) (message string, header string, err error) {
+	crclient crclient.Client, registrationToken string,
+) (message string, header string, err error) {
 	var headerPayloadStruct *clientUpgradeData
 
 	// Prep request
@@ -75,9 +74,9 @@ func checkForUpgrades(ctx context.Context, url, versionString string, backoff wa
 	if err == nil {
 		// generateHeader always returns some sort of struct, using defaults/nil values
 		// in case some of the checks return errors
-		headerPayloadStruct = generateHeader(ctx, cfg, crclient,
-			versionString, isOpenShift, registrationToken)
-		req, err = addHeader(req, headerPayloadStruct)
+		headerPayloadStruct = generateHeader(ctx, crclient,
+			versionString, registrationToken)
+		req = addHeader(req, headerPayloadStruct)
 	}
 
 	// wait.ExponentialBackoff will retry the func according to the backoff object until
@@ -124,9 +123,7 @@ func checkForUpgrades(ctx context.Context, url, versionString string, backoff wa
 
 type CheckForUpgradesScheduler struct {
 	Client crclient.Client
-	Config *rest.Config
 
-	OpenShift         bool
 	Refresh           time.Duration
 	RegistrationToken string
 	URL, Version      string
@@ -138,7 +135,7 @@ type CheckForUpgradesScheduler struct {
 // so this token is always current; but if that restart behavior is changed,
 // we will want the upgrade mechanism to instantiate its own registration runner
 // or otherwise get the most recent token.
-func ManagedScheduler(m manager.Manager, openshift bool,
+func ManagedScheduler(m manager.Manager,
 	url, version string, registrationToken *jwt.Token) error {
 	if url == "" {
 		url = upgradeCheckURL
@@ -151,8 +148,6 @@ func ManagedScheduler(m manager.Manager, openshift bool,
 
 	return m.Add(&CheckForUpgradesScheduler{
 		Client:            m.GetClient(),
-		Config:            m.GetConfig(),
-		OpenShift:         openshift,
 		Refresh:           24 * time.Hour,
 		RegistrationToken: token,
 		URL:               url,
@@ -191,7 +186,7 @@ func (s *CheckForUpgradesScheduler) check(ctx context.Context) {
 	}()
 
 	info, header, err := checkForUpgrades(ctx,
-		s.URL, s.Version, backoff, s.Client, s.Config, s.OpenShift, s.RegistrationToken)
+		s.URL, s.Version, backoff, s.Client, s.RegistrationToken)
 
 	if err != nil {
 		log.V(1).Info("could not complete upgrade check", "response", err.Error())

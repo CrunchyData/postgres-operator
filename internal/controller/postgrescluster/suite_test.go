@@ -7,7 +7,6 @@ package postgrescluster
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,19 +19,17 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 var suite struct {
 	Client client.Client
 	Config *rest.Config
 
-	Environment   *envtest.Environment
 	ServerVersion *version.Version
 
 	Manager manager.Manager
@@ -53,21 +50,7 @@ var _ = BeforeSuite(func() {
 	log.SetLogger(logging.FromContext(context.Background()))
 
 	By("bootstrapping test environment")
-	suite.Environment = &envtest.Environment{
-		CRDDirectoryPaths: []string{
-			filepath.Join("..", "..", "..", "config", "crd", "bases"),
-			filepath.Join("..", "..", "..", "hack", "tools", "external-snapshotter", "client", "config", "crd"),
-		},
-	}
-
-	_, err := suite.Environment.Start()
-	Expect(err).ToNot(HaveOccurred())
-
-	DeferCleanup(suite.Environment.Stop)
-
-	suite.Config = suite.Environment.Config
-	suite.Client, err = client.New(suite.Config, client.Options{Scheme: runtime.Scheme})
-	Expect(err).ToNot(HaveOccurred())
+	suite.Config, suite.Client = require.Kubernetes2(GinkgoT())
 
 	dc, err := discovery.NewDiscoveryClientForConfig(suite.Config)
 	Expect(err).ToNot(HaveOccurred())

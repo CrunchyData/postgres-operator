@@ -3,7 +3,6 @@
 linters:
   disable:
     - contextcheck
-    - errchkjson
     - gci
     - gofumpt
   enable:
@@ -40,6 +39,18 @@ linters-settings:
 
           - pkg: github.com/crunchydata/postgres-operator/internal/testing/*
             desc: The "internal/testing" packages should be used only in tests.
+
+          - pkg: k8s.io/client-go/discovery
+            desc: Use the "internal/kubernetes" package instead.
+
+      tests:
+        files: ['$test']
+        deny:
+          - pkg: github.com/pkg/errors
+            desc: Use the "errors" package unless you are interacting with stack traces.
+
+  errchkjson:
+    check-error-free-encoding: true
 
   exhaustive:
     default-signifies-exhaustive: true
@@ -83,5 +94,15 @@ linters-settings:
     no-unaliased: true
 
 issues:
-  exclude-dirs:
-    - pkg/generated
+  exclude-generated: strict
+  exclude-rules:
+    # This internal package is the one place we want to do API discovery.
+    - linters: [depguard]
+      path: internal/kubernetes/discovery.go
+      text: k8s.io/client-go/discovery
+
+    # These value types have unmarshal methods.
+    # https://github.com/raeperd/recvcheck/issues/7
+    - linters: [recvcheck]
+      path: internal/pki/pki.go
+      text: 'methods of "(Certificate|PrivateKey)"'

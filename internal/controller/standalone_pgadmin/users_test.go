@@ -7,12 +7,12 @@ package standalone_pgadmin
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"testing"
 
-	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -112,7 +112,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
 			// podexec call in reconcilePGAdminMajorVersion
-			stdout.Write([]byte("7"))
+			_, _ = stdout.Write([]byte("7"))
 			return nil
 		}
 
@@ -147,7 +147,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
 			// podexec call in reconcilePGAdminMajorVersion
-			stdout.Write([]byte("7"))
+			_, _ = stdout.Write([]byte("7"))
 			return nil
 		}
 
@@ -182,7 +182,7 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 
 			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
 			// podexec call in reconcilePGAdminMajorVersion
-			stdout.Write([]byte("7"))
+			_, _ = stdout.Write([]byte("7"))
 			return nil
 		}
 
@@ -197,7 +197,7 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 			stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
 			// Simulate the python call giving bad data (not a version int)
-			stdout.Write([]byte("asdfjkl;"))
+			_, _ = stdout.Write([]byte("asdfjkl;"))
 			return nil
 		}
 
@@ -310,8 +310,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 		assert.Equal(t, calls, 1, "PodExec should be called once")
 
 		secret := &corev1.Secret{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -370,8 +370,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 		assert.Equal(t, updateUserCalls, 1, "The update-user command should be executed once")
 
 		secret := &corev1.Secret{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -442,8 +442,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 		assert.Equal(t, updateUserCalls, 1, "The update-user command should be executed once")
 
 		secret := &corev1.Secret{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -487,8 +487,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 		assert.Equal(t, calls, 0, "PodExec should be called zero times")
 
 		secret := &corev1.Secret{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -529,8 +529,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// User in users.json should be unchanged
 		secret := &corev1.Secret{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -547,7 +547,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stderr.Write([]byte("issue running setup.py update-user command"))
+			_, _ = stderr.Write([]byte("issue running setup.py update-user command"))
 
 			return nil
 		}
@@ -556,8 +556,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 		assert.Equal(t, calls, 2, "PodExec should be called once more")
 
 		// User in users.json should be unchanged
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -609,8 +609,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 		// User in users.json should be unchanged and attempt to add user should not
 		// have succeeded
 		secret := &corev1.Secret{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -627,7 +627,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stderr.Write([]byte("issue running setup.py add-user command"))
+			_, _ = stderr.Write([]byte("issue running setup.py add-user command"))
 
 			return nil
 		}
@@ -637,8 +637,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// User in users.json should be unchanged and attempt to add user should not
 		// have succeeded
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -655,7 +655,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stdout.Write([]byte("Invalid email address"))
+			_, _ = stdout.Write([]byte("Invalid email address"))
 
 			return nil
 		}
@@ -665,8 +665,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// User in users.json should be unchanged and attempt to add user should not
 		// have succeeded
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))
@@ -684,7 +684,7 @@ func TestWritePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			stdout.Write([]byte("Password must be at least 6 characters long"))
+			_, _ = stdout.Write([]byte("Password must be at least 6 characters long"))
 
 			return nil
 		}
@@ -694,8 +694,8 @@ func TestWritePGAdminUsers(t *testing.T) {
 
 		// User in users.json should be unchanged and attempt to add user should not
 		// have succeeded
-		assert.NilError(t, errors.WithStack(
-			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret)))
+		assert.NilError(t,
+			reconciler.Client.Get(ctx, client.ObjectKeyFromObject(secret), secret))
 		if assert.Check(t, secret.Data["users.json"] != nil) {
 			var usersArr []pgAdminUserForJson
 			assert.NilError(t, json.Unmarshal(secret.Data["users.json"], &usersArr))

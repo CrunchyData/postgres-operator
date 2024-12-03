@@ -7,8 +7,20 @@ package runtime
 import (
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
+
+// Requests converts objects to a slice of [reconcile.Request].
+func Requests[T client.Object](objects ...T) []reconcile.Request {
+	result := make([]reconcile.Request, len(objects))
+	for i := range objects {
+		result[i] = reconcile.Request{
+			NamespacedName: client.ObjectKeyFromObject(objects[i]),
+		}
+	}
+	return result
+}
 
 // ErrorWithBackoff returns a Result and error that indicate a non-nil err
 // should be logged and measured and its [reconcile.Request] should be retried

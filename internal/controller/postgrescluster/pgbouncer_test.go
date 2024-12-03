@@ -6,10 +6,10 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"testing"
 
-	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -443,6 +443,7 @@ namespace: ns3
 		// Annotations present in the pod template.
 		assert.DeepEqual(t, deploy.Spec.Template.Annotations, map[string]string{
 			"a": "v1",
+			"kubectl.kubernetes.io/default-container": "pgbouncer",
 		})
 
 		// Labels present in the pod template.

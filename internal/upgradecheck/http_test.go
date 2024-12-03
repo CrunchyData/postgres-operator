@@ -18,7 +18,6 @@ import (
 	"github.com/go-logr/logr/funcr"
 	"gotest.tools/v3/assert"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -49,7 +48,6 @@ func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
 
 func TestCheckForUpgrades(t *testing.T) {
 	fakeClient := setupFakeClientWithPGOScheme(t, true)
-	cfg := &rest.Config{}
 
 	ctx := logging.NewContext(context.Background(), logging.Discard())
 	gate := feature.NewGate()
@@ -83,7 +81,7 @@ func TestCheckForUpgrades(t *testing.T) {
 		}
 
 		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
-			fakeClient, cfg, false, "speakFriend")
+			fakeClient, "speakFriend")
 		assert.NilError(t, err)
 		assert.Equal(t, res, `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
 		checkData(t, header)
@@ -98,7 +96,7 @@ func TestCheckForUpgrades(t *testing.T) {
 		}
 
 		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
-			fakeClient, cfg, false, "speakFriend")
+			fakeClient, "speakFriend")
 		// Two failed calls because of env var
 		assert.Equal(t, counter, 2)
 		assert.Equal(t, res, "")
@@ -118,7 +116,7 @@ func TestCheckForUpgrades(t *testing.T) {
 		}
 
 		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
-			fakeClient, cfg, false, "speakFriend")
+			fakeClient, "speakFriend")
 		assert.Equal(t, res, "")
 		// Two failed calls because of env var
 		assert.Equal(t, counter, 2)
@@ -147,7 +145,7 @@ func TestCheckForUpgrades(t *testing.T) {
 		}
 
 		res, header, err := checkForUpgrades(ctx, "", "4.7.3", backoff,
-			fakeClient, cfg, false, "speakFriend")
+			fakeClient, "speakFriend")
 		assert.Equal(t, counter, 2)
 		assert.NilError(t, err)
 		assert.Equal(t, res, `{"pgo_versions":[{"tag":"v5.0.4"},{"tag":"v5.0.3"},{"tag":"v5.0.2"},{"tag":"v5.0.1"},{"tag":"v5.0.0"}]}`)
@@ -158,9 +156,6 @@ func TestCheckForUpgrades(t *testing.T) {
 // TODO(benjaminjb): Replace `fake` with envtest
 func TestCheckForUpgradesScheduler(t *testing.T) {
 	fakeClient := setupFakeClientWithPGOScheme(t, false)
-	_, server := setupVersionServer(t, true)
-	defer server.Close()
-	cfg := &rest.Config{Host: server.URL}
 
 	t.Run("panic from checkForUpgrades doesn't bubble up", func(t *testing.T) {
 		ctx := context.Background()
@@ -180,7 +175,6 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 
 		s := CheckForUpgradesScheduler{
 			Client: fakeClient,
-			Config: cfg,
 		}
 		s.check(ctx)
 
@@ -213,7 +207,6 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 		defer cancel()
 		s := CheckForUpgradesScheduler{
 			Client:  fakeClient,
-			Config:  cfg,
 			Refresh: 1 * time.Second,
 		}
 		assert.ErrorIs(t, context.DeadlineExceeded, s.Start(ctx))

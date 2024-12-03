@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -466,7 +465,7 @@ func (r *Reconciler) deleteInstances(
 
 	// stop schedules pod for deletion by scaling its controller to zero.
 	stop := func(pod *corev1.Pod) error {
-		instance := &unstructured.Unstructured{}
+		instance := &appsv1.StatefulSet{}
 		instance.SetNamespace(cluster.Namespace)
 
 		switch owner := metav1.GetControllerOfNoCopy(pod); {
@@ -474,8 +473,6 @@ func (r *Reconciler) deleteInstances(
 			return errors.Errorf("pod %q has no owner", client.ObjectKeyFromObject(pod))
 
 		case owner.Kind == "StatefulSet":
-			instance.SetAPIVersion(owner.APIVersion)
-			instance.SetKind(owner.Kind)
 			instance.SetName(owner.Name)
 
 		default:
@@ -536,7 +533,7 @@ func (r *Reconciler) deleteInstance(
 	cluster *v1beta1.PostgresCluster,
 	instanceName string,
 ) error {
-	gvks := []schema.GroupVersionKind{{
+	gvks := []runtime.GVK{{
 		Group:   corev1.SchemeGroupVersion.Group,
 		Version: corev1.SchemeGroupVersion.Version,
 		Kind:    "ConfigMapList",
@@ -591,7 +588,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	instances *observedInstances,
 	patroniLeaderService *corev1.Service,
 	primaryCertificate *corev1.SecretProjection,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 ) error {
@@ -709,12 +706,12 @@ func (r *Reconciler) cleanupPodDisruptionBudgets(
 // for the instance set specified that are not currently associated with an instance, and then
 // returning the instance names associated with those PVC's.
 func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
-	observedInstances *observedInstances, clusterVolumes []corev1.PersistentVolumeClaim) []string {
+	observedInstances *observedInstances, clusterVolumes []*corev1.PersistentVolumeClaim) []string {
 
 	availableInstanceNames := []string{}
 
 	// first identify any PGDATA volumes for the instance set specified
-	setVolumes := []corev1.PersistentVolumeClaim{}
+	setVolumes := []*corev1.PersistentVolumeClaim{}
 	for _, pvc := range clusterVolumes {
 		// ignore PGDATA PVCs that are terminating
 		if pvc.GetDeletionTimestamp() != nil {
@@ -732,7 +729,7 @@ func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
 	// any available PGDATA volumes for the instance set that have no corresponding WAL
 	// volumes (which means new PVCs will simply be reconciled instead).
 	if set.WALVolumeClaimSpec != nil {
-		setVolumesWithWAL := []corev1.PersistentVolumeClaim{}
+		setVolumesWithWAL := []*corev1.PersistentVolumeClaim{}
 		for _, setVol := range setVolumes {
 			setVolInstance := setVol.GetLabels()[naming.LabelInstance]
 			for _, pvc := range clusterVolumes {
@@ -1069,7 +1066,7 @@ func (r *Reconciler) scaleUpInstances(
 	primaryCertificate *corev1.SecretProjection,
 	availableInstanceNames []string,
 	numInstancePods int,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 ) ([]*appsv1.StatefulSet, error) {
@@ -1144,7 +1141,7 @@ func (r *Reconciler) reconcileInstance(
 	primaryCertificate *corev1.SecretProjection,
 	instance *appsv1.StatefulSet,
 	numInstancePods int,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 ) error {
@@ -1268,6 +1265,9 @@ func generateInstanceStatefulSetIntent(_ context.Context,
 	sts.Spec.Template.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
 		spec.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.DefaultContainerAnnotation: naming.ContainerDatabase,
+		},
 	)
 	sts.Spec.Template.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),

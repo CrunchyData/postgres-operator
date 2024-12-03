@@ -243,7 +243,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		tl, actual := Executor(func(
 			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
-			stderr.Write([]byte(`no luck`))
+			_, _ = stderr.Write([]byte(`no luck`))
 			return nil
 		}).GetTimeline(context.Background())
 
@@ -255,7 +255,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		tl, actual := Executor(func(
 			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
-			stdout.Write([]byte(`no luck`))
+			_, _ = stdout.Write([]byte(`no luck`))
 			return nil
 		}).GetTimeline(context.Background())
 
@@ -267,7 +267,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		tl, actual := Executor(func(
 			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
-			stdout.Write([]byte(`[{"Cluster": "hippo-ha", "Member": "hippo-instance1-ltcf-0", "Host": "hippo-instance1-ltcf-0.hippo-pods", "Role": "Replica", "State": "running", "TL": 4, "Lag in MB": 0}]`))
+			_, _ = stdout.Write([]byte(`[{"Cluster": "hippo-ha", "Member": "hippo-instance1-ltcf-0", "Host": "hippo-instance1-ltcf-0.hippo-pods", "Role": "Replica", "State": "running", "TL": 4, "Lag in MB": 0}]`))
 			return nil
 		}).GetTimeline(context.Background())
 
@@ -279,7 +279,7 @@ func TestExecutorGetTimeline(t *testing.T) {
 		tl, actual := Executor(func(
 			_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 		) error {
-			stdout.Write([]byte(`[{"Cluster": "hippo-ha", "Member": "hippo-instance1-67mc-0", "Host": "hippo-instance1-67mc-0.hippo-pods", "Role": "Leader", "State": "running", "TL": 4}, {"Cluster": "hippo-ha", "Member": "hippo-instance1-ltcf-0", "Host": "hippo-instance1-ltcf-0.hippo-pods", "Role": "Replica", "State": "running", "TL": 4, "Lag in MB": 0}]`))
+			_, _ = stdout.Write([]byte(`[{"Cluster": "hippo-ha", "Member": "hippo-instance1-67mc-0", "Host": "hippo-instance1-67mc-0.hippo-pods", "Role": "Leader", "State": "running", "TL": 4}, {"Cluster": "hippo-ha", "Member": "hippo-instance1-ltcf-0", "Host": "hippo-instance1-ltcf-0.hippo-pods", "Role": "Replica", "State": "running", "TL": 4, "Lag in MB": 0}]`))
 			return nil
 		}).GetTimeline(context.Background())
 

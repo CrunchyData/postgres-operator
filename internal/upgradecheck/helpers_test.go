@@ -6,19 +6,13 @@ package upgradecheck
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/go-logr/logr/funcr"
-	"gotest.tools/v3/assert"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/apimachinery/pkg/version"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -119,31 +113,6 @@ func setupFakeClientWithPGOScheme(t *testing.T, includeCluster bool) crclient.Cl
 	return fake.NewClientBuilder().WithScheme(runtime.Scheme).Build()
 }
 
-// setupVersionServer sets up and tears down a server and version info for testing
-func setupVersionServer(t *testing.T, works bool) (version.Info, *httptest.Server) {
-	t.Helper()
-	expect := version.Info{
-		Major:     "1",
-		Minor:     "22",
-		GitCommit: "v1.22.2",
-	}
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
-		req *http.Request) {
-		if works {
-			output, _ := json.Marshal(expect)
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			// We don't need to check the error output from this
-			_, _ = w.Write(output)
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-		}
-	}))
-	t.Cleanup(server.Close)
-
-	return expect, server
-}
-
 // setupLogCapture captures the logs and keeps count of the logs captured
 func setupLogCapture(ctx context.Context) (context.Context, *[]string) {
 	calls := []string{}
@@ -153,27 +122,4 @@ func setupLogCapture(ctx context.Context) (context.Context, *[]string) {
 		Verbosity: 1,
 	})
 	return logging.NewContext(ctx, testlog), &calls
-}
-
-// setupNamespace creates a namespace that will be deleted by t.Cleanup.
-// For upgradechecking, this namespace is set to `postgres-operator`,
-// which sometimes is created by other parts of the testing apparatus,
-// cf., the createnamespace call in `make check-envtest-existing`.
-// When creation fails, it calls t.Fatal. The caller may delete the namespace
-// at any time.
-func setupNamespace(t testing.TB, cc crclient.Client) {
-	t.Helper()
-	ns := &corev1.Namespace{}
-	ns.Name = "postgres-operator"
-	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
-
-	ctx := context.Background()
-	exists := &corev1.Namespace{}
-	assert.NilError(t, crclient.IgnoreNotFound(
-		cc.Get(ctx, crclient.ObjectKeyFromObject(ns), exists)))
-	if exists.Name != "" {
-		return
-	}
-	assert.NilError(t, cc.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, crclient.IgnoreNotFound(cc.Delete(ctx, ns))) })
 }

@@ -14,11 +14,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/rest"
 	crclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -50,16 +50,16 @@ type clientUpgradeData struct {
 
 // generateHeader aggregates data and returns a struct of that data
 // If any errors are encountered, it logs those errors and uses the default values
-func generateHeader(ctx context.Context, cfg *rest.Config, crClient crclient.Client,
-	pgoVersion string, isOpenShift bool, registrationToken string) *clientUpgradeData {
+func generateHeader(ctx context.Context, crClient crclient.Client,
+	pgoVersion string, registrationToken string) *clientUpgradeData {
 
 	return &clientUpgradeData{
 		BridgeClustersTotal: getBridgeClusters(ctx, crClient),
 		BuildSource:         os.Getenv("BUILD_SOURCE"),
 		DeploymentID:        ensureDeploymentID(ctx, crClient),
 		FeatureGatesEnabled: feature.ShowEnabled(ctx),
-		IsOpenShift:         isOpenShift,
-		KubernetesEnv:       getServerVersion(ctx, cfg),
+		IsOpenShift:         kubernetes.IsOpenShift(ctx),
+		KubernetesEnv:       kubernetes.VersionString(ctx),
 		PGOClustersTotal:    getManagedClusters(ctx, crClient),
 		PGOInstaller:        os.Getenv("PGO_INSTALLER"),
 		PGOInstallerOrigin:  os.Getenv("PGO_INSTALLER_ORIGIN"),
@@ -128,7 +128,7 @@ func manageUpgradeCheckConfigMap(ctx context.Context, crClient crclient.Client,
 		}
 	}
 
-	err = applyConfigMap(ctx, crClient, cm, currentID)
+	err = applyConfigMap(ctx, crClient, cm, postgrescluster.ControllerName)
 	if err != nil {
 		log.V(1).Info("upgrade check issue: could not apply configmap",
 			"response", err.Error())
@@ -188,31 +188,8 @@ func getBridgeClusters(ctx context.Context, crClient crclient.Client) int {
 	return count
 }
 
-// getServerVersion returns the stringified server version (i.e., the same info `kubectl version`
-// returns for the server)
-// Any errors encountered will be logged and will return an empty string
-func getServerVersion(ctx context.Context, cfg *rest.Config) string {
-	log := logging.FromContext(ctx)
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		log.V(1).Info("upgrade check issue: could not retrieve discovery client",
-			"response", err.Error())
-		return ""
-	}
-	versionInfo, err := discoveryClient.ServerVersion()
-	if err != nil {
-		log.V(1).Info("upgrade check issue: could not retrieve server version",
-			"response", err.Error())
-		return ""
-	}
-	return versionInfo.String()
-}
-
-func addHeader(req *http.Request, upgradeInfo *clientUpgradeData) (*http.Request, error) {
-	marshaled, err := json.Marshal(upgradeInfo)
-	if err == nil {
-		upgradeInfoString := string(marshaled)
-		req.Header.Add(clientHeader, upgradeInfoString)
-	}
-	return req, err
+func addHeader(req *http.Request, upgradeInfo *clientUpgradeData) *http.Request {
+	marshaled, _ := json.Marshal(upgradeInfo)
+	req.Header.Add(clientHeader, string(marshaled))
+	return req
 }

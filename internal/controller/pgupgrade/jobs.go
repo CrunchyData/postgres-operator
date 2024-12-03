@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -129,7 +130,6 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 	job.Namespace = upgrade.Namespace
 	job.Name = pgUpgradeJob(upgrade).Name
 
-	job.Annotations = upgrade.Spec.Metadata.GetAnnotationsOrNil()
 	job.Labels = Merge(upgrade.Spec.Metadata.GetLabelsOrNil(),
 		commonLabels(pgUpgrade, upgrade), //FIXME role pgupgrade
 		map[string]string{
@@ -144,6 +144,11 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 			database = &container
 		}
 	}
+
+	job.Annotations = Merge(upgrade.Spec.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.DefaultContainerAnnotation: database.Name,
+		})
 
 	// Copy the pod template from the startup instance StatefulSet. This includes
 	// the service account, volumes, DNS policies, and scheduling constraints.
@@ -241,7 +246,6 @@ func (r *PGUpgradeReconciler) generateRemoveDataJob(
 	job.Namespace = upgrade.Namespace
 	job.Name = upgrade.Name + "-" + sts.Name
 
-	job.Annotations = upgrade.Spec.Metadata.GetAnnotationsOrNil()
 	job.Labels = labels.Merge(upgrade.Spec.Metadata.GetLabelsOrNil(),
 		commonLabels(removeData, upgrade)) //FIXME role removedata
 
@@ -253,6 +257,11 @@ func (r *PGUpgradeReconciler) generateRemoveDataJob(
 			database = &container
 		}
 	}
+
+	job.Annotations = Merge(upgrade.Spec.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.DefaultContainerAnnotation: database.Name,
+		})
 
 	// Copy the pod template from the sts instance StatefulSet. This includes
 	// the service account, volumes, DNS policies, and scheduling constraints.

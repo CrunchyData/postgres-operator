@@ -16,7 +16,6 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
@@ -152,6 +152,12 @@ func main() {
 	// deprecation warnings when using an older version of a resource for backwards compatibility).
 	rest.SetDefaultWarningHandler(rest.NoWarnings{})
 
+	k8s, err := kubernetes.NewDiscoveryRunner(cfg)
+	assertNoError(err)
+	assertNoError(k8s.Read(ctx))
+
+	log.Info("Connected to Kubernetes", "api", k8s.Version().String(), "openshift", k8s.IsOpenShift())
+
 	options, err := initManager()
 	assertNoError(err)
 
@@ -160,16 +166,13 @@ func main() {
 	options.BaseContext = func() context.Context {
 		ctx := context.Background()
 		ctx = feature.NewContext(ctx, features)
+		ctx = kubernetes.NewAPIContext(ctx, k8s)
 		return ctx
 	}
 
 	mgr, err := runtime.NewManager(cfg, options)
 	assertNoError(err)
-
-	openshift := isOpenshift(cfg)
-	if openshift {
-		log.Info("detected OpenShift environment")
-	}
+	assertNoError(mgr.Add(k8s))
 
 	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), shutdown)
 	assertNoError(err)
@@ -177,7 +180,7 @@ func main() {
 	token, _ := registrar.CheckToken()
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, openshift, log, registrar)
+	addControllersToManager(mgr, log, registrar)
 
 	if features.Enabled(feature.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -197,7 +200,6 @@ func main() {
 		assertNoError(
 			upgradecheck.ManagedScheduler(
 				mgr,
-				openshift,
 				os.Getenv("CHECK_FOR_UPGRADES_URL"),
 				versionString,
 				token,
@@ -218,10 +220,9 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Logger, reg registration.Registration) {
+func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:       mgr.GetClient(),
-		IsOpenShift:  openshift,
 		Owner:        postgrescluster.ControllerName,
 		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
 		Registration: reg,
@@ -246,10 +247,9 @@ func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Lo
 	}
 
 	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
-		Client:      mgr.GetClient(),
-		Owner:       "pgadmin-controller",
-		Recorder:    mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-		IsOpenShift: openshift,
+		Client:   mgr.GetClient(),
+		Owner:    "pgadmin-controller",
+		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
 	}
 
 	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
@@ -275,34 +275,4 @@ func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Lo
 		log.Error(err, "unable to create CrunchyBridgeCluster controller")
 		os.Exit(1)
 	}
-}
-
-func isOpenshift(cfg *rest.Config) bool {
-	const sccGroupName, sccKind = "security.openshift.io", "SecurityContextConstraints"
-
-	client, err := discovery.NewDiscoveryClientForConfig(cfg)
-	assertNoError(err)
-
-	groups, err := client.ServerGroups()
-	if err != nil {
-		assertNoError(err)
-	}
-	for _, g := range groups.Groups {
-		if g.Name != sccGroupName {
-			continue
-		}
-		for _, v := range g.Versions {
-			resourceList, err := client.ServerResourcesForGroupVersion(v.GroupVersion)
-			if err != nil {
-				assertNoError(err)
-			}
-			for _, r := range resourceList.APIResources {
-				if r.Kind == sccKind {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
 }

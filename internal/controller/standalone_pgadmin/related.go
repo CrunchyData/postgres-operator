@@ -7,11 +7,11 @@ package standalone_pgadmin
 import (
 	"context"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,10 +27,10 @@ func (r *PGAdminReconciler) findPGAdminsForPostgresCluster(
 	)
 
 	// NOTE: If this becomes slow due to a large number of pgadmins in a single
-	// namespace, we can configure the [ctrl.Manager] field indexer and pass a
+	// namespace, we can configure the [manager.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
-	if r.List(ctx, &pgadmins, &client.ListOptions{
+	if r.Client.List(ctx, &pgadmins, &client.ListOptions{
 		Namespace: cluster.GetNamespace(),
 	}) == nil {
 		for i := range pgadmins.Items {
@@ -50,39 +50,66 @@ func (r *PGAdminReconciler) findPGAdminsForPostgresCluster(
 	return matching
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={list}
+
+// findPGAdminsForSecret returns PGAdmins that have a user or users that have their password
+// stored in the Secret
+func (r *PGAdminReconciler) findPGAdminsForSecret(
+	ctx context.Context, secret client.ObjectKey,
+) []*v1beta1.PGAdmin {
+	var matching []*v1beta1.PGAdmin
+	var pgadmins v1beta1.PGAdminList
+
+	// NOTE: If this becomes slow due to a large number of PGAdmins in a single
+	// namespace, we can configure the [manager.Manager] field indexer and pass a
+	// [fields.Selector] here.
+	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
+	if err := r.Client.List(ctx, &pgadmins, &client.ListOptions{
+		Namespace: secret.Namespace,
+	}); err == nil {
+		for i := range pgadmins.Items {
+			for j := range pgadmins.Items[i].Spec.Users {
+				if pgadmins.Items[i].Spec.Users[j].PasswordRef.Name == secret.Name {
+					matching = append(matching, &pgadmins.Items[i])
+					break
+				}
+			}
+		}
+	}
+	return matching
+}
+
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list}
 
 // getClustersForPGAdmin returns clusters managed by the given pgAdmin
 func (r *PGAdminReconciler) getClustersForPGAdmin(
 	ctx context.Context,
 	pgAdmin *v1beta1.PGAdmin,
-) (map[string]*v1beta1.PostgresClusterList, error) {
-	matching := make(map[string]*v1beta1.PostgresClusterList)
+) (map[string][]*v1beta1.PostgresCluster, error) {
+	matching := make(map[string][]*v1beta1.PostgresCluster)
 	var err error
 	var selector labels.Selector
 
 	for _, serverGroup := range pgAdmin.Spec.ServerGroups {
-		cluster := &v1beta1.PostgresCluster{}
+		var cluster v1beta1.PostgresCluster
 		if serverGroup.PostgresClusterName != "" {
-			err = r.Get(ctx, types.NamespacedName{
+			err = r.Client.Get(ctx, client.ObjectKey{
 				Name:      serverGroup.PostgresClusterName,
 				Namespace: pgAdmin.GetNamespace(),
-			}, cluster)
+			}, &cluster)
 			if err == nil {
-				matching[serverGroup.Name] = &v1beta1.PostgresClusterList{
-					Items: []v1beta1.PostgresCluster{*cluster},
-				}
+				matching[serverGroup.Name] = []*v1beta1.PostgresCluster{&cluster}
 			}
 			continue
 		}
 		if selector, err = naming.AsSelector(serverGroup.PostgresClusterSelector); err == nil {
-			var filteredList v1beta1.PostgresClusterList
-			err = r.List(ctx, &filteredList,
+			var list v1beta1.PostgresClusterList
+			err = r.Client.List(ctx, &list,
 				client.InNamespace(pgAdmin.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			)
 			if err == nil {
-				matching[serverGroup.Name] = &filteredList
+				matching[serverGroup.Name] = initialize.Pointers(list.Items...)
 			}
 		}
 	}

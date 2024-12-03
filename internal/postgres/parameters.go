@@ -5,6 +5,8 @@
 package postgres
 
 import (
+	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -65,7 +67,7 @@ func NewParameterSet() *ParameterSet {
 }
 
 // AsMap returns a copy of ps as a map.
-func (ps ParameterSet) AsMap() map[string]string {
+func (ps *ParameterSet) AsMap() map[string]string {
 	out := make(map[string]string, len(ps.values))
 	for name, value := range ps.values {
 		out[name] = value
@@ -102,25 +104,43 @@ func (ps *ParameterSet) AppendToList(name string, value ...string) {
 }
 
 // Get returns the value of parameter name and whether or not it was present in ps.
-func (ps ParameterSet) Get(name string) (string, bool) {
+func (ps *ParameterSet) Get(name string) (string, bool) {
 	value, ok := ps.values[ps.normalize(name)]
 	return value, ok
 }
 
 // Has returns whether or not parameter name is present in ps.
-func (ps ParameterSet) Has(name string) bool {
+func (ps *ParameterSet) Has(name string) bool {
 	_, ok := ps.Get(name)
 	return ok
 }
 
-func (ParameterSet) normalize(name string) string {
+func (*ParameterSet) normalize(name string) string {
 	// All parameter names are case-insensitive.
 	// -- https://www.postgresql.org/docs/current/config-setting.html
 	return strings.ToLower(name)
 }
 
 // Value returns empty string or the value of parameter name if it is present in ps.
-func (ps ParameterSet) Value(name string) string {
+func (ps *ParameterSet) Value(name string) string {
 	value, _ := ps.Get(name)
 	return value
 }
+
+func (ps *ParameterSet) String() string {
+	keys := make([]string, 0, len(ps.values))
+	for k := range ps.values {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+
+	var b strings.Builder
+	for _, k := range keys {
+		_, _ = fmt.Fprintf(&b, "%s = '%s'\n", k, escapeParameterQuotes(ps.values[k]))
+	}
+	return b.String()
+}
+
+// escapeParameterQuotes is used by [ParameterSet.String].
+var escapeParameterQuotes = strings.NewReplacer(`'`, `''`).Replace

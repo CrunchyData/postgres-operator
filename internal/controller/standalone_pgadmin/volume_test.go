@@ -6,6 +6,7 @@ package standalone_pgadmin
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -15,8 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/pkg/errors"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"

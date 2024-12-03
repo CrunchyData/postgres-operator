@@ -6,6 +6,7 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/go-logr/logr/funcr"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -25,7 +25,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -1347,7 +1346,7 @@ func TestDeleteInstance(t *testing.T) {
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
 
-	assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
+	assert.NilError(t, reconciler.Client.Create(ctx, cluster))
 	t.Cleanup(func() {
 		// Remove finalizers, if any, so the namespace can terminate.
 		assert.Check(t, client.IgnoreNotFound(
@@ -1377,7 +1376,7 @@ func TestDeleteInstance(t *testing.T) {
 	// Use the instance name to delete the single instance
 	assert.NilError(t, reconciler.deleteInstance(ctx, cluster, instanceName))
 
-	gvks := []schema.GroupVersionKind{
+	gvks := []runtime.GVK{
 		corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"),
 		corev1.SchemeGroupVersion.WithKind("ConfigMap"),
 		corev1.SchemeGroupVersion.WithKind("Secret"),
@@ -1397,9 +1396,9 @@ func TestDeleteInstance(t *testing.T) {
 			err := wait.PollUntilContextTimeout(ctx, time.Second*3, Scale(time.Second*30), false, func(ctx context.Context) (bool, error) {
 				uList := &unstructured.UnstructuredList{}
 				uList.SetGroupVersionKind(gvk)
-				assert.NilError(t, errors.WithStack(reconciler.Client.List(ctx, uList,
+				assert.NilError(t, reconciler.Client.List(ctx, uList,
 					client.InNamespace(cluster.Namespace),
-					client.MatchingLabelsSelector{Selector: selector})))
+					client.MatchingLabelsSelector{Selector: selector}))
 
 				if len(uList.Items) == 0 {
 					return true, nil
@@ -1759,7 +1758,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 	testCases := []struct {
 		set                   v1beta1.PostgresInstanceSetSpec
 		fakeObservedInstances *observedInstances
-		fakeClusterVolumes    []corev1.PersistentVolumeClaim
+		fakeClusterVolumes    []*corev1.PersistentVolumeClaim
 		expectedInstanceNames []string
 	}{{
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1770,7 +1769,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 			[]appsv1.StatefulSet{{}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes:    []corev1.PersistentVolumeClaim{{}},
+		fakeClusterVolumes:    []*corev1.PersistentVolumeClaim{{}},
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1784,7 +1783,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-abc-def",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,
@@ -1803,7 +1802,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes:    []corev1.PersistentVolumeClaim{},
+		fakeClusterVolumes:    []*corev1.PersistentVolumeClaim{},
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1"},
@@ -1817,7 +1816,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-abc-def",
 				Labels: map[string]string{
@@ -1844,7 +1843,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-abc-def",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,
@@ -1864,7 +1863,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 					naming.LabelInstanceSet: "instance1"}}}},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-abc-def",
 				Labels: map[string]string{
@@ -1888,7 +1887,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 			[]appsv1.StatefulSet{},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{
 			{ObjectMeta: metav1.ObjectMeta{
 				Name: "instance1-def-ghi",
 				Labels: map[string]string{
@@ -1912,7 +1911,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 			[]appsv1.StatefulSet{},
 			[]corev1.Pod{},
 		),
-		fakeClusterVolumes: []corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
+		fakeClusterVolumes: []*corev1.PersistentVolumeClaim{{ObjectMeta: metav1.ObjectMeta{
 			Name: "instance1-def-ghi",
 			Labels: map[string]string{
 				naming.LabelRole:        naming.RolePostgresData,

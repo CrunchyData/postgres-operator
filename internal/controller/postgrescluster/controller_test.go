@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
-	"github.com/pkg/errors"
+	"github.com/pkg/errors" //nolint:depguard // This legacy test covers so much code, it logs the origin of unexpected errors.
 
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
@@ -554,6 +554,68 @@ spec:
 				ctx, client.ObjectKeyFromObject(&instance), &instance,
 			)).To(Succeed())
 			Expect(instance.Spec.Replicas).To(PointTo(BeEquivalentTo(1)))
+		})
+	})
+
+	Context("Postgres version EOL", func() {
+		var cluster *v1beta1.PostgresCluster
+
+		BeforeEach(func() {
+			cluster = create(`
+metadata:
+  name: old-postgres
+spec:
+  postgresVersion: 11
+  image: postgres
+  instances:
+  - name: instance1
+    dataVolumeClaimSpec:
+      accessModes:
+      - "ReadWriteMany"
+      resources:
+        requests:
+          storage: 1Gi
+  backups:
+    pgbackrest:
+      image: pgbackrest
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+`)
+			Expect(reconcile(cluster)).To(BeZero())
+		})
+
+		AfterEach(func() {
+			ctx := context.Background()
+
+			if cluster != nil {
+				Expect(client.IgnoreNotFound(
+					suite.Client.Delete(ctx, cluster),
+				)).To(Succeed())
+
+				// Remove finalizers, if any, so the namespace can terminate.
+				Expect(client.IgnoreNotFound(
+					suite.Client.Patch(ctx, cluster, client.RawPatch(
+						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+				)).To(Succeed())
+			}
+		})
+
+		Specify("Postgres EOL Warning Event", func() {
+			existing := &v1beta1.PostgresCluster{}
+			Expect(suite.Client.Get(
+				context.Background(), client.ObjectKeyFromObject(cluster), existing,
+			)).To(Succeed())
+
+			event, ok := <-test.Recorder.Events
+			Expect(ok).To(BeTrue())
+			Expect(event).To(ContainSubstring("PG 11 will no longer receive updates. We recommend upgrading."))
 		})
 	})
 })

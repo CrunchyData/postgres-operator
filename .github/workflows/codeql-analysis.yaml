@@ -1,3 +1,4 @@
+# https://codeql.github.com
 name: CodeQL
 
 on:
@@ -5,20 +6,23 @@ on:
   push:
     branches:
       - main
-      - master
   schedule:
     - cron: '10 18 * * 2'
 
+env:
+  # Use the Go toolchain installed by setup-go
+  # https://github.com/actions/setup-go/issues/457
+  GOTOOLCHAIN: local
+
 jobs:
   analyze:
-    runs-on: ubuntu-latest
+    if: ${{ github.repository == 'CrunchyData/postgres-operator' }}
     permissions:
       actions: read
       contents: read
       security-events: write
 
-    if: ${{ github.repository == 'CrunchyData/postgres-operator' }}
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

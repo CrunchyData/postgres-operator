@@ -13,8 +13,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -34,7 +34,7 @@ func TestPopulateCluster(t *testing.T) {
 
 	t.Run("NotFound", func(t *testing.T) {
 		cluster := v1beta1.NewPostgresCluster()
-		expected := apierrors.NewNotFound(schema.GroupResource{}, "name")
+		expected := apierrors.NewNotFound(runtime.GR{}, "name")
 
 		world := NewWorld()
 		err := world.populateCluster(cluster, expected)

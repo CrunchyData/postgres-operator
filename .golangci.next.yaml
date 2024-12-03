@@ -10,7 +10,6 @@ linters:
   enable:
     - contextcheck
     - err113
-    - errchkjson
     - gocritic
     - godot
     - godox
@@ -27,13 +26,16 @@ linters:
     - wastedassign
 
 issues:
+  exclude-rules:
+    # We call external linters when they are installed: Flake8, ShellCheck, etc.
+    - linters: [gosec]
+      path: '_test[.]go$'
+      text: 'G204: Subprocess launched with variable'
+
   # https://github.com/golangci/golangci-lint/issues/2239
   exclude-use-default: false
 
 linters-settings:
-  errchkjson:
-    check-error-free-encoding: true
-
   thelper:
     # https://github.com/kulti/thelper/issues/27
     tb:   { begin: true, first: true }

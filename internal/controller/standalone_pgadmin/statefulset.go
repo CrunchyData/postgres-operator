@@ -25,7 +25,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap, dataVolume *corev1.PersistentVolumeClaim,
 ) error {
-	sts := statefulset(r, pgadmin, configmap, dataVolume)
+	sts := statefulset(ctx, pgadmin, configmap, dataVolume)
 
 	// Previous versions of PGO used a StatefulSet Pod Management Policy that could leave the Pod
 	// in a failed state. When we see that it has the wrong policy, we will delete the StatefulSet
@@ -58,7 +58,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 
 // statefulset defines the StatefulSet needed to run pgAdmin.
 func statefulset(
-	r *PGAdminReconciler,
+	ctx context.Context,
 	pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap,
 	dataVolume *corev1.PersistentVolumeClaim,
@@ -74,7 +74,12 @@ func statefulset(
 	sts.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: naming.StandalonePGAdminLabels(pgadmin.Name),
 	}
-	sts.Spec.Template.Annotations = pgadmin.Spec.Metadata.GetAnnotationsOrNil()
+	sts.Spec.Template.Annotations = naming.Merge(
+		pgadmin.Spec.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.DefaultContainerAnnotation: naming.ContainerPGAdmin,
+		},
+	)
 	sts.Spec.Template.Labels = naming.Merge(
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
 		naming.StandalonePGAdminDataLabels(pgadmin.Name),
@@ -110,7 +115,7 @@ func statefulset(
 	// set the image pull secrets, if any exist
 	sts.Spec.Template.Spec.ImagePullSecrets = pgadmin.Spec.ImagePullSecrets
 
-	sts.Spec.Template.Spec.SecurityContext = podSecurityContext(r)
+	sts.Spec.Template.Spec.SecurityContext = podSecurityContext(ctx)
 
 	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
 

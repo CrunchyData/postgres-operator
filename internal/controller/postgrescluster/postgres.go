@@ -20,6 +20,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -569,7 +570,7 @@ func (r *Reconciler) reconcilePostgresUsersInPostgreSQL(
 func (r *Reconciler) reconcilePostgresDataVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
-	clusterVolumes []corev1.PersistentVolumeClaim, sourceCluster *v1beta1.PostgresCluster,
+	clusterVolumes []*corev1.PersistentVolumeClaim, sourceCluster *v1beta1.PostgresCluster,
 ) (*corev1.PersistentVolumeClaim, error) {
 
 	labelMap := map[string]string{
@@ -581,10 +582,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 	}
 
 	var pvc *corev1.PersistentVolumeClaim
-	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	existingPVCName := getPVCName(clusterVolumes, labels.SelectorFromSet(labelMap))
 	if existingPVCName != "" {
 		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
 			Namespace: cluster.GetNamespace(),
@@ -596,7 +594,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 
 	pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
 
-	err = errors.WithStack(r.setControllerReference(cluster, pvc))
+	err := errors.WithStack(r.setControllerReference(cluster, pvc))
 
 	pvc.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
@@ -726,7 +724,7 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 func (r *Reconciler) reconcileTablespaceVolumes(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 ) (tablespaceVolumes []*corev1.PersistentVolumeClaim, err error) {
 
 	if !feature.Enabled(ctx, feature.TablespaceVolumes) {
@@ -747,10 +745,7 @@ func (r *Reconciler) reconcileTablespaceVolumes(
 		}
 
 		var pvc *corev1.PersistentVolumeClaim
-		existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
+		existingPVCName := getPVCName(clusterVolumes, labels.SelectorFromSet(labelMap))
 		if existingPVCName != "" {
 			pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
 				Namespace: cluster.GetNamespace(),
@@ -799,7 +794,7 @@ func (r *Reconciler) reconcileTablespaceVolumes(
 func (r *Reconciler) reconcilePostgresWALVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceSpec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
-	observed *Instance, clusterVolumes []corev1.PersistentVolumeClaim,
+	observed *Instance, clusterVolumes []*corev1.PersistentVolumeClaim,
 ) (*corev1.PersistentVolumeClaim, error) {
 
 	labelMap := map[string]string{
@@ -811,10 +806,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 	}
 
 	var pvc *corev1.PersistentVolumeClaim
-	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	existingPVCName := getPVCName(clusterVolumes, labels.SelectorFromSet(labelMap))
 	if existingPVCName != "" {
 		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
 			Namespace: cluster.GetNamespace(),
@@ -872,7 +864,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 		return pvc, err
 	}
 
-	err = errors.WithStack(r.setControllerReference(cluster, pvc))
+	err := errors.WithStack(r.setControllerReference(cluster, pvc))
 
 	pvc.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),

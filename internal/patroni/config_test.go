@@ -462,8 +462,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			hbas: postgres.HBAs{
-				Default: []postgres.HostBasedAuthentication{
-					*postgres.NewHBA().Local().Method("peer"),
+				Default: []*postgres.HostBasedAuthentication{
+					postgres.NewHBA().Local().Method("peer"),
 				},
 			},
 			expected: map[string]any{
@@ -487,8 +487,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			hbas: postgres.HBAs{
-				Default: []postgres.HostBasedAuthentication{
-					*postgres.NewHBA().Local().Method("peer"),
+				Default: []*postgres.HostBasedAuthentication{
+					postgres.NewHBA().Local().Method("peer"),
 				},
 			},
 			expected: map[string]any{
@@ -512,8 +512,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			hbas: postgres.HBAs{
-				Mandatory: []postgres.HostBasedAuthentication{
-					*postgres.NewHBA().Local().Method("peer"),
+				Mandatory: []*postgres.HostBasedAuthentication{
+					postgres.NewHBA().Local().Method("peer"),
 				},
 			},
 			expected: map[string]any{
@@ -538,8 +538,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			hbas: postgres.HBAs{
-				Mandatory: []postgres.HostBasedAuthentication{
-					*postgres.NewHBA().Local().Method("peer"),
+				Mandatory: []*postgres.HostBasedAuthentication{
+					postgres.NewHBA().Local().Method("peer"),
 				},
 			},
 			expected: map[string]any{

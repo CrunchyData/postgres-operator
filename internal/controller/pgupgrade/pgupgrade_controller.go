@@ -14,10 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -50,7 +48,9 @@ func (r *PGUpgradeReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&batchv1.Job{}).
 		Watches(
 			v1beta1.NewPostgresCluster(),
-			r.watchPostgresClusters(),
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, cluster client.Object) []ctrl.Request {
+				return runtime.Requests(r.findUpgradesForPostgresCluster(ctx, client.ObjectKeyFromObject(cluster))...)
+			}),
 		).
 		Complete(r)
 }
@@ -78,31 +78,6 @@ func (r *PGUpgradeReconciler) findUpgradesForPostgresCluster(
 		}
 	}
 	return matching
-}
-
-// watchPostgresClusters returns a [handler.EventHandler] for PostgresClusters.
-func (r *PGUpgradeReconciler) watchPostgresClusters() handler.Funcs {
-	handle := func(ctx context.Context, cluster client.Object, q workqueue.RateLimitingInterface) {
-		key := client.ObjectKeyFromObject(cluster)
-
-		for _, upgrade := range r.findUpgradesForPostgresCluster(ctx, key) {
-			q.Add(ctrl.Request{
-				NamespacedName: client.ObjectKeyFromObject(upgrade),
-			})
-		}
-	}
-
-	return handler.Funcs{
-		CreateFunc: func(ctx context.Context, e event.CreateEvent, q workqueue.RateLimitingInterface) {
-			handle(ctx, e.Object, q)
-		},
-		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-			handle(ctx, e.ObjectNew, q)
-		},
-		DeleteFunc: func(ctx context.Context, e event.DeleteEvent, q workqueue.RateLimitingInterface) {
-			handle(ctx, e.Object, q)
-		},
-	}
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades",verbs={get}

@@ -14,6 +14,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	volumesnapshotv1 "github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1"
@@ -21,6 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -56,14 +58,11 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 		return nil
 	}
 
-	// Check if the Kube cluster has VolumeSnapshots installed. If VolumeSnapshots
-	// are not installed, we need to return early. If user is attempting to use
-	// VolumeSnapshots, return an error, otherwise return nil.
-	volumeSnapshotKindExists, err := r.GroupVersionKindExists("snapshot.storage.k8s.io/v1", "VolumeSnapshot")
-	if err != nil {
-		return err
-	}
-	if !*volumeSnapshotKindExists {
+	// Return early when VolumeSnapshots are not installed in Kubernetes.
+	// If user is attempting to use VolumeSnapshots, return an error.
+	if !kubernetes.Has(
+		ctx, volumesnapshotv1.SchemeGroupVersion.WithKind("VolumeSnapshot"),
+	) {
 		if postgrescluster.Spec.Backups.Snapshots != nil {
 			return errors.New("VolumeSnapshots are not installed/enabled in this Kubernetes cluster; cannot create snapshot.")
 		} else {
@@ -102,10 +101,10 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 	if snapshotWithLatestError != nil {
 		r.Recorder.Event(postgrescluster, corev1.EventTypeWarning, "VolumeSnapshotError",
 			*snapshotWithLatestError.Status.Error.Message)
-		for _, snapshot := range snapshots.Items {
-			if snapshot.Status.Error != nil &&
+		for _, snapshot := range snapshots {
+			if snapshot.Status != nil && snapshot.Status.Error != nil &&
 				snapshot.Status.Error.Time.Before(snapshotWithLatestError.Status.Error.Time) {
-				err = r.deleteControlled(ctx, postgrescluster, &snapshot)
+				err = r.deleteControlled(ctx, postgrescluster, snapshot)
 				if err != nil {
 					return err
 				}
@@ -124,7 +123,7 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 	// the dedicated pvc.
 	var snapshotForPvcUpdateIdx int
 	snapshotFoundForPvcUpdate := false
-	for idx, snapshot := range snapshots.Items {
+	for idx, snapshot := range snapshots {
 		if snapshot.GetAnnotations()[naming.PGBackRestBackupJobCompletion] == pvcUpdateTimeStamp {
 			snapshotForPvcUpdateIdx = idx
 			snapshotFoundForPvcUpdate = true
@@ -133,11 +132,11 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 
 	// If a snapshot exists for the latest backup that has been restored into the dedicated pvc
 	// and the snapshot is Ready, delete all other snapshots.
-	if snapshotFoundForPvcUpdate && snapshots.Items[snapshotForPvcUpdateIdx].Status.ReadyToUse != nil &&
-		*snapshots.Items[snapshotForPvcUpdateIdx].Status.ReadyToUse {
-		for idx, snapshot := range snapshots.Items {
+	if snapshotFoundForPvcUpdate && snapshots[snapshotForPvcUpdateIdx].Status.ReadyToUse != nil &&
+		*snapshots[snapshotForPvcUpdateIdx].Status.ReadyToUse {
+		for idx, snapshot := range snapshots {
 			if idx != snapshotForPvcUpdateIdx {
-				err = r.deleteControlled(ctx, postgrescluster, &snapshot)
+				err = r.deleteControlled(ctx, postgrescluster, snapshot)
 				if err != nil {
 					return err
 				}
@@ -166,7 +165,7 @@ func (r *Reconciler) reconcileVolumeSnapshots(ctx context.Context,
 // after a successful backup.
 func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	clusterVolumes []corev1.PersistentVolumeClaim,
+	clusterVolumes []*corev1.PersistentVolumeClaim,
 ) (*corev1.PersistentVolumeClaim, error) {
 
 	// If VolumeSnapshots feature gate is disabled, do nothing and return early.
@@ -183,10 +182,7 @@ func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 
 	// If volume already exists, use existing name. Otherwise, generate a name.
 	var pvc *corev1.PersistentVolumeClaim
-	existingPVCName, err := getPGPVCName(labelMap, clusterVolumes)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	existingPVCName := getPVCName(clusterVolumes, labels.SelectorFromSet(labelMap))
 	if existingPVCName != "" {
 		pvc = &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{
 			Namespace: cluster.GetNamespace(),
@@ -210,7 +206,7 @@ func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 
 	// If we've got this far, snapshots are enabled so we should create/update/get
 	// the dedicated snapshot volume
-	pvc, err = r.createDedicatedSnapshotVolume(ctx, cluster, labelMap, pvc)
+	pvc, err := r.createDedicatedSnapshotVolume(ctx, cluster, labelMap, pvc)
 	if err != nil {
 		return pvc, err
 	}
@@ -527,17 +523,17 @@ func (r *Reconciler) getLatestCompleteBackupJob(ctx context.Context,
 // getSnapshotWithLatestError takes a VolumeSnapshotList and returns a pointer to the
 // snapshot that has most recently had an error. If no snapshot errors exist
 // then it returns nil.
-func getSnapshotWithLatestError(snapshots *volumesnapshotv1.VolumeSnapshotList) *volumesnapshotv1.VolumeSnapshot {
+func getSnapshotWithLatestError(snapshots []*volumesnapshotv1.VolumeSnapshot) *volumesnapshotv1.VolumeSnapshot {
 	zeroTime := metav1.NewTime(time.Time{})
-	snapshotWithLatestError := volumesnapshotv1.VolumeSnapshot{
+	snapshotWithLatestError := &volumesnapshotv1.VolumeSnapshot{
 		Status: &volumesnapshotv1.VolumeSnapshotStatus{
 			Error: &volumesnapshotv1.VolumeSnapshotError{
 				Time: &zeroTime,
 			},
 		},
 	}
-	for _, snapshot := range snapshots.Items {
-		if snapshot.Status.Error != nil &&
+	for _, snapshot := range snapshots {
+		if snapshot.Status != nil && snapshot.Status.Error != nil &&
 			snapshotWithLatestError.Status.Error.Time.Before(snapshot.Status.Error.Time) {
 			snapshotWithLatestError = snapshot
 		}
@@ -547,12 +543,12 @@ func getSnapshotWithLatestError(snapshots *volumesnapshotv1.VolumeSnapshotList) 
 		return nil
 	}
 
-	return &snapshotWithLatestError
+	return snapshotWithLatestError
 }
 
 // getSnapshotsForCluster gets all the VolumeSnapshots for a given postgrescluster.
 func (r *Reconciler) getSnapshotsForCluster(ctx context.Context, cluster *v1beta1.PostgresCluster) (
-	*volumesnapshotv1.VolumeSnapshotList, error) {
+	[]*volumesnapshotv1.VolumeSnapshot, error) {
 
 	selectSnapshots, err := naming.AsSelector(naming.Cluster(cluster.Name))
 	if err != nil {
@@ -565,19 +561,19 @@ func (r *Reconciler) getSnapshotsForCluster(ctx context.Context, cluster *v1beta
 			client.MatchingLabelsSelector{Selector: selectSnapshots},
 		))
 
-	return snapshots, err
+	return initialize.Pointers(snapshots.Items...), err
 }
 
 // getLatestReadySnapshot takes a VolumeSnapshotList and returns the latest ready VolumeSnapshot.
-func getLatestReadySnapshot(snapshots *volumesnapshotv1.VolumeSnapshotList) *volumesnapshotv1.VolumeSnapshot {
+func getLatestReadySnapshot(snapshots []*volumesnapshotv1.VolumeSnapshot) *volumesnapshotv1.VolumeSnapshot {
 	zeroTime := metav1.NewTime(time.Time{})
-	latestReadySnapshot := volumesnapshotv1.VolumeSnapshot{
+	latestReadySnapshot := &volumesnapshotv1.VolumeSnapshot{
 		Status: &volumesnapshotv1.VolumeSnapshotStatus{
 			CreationTime: &zeroTime,
 		},
 	}
-	for _, snapshot := range snapshots.Items {
-		if snapshot.Status.ReadyToUse != nil && *snapshot.Status.ReadyToUse &&
+	for _, snapshot := range snapshots {
+		if snapshot.Status != nil && snapshot.Status.ReadyToUse != nil && *snapshot.Status.ReadyToUse &&
 			latestReadySnapshot.Status.CreationTime.Before(snapshot.Status.CreationTime) {
 			latestReadySnapshot = snapshot
 		}
@@ -587,17 +583,17 @@ func getLatestReadySnapshot(snapshots *volumesnapshotv1.VolumeSnapshotList) *vol
 		return nil
 	}
 
-	return &latestReadySnapshot
+	return latestReadySnapshot
 }
 
 // deleteSnapshots takes a postgrescluster and a snapshot list and deletes all snapshots
 // in the list that are controlled by the provided postgrescluster.
 func (r *Reconciler) deleteSnapshots(ctx context.Context,
-	postgrescluster *v1beta1.PostgresCluster, snapshots *volumesnapshotv1.VolumeSnapshotList) error {
+	postgrescluster *v1beta1.PostgresCluster, snapshots []*volumesnapshotv1.VolumeSnapshot) error {
 
-	for i := range snapshots.Items {
+	for i := range snapshots {
 		err := errors.WithStack(client.IgnoreNotFound(
-			r.deleteControlled(ctx, postgrescluster, &snapshots.Items[i])))
+			r.deleteControlled(ctx, postgrescluster, snapshots[i])))
 		if err != nil {
 			return err
 		}

@@ -11,8 +11,8 @@ import (
 	goruntime "runtime"
 	"strings"
 	"sync"
-	"testing"
 
+	"golang.org/x/tools/go/packages"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
@@ -22,6 +22,14 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 )
 
+type TestingT interface {
+	assert.TestingT
+	Cleanup(func())
+	Helper()
+	Name() string
+	SkipNow()
+}
+
 // https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/envtest#pkg-constants
 var envtestVarsSet = os.Getenv("KUBEBUILDER_ASSETS") != "" ||
 	strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true")
@@ -29,7 +37,7 @@ var envtestVarsSet = os.Getenv("KUBEBUILDER_ASSETS") != "" ||
 // EnvTest returns an unstarted Environment with crds. It calls t.Skip when
 // the "KUBEBUILDER_ASSETS" and "USE_EXISTING_CLUSTER" environment variables
 // are unset.
-func EnvTest(t testing.TB, crds envtest.CRDInstallOptions) *envtest.Environment {
+func EnvTest(t TestingT, crds envtest.CRDInstallOptions) *envtest.Environment {
 	t.Helper()
 
 	if !envtestVarsSet {
@@ -59,7 +67,7 @@ var kubernetes struct {
 //
 // Tests that call t.Parallel might share the same local API. Call t.Parallel after this
 // function to ensure they share.
-func Kubernetes(t testing.TB) client.Client {
+func Kubernetes(t TestingT) client.Client {
 	t.Helper()
 	_, cc := kubernetes3(t)
 	return cc
@@ -67,13 +75,13 @@ func Kubernetes(t testing.TB) client.Client {
 
 // Kubernetes2 is the same as [Kubernetes] but also returns a copy of the client
 // configuration.
-func Kubernetes2(t testing.TB) (*rest.Config, client.Client) {
+func Kubernetes2(t TestingT) (*rest.Config, client.Client) {
 	t.Helper()
 	env, cc := kubernetes3(t)
 	return rest.CopyConfig(env.Config), cc
 }
 
-func kubernetes3(t testing.TB) (*envtest.Environment, client.Client) {
+func kubernetes3(t TestingT) (*envtest.Environment, client.Client) {
 	t.Helper()
 
 	if !envtestVarsSet {
@@ -102,6 +110,18 @@ func kubernetes3(t testing.TB) (*envtest.Environment, client.Client) {
 	base, err := filepath.Rel(filepath.Dir(caller), root)
 	assert.NilError(t, err)
 
+	// Calculate the snapshotter module directory path relative to the project directory.
+	var snapshotter string
+	if pkgs, err := packages.Load(
+		&packages.Config{Mode: packages.NeedModule},
+		"github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1",
+	); assert.Check(t,
+		err == nil && len(pkgs) > 0 && pkgs[0].Module != nil, "got %v\n%#v", err, pkgs,
+	) {
+		snapshotter, err = filepath.Rel(root, pkgs[0].Module.Dir)
+		assert.NilError(t, err)
+	}
+
 	kubernetes.Lock()
 	defer kubernetes.Unlock()
 
@@ -110,7 +130,7 @@ func kubernetes3(t testing.TB) (*envtest.Environment, client.Client) {
 			ErrorIfPathMissing: true,
 			Paths: []string{
 				filepath.Join(base, "config", "crd", "bases"),
-				filepath.Join(base, "hack", "tools", "external-snapshotter", "client", "config", "crd"),
+				filepath.Join(base, snapshotter, "config", "crd"),
 			},
 			Scheme: runtime.Scheme,
 		})
@@ -145,7 +165,7 @@ func kubernetes3(t testing.TB) (*envtest.Environment, client.Client) {
 
 // Namespace creates a random namespace that is deleted by t.Cleanup. It calls
 // t.Fatal when creation fails. The caller may delete the namespace at any time.
-func Namespace(t testing.TB, cc client.Client) *corev1.Namespace {
+func Namespace(t TestingT, cc client.Client) *corev1.Namespace {
 	t.Helper()
 
 	// Remove / that shows up when running a sub-test
