@@ -134,7 +134,13 @@ func main() {
 
 	features := feature.NewGate()
 	assertNoError(features.Set(os.Getenv("PGO_FEATURE_GATES")))
-	log.Info("feature gates enabled", "PGO_FEATURE_GATES", features.String())
+
+	ctx = feature.NewContext(ctx, features)
+	log.Info("feature gates",
+		// These are set by the user
+		"PGO_FEATURE_GATES", feature.ShowAssigned(ctx),
+		// These are enabled, including features that are on by default
+		"enabled", feature.ShowEnabled(ctx))
 
 	cfg, err := runtime.GetConfig()
 	assertNoError(err)

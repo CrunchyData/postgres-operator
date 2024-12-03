@@ -42,6 +42,9 @@ package feature
 
 import (
 	"context"
+	"fmt"
+	"slices"
+	"strings"
 
 	"k8s.io/component-base/featuregate"
 )
@@ -51,7 +54,6 @@ type Feature = featuregate.Feature
 // Gate indicates what features exist and which are enabled.
 type Gate interface {
 	Enabled(Feature) bool
-	String() string
 }
 
 // MutableGate contains features that can be enabled or disabled.
@@ -122,11 +124,36 @@ func NewContext(ctx context.Context, gate Gate) context.Context {
 	return context.WithValue(ctx, contextKey{}, gate)
 }
 
-func ShowGates(ctx context.Context) string {
-	featuresEnabled := ""
-	gate, ok := ctx.Value(contextKey{}).(Gate)
-	if ok {
-		featuresEnabled = gate.String()
+// ShowEnabled returns all the features enabled in the Gate contained in ctx.
+func ShowEnabled(ctx context.Context) string {
+	featuresEnabled := []string{}
+	if gate, ok := ctx.Value(contextKey{}).(interface {
+		Gate
+		GetAll() map[Feature]featuregate.FeatureSpec
+	}); ok {
+		specs := gate.GetAll()
+		for feature := range specs {
+			// `gate.Enabled` first checks if the feature is enabled;
+			// then (if not explicitly set by the user),
+			// it checks if the feature is on/true by default
+			if gate.Enabled(feature) {
+				featuresEnabled = append(featuresEnabled, fmt.Sprintf("%s=true", feature))
+			}
+		}
 	}
-	return featuresEnabled
+	slices.Sort(featuresEnabled)
+	return strings.Join(featuresEnabled, ",")
+}
+
+// ShowAssigned returns the features enabled or disabled by Set and SetFromMap
+// in the Gate contained in ctx.
+func ShowAssigned(ctx context.Context) string {
+	featuresAssigned := ""
+	if gate, ok := ctx.Value(contextKey{}).(interface {
+		Gate
+		String() string
+	}); ok {
+		featuresAssigned = gate.String()
+	}
+	return featuresAssigned
 }

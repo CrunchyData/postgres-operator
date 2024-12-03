@@ -6,6 +6,7 @@ package feature
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -23,8 +24,6 @@ func TestDefaults(t *testing.T) {
 	assert.Assert(t, false == gate.Enabled(PGBouncerSidecars))
 	assert.Assert(t, false == gate.Enabled(TablespaceVolumes))
 	assert.Assert(t, false == gate.Enabled(VolumeSnapshots))
-
-	assert.Equal(t, gate.String(), "")
 }
 
 func TestStringFormat(t *testing.T) {
@@ -33,7 +32,6 @@ func TestStringFormat(t *testing.T) {
 
 	assert.NilError(t, gate.Set(""))
 	assert.NilError(t, gate.Set("TablespaceVolumes=true"))
-	assert.Equal(t, gate.String(), "TablespaceVolumes=true")
 	assert.Assert(t, true == gate.Enabled(TablespaceVolumes))
 
 	err := gate.Set("NotAGate=true")
@@ -53,13 +51,21 @@ func TestContext(t *testing.T) {
 	t.Parallel()
 	gate := NewGate()
 	ctx := NewContext(context.Background(), gate)
-	assert.Equal(t, ShowGates(ctx), "")
+
+	assert.Equal(t, ShowAssigned(ctx), "")
+	assert.Assert(t, ShowEnabled(ctx) != "") // This assumes some feature is enabled by default.
 
 	assert.NilError(t, gate.Set("TablespaceVolumes=true"))
-	assert.Assert(t, true == Enabled(ctx, TablespaceVolumes))
-	assert.Equal(t, ShowGates(ctx), "TablespaceVolumes=true")
+	assert.Assert(t, Enabled(ctx, TablespaceVolumes))
+	assert.Equal(t, ShowAssigned(ctx), "TablespaceVolumes=true")
+	assert.Assert(t,
+		strings.Contains(ShowEnabled(ctx), "TablespaceVolumes=true"),
+		"got: %v", ShowEnabled(ctx))
 
 	assert.NilError(t, gate.SetFromMap(map[string]bool{TablespaceVolumes: false}))
-	assert.Assert(t, false == Enabled(ctx, TablespaceVolumes))
-	assert.Equal(t, ShowGates(ctx), "TablespaceVolumes=false")
+	assert.Assert(t, !Enabled(ctx, TablespaceVolumes))
+	assert.Equal(t, ShowAssigned(ctx), "TablespaceVolumes=false")
+	assert.Assert(t,
+		!strings.Contains(ShowEnabled(ctx), "TablespaceVolumes"),
+		"got: %v", ShowEnabled(ctx))
 }
