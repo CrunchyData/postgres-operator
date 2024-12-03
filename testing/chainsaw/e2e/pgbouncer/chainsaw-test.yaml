@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: pgbouncer
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: 00--cluster.yaml
+    - assert:
+        file: 00-assert.yaml
+  - name: step-01
+    try:
+    - apply:
+        file: 01--psql-connect.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-10
+    try:
+    - apply:
+        file: 10--read-certificate.yaml
+    - assert:
+        file: 10-assert.yaml
+  - name: step-11
+    try:
+    - apply:
+        file: 11--open-connection.yaml
+    - assert:
+        file: 11-assert.yaml
+  - name: step-12
+    try:
+    - script:
+        content: "BEFORE=$(date -u +%FT%TZ)\n\n# Wipe out the stored PgBouncer certificate.\nkubectl
+          patch --namespace \"${NAMESPACE}\" secret/proxied-pgbouncer \\\n  --patch
+          '{\"data\":{\"pgbouncer-frontend.crt\":\"\"}}'\n\n# Wait for the certificate
+          to be regenerated then loaded.\n# Changing this from \"wait until timeout\"
+          to \"try X times\"\n# so that we can get the logs before exiting 1 in case
+          we cannot find the reload.\nfor _ in $(seq 120); do\n  kubectl logs --namespace
+          \"${NAMESPACE}\" deployment.apps/proxied-pgbouncer \\\n    --container pgbouncer-config
+          --since-time \"${BEFORE}\" | grep 'Loaded' && \\\n    found=true && break\n
+          \ sleep 1\ndone\n\n# This test has been flaky in the past, potentially around
+          rotating/reloading the cert.\n# To help debug, we set the pgBouncer verbosity
+          to 1 (debug) and print the logs\nkubectl logs --namespace \"${NAMESPACE}\"
+          deployment.apps/proxied-pgbouncer \\\n  --all-containers --prefix --timestamps\n\n#
+          If we haven't found the `Loaded` log statement, exit with an error\nif [
+          -z \"$found\" ]; then \n  echo \"pgbouncer-config has failed to reload in
+          time\"\n  exit 1; \nfi\n"
+  - name: step-13
+    try:
+    - apply:
+        file: 13--read-certificate.yaml
+    - assert:
+        file: 13-assert.yaml
+  - name: step-14
+    try:
+    - script:
+        content: |
+          bash -c '! diff -u \
+            <(kubectl logs --namespace "${NAMESPACE}" job.batch/read-cert-before) \
+            <(kubectl logs --namespace "${NAMESPACE}" job.batch/read-cert-after) \
+          ' || {
+            echo 'Certificate did not change!'
+            kubectl logs --namespace "${NAMESPACE}" job.batch/read-cert-after
+            exit 1
+          }
+  - name: step-15
+    try:
+    - script:
+        content: |
+          CONNECTION=$(
+            kubectl logs --namespace "${NAMESPACE}" job.batch/psql-open-connection
+          )
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=proxied,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qb --set ON_ERROR_STOP=1 --set CONNECTION="${CONNECTION}" \
+              --file=- <<'SQL'
+            SELECT
+              set_config('testing.pid', (string_to_array(:'CONNECTION', '|'))[1], false) AS "testing.pid",
+              set_config('testing.start', (string_to_array(:'CONNECTION', '|'))[2], false) AS "testing.start";
+
+            DO $$
+            BEGIN
+              PERFORM * FROM pg_stat_ssl
+                WHERE ssl AND pid = current_setting('testing.pid')::integer;
+              ASSERT FOUND, 'expected TLS end-to-end';
+
+              PERFORM * FROM pg_stat_activity
+                WHERE pid = current_setting('testing.pid')::integer
+                  AND backend_start = current_setting('testing.start')::timestamptz;
+              ASSERT FOUND, 'expected to stay connected';
+            END $$;
+          SQL
+  - name: step-16
+    try:
+    - apply:
+        file: 16--reconnect.yaml
+    - assert:
+        file: 16-assert.yaml

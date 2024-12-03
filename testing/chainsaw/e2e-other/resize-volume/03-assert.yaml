@@ -1,0 +1,37 @@
+# We know that the PVC sizes have change so now we can check that they have been
+# updated to have the expected size
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: resize-volume-up
+    postgres-operator.crunchydata.com/instance-set: instance1
+spec:
+  resources:
+    requests:
+      storage: 2Gi
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  phase: Bound
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: resize-volume-up
+    postgres-operator.crunchydata.com/data: pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+spec:
+  resources:
+    requests:
+      storage: 2Gi
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 2Gi
+  phase: Bound

@@ -1,0 +1,6 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-replica-read
+status:
+  succeeded: 1

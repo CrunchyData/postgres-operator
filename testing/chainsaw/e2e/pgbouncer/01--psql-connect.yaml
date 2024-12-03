@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-connect
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          command:
+            - psql
+            - -c
+            - "select version();"
+          env:
+          - name: PGSSLMODE
+            value: verify-full
+          - name: PGSSLROOTCERT
+            value: "/tmp/certs/ca.crt"
+          - name: PGHOST
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-host } }
+          - name: PGPORT
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-port } }
+          - name: PGDATABASE
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: dbname } }
+          - name: PGUSER
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: user } }
+          - name: PGPASSWORD
+            valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: password } }
+          volumeMounts:
+          - name: certs
+            mountPath: "/tmp/certs"
+      volumes:
+      - name: certs
+        secret:
+          secretName: proxied-cluster-cert
