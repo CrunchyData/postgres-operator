@@ -58,7 +58,7 @@ func generateHeader(ctx context.Context, cfg *rest.Config, crClient crclient.Cli
 		BridgeClustersTotal: getBridgeClusters(ctx, crClient),
 		BuildSource:         os.Getenv("BUILD_SOURCE"),
 		DeploymentID:        ensureDeploymentID(ctx, crClient),
-		FeatureGatesEnabled: feature.ShowGates(ctx),
+		FeatureGatesEnabled: feature.ShowEnabled(ctx),
 		IsOpenShift:         isOpenShift,
 		KubernetesEnv:       getServerVersion(ctx, cfg),
 		PGOClustersTotal:    getManagedClusters(ctx, crClient),

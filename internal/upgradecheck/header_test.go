@@ -136,7 +136,10 @@ func TestGenerateHeader(t *testing.T) {
 		assert.Equal(t, len(pgoList.Items), res.PGOClustersTotal)
 		assert.Equal(t, "1.2.3", res.PGOVersion)
 		assert.Equal(t, server.String(), res.KubernetesEnv)
-		assert.Equal(t, "TablespaceVolumes=true", res.FeatureGatesEnabled)
+		assert.Check(t, strings.Contains(
+			res.FeatureGatesEnabled,
+			"TablespaceVolumes=true",
+		))
 		assert.Equal(t, "test", res.PGOInstaller)
 		assert.Equal(t, "test-origin", res.PGOInstallerOrigin)
 		assert.Equal(t, "developer", res.BuildSource)
