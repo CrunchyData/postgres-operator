@@ -43,6 +43,12 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string
 		initdb += ` --encryption-key-command "` + fetchKeyCommand + `"`
 	}
 
+	// Determine the number of jobs for pg_upgrade
+	var jobsFlag string
+	if upgrade.Spec.Jobs > 0 {
+		jobsFlag = fmt.Sprintf(" --jobs=%d", upgrade.Spec.Jobs)
+	}
+
 	args := []string{oldVersion, newVersion}
 	script := strings.Join([]string{
 		`declare -r data_volume='/pgdata' old_version="$1" new_version="$2"`,
@@ -104,7 +110,7 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string
 		`echo -e "\nStep 6: Running pg_upgrade...\n"`,
 		`time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \`,
 		`--new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}" \`,
-		`--new-datadir /pgdata/pg"${new_version}" --link`,
+		`--new-datadir /pgdata/pg"${new_version}" --link` + jobsFlag, // Add jobs flag here if it's defined
 
 		// Since we have cleared the Patroni cluster step by removing the EndPoints, we copy patroni.dynamic.json
 		// from the old data dir to help retain PostgreSQL parameters you had set before.
