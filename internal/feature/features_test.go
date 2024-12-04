@@ -22,6 +22,7 @@ func TestDefaults(t *testing.T) {
 	assert.Assert(t, false == gate.Enabled(BridgeIdentifiers))
 	assert.Assert(t, false == gate.Enabled(InstanceSidecars))
 	assert.Assert(t, false == gate.Enabled(PGBouncerSidecars))
+	assert.Assert(t, false == gate.Enabled(PGUpgradeCPUConcurrency))
 	assert.Assert(t, false == gate.Enabled(TablespaceVolumes))
 	assert.Assert(t, false == gate.Enabled(VolumeSnapshots))
 }

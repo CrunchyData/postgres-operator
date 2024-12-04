@@ -16,10 +16,84 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestLargestWholeCPU(t *testing.T) {
+	assert.Equal(t, 0,
+		largestWholeCPU(corev1.ResourceRequirements{}),
+		"expected the zero value to be zero")
+
+	for _, tt := range []struct {
+		Name, ResourcesYAML string
+		Result              int
+	}{
+		{
+			Name: "Negatives", ResourcesYAML: `{requests: {cpu: -3}, limits: {cpu: -5}}`,
+			Result: 0,
+		},
+		{
+			Name: "SmallPositive", ResourcesYAML: `limits: {cpu: 600m}`,
+			Result: 0,
+		},
+		{
+			Name: "FractionalPositive", ResourcesYAML: `requests: {cpu: 2200m}`,
+			Result: 2,
+		},
+		{
+			Name: "LargePositive", ResourcesYAML: `limits: {cpu: 10}`,
+			Result: 10,
+		},
+		{
+			Name: "RequestsAndLimits", ResourcesYAML: `{requests: {cpu: 2}, limits: {cpu: 4}}`,
+			Result: 4,
+		},
+	} {
+		t.Run(tt.Name, func(t *testing.T) {
+			var resources corev1.ResourceRequirements
+			assert.NilError(t, yaml.Unmarshal([]byte(tt.ResourcesYAML), &resources))
+			assert.Equal(t, tt.Result, largestWholeCPU(resources))
+		})
+	}
+}
+
+func TestUpgradeCommand(t *testing.T) {
+	expectScript := func(t *testing.T, script string) {
+		t.Helper()
+
+		t.Run("PrettyYAML", func(t *testing.T) {
+			b, err := yaml.Marshal(script)
+			assert.NilError(t, err)
+			assert.Assert(t, strings.HasPrefix(string(b), `|`),
+				"expected literal block scalar, got:\n%s", b)
+		})
+	}
+
+	t.Run("CPUs", func(t *testing.T) {
+		for _, tt := range []struct {
+			CPUs int
+			Jobs string
+		}{
+			{CPUs: 0, Jobs: "--jobs=1"},
+			{CPUs: 1, Jobs: "--jobs=1"},
+			{CPUs: 2, Jobs: "--jobs=1"},
+			{CPUs: 3, Jobs: "--jobs=2"},
+			{CPUs: 10, Jobs: "--jobs=9"},
+		} {
+			command := upgradeCommand(10, 11, "", tt.CPUs)
+			assert.Assert(t, len(command) > 3)
+			assert.DeepEqual(t, []string{"bash", "-ceu", "--"}, command[:3])
+
+			script := command[3]
+			assert.Assert(t, cmp.Contains(script, tt.Jobs))
+
+			expectScript(t, script)
+		}
+	})
+}
 
 func TestGenerateUpgradeJob(t *testing.T) {
 	ctx := context.Background()
@@ -116,11 +190,11 @@ spec:
           echo -e "Step 5: Running pg_upgrade check...\n"
           time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \
           --new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}"\
-           --new-datadir /pgdata/pg"${new_version}" --link --check
+           --new-datadir /pgdata/pg"${new_version}" --link --check --jobs=1
           echo -e "\nStep 6: Running pg_upgrade...\n"
           time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \
           --new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}" \
-          --new-datadir /pgdata/pg"${new_version}" --link
+          --new-datadir /pgdata/pg"${new_version}" --link --jobs=1
           echo -e "\nStep 7: Copying patroni.dynamic.json...\n"
           cp /pgdata/pg"${old_version}"/patroni.dynamic.json /pgdata/pg"${new_version}"
           echo -e "\npg_upgrade Job Complete!"
@@ -144,6 +218,18 @@ spec:
         name: vol2
 status: {}
 	`))
+
+	t.Run(feature.PGUpgradeCPUConcurrency+"Enabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.PGUpgradeCPUConcurrency: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		job := reconciler.generateUpgradeJob(ctx, upgrade, startup, "")
+		b, _ := yaml.Marshal(job)
+		assert.Assert(t, strings.Contains(string(b), `--jobs=2`))
+	})
 
 	tdeJob := reconciler.generateUpgradeJob(ctx, upgrade, startup, "echo testKey")
 	b, _ := yaml.Marshal(tdeJob)
