@@ -50,6 +50,15 @@ func DeepEqual(x, y any, opts ...gocmp.Option) Comparison {
 	return gotest.DeepEqual(x, y, opts...)
 }
 
+// MarshalContains converts actual to YAML and succeeds if expected is in the result.
+func MarshalContains(actual any, expected string) Comparison {
+	b, err := yaml.Marshal(actual)
+	if err != nil {
+		return func() gotest.Result { return gotest.ResultFromError(err) }
+	}
+	return Contains(string(b), expected)
+}
+
 // MarshalMatches converts actual to YAML and compares that to expected.
 func MarshalMatches(actual any, expected string) Comparison {
 	b, err := yaml.Marshal(actual)
