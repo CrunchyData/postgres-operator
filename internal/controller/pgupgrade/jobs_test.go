@@ -150,8 +150,7 @@ status: {}
 	`))
 
 	tdeJob := reconciler.generateUpgradeJob(ctx, upgrade, startup, "echo testKey")
-	b, _ := yaml.Marshal(tdeJob)
-	assert.Assert(t, strings.Contains(string(b),
+	assert.Assert(t, cmp.MarshalContains(tdeJob,
 		`/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}" --encryption-key-command "echo testKey"`))
 }
 
