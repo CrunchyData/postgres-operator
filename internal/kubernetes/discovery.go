@@ -196,11 +196,6 @@ func (r *DiscoveryRunner) Start(ctx context.Context) error {
 				log.Error(err, "Unable to detect Kubernetes APIs")
 			}
 		case <-ctx.Done():
-			// TODO(controller-runtime): Fixed in v0.19.0
-			// https://github.com/kubernetes-sigs/controller-runtime/issues/1927
-			if errors.Is(ctx.Err(), context.Canceled) {
-				return nil
-			}
 			return ctx.Err()
 		}
 	}
