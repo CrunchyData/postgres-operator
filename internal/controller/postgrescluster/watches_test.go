@@ -19,7 +19,7 @@ import (
 
 func TestWatchPodsUpdate(t *testing.T) {
 	ctx := context.Background()
-	queue := &controllertest.Queue{Interface: workqueue.New()}
+	queue := &controllertest.Queue{TypedInterface: workqueue.NewTyped[reconcile.Request]()}
 	reconciler := &Reconciler{}
 
 	update := reconciler.watchPods().UpdateFunc

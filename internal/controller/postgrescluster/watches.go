@@ -20,7 +20,7 @@ import (
 // watchPods returns a handler.EventHandler for Pods.
 func (*Reconciler) watchPods() handler.Funcs {
 	return handler.Funcs{
-		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+		UpdateFunc: func(ctx context.Context, e event.UpdateEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 			labels := e.ObjectNew.GetLabels()
 			cluster := labels[naming.LabelCluster]
 

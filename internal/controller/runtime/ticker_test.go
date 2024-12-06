@@ -14,6 +14,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func TestTickerString(t *testing.T) {
@@ -28,8 +29,8 @@ func TestTicker(t *testing.T) {
 	var called []event.GenericEvent
 	expected := event.GenericEvent{Object: new(corev1.ConfigMap)}
 
-	tq := workqueue.NewRateLimitingQueue(workqueue.DefaultItemBasedRateLimiter())
-	th := handler.Funcs{GenericFunc: func(ctx context.Context, e event.GenericEvent, q workqueue.RateLimitingInterface) {
+	tq := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedItemBasedRateLimiter[reconcile.Request]())
+	th := handler.Funcs{GenericFunc: func(ctx context.Context, e event.GenericEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 		called = append(called, e)
 
 		assert.Equal(t, q, tq, "should be called with the queue passed in Start")

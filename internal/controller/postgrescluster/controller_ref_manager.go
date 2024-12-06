@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -185,17 +186,17 @@ func (r *Reconciler) controllerRefHandlerFuncs() *handler.Funcs {
 	errMsg := "managing StatefulSet controller refs"
 
 	return &handler.Funcs{
-		CreateFunc: func(ctx context.Context, updateEvent event.CreateEvent, workQueue workqueue.RateLimitingInterface) {
+		CreateFunc: func(ctx context.Context, updateEvent event.CreateEvent, workQueue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 			if err := r.manageControllerRefs(ctx, updateEvent.Object); err != nil {
 				log.Error(err, errMsg)
 			}
 		},
-		UpdateFunc: func(ctx context.Context, updateEvent event.UpdateEvent, workQueue workqueue.RateLimitingInterface) {
+		UpdateFunc: func(ctx context.Context, updateEvent event.UpdateEvent, workQueue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 			if err := r.manageControllerRefs(ctx, updateEvent.ObjectNew); err != nil {
 				log.Error(err, errMsg)
 			}
 		},
-		DeleteFunc: func(ctx context.Context, updateEvent event.DeleteEvent, workQueue workqueue.RateLimitingInterface) {
+		DeleteFunc: func(ctx context.Context, updateEvent event.DeleteEvent, workQueue workqueue.TypedRateLimitingInterface[reconcile.Request]) {
 			if err := r.manageControllerRefs(ctx, updateEvent.Object); err != nil {
 				log.Error(err, errMsg)
 			}
