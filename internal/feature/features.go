@@ -83,6 +83,9 @@ const (
 	// Support custom sidecars for pgBouncer Pods
 	PGBouncerSidecars = "PGBouncerSidecars"
 
+	// Adjust PGUpgrade parallelism according to CPU resources
+	PGUpgradeCPUConcurrency = "PGUpgradeCPUConcurrency"
+
 	// Support tablespace volumes
 	TablespaceVolumes = "TablespaceVolumes"
 
@@ -95,14 +98,15 @@ func NewGate() MutableGate {
 	gate := featuregate.NewFeatureGate()
 
 	if err := gate.Add(map[Feature]featuregate.FeatureSpec{
-		AppendCustomQueries:  {Default: false, PreRelease: featuregate.Alpha},
-		AutoCreateUserSchema: {Default: true, PreRelease: featuregate.Beta},
-		AutoGrowVolumes:      {Default: false, PreRelease: featuregate.Alpha},
-		BridgeIdentifiers:    {Default: false, PreRelease: featuregate.Alpha},
-		InstanceSidecars:     {Default: false, PreRelease: featuregate.Alpha},
-		PGBouncerSidecars:    {Default: false, PreRelease: featuregate.Alpha},
-		TablespaceVolumes:    {Default: false, PreRelease: featuregate.Alpha},
-		VolumeSnapshots:      {Default: false, PreRelease: featuregate.Alpha},
+		AppendCustomQueries:     {Default: false, PreRelease: featuregate.Alpha},
+		AutoCreateUserSchema:    {Default: true, PreRelease: featuregate.Beta},
+		AutoGrowVolumes:         {Default: false, PreRelease: featuregate.Alpha},
+		BridgeIdentifiers:       {Default: false, PreRelease: featuregate.Alpha},
+		InstanceSidecars:        {Default: false, PreRelease: featuregate.Alpha},
+		PGBouncerSidecars:       {Default: false, PreRelease: featuregate.Alpha},
+		PGUpgradeCPUConcurrency: {Default: false, PreRelease: featuregate.Alpha},
+		TablespaceVolumes:       {Default: false, PreRelease: featuregate.Alpha},
+		VolumeSnapshots:         {Default: false, PreRelease: featuregate.Alpha},
 	}); err != nil {
 		panic(err)
 	}

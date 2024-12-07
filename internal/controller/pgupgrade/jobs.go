@@ -12,9 +12,11 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -33,9 +35,9 @@ func pgUpgradeJob(upgrade *v1beta1.PGUpgrade) metav1.ObjectMeta {
 
 // upgradeCommand returns an entrypoint that prepares the filesystem for
 // and performs a PostgreSQL major version upgrade using pg_upgrade.
-func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string {
-	oldVersion := fmt.Sprint(upgrade.Spec.FromPostgresVersion)
-	newVersion := fmt.Sprint(upgrade.Spec.ToPostgresVersion)
+func upgradeCommand(oldVersion, newVersion int, fetchKeyCommand string, availableCPUs int) []string {
+	// Use multiple CPUs when three or more are available.
+	argJobs := fmt.Sprintf(` --jobs=%d`, max(1, availableCPUs-1))
 
 	// if the fetch key command is set for TDE, provide the value during initialization
 	initdb := `/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"`
@@ -43,7 +45,7 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string
 		initdb += ` --encryption-key-command "` + fetchKeyCommand + `"`
 	}
 
-	args := []string{oldVersion, newVersion}
+	args := []string{fmt.Sprint(oldVersion), fmt.Sprint(newVersion)}
 	script := strings.Join([]string{
 		`declare -r data_volume='/pgdata' old_version="$1" new_version="$2"`,
 		`printf 'Performing PostgreSQL upgrade from version "%s" to "%s" ...\n\n' "$@"`,
@@ -97,14 +99,14 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string
 		`echo -e "Step 5: Running pg_upgrade check...\n"`,
 		`time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \`,
 		`--new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}"\`,
-		` --new-datadir /pgdata/pg"${new_version}" --link --check`,
+		` --new-datadir /pgdata/pg"${new_version}" --link --check` + argJobs,
 
 		// Assuming the check completes successfully, the pg_upgrade command will
 		// be run that actually prepares the upgraded pgdata directory.
 		`echo -e "\nStep 6: Running pg_upgrade...\n"`,
 		`time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \`,
 		`--new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}" \`,
-		`--new-datadir /pgdata/pg"${new_version}" --link`,
+		`--new-datadir /pgdata/pg"${new_version}" --link` + argJobs,
 
 		// Since we have cleared the Patroni cluster step by removing the EndPoints, we copy patroni.dynamic.json
 		// from the old data dir to help retain PostgreSQL parameters you had set before.
@@ -118,10 +120,21 @@ func upgradeCommand(upgrade *v1beta1.PGUpgrade, fetchKeyCommand string) []string
 	return append([]string{"bash", "-ceu", "--", script, "upgrade"}, args...)
 }
 
+// largestWholeCPU returns the maximum CPU request or limit as a non-negative
+// integer of CPUs. When resources lacks any CPU, the result is zero.
+func largestWholeCPU(resources corev1.ResourceRequirements) int {
+	// Read CPU quantities as millicores then divide to get the "floor."
+	// NOTE: [resource.Quantity.Value] looks easier, but it rounds up.
+	return max(
+		int(resources.Limits.Cpu().ScaledValue(resource.Milli)/1000),
+		int(resources.Requests.Cpu().ScaledValue(resource.Milli)/1000),
+		0)
+}
+
 // generateUpgradeJob returns a Job that can upgrade the PostgreSQL data
 // directory of the startup instance.
 func (r *PGUpgradeReconciler) generateUpgradeJob(
-	_ context.Context, upgrade *v1beta1.PGUpgrade,
+	ctx context.Context, upgrade *v1beta1.PGUpgrade,
 	startup *appsv1.StatefulSet, fetchKeyCommand string,
 ) *batchv1.Job {
 	job := &batchv1.Job{}
@@ -167,6 +180,12 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 	job.Spec.BackoffLimit = initialize.Int32(0)
 	job.Spec.Template.Spec.RestartPolicy = corev1.RestartPolicyNever
 
+	// When enabled, calculate the number of CPUs for pg_upgrade.
+	wholeCPUs := 0
+	if feature.Enabled(ctx, feature.PGUpgradeCPUConcurrency) {
+		wholeCPUs = largestWholeCPU(upgrade.Spec.Resources)
+	}
+
 	// Replace all containers with one that does the upgrade.
 	job.Spec.Template.Spec.EphemeralContainers = nil
 	job.Spec.Template.Spec.InitContainers = nil
@@ -179,7 +198,11 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 		VolumeMounts:    database.VolumeMounts,
 
 		// Use our upgrade command and the specified image and resources.
-		Command:         upgradeCommand(upgrade, fetchKeyCommand),
+		Command: upgradeCommand(
+			upgrade.Spec.FromPostgresVersion,
+			upgrade.Spec.ToPostgresVersion,
+			fetchKeyCommand,
+			wholeCPUs),
 		Image:           pgUpgradeContainerImage(upgrade),
 		ImagePullPolicy: upgrade.Spec.ImagePullPolicy,
 		Resources:       upgrade.Spec.Resources,
