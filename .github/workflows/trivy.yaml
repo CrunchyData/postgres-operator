@@ -19,7 +19,7 @@ jobs:
     # Do not fail this workflow when this job fails.
     continue-on-error: true
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Download Trivy
@@ -36,7 +36,7 @@ jobs:
     if: >-
       ${{ !cancelled() }}
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -64,7 +64,7 @@ jobs:
     permissions:
       security-events: write
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 

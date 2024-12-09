@@ -13,7 +13,7 @@ env:
 
 jobs:
   go-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -25,7 +25,7 @@ jobs:
         run: go mod tidy && git diff --exit-code -- go.mod
 
   kubernetes-api:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [go-test]
     strategy:
       fail-fast: false
@@ -51,7 +51,7 @@ jobs:
 
   kubernetes-k3d:
     if: "${{ github.repository == 'CrunchyData/postgres-operator' }}"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [go-test]
     strategy:
       fail-fast: false
@@ -85,7 +85,7 @@ jobs:
           retention-days: 1
 
   kuttl-k3d:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [go-test]
     strategy:
       fail-fast: false
@@ -170,7 +170,7 @@ jobs:
 
   coverage-report:
     if: ${{ success() || contains(needs.*.result, 'success') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs:
       - kubernetes-api
       - kubernetes-k3d
