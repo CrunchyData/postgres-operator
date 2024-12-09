@@ -58,7 +58,6 @@ clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -rf licenses/*/
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
-	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
 	[ ! -d hack/tools/envtest ] || { chmod -R u+w hack/tools/envtest && rm -r hack/tools/envtest; }
 	[ ! -d hack/tools/pgmonitor ] || rm -rf hack/tools/pgmonitor
@@ -85,6 +84,8 @@ clean-deprecated: ## Clean deprecated resources
 	[ ! -d build/crunchy-postgres-exporter ] || rm -r build/crunchy-postgres-exporter
 	@# CRDs used to require patching
 	[ ! -d build/crd ] || rm -r build/crd
+	@# Old testing directories
+	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 
 
 ##@ Deployment
@@ -228,7 +229,6 @@ generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/c
 generate-kuttl: export KUTTL_TEST_DELETE_NAMESPACE ?= kuttl-test-delete-namespace
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
-	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	bash -ceu ' \
 	case $(KUTTL_PG_VERSION) in \
 	16 ) export KUTTL_BITNAMI_IMAGE_TAG=16.0.0-debian-11-r3 ;; \
@@ -245,7 +245,7 @@ generate-kuttl: ## Generate kuttl tests
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
 		shift; \
-	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e-other/*/*.yaml testing/kuttl/e2e/*/*/*.yaml testing/kuttl/e2e-other/*/*/*.yaml
+	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e/*/*/*.yaml
 
 ##@ Generate
 
