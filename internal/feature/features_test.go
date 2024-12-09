@@ -24,7 +24,7 @@ func TestDefaults(t *testing.T) {
 	assert.Assert(t, false == gate.Enabled(OpenTelemetryLogs))
 	assert.Assert(t, false == gate.Enabled(OpenTelemetryMetrics))
 	assert.Assert(t, false == gate.Enabled(PGBouncerSidecars))
-	assert.Assert(t, false == gate.Enabled(PGUpgradeCPUConcurrency))
+	assert.Assert(t, true == gate.Enabled(PGUpgradeCPUConcurrency))
 	assert.Assert(t, false == gate.Enabled(TablespaceVolumes))
 	assert.Assert(t, false == gate.Enabled(VolumeSnapshots))
 }

@@ -15,9 +15,10 @@ type PGUpgradeSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
-	// The name of the cluster to be updated
-	// +required
+	// The name of the Postgres cluster to upgrade.
+	// ---
 	// +kubebuilder:validation:MinLength=1
+	// +required
 	PostgresClusterName string `json:"postgresClusterName"`
 
 	// The image name to use for major PostgreSQL upgrades.
@@ -42,37 +43,9 @@ type PGUpgradeSpec struct {
 
 	// The image pull secrets used to pull from a private registry.
 	// Changing this value causes all running PGUpgrade pods to restart.
-	// https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+	// https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry
 	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
-
-	// TODO(benjaminjb): define webhook validation to make sure
-	// `fromPostgresVersion` is below `toPostgresVersion`
-	// or leverage other validation rules, such as the Common Expression Language
-	// rules currently in alpha as of Kubernetes 1.23
-	// - https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#validation-rules
-
-	// The major version of PostgreSQL before the upgrade.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Minimum=11
-	// +kubebuilder:validation:Maximum=17
-	FromPostgresVersion int `json:"fromPostgresVersion"`
-
-	// TODO(benjaminjb): define webhook validation to make sure
-	// `fromPostgresVersion` is below `toPostgresVersion`
-	// or leverage other validation rules, such as the Common Expression Language
-	// rules currently in alpha as of Kubernetes 1.23
-
-	// The major version of PostgreSQL to be upgraded to.
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Minimum=11
-	// +kubebuilder:validation:Maximum=17
-	ToPostgresVersion int `json:"toPostgresVersion"`
-
-	// The image name to use for PostgreSQL containers after upgrade.
-	// When omitted, the value comes from an operator environment variable.
-	// +optional
-	ToPostgresImage string `json:"toPostgresImage,omitempty"`
 
 	// Resource requirements for the PGUpgrade container.
 	// +optional
@@ -88,7 +61,7 @@ type PGUpgradeSpec struct {
 
 	// Priority class name for the PGUpgrade pod. Changing this
 	// value causes PGUpgrade pod to restart.
-	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption
 	// +optional
 	PriorityClassName *string `json:"priorityClassName,omitempty"`
 
@@ -96,6 +69,53 @@ type PGUpgradeSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	PGUpgradeSettings `json:",inline"`
+}
+
+// Arguments and settings for the pg_upgrade tool.
+// See: https://www.postgresql.org/docs/current/pgupgrade.html
+// ---
+// +kubebuilder:validation:XValidation:rule=`!has(self.transferMethod) || (self.toPostgresVersion < 12 ? self.transferMethod in ["Copy","Link"] : true)`,message="Only Copy or Link before PostgreSQL 12"
+// +kubebuilder:validation:XValidation:rule=`!has(self.transferMethod) || (self.toPostgresVersion < 17 ? self.transferMethod in ["Clone","Copy","Link"] : true)`,message="Only Clone, Copy, or Link before PostgreSQL 17"
+type PGUpgradeSettings struct {
+
+	// The major version of PostgreSQL before the upgrade.
+	// ---
+	// +kubebuilder:validation:Minimum=11
+	// +kubebuilder:validation:Maximum=17
+	// +required
+	FromPostgresVersion int32 `json:"fromPostgresVersion"`
+
+	// The number of simultaneous processes pg_upgrade should use.
+	// More info: https://www.postgresql.org/docs/current/pgupgrade.html
+	// ---
+	// +kubebuilder:validation:Minimum=0
+	// +optional
+	Jobs int32 `json:"jobs,omitempty"`
+
+	// The major version of PostgreSQL to be upgraded to.
+	// ---
+	// +kubebuilder:validation:Minimum=11
+	// +kubebuilder:validation:Maximum=17
+	// +required
+	ToPostgresVersion int32 `json:"toPostgresVersion"`
+
+	// The method pg_upgrade should use to transfer files to the new cluster.
+	// More info: https://www.postgresql.org/docs/current/pgupgrade.html
+	// ---
+	// Different versions of the tool have different methods.
+	// - Copy and Link forever:  https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_upgrade/pg_upgrade.h;hb=REL_10_0#l232
+	// - Clone since 12:         https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_upgrade/pg_upgrade.h;hb=REL_12_0#l232
+	// - CopyFileRange since 17: https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_upgrade/pg_upgrade.h;hb=REL_17_0#l251
+	//
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=15
+	//
+	// +kubebuilder:validation:Enum={Clone,Copy,CopyFileRange,Link}
+	// +optional
+	TransferMethod string `json:"transferMethod,omitempty"`
 }
 
 // PGUpgradeStatus defines the observed state of PGUpgrade
