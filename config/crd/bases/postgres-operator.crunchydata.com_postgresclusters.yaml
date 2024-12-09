@@ -7690,6 +7690,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
+                maxLength: 15
                 type: string
               imagePullSecrets:
                 description: |-
@@ -11637,7 +11638,7 @@ spec:
                         default: INFO
                         description: |-
                           The Patroni log level.
-                          https://docs.python.org/3.6/library/logging.html#levels
+                          More info: https://docs.python.org/3/library/logging.html#levels
                         enum:
                         - CRITICAL
                         - ERROR
@@ -11645,15 +11646,16 @@ spec:
                         - INFO
                         - DEBUG
                         - NOTSET
+                        maxLength: 10
                         type: string
                       storageLimit:
                         anyOf:
                         - type: integer
                         - type: string
                         description: |-
-                          Limits the total amount of space taken by Patroni Log files.
+                          Limits the total amount of space taken by Patroni log files.
                           Minimum value is 25MB.
-                          https://pkg.go.dev/k8s.io/apimachinery/pkg/api/resource#Quantity
+                          More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
                     required:
@@ -11692,6 +11694,7 @@ spec:
                         enum:
                         - Switchover
                         - Failover
+                        maxLength: 15
                         type: string
                     required:
                     - enabled
@@ -14651,12 +14654,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -14685,6 +14690,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
+                            maxLength: 15
                             type: string
                         type: object
                       sidecars:
@@ -14990,12 +14996,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -15024,6 +15032,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
+                    maxLength: 15
                     type: string
                 type: object
               service:
@@ -15035,12 +15044,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -15069,6 +15080,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
+                    maxLength: 15
                     type: string
                 type: object
               shutdown:
@@ -16728,12 +16740,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -16762,6 +16776,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
+                            maxLength: 15
                             type: string
                         type: object
                       tolerations:
@@ -17046,6 +17061,7 @@ spec:
                           enum:
                           - ASCII
                           - AlphaNumeric
+                          maxLength: 15
                           type: string
                       required:
                       - type

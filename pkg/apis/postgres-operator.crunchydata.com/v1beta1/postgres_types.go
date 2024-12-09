@@ -16,6 +16,11 @@ type PostgresPasswordSpec struct {
 	// and AlphaNumeric.
 	// "ASCII" passwords contain letters, numbers, and symbols from the US-ASCII character set.
 	// "AlphaNumeric" passwords contain letters and numbers from the US-ASCII character set.
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=15
+	//
 	// +kubebuilder:default=ASCII
 	// +kubebuilder:validation:Enum={ASCII,AlphaNumeric}
 	Type string `json:"type"`

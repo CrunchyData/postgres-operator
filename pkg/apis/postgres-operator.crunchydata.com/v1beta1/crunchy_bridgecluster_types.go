@@ -51,6 +51,11 @@ type CrunchyBridgeClusterSpec struct {
 
 	// The cloud provider where the cluster is located.
 	// Currently Bridge offers aws, azure, and gcp only
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=10
+	//
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Enum={aws,azure,gcp}
 	// +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
