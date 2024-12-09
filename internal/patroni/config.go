@@ -43,7 +43,7 @@ func quoteShellWord(s string) string {
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
 	cluster *v1beta1.PostgresCluster,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+	pgHBAs postgres.HBAs, pgParameters postgres.Parameters, patroniLogStorageLimit int64,
 ) (string, error) {
 	root := map[string]any{
 		// The cluster identifier. This value cannot change during the cluster's
@@ -150,6 +150,29 @@ func clusterYAML(
 			// flexible approximation.
 			"mode": "off",
 		},
+	}
+
+	// if a Patroni log file size is configured, configure volume file storage
+	if patroniLogStorageLimit != 0 {
+
+		// Configure the Patroni log settings
+		// - https://patroni.readthedocs.io/en/latest/yaml_configuration.html#log
+		root["log"] = map[string]any{
+
+			"dir":  naming.PatroniPGDataLogPath,
+			"type": "json",
+
+			// defaults to "INFO"
+			"level": cluster.Spec.Patroni.Logging.Level,
+
+			// There will only be two log files. Cannot set to 1 or the logs won't rotate.
+			// - https://github.com/python/cpython/blob/3.11/Lib/logging/handlers.py#L134
+			"file_num": 1,
+
+			// Since there are two log files, ensure the total space used is under
+			// the configured limit.
+			"file_size": patroniLogStorageLimit / 2,
+		}
 	}
 
 	if !ClusterBootstrapped(cluster) {

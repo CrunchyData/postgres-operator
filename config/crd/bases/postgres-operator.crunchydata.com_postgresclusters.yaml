@@ -11630,6 +11630,35 @@ spec:
                     format: int32
                     minimum: 3
                     type: integer
+                  logging:
+                    description: Patroni log configuration settings.
+                    properties:
+                      level:
+                        default: INFO
+                        description: |-
+                          The Patroni log level.
+                          https://docs.python.org/3.6/library/logging.html#levels
+                        enum:
+                        - CRITICAL
+                        - ERROR
+                        - WARNING
+                        - INFO
+                        - DEBUG
+                        - NOTSET
+                        type: string
+                      storageLimit:
+                        anyOf:
+                        - type: integer
+                        - type: string
+                        description: |-
+                          Limits the total amount of space taken by Patroni Log files.
+                          Minimum value is 25MB.
+                          https://pkg.go.dev/k8s.io/apimachinery/pkg/api/resource#Quantity
+                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                        x-kubernetes-int-or-string: true
+                    required:
+                    - storageLimit
+                    type: object
                   port:
                     default: 8008
                     description: |-

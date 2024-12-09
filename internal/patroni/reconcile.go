@@ -32,13 +32,14 @@ func ClusterConfigMap(ctx context.Context,
 	inHBAs postgres.HBAs,
 	inParameters postgres.Parameters,
 	outClusterConfigMap *corev1.ConfigMap,
+	patroniLogStorageLimit int64,
 ) error {
 	var err error
 
 	initialize.Map(&outClusterConfigMap.Data)
 
 	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inHBAs,
-		inParameters)
+		inParameters, patroniLogStorageLimit)
 
 	return err
 }

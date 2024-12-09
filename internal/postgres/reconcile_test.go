@@ -230,7 +230,7 @@ initContainers:
   - -ceu
   - --
   - |-
-    declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3"
+    declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3" patroniLog_directory="$4"
     permissions() { while [[ -n "$1" ]]; do set "${1%/*}" "$@"; done; shift; stat -Lc '%A %4u %4g %n' "$@"; }
     halt() { local rc=$?; >&2 echo "$@"; exit "${rc/#0/1}"; }
     results() { printf '::postgres-operator: %s::%s\n' "$@"; }
@@ -270,6 +270,9 @@ initContainers:
     results 'pgBackRest log directory' "${pgbrLog_directory}"
     install --directory --mode=0775 "${pgbrLog_directory}" ||
     halt "$(permissions "${pgbrLog_directory}" ||:)"
+    results 'Patroni log directory' "${patroniLog_directory}"
+    install --directory --mode=0775 "${patroniLog_directory}" ||
+    halt "$(permissions "${patroniLog_directory}" ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
 
 
@@ -286,6 +289,7 @@ initContainers:
   - "11"
   - /pgdata/pg11_wal
   - /pgdata/pgbackrest/log
+  - /pgdata/patroni/log
   env:
   - name: PGDATA
     value: /pgdata/pg11
@@ -473,7 +477,7 @@ volumes:
 
 		// Startup moves WAL files to data volume.
 		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
-			[]string{"startup", "11", "/pgdata/pg11_wal", "/pgdata/pgbackrest/log"})
+			[]string{"startup", "11", "/pgdata/pg11_wal", "/pgdata/pgbackrest/log", "/pgdata/patroni/log"})
 	})
 
 	t.Run("WithAdditionalConfigFiles", func(t *testing.T) {
@@ -703,7 +707,7 @@ volumes:
 
 		// Startup moves WAL files to WAL volume.
 		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
-			[]string{"startup", "11", "/pgwal/pg11_wal", "/pgdata/pgbackrest/log"})
+			[]string{"startup", "11", "/pgwal/pg11_wal", "/pgdata/pgbackrest/log", "/pgdata/patroni/log"})
 	})
 }
 

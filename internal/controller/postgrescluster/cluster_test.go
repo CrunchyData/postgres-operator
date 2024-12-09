@@ -13,6 +13,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/record"
@@ -23,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -781,5 +783,77 @@ postgres-operator.crunchydata.com/role: replica
 postgres-operator.crunchydata.com/cluster: pg2
 postgres-operator.crunchydata.com/role: replica
 		`))
+	})
+}
+
+func TestPatroniLogSize(t *testing.T) {
+
+	oneHundredMeg, err := resource.ParseQuantity("100M")
+	assert.NilError(t, err)
+
+	tooSmall, err := resource.ParseQuantity("1k")
+	assert.NilError(t, err)
+
+	cluster := v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "sometest",
+			Namespace: "test-namespace",
+		},
+		Spec: v1beta1.PostgresClusterSpec{}}
+
+	t.Run("Default", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+
+		size := reconciler.patroniLogSize(&cluster)
+
+		assert.Equal(t, size, int64(0))
+		assert.Equal(t, len(recorder.Events), 0)
+	})
+
+	t.Run("NoSize", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Logging: &v1beta1.PatroniLogConfig{}}
+
+		size := reconciler.patroniLogSize(&cluster)
+
+		assert.Equal(t, size, int64(0))
+		assert.Equal(t, len(recorder.Events), 0)
+	})
+
+	t.Run("ValidSize", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Logging: &v1beta1.PatroniLogConfig{
+				StorageLimit: &oneHundredMeg,
+			}}
+
+		size := reconciler.patroniLogSize(&cluster)
+
+		assert.Equal(t, size, int64(100000000))
+		assert.Equal(t, len(recorder.Events), 0)
+	})
+
+	t.Run("BadSize", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler := &Reconciler{Recorder: recorder}
+
+		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
+			Logging: &v1beta1.PatroniLogConfig{
+				StorageLimit: &tooSmall,
+			}}
+
+		size := reconciler.patroniLogSize(&cluster)
+
+		assert.Equal(t, size, int64(25000000))
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "PatroniLogStorageLimitTooSmall")
+		assert.Equal(t, recorder.Events[0].Note, "Configured Patroni log storage limit is too small. File size will default to 25M.")
 	})
 }
