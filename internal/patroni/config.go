@@ -50,6 +50,17 @@ func clusterYAML(
 		// lifetime.
 		"scope": naming.PatroniScope(cluster),
 
+		// Configure the Patroni log path directory
+		// - https://patroni.readthedocs.io/en/latest/yaml_configuration.html#log
+		//
+		// Setting file_size to 0 means that there will be no rollover.
+		// - https://github.com/patroni/patroni/blob/v3.3.4/patroni/log.py#L431-L432
+		// - https://docs.python.org/3.11/library/logging.handlers.html#rotatingfilehandler
+		"log": map[string]any{
+			"dir":       naming.PatroniPGDataLogPath,
+			"file_size": 0,
+		},
+
 		// Use Kubernetes Endpoints for the distributed configuration store (DCS).
 		// These values cannot change during the cluster's lifetime.
 		//
