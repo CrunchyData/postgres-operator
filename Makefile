@@ -52,6 +52,10 @@ get-pgmonitor:
 	cp -r '$(PGMONITOR_DIR)/postgres_exporter/common/.' '${QUERIES_CONFIG_DIR}'
 	cp '$(PGMONITOR_DIR)/postgres_exporter/linux/queries_backrest.yml' '${QUERIES_CONFIG_DIR}'
 
+.PHONY: notes
+notes: ## List known issues and future considerations
+	command -v rg > /dev/null && rg '(BUGS|FIXME|NOTE|TODO)[(][^)]+[)]' || grep -Ern '(BUGS|FIXME|NOTE|TODO)[(][^)]+[)]' *
+
 .PHONY: clean
 clean: ## Clean resources
 clean: clean-deprecated
