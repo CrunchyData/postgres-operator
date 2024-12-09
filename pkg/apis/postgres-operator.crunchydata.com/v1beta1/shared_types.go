@@ -34,6 +34,10 @@ type ServiceSpec struct {
 	NodePort *int32 `json:"nodePort,omitempty"`
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=15
 	//
 	// +optional
 	// +kubebuilder:default=ClusterIP
@@ -41,12 +45,22 @@ type ServiceSpec struct {
 	Type string `json:"type"`
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=10
+	// +kubebuilder:validation:Type=string
 	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
 	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicyType `json:"internalTrafficPolicy,omitempty"`
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=10
+	// +kubebuilder:validation:Type=string
 	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
