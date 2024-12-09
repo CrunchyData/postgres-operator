@@ -68,6 +68,12 @@ type PGAdminSpec struct {
 	// ImagePullPolicy is used to determine when Kubernetes will attempt to
 	// pull (download) container images.
 	// More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=15
+	// +kubebuilder:validation:Type=string
+	//
 	// +kubebuilder:validation:Enum={Always,Never,IfNotPresent}
 	// +optional
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
@@ -146,6 +152,11 @@ type PGAdminUser struct {
 
 	// Role determines whether the user has admin privileges or not.
 	// Defaults to User. Valid options are Administrator and User.
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=15
+	//
 	// +kubebuilder:validation:Enum={Administrator,User}
 	// +optional
 	Role string `json:"role,omitempty"`
