@@ -113,7 +113,7 @@ func NewGate() MutableGate {
 		OpenTelemetryLogs:       {Default: false, PreRelease: featuregate.Alpha},
 		OpenTelemetryMetrics:    {Default: false, PreRelease: featuregate.Alpha},
 		PGBouncerSidecars:       {Default: false, PreRelease: featuregate.Alpha},
-		PGUpgradeCPUConcurrency: {Default: false, PreRelease: featuregate.Alpha},
+		PGUpgradeCPUConcurrency: {Default: true, PreRelease: featuregate.Beta},
 		TablespaceVolumes:       {Default: false, PreRelease: featuregate.Alpha},
 		VolumeSnapshots:         {Default: false, PreRelease: featuregate.Alpha},
 	}); err != nil {

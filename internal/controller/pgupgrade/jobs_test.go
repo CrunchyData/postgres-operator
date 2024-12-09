@@ -23,13 +23,13 @@ import (
 )
 
 func TestLargestWholeCPU(t *testing.T) {
-	assert.Equal(t, 0,
+	assert.Equal(t, int64(0),
 		largestWholeCPU(corev1.ResourceRequirements{}),
 		"expected the zero value to be zero")
 
 	for _, tt := range []struct {
 		Name, ResourcesYAML string
-		Result              int
+		Result              int64
 	}{
 		{
 			Name: "Negatives", ResourcesYAML: `{requests: {cpu: -3}, limits: {cpu: -5}}`,
@@ -72,26 +72,52 @@ func TestUpgradeCommand(t *testing.T) {
 		})
 	}
 
-	t.Run("CPUs", func(t *testing.T) {
+	t.Run("Jobs", func(t *testing.T) {
 		for _, tt := range []struct {
-			CPUs int
-			Jobs string
+			Spec int32
+			Args string
 		}{
-			{CPUs: 0, Jobs: "--jobs=1"},
-			{CPUs: 1, Jobs: "--jobs=1"},
-			{CPUs: 2, Jobs: "--jobs=1"},
-			{CPUs: 3, Jobs: "--jobs=2"},
-			{CPUs: 10, Jobs: "--jobs=9"},
+			{Spec: -1, Args: "--jobs=1"},
+			{Spec: 0, Args: "--jobs=1"},
+			{Spec: 1, Args: "--jobs=1"},
+			{Spec: 2, Args: "--jobs=2"},
+			{Spec: 10, Args: "--jobs=10"},
 		} {
-			command := upgradeCommand(10, 11, "", tt.CPUs)
+			spec := &v1beta1.PGUpgradeSettings{Jobs: tt.Spec}
+			command := upgradeCommand(spec, "")
 			assert.Assert(t, len(command) > 3)
 			assert.DeepEqual(t, []string{"bash", "-ceu", "--"}, command[:3])
 
 			script := command[3]
-			assert.Assert(t, cmp.Contains(script, tt.Jobs))
+			assert.Assert(t, cmp.Contains(script, tt.Args))
 
 			expectScript(t, script)
 		}
+	})
+
+	t.Run("Method", func(t *testing.T) {
+		for _, tt := range []struct {
+			Spec string
+			Args string
+		}{
+			{Spec: "", Args: "--link"},
+			{Spec: "mystery!", Args: "--link"},
+			{Spec: "Link", Args: "--link"},
+			{Spec: "Clone", Args: "--clone"},
+			{Spec: "Copy", Args: "--copy"},
+			{Spec: "CopyFileRange", Args: "--copy-file-range"},
+		} {
+			spec := &v1beta1.PGUpgradeSettings{TransferMethod: tt.Spec}
+			command := upgradeCommand(spec, "")
+			assert.Assert(t, len(command) > 3)
+			assert.DeepEqual(t, []string{"bash", "-ceu", "--"}, command[:3])
+
+			script := command[3]
+			assert.Assert(t, cmp.Contains(script, tt.Args))
+
+			expectScript(t, script)
+		}
+
 	})
 }
 
@@ -194,7 +220,7 @@ spec:
           echo -e "Step 5: Running pg_upgrade check...\n"
           time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \
           --new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}"\
-           --new-datadir /pgdata/pg"${new_version}" --link --check --jobs=1
+           --new-datadir /pgdata/pg"${new_version}" --check --link --jobs=1
           echo -e "\nStep 6: Running pg_upgrade...\n"
           time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \
           --new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}" \

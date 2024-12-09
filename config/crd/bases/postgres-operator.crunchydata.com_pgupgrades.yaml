@@ -963,6 +963,7 @@ spec:
                 type: object
               fromPostgresVersion:
                 description: The major version of PostgreSQL before the upgrade.
+                format: int32
                 maximum: 17
                 minimum: 11
                 type: integer
@@ -984,7 +985,7 @@ spec:
                 description: |-
                   The image pull secrets used to pull from a private registry.
                   Changing this value causes all running PGUpgrade pods to restart.
-                  https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+                  https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry
                 items:
                   description: |-
                     LocalObjectReference contains enough information to let you locate the
@@ -1002,6 +1003,13 @@ spec:
                   type: object
                   x-kubernetes-map-type: atomic
                 type: array
+              jobs:
+                description: |-
+                  The number of simultaneous processes pg_upgrade should use.
+                  More info: https://www.postgresql.org/docs/current/pgupgrade.html
+                format: int32
+                minimum: 0
+                type: integer
               metadata:
                 description: Metadata contains metadata for custom resources
                 properties:
@@ -1015,14 +1023,14 @@ spec:
                     type: object
                 type: object
               postgresClusterName:
-                description: The name of the cluster to be updated
+                description: The name of the Postgres cluster to upgrade.
                 minLength: 1
                 type: string
               priorityClassName:
                 description: |-
                   Priority class name for the PGUpgrade pod. Changing this
                   value causes PGUpgrade pod to restart.
-                  More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+                  More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption
                 type: string
               resources:
                 description: Resource requirements for the PGUpgrade container.
@@ -1083,13 +1091,9 @@ spec:
                       More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                     type: object
                 type: object
-              toPostgresImage:
-                description: |-
-                  The image name to use for PostgreSQL containers after upgrade.
-                  When omitted, the value comes from an operator environment variable.
-                type: string
               toPostgresVersion:
                 description: The major version of PostgreSQL to be upgraded to.
+                format: int32
                 maximum: 17
                 minimum: 11
                 type: integer
@@ -1134,11 +1138,29 @@ spec:
                       type: string
                   type: object
                 type: array
+              transferMethod:
+                description: |-
+                  The method pg_upgrade should use to transfer files to the new cluster.
+                  More info: https://www.postgresql.org/docs/current/pgupgrade.html
+                enum:
+                - Clone
+                - Copy
+                - CopyFileRange
+                - Link
+                maxLength: 15
+                type: string
             required:
             - fromPostgresVersion
             - postgresClusterName
             - toPostgresVersion
             type: object
+            x-kubernetes-validations:
+            - message: Only Copy or Link before PostgreSQL 12
+              rule: '!has(self.transferMethod) || (self.toPostgresVersion < 12 ? self.transferMethod
+                in ["Copy","Link"] : true)'
+            - message: Only Clone, Copy, or Link before PostgreSQL 17
+              rule: '!has(self.transferMethod) || (self.toPostgresVersion < 17 ? self.transferMethod
+                in ["Clone","Copy","Link"] : true)'
           status:
             description: PGUpgradeStatus defines the observed state of PGUpgrade
             properties:
