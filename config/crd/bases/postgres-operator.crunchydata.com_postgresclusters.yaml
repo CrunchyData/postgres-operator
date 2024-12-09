@@ -7690,6 +7690,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
+                maxLength: 15
                 type: string
               imagePullSecrets:
                 description: |-
@@ -11663,6 +11664,7 @@ spec:
                         enum:
                         - Switchover
                         - Failover
+                        maxLength: 15
                         type: string
                     required:
                     - enabled
@@ -14622,12 +14624,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -14656,6 +14660,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
+                            maxLength: 15
                             type: string
                         type: object
                       sidecars:
@@ -14961,12 +14966,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -14995,6 +15002,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
+                    maxLength: 15
                     type: string
                 type: object
               service:
@@ -15006,12 +15014,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
+                    maxLength: 10
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -15040,6 +15050,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
+                    maxLength: 15
                     type: string
                 type: object
               shutdown:
@@ -16699,12 +16710,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
+                            maxLength: 10
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -16733,6 +16746,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
+                            maxLength: 15
                             type: string
                         type: object
                       tolerations:
@@ -17017,6 +17031,7 @@ spec:
                           enum:
                           - ASCII
                           - AlphaNumeric
+                          maxLength: 15
                           type: string
                       required:
                       - type
