@@ -56,16 +56,24 @@ type PatroniSpec struct {
 
 type PatroniLogConfig struct {
 
-	// Limits the total amount of space taken by Patroni Log files.
+	// Limits the total amount of space taken by Patroni log files.
 	// Minimum value is 25MB.
-	// https://pkg.go.dev/k8s.io/apimachinery/pkg/api/resource#Quantity
+	// More info: https://kubernetes.io/docs/reference/kubernetes-api/common-definitions/quantity
+	// ---
+	// TODO(validation) TODO(k8s-1.29): Validate the minimum using CEL libraries.
+	//
 	// +required
 	StorageLimit *resource.Quantity `json:"storageLimit"`
 
 	// The Patroni log level.
-	// https://docs.python.org/3.6/library/logging.html#levels
+	// More info: https://docs.python.org/3/library/logging.html#levels
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=10
+	//
+	// +default="INFO"
 	// +kubebuilder:validation:Enum={CRITICAL,ERROR,WARNING,INFO,DEBUG,NOTSET}
-	// +kubebuilder:default:=INFO
 	// +optional
 	Level *string `json:"level,omitempty"`
 }
@@ -87,6 +95,11 @@ type PatroniSwitchover struct {
 	// "Failover" forces a particular instance to be primary, regardless of other
 	// factors. A TargetInstance must be specified to failover.
 	// NOTE: The Failover type is reserved as the "last resort" case.
+	// ---
+	// Kubernetes assumes the evaluation cost of an enum value is very large.
+	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
+	// +kubebuilder:validation:MaxLength=15
+	//
 	// +kubebuilder:validation:Enum={Switchover,Failover}
 	// +kubebuilder:default:=Switchover
 	// +optional
