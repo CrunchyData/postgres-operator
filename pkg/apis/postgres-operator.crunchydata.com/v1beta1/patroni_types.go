@@ -4,6 +4,8 @@
 
 package v1beta1
 
+import "k8s.io/apimachinery/pkg/api/resource"
+
 type PatroniSpec struct {
 	// Patroni dynamic configuration settings. Changes to this value will be
 	// automatically reloaded without validation. Changes to certain PostgreSQL
@@ -22,6 +24,10 @@ type PatroniSpec struct {
 	// +kubebuilder:default=30
 	// +kubebuilder:validation:Minimum=3
 	LeaderLeaseDurationSeconds *int32 `json:"leaderLeaseDurationSeconds,omitempty"`
+
+	// Patroni log configuration settings.
+	// +optional
+	Logging *PatroniLogConfig `json:"logging,omitempty"`
 
 	// The port on which Patroni should listen.
 	// Changing this value causes PostgreSQL to restart.
@@ -46,6 +52,22 @@ type PatroniSpec struct {
 	// TODO(cbandy): Allow other DCS: etcd, raft, etc?
 	// N.B. changing this will cause downtime.
 	// - https://patroni.readthedocs.io/en/latest/kubernetes.html
+}
+
+type PatroniLogConfig struct {
+
+	// Limits the total amount of space taken by Patroni Log files.
+	// Minimum value is 25MB.
+	// https://pkg.go.dev/k8s.io/apimachinery/pkg/api/resource#Quantity
+	// +required
+	StorageLimit *resource.Quantity `json:"storageLimit"`
+
+	// The Patroni log level.
+	// https://docs.python.org/3.6/library/logging.html#levels
+	// +kubebuilder:validation:Enum={CRITICAL,ERROR,WARNING,INFO,DEBUG,NOTSET}
+	// +kubebuilder:default:=INFO
+	// +optional
+	Level *string `json:"level,omitempty"`
 }
 
 type PatroniSwitchover struct {

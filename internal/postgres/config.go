@@ -291,9 +291,9 @@ chmod +x /tmp/pg_rewind_tde.sh
 `
 	}
 
-	args := []string{version, walDir, naming.PGBackRestPGDataLogPath}
+	args := []string{version, walDir, naming.PGBackRestPGDataLogPath, naming.PatroniPGDataLogPath}
 	script := strings.Join([]string{
-		`declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3"`,
+		`declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3" patroniLog_directory="$4"`,
 
 		// Function to print the permissions of a file or directory and its parents.
 		bashPermissions,
@@ -368,6 +368,11 @@ chmod +x /tmp/pg_rewind_tde.sh
 		`results 'pgBackRest log directory' "${pgbrLog_directory}"`,
 		`install --directory --mode=0775 "${pgbrLog_directory}" ||`,
 		`halt "$(permissions "${pgbrLog_directory}" ||:)"`,
+
+		// Create the Patroni log directory.
+		`results 'Patroni log directory' "${patroniLog_directory}"`,
+		`install --directory --mode=0775 "${patroniLog_directory}" ||`,
+		`halt "$(permissions "${patroniLog_directory}" ||:)"`,
 
 		// Copy replication client certificate files
 		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order

@@ -44,13 +44,40 @@ func (r *Reconciler) reconcileClusterConfigMap(
 
 	if err == nil {
 		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters,
-			clusterConfigMap)
+			clusterConfigMap, r.patroniLogSize(cluster))
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, clusterConfigMap))
 	}
 
 	return clusterConfigMap, err
+}
+
+// patroniLogSize attempts to parse the defined log file storage limit, if configured.
+// If a value is set, this enables volume based log storage and triggers the
+// relevant Patroni configuration. If the value given is less than 25M, the log
+// file size storage limit defaults to 25M and an event is triggered.
+func (r *Reconciler) patroniLogSize(cluster *v1beta1.PostgresCluster) int64 {
+
+	if cluster.Spec.Patroni != nil {
+		if cluster.Spec.Patroni.Logging != nil {
+			if cluster.Spec.Patroni.Logging.StorageLimit != nil {
+
+				sizeInBytes := cluster.Spec.Patroni.Logging.StorageLimit.Value()
+
+				if sizeInBytes < 25000000 {
+					// TODO(validation): Eventually we should be able to remove this in favor of CEL validation.
+					// - https://kubernetes.io/docs/reference/using-api/cel/
+					r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "PatroniLogStorageLimitTooSmall",
+						"Configured Patroni log storage limit is too small. File size will default to 25M.")
+
+					sizeInBytes = 25000000
+				}
+				return sizeInBytes
+			}
+		}
+	}
+	return 0
 }
 
 // +kubebuilder:rbac:groups="",resources="services",verbs={create,patch}
