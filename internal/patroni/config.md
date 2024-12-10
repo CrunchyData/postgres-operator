@@ -214,7 +214,7 @@ acquiring the leader lock, the Patroni leader:
 | - | postgresql.basebackup             | Yes  | mutable | either | List of arguments to pass to pg_basebackup when using the `basebackup` replica method.
 | - | postgresql.{method}.command       | Yes¹ | mutable | either | Command to execute for this replica method.
 | - | postgresql.{method}.keep_data     | Yes¹ | mutable | either | Whether or not Patroni should empty the data directory before. (default: false)
-| - | postgresql.{method}.no_master     | Yes¹ | mutable | either | Whether or not Patroni can call this method when no instances are running. (default: false)
+| - | postgresql.{method}.no_leader     | Yes¹ | mutable | either | Whether or not Patroni can call this method when no instances are running. (default: false)
 | - | postgresql.{method}.no_params     | Yes¹ | mutable | either | Whether or not Patroni should pass extra arguments to the command. (default: false)
 ||
 |||||| https://github.com/zalando/patroni/blob/v2.0.1/docs/replica_bootstrap.rst#bootstrap
