@@ -68,7 +68,7 @@ func TestWatchPodsUpdate(t *testing.T) {
 				Namespace: "some-ns",
 				Labels: map[string]string{
 					"postgres-operator.crunchydata.com/cluster": "starfish",
-					"postgres-operator.crunchydata.com/role":    "master",
+					"postgres-operator.crunchydata.com/role":    "primary",
 				},
 			},
 		},

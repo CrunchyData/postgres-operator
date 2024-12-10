@@ -16,6 +16,6 @@ metadata:
     postgres-operator.crunchydata.com/cluster: cluster-migrate
     postgres-operator.crunchydata.com/data: postgres
     postgres-operator.crunchydata.com/instance-set: instance1
-    postgres-operator.crunchydata.com/role: master
+    postgres-operator.crunchydata.com/role: primary
 status:
   phase: Running

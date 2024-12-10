@@ -358,7 +358,7 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 				Pods: []*corev1.Pod{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:              "daisy-pod",
-						Annotations:       map[string]string{"status": `{"role":"master"}`},
+						Annotations:       map[string]string{"status": `{"role":"primary"}`},
 						DeletionTimestamp: &metav1.Time{},
 					},
 				}},
@@ -388,7 +388,7 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 				Pods: []*corev1.Pod{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "daisy-pod",
-						Annotations: map[string]string{"status": `{"role":"master"}`},
+						Annotations: map[string]string{"status": `{"role":"primary"}`},
 					},
 				}},
 				Runner: &appsv1.StatefulSet{},
@@ -410,7 +410,7 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 				Pods: []*corev1.Pod{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "daisy-pod",
-						Annotations: map[string]string{"status": `{"role":"master"}`},
+						Annotations: map[string]string{"status": `{"role":"primary"}`},
 					},
 					Status: corev1.PodStatus{
 						ContainerStatuses: []corev1.ContainerStatus{{
@@ -438,7 +438,7 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 				Pods: []*corev1.Pod{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "daisy-pod",
-						Annotations: map[string]string{"status": `{"role":"master"}`},
+						Annotations: map[string]string{"status": `{"role":"primary"}`},
 					},
 					Status: corev1.PodStatus{
 						ContainerStatuses: []corev1.ContainerStatus{{
@@ -469,7 +469,7 @@ func TestReconcilePGMonitorExporterSetupErrors(t *testing.T) {
 				Pods: []*corev1.Pod{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "daisy-pod",
-						Annotations: map[string]string{"status": `{"role":"master"}`},
+						Annotations: map[string]string{"status": `{"role":"primary"}`},
 					},
 					Status: corev1.PodStatus{
 						ContainerStatuses: []corev1.ContainerStatus{{
@@ -536,7 +536,7 @@ func TestReconcilePGMonitorExporter(t *testing.T) {
 				Pods: []*corev1.Pod{{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "one-daisy-pod",
-						Annotations: map[string]string{"status": `{"role":"master"}`},
+						Annotations: map[string]string{"status": `{"role":"primary"}`},
 					},
 					Status: corev1.PodStatus{
 						Phase: corev1.PodRunning,
@@ -634,7 +634,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 					Pods: []*corev1.Pod{{
 						ObjectMeta: metav1.ObjectMeta{
 							Name:        "daisy-pod",
-							Annotations: map[string]string{"status": `{"role":"master"}`},
+							Annotations: map[string]string{"status": `{"role":"primary"}`},
 						},
 						Status: corev1.PodStatus{
 							ContainerStatuses: []corev1.ContainerStatus{{

@@ -9,7 +9,7 @@ commands:
   - script: |
       PRIMARY=$(
         kubectl get pods --namespace="${NAMESPACE}" \
-          --selector='postgres-operator.crunchydata.com/role=master' \
+          --selector='postgres-operator.crunchydata.com/role=primary' \
           --output=jsonpath={.items..metadata.name}
       )
 

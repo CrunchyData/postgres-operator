@@ -17,7 +17,7 @@ kind: Pod
 metadata:
   labels:
     postgres-operator.crunchydata.com/cluster: delete-with-replica
-    postgres-operator.crunchydata.com/role: master
+    postgres-operator.crunchydata.com/role: primary
 ---
 apiVersion: v1
 kind: Pod

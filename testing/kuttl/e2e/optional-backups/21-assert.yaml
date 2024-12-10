@@ -6,7 +6,7 @@ commands:
       -l postgres-operator.crunchydata.com/cluster=created-without-backup \
       -l postgres-operator.crunchydata.com/instance-set=instance1 \
       -l postgres-operator.crunchydata.com/patroni=created-without-backups-ha \
-      -l postgres-operator.crunchydata.com/role=master)
+      -l postgres-operator.crunchydata.com/role=primary)
 
     kubectl exec --stdin "${pod}" --namespace "${NAMESPACE}" -c database \
       -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'

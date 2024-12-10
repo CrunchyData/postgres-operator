@@ -31,7 +31,7 @@ metadata:
       postgres-operator.crunchydata.com/cluster: created-without-backups
       postgres-operator.crunchydata.com/data: postgres
       postgres-operator.crunchydata.com/instance-set: instance1
-      postgres-operator.crunchydata.com/role: master
+      postgres-operator.crunchydata.com/role: primary
 status:
   containerStatuses:
   - ready: true

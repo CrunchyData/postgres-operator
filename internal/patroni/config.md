@@ -123,7 +123,7 @@ TODO: document PostgreSQL parameters separately...
 | PATRONI_KUBERNETES_USE_ENDPOINTS      | kubernetes.use_endpoints      | No | immutable | cluster  | both | Elect and store state using Endpoints (instead of ConfigMap).
 | PATRONI_KUBERNETES_PORTS              | kubernetes.ports              | No | restart   | either   | both | When using Endpoints, port details need to match the leader Service.
 | PATRONI_KUBERNETES_LABELS             | kubernetes.labels             | No | immutable | cluster  | both | Used to find objects of the cluster. Patroni writes them on things it creates.
-| PATRONI_KUBERNETES_ROLE_LABEL         | kubernetes.role_label         | No | immutable | cluster  | both | Name of the label containing "master", "replica", etc.
+| PATRONI_KUBERNETES_ROLE_LABEL         | kubernetes.role_label         | No | immutable | cluster  | both | Name of the label containing "primary", "replica", etc.
 | PATRONI_KUBERNETES_SCOPE_LABEL        | kubernetes.scope_label        | No | immutable | cluster  | both | Name of the label containing cluster identifier.
 | PATRONI_KUBERNETES_NAMESPACE          | kubernetes.namespace          | No | immutable | cluster  | both |
 | PATRONI_KUBERNETES_POD_IP             | kubernetes.pod_ip             | No | immutable | instance | both |

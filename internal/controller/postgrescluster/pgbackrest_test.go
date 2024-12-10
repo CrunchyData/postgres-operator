@@ -754,7 +754,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 
 	instances := newObservedInstances(postgresCluster, nil, []corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{"status": `"role":"master"`},
+			Annotations: map[string]string{"status": `"role":"primary"`},
 			Labels: map[string]string{
 				naming.LabelCluster:  postgresCluster.GetName(),
 				naming.LabelInstance: "",
@@ -870,7 +870,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	}
 	instances := newObservedInstances(postgresCluster, nil, []corev1.Pod{{
 		ObjectMeta: metav1.ObjectMeta{
-			Annotations: map[string]string{"status": `"role":"master"`},
+			Annotations: map[string]string{"status": `"role":"primary"`},
 			Labels: map[string]string{
 				naming.LabelCluster:  postgresCluster.GetName(),
 				naming.LabelInstance: "",
@@ -1352,7 +1352,7 @@ func TestReconcileManualBackup(t *testing.T) {
 					instances.forCluster[0].Pods[0].Annotations = map[string]string{}
 				} else {
 					instances.forCluster[0].Pods[0].Annotations = map[string]string{
-						"status": `"role":"master"`,
+						"status": `"role":"primary"`,
 					}
 				}
 
