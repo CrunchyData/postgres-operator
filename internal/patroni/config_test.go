@@ -924,7 +924,7 @@ postgresql:
     command: '''bash'' ''-ceu'' ''--'' ''install --directory --mode=0700 "${PGDATA?}"
       && exec "$@"'' ''-'' ''some'' ''backrest'' ''cmd'''
     keep_data: true
-    no_master: true
+    no_leader: true
     no_params: true
   pgpass: /tmp/.pgpass
   use_unix_socket: true

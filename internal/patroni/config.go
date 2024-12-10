@@ -565,7 +565,7 @@ func instanceYAML(
 		postgresql[pgBackRestCreateReplicaMethod] = map[string]any{
 			"command":   strings.Join(quoted, " "),
 			"keep_data": true,
-			"no_master": true,
+			"no_leader": true,
 			"no_params": true,
 		}
 		methods = append([]string{pgBackRestCreateReplicaMethod}, methods...)
