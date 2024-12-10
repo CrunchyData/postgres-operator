@@ -131,6 +131,10 @@ const (
 )
 
 const (
+	// PatroniPGDataLogPath is the Patroni default log path configuration used by the
+	// PostgreSQL instance.
+	PatroniPGDataLogPath = "/pgdata/patroni/log"
+
 	// PGBackRestRepoContainerName is the name assigned to the container used to run pgBackRest
 	PGBackRestRepoContainerName = "pgbackrest"
 

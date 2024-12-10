@@ -58,6 +58,9 @@ kubernetes:
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
   use_endpoints: true
+log:
+  dir: /pgdata/patroni/log
+  file_size: 0
 postgresql:
   authentication:
     replication:
@@ -116,6 +119,9 @@ kubernetes:
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
   use_endpoints: true
+log:
+  dir: /pgdata/patroni/log
+  file_size: 0
 postgresql:
   authentication:
     replication:
