@@ -257,6 +257,7 @@ func main() {
 
 	// add all PostgreSQL Operator controllers to the runtime manager
 	addControllersToManager(manager, log, registrar)
+	must(pgupgrade.ManagedReconciler(manager, registrar))
 	must(standalone_pgadmin.ManagedReconciler(manager))
 	must(crunchybridgecluster.ManagedReconciler(manager, func() bridge.ClientInterface {
 		return bridgeClient()
@@ -318,18 +319,6 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 
 	if err := pgReconciler.SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create PostgresCluster controller")
-		os.Exit(1)
-	}
-
-	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
-		Client:       mgr.GetClient(),
-		Owner:        naming.ControllerPGUpgrade,
-		Recorder:     mgr.GetEventRecorderFor(naming.ControllerPGUpgrade),
-		Registration: reg,
-	}
-
-	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PGUpgrade controller")
 		os.Exit(1)
 	}
 }

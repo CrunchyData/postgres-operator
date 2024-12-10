@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -29,7 +30,7 @@ func (r *PGUpgradeReconciler) setControllerReference(
 	owner *v1beta1.PGUpgrade, controlled client.Object,
 ) {
 	if metav1.GetControllerOf(controlled) != nil {
-		panic(controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme()))
+		panic(controllerutil.SetControllerReference(owner, controlled, runtime.Scheme))
 	}
 
 	controlled.SetOwnerReferences(append(
