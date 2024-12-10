@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -32,29 +33,49 @@ const (
 
 // PGUpgradeReconciler reconciles a PGUpgrade object
 type PGUpgradeReconciler struct {
-	Client client.Client
-	Owner  client.FieldOwner
-
 	Recorder     record.EventRecorder
 	Registration registration.Registration
+
+	Reader interface {
+		Get(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
+		List(context.Context, client.ObjectList, ...client.ListOption) error
+	}
+	Writer interface {
+		Delete(context.Context, client.Object, ...client.DeleteOption) error
+		Patch(context.Context, client.Object, client.Patch, ...client.PatchOption) error
+	}
+	StatusWriter interface {
+		Patch(context.Context, client.Object, client.Patch, ...client.SubResourcePatchOption) error
+	}
 }
 
 //+kubebuilder:rbac:groups="batch",resources="jobs",verbs={list,watch}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades",verbs={list,watch}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *PGUpgradeReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
+// ManagedReconciler creates a [PGUpgradeReconciler] and adds it to m.
+func ManagedReconciler(m ctrl.Manager, r registration.Registration) error {
+	kubernetes := client.WithFieldOwner(m.GetClient(), naming.ControllerPGUpgrade)
+	recorder := m.GetEventRecorderFor(naming.ControllerPGUpgrade)
+
+	reconciler := &PGUpgradeReconciler{
+		Reader:       kubernetes,
+		Recorder:     recorder,
+		Registration: r,
+		StatusWriter: kubernetes.Status(),
+		Writer:       kubernetes,
+	}
+
+	return ctrl.NewControllerManagedBy(m).
 		For(&v1beta1.PGUpgrade{}).
 		Owns(&batchv1.Job{}).
 		Watches(
 			v1beta1.NewPostgresCluster(),
 			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, cluster client.Object) []ctrl.Request {
-				return runtime.Requests(r.findUpgradesForPostgresCluster(ctx, client.ObjectKeyFromObject(cluster))...)
+				return runtime.Requests(reconciler.findUpgradesForPostgresCluster(ctx, client.ObjectKeyFromObject(cluster))...)
 			}),
 		).
-		Complete(r)
+		Complete(reconciler)
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades",verbs={list}
@@ -70,7 +91,7 @@ func (r *PGUpgradeReconciler) findUpgradesForPostgresCluster(
 	// namespace, we can configure the [ctrl.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
-	if r.Client.List(ctx, &upgrades, &client.ListOptions{
+	if r.Reader.List(ctx, &upgrades, &client.ListOptions{
 		Namespace: cluster.Namespace,
 	}) == nil {
 		for i := range upgrades.Items {
@@ -107,14 +128,14 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// copy before returning from its cache.
 	// - https://github.com/kubernetes-sigs/controller-runtime/issues/1235
 	upgrade := &v1beta1.PGUpgrade{}
-	err = r.Client.Get(ctx, req.NamespacedName, upgrade)
+	err = r.Reader.Get(ctx, req.NamespacedName, upgrade)
 
 	if err == nil {
 		// Write any changes to the upgrade status on the way out.
 		before := upgrade.DeepCopy()
 		defer func() {
 			if !equality.Semantic.DeepEqual(before.Status, upgrade.Status) {
-				status := r.Client.Status().Patch(ctx, upgrade, client.MergeFrom(before), r.Owner)
+				status := r.StatusWriter.Patch(ctx, upgrade, client.MergeFrom(before))
 
 				if err == nil && status != nil {
 					err = status
@@ -409,7 +430,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				// - https://kubernetes.io/docs/concepts/workloads/controllers/job/
 				// - https://github.com/kubernetes/kubernetes/blob/master/pkg/registry/batch/job/strategy.go#L58
 				propagate := client.PropagationPolicy(metav1.DeletePropagationBackground)
-				err = client.IgnoreNotFound(r.Client.Delete(ctx, object, exactly, propagate))
+				err = client.IgnoreNotFound(r.Writer.Delete(ctx, object, exactly, propagate))
 			}
 		}
 
@@ -424,7 +445,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			// Set the pgBackRest status for bootstrapping
 			patch.Status.PGBackRest.Repos = []v1beta1.RepoStatus{}
 
-			err = r.Client.Status().Patch(ctx, patch, client.MergeFrom(world.Cluster), r.Owner)
+			err = r.StatusWriter.Patch(ctx, patch, client.MergeFrom(world.Cluster))
 		}
 
 		return ctrl.Result{}, err
@@ -461,7 +482,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			uid := object.GetUID()
 			version := object.GetResourceVersion()
 			exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
-			err = client.IgnoreNotFound(r.Client.Delete(ctx, object, exactly))
+			err = client.IgnoreNotFound(r.Writer.Delete(ctx, object, exactly))
 		}
 
 		// Requeue to verify that Patroni endpoints are deleted
