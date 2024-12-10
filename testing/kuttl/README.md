@@ -74,18 +74,9 @@ calling the `make generate-kuttl` target:
 KUTTL_PG_VERSION=13 KUTTL_POSTGIS_VERSION=3.0 make generate-kuttl
 ```
 
-This will loop through the files under the `e2e` and `e2e-other` directories and create matching
-files under the `e2e-generated` and `e2e-generated-other` directories that can be checked for
+This will loop through the files under testing directories and create matching
+files under testing + `generated`  directories that can be checked for
 correctness before running the tests.
-
-Please note, `make check-kuttl` does not run the `e2e-other` tests.  To run the `postgis-cluster`
-test, you can use:
-
-```
-kubectl kuttl test testing/kuttl/e2e-generated-other/ --timeout=180 --test postgis-cluster`
-```
-
-To run the `gssapi` test, please see testing/kuttl/e2e-other/gssapi/README.md.
 
 To prevent errors, we want to set defaults for all the environment variables used in the source
 YAML files; so if you add a new test with a new variable, please update the Makefile with a
