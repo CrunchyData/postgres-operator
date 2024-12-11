@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/bridge/crunchybridgecluster"
@@ -58,6 +60,8 @@ func initLogging() {
 }
 
 //+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update,watch}
+//+kubebuilder:rbac:groups="authentication.k8s.io",resources="tokenreviews",verbs={create}
+//+kubebuilder:rbac:groups="authorization.k8s.io",resources="subjectaccessreviews",verbs={create}
 
 func initManager(ctx context.Context) (runtime.Options, error) {
 	log := logging.FromContext(ctx)
@@ -65,6 +69,28 @@ func initManager(ctx context.Context) (runtime.Options, error) {
 	options := runtime.Options{}
 	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
 
+	// If we aren't using it, http/2 should be disabled
+	// due to its vulnerabilities. More specifically, disabling http/2 will
+	// prevent from being vulnerable to the HTTP/2 Stream Cancellation and
+	// Rapid Reset CVEs. For more information see:
+	// - https://github.com/advisories/GHSA-qppj-fm5r-hxr3
+	// - https://github.com/advisories/GHSA-4374-p667-p6c8
+	options.Metrics.TLSOpts = append(options.Metrics.TLSOpts, func(c *tls.Config) {
+		log.Info("enabling metrics via http/1.1")
+		c.NextProtos = []string{"http/1.1"}
+	})
+
+	// Use https port
+	options.Metrics.BindAddress = ":8443"
+	options.Metrics.SecureServing = true
+
+	// FilterProvider is used to protect the metrics endpoint with authn/authz.
+	// These configurations ensure that only authorized users and service accounts
+	// can access the metrics endpoint. The RBAC are configured in 'config/rbac/kustomization.yaml'. More info:
+	// https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.19.3/pkg/metrics/filters#WithAuthenticationAndAuthorization
+	options.Metrics.FilterProvider = filters.WithAuthenticationAndAuthorization
+
+	// Set health probe port
 	options.HealthProbeBindAddress = ":8081"
 
 	// Enable leader elections when configured with a valid Lease.coordination.k8s.io name.

@@ -25,6 +25,11 @@ func TestInitManager(t *testing.T) {
 			assert.Equal(t, *options.Cache.SyncPeriod, time.Hour)
 		}
 
+		assert.Equal(t, len(options.Metrics.TLSOpts), 1)
+		assert.Assert(t, options.Metrics.BindAddress == ":8443")
+		assert.Assert(t, options.Metrics.SecureServing == true)
+		assert.Assert(t, options.Metrics.FilterProvider != nil)
+
 		assert.Assert(t, options.HealthProbeBindAddress == ":8081")
 
 		assert.DeepEqual(t, options.Controller.GroupKindConcurrency,
@@ -39,6 +44,10 @@ func TestInitManager(t *testing.T) {
 			options.Cache.SyncPeriod = nil
 			options.Controller.GroupKindConcurrency = nil
 			options.HealthProbeBindAddress = ""
+			options.Metrics.TLSOpts = nil
+			options.Metrics.BindAddress = ""
+			options.Metrics.SecureServing = false
+			options.Metrics.FilterProvider = nil
 
 			assert.Assert(t, reflect.ValueOf(options).IsZero(),
 				"expected remaining fields to be unset:\n%+v", options)
