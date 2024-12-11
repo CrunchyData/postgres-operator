@@ -5,7 +5,7 @@ commands:
     PRIMARY=$(
         kubectl get pod --namespace "${NAMESPACE}" \
           --output name --selector '
-            postgres-operator.crunchydata.com/role=master'
+            postgres-operator.crunchydata.com/role=primary'
       )
 
     LIST=$(

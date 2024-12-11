@@ -6,7 +6,7 @@ metadata:
   labels:
     postgres-operator.crunchydata.com/cluster: delete-switchover-with-timestamp
     postgres-operator.crunchydata.com/data: postgres
-    postgres-operator.crunchydata.com/role: master
+    postgres-operator.crunchydata.com/role: primary
     testing/role-before: replica
 ---
 # The former primary should now be a replica.
@@ -17,7 +17,7 @@ metadata:
     postgres-operator.crunchydata.com/cluster: delete-switchover-with-timestamp
     postgres-operator.crunchydata.com/data: postgres
     postgres-operator.crunchydata.com/role: replica
-    testing/role-before: master
+    testing/role-before: primary
 ---
 # All instances should be healthy.
 apiVersion: postgres-operator.crunchydata.com/v1beta1

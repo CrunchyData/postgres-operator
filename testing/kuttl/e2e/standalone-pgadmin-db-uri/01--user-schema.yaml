@@ -8,7 +8,7 @@ commands:
         kubectl get pod --namespace "${NAMESPACE}" \
           --output name --selector '
             postgres-operator.crunchydata.com/cluster=elephant,
-            postgres-operator.crunchydata.com/role=master'
+            postgres-operator.crunchydata.com/role=primary'
       )
       kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
         -- psql -qAt -d elephant --command 'CREATE SCHEMA elephant AUTHORIZATION elephant'

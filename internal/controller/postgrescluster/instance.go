@@ -132,7 +132,7 @@ func (i Instance) IsWritable() (writable, known bool) {
 
 	// TODO(cbandy): Update this to consider when Patroni is paused.
 
-	return strings.HasPrefix(member[role:], `"role":"master"`), true
+	return strings.HasPrefix(member[role:], `"role":"primary"`), true
 }
 
 // PodMatchesPodTemplate returns whether or not the Pod for this instance
@@ -1011,14 +1011,14 @@ func podsToKeep(instances []corev1.Pod, want map[string]int) []corev1.Pod {
 
 		if want > 0 {
 			for _, instance := range instances {
-				if instance.Labels[naming.LabelRole] == "master" {
+				if instance.Labels[naming.LabelRole] == "primary" {
 					keep = append(keep, instance)
 				}
 			}
 		}
 
 		for _, instance := range instances {
-			if instance.Labels[naming.LabelRole] != "master" && len(keep) < want {
+			if instance.Labels[naming.LabelRole] != "primary" && len(keep) < want {
 				keep = append(keep, instance)
 			}
 		}

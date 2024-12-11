@@ -45,7 +45,7 @@ metadata:
     postgres-operator.crunchydata.com/data: postgres
     postgres-operator.crunchydata.com/instance-set: instance1
     postgres-operator.crunchydata.com/patroni: security-context-ha
-    postgres-operator.crunchydata.com/role: master
+    postgres-operator.crunchydata.com/role: primary
 spec:
   containers:
   - name: database

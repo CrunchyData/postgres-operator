@@ -42,7 +42,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 						Name:      "one-pod-bruh",
 						Labels: map[string]string{
 							"controller-revision-hash":               "gamma",
-							"postgres-operator.crunchydata.com/role": "master",
+							"postgres-operator.crunchydata.com/role": "primary",
 						},
 					},
 					Status: corev1.PodStatus{
@@ -103,7 +103,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 						Name:      "the-pod",
 						Labels: map[string]string{
 							"controller-revision-hash":               "gamma",
-							"postgres-operator.crunchydata.com/role": "master",
+							"postgres-operator.crunchydata.com/role": "primary",
 						},
 					},
 				}},
@@ -132,7 +132,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 
 				// A switchover to any viable candidate.
 				assert.DeepEqual(t, command[:2], []string{"patronictl", "switchover"})
-				assert.Assert(t, sets.NewString(command...).Has("--master=the-pod"))
+				assert.Assert(t, sets.NewString(command...).Has("--primary=the-pod"))
 				assert.Assert(t, sets.NewString(command...).Has("--candidate="))
 
 				// Indicate success through stdout.
@@ -210,7 +210,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
 							"controller-revision-hash":               "gamma",
-							"postgres-operator.crunchydata.com/role": "master",
+							"postgres-operator.crunchydata.com/role": "primary",
 						},
 					},
 					Status: corev1.PodStatus{
@@ -255,7 +255,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
 							"controller-revision-hash":               "beta",
-							"postgres-operator.crunchydata.com/role": "master",
+							"postgres-operator.crunchydata.com/role": "primary",
 						},
 					},
 					Status: corev1.PodStatus{
@@ -370,7 +370,7 @@ func TestReconcilerRolloutInstances(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{
 						Labels: map[string]string{
 							"controller-revision-hash":               "beta",
-							"postgres-operator.crunchydata.com/role": "master",
+							"postgres-operator.crunchydata.com/role": "primary",
 						},
 					},
 					Status: corev1.PodStatus{

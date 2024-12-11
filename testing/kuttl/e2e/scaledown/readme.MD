@@ -20,7 +20,7 @@ have the expected number of pods.
 * 10-assert: check that the cluster exists with the expected status
 * 11-annotate: set the roles as labels on the pods
 * 12--update-cluster: update the cluster to remove one replica
-* 12-assert: check that the cluster exists with the expected status; and that the `master` pod that exists was the `master` before the scaledown
+* 12-assert: check that the cluster exists with the expected status; and that the `primary` pod that exists was the `primary` before the scaledown
 * 13--delete-cluster: delete the cluster
 
 ### From two sets with variable replicas to two set with one replica each

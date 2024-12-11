@@ -30,7 +30,7 @@ commands:
           --selector='
             postgres-operator.crunchydata.com/cluster=original,
             postgres-operator.crunchydata.com/data=postgres,
-            postgres-operator.crunchydata.com/role!=master' \
+            postgres-operator.crunchydata.com/role!=primary' \
           --output=jsonpath={.items..metadata.name})
 
         # Wait for replica to be deleted

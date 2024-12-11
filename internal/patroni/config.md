@@ -123,7 +123,7 @@ TODO: document PostgreSQL parameters separately...
 | PATRONI_KUBERNETES_USE_ENDPOINTS      | kubernetes.use_endpoints      | No | immutable | cluster  | both | Elect and store state using Endpoints (instead of ConfigMap).
 | PATRONI_KUBERNETES_PORTS              | kubernetes.ports              | No | restart   | either   | both | When using Endpoints, port details need to match the leader Service.
 | PATRONI_KUBERNETES_LABELS             | kubernetes.labels             | No | immutable | cluster  | both | Used to find objects of the cluster. Patroni writes them on things it creates.
-| PATRONI_KUBERNETES_ROLE_LABEL         | kubernetes.role_label         | No | immutable | cluster  | both | Name of the label containing "master", "replica", etc.
+| PATRONI_KUBERNETES_ROLE_LABEL         | kubernetes.role_label         | No | immutable | cluster  | both | Name of the label containing "primary", "replica", etc.
 | PATRONI_KUBERNETES_SCOPE_LABEL        | kubernetes.scope_label        | No | immutable | cluster  | both | Name of the label containing cluster identifier.
 | PATRONI_KUBERNETES_NAMESPACE          | kubernetes.namespace          | No | immutable | cluster  | both |
 | PATRONI_KUBERNETES_POD_IP             | kubernetes.pod_ip             | No | immutable | instance | both |
@@ -214,7 +214,7 @@ acquiring the leader lock, the Patroni leader:
 | - | postgresql.basebackup             | Yes  | mutable | either | List of arguments to pass to pg_basebackup when using the `basebackup` replica method.
 | - | postgresql.{method}.command       | Yes¹ | mutable | either | Command to execute for this replica method.
 | - | postgresql.{method}.keep_data     | Yes¹ | mutable | either | Whether or not Patroni should empty the data directory before. (default: false)
-| - | postgresql.{method}.no_master     | Yes¹ | mutable | either | Whether or not Patroni can call this method when no instances are running. (default: false)
+| - | postgresql.{method}.no_leader     | Yes¹ | mutable | either | Whether or not Patroni can call this method when no instances are running. (default: false)
 | - | postgresql.{method}.no_params     | Yes¹ | mutable | either | Whether or not Patroni should pass extra arguments to the command. (default: false)
 ||
 |||||| https://github.com/zalando/patroni/blob/v2.0.1/docs/replica_bootstrap.rst#bootstrap
