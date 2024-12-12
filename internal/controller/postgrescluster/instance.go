@@ -300,14 +300,14 @@ func (r *Reconciler) observeInstances(
 	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, pods,
+			r.Reader.List(ctx, pods,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
 	}
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, runners,
+			r.Reader.List(ctx, runners,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
@@ -418,7 +418,7 @@ func (r *Reconciler) deleteInstances(
 	instances, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, pods,
+			r.Reader.List(ctx, pods,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: instances},
 			))
@@ -456,7 +456,7 @@ func (r *Reconciler) deleteInstances(
 		// apps/v1.Deployment, apps/v1.ReplicaSet, and apps/v1.StatefulSet all
 		// have a "spec.replicas" field with the same meaning.
 		patch := client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"replicas":0}}`))
-		err := errors.WithStack(r.patch(ctx, instance, patch))
+		err := errors.WithStack(r.Writer.Patch(ctx, instance, patch))
 
 		// When the pod controller is missing, requeue rather than return an
 		// error. The garbage collector will stop the pod, and it is not our
@@ -532,7 +532,7 @@ func (r *Reconciler) deleteInstance(
 			uList.SetGroupVersionKind(gvk)
 
 			err = errors.WithStack(
-				r.Client.List(ctx, uList,
+				r.Reader.List(ctx, uList,
 					client.InNamespace(cluster.GetNamespace()),
 					client.MatchingLabelsSelector{Selector: selector},
 				))
@@ -650,7 +650,7 @@ func (r *Reconciler) cleanupPodDisruptionBudgets(
 
 	pdbList := &policyv1.PodDisruptionBudgetList{}
 	if err == nil {
-		err = r.Client.List(ctx, pdbList,
+		err = r.Reader.List(ctx, pdbList,
 			client.InNamespace(cluster.Namespace), client.MatchingLabelsSelector{
 				Selector: selector,
 			})
@@ -847,7 +847,7 @@ func (r *Reconciler) rolloutInstance(
 	// NOTE(cbandy): This could return an apierrors.IsConflict() which should be
 	// retried by another reconcile (not ignored).
 	return errors.WithStack(
-		r.Client.Delete(ctx, pod, client.Preconditions{
+		r.Writer.Delete(ctx, pod, client.Preconditions{
 			UID:             &pod.UID,
 			ResourceVersion: &pod.ResourceVersion,
 		}))
@@ -1188,7 +1188,7 @@ func (r *Reconciler) reconcileInstance(
 			// Create new err variable to avoid abandoning the rest of the reconcile loop if there
 			// is an error getting the monitoring user secret
 			err := errors.WithStack(
-				r.Client.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
+				r.Reader.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
 			if err == nil {
 				pgPassword = string(monitoringUserSecret.Data["password"])
 			}
@@ -1459,7 +1459,7 @@ func (r *Reconciler) reconcileInstanceCertificates(
 ) (*corev1.Secret, error) {
 	existing := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	instanceCerts := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	instanceCerts.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
@@ -1547,7 +1547,7 @@ func (r *Reconciler) reconcileInstanceSetPodDisruptionBudget(
 		scaled, err = intstr.GetScaledValueFromIntOrPercent(minAvailable, int(*spec.Replicas), true)
 	}
 	if err == nil && scaled <= 0 {
-		err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(pdb), pdb))
+		err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(pdb), pdb))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, pdb))
 		}

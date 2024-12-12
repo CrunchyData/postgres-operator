@@ -42,8 +42,8 @@ func TestReconcileCerts(t *testing.T) {
 	namespace := setupNamespace(t, tClient).Name
 
 	r := &Reconciler{
-		Client: tClient,
-		Owner:  controllerName,
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, controllerName),
 	}
 
 	// set up cluster1

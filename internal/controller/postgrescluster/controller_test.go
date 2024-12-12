@@ -39,7 +39,7 @@ func TestDeleteControlled(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	ns := setupNamespace(t, cc)
-	reconciler := Reconciler{Client: cc}
+	reconciler := Reconciler{Writer: cc}
 
 	cluster := testCluster()
 	cluster.Namespace = ns.Name
@@ -118,6 +118,7 @@ spec:
 var _ = Describe("PostgresCluster Reconciler", func() {
 	var test struct {
 		Namespace  *corev1.Namespace
+		Owner      string
 		Reconciler Reconciler
 		Recorder   *record.FakeRecorder
 	}
@@ -129,13 +130,17 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		test.Namespace.Name = "postgres-operator-test-" + rand.String(6)
 		Expect(suite.Client.Create(ctx, test.Namespace)).To(Succeed())
 
+		test.Owner = "asdf"
 		test.Recorder = record.NewFakeRecorder(100)
 		test.Recorder.IncludeObject = true
 
-		test.Reconciler.Client = suite.Client
-		test.Reconciler.Owner = "asdf"
+		client := client.WithFieldOwner(suite.Client, test.Owner)
+
+		test.Reconciler.Reader = client
 		test.Reconciler.Recorder = test.Recorder
 		test.Reconciler.Registration = nil
+		test.Reconciler.StatusWriter = client.Status()
+		test.Reconciler.Writer = client
 	})
 
 	AfterEach(func() {
@@ -284,7 +289,7 @@ spec:
 			))
 			Expect(ccm.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -308,7 +313,7 @@ spec:
 			))
 			Expect(cps.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -347,7 +352,7 @@ spec:
 				// - https://pr.k8s.io/100970
 				Expect(existing.ManagedFields).To(ContainElement(
 					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(string(test.Reconciler.Owner)),
+						"Manager": Equal(test.Owner),
 						"FieldsV1": PointTo(MatchAllFields(Fields{
 							"Raw": WithTransform(func(in []byte) (out map[string]any) {
 								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
@@ -365,7 +370,7 @@ spec:
 			default:
 				Expect(existing.ManagedFields).To(ContainElements(
 					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(string(test.Reconciler.Owner)),
+						"Manager": Equal(test.Owner),
 						"FieldsV1": PointTo(MatchAllFields(Fields{
 							"Raw": WithTransform(func(in []byte) (out map[string]any) {
 								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
@@ -378,7 +383,7 @@ spec:
 						})),
 					}),
 					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(string(test.Reconciler.Owner)),
+						"Manager": Equal(test.Owner),
 						"FieldsV1": PointTo(MatchAllFields(Fields{
 							"Raw": WithTransform(func(in []byte) (out map[string]any) {
 								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
@@ -409,7 +414,7 @@ spec:
 			))
 			Expect(ds.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -501,7 +506,7 @@ spec:
 			))
 			Expect(icm.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -522,7 +527,7 @@ spec:
 			))
 			Expect(instance.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))

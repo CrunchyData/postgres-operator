@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -41,7 +40,7 @@ func (r *Reconciler) observePersistentVolumeClaims(
 	selector, err := naming.AsSelector(naming.Cluster(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, volumes,
+			r.Reader.List(ctx, volumes,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
@@ -392,7 +391,7 @@ func (r *Reconciler) reconcileDirMoveJobs(ctx context.Context,
 		cluster.Spec.DataSource.Volumes != nil {
 
 		var list batchv1.JobList
-		if err := r.Client.List(ctx, &list, &client.ListOptions{
+		if err := r.Reader.List(ctx, &list, &client.ListOptions{
 			Namespace:     cluster.Namespace,
 			LabelSelector: naming.DirectoryMoveJobLabels(cluster.Name).AsSelector(),
 		}); err != nil {
@@ -547,8 +546,7 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 
 	// set gvk and ownership refs
 	moveDirJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
-	if err := controllerutil.SetControllerReference(cluster, moveDirJob,
-		r.Client.Scheme()); err != nil {
+	if err := r.setControllerReference(cluster, moveDirJob); err != nil {
 		return true, errors.WithStack(err)
 	}
 
@@ -666,8 +664,7 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 
 	// set gvk and ownership refs
 	moveDirJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
-	if err := controllerutil.SetControllerReference(cluster, moveDirJob,
-		r.Client.Scheme()); err != nil {
+	if err := r.setControllerReference(cluster, moveDirJob); err != nil {
 		return true, errors.WithStack(err)
 	}
 
@@ -788,8 +785,7 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 
 	// set gvk and ownership refs
 	moveDirJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
-	if err := controllerutil.SetControllerReference(cluster, moveDirJob,
-		r.Client.Scheme()); err != nil {
+	if err := r.setControllerReference(cluster, moveDirJob); err != nil {
 		return true, errors.WithStack(err)
 	}
 

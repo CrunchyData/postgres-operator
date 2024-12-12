@@ -58,7 +58,7 @@ func (r *Reconciler) handleDelete(
 		// Make another copy so that Patch doesn't write back to cluster.
 		intent := before.DeepCopy()
 		intent.Finalizers = append(intent.Finalizers, naming.Finalizer)
-		err := errors.WithStack(r.patch(ctx, intent,
+		err := errors.WithStack(r.Writer.Patch(ctx, intent,
 			client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{})))
 
 		// The caller can do what they like or requeue upon error.
@@ -96,7 +96,7 @@ func (r *Reconciler) handleDelete(
 	// Make another copy so that Patch doesn't write back to cluster.
 	intent := before.DeepCopy()
 	intent.Finalizers = finalizers.Delete(naming.Finalizer).List()
-	err := errors.WithStack(r.patch(ctx, intent,
+	err := errors.WithStack(r.Writer.Patch(ctx, intent,
 		client.MergeFromWithOptions(before, client.MergeFromWithOptimisticLock{})))
 
 	// The caller should wait for further events or requeue upon error.

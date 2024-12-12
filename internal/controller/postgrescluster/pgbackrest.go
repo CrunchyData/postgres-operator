@@ -139,7 +139,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 	// When we delete the StatefulSet, we will leave its Pods in place. They will be claimed by
 	// the StatefulSet that gets created in the next reconcile.
 	existing := &appsv1.StatefulSet{}
-	if err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(repo), existing)); err != nil {
+	if err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(repo), existing)); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, err
 		}
@@ -152,7 +152,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 			exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 			propagate := client.PropagationPolicy(metav1.DeletePropagationOrphan)
 
-			return repo, errors.WithStack(r.Client.Delete(ctx, existing, exactly, propagate))
+			return repo, errors.WithStack(r.Writer.Delete(ctx, existing, exactly, propagate))
 		}
 	}
 
@@ -250,7 +250,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	for _, gvk := range gvks {
 		uList := &unstructured.UnstructuredList{}
 		uList.SetGroupVersionKind(gvk)
-		if err := r.Client.List(ctx, uList,
+		if err := r.Reader.List(ctx, uList,
 			client.InNamespace(postgresCluster.GetNamespace()),
 			client.MatchingLabelsSelector{Selector: selector}); err != nil {
 			return nil, errors.WithStack(err)
@@ -400,7 +400,7 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 
 		// If nothing has specified that the resource should not be deleted, then delete
 		if delete {
-			if err := r.Client.Delete(ctx, &ownedResources[i],
+			if err := r.Writer.Delete(ctx, &ownedResources[i],
 				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 				return []unstructured.Unstructured{}, errors.WithStack(err)
 			}
@@ -947,7 +947,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	// lookup the various patroni endpoints
 	leaderEP, dcsEP, failoverEP := corev1.Endpoints{}, corev1.Endpoints{}, corev1.Endpoints{}
 	currentEndpoints := []corev1.Endpoints{}
-	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
+	if err := r.Reader.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
 		&leaderEP); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, nil, errors.WithStack(err)
@@ -955,7 +955,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	} else {
 		currentEndpoints = append(currentEndpoints, leaderEP)
 	}
-	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
+	if err := r.Reader.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
 		&dcsEP); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, nil, errors.WithStack(err)
@@ -963,7 +963,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	} else {
 		currentEndpoints = append(currentEndpoints, dcsEP)
 	}
-	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
+	if err := r.Reader.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
 		&failoverEP); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, nil, errors.WithStack(err)
@@ -973,7 +973,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	}
 
 	restoreJobs := &batchv1.JobList{}
-	if err := r.Client.List(ctx, restoreJobs, &client.ListOptions{
+	if err := r.Reader.List(ctx, restoreJobs, &client.ListOptions{
 		Namespace:     cluster.Namespace,
 		LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
 	}); err != nil {
@@ -1021,26 +1021,26 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 			// by the restore job. Clean them up if they still exist.
 			selector := naming.PGBackRestRestoreConfigSelector(cluster.GetName())
 			restoreConfigMaps := &corev1.ConfigMapList{}
-			if err := r.Client.List(ctx, restoreConfigMaps, &client.ListOptions{
+			if err := r.Reader.List(ctx, restoreConfigMaps, &client.ListOptions{
 				Namespace:     cluster.Namespace,
 				LabelSelector: selector,
 			}); err != nil {
 				return nil, nil, errors.WithStack(err)
 			}
 			for i := range restoreConfigMaps.Items {
-				if err := r.Client.Delete(ctx, &restoreConfigMaps.Items[i]); err != nil {
+				if err := r.Writer.Delete(ctx, &restoreConfigMaps.Items[i]); err != nil {
 					return nil, nil, errors.WithStack(err)
 				}
 			}
 			restoreSecrets := &corev1.SecretList{}
-			if err := r.Client.List(ctx, restoreSecrets, &client.ListOptions{
+			if err := r.Reader.List(ctx, restoreSecrets, &client.ListOptions{
 				Namespace:     cluster.Namespace,
 				LabelSelector: selector,
 			}); err != nil {
 				return nil, nil, errors.WithStack(err)
 			}
 			for i := range restoreSecrets.Items {
-				if err := r.Client.Delete(ctx, &restoreSecrets.Items[i]); err != nil {
+				if err := r.Writer.Delete(ctx, &restoreSecrets.Items[i]); err != nil {
 					return nil, nil, errors.WithStack(err)
 				}
 			}
@@ -1132,7 +1132,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 	// remove any existing restore Jobs
 	if restoreJob != nil {
 		setPreparingClusterCondition("removing restore job")
-		if err := r.Client.Delete(ctx, restoreJob,
+		if err := r.Writer.Delete(ctx, restoreJob,
 			client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 			return errors.WithStack(err)
 		}
@@ -1142,7 +1142,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 	if clusterRunning {
 		setPreparingClusterCondition("removing runners")
 		for _, runner := range runners {
-			err := r.Client.Delete(ctx, runner,
+			err := r.Writer.Delete(ctx, runner,
 				client.PropagationPolicy(metav1.DeletePropagationForeground))
 			if client.IgnoreNotFound(err) != nil {
 				return errors.WithStack(err)
@@ -1173,7 +1173,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 	setPreparingClusterCondition("removing DCS")
 	// delete any Endpoints
 	for i := range currentEndpoints {
-		if err := r.Client.Delete(ctx, &currentEndpoints[i]); client.IgnoreNotFound(err) != nil {
+		if err := r.Writer.Delete(ctx, &currentEndpoints[i]); client.IgnoreNotFound(err) != nil {
 			return errors.WithStack(err)
 		}
 	}
@@ -1699,7 +1699,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 				"PostgreSQL data for the cluster: %w", err)
 		}
 	} else {
-		if err := r.Client.Get(ctx,
+		if err := r.Reader.Get(ctx,
 			client.ObjectKey{Name: sourceClusterName, Namespace: sourceClusterNamespace},
 			sourceCluster); err != nil {
 			if apierrors.IsNotFound(err) {
@@ -1901,7 +1901,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 	sourceConfig := &corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(sourceCluster)}
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(sourceConfig), sourceConfig))
+			r.Reader.Get(ctx, client.ObjectKeyFromObject(sourceConfig), sourceConfig))
 	}
 
 	// Retrieve the pgBackRest Secret of the source cluster if it has one. When
@@ -1909,7 +1909,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 	sourceSecret := &corev1.Secret{ObjectMeta: naming.PGBackRestSecret(sourceCluster)}
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(sourceSecret), sourceSecret))
+			r.Reader.Get(ctx, client.ObjectKeyFromObject(sourceSecret), sourceSecret))
 
 		if apierrors.IsNotFound(err) {
 			sourceSecret, err = nil, nil
@@ -1997,7 +1997,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 			// Get the existing Secret for the copy, if it exists. It **must**
 			// exist if not configured as optional.
 			if secretProjection.Optional != nil && *secretProjection.Optional {
-				if err := errors.WithStack(r.Client.Get(ctx, secretName,
+				if err := errors.WithStack(r.Reader.Get(ctx, secretName,
 					secretCopy)); apierrors.IsNotFound(err) {
 					continue
 				} else {
@@ -2005,7 +2005,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 				}
 			} else {
 				if err := errors.WithStack(
-					r.Client.Get(ctx, secretName, secretCopy)); err != nil {
+					r.Reader.Get(ctx, secretName, secretCopy)); err != nil {
 					return err
 				}
 			}
@@ -2051,7 +2051,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 			// Get the existing ConfigMap for the copy, if it exists. It **must**
 			// exist if not configured as optional.
 			if configMapProjection.Optional != nil && *configMapProjection.Optional {
-				if err := errors.WithStack(r.Client.Get(ctx, configMapName,
+				if err := errors.WithStack(r.Reader.Get(ctx, configMapName,
 					configMapCopy)); apierrors.IsNotFound(err) {
 					continue
 				} else {
@@ -2059,7 +2059,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 				}
 			} else {
 				if err := errors.WithStack(
-					r.Client.Get(ctx, configMapName, configMapCopy)); err != nil {
+					r.Reader.Get(ctx, configMapName, configMapCopy)); err != nil {
 					return err
 				}
 			}
@@ -2144,7 +2144,7 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 
 	existing := &corev1.Secret{}
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(intent), existing)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(intent), existing)))
 
 	if err == nil {
 		err = r.setControllerReference(cluster, intent)
@@ -2420,7 +2420,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 		// per a new value for the annotation (unless the user manually deletes the Job).
 		if completed || failed {
 			if manualAnnotation != "" && backupID != manualAnnotation {
-				return errors.WithStack(r.Client.Delete(ctx, currentBackupJob,
+				return errors.WithStack(r.Writer.Delete(ctx, currentBackupJob,
 					client.PropagationPolicy(metav1.DeletePropagationBackground)))
 			}
 		}
@@ -2693,7 +2693,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		if failed || replicaCreateRepoChanged ||
 			(job.GetAnnotations()[naming.PGBackRestCurrentConfig] != containerName) ||
 			(job.GetAnnotations()[naming.PGBackRestConfigHash] != configHash) {
-			if err := r.Client.Delete(ctx, job,
+			if err := r.Writer.Delete(ctx, job,
 				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 				return errors.WithStack(err)
 			}
@@ -2819,7 +2819,7 @@ func (r *Reconciler) writeRepoVolumeSizeRequestStatus(ctx context.Context,
 
 	pods := &corev1.PodList{}
 	if err := errors.WithStack(
-		r.Client.List(ctx, pods,
+		r.Reader.List(ctx, pods,
 			client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{
 				Selector: naming.PGBackRestDedicatedLabels(cluster.Name).AsSelector()},
@@ -3339,7 +3339,7 @@ func (r *Reconciler) ObserveBackupUniverse(ctx context.Context,
 		},
 	}
 	err = errors.WithStack(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 	repoHostStatefulSetNotFound = apierrors.IsNotFound(err)
 
 	// If we have an error that is not related to a missing repo-host StatefulSet,

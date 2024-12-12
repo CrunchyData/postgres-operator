@@ -97,7 +97,7 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 		// PgBouncer is disabled; delete the ConfigMap if it exists. Check the
 		// client cache first using Get.
 		key := client.ObjectKeyFromObject(configmap)
-		err := errors.WithStack(r.Client.Get(ctx, key, configmap))
+		err := errors.WithStack(r.Reader.Get(ctx, key, configmap))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, configmap))
 		}
@@ -230,7 +230,7 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 ) (*corev1.Secret, error) {
 	existing := &corev1.Secret{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	err := errors.WithStack(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 	if client.IgnoreNotFound(err) != nil {
 		return nil, err
 	}
@@ -374,7 +374,7 @@ func (r *Reconciler) reconcilePGBouncerService(
 		// PgBouncer is disabled; delete the Service if it exists. Check the client
 		// cache first using Get.
 		key := client.ObjectKeyFromObject(service)
-		err := errors.WithStack(r.Client.Get(ctx, key, service))
+		err := errors.WithStack(r.Reader.Get(ctx, key, service))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, service))
 		}
@@ -565,7 +565,7 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 		// PgBouncer is disabled; delete the Deployment if it exists. Check the
 		// client cache first using Get.
 		key := client.ObjectKeyFromObject(deploy)
-		err := errors.WithStack(r.Client.Get(ctx, key, deploy))
+		err := errors.WithStack(r.Reader.Get(ctx, key, deploy))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, deploy))
 		}
@@ -590,7 +590,7 @@ func (r *Reconciler) reconcilePGBouncerPodDisruptionBudget(
 ) error {
 	deleteExistingPDB := func(cluster *v1beta1.PostgresCluster) error {
 		existing := &policyv1.PodDisruptionBudget{ObjectMeta: naming.ClusterPGBouncer(cluster)}
-		err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
 		}

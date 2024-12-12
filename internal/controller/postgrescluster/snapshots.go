@@ -196,7 +196,7 @@ func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 	// Check the client cache first using Get.
 	if cluster.Spec.Backups.Snapshots == nil {
 		key := client.ObjectKeyFromObject(pvc)
-		err := errors.WithStack(r.Client.Get(ctx, key, pvc))
+		err := errors.WithStack(r.Reader.Get(ctx, key, pvc))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, pvc))
 		}
@@ -263,13 +263,13 @@ func (r *Reconciler) reconcileDedicatedSnapshotVolume(
 
 		patch := client.RawPatch(client.Merge.Type(), []byte(annotations))
 		err = r.handlePersistentVolumeClaimError(cluster,
-			errors.WithStack(r.patch(ctx, pvc, patch)))
+			errors.WithStack(r.Writer.Patch(ctx, pvc, patch)))
 
 		if err != nil {
 			return pvc, err
 		}
 
-		err = r.Client.Delete(ctx, restoreJob, client.PropagationPolicy(metav1.DeletePropagationBackground))
+		err = r.Writer.Delete(ctx, restoreJob, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		return pvc, errors.WithStack(err)
 	}
 
@@ -459,7 +459,7 @@ func (r *Reconciler) getDedicatedSnapshotVolumeRestoreJob(ctx context.Context,
 	selectJobs, err := naming.AsSelector(naming.ClusterRestoreJobs(postgrescluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, jobs,
+			r.Reader.List(ctx, jobs,
 				client.InNamespace(postgrescluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selectJobs},
 			))
@@ -489,7 +489,7 @@ func (r *Reconciler) getLatestCompleteBackupJob(ctx context.Context,
 	selectJobs, err := naming.AsSelector(naming.ClusterBackupJobs(postgrescluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, jobs,
+			r.Reader.List(ctx, jobs,
 				client.InNamespace(postgrescluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selectJobs},
 			))
@@ -555,7 +555,7 @@ func (r *Reconciler) getSnapshotsForCluster(ctx context.Context, cluster *v1beta
 	}
 	snapshots := &volumesnapshotv1.VolumeSnapshotList{}
 	err = errors.WithStack(
-		r.Client.List(ctx, snapshots,
+		r.Reader.List(ctx, snapshots,
 			client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selectSnapshots},
 		))

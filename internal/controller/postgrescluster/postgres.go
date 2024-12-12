@@ -542,7 +542,7 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 	selector, err := naming.AsSelector(naming.ClusterPostgresUsers(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, secrets,
+			r.Reader.List(ctx, secrets,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
@@ -898,7 +898,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 		// No WAL volume is specified; delete the PVC safely if it exists. Check
 		// the client cache first using Get.
 		key := client.ObjectKeyFromObject(pvc)
-		err := errors.WithStack(r.Client.Get(ctx, key, pvc))
+		err := errors.WithStack(r.Reader.Get(ctx, key, pvc))
 		if err != nil {
 			return nil, client.IgnoreNotFound(err)
 		}
@@ -1003,7 +1003,7 @@ func (r *Reconciler) reconcileDatabaseInitSQL(ctx context.Context,
 				Namespace: cluster.Namespace,
 			},
 		}
-		err := r.Client.Get(ctx, client.ObjectKeyFromObject(cm), cm)
+		err := r.Reader.Get(ctx, client.ObjectKeyFromObject(cm), cm)
 		if err != nil {
 			return "", err
 		}
