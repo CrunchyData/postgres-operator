@@ -1189,20 +1189,21 @@ func TestDeleteInstance(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{
-		Client:   cc,
-		Owner:    client.FieldOwner(t.Name()),
-		Recorder: new(record.FakeRecorder),
+		Reader:       cc,
+		Recorder:     new(record.FakeRecorder),
+		StatusWriter: client.WithFieldOwner(cc, t.Name()).Status(),
+		Writer:       client.WithFieldOwner(cc, t.Name()),
 	}
 
 	// Define, Create, and Reconcile a cluster to get an instance running in kube
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
 
-	assert.NilError(t, reconciler.Client.Create(ctx, cluster))
+	assert.NilError(t, cc.Create(ctx, cluster))
 	t.Cleanup(func() {
 		// Remove finalizers, if any, so the namespace can terminate.
 		assert.Check(t, client.IgnoreNotFound(
-			reconciler.Client.Patch(ctx, cluster, client.RawPatch(
+			cc.Patch(ctx, cluster, client.RawPatch(
 				client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
 	})
 
@@ -1215,7 +1216,7 @@ func TestDeleteInstance(t *testing.T) {
 	assert.Assert(t, result.Requeue == false)
 
 	stsList := &appsv1.StatefulSetList{}
-	assert.NilError(t, reconciler.Client.List(ctx, stsList,
+	assert.NilError(t, cc.List(ctx, stsList,
 		client.InNamespace(cluster.Namespace),
 		client.MatchingLabels{
 			naming.LabelCluster:     cluster.Name,
@@ -1248,7 +1249,7 @@ func TestDeleteInstance(t *testing.T) {
 			err := wait.PollUntilContextTimeout(ctx, time.Second*3, Scale(time.Second*30), false, func(ctx context.Context) (bool, error) {
 				uList := &unstructured.UnstructuredList{}
 				uList.SetGroupVersionKind(gvk)
-				assert.NilError(t, reconciler.Client.List(ctx, uList,
+				assert.NilError(t, cc.List(ctx, uList,
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
 
@@ -1792,8 +1793,8 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	foundPDB := func(
@@ -1801,7 +1802,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		spec *v1beta1.PostgresInstanceSetSpec,
 	) bool {
 		got := &policyv1.PodDisruptionBudget{}
-		err := r.Client.Get(ctx,
+		err := cc.Get(ctx,
 			naming.AsObjectKey(naming.InstanceSet(cluster, spec)),
 			got)
 		return !apierrors.IsNotFound(err)
@@ -1833,8 +1834,8 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		spec := &cluster.Spec.InstanceSets[0]
 		spec.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
 		assert.Assert(t, foundPDB(cluster, spec))
@@ -1860,8 +1861,8 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		spec := &cluster.Spec.InstanceSets[0]
 		spec.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
 		assert.Assert(t, foundPDB(cluster, spec))
@@ -1910,8 +1911,8 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)
@@ -1940,14 +1941,14 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 	createPDB := func(
 		pdb *policyv1.PodDisruptionBudget,
 	) error {
-		return r.Client.Create(ctx, pdb)
+		return cc.Create(ctx, pdb)
 	}
 
 	foundPDB := func(
 		pdb *policyv1.PodDisruptionBudget,
 	) bool {
 		return !apierrors.IsNotFound(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(pdb),
+			cc.Get(ctx, client.ObjectKeyFromObject(pdb),
 				&policyv1.PodDisruptionBudget{}))
 	}
 
@@ -1962,8 +1963,8 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 		spec := &cluster.Spec.InstanceSets[0]
 		spec.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		expectedPDB := generatePDB(t, cluster, spec,
 			initialize.Pointer(intstr.FromInt32(1)))
@@ -2007,8 +2008,7 @@ func TestReconcileInstanceConfigMap(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	t.Run("LocalVolumeOtelDisabled", func(t *testing.T) {
