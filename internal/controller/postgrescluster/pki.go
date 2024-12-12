@@ -42,7 +42,7 @@ func (r *Reconciler) reconcileRootCertificate(
 	existing := &corev1.Secret{}
 	existing.Namespace, existing.Name = cluster.Namespace, naming.RootCertSecret
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	root := &pki.RootCertificateAuthority{}
 
@@ -120,7 +120,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 
 	existing := &corev1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	leaf := &pki.LeafCertificate{}
 	dnsNames := append(naming.ServiceDNSNames(ctx, primaryService), naming.ServiceDNSNames(ctx, replicaService)...)

@@ -283,10 +283,7 @@ func TestGeneratePostgresParameters(t *testing.T) {
 }
 
 func TestGeneratePostgresUserSecret(t *testing.T) {
-	_, tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	reconciler := &Reconciler{Client: tClient}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns1"
@@ -484,8 +481,8 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{
-		Client: tClient,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
 	}
 
 	t.Run("DataVolumeNoSourceCluster", func(t *testing.T) {
@@ -588,7 +585,7 @@ volumeMode: Filesystem
 		assert.NilError(t, err)
 
 		// Get snapshot and update Status.ReadyToUse and CreationTime
-		err = reconciler.Client.Get(ctx, client.ObjectKeyFromObject(snapshot), snapshot)
+		err = tClient.Get(ctx, client.ObjectKeyFromObject(snapshot), snapshot)
 		assert.NilError(t, err)
 
 		currentTime := metav1.Now()
@@ -596,7 +593,7 @@ volumeMode: Filesystem
 			ReadyToUse:   initialize.Bool(true),
 			CreationTime: &currentTime,
 		}
-		err = reconciler.Client.Status().Update(ctx, snapshot)
+		err = tClient.Status().Update(ctx, snapshot)
 		assert.NilError(t, err)
 
 		// Reconcile volume
@@ -861,7 +858,7 @@ func TestReconcileDatabaseInitSQL(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{
-		Client: client,
+		Reader: client,
 
 		// Overwrite the PodExec function with a check to ensure the exec
 		// call would have been made
@@ -985,7 +982,7 @@ func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{
-		Client: client,
+		Reader: client,
 
 		// Overwrite the PodExec function with a check to ensure the exec
 		// call would have been made

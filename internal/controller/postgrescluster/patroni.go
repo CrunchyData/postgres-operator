@@ -37,7 +37,7 @@ func (r *Reconciler) deletePatroniArtifacts(
 	selector, err := naming.AsSelector(naming.ClusterPatronis(cluster))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.DeleteAllOf(ctx, &corev1.Endpoints{},
+			r.Writer.DeleteAllOf(ctx, &corev1.Endpoints{},
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
@@ -324,7 +324,7 @@ func (r *Reconciler) reconcilePatroniStatus(
 
 	dcs := &corev1.Endpoints{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(dcs), dcs)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(dcs), dcs)))
 
 	if err == nil {
 		if dcs.Annotations["initialize"] != "" {
@@ -362,14 +362,14 @@ func (r *Reconciler) reconcileReplicationSecret(
 			Name:      cluster.Spec.CustomReplicationClientTLSSecret.Name,
 			Namespace: cluster.Namespace,
 		}}
-		err := errors.WithStack(r.Client.Get(ctx,
+		err := errors.WithStack(r.Reader.Get(ctx,
 			client.ObjectKeyFromObject(custom), custom))
 		return custom, err
 	}
 
 	existing := &corev1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	leaf := &pki.LeafCertificate{}
 	commonName := postgres.ReplicationUser
