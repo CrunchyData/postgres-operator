@@ -16,8 +16,8 @@ import (
 )
 
 // apply sends an apply patch to object's endpoint in the Kubernetes API and
-// updates object with any returned content. The fieldManager is set to
-// r.Owner and the force parameter is true.
+// updates object with any returned content. The fieldManager is set by
+// r.Writer and the force parameter is true.
 // - https://docs.k8s.io/reference/using-api/server-side-apply/#managers
 // - https://docs.k8s.io/reference/using-api/server-side-apply/#conflicts
 func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
@@ -32,7 +32,7 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 
 	// Send the apply-patch with force=true.
 	if err == nil {
-		err = r.patch(ctx, object, apply, client.ForceOwnership)
+		err = r.Writer.Patch(ctx, object, apply, client.ForceOwnership)
 	}
 
 	// Some fields cannot be server-side applied correctly. When their outcome
@@ -44,7 +44,7 @@ func (r *Reconciler) apply(ctx context.Context, object client.Object) error {
 
 	// Send the json-patch when necessary.
 	if err == nil && !patch.IsEmpty() {
-		err = r.patch(ctx, object, patch)
+		err = r.Writer.Patch(ctx, object, patch)
 	}
 	return err
 }

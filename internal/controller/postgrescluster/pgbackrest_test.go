@@ -178,9 +178,9 @@ func TestReconcilePGBackRest(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
+			Reader:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(controllerName),
-			Owner:    controllerName,
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -678,7 +678,7 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Writer: client.WithFieldOwner(tClient, t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -737,7 +737,7 @@ func TestReconcileRepoHostRBAC(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Reader: tClient, Writer: client.WithFieldOwner(tClient, t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -804,9 +804,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(controllerName),
-			Owner:    controllerName,
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -925,7 +923,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Writer: client.WithFieldOwner(tClient, t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -1086,9 +1084,8 @@ func TestReconcileManualBackup(t *testing.T) {
 	r := &Reconciler{}
 	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(controllerName),
-			Owner:    controllerName,
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -1524,7 +1521,10 @@ func TestGetPGBackRestResources(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -1830,9 +1830,9 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   tClient,
+			Reader:   tClient,
 			Recorder: mgr.GetEventRecorderFor(controllerName),
-			Owner:    controllerName,
+			Writer:   client.WithFieldOwner(tClient, controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -2209,9 +2209,9 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   tClient,
+			Reader:   tClient,
 			Recorder: mgr.GetEventRecorderFor(controllerName),
-			Owner:    controllerName,
+			Writer:   client.WithFieldOwner(tClient, controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -2385,7 +2385,10 @@ func TestCopyConfigurationResources(t *testing.T) {
 	ctx := context.Background()
 	require.ParallelCapacity(t, 2)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	ns1 := setupNamespace(t, tClient)
 	ns2 := setupNamespace(t, tClient)
@@ -2634,8 +2637,7 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 	ns := setupNamespace(t, cc)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  controllerName,
+		Reader: cc,
 	}
 
 	ctx := context.Background()
@@ -3027,7 +3029,7 @@ volumes:
 			},
 			Spec: corev1.PersistentVolumeClaimSpec(testVolumeClaimSpec()),
 		}
-		err := r.Client.Create(ctx, pvc)
+		err := cc.Create(ctx, pvc)
 		assert.NilError(t, err)
 
 		spec := r.generateBackupJobSpecIntent(ctx,
@@ -3140,11 +3142,8 @@ volumes:
 }
 
 func TestGenerateRepoHostIntent(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
 	ctx := context.Background()
-	r := Reconciler{Client: cc}
+	r := Reconciler{}
 
 	t.Run("empty", func(t *testing.T) {
 		_, err := r.generateRepoHostIntent(ctx, &v1beta1.PostgresCluster{}, "", &RepoResources{},
@@ -3230,12 +3229,7 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 }
 
 func TestGenerateRestoreJobIntent(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	r := Reconciler{
-		Client: cc,
-	}
+	r := Reconciler{}
 
 	t.Run("empty", func(t *testing.T) {
 		err := r.generateRestoreJobIntent(&v1beta1.PostgresCluster{}, "", "",
@@ -3457,7 +3451,7 @@ func TestObserveRestoreEnv(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Reader: tClient}
 	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
@@ -3557,18 +3551,18 @@ func TestObserveRestoreEnv(t *testing.T) {
 				fakeLeaderEP := &corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
+				assert.NilError(t, tClient.Create(ctx, fakeLeaderEP))
 				fakeDCSEP := &corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
+				assert.NilError(t, tClient.Create(ctx, fakeDCSEP))
 				fakeFailoverEP := &corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
+				assert.NilError(t, tClient.Create(ctx, fakeFailoverEP))
 
 				job := generateJob(cluster.Name, initialize.Bool(false), initialize.Bool(false))
-				assert.NilError(t, r.Client.Create(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob:          true,
@@ -3581,15 +3575,15 @@ func TestObserveRestoreEnv(t *testing.T) {
 				fakeLeaderEP := &corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
+				assert.NilError(t, tClient.Create(ctx, fakeLeaderEP))
 				fakeDCSEP := &corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
+				assert.NilError(t, tClient.Create(ctx, fakeDCSEP))
 				fakeFailoverEP := &corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
+				assert.NilError(t, tClient.Create(ctx, fakeFailoverEP))
 			},
 			result: testResult{
 				foundRestoreJob:          false,
@@ -3600,7 +3594,7 @@ func TestObserveRestoreEnv(t *testing.T) {
 			desc: "restore job only exists",
 			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
 				job := generateJob(cluster.Name, initialize.Bool(false), initialize.Bool(false))
-				assert.NilError(t, r.Client.Create(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob:          true,
@@ -3614,8 +3608,8 @@ func TestObserveRestoreEnv(t *testing.T) {
 					t.Skip("requires mocking of Job conditions")
 				}
 				job := generateJob(cluster.Name, initialize.Bool(true), nil)
-				assert.NilError(t, r.Client.Create(ctx, job.DeepCopy()))
-				assert.NilError(t, r.Client.Status().Update(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job.DeepCopy()))
+				assert.NilError(t, tClient.Status().Update(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob: true,
@@ -3634,8 +3628,8 @@ func TestObserveRestoreEnv(t *testing.T) {
 					t.Skip("requires mocking of Job conditions")
 				}
 				job := generateJob(cluster.Name, nil, initialize.Bool(true))
-				assert.NilError(t, r.Client.Create(ctx, job.DeepCopy()))
-				assert.NilError(t, r.Client.Status().Update(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job.DeepCopy()))
+				assert.NilError(t, tClient.Status().Update(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob: true,
@@ -3685,7 +3679,9 @@ func TestPrepareForRestore(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string) *batchv1.Job {
@@ -3739,7 +3735,7 @@ func TestPrepareForRestore(t *testing.T) {
 			createResources: func(t *testing.T,
 				cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
 				job := generateJob(cluster.Name)
-				assert.NilError(t, r.Client.Create(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job))
 				return job, nil
 			},
 			result: testResult{
@@ -3759,15 +3755,15 @@ func TestPrepareForRestore(t *testing.T) {
 				fakeLeaderEP := corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, &fakeLeaderEP))
+				assert.NilError(t, tClient.Create(ctx, &fakeLeaderEP))
 				fakeDCSEP := corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, &fakeDCSEP))
+				assert.NilError(t, tClient.Create(ctx, &fakeDCSEP))
 				fakeFailoverEP := corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, &fakeFailoverEP))
+				assert.NilError(t, tClient.Create(ctx, &fakeFailoverEP))
 				return nil, []corev1.Endpoints{fakeLeaderEP, fakeDCSEP, fakeFailoverEP}
 			},
 			result: testResult{
@@ -3874,19 +3870,19 @@ func TestPrepareForRestore(t *testing.T) {
 
 				leaderEP, dcsEP, failoverEP := corev1.Endpoints{}, corev1.Endpoints{}, corev1.Endpoints{}
 				currentEndpoints := []corev1.Endpoints{}
-				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
+				if err := tClient.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
 					&leaderEP); err != nil {
 					assert.NilError(t, client.IgnoreNotFound(err))
 				} else {
 					currentEndpoints = append(currentEndpoints, leaderEP)
 				}
-				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
+				if err := tClient.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
 					&dcsEP); err != nil {
 					assert.NilError(t, client.IgnoreNotFound(err))
 				} else {
 					currentEndpoints = append(currentEndpoints, dcsEP)
 				}
-				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
+				if err := tClient.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
 					&failoverEP); err != nil {
 					assert.NilError(t, client.IgnoreNotFound(err))
 				} else {
@@ -3894,7 +3890,7 @@ func TestPrepareForRestore(t *testing.T) {
 				}
 
 				restoreJobs := &batchv1.JobList{}
-				assert.NilError(t, r.Client.List(ctx, restoreJobs, &client.ListOptions{
+				assert.NilError(t, tClient.List(ctx, restoreJobs, &client.ListOptions{
 					Namespace:     cluster.Namespace,
 					LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
 				}))
@@ -3930,9 +3926,9 @@ func TestReconcileScheduledBackups(t *testing.T) {
 	r := &Reconciler{}
 	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
+			Reader:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(controllerName),
-			Owner:    controllerName,
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -4193,7 +4189,7 @@ func TestSetScheduledJobStatus(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Reader: tClient}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -4266,9 +4262,9 @@ func TestBackupsEnabled(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
+			Reader:   mgr.GetClient(),
 			Recorder: mgr.GetEventRecorderFor(controllerName),
-			Owner:    controllerName,
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -4424,8 +4420,7 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{
-		Client: tClient,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: tClient,
 	}
 
 	testCases := []struct {

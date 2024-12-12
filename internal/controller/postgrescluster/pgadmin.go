@@ -96,7 +96,7 @@ func (r *Reconciler) reconcilePGAdminConfigMap(
 		// pgAdmin is disabled; delete the ConfigMap if it exists. Check the
 		// client cache first using Get.
 		key := client.ObjectKeyFromObject(configmap)
-		err := errors.WithStack(r.Client.Get(ctx, key, configmap))
+		err := errors.WithStack(r.Reader.Get(ctx, key, configmap))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, configmap))
 		}
@@ -212,7 +212,7 @@ func (r *Reconciler) reconcilePGAdminService(
 		// pgAdmin is disabled; delete the Service if it exists. Check the client
 		// cache first using Get.
 		key := client.ObjectKeyFromObject(service)
-		err := errors.WithStack(r.Client.Get(ctx, key, service))
+		err := errors.WithStack(r.Reader.Get(ctx, key, service))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, service))
 		}
@@ -240,7 +240,7 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 		// pgAdmin is disabled; delete the Deployment if it exists. Check the
 		// client cache first using Get.
 		key := client.ObjectKeyFromObject(sts)
-		err := errors.WithStack(r.Client.Get(ctx, key, sts))
+		err := errors.WithStack(r.Reader.Get(ctx, key, sts))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, sts))
 		}
@@ -333,7 +333,7 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 	// When we delete the StatefulSet, we will leave its Pods in place. They will be claimed by
 	// the StatefulSet that gets created in the next reconcile.
 	existing := &appsv1.StatefulSet{}
-	if err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(sts), existing)); err != nil {
+	if err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(sts), existing)); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -346,7 +346,7 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 			exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 			propagate := client.PropagationPolicy(metav1.DeletePropagationOrphan)
 
-			return errors.WithStack(client.IgnoreNotFound(r.Client.Delete(ctx, existing, exactly, propagate)))
+			return errors.WithStack(client.IgnoreNotFound(r.Writer.Delete(ctx, existing, exactly, propagate)))
 		}
 	}
 
@@ -391,7 +391,7 @@ func (r *Reconciler) reconcilePGAdminDataVolume(
 		// pgAdmin is disabled; delete the PVC if it exists. Check the client
 		// cache first using Get.
 		key := client.ObjectKeyFromObject(pvc)
-		err := errors.WithStack(r.Client.Get(ctx, key, pvc))
+		err := errors.WithStack(r.Reader.Get(ctx, key, pvc))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, pvc))
 		}
@@ -439,7 +439,7 @@ func (r *Reconciler) reconcilePGAdminUsers(
 	pod := &corev1.Pod{ObjectMeta: naming.ClusterPGAdmin(cluster)}
 	pod.Name += "-0"
 
-	err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(pod), pod))
+	err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(pod), pod))
 	if err != nil {
 		return client.IgnoreNotFound(err)
 	}

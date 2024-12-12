@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -28,8 +27,7 @@ import (
 func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	obj client.Object) error {
 
-	if err := controllerutil.SetControllerReference(postgresCluster, obj,
-		r.Client.Scheme()); err != nil {
+	if err := r.setControllerReference(postgresCluster, obj); err != nil {
 		return err
 	}
 
@@ -39,10 +37,7 @@ func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1beta1.P
 		return err
 	}
 
-	return r.Client.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType,
-		patchBytes), &client.PatchOptions{
-		FieldManager: controllerName,
-	})
+	return r.Writer.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType, patchBytes))
 }
 
 // claimObject is responsible for adopting or releasing Objects based on their current
@@ -129,7 +124,7 @@ func (r *Reconciler) getPostgresClusterForObject(ctx context.Context,
 	}
 
 	postgresCluster := &v1beta1.PostgresCluster{}
-	if err := r.Client.Get(ctx, types.NamespacedName{
+	if err := r.Reader.Get(ctx, types.NamespacedName{
 		Name:      clusterName,
 		Namespace: obj.GetNamespace(),
 	}, postgresCluster); err != nil {
@@ -175,7 +170,7 @@ func (r *Reconciler) releaseObject(ctx context.Context,
 		return err
 	}
 
-	return r.Client.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType, patch))
+	return r.Writer.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType, patch))
 }
 
 // controllerRefHandlerFuncs returns the handler funcs that should be utilized to watch

@@ -22,7 +22,10 @@ func TestManageControllerRefs(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	ctx := context.Background()
-	r := &Reconciler{Client: tClient}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 	clusterName := "hippo"
 
 	cluster := testCluster()
@@ -56,7 +59,7 @@ func TestManageControllerRefs(t *testing.T) {
 		obj.Name = "adopt"
 		obj.Labels = map[string]string{naming.LabelCluster: clusterName}
 
-		if err := r.Client.Create(ctx, obj); err != nil {
+		if err := tClient.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
@@ -97,7 +100,7 @@ func TestManageControllerRefs(t *testing.T) {
 			BlockOwnerDeletion: &isTrue,
 		})
 
-		if err := r.Client.Create(ctx, obj); err != nil {
+		if err := tClient.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
@@ -120,7 +123,7 @@ func TestManageControllerRefs(t *testing.T) {
 		obj.Name = "ignore-no-labels-refs"
 		obj.Labels = map[string]string{"ignore-label": "ignore-value"}
 
-		if err := r.Client.Create(ctx, obj); err != nil {
+		if err := tClient.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
@@ -143,7 +146,7 @@ func TestManageControllerRefs(t *testing.T) {
 		obj.Name = "ignore-no-postgrescluster"
 		obj.Labels = map[string]string{naming.LabelCluster: "nonexistent"}
 
-		if err := r.Client.Create(ctx, obj); err != nil {
+		if err := tClient.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
