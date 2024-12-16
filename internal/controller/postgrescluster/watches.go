@@ -50,7 +50,7 @@ func (*Reconciler) watchPods() handler.Funcs {
 			}
 
 			// Queue an event to start applying changes if the PostgreSQL instance
-			// now has the "master" role.
+			// now has the "primary" role.
 			if len(cluster) != 0 &&
 				!patroni.PodIsPrimary(e.ObjectOld) &&
 				patroni.PodIsPrimary(e.ObjectNew) {
