@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: custom-queries-test
-data:
-  queries.yml: "# This is a test."
