@@ -36,7 +36,7 @@ func TestExecutorChangePrimaryAndWait(t *testing.T) {
 		) error {
 			called = true
 			assert.DeepEqual(t, command, strings.Fields(
-				`patronictl switchover --scheduled=now --force --master=old --candidate=new`,
+				`patronictl switchover --scheduled=now --force --primary=old --candidate=new`,
 			))
 			assert.Assert(t, stdin == nil, "expected no stdin, got %T", stdin)
 			assert.Assert(t, stderr != nil, "should capture stderr")

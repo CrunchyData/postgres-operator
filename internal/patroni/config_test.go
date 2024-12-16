@@ -55,6 +55,7 @@ ctl:
 kubernetes:
   labels:
     postgres-operator.crunchydata.com/cluster: cluster-name
+  leader_label_value: master
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
@@ -113,6 +114,7 @@ ctl:
 kubernetes:
   labels:
     postgres-operator.crunchydata.com/cluster: cluster-name
+  leader_label_value: master
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
@@ -180,6 +182,7 @@ ctl:
 kubernetes:
   labels:
     postgres-operator.crunchydata.com/cluster: cluster-name
+  leader_label_value: master
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni

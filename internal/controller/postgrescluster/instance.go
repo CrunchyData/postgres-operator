@@ -132,7 +132,8 @@ func (i Instance) IsWritable() (writable, known bool) {
 
 	// TODO(cbandy): Update this to consider when Patroni is paused.
 
-	return strings.HasPrefix(member[role:], `"role":"master"`), true
+	return strings.HasPrefix(member[role:], `"role":"master"`) ||
+		strings.HasPrefix(member[role:], `"role":"primary"`), true
 }
 
 // PodMatchesPodTemplate returns whether or not the Pod for this instance
