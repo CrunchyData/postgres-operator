@@ -60,6 +60,9 @@ func clusterYAML(
 			"role_label":    naming.LabelRole,
 			"scope_label":   naming.LabelPatroni,
 			"use_endpoints": true,
+			// To support transitioning to Patroni v4, set the value to 'master'.
+			// In a future release, this can be removed in favor of the default.
+			"leader_label_value": naming.RolePatroniLeader,
 
 			// In addition to "scope_label" above, Patroni will add the following to
 			// every object it creates. It will also use these as filters when doing

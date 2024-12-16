@@ -45,7 +45,7 @@ func (exec Executor) ChangePrimaryAndWait(
 
 	err := exec(ctx, nil, &stdout, &stderr,
 		"patronictl", "switchover", "--scheduled=now", "--force",
-		"--master="+current, "--candidate="+next)
+		"--primary="+current, "--candidate="+next)
 
 	log := logging.FromContext(ctx)
 	log.V(1).Info("changed primary",
@@ -65,7 +65,7 @@ func (exec Executor) ChangePrimaryAndWait(
 // "patronictl". It returns true when an election completes successfully. It
 // waits up to two "loop_wait" or until an error occurs. When Patroni is paused,
 // next cannot be blank. Similar to the "POST /switchover" REST endpoint.
-// The "patronictl switchover" variant does not require the current master to be passed
+// The "patronictl switchover" variant does not require the current primary to be passed
 // as a flag.
 func (exec Executor) SwitchoverAndWait(
 	ctx context.Context, target string,
@@ -96,7 +96,7 @@ func (exec Executor) SwitchoverAndWait(
 // "patronictl". It returns true when an election completes successfully. It
 // waits up to two "loop_wait" or until an error occurs. When Patroni is paused,
 // next cannot be blank. Similar to the "POST /switchover" REST endpoint.
-// The "patronictl failover" variant does not require the current master to be passed
+// The "patronictl failover" variant does not require the current primary to be passed
 // as a flag.
 func (exec Executor) FailoverAndWait(
 	ctx context.Context, target string,
