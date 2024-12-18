@@ -117,7 +117,7 @@ func TestInstanceIsWritable(t *testing.T) {
 	assert.Assert(t, !writable)
 
 	// Patroni leader
-	instance.Pods[0].Annotations["status"] = `{"role":"master"}`
+	instance.Pods[0].Annotations["status"] = `{"role":"primary"}`
 	writable, known = instance.IsWritable()
 	assert.Assert(t, known)
 	assert.Assert(t, writable)
@@ -392,7 +392,7 @@ func TestWritablePod(t *testing.T) {
 						Namespace: "namespace",
 						Name:      "pod",
 						Annotations: map[string]string{
-							"status": `{"role":"master"}`,
+							"status": `{"role":"primary"}`,
 						},
 						DeletionTimestamp: &metav1.Time{},
 					},
@@ -426,7 +426,7 @@ func TestWritablePod(t *testing.T) {
 						Namespace: "namespace",
 						Name:      "pod",
 						Annotations: map[string]string{
-							"status": `{"role":"master"}`,
+							"status": `{"role":"primary"}`,
 						},
 					},
 					Status: corev1.PodStatus{
@@ -491,7 +491,7 @@ func TestWritablePod(t *testing.T) {
 						Namespace: "namespace",
 						Name:      "pod",
 						Annotations: map[string]string{
-							"status": `{"role":"master"}`,
+							"status": `{"role":"primary"}`,
 						},
 					},
 					Status: corev1.PodStatus{
@@ -964,7 +964,7 @@ func TestPodsToKeep(t *testing.T) {
 		checks    func(*testing.T, []corev1.Pod)
 	}{
 		{
-			name: "RemoveSetWithMasterOnly",
+			name: "RemoveSetWithPrimaryOnly",
 			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -998,7 +998,7 @@ func TestPodsToKeep(t *testing.T) {
 				assert.Equal(t, len(p), 0)
 			},
 		}, {
-			name: "KeepMasterOnly",
+			name: "KeepPrimaryOnly",
 			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1087,7 +1087,7 @@ func TestPodsToKeep(t *testing.T) {
 				assert.Equal(t, len(p), 0)
 			},
 		}, {
-			name: "MasterLastInSet",
+			name: "PrimaryLastInSet",
 			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1116,7 +1116,7 @@ func TestPodsToKeep(t *testing.T) {
 				assert.Equal(t, p[0].Labels[naming.LabelRole], "master")
 			},
 		}, {
-			name: "ScaleDownSetWithMaster",
+			name: "ScaleDownSetWithPrimary",
 			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1167,7 +1167,7 @@ func TestPodsToKeep(t *testing.T) {
 				assert.Equal(t, p[1].Labels[naming.LabelInstanceSet], "max")
 			},
 		}, {
-			name: "ScaleDownSetWithoutMaster",
+			name: "ScaleDownSetWithoutPrimary",
 			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1220,7 +1220,7 @@ func TestPodsToKeep(t *testing.T) {
 				assert.Equal(t, p[2].Labels[naming.LabelRole], "replica")
 			},
 		}, {
-			name: "ScaleMasterSetToZero",
+			name: "ScalePrimarySetToZero",
 			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1262,7 +1262,7 @@ func TestPodsToKeep(t *testing.T) {
 				assert.Equal(t, p[1].Labels[naming.LabelInstanceSet], "daisy")
 			},
 		}, {
-			name: "RemoveMasterInstanceSet",
+			name: "RemovePrimaryInstanceSet",
 			instances: []corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{

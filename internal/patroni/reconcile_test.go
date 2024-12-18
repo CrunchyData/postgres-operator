@@ -241,7 +241,7 @@ func TestPodIsPrimary(t *testing.T) {
 	assert.Assert(t, !PodIsPrimary(pod))
 
 	// Primary
-	pod.Annotations["status"] = `{"role":"master"}`
+	pod.Annotations["status"] = `{"role":"primary"}`
 	assert.Assert(t, PodIsPrimary(pod))
 }
 
@@ -258,7 +258,7 @@ func TestPodIsStandbyLeader(t *testing.T) {
 	assert.Assert(t, !PodIsStandbyLeader(pod))
 
 	// Leader
-	pod.Annotations["status"] = `{"role":"master"}`
+	pod.Annotations["status"] = `{"role":"primary"}`
 	assert.Assert(t, !PodIsStandbyLeader(pod))
 
 	// Replica

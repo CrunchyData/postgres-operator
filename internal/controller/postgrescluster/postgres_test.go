@@ -951,7 +951,7 @@ func TestReconcileDatabaseInitSQL(t *testing.T) {
 					Namespace: ns.Name,
 					Name:      "pod",
 					Annotations: map[string]string{
-						"status": `{"role":"master"}`,
+						"status": `{"role":"primary"}`,
 					},
 				},
 				Status: corev1.PodStatus{
@@ -1072,7 +1072,7 @@ func TestReconcileDatabaseInitSQLConfigMap(t *testing.T) {
 					Namespace: ns.Name,
 					Name:      "pod",
 					Annotations: map[string]string{
-						"status": `{"role":"master"}`,
+						"status": `{"role":"primary"}`,
 					},
 				},
 				Status: corev1.PodStatus{
