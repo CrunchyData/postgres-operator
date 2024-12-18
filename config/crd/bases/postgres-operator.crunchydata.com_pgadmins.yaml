@@ -1566,6 +1566,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
+                maxLength: 15
                 type: string
               imagePullSecrets:
                 description: |-
@@ -1827,6 +1828,7 @@ spec:
                       enum:
                       - Administrator
                       - User
+                      maxLength: 15
                       type: string
                     username:
                       description: |-
