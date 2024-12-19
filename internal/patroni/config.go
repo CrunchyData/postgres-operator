@@ -179,13 +179,8 @@ func clusterYAML(
 		// Patroni has not yet bootstrapped. Populate the "bootstrap.dcs" field to
 		// facilitate it. When Patroni is already bootstrapped, this field is ignored.
 
-		var configuration map[string]any
-		if cluster.Spec.Patroni != nil {
-			configuration = cluster.Spec.Patroni.DynamicConfiguration
-		}
-
 		root["bootstrap"] = map[string]any{
-			"dcs": DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters),
+			"dcs": DynamicConfiguration(&cluster.Spec, pgHBAs, pgParameters),
 
 			// Missing here is "users" which runs *after* "post_bootstrap". It is
 			// not possible to use roles created by the former in the latter.
@@ -200,20 +195,19 @@ func clusterYAML(
 // DynamicConfiguration combines configuration with some PostgreSQL settings
 // and returns a value that can be marshaled to JSON.
 func DynamicConfiguration(
-	cluster *v1beta1.PostgresCluster,
-	configuration map[string]any,
+	spec *v1beta1.PostgresClusterSpec,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) map[string]any {
 	// Copy the entire configuration before making any changes.
-	root := make(map[string]any, len(configuration))
-	for k, v := range configuration {
-		root[k] = v
+	root := make(map[string]any)
+	if spec.Patroni != nil && spec.Patroni.DynamicConfiguration != nil {
+		root = spec.Patroni.DynamicConfiguration.DeepCopy()
 	}
 
-	root["ttl"] = *cluster.Spec.Patroni.LeaderLeaseDurationSeconds
-	root["loop_wait"] = *cluster.Spec.Patroni.SyncPeriodSeconds
+	// NOTE: These are always populated due to [v1beta1.PatroniSpec.Default]
+	root["ttl"] = *spec.Patroni.LeaderLeaseDurationSeconds
+	root["loop_wait"] = *spec.Patroni.SyncPeriodSeconds
 
-	// Copy the "postgresql" section before making any changes.
 	postgresql := map[string]any{
 		// TODO(cbandy): explain this. requires an archive, perhaps.
 		"use_slots": false,
@@ -221,12 +215,13 @@ func DynamicConfiguration(
 
 	// When TDE is configured, override the pg_rewind binary name to point
 	// to the wrapper script.
-	if config.FetchKeyCommand(&cluster.Spec) != "" {
+	if config.FetchKeyCommand(spec) != "" {
 		postgresql["bin_name"] = map[string]any{
 			"pg_rewind": "/tmp/pg_rewind_tde.sh",
 		}
 	}
 
+	// Copy the "postgresql" section over the above defaults.
 	if section, ok := root["postgresql"].(map[string]any); ok {
 		for k, v := range section {
 			postgresql[k] = v
@@ -300,15 +295,12 @@ func DynamicConfiguration(
 	// Recent versions of `pg_rewind` can run with limited permissions granted
 	// by Patroni to the user defined in "postgresql.authentication.rewind".
 	// PostgreSQL v10 and earlier require superuser access over the network.
-	postgresql["use_pg_rewind"] = cluster.Spec.PostgresVersion > 10
+	postgresql["use_pg_rewind"] = spec.PostgresVersion > 10
 
-	if cluster.Spec.Standby != nil && cluster.Spec.Standby.Enabled {
-		// Copy the "standby_cluster" section before making any changes.
-		standby := make(map[string]any)
-		if section, ok := root["standby_cluster"].(map[string]any); ok {
-			for k, v := range section {
-				standby[k] = v
-			}
+	if spec.Standby != nil && spec.Standby.Enabled {
+		standby, _ := root["standby_cluster"].(map[string]any)
+		if standby == nil {
+			standby = make(map[string]any)
 		}
 
 		// Unset any previous value for restore_command - we will set it later if needed
@@ -316,16 +308,16 @@ func DynamicConfiguration(
 
 		// Populate replica creation methods based on options provided in the standby spec:
 		methods := []string{}
-		if cluster.Spec.Standby.Host != "" {
-			standby["host"] = cluster.Spec.Standby.Host
-			if cluster.Spec.Standby.Port != nil {
-				standby["port"] = *cluster.Spec.Standby.Port
+		if spec.Standby.Host != "" {
+			standby["host"] = spec.Standby.Host
+			if spec.Standby.Port != nil {
+				standby["port"] = *spec.Standby.Port
 			}
 
 			methods = append([]string{basebackupCreateReplicaMethod}, methods...)
 		}
 
-		if cluster.Spec.Standby.RepoName != "" {
+		if spec.Standby.RepoName != "" {
 			// Append pgbackrest as the first choice when creating the standby
 			methods = append([]string{pgBackRestCreateReplicaMethod}, methods...)
 

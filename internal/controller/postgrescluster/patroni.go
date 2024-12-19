@@ -204,14 +204,9 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 		return r.PodExec(ctx, pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
 	}
 
-	var configuration map[string]any
-	if cluster.Spec.Patroni != nil {
-		configuration = cluster.Spec.Patroni.DynamicConfiguration
-	}
-	configuration = patroni.DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters)
-
 	return errors.WithStack(
-		patroni.Executor(exec).ReplaceConfiguration(ctx, configuration))
+		patroni.Executor(exec).ReplaceConfiguration(ctx,
+			patroni.DynamicConfiguration(&cluster.Spec, pgHBAs, pgParameters)))
 }
 
 // generatePatroniLeaderLeaseService returns a v1.Service that exposes the
