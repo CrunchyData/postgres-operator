@@ -17,7 +17,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
@@ -229,7 +228,7 @@ func TestDynamicConfiguration(t *testing.T) {
 
 	for _, tt := range []struct {
 		name     string
-		spec     v1beta1.PostgresClusterSpec
+		spec     string
 		hbas     postgres.HBAs
 		params   postgres.Parameters
 		expected map[string]any
@@ -249,17 +248,17 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "top-level passes through",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"retry_timeout": int64(5),
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						retry_timeout: 5,
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait":     int32(10),
 				"ttl":           int32(30),
-				"retry_timeout": int64(5),
+				"retry_timeout": float64(5),
 				"postgresql": map[string]any{
 					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
@@ -270,16 +269,16 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "top-level: spec overrides input",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					LeaderLeaseDurationSeconds: initialize.Int32(99),
-					SyncPeriodSeconds:          initialize.Int32(8),
-					DynamicConfiguration: map[string]any{
-						"loop_wait": int64(3),
-						"ttl":       "nope",
+			spec: `{
+				patroni: {
+					leaderLeaseDurationSeconds: 99,
+					syncPeriodSeconds: 8,
+					dynamicConfiguration: {
+						loop_wait: 3,
+						ttl: nope,
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(8),
 				"ttl":       int32(99),
@@ -293,13 +292,13 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql: wrong-type is ignored",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": true,
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: true,
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
@@ -313,16 +312,16 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql: defaults and overrides",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"use_pg_rewind": "overridden",
-							"use_slots":     "input",
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							use_pg_rewind: overidden,
+							use_slots: input,
 						},
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
@@ -336,15 +335,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: wrong-type is ignored",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": true,
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: true,
 						},
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
@@ -358,25 +357,25 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: input passes through",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": map[string]any{
-								"something": "str",
-								"another":   int64(5),
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: {
+								something: str,
+								another: 5,
 							},
 						},
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
 						"something": "str",
-						"another":   int64(5),
+						"another":   float64(5),
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
@@ -386,18 +385,18 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: input overrides default",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": map[string]any{
-								"something": "str",
-								"another":   int64(5),
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: {
+								something: str,
+								another: 5,
 							},
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Default: parameters(map[string]string{
 					"something": "overridden",
@@ -410,7 +409,7 @@ func TestDynamicConfiguration(t *testing.T) {
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
 						"something": "str",
-						"another":   int64(5),
+						"another":   float64(5),
 						"unrelated": "default",
 					},
 					"pg_hba":        []string{},
@@ -421,18 +420,18 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: mandatory overrides input",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": map[string]any{
-								"something": "str",
-								"another":   int64(5),
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: {
+								something: str,
+								another: 5,
 							},
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Mandatory: parameters(map[string]string{
 					"something": "overrides",
@@ -445,7 +444,7 @@ func TestDynamicConfiguration(t *testing.T) {
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
 						"something": "overrides",
-						"another":   int64(5),
+						"another":   float64(5),
 						"unrelated": "setting",
 					},
 					"pg_hba":        []string{},
@@ -456,17 +455,17 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: mandatory shared_preload_libraries",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": map[string]any{
-								"shared_preload_libraries": "given",
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: {
+								shared_preload_libraries: given,
 							},
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Mandatory: parameters(map[string]string{
 					"shared_preload_libraries": "mandatory",
@@ -487,17 +486,17 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: mandatory shared_preload_libraries wrong-type is ignored",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": map[string]any{
-								"shared_preload_libraries": int64(1),
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: {
+								shared_preload_libraries: 1,
 							},
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Mandatory: parameters(map[string]string{
 					"shared_preload_libraries": "mandatory",
@@ -518,17 +517,17 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.parameters: shared_preload_libraries order",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": map[string]any{
-								"shared_preload_libraries": "given, citus, more",
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: {
+								shared_preload_libraries: "given, citus, more",
 							},
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Mandatory: parameters(map[string]string{
 					"shared_preload_libraries": "mandatory",
@@ -549,15 +548,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: wrong-type is ignored",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"pg_hba": true,
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							pg_hba: true,
 						},
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
@@ -571,15 +570,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: default when no input",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"pg_hba": nil,
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							pg_hba: null,
 						},
 					},
 				},
-			},
+			}`,
 			hbas: postgres.HBAs{
 				Default: []*postgres.HostBasedAuthentication{
 					postgres.NewHBA().Local().Method("peer"),
@@ -600,15 +599,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: no default when input",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"pg_hba": []any{"custom"},
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							pg_hba: [custom],
 						},
 					},
 				},
-			},
+			}`,
 			hbas: postgres.HBAs{
 				Default: []*postgres.HostBasedAuthentication{
 					postgres.NewHBA().Local().Method("peer"),
@@ -629,15 +628,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: mandatory before others",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"pg_hba": []any{"custom"},
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							pg_hba: [custom],
 						},
 					},
 				},
-			},
+			}`,
 			hbas: postgres.HBAs{
 				Mandatory: []*postgres.HostBasedAuthentication{
 					postgres.NewHBA().Local().Method("peer"),
@@ -659,15 +658,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "postgresql.pg_hba: ignore non-string types",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"pg_hba": []any{int64(1), true, "custom", map[string]any{}, []any{}},
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							pg_hba: [1, true, custom, {}, []],
 						},
 					},
 				},
-			},
+			}`,
 			hbas: postgres.HBAs{
 				Mandatory: []*postgres.HostBasedAuthentication{
 					postgres.NewHBA().Local().Method("peer"),
@@ -689,15 +688,15 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "standby_cluster: input passes through",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"standby_cluster": map[string]any{
-							"primary_slot_name": "str",
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						standby_cluster: {
+							primary_slot_name: str,
 						},
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
@@ -714,20 +713,20 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "standby_cluster: repo only",
-			spec: v1beta1.PostgresClusterSpec{
-				Standby: &v1beta1.PostgresStandbySpec{
-					Enabled:  true,
-					RepoName: "repo",
+			spec: `{
+				standby: {
+					enabled: true,
+					repoName: repo,
 				},
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"standby_cluster": map[string]any{
-							"restore_command": "overridden",
-							"unrelated":       "input",
+				patroni: {
+					dynamicConfiguration: {
+						standby_cluster: {
+							restore_command: overridden,
+							unrelated: input,
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Mandatory: parameters(map[string]string{
 					"restore_command": "mandatory",
@@ -753,23 +752,23 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "standby_cluster: basebackup for streaming",
-			spec: v1beta1.PostgresClusterSpec{
-				Standby: &v1beta1.PostgresStandbySpec{
-					Enabled: true,
-					Host:    "0.0.0.0",
-					Port:    initialize.Int32(5432),
+			spec: `{
+				standby: {
+					enabled: true,
+					host: 0.0.0.0,
+					port: 5432,
 				},
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"standby_cluster": map[string]any{
-							"host":            "overridden",
-							"port":            int64(0000),
-							"restore_command": "overridden",
-							"unrelated":       "input",
+				patroni: {
+					dynamicConfiguration: {
+						standby_cluster: {
+							host: overridden,
+							port: 0000,
+							restore_command: overridden,
+							unrelated: input,
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Mandatory: parameters(map[string]string{
 					"restore_command": "mandatory",
@@ -796,24 +795,24 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "standby_cluster: both repo and streaming",
-			spec: v1beta1.PostgresClusterSpec{
-				Standby: &v1beta1.PostgresStandbySpec{
-					Enabled:  true,
-					Host:     "0.0.0.0",
-					Port:     initialize.Int32(5432),
-					RepoName: "repo",
+			spec: `{
+				standby: {
+					enabled: true,
+					host: 0.0.0.0,
+					port: 5432,
+					repoName: repo,
 				},
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"standby_cluster": map[string]any{
-							"host":            "overridden",
-							"port":            int64(9999),
-							"restore_command": "overridden",
-							"unrelated":       "input",
+				patroni: {
+					dynamicConfiguration: {
+						standby_cluster: {
+							host: overridden,
+							port: 9999,
+							restore_command: overridden,
+							unrelated: input,
 						},
 					},
 				},
-			},
+			}`,
 			params: postgres.Parameters{
 				Mandatory: parameters(map[string]string{
 					"restore_command": "mandatory",
@@ -841,17 +840,17 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "tde enabled",
-			spec: v1beta1.PostgresClusterSpec{
-				Patroni: &v1beta1.PatroniSpec{
-					DynamicConfiguration: map[string]any{
-						"postgresql": map[string]any{
-							"parameters": map[string]any{
-								"encryption_key_command": "echo test",
+			spec: `{
+				patroni: {
+					dynamicConfiguration: {
+						postgresql: {
+							parameters: {
+								encryption_key_command: echo test,
 							},
 						},
 					},
 				},
-			},
+			}`,
 			expected: map[string]any{
 				"loop_wait": int32(10),
 				"ttl":       int32(30),
@@ -868,7 +867,8 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			cluster := &v1beta1.PostgresCluster{Spec: tt.spec}
+			cluster := new(v1beta1.PostgresCluster)
+			assert.NilError(t, yaml.Unmarshal([]byte(tt.spec), &cluster.Spec))
 			if cluster.Spec.PostgresVersion == 0 {
 				cluster.Spec.PostgresVersion = 14
 			}
