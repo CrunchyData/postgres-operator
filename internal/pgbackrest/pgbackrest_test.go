@@ -56,7 +56,7 @@ fi
 	}
 	postgresCluster := &v1beta1.PostgresCluster{
 		Spec: v1beta1.PostgresClusterSpec{
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",

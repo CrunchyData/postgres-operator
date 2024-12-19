@@ -120,7 +120,7 @@ func testCluster() *v1beta1.PostgresCluster {
 				Replicas:            initialize.Int32(1),
 				DataVolumeClaimSpec: testVolumeClaimSpec(),
 			}},
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: CrunchyPGBackRestImage,
 					Repos: []v1beta1.PGBackRestRepo{{

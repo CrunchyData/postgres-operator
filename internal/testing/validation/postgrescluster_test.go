@@ -30,11 +30,6 @@ func TestPostgresUserOptions(t *testing.T) {
 	// Start with a bunch of required fields.
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		postgresVersion: 16,
-		backups: {
-			pgbackrest: {
-				repos: [{ name: repo1 }],
-			},
-		},
 		instances: [{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],

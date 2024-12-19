@@ -73,7 +73,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 					},
 				},
 			}},
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: "example.com/crunchy-pgbackrest:test",
 					Jobs: &v1beta1.BackupJobs{
@@ -597,7 +597,7 @@ topologySpreadConstraints:
 		ns := setupNamespace(t, tClient)
 		// create a PostgresCluster without backups to test with
 		postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
-		postgresCluster.Spec.Backups = v1beta1.Backups{}
+		postgresCluster.Spec.Backups = &v1beta1.Backups{}
 
 		// create the 'observed' instances and set the leader
 		instances := &observedInstances{
@@ -1489,7 +1489,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{Name: "repo1"}},
 					},
@@ -1526,7 +1526,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{Name: "repo4"}},
 					},
@@ -1562,7 +1562,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{
 							Name:   "repo1",
@@ -1601,7 +1601,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{
 							Name:   "repo4",
@@ -1642,7 +1642,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Repos: []v1beta1.PGBackRestRepo{{Volume: &v1beta1.RepoPVC{}}},
 					},
@@ -1680,7 +1680,7 @@ func TestGetPGBackRestResources(t *testing.T) {
 				UID:       types.UID(clusterUID),
 			},
 			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{},
 				},
 			},
@@ -2233,7 +2233,7 @@ func TestCopyConfigurationResources(t *testing.T) {
 						},
 					},
 				}},
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Configuration: []corev1.VolumeProjection{{
 							Secret: &corev1.SecretProjection{
@@ -2285,7 +2285,7 @@ func TestCopyConfigurationResources(t *testing.T) {
 						},
 					},
 				}},
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Image: "example.com/crunchy-pgbackrest:test",
 						Repos: []v1beta1.PGBackRestRepo{{
@@ -2518,7 +2518,7 @@ volumes:
 		cluster := &v1beta1.PostgresCluster{}
 
 		t.Run("Resources not defined in jobs", func(t *testing.T) {
-			cluster.Spec.Backups = v1beta1.Backups{
+			cluster.Spec.Backups = &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{},
 			}
 			job := generateBackupJobSpecIntent(ctx,
@@ -2568,7 +2568,7 @@ volumes:
 
 		cluster := &v1beta1.PostgresCluster{
 			Spec: v1beta1.PostgresClusterSpec{
-				Backups: v1beta1.Backups{
+				Backups: &v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
 						Jobs: &v1beta1.BackupJobs{
 							Affinity: affinity,
@@ -2775,7 +2775,7 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 				Labels:      map[string]string{"Global": "test"},
 				Annotations: map[string]string{"Global": "test"},
 			},
-			Backups: v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
+			Backups: &v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{
 				Metadata: &v1beta1.Metadata{
 					Labels:      map[string]string{"Backrest": "test"},
 					Annotations: map[string]string{"Backrest": "test"},
@@ -3786,7 +3786,7 @@ func TestBackupsEnabled(t *testing.T) {
 		ns := setupNamespace(t, tClient)
 
 		postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
-		postgresCluster.Spec.Backups = v1beta1.Backups{}
+		postgresCluster.Spec.Backups = &v1beta1.Backups{}
 
 		backupsSpecFound, backupsReconciliationAllowed, err := r.BackupsEnabled(ctx, postgresCluster)
 
@@ -3822,7 +3822,7 @@ func TestBackupsEnabled(t *testing.T) {
 		_, err = r.reconcilePGBackRest(ctx, postgresCluster, instances, rootCA, true)
 		assert.NilError(t, err)
 
-		postgresCluster.Spec.Backups = v1beta1.Backups{}
+		postgresCluster.Spec.Backups = &v1beta1.Backups{}
 
 		backupsSpecFound, backupsReconciliationAllowed, err := r.BackupsEnabled(ctx, postgresCluster)
 
@@ -3858,7 +3858,7 @@ func TestBackupsEnabled(t *testing.T) {
 		_, err = r.reconcilePGBackRest(ctx, postgresCluster, instances, rootCA, true)
 		assert.NilError(t, err)
 
-		postgresCluster.Spec.Backups = v1beta1.Backups{}
+		postgresCluster.Spec.Backups = &v1beta1.Backups{}
 		annotations := map[string]string{
 			naming.AuthorizeBackupRemovalAnnotation: "true",
 		}
