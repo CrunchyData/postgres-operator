@@ -3062,7 +3062,7 @@ func (r *Reconciler) ObserveBackupUniverse(ctx context.Context,
 ) {
 
 	// Does the cluster have a blank Backups section
-	backupsSpecFound = !reflect.DeepEqual(postgresCluster.Spec.Backups, v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{}})
+	backupsSpecFound = !reflect.DeepEqual(postgresCluster.Spec.Backups, &v1beta1.Backups{PGBackRest: v1beta1.PGBackRestArchive{}})
 
 	// Does the repo-host StatefulSet exist?
 	name := fmt.Sprintf("%s-%s", postgresCluster.GetName(), "repo-host")

@@ -23,7 +23,7 @@ type PostgresClusterSpec struct {
 
 	// PostgreSQL backup configuration
 	// +optional
-	Backups Backups `json:"backups,omitempty"`
+	Backups *Backups `json:"backups,omitempty"`
 
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the

@@ -848,7 +848,7 @@ func pgAdminTestCluster(ns corev1.Namespace) *v1beta1.PostgresCluster {
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				DataVolumeClaimSpec: testVolumeClaimSpec(),
 			}},
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",

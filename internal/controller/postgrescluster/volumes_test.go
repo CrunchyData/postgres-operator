@@ -401,7 +401,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					},
 				},
 			}},
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: "example.com/crunchy-pgbackrest:test",
 					Repos: []v1beta1.PGBackRestRepo{{
@@ -684,7 +684,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					},
 				},
 			}},
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: "example.com/crunchy-pgbackrest:test",
 					RepoHost: &v1beta1.PGBackRestRepoHost{

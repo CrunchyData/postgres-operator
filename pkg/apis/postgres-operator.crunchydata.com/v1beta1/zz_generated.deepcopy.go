@@ -1690,7 +1690,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(DataSource)
 		(*in).DeepCopyInto(*out)
 	}
-	in.Backups.DeepCopyInto(&out.Backups)
+	if in.Backups != nil {
+		in, out := &in.Backups, &out.Backups
+		*out = new(Backups)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.CustomTLSSecret != nil {
 		in, out := &in.CustomTLSSecret, &out.CustomTLSSecret
 		*out = new(corev1.SecretProjection)

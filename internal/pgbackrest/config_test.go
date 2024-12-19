@@ -262,7 +262,7 @@ func TestMakePGBackrestLogDir(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{
 		Spec: v1beta1.PostgresClusterSpec{
 			ImagePullPolicy: corev1.PullAlways,
-			Backups: v1beta1.Backups{
+			Backups: &v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Image: "test-image",
 					Repos: []v1beta1.PGBackRestRepo{
