@@ -132,7 +132,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 
 				// A switchover to any viable candidate.
 				assert.DeepEqual(t, command[:2], []string{"patronictl", "switchover"})
-				assert.Assert(t, sets.NewString(command...).Has("--master=the-pod"))
+				assert.Assert(t, sets.NewString(command...).Has("--primary=the-pod"))
 				assert.Assert(t, sets.NewString(command...).Has("--candidate="))
 
 				// Indicate success through stdout.

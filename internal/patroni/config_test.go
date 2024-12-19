@@ -54,6 +54,7 @@ ctl:
 kubernetes:
   labels:
     postgres-operator.crunchydata.com/cluster: cluster-name
+  leader_label_value: master
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
@@ -112,6 +113,7 @@ ctl:
 kubernetes:
   labels:
     postgres-operator.crunchydata.com/cluster: cluster-name
+  leader_label_value: master
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
@@ -179,6 +181,7 @@ ctl:
 kubernetes:
   labels:
     postgres-operator.crunchydata.com/cluster: cluster-name
+  leader_label_value: master
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
@@ -1038,7 +1041,7 @@ postgresql:
     command: '''bash'' ''-ceu'' ''--'' ''install --directory --mode=0700 "${PGDATA?}"
       && exec "$@"'' ''-'' ''some'' ''backrest'' ''cmd'''
     keep_data: true
-    no_master: true
+    no_leader: true
     no_params: true
   pgpass: /tmp/.pgpass
   use_unix_socket: true
