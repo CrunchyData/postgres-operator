@@ -68,7 +68,7 @@ linters-settings:
       SPDX-License-Identifier: Apache-2.0
     values:
       regexp:
-        DATES: '((201[7-9]|202[0-3]) - 2024|2024)'
+        DATES: '((201[7-9]|202[0-4]) - 2025|2025)'
 
   goimports:
     local-prefixes: github.com/crunchydata/postgres-operator
