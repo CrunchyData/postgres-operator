@@ -178,7 +178,7 @@ type PostgresClusterSpec struct {
 	// +optional
 	Users []PostgresUserSpec `json:"users,omitempty"`
 
-	Config PostgresAdditionalConfig `json:"config,omitempty"`
+	Config PostgresConfig `json:"config,omitempty"`
 }
 
 // DataSource defines data sources for a new PostgresCluster.
@@ -668,10 +668,6 @@ type PostgresUserInterfaceStatus struct {
 
 	// The state of the pgAdmin user interface.
 	PGAdmin PGAdminPodStatus `json:"pgAdmin,omitempty"`
-}
-
-type PostgresAdditionalConfig struct {
-	Files []corev1.VolumeProjection `json:"files,omitempty"`
 }
 
 // +kubebuilder:object:root=true

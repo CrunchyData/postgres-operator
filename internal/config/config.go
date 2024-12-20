@@ -22,20 +22,24 @@ func defaultFromEnv(value, key string) string {
 // FetchKeyCommand returns the fetch_key_cmd value stored in the encryption_key_command
 // variable used to enable TDE.
 func FetchKeyCommand(spec *v1beta1.PostgresClusterSpec) string {
+	if parameters := spec.Config.Parameters; parameters != nil {
+		if v, ok := parameters["encryption_key_command"]; ok {
+			return v.String()
+		}
+	}
+
 	if spec.Patroni != nil {
-		if spec.Patroni.DynamicConfiguration != nil {
-			configuration := spec.Patroni.DynamicConfiguration
-			if configuration != nil {
-				if postgresql, ok := configuration["postgresql"].(map[string]any); ok {
-					if parameters, ok := postgresql["parameters"].(map[string]any); ok {
-						if parameters["encryption_key_command"] != nil {
-							return fmt.Sprintf("%s", parameters["encryption_key_command"])
-						}
+		if configuration := spec.Patroni.DynamicConfiguration; configuration != nil {
+			if postgresql, ok := configuration["postgresql"].(map[string]any); ok {
+				if parameters, ok := postgresql["parameters"].(map[string]any); ok {
+					if parameters["encryption_key_command"] != nil {
+						return fmt.Sprintf("%s", parameters["encryption_key_command"])
 					}
 				}
 			}
 		}
 	}
+
 	return ""
 }
 
