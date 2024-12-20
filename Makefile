@@ -119,7 +119,7 @@ undeploy: ## Undeploy the PostgreSQL Operator
 
 .PHONY: deploy-dev
 deploy-dev: ## Deploy the PostgreSQL Operator locally
-deploy-dev: PGO_FEATURE_GATES ?= "TablespaceVolumes=true,VolumeSnapshots=true"
+deploy-dev: PGO_FEATURE_GATES ?= "AllAlpha=true"
 deploy-dev: get-pgmonitor
 deploy-dev: build-postgres-operator
 deploy-dev: createnamespaces
@@ -145,7 +145,7 @@ deploy-dev: createnamespaces
 ##@ Build - Binary
 .PHONY: build-postgres-operator
 build-postgres-operator: ## Build the postgres-operator binary
-	CGO_ENABLED=1 $(GO_BUILD) $(\
+	$(GO_BUILD) $(\
 		) --ldflags '-X "main.versionString=$(PGO_VERSION)"' $(\
 		) --trimpath -o bin/postgres-operator ./cmd/postgres-operator
 
