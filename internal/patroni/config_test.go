@@ -15,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -388,8 +389,13 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "postgresql.parameters: input overrides default",
+			name: "config.parameters takes precedence",
 			spec: `{
+				config: {
+					parameters: {
+						something: this,
+					},
+				},
 				patroni: {
 					dynamicConfiguration: {
 						postgresql: {
@@ -398,6 +404,30 @@ func TestDynamicConfiguration(t *testing.T) {
 								another: 5,
 							},
 						},
+					},
+				},
+			}`,
+			expected: map[string]any{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]any{
+					"parameters": map[string]any{
+						"something": intstr.FromString("this"),
+						"another":   float64(5),
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+					"use_slots":     false,
+				},
+			},
+		},
+		{
+			name: "config.parameters: input overrides default",
+			spec: `{
+				config: {
+					parameters: {
+						something: str,
+						another: 5,
 					},
 				},
 			}`,
@@ -412,8 +442,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				"ttl":       int32(30),
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
-						"something": "str",
-						"another":   float64(5),
+						"something": intstr.FromString("str"),
+						"another":   intstr.FromInt(5),
 						"unrelated": "default",
 					},
 					"pg_hba":        []string{},
@@ -423,16 +453,12 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "postgresql.parameters: mandatory overrides input",
+			name: "config.parameters: mandatory overrides input",
 			spec: `{
-				patroni: {
-					dynamicConfiguration: {
-						postgresql: {
-							parameters: {
-								something: str,
-								another: 5,
-							},
-						},
+				config: {
+					parameters: {
+						something: str,
+						another: 5,
 					},
 				},
 			}`,
@@ -448,7 +474,7 @@ func TestDynamicConfiguration(t *testing.T) {
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
 						"something": "overrides",
-						"another":   float64(5),
+						"another":   intstr.FromInt(5),
 						"unrelated": "setting",
 					},
 					"pg_hba":        []string{},
@@ -458,15 +484,11 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "postgresql.parameters: mandatory shared_preload_libraries",
+			name: "config.parameters: mandatory shared_preload_libraries",
 			spec: `{
-				patroni: {
-					dynamicConfiguration: {
-						postgresql: {
-							parameters: {
-								shared_preload_libraries: given,
-							},
-						},
+				config: {
+					parameters: {
+						shared_preload_libraries: given,
 					},
 				},
 			}`,
@@ -489,15 +511,11 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "postgresql.parameters: mandatory shared_preload_libraries wrong-type is ignored",
+			name: "config.parameters: mandatory shared_preload_libraries wrong-type is ignored",
 			spec: `{
-				patroni: {
-					dynamicConfiguration: {
-						postgresql: {
-							parameters: {
-								shared_preload_libraries: 1,
-							},
-						},
+				config: {
+					parameters: {
+						shared_preload_libraries: 1,
 					},
 				},
 			}`,
@@ -520,15 +538,11 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "postgresql.parameters: shared_preload_libraries order",
+			name: "config.parameters: shared_preload_libraries order",
 			spec: `{
-				patroni: {
-					dynamicConfiguration: {
-						postgresql: {
-							parameters: {
-								shared_preload_libraries: "given, citus, more",
-							},
-						},
+				config: {
+					parameters: {
+						shared_preload_libraries: "given, citus, more",
 					},
 				},
 			}`,
@@ -843,7 +857,30 @@ func TestDynamicConfiguration(t *testing.T) {
 			},
 		},
 		{
-			name: "tde enabled",
+			name: "config.parameters: tde enabled",
+			spec: `{
+				config: {
+					parameters: {
+						encryption_key_command: echo one,
+					},
+				},
+			}`,
+			expected: map[string]any{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
+				"postgresql": map[string]any{
+					"bin_name": map[string]any{"pg_rewind": string("/tmp/pg_rewind_tde.sh")},
+					"parameters": map[string]any{
+						"encryption_key_command": intstr.FromString("echo one"),
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": bool(true),
+					"use_slots":     bool(false),
+				},
+			},
+		},
+		{
+			name: "postgresql.parameters: tde enabled",
 			spec: `{
 				patroni: {
 					dynamicConfiguration: {

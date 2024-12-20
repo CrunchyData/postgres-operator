@@ -7,11 +7,9 @@ metadata:
   labels: { postgres-operator-test: kuttl }
 spec:
   postgresVersion: ${KUTTL_PG_VERSION}
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          max_connections: 1000
+  config:
+    parameters:
+      max_connections: 1000
   instances:
     - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
       replicas: 2

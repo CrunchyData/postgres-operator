@@ -71,7 +71,7 @@ safelink() (
 	// for streaming replication and for `pg_rewind`.
 	ReplicationUser = "_crunchyrepl"
 
-	// configMountPath is where to mount additional config files
+	// configMountPath is where to mount config files.
 	configMountPath = "/etc/postgres"
 )
 

@@ -46,8 +46,8 @@ func DownwardAPIVolumeMount() corev1.VolumeMount {
 	}
 }
 
-// AdditionalConfigVolumeMount returns the name and mount path of the additional config files.
-func AdditionalConfigVolumeMount() corev1.VolumeMount {
+// ConfigVolumeMount returns the name and mount path of PostgreSQL config files.
+func ConfigVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{
 		Name:      "postgres-config",
 		MountPath: configMountPath,
@@ -233,7 +233,7 @@ func InstancePod(ctx context.Context,
 	}
 
 	if len(inCluster.Spec.Config.Files) != 0 {
-		additionalConfigVolumeMount := AdditionalConfigVolumeMount()
+		additionalConfigVolumeMount := ConfigVolumeMount()
 		additionalConfigVolume := corev1.Volume{Name: additionalConfigVolumeMount.Name}
 		additionalConfigVolume.Projected = &corev1.ProjectedVolumeSource{
 			Sources: append([]corev1.VolumeProjection{}, inCluster.Spec.Config.Files...),
