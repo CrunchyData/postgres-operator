@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -244,7 +245,11 @@ func DynamicConfiguration(
 			parameters[k] = v
 		}
 	}
-	// Override the above with mandatory parameters.
+	// Copy spec.config.parameters over spec.patroni...parameters.
+	for k, v := range spec.Config.Parameters {
+		parameters[k] = v
+	}
+	// Override all of the above with mandatory parameters.
 	if pgParameters.Mandatory != nil {
 		for k, v := range pgParameters.Mandatory.AsMap() {
 
@@ -254,8 +259,15 @@ func DynamicConfiguration(
 			// that out as well.
 			if k == "shared_preload_libraries" {
 				// Load mandatory libraries ahead of user-defined libraries.
-				if s, ok := parameters[k].(string); ok && len(s) > 0 {
-					v = v + "," + s
+				switch s := parameters[k].(type) {
+				case string:
+					if len(s) > 0 {
+						v = v + "," + s
+					}
+				case intstr.IntOrString:
+					if len(s.StrVal) > 0 {
+						v = v + "," + s.StrVal
+					}
 				}
 				// Load "citus" ahead of any other libraries.
 				// - https://github.com/citusdata/citus/blob/v12.0.0/src/backend/distributed/shared_library_init.c#L417-L419

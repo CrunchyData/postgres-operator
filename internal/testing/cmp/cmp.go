@@ -74,9 +74,9 @@ func MarshalMatches(actual any, expected string) Comparison {
 	return gotest.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
 }
 
-// Regexp succeeds if value contains any match of the regular expression re.
+// Regexp succeeds if value contains any match of the regular expression.
 // The regular expression may be a *regexp.Regexp or a string that is a valid
 // regexp pattern.
-func Regexp[RE *regexp.Regexp | ~string](re RE, value string) Comparison {
-	return gotest.Regexp(re, value)
+func Regexp[RE *regexp.Regexp | ~string](regex RE, value string) Comparison {
+	return gotest.Regexp(regex, value)
 }
