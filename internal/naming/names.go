@@ -18,6 +18,8 @@ import (
 )
 
 const (
+	ContainerCollector = "collector"
+
 	// ContainerDatabase is the name of the container running PostgreSQL and
 	// supporting tools: Patroni, pgBackRest, etc.
 	ContainerDatabase = "database"
