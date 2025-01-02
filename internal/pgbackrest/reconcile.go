@@ -214,7 +214,7 @@ func AddConfigToRestorePod(
 
 	// mount any provided configuration files to the restore Job Pod
 	if len(cluster.Spec.Config.Files) != 0 {
-		additionalConfigVolumeMount := postgres.AdditionalConfigVolumeMount()
+		additionalConfigVolumeMount := postgres.ConfigVolumeMount()
 		additionalConfigVolume := corev1.Volume{Name: additionalConfigVolumeMount.Name}
 		additionalConfigVolume.Projected = &corev1.ProjectedVolumeSource{
 			Sources: append(sources, cluster.Spec.Config.Files...),
