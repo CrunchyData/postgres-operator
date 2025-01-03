@@ -163,7 +163,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 		}
 
 		// Present when specified.
-		spec.Databases = []v1beta1.PostgresIdentifier{"db1"}
+		spec.Databases = []string{"db1"}
 
 		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
 		assert.NilError(t, err)
@@ -180,7 +180,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 		}
 
 		// Only the first in the list.
-		spec.Databases = []v1beta1.PostgresIdentifier{"first", "asdf"}
+		spec.Databases = []string{"first", "asdf"}
 
 		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
 		assert.NilError(t, err)
@@ -214,7 +214,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 
 		// Includes a URI when possible.
 		spec := *spec
-		spec.Databases = []v1beta1.PostgresIdentifier{"yes", "no"}
+		spec.Databases = []string{"yes", "no"}
 
 		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
 		assert.NilError(t, err)
