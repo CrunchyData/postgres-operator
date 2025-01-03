@@ -17087,9 +17087,6 @@ spec:
                         database from this list does NOT revoke access. This field is ignored for
                         the "postgres" user.
                       items:
-                        description: |-
-                          PostgreSQL identifiers are limited in length but may contain any character.
-                          More info: https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
                         maxLength: 63
                         minLength: 1
                         type: string

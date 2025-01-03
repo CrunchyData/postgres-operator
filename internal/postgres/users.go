@@ -106,7 +106,7 @@ CREATE TEMPORARY TABLE input (id serial, data json);
 				"databases": databases,
 				"options":   options,
 				"username":  spec.Name,
-				"verifier":  verifiers[string(spec.Name)],
+				"verifier":  verifiers[spec.Name],
 			})
 		}
 	}
@@ -194,9 +194,9 @@ func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 		spec := users[i]
 
 		// We skip if the user has the name of a reserved schema
-		if RESERVED_SCHEMA_NAMES[string(spec.Name)] {
+		if RESERVED_SCHEMA_NAMES[spec.Name] {
 			log.V(1).Info("Skipping schema creation for user with reserved name",
-				"name", string(spec.Name))
+				"name", spec.Name)
 			continue
 		}
 
@@ -239,7 +239,7 @@ func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 			}, "\n"),
 			map[string]string{
 				"databases": string(databases),
-				"username":  string(spec.Name),
+				"username":  spec.Name,
 
 				"ON_ERROR_STOP": "on", // Abort when any one statement fails.
 				"QUIET":         "on", // Do not print successful commands to stdout.
