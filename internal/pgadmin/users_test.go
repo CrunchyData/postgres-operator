@@ -235,7 +235,7 @@ with create_app().app_context():
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "user-no-options",
-					Databases: []v1beta1.PostgresIdentifier{"db1"},
+					Databases: []string{"db1"},
 				},
 				{
 					Name:    "user-no-databases",

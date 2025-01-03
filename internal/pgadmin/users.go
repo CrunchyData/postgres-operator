@@ -239,7 +239,7 @@ with create_app().app_context():`,
 		if err == nil {
 			err = encoder.Encode(map[string]interface{}{
 				"username": spec.Name,
-				"password": passwords[string(spec.Name)],
+				"password": passwords[spec.Name],
 			})
 		}
 	}

@@ -43,7 +43,7 @@ import (
 func (r *Reconciler) generatePostgresUserSecret(
 	cluster *v1beta1.PostgresCluster, spec *v1beta1.PostgresUserSpec, existing *corev1.Secret,
 ) (*corev1.Secret, error) {
-	username := string(spec.Name)
+	username := spec.Name
 	intent := &corev1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster, username)}
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	initialize.Map(&intent.Data)
@@ -100,7 +100,7 @@ func (r *Reconciler) generatePostgresUserSecret(
 	// When a database has been specified, include it and a connection URI.
 	// - https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 	if len(spec.Databases) > 0 {
-		database := string(spec.Databases[0])
+		database := spec.Databases[0]
 
 		intent.Data["dbname"] = []byte(database)
 		intent.Data["uri"] = []byte((&url.URL{
@@ -133,7 +133,7 @@ func (r *Reconciler) generatePostgresUserSecret(
 		intent.Data["pgbouncer-port"] = []byte(port)
 
 		if len(spec.Databases) > 0 {
-			database := string(spec.Databases[0])
+			database := spec.Databases[0]
 
 			intent.Data["pgbouncer-uri"] = []byte((&url.URL{
 				Scheme: "postgresql",
@@ -216,9 +216,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		}
 	} else {
 		for _, user := range cluster.Spec.Users {
-			for _, database := range user.Databases {
-				databases.Insert(string(database))
-			}
+			databases.Insert(user.Databases...)
 		}
 	}
 
@@ -379,10 +377,9 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 			r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidUser",
 				allErrors.ToAggregate().Error())
 		} else {
-			identifier := v1beta1.PostgresIdentifier(cluster.Name)
 			specUsers = []v1beta1.PostgresUserSpec{{
-				Name:      identifier,
-				Databases: []v1beta1.PostgresIdentifier{identifier},
+				Name:      cluster.Name,
+				Databases: []string{cluster.Name},
 			}}
 		}
 	}
@@ -390,7 +387,7 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 	// Index user specifications by PostgreSQL user name.
 	userSpecs := make(map[string]*v1beta1.PostgresUserSpec, len(specUsers))
 	for i := range specUsers {
-		userSpecs[string(specUsers[i].Name)] = &specUsers[i]
+		userSpecs[specUsers[i].Name] = &specUsers[i]
 	}
 
 	secrets := &corev1.SecretList{}
