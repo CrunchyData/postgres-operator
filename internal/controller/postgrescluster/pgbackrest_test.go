@@ -2965,14 +2965,23 @@ func TestObserveRestoreEnv(t *testing.T) {
 			},
 		}
 
+		currentTime := metav1.Now()
+		startTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
+		restoreJob.Status.StartTime = &startTime
+
 		if completed != nil {
 			if *completed {
+				restoreJob.Status.CompletionTime = &currentTime
 				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
 					Type:    batchv1.JobComplete,
 					Status:  corev1.ConditionTrue,
 					Reason:  "test",
 					Message: "test",
-				})
+				},
+					batchv1.JobCondition{
+						Type:   batchv1.JobSuccessCriteriaMet,
+						Status: corev1.ConditionTrue,
+					})
 			} else {
 				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
 					Type:    batchv1.JobComplete,
@@ -2988,7 +2997,12 @@ func TestObserveRestoreEnv(t *testing.T) {
 					Status:  corev1.ConditionTrue,
 					Reason:  "test",
 					Message: "test",
-				})
+				},
+					batchv1.JobCondition{
+						Type:   batchv1.JobFailureTarget,
+						Status: corev1.ConditionTrue,
+					},
+				)
 			} else {
 				restoreJob.Status.Conditions = append(restoreJob.Status.Conditions, batchv1.JobCondition{
 					Type:    batchv1.JobFailed,
