@@ -471,10 +471,8 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		assert.NilError(t, r.apply(ctx, backupJob))
 
 		currentTime := metav1.Now()
-		backupJob.Status = batchv1.JobStatus{
-			Succeeded:      1,
-			CompletionTime: &currentTime,
-		}
+		startTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
+		backupJob.Status = succeededJobStatus(startTime, currentTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, backupJob))
 
 		// Create instance set and volumes for reconcile
@@ -514,17 +512,16 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 
 		// Create times for jobs
 		currentTime := metav1.Now()
+		currentStartTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
+		earlierStartTime := metav1.NewTime(earlierTime.AddDate(0, 0, -1))
 
 		// Create successful backup job
 		backupJob := testBackupJob(cluster)
 		assert.NilError(t, r.setControllerReference(cluster, backupJob))
 		assert.NilError(t, r.apply(ctx, backupJob))
 
-		backupJob.Status = batchv1.JobStatus{
-			Succeeded:      1,
-			CompletionTime: &earlierTime,
-		}
+		backupJob.Status = succeededJobStatus(earlierStartTime, earlierTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, backupJob))
 
 		// Create successful restore job
@@ -535,10 +532,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		assert.NilError(t, r.setControllerReference(cluster, restoreJob))
 		assert.NilError(t, r.apply(ctx, restoreJob))
 
-		restoreJob.Status = batchv1.JobStatus{
-			Succeeded:      1,
-			CompletionTime: &currentTime,
-		}
+		restoreJob.Status = succeededJobStatus(currentStartTime, currentTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, restoreJob))
 
 		// Create instance set and volumes for reconcile
@@ -581,16 +575,14 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		// Create times for jobs
 		currentTime := metav1.Now()
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
+		startTime := metav1.NewTime(earlierTime.AddDate(0, 0, -1))
 
 		// Create successful backup job
 		backupJob := testBackupJob(cluster)
 		assert.NilError(t, r.setControllerReference(cluster, backupJob))
 		assert.NilError(t, r.apply(ctx, backupJob))
 
-		backupJob.Status = batchv1.JobStatus{
-			Succeeded:      1,
-			CompletionTime: &earlierTime,
-		}
+		backupJob.Status = succeededJobStatus(startTime, earlierTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, backupJob))
 
 		// Create failed restore job
@@ -602,9 +594,8 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		assert.NilError(t, r.apply(ctx, restoreJob))
 
 		restoreJob.Status = batchv1.JobStatus{
-			Succeeded:      0,
-			Failed:         1,
-			CompletionTime: &currentTime,
+			Succeeded: 0,
+			Failed:    1,
 		}
 		assert.NilError(t, r.Client.Status().Update(ctx, restoreJob))
 
@@ -847,6 +838,7 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 
 	t.Run("OneCompleteBackupJob", func(t *testing.T) {
 		currentTime := metav1.Now()
+		currentStartTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
 
 		job1 := testBackupJob(cluster)
 		job1.Namespace = ns.Name
@@ -863,10 +855,7 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 		// Get job1 and update Status.
 		assert.NilError(t, r.Client.Get(ctx, client.ObjectKeyFromObject(job1), job1))
 
-		job1.Status = batchv1.JobStatus{
-			Succeeded:      1,
-			CompletionTime: &currentTime,
-		}
+		job1.Status = succeededJobStatus(currentStartTime, currentTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, job1))
 
 		latestCompleteBackupJob, err := r.getLatestCompleteBackupJob(ctx, cluster)
@@ -876,7 +865,9 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 
 	t.Run("TwoCompleteBackupJobs", func(t *testing.T) {
 		currentTime := metav1.Now()
+		currentStartTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
+		earlierStartTime := metav1.NewTime(earlierTime.AddDate(0, 0, -1))
 		assert.Check(t, earlierTime.Before(&currentTime))
 
 		job1 := testBackupJob(cluster)
@@ -894,19 +885,13 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 		// Get job1 and update Status.
 		assert.NilError(t, r.Client.Get(ctx, client.ObjectKeyFromObject(job1), job1))
 
-		job1.Status = batchv1.JobStatus{
-			Succeeded:      1,
-			CompletionTime: &currentTime,
-		}
+		job1.Status = succeededJobStatus(currentStartTime, currentTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, job1))
 
 		// Get job2 and update Status.
 		assert.NilError(t, r.Client.Get(ctx, client.ObjectKeyFromObject(job2), job2))
 
-		job2.Status = batchv1.JobStatus{
-			Succeeded:      1,
-			CompletionTime: &earlierTime,
-		}
+		job2.Status = succeededJobStatus(earlierStartTime, earlierTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, job2))
 
 		latestCompleteBackupJob, err := r.getLatestCompleteBackupJob(ctx, cluster)
@@ -1381,4 +1366,22 @@ func TestClusterUsingTablespaces(t *testing.T) {
 
 		assert.Assert(t, clusterUsingTablespaces(ctx, cluster))
 	})
+}
+
+func succeededJobStatus(startTime, completionTime metav1.Time) batchv1.JobStatus {
+	return batchv1.JobStatus{
+		Succeeded:      1,
+		StartTime:      &startTime,
+		CompletionTime: &completionTime,
+		Conditions: []batchv1.JobCondition{
+			{
+				Type:   batchv1.JobSuccessCriteriaMet,
+				Status: corev1.ConditionTrue,
+			},
+			{
+				Type:   batchv1.JobComplete,
+				Status: corev1.ConditionTrue,
+			},
+		},
+	}
 }
