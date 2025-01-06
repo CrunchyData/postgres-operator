@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -241,6 +242,8 @@ func (r *Reconciler) Reconcile(
 	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
+	otelConfig := collector.NewConfigForPostgresPod(ctx)
+
 	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
 	postgres.SetHugePages(cluster, &pgParameters)
 
@@ -349,7 +352,7 @@ func (r *Reconciler) Reconcile(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret, rootCA,
 			clusterPodService, instanceServiceAccount, instances, patroniLeaderService,
 			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound,
+			backupsSpecFound, otelConfig,
 		)
 	}
 

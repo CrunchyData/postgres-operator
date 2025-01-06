@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -591,6 +592,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
+	otelConfig *collector.Config,
 ) error {
 
 	// Go through the observed instances and check if a primary has been determined.
@@ -628,7 +630,7 @@ func (r *Reconciler) reconcileInstanceSets(
 			patroniLeaderService, primaryCertificate,
 			findAvailableInstanceNames(*set, instances, clusterVolumes),
 			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound,
+			backupsSpecFound, otelConfig,
 		)
 
 		if err == nil {
@@ -1063,6 +1065,7 @@ func (r *Reconciler) scaleUpInstances(
 	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
+	otelConfig *collector.Config,
 ) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
@@ -1109,7 +1112,7 @@ func (r *Reconciler) scaleUpInstances(
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate, instances[i],
 			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound,
+			backupsSpecFound, otelConfig,
 		)
 	}
 	if err == nil {
@@ -1140,6 +1143,7 @@ func (r *Reconciler) reconcileInstance(
 	clusterVolumes []*corev1.PersistentVolumeClaim,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
+	otelConfig *collector.Config,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
 	ctx = logging.NewContext(ctx, log)
@@ -1164,7 +1168,7 @@ func (r *Reconciler) reconcileInstance(
 	)
 
 	if err == nil {
-		instanceConfigMap, err = r.reconcileInstanceConfigMap(ctx, cluster, spec, instance)
+		instanceConfigMap, err = r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig)
 	}
 	if err == nil {
 		instanceCertificates, err = r.reconcileInstanceCertificates(
@@ -1194,6 +1198,10 @@ func (r *Reconciler) reconcileInstance(
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
+	}
+
+	if err == nil && feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		collector.AddToPod(ctx, cluster, instanceConfigMap, &instance.Spec.Template.Spec, nil)
 	}
 
 	// Add pgMonitor resources to the instance Pod spec
@@ -1377,7 +1385,7 @@ func addPGBackRestToInstancePodSpec(
 // files (etc) that apply to instance of cluster.
 func (r *Reconciler) reconcileInstanceConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, spec *v1beta1.PostgresInstanceSetSpec,
-	instance *appsv1.StatefulSet,
+	instance *appsv1.StatefulSet, otelConfig *collector.Config,
 ) (*corev1.ConfigMap, error) {
 	instanceConfigMap := &corev1.ConfigMap{ObjectMeta: naming.InstanceConfigMap(instance)}
 	instanceConfigMap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -1397,6 +1405,9 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 			naming.LabelInstance:    instance.Name,
 		})
 
+	if err == nil && feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		err = collector.AddToConfigMap(ctx, otelConfig, instanceConfigMap)
+	}
 	if err == nil {
 		err = patroni.InstanceConfigMap(ctx, cluster, spec, instanceConfigMap)
 	}

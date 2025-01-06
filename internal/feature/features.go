@@ -81,6 +81,9 @@ const (
 	// Support custom sidecars for PostgreSQL instance Pods
 	InstanceSidecars = "InstanceSidecars"
 
+	// Export metrics using OpenTelemetry
+	OpenTelemetryMetrics = "OpenTelemetryMetrics"
+
 	// Support custom sidecars for pgBouncer Pods
 	PGBouncerSidecars = "PGBouncerSidecars"
 
@@ -104,6 +107,7 @@ func NewGate() MutableGate {
 		AutoGrowVolumes:         {Default: false, PreRelease: featuregate.Alpha},
 		BridgeIdentifiers:       {Default: false, PreRelease: featuregate.Deprecated},
 		InstanceSidecars:        {Default: false, PreRelease: featuregate.Alpha},
+		OpenTelemetryMetrics:    {Default: false, PreRelease: featuregate.Alpha},
 		PGBouncerSidecars:       {Default: false, PreRelease: featuregate.Alpha},
 		PGUpgradeCPUConcurrency: {Default: false, PreRelease: featuregate.Alpha},
 		TablespaceVolumes:       {Default: false, PreRelease: featuregate.Alpha},
