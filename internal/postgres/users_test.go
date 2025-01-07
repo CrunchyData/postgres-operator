@@ -131,7 +131,7 @@ COMMIT;`))
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "user-no-options",
-					Databases: []v1beta1.PostgresIdentifier{"db1"},
+					Databases: []string{"db1"},
 				},
 				{
 					Name:    "user-no-databases",
@@ -175,7 +175,7 @@ COMMIT;`))
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "postgres",
-					Databases: []v1beta1.PostgresIdentifier{"all", "ignored"},
+					Databases: []string{"all", "ignored"},
 					Options:   "NOLOGIN CONNECTION LIMIT 0",
 				},
 			},
@@ -213,18 +213,18 @@ func TestWriteUsersSchemasInPostgreSQL(t *testing.T) {
 			[]v1beta1.PostgresUserSpec{
 				{
 					Name:      "user-single-db",
-					Databases: []v1beta1.PostgresIdentifier{"db1"},
+					Databases: []string{"db1"},
 				},
 				{
 					Name: "user-no-databases",
 				},
 				{
 					Name:      "user-multi-dbs",
-					Databases: []v1beta1.PostgresIdentifier{"db1", "db2"},
+					Databases: []string{"db1", "db2"},
 				},
 				{
 					Name:      "public",
-					Databases: []v1beta1.PostgresIdentifier{"db3"},
+					Databases: []string{"db3"},
 				},
 			},
 		))
