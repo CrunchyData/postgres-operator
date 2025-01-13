@@ -26,6 +26,10 @@ func EnableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 			// - https://www.postgresql.org/docs/current/runtime-config-client.html
 			`SET client_min_messages = WARNING;`,
 
+			// Do not wait for changes to be replicated. [Since PostgreSQL v9.1]
+			// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+			`SET synchronous_commit = LOCAL;`,
+
 			`CREATE EXTENSION IF NOT EXISTS postgis;`,
 			`CREATE EXTENSION IF NOT EXISTS postgis_topology;`,
 			`CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;`,

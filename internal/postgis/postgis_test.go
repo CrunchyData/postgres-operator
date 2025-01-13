@@ -29,6 +29,7 @@ func TestEnableInPostgreSQL(t *testing.T) {
 		b, err := io.ReadAll(stdin)
 		assert.NilError(t, err)
 		assert.Equal(t, string(b), `SET client_min_messages = WARNING;
+SET synchronous_commit = LOCAL;
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;

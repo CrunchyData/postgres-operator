@@ -68,6 +68,10 @@ func DisableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 			// - https://www.postgresql.org/docs/current/runtime-config-client.html
 			`SET client_min_messages = WARNING;`,
 
+			// Do not wait for changes to be replicated. [Since PostgreSQL v9.1]
+			// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+			`SET synchronous_commit = LOCAL;`,
+
 			// Drop the following objects in a transaction.
 			`BEGIN;`,
 
@@ -102,7 +106,7 @@ SELECT pg_catalog.format('DROP OWNED BY %I CASCADE', :'username')
 		// Remove the PgBouncer user now that the objects and other privileges are gone.
 		stdout, stderr, err = exec.ExecInDatabasesFromQuery(ctx,
 			`SELECT pg_catalog.current_database()`,
-			`SET client_min_messages = WARNING; DROP ROLE IF EXISTS :"username";`,
+			`SET client_min_messages = WARNING; SET synchronous_commit = LOCAL; DROP ROLE IF EXISTS :"username";`,
 			map[string]string{
 				"username": postgresqlUser,
 
@@ -129,6 +133,10 @@ func EnableInPostgreSQL(
 			// Quiet NOTICE messages from IF NOT EXISTS statements.
 			// - https://www.postgresql.org/docs/current/runtime-config-client.html
 			`SET client_min_messages = WARNING;`,
+
+			// Do not wait for changes to be replicated. [Since PostgreSQL v9.1]
+			// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+			`SET synchronous_commit = LOCAL;`,
 
 			// Create the following objects in a transaction so that permissions
 			// are correct before any other session sees them.
