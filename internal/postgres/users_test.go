@@ -63,7 +63,7 @@ func TestWriteUsersInPostgreSQL(t *testing.T) {
 			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
 			assert.Equal(t, string(b), strings.TrimSpace(`
-SET search_path TO '';
+SET synchronous_commit = LOCAL;SET search_path TO '';
 CREATE TEMPORARY TABLE input (id serial, data json);
 \copy input (data) from stdin with (format text)
 \.
