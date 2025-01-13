@@ -35,7 +35,9 @@ func EnableInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
 
 	stdout, stderr, err := exec.ExecInAllDatabases(ctx,
 		// Quiet the NOTICE from IF EXISTS, and install the pgAudit event triggers.
+		// Use the default setting for "synchronous_commit".
 		// - https://www.postgresql.org/docs/current/runtime-config-client.html
+		// - https://www.postgresql.org/docs/current/runtime-config-wal.html
 		// - https://github.com/pgaudit/pgaudit#settings
 		`SET client_min_messages = WARNING; CREATE EXTENSION IF NOT EXISTS pgaudit;`,
 		map[string]string{

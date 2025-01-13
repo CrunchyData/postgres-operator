@@ -49,6 +49,7 @@ func TestDisableInPostgreSQL(t *testing.T) {
 			assert.NilError(t, err)
 			assert.Equal(t, string(b), strings.TrimSpace(`
 SET client_min_messages = WARNING;
+SET synchronous_commit = LOCAL;
 BEGIN;
 DROP FUNCTION IF EXISTS :"namespace".get_auth(username TEXT);
 DROP SCHEMA IF EXISTS :"namespace" CASCADE;
@@ -90,7 +91,7 @@ COMMIT;`))
 
 			b, err := io.ReadAll(stdin)
 			assert.NilError(t, err)
-			assert.Equal(t, string(b), `SET client_min_messages = WARNING; DROP ROLE IF EXISTS :"username";`)
+			assert.Equal(t, string(b), `SET client_min_messages = WARNING; SET synchronous_commit = LOCAL; DROP ROLE IF EXISTS :"username";`)
 			gomega.NewWithT(t).Expect(command).To(gomega.ContainElements(
 				`--set=username=_crunchypgbouncer`,
 			), "expected query parameters")
@@ -135,6 +136,7 @@ func TestEnableInPostgreSQL(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, string(b), strings.TrimSpace(`
 SET client_min_messages = WARNING;
+SET synchronous_commit = LOCAL;
 BEGIN;
 SELECT pg_catalog.format('CREATE ROLE %I NOLOGIN', :'username')
  WHERE NOT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = :'username')
