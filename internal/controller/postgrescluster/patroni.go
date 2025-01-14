@@ -271,6 +271,12 @@ func (r *Reconciler) generatePatroniLeaderLeaseService(
 		}
 		service.Spec.ExternalTrafficPolicy = initialize.FromPointer(spec.ExternalTrafficPolicy)
 		service.Spec.InternalTrafficPolicy = spec.InternalTrafficPolicy
+
+		// Default to SingleStack if IP Family Policy is not defined
+		if spec.IPFamilyPolicy == "" {
+			spec.IPFamilyPolicy = "SingleStack"
+		}
+		service.Spec.IPFamilyPolicy = (*corev1.IPFamilyPolicy)(&spec.IPFamilyPolicy)
 	}
 	service.Spec.Ports = []corev1.ServicePort{servicePort}
 
