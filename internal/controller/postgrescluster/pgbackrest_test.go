@@ -331,6 +331,8 @@ schedulerName: default-scheduler
 securityContext:
   fsGroup: 26
   fsGroupChangePolicy: OnRootMismatch
+serviceAccount: hippocluster-repohost
+serviceAccountName: hippocluster-repohost
 shareProcessNamespace: true
 terminationGracePeriodSeconds: 30
 tolerations:
@@ -725,6 +727,42 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 		}
 	}
 	assert.Assert(t, foundSubject)
+}
+
+func TestReconcileRepoHostRBAC(t *testing.T) {
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
+
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 0)
+
+	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+
+	clusterName := "hippocluster"
+	clusterUID := "hippouid"
+
+	ns := setupNamespace(t, tClient)
+
+	// create a PostgresCluster to test with
+	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
+	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
+		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
+	}
+
+	serviceAccount, err := r.reconcileRepoHostRBAC(ctx, postgresCluster)
+	assert.NilError(t, err)
+	assert.Assert(t, serviceAccount != nil)
+
+	// verify the service account has been created
+	sa := &corev1.ServiceAccount{}
+	err = tClient.Get(ctx, types.NamespacedName{
+		Name:      naming.RepoHostRBAC(postgresCluster).Name,
+		Namespace: postgresCluster.GetNamespace(),
+	}, sa)
+	assert.NilError(t, err)
 }
 
 func TestReconcileStanzaCreate(t *testing.T) {
@@ -2679,12 +2717,12 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		_, err := r.generateRepoHostIntent(ctx, &v1beta1.PostgresCluster{}, "", &RepoResources{},
-			&observedInstances{})
+			&observedInstances{}, "")
 		assert.NilError(t, err)
 	})
 
 	cluster := &v1beta1.PostgresCluster{}
-	sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, &observedInstances{})
+	sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, &observedInstances{}, "")
 	assert.NilError(t, err)
 
 	t.Run("ServiceAccount", func(t *testing.T) {
@@ -2705,7 +2743,7 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 			},
 		}
 		observed := &observedInstances{forCluster: []*Instance{{Pods: []*corev1.Pod{{}}}}}
-		sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, observed)
+		sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, observed, "")
 		assert.NilError(t, err)
 		assert.Equal(t, *sts.Spec.Replicas, int32(1))
 	})
@@ -2717,7 +2755,7 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 			},
 		}
 		observed := &observedInstances{forCluster: []*Instance{{}}}
-		sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, observed)
+		sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, observed, "")
 		assert.NilError(t, err)
 		assert.Equal(t, *sts.Spec.Replicas, int32(0))
 	})

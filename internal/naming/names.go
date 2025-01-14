@@ -486,6 +486,15 @@ func PGBackRestRBAC(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// RepoHostRBAC returns the ObjectMeta necessary to lookup the ServiceAccount for
+// the pgBackRest Repo Host
+func RepoHostRBAC(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-repohost",
+	}
+}
+
 // PGBackRestRepoVolume returns the ObjectMeta for a pgBackRest repository volume
 func PGBackRestRepoVolume(cluster *v1beta1.PostgresCluster,
 	repoName string) metav1.ObjectMeta {

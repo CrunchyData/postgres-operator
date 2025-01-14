@@ -125,9 +125,9 @@ type RepoResources struct {
 // strategy.
 func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string, repoResources *RepoResources,
-	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
+	observedInstances *observedInstances, saName string) (*appsv1.StatefulSet, error) {
 
-	repo, err := r.generateRepoHostIntent(ctx, postgresCluster, repoHostName, repoResources, observedInstances)
+	repo, err := r.generateRepoHostIntent(ctx, postgresCluster, repoHostName, repoResources, observedInstances, saName)
 	if err != nil {
 		return nil, err
 	}
@@ -578,7 +578,7 @@ func (r *Reconciler) setScheduledJobStatus(ctx context.Context,
 // as needed to create and reconcile a pgBackRest dedicated repository host within the kubernetes
 // cluster.
 func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
-	repoHostName string, repoResources *RepoResources, observedInstances *observedInstances,
+	repoHostName string, repoResources *RepoResources, observedInstances *observedInstances, saName string,
 ) (*appsv1.StatefulSet, error) {
 
 	annotations := naming.Merge(
@@ -687,6 +687,8 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 	repo.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
 
 	repo.Spec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
+
+	repo.Spec.Template.Spec.ServiceAccountName = saName
 
 	pgbackrest.AddServerToRepoPod(ctx, postgresCluster, &repo.Spec.Template.Spec)
 
@@ -1378,10 +1380,18 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		return result, nil
 	}
 
+	// reconcile the RBAC required to run the pgBackRest Repo Host
+	repoHostSA, err := r.reconcileRepoHostRBAC(ctx, postgresCluster)
+	if err != nil {
+		log.Error(err, "unable to reconcile pgBackRest repo host RBAC")
+		result.Requeue = true
+		return result, nil
+	}
+
 	var repoHost *appsv1.StatefulSet
 	var repoHostName string
 	// reconcile the pgbackrest repository host
-	repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources, instances)
+	repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources, instances, repoHostSA.GetName())
 	if err != nil {
 		log.Error(err, "unable to reconcile pgBackRest repo host")
 		result.Requeue = true
@@ -2117,12 +2127,39 @@ func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
 	return sa, nil
 }
 
+// +kubebuilder:rbac:groups="",resources="serviceaccounts",verbs={create,patch}
+
+// reconcileRepoHostRBAC reconciles the ServiceAccount for the pgBackRest repo host
+func (r *Reconciler) reconcileRepoHostRBAC(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster) (*corev1.ServiceAccount, error) {
+
+	sa := &corev1.ServiceAccount{ObjectMeta: naming.RepoHostRBAC(postgresCluster)}
+	sa.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ServiceAccount"))
+
+	if err := r.setControllerReference(postgresCluster, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	sa.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+
+	if err := r.apply(ctx, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return sa, nil
+}
+
 // reconcileDedicatedRepoHost is responsible for reconciling a pgBackRest dedicated repository host
 // StatefulSet according to a specific PostgresCluster custom resource.
 func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoResources *RepoResources,
-	observedInstances *observedInstances) (*appsv1.StatefulSet, error) {
+	observedInstances *observedInstances,
+	saName string) (*appsv1.StatefulSet, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoHost")
 
@@ -2163,7 +2200,7 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	}
 	repoHostName := repoResources.hosts[0].Name
 	repoHost, err := r.applyRepoHostIntent(ctx, postgresCluster, repoHostName, repoResources,
-		observedInstances)
+		observedInstances, saName)
 	if err != nil {
 		log.Error(err, "reconciling repository host")
 		return nil, err
