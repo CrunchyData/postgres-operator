@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -22,6 +23,7 @@ import (
 
 // ConfigMap populates the PgBouncer ConfigMap.
 func ConfigMap(
+	ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	outConfigMap *corev1.ConfigMap,
 ) {
@@ -33,7 +35,7 @@ func ConfigMap(
 	initialize.Map(&outConfigMap.Data)
 
 	outConfigMap.Data[emptyConfigMapKey] = ""
-	outConfigMap.Data[iniFileConfigMapKey] = clusterINI(inCluster)
+	outConfigMap.Data[iniFileConfigMapKey] = clusterINI(ctx, inCluster)
 }
 
 // Secret populates the PgBouncer Secret.
@@ -187,6 +189,11 @@ func Pod(
 	}
 
 	outPod.Volumes = []corev1.Volume{configVolume}
+
+	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		collector.AddToPod(ctx, inCluster, inConfigMap, outPod, []corev1.VolumeMount{configVolumeMount},
+			string(inSecret.Data["pgbouncer-password"]))
+	}
 }
 
 // PostgreSQL populates outHBAs with any records needed to run PgBouncer.

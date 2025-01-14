@@ -1201,7 +1201,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	if err == nil && feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-		collector.AddToPod(ctx, cluster, instanceConfigMap, &instance.Spec.Template.Spec, nil)
+		collector.AddToPod(ctx, cluster, instanceConfigMap, &instance.Spec.Template.Spec, nil, "")
 	}
 
 	// Add pgMonitor resources to the instance Pod spec

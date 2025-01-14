@@ -242,7 +242,7 @@ func (r *Reconciler) Reconcile(
 	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)
 	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
 
-	otelConfig := collector.NewConfigForPostgresPod(ctx)
+	otelConfig := collector.NewConfigForPostgresPod(ctx, cluster)
 
 	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
 	postgres.SetHugePages(cluster, &pgParameters)

@@ -23,7 +23,7 @@ const (
 	// to also be related to the "auth_user".
 	// - https://github.com/pgbouncer/pgbouncer/issues/568
 	// - https://github.com/pgbouncer/pgbouncer/issues/302#issuecomment-815097248
-	postgresqlUser = "_crunchypgbouncer"
+	PostgresqlUser = "_crunchypgbouncer"
 )
 
 // sqlAuthenticationQuery returns the SECURITY DEFINER function that allows
@@ -41,7 +41,7 @@ func sqlAuthenticationQuery(sqlFunctionName string) string {
 		// No replicators.
 		`NOT pg_authid.rolreplication`,
 		// Not the PgBouncer role itself.
-		`pg_authid.rolname <> ` + postgres.QuoteLiteral(postgresqlUser),
+		`pg_authid.rolname <> ` + postgres.QuoteLiteral(PostgresqlUser),
 		// Those without a password expiration or an expiration in the future.
 		`(pg_authid.rolvaliduntil IS NULL OR pg_authid.rolvaliduntil >= CURRENT_TIMESTAMP)`,
 	}, "\n    AND ")
@@ -93,7 +93,7 @@ SELECT pg_catalog.format('DROP OWNED BY %I CASCADE', :'username')
 			`COMMIT;`,
 		}, "\n"),
 		map[string]string{
-			"username":  postgresqlUser,
+			"username":  PostgresqlUser,
 			"namespace": postgresqlSchema,
 
 			"ON_ERROR_STOP": "on", // Abort when any one statement fails.
@@ -108,7 +108,7 @@ SELECT pg_catalog.format('DROP OWNED BY %I CASCADE', :'username')
 			`SELECT pg_catalog.current_database()`,
 			`SET client_min_messages = WARNING; SET synchronous_commit = LOCAL; DROP ROLE IF EXISTS :"username";`,
 			map[string]string{
-				"username": postgresqlUser,
+				"username": PostgresqlUser,
 
 				"ON_ERROR_STOP": "on", // Abort when any one statement fails.
 				"QUIET":         "on", // Do not print successful statements to stdout.
@@ -190,7 +190,7 @@ REVOKE ALL PRIVILEGES
 			`COMMIT;`,
 		}, "\n"),
 		map[string]string{
-			"username":  postgresqlUser,
+			"username":  PostgresqlUser,
 			"namespace": postgresqlSchema,
 			"verifier":  string(clusterSecret.Data[verifierSecretKey]),
 
@@ -225,7 +225,7 @@ func postgresqlHBAs() []*postgres.HostBasedAuthentication {
 	// - https://www.postgresql.org/docs/current/auth-password.html
 
 	return []*postgres.HostBasedAuthentication{
-		postgres.NewHBA().User(postgresqlUser).TLS().Method("scram-sha-256"),
-		postgres.NewHBA().User(postgresqlUser).TCP().Method("reject"),
+		postgres.NewHBA().User(PostgresqlUser).TLS().Method("scram-sha-256"),
+		postgres.NewHBA().User(PostgresqlUser).TCP().Method("reject"),
 	}
 }
