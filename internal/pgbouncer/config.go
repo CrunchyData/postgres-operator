@@ -5,12 +5,14 @@
 package pgbouncer
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -69,12 +71,12 @@ func authFileContents(password string) []byte {
 		return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 	}
 
-	user1 := quote(postgresqlUser) + " " + quote(password) + "\n"
+	user1 := quote(PostgresqlUser) + " " + quote(password) + "\n"
 
 	return []byte(user1)
 }
 
-func clusterINI(cluster *v1beta1.PostgresCluster) string {
+func clusterINI(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
 	var (
 		pgBouncerPort = *cluster.Spec.Proxy.PGBouncer.Port
 		postgresPort  = *cluster.Spec.Port
@@ -97,7 +99,7 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 		// "auth_user" requires a password, PgBouncer reads it from "auth_file".
 		"auth_file":  authFileAbsolutePath,
 		"auth_query": "SELECT username, password from pgbouncer.get_auth($1)",
-		"auth_user":  postgresqlUser,
+		"auth_user":  PostgresqlUser,
 
 		// TODO(cbandy): Use an HBA file to control authentication of PgBouncer
 		// accounts; e.g. "admin_users" below.
@@ -122,6 +124,12 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 
 		// Disable Unix sockets to keep the filesystem read-only.
 		"unix_socket_dir": "",
+	}
+
+	// When OTel metrics are enabled, allow pgbouncer's postgres user
+	// to run read-only console queries on pgBouncer's virtual db
+	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		global["stats_users"] = PostgresqlUser
 	}
 
 	// Override the above with any specified settings.

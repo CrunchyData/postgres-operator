@@ -38,6 +38,7 @@ func AddToPod(
 	inInstanceConfigMap *corev1.ConfigMap,
 	outPod *corev1.PodSpec,
 	volumeMounts []corev1.VolumeMount,
+	sqlQueryPassword string,
 ) {
 	if !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		return
@@ -69,6 +70,12 @@ func AddToPod(
 		Image:           "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.116.1",
 		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
 		Command:         []string{"/otelcol-contrib", "--config", "/etc/otel-collector/config.yaml"},
+		Env: []corev1.EnvVar{
+			{
+				Name:  "PGPASSWORD",
+				Value: sqlQueryPassword,
+			},
+		},
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
 		VolumeMounts:    append(volumeMounts, configVolumeMount),

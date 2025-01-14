@@ -254,16 +254,16 @@ generate-kuttl: ## Generate kuttl tests
 ##@ Generate
 
 .PHONY: check-generate
-check-generate: ## Check crd, deepcopy functions, and rbac generation
-check-generate: generate-crd
-check-generate: generate-deepcopy
-check-generate: generate-rbac
+check-generate: ## Check everything generated is also committed
+check-generate: generate
 	git diff --exit-code -- config/crd
 	git diff --exit-code -- config/rbac
+	git diff --exit-code -- internal/collector
 	git diff --exit-code -- pkg/apis
 
 .PHONY: generate
-generate: ## Generate crd, deepcopy functions, and rbac
+generate: ## Generate everything
+generate: generate-collector
 generate: generate-crd
 generate: generate-deepcopy
 generate: generate-rbac
@@ -275,6 +275,10 @@ generate-crd: tools/controller-gen
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
 		output:dir='config/crd/bases' # {directory}/{group}_{plural}.yaml
+
+.PHONY: generate-collector
+generate-collector: ## Generate OTel Collector files
+	$(GO) generate ./internal/collector
 
 .PHONY: generate-deepcopy
 generate-deepcopy: ## Generate DeepCopy functions
