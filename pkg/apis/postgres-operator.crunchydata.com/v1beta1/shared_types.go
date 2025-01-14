@@ -44,6 +44,12 @@ type ServiceSpec struct {
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
 	Type string `json:"type"`
 
+	// More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/
+	// ---
+	// +optional
+	// +kubebuilder:validation:Enum=SingleStack;PreferDualStack;RequireDualStack
+	IPFamilyPolicy string `json:"ipFamilyPolicy,omitempty"`
+
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
 	// Kubernetes assumes the evaluation cost of an enum value is very large.
