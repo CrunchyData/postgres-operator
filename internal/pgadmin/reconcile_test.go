@@ -316,11 +316,11 @@ volumes:
 				Name: "test",
 			}},
 		}}
-		cluster.Spec.UserInterface.PGAdmin.Config.LDAPBindPassword = &corev1.SecretKeySelector{
-			LocalObjectReference: corev1.LocalObjectReference{
+		cluster.Spec.UserInterface.PGAdmin.Config.LDAPBindPassword = &v1beta1.OptionalSecretKeyRef{
+			SecretKeyRef: v1beta1.SecretKeyRef{
 				Name: "podtest",
+				Key:  "podtestpw",
 			},
-			Key: "podtestpw",
 		}
 
 		call()
