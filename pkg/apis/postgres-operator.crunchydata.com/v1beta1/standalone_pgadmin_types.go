@@ -19,7 +19,7 @@ type StandalonePGAdminConfiguration struct {
 	// A Secret containing the value for the CONFIG_DATABASE_URI setting.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/external_database.html
 	// +optional
-	ConfigDatabaseURI *corev1.SecretKeySelector `json:"configDatabaseURI,omitempty"`
+	ConfigDatabaseURI *OptionalSecretKeyRef `json:"configDatabaseURI,omitempty"`
 
 	// Settings for the gunicorn server.
 	// More info: https://docs.gunicorn.org/en/latest/settings.html
@@ -32,7 +32,7 @@ type StandalonePGAdminConfiguration struct {
 	// A Secret containing the value for the LDAP_BIND_PASSWORD setting.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
 	// +optional
-	LDAPBindPassword *corev1.SecretKeySelector `json:"ldapBindPassword,omitempty"`
+	LDAPBindPassword *OptionalSecretKeyRef `json:"ldapBindPassword,omitempty"`
 
 	// Settings for the pgAdmin server process. Keys should be uppercase and
 	// values must be constants.

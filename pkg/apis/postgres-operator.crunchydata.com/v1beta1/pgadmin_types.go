@@ -17,7 +17,7 @@ type PGAdminConfiguration struct {
 	// A Secret containing the value for the LDAP_BIND_PASSWORD setting.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
 	// +optional
-	LDAPBindPassword *corev1.SecretKeySelector `json:"ldapBindPassword,omitempty"`
+	LDAPBindPassword *OptionalSecretKeyRef `json:"ldapBindPassword,omitempty"`
 
 	// Settings for the pgAdmin server process. Keys should be uppercase and
 	// values must be constants.
