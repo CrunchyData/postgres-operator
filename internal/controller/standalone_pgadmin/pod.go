@@ -229,16 +229,9 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 
 	if pgadmin.Spec.Config.ConfigDatabaseURI != nil {
 		config = append(config, corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: pgadmin.Spec.Config.ConfigDatabaseURI.LocalObjectReference,
-				Optional:             pgadmin.Spec.Config.ConfigDatabaseURI.Optional,
-				Items: []corev1.KeyToPath{
-					{
-						Key:  pgadmin.Spec.Config.ConfigDatabaseURI.Key,
-						Path: configDatabaseURIPath,
-					},
-				},
-			},
+			Secret: initialize.Pointer(
+				pgadmin.Spec.Config.ConfigDatabaseURI.AsProjection(configDatabaseURIPath),
+			),
 		})
 	}
 
@@ -252,16 +245,9 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 	// - https://www.pgadmin.org/docs/pgadmin4/development/enabling_ldap_authentication.html
 	if pgadmin.Spec.Config.LDAPBindPassword != nil {
 		config = append(config, corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: pgadmin.Spec.Config.LDAPBindPassword.LocalObjectReference,
-				Optional:             pgadmin.Spec.Config.LDAPBindPassword.Optional,
-				Items: []corev1.KeyToPath{
-					{
-						Key:  pgadmin.Spec.Config.LDAPBindPassword.Key,
-						Path: ldapFilePath,
-					},
-				},
-			},
+			Secret: initialize.Pointer(
+				pgadmin.Spec.Config.LDAPBindPassword.AsProjection(ldapFilePath),
+			),
 		})
 	}
 

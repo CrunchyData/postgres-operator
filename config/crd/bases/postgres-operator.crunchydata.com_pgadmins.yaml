@@ -973,24 +973,27 @@ spec:
                       More info: https://www.pgadmin.org/docs/pgadmin4/latest/external_database.html
                     properties:
                       key:
-                        description: The key of the secret to select from.  Must be
-                          a valid secret key.
+                        description: Name of the data field within the Secret.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[-._a-zA-Z0-9]+$
                         type: string
+                        x-kubernetes-validations:
+                        - message: cannot be "." or start with ".."
+                          rule: self != "." && !self.startsWith("..")
                       name:
-                        default: ""
-                        description: |-
-                          Name of the referent.
-                          This field is effectively required, but due to backwards compatibility is
-                          allowed to be empty. Instances of this type with an empty value here are
-                          almost certainly wrong.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        description: Name of the Secret.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                         type: string
                       optional:
-                        description: Specify whether the Secret or its key must be
-                          defined
+                        description: Whether or not the Secret or its data must be
+                          defined. Defaults to false.
                         type: boolean
                     required:
                     - key
+                    - name
                     type: object
                     x-kubernetes-map-type: atomic
                   files:
@@ -1327,24 +1330,27 @@ spec:
                       More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
                     properties:
                       key:
-                        description: The key of the secret to select from.  Must be
-                          a valid secret key.
+                        description: Name of the data field within the Secret.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[-._a-zA-Z0-9]+$
                         type: string
+                        x-kubernetes-validations:
+                        - message: cannot be "." or start with ".."
+                          rule: self != "." && !self.startsWith("..")
                       name:
-                        default: ""
-                        description: |-
-                          Name of the referent.
-                          This field is effectively required, but due to backwards compatibility is
-                          allowed to be empty. Instances of this type with an empty value here are
-                          almost certainly wrong.
-                          More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        description: Name of the Secret.
+                        maxLength: 253
+                        minLength: 1
+                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                         type: string
                       optional:
-                        description: Specify whether the Secret or its key must be
-                          defined
+                        description: Whether or not the Secret or its data must be
+                          defined. Defaults to false.
                         type: boolean
                     required:
                     - key
+                    - name
                     type: object
                     x-kubernetes-map-type: atomic
                   settings:

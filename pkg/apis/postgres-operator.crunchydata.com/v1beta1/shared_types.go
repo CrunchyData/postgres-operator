@@ -14,6 +14,25 @@ import (
 )
 
 // ---
+// https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsConfigMapKey
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=253
+// +kubebuilder:validation:Pattern=`^[-._a-zA-Z0-9]+$`
+// +kubebuilder:validation:XValidation:rule=`self != "." && !self.startsWith("..")`,message=`cannot be "." or start with ".."`
+type ConfigDataKey = string
+
+// ---
+// https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
+// https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsDNS1123Subdomain
+// https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Format
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=253
+// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+type DNS1123Subdomain = string
+
+// ---
 // Duration represents a string accepted by the Kubernetes API in the "duration"
 // [format]. This format extends the "duration" [defined by OpenAPI] by allowing
 // some whitespace and more units:
