@@ -271,6 +271,18 @@ func (r *Reconciler) generatePatroniLeaderLeaseService(
 		}
 		service.Spec.ExternalTrafficPolicy = initialize.FromPointer(spec.ExternalTrafficPolicy)
 		service.Spec.InternalTrafficPolicy = spec.InternalTrafficPolicy
+
+		// Set IPFamilyPolicy and IPFamilies
+		if spec.IPFamilyPolicy != "" {
+			policy := corev1.IPFamilyPolicyType(spec.IPFamilyPolicy)
+			service.Spec.IPFamilyPolicy = &policy
+		}
+		if len(spec.IPFamilies) > 0 {
+			service.Spec.IPFamilies = []corev1.IPFamily{}
+			for _, family := range spec.IPFamilies {
+				service.Spec.IPFamilies = append(service.Spec.IPFamilies, corev1.IPFamily(family))
+			}
+		}
 	}
 	service.Spec.Ports = []corev1.ServicePort{servicePort}
 

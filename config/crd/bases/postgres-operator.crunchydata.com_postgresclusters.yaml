@@ -14663,6 +14663,21 @@ spec:
                             - Local
                             maxLength: 10
                             type: string
+                          ipFamilies:
+                            items:
+                              enum:
+                              - IPv4
+                              - IPv6
+                              - foo
+                              type: string
+                            type: array
+                          ipFamilyPolicy:
+                            description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
+                            enum:
+                            - SingleStack
+                            - PreferDualStack
+                            - RequireDualStack
+                            type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
                             properties:
@@ -15005,6 +15020,21 @@ spec:
                     - Local
                     maxLength: 10
                     type: string
+                  ipFamilies:
+                    items:
+                      enum:
+                      - IPv4
+                      - IPv6
+                      - foo
+                      type: string
+                    type: array
+                  ipFamilyPolicy:
+                    description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
+                    enum:
+                    - SingleStack
+                    - PreferDualStack
+                    - RequireDualStack
+                    type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
                     properties:
@@ -15052,6 +15082,21 @@ spec:
                     - Cluster
                     - Local
                     maxLength: 10
+                    type: string
+                  ipFamilies:
+                    items:
+                      enum:
+                      - IPv4
+                      - IPv6
+                      - foo
+                      type: string
+                    type: array
+                  ipFamilyPolicy:
+                    description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
+                    enum:
+                    - SingleStack
+                    - PreferDualStack
+                    - RequireDualStack
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -16748,6 +16793,21 @@ spec:
                             - Cluster
                             - Local
                             maxLength: 10
+                            type: string
+                          ipFamilies:
+                            items:
+                              enum:
+                              - IPv4
+                              - IPv6
+                              - foo
+                              type: string
+                            type: array
+                          ipFamilyPolicy:
+                            description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
+                            enum:
+                            - SingleStack
+                            - PreferDualStack
+                            - RequireDualStack
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources

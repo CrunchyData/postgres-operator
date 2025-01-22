@@ -20,7 +20,11 @@ type SchemalessObject map[string]any
 // DeepCopy creates a new SchemalessObject by copying the receiver.
 func (in SchemalessObject) DeepCopy() SchemalessObject {
 	return runtime.DeepCopyJSON(in)
+
 }
+
+// +kubebuilder:validation:Enum=IPv4;IPv6;foo
+type IPFamily string
 
 type ServiceSpec struct {
 	// +optional
@@ -43,6 +47,15 @@ type ServiceSpec struct {
 	// +kubebuilder:default=ClusterIP
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
 	Type string `json:"type"`
+
+	// More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/
+	// ---
+	// +optional
+	// +kubebuilder:validation:Enum=SingleStack;PreferDualStack;RequireDualStack
+	IPFamilyPolicy string `json:"ipFamilyPolicy,omitempty"`
+
+	// +optional
+	IPFamilies []IPFamily `json:"ipFamilies,omitempty"`
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
