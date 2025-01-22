@@ -38,8 +38,6 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'govulncheck-results.sarif'
-        # TODO: https://go.dev/issue/70157
-        if: ${{ false }}
 
       # Print any detected vulnerabilities to the workflow log. This step fails
       # when the tool detects a vulnerability in code that is called.
