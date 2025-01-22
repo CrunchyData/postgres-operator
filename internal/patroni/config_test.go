@@ -191,6 +191,7 @@ log:
   file_num: 1
   file_size: 500
   level: DEBUG
+  mode: "0660"
   type: json
 postgresql:
   authentication:
