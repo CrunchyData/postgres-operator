@@ -168,6 +168,11 @@ func clusterYAML(
 			// defaults to "INFO"
 			"level": cluster.Spec.Patroni.Logging.Level,
 
+			// Setting group read permissions so that the OTel filelog receiver can
+			// read the log files.
+			// NOTE: This log configuration setting is only available in Patroni v4
+			"mode": "0660",
+
 			// There will only be two log files. Cannot set to 1 or the logs won't rotate.
 			// - https://github.com/python/cpython/blob/3.11/Lib/logging/handlers.py#L134
 			"file_num": 1,
