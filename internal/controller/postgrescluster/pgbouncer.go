@@ -98,7 +98,9 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 	if err == nil {
 		pgbouncer.ConfigMap(ctx, cluster, configmap)
 	}
-	if otelConfig != nil && feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	// If OTel logging or metrics is enabled, add collector config
+	if otelConfig != nil &&
+		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		err = collector.AddToConfigMap(ctx, otelConfig, configmap)
 	}
 	if err == nil {

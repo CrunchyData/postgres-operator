@@ -40,7 +40,7 @@ func AddToPod(
 	volumeMounts []corev1.VolumeMount,
 	sqlQueryPassword string,
 ) {
-	if !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if !(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		return
 	}
 
@@ -67,10 +67,22 @@ func AddToPod(
 	container := corev1.Container{
 		Name: naming.ContainerCollector,
 
-		Image:           "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.116.1",
+		Image:           "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.117.0",
 		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
 		Command:         []string{"/otelcol-contrib", "--config", "/etc/otel-collector/config.yaml"},
 		Env: []corev1.EnvVar{
+			{
+				Name: "K8S_POD_NAMESPACE",
+				ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.namespace",
+				}},
+			},
+			{
+				Name: "K8S_POD_NAME",
+				ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				}},
+			},
 			{
 				Name:  "PGPASSWORD",
 				Value: sqlQueryPassword,
@@ -81,11 +93,13 @@ func AddToPod(
 		VolumeMounts:    append(volumeMounts, configVolumeMount),
 	}
 
-	container.Ports = []corev1.ContainerPort{{
-		ContainerPort: int32(8889),
-		Name:          "otel-metrics",
-		Protocol:      corev1.ProtocolTCP,
-	}}
+	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		container.Ports = []corev1.ContainerPort{{
+			ContainerPort: int32(8889),
+			Name:          "otel-metrics",
+			Protocol:      corev1.ProtocolTCP,
+		}}
+	}
 
 	outPod.Containers = append(outPod.Containers, container)
 	outPod.Volumes = append(outPod.Volumes, configVolume)
