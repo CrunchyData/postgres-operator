@@ -23,7 +23,7 @@ func (in SchemalessObject) DeepCopy() SchemalessObject {
 
 }
 
-// +kubebuilder:validation:Enum=IPv4;IPv6;foo
+// +kubebuilder:validation:Enum=IPv4;IPv6
 type IPFamily string
 
 type ServiceSpec struct {
