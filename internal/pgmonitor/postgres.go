@@ -79,6 +79,10 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 			// - https://www.postgresql.org/docs/current/runtime-config-client.html
 			`SET client_min_messages = WARNING;`,
 
+			// Do not wait for changes to be replicated. [Since PostgreSQL v9.1]
+			// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+			`SET synchronous_commit = LOCAL;`,
+
 			// Exporter expects that extension(s) to be installed in all databases
 			// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
 			"CREATE EXTENSION IF NOT EXISTS pg_stat_statements;",
@@ -102,6 +106,10 @@ func EnableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor,
 				// Quiet NOTICE messages from IF EXISTS statements.
 				// - https://www.postgresql.org/docs/current/runtime-config-client.html
 				`SET client_min_messages = WARNING;`,
+
+				// Do not wait for changes to be replicated. [Since PostgreSQL v9.1]
+				// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+				`SET synchronous_commit = LOCAL;`,
 
 				// Setup.sql file from the exporter image. sql is specific
 				// to the PostgreSQL version

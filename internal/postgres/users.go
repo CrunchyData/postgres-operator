@@ -69,6 +69,10 @@ func WriteUsersInPostgreSQL(
 	var err error
 	var sql bytes.Buffer
 
+	// Do not wait for changes to be replicated. [Since PostgreSQL v9.1]
+	// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+	_, _ = sql.WriteString(`SET synchronous_commit = LOCAL;`)
+
 	// Prevent unexpected dereferences by emptying "search_path". The "pg_catalog"
 	// schema is still searched, and only temporary objects can be created.
 	// - https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-SEARCH-PATH
@@ -218,6 +222,10 @@ func WriteUsersSchemasInPostgreSQL(ctx context.Context, exec Executor,
 				// Quiet NOTICE messages from IF EXISTS statements.
 				// - https://www.postgresql.org/docs/current/runtime-config-client.html
 				`SET client_min_messages = WARNING;`,
+
+				// Do not wait for changes to be replicated. [Since PostgreSQL v9.1]
+				// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+				`SET synchronous_commit = LOCAL;`,
 
 				// Creates a schema named after and owned by the user
 				// - https://www.postgresql.org/docs/current/ddl-schemas.html
