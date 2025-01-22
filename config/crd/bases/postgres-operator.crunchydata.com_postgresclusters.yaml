@@ -14663,6 +14663,14 @@ spec:
                             - Local
                             maxLength: 10
                             type: string
+                          ipFamilies:
+                            items:
+                              enum:
+                              - IPv4
+                              - IPv6
+                              - foo
+                              type: string
+                            type: array
                           ipFamilyPolicy:
                             description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
                             enum:
@@ -15012,6 +15020,14 @@ spec:
                     - Local
                     maxLength: 10
                     type: string
+                  ipFamilies:
+                    items:
+                      enum:
+                      - IPv4
+                      - IPv6
+                      - foo
+                      type: string
+                    type: array
                   ipFamilyPolicy:
                     description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
                     enum:
@@ -15067,6 +15083,14 @@ spec:
                     - Local
                     maxLength: 10
                     type: string
+                  ipFamilies:
+                    items:
+                      enum:
+                      - IPv4
+                      - IPv6
+                      - foo
+                      type: string
+                    type: array
                   ipFamilyPolicy:
                     description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
                     enum:
@@ -16770,6 +16794,14 @@ spec:
                             - Local
                             maxLength: 10
                             type: string
+                          ipFamilies:
+                            items:
+                              enum:
+                              - IPv4
+                              - IPv6
+                              - foo
+                              type: string
+                            type: array
                           ipFamilyPolicy:
                             description: 'More info: https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/'
                             enum:
