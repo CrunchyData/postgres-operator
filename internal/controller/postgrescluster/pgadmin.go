@@ -184,11 +184,17 @@ func (r *Reconciler) generatePGAdminService(
 		service.Spec.ExternalTrafficPolicy = initialize.FromPointer(spec.ExternalTrafficPolicy)
 		service.Spec.InternalTrafficPolicy = spec.InternalTrafficPolicy
 
-		// Default to SingleStack if IP Family Policy is not defined
-		if spec.IPFamilyPolicy == "" {
-			spec.IPFamilyPolicy = "SingleStack"
+		// Set IPFamilyPolicy and IPFamilies
+		if spec.IPFamilyPolicy != "" {
+			policy := corev1.IPFamilyPolicyType(spec.IPFamilyPolicy)
+			service.Spec.IPFamilyPolicy = &policy
 		}
-		service.Spec.IPFamilyPolicy = (*corev1.IPFamilyPolicy)(&spec.IPFamilyPolicy)
+		if len(spec.IPFamilies) > 0 {
+			service.Spec.IPFamilies = []corev1.IPFamily{}
+			for _, family := range spec.IPFamilies {
+				service.Spec.IPFamilies = append(service.Spec.IPFamilies, corev1.IPFamily(family))
+			}
+		}
 	}
 	service.Spec.Ports = []corev1.ServicePort{servicePort}
 
