@@ -14668,7 +14668,6 @@ spec:
                               enum:
                               - IPv4
                               - IPv6
-                              - foo
                               type: string
                             type: array
                           ipFamilyPolicy:
@@ -15025,7 +15024,6 @@ spec:
                       enum:
                       - IPv4
                       - IPv6
-                      - foo
                       type: string
                     type: array
                   ipFamilyPolicy:
@@ -15088,7 +15086,6 @@ spec:
                       enum:
                       - IPv4
                       - IPv6
-                      - foo
                       type: string
                     type: array
                   ipFamilyPolicy:
@@ -16799,7 +16796,6 @@ spec:
                               enum:
                               - IPv4
                               - IPv6
-                              - foo
                               type: string
                             type: array
                           ipFamilyPolicy:
