@@ -273,6 +273,8 @@ initContainers:
     results 'Patroni log directory' "${patroniLog_directory}"
     install --directory --mode=0775 "${patroniLog_directory}" ||
     halt "$(permissions "${patroniLog_directory}" ||:)"
+    install --directory --mode=0775 /pgdata/logs/postgres ||
+    halt "$(permissions /pgdata/logs/postgres ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
 
 

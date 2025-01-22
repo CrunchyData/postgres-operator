@@ -86,6 +86,12 @@ func DataDirectory(cluster *v1beta1.PostgresCluster) string {
 	return fmt.Sprintf("%s/pg%d", dataMountPath, cluster.Spec.PostgresVersion)
 }
 
+// LogDirectory returns the absolute path to the "log_directory" of cluster.
+// - https://www.postgresql.org/docs/current/runtime-config-logging.html
+func LogDirectory() string {
+	return fmt.Sprintf("%s/logs/postgres", dataMountPath)
+}
+
 // WALDirectory returns the absolute path to the directory where an instance
 // stores its WAL files.
 // - https://www.postgresql.org/docs/current/wal.html
@@ -373,6 +379,9 @@ chmod +x /tmp/pg_rewind_tde.sh
 		`results 'Patroni log directory' "${patroniLog_directory}"`,
 		`install --directory --mode=0775 "${patroniLog_directory}" ||`,
 		`halt "$(permissions "${patroniLog_directory}" ||:)"`,
+
+		`install --directory --mode=0775 ` + LogDirectory() + ` ||`,
+		`halt "$(permissions ` + LogDirectory() + ` ||:)"`,
 
 		// Copy replication client certificate files
 		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order

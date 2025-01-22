@@ -1200,8 +1200,10 @@ func (r *Reconciler) reconcileInstance(
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
-	if err == nil && feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-		collector.AddToPod(ctx, cluster, instanceConfigMap, &instance.Spec.Template.Spec, nil, "")
+	if err == nil &&
+		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		collector.AddToPod(ctx, cluster, instanceConfigMap, &instance.Spec.Template.Spec,
+			[]corev1.VolumeMount{postgres.DataVolumeMount()}, "")
 	}
 
 	// Add pgMonitor resources to the instance Pod spec
@@ -1405,7 +1407,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 			naming.LabelInstance:    instance.Name,
 		})
 
-	if err == nil && feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if err == nil && (feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		err = collector.AddToConfigMap(ctx, otelConfig, instanceConfigMap)
 	}
 	if err == nil {
