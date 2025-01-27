@@ -727,10 +727,6 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 }
 
 func TestReconcileRepoHostRBAC(t *testing.T) {
-	// Garbage collector cleans up test resources before the test completes
-	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
-		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
-	}
 
 	ctx := context.Background()
 	_, tClient := setupKubernetes(t)
@@ -745,6 +741,15 @@ func TestReconcileRepoHostRBAC(t *testing.T) {
 
 	// create a PostgresCluster to test with
 	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
+	// create an example AWS ARN annotation
+	annotations := map[string]string{
+		"eks.amazonaws.com/role-arn": "arn:aws:iam::123456768901:role/allow_bucket_access",
+	}
+	// set the annotation on the cluster
+	postgresCluster.Spec.Metadata = &v1beta1.Metadata{
+		Annotations: annotations,
+	}
+
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
@@ -760,6 +765,7 @@ func TestReconcileRepoHostRBAC(t *testing.T) {
 		Namespace: postgresCluster.GetNamespace(),
 	}, sa)
 	assert.NilError(t, err)
+	assert.DeepEqual(t, sa.Annotations, annotations)
 }
 
 func TestReconcileStanzaCreate(t *testing.T) {
