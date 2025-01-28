@@ -23,9 +23,6 @@ func (in SchemalessObject) DeepCopy() SchemalessObject {
 
 }
 
-// +kubebuilder:validation:Enum=IPv4;IPv6
-type IPFamily string
-
 type ServiceSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
@@ -52,10 +49,11 @@ type ServiceSpec struct {
 	// ---
 	// +optional
 	// +kubebuilder:validation:Enum=SingleStack;PreferDualStack;RequireDualStack
-	IPFamilyPolicy string `json:"ipFamilyPolicy,omitempty"`
+	IPFamilyPolicy *corev1.IPFamilyPolicy `json:"ipFamilyPolicy,omitempty"`
 
 	// +optional
-	IPFamilies []IPFamily `json:"ipFamilies,omitempty"`
+	// +kubebuilder:validation:items:Enum={IPv4,IPv6}
+	IPFamilies []corev1.IPFamily `json:"ipFamilies,omitempty"`
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---

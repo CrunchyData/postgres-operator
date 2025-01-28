@@ -14665,6 +14665,9 @@ spec:
                             type: string
                           ipFamilies:
                             items:
+                              description: |-
+                                IPFamily represents the IP Family (IPv4 or IPv6). This type is used
+                                to express the family of an IP expressed by a type (e.g. service.spec.ipFamilies).
                               enum:
                               - IPv4
                               - IPv6
@@ -15021,6 +15024,9 @@ spec:
                     type: string
                   ipFamilies:
                     items:
+                      description: |-
+                        IPFamily represents the IP Family (IPv4 or IPv6). This type is used
+                        to express the family of an IP expressed by a type (e.g. service.spec.ipFamilies).
                       enum:
                       - IPv4
                       - IPv6
@@ -15083,6 +15089,9 @@ spec:
                     type: string
                   ipFamilies:
                     items:
+                      description: |-
+                        IPFamily represents the IP Family (IPv4 or IPv6). This type is used
+                        to express the family of an IP expressed by a type (e.g. service.spec.ipFamilies).
                       enum:
                       - IPv4
                       - IPv6
@@ -16793,6 +16802,9 @@ spec:
                             type: string
                           ipFamilies:
                             items:
+                              description: |-
+                                IPFamily represents the IP Family (IPv4 or IPv6). This type is used
+                                to express the family of an IP expressed by a type (e.g. service.spec.ipFamilies).
                               enum:
                               - IPv4
                               - IPv6

@@ -2213,9 +2213,14 @@ func (in *ServiceSpec) DeepCopyInto(out *ServiceSpec) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.IPFamilyPolicy != nil {
+		in, out := &in.IPFamilyPolicy, &out.IPFamilyPolicy
+		*out = new(corev1.IPFamilyPolicy)
+		**out = **in
+	}
 	if in.IPFamilies != nil {
 		in, out := &in.IPFamilies, &out.IPFamilies
-		*out = make([]IPFamily, len(*in))
+		*out = make([]corev1.IPFamily, len(*in))
 		copy(*out, *in)
 	}
 	if in.InternalTrafficPolicy != nil {
