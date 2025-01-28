@@ -342,18 +342,6 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 					delete = false
 				}
 			}
-		case hasLabel(naming.LabelPGBackRestBackup):
-			if !backupsSpecFound {
-				break
-			}
-			// If a Job is identified for a repo that no longer exists in the spec then
-			// delete it.  Otherwise add it to the slice and continue.
-			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
-					ownedNoDelete = append(ownedNoDelete, owned)
-					delete = false
-				}
-			}
 		case hasLabel(naming.LabelPGBackRestCronJob):
 			if !backupsSpecFound {
 				break
@@ -366,6 +354,18 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 						ownedNoDelete = append(ownedNoDelete, owned)
 					}
 					break
+				}
+			}
+		case hasLabel(naming.LabelPGBackRestBackup):
+			if !backupsSpecFound {
+				break
+			}
+			// If a Job is identified for a repo that no longer exists in the spec then
+			// delete it.  Otherwise add it to the slice and continue.
+			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
+					ownedNoDelete = append(ownedNoDelete, owned)
+					delete = false
 				}
 			}
 		case hasLabel(naming.LabelPGBackRestRestore):
