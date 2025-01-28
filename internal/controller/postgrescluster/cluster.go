@@ -273,10 +273,7 @@ func (r *Reconciler) generateClusterReplicaService(
 			service.Spec.IPFamilyPolicy = spec.IPFamilyPolicy
 		}
 		if len(spec.IPFamilies) > 0 {
-			service.Spec.IPFamilies = []corev1.IPFamily{}
-			for _, family := range spec.IPFamilies {
-				service.Spec.IPFamilies = append(service.Spec.IPFamilies, corev1.IPFamily(family))
-			}
+			service.Spec.IPFamilies = spec.IPFamilies
 		}
 
 	}
