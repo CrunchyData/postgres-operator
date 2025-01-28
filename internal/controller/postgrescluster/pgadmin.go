@@ -185,9 +185,8 @@ func (r *Reconciler) generatePGAdminService(
 		service.Spec.InternalTrafficPolicy = spec.InternalTrafficPolicy
 
 		// Set IPFamilyPolicy and IPFamilies
-		if spec.IPFamilyPolicy != "" {
-			policy := corev1.IPFamilyPolicyType(spec.IPFamilyPolicy)
-			service.Spec.IPFamilyPolicy = &policy
+		if spec.IPFamilyPolicy != nil {
+			service.Spec.IPFamilyPolicy = spec.IPFamilyPolicy
 		}
 		if len(spec.IPFamilies) > 0 {
 			service.Spec.IPFamilies = []corev1.IPFamily{}
