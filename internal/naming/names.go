@@ -155,6 +155,9 @@ const (
 	// dedicated repo host, if configured.
 	PGBackRestRepoLogPath = "/pgbackrest/%s/log"
 
+	// PGBouncerLogPath is the pgBouncer default log path configuration
+	PGBouncerLogPath = "/tmp"
+
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
