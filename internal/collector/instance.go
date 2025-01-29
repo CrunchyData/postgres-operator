@@ -12,7 +12,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // AddToConfigMap populates the shared ConfigMap with fields needed to run the Collector.
@@ -34,7 +33,7 @@ func AddToConfigMap(
 // AddToPod adds the OpenTelemetry collector container to a given Pod
 func AddToPod(
 	ctx context.Context,
-	inCluster *v1beta1.PostgresCluster,
+	pullPolicy corev1.PullPolicy,
 	inInstanceConfigMap *corev1.ConfigMap,
 	outPod *corev1.PodSpec,
 	volumeMounts []corev1.VolumeMount,
@@ -65,10 +64,9 @@ func AddToPod(
 	}
 
 	container := corev1.Container{
-		Name: naming.ContainerCollector,
-
+		Name:            naming.ContainerCollector,
 		Image:           "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.117.0",
-		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
+		ImagePullPolicy: pullPolicy,
 		Command:         []string{"/otelcol-contrib", "--config", "/etc/otel-collector/config.yaml"},
 		Env: []corev1.EnvVar{
 			{

@@ -18,6 +18,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -32,6 +33,12 @@ func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 	clusters map[string][]*v1beta1.PostgresCluster,
 ) (*corev1.ConfigMap, error) {
 	configmap, err := configmap(pgadmin, clusters)
+	if err != nil {
+		return configmap, err
+	}
+
+	err = collector.EnablePgAdminLogging(ctx, configmap)
+
 	if err == nil {
 		err = errors.WithStack(r.setControllerReference(pgadmin, configmap))
 	}
