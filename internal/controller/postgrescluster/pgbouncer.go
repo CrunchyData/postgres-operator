@@ -465,6 +465,9 @@ func (r *Reconciler) generatePGBouncerDeployment(
 		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)
 	}
 
+	// Add tmp directory and volume for log files
+	addTMPEmptyDir(&deploy.Spec.Template)
+
 	return deploy, true, err
 }
 

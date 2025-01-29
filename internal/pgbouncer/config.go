@@ -126,7 +126,12 @@ func clusterINI(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
 		"unix_socket_dir": "",
 	}
 
-	// When OTel metrics are enabled, allow pgbouncer's postgres user
+	// If OpenTelemetryLogs feature is enabled, enable logging to file
+	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+		global["logfile"] = naming.PGBouncerLogPath + "/pgbouncer.log"
+	}
+
+	// When OTel metrics are enabled, allow pgBouncer's postgres user
 	// to run read-only console queries on pgBouncer's virtual db
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		global["stats_users"] = PostgresqlUser
