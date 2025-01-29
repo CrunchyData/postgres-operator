@@ -306,6 +306,14 @@ func (r *Reconciler) generatePGBouncerService(
 		}
 		service.Spec.ExternalTrafficPolicy = initialize.FromPointer(spec.ExternalTrafficPolicy)
 		service.Spec.InternalTrafficPolicy = spec.InternalTrafficPolicy
+
+		// Set IPFamilyPolicy and IPFamilies
+		if spec.IPFamilyPolicy != nil {
+			service.Spec.IPFamilyPolicy = spec.IPFamilyPolicy
+		}
+		if len(spec.IPFamilies) > 0 {
+			service.Spec.IPFamilies = spec.IPFamilies
+		}
 	}
 	service.Spec.Ports = []corev1.ServicePort{servicePort}
 
