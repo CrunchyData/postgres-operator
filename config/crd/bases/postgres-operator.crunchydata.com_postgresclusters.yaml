@@ -6646,6 +6646,11 @@ spec:
                     - repo
                     - stanza
                     type: object
+                    x-kubernetes-validations:
+                    - fieldPath: .repo
+                      message: Only S3, GCS or Azure repos can be used as a pgBackRest
+                        data source.
+                      rule: '!has(self.repo.volume)'
                   postgresCluster:
                     description: |-
                       Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL data
