@@ -17,6 +17,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	pwd "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -52,14 +53,22 @@ func Secret(ctx context.Context,
 	var err error
 	initialize.Map(&outSecret.Data)
 
-	// Use the existing password and verifier. Generate both when either is missing.
+	// Use the existing password and verifier. Generate when one is missing.
 	// NOTE(cbandy): We don't have a function to compare a plaintext password
 	// to a SCRAM verifier.
 	password := string(inSecret.Data[passwordSecretKey])
 	verifier := string(inSecret.Data[verifierSecretKey])
 
-	if err == nil && (len(password) == 0 || len(verifier) == 0) {
+	// If the password is empty, generate a new one.
+	// The user may not have provided a SCRAM verifier.
+	if err == nil && len(password) == 0 {
 		password, verifier, err = generatePassword()
+		err = errors.WithStack(err)
+	}
+
+	// If the verifier is empty, generate a new one.
+	if err == nil && len(verifier) == 0 {
+		verifier, err = pwd.NewSCRAMPassword(password).Build()
 		err = errors.WithStack(err)
 	}
 
