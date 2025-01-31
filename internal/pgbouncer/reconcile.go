@@ -60,9 +60,9 @@ func Secret(ctx context.Context,
 	verifier := string(inSecret.Data[verifierSecretKey])
 
 	// If the password is empty, generate a new one.
-	// The user may not have provided a SCRAM verifier.
+	// Ignore the verifier for now.
 	if err == nil && len(password) == 0 {
-		password, verifier, err = generatePassword()
+		password, _, err = generatePassword()
 		err = errors.WithStack(err)
 	}
 
