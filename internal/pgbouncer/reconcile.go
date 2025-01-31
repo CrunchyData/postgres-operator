@@ -17,7 +17,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	pwd "github.com/crunchydata/postgres-operator/internal/postgres/password"
+	passwd "github.com/crunchydata/postgres-operator/internal/postgres/password"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -62,13 +63,13 @@ func Secret(ctx context.Context,
 	// If the password is empty, generate a new one.
 	// Ignore the verifier for now.
 	if err == nil && len(password) == 0 {
-		password, _, err = generatePassword()
+		password, err = util.GenerateASCIIPassword(32)
 		err = errors.WithStack(err)
 	}
 
 	// If the verifier is empty, generate a new one.
 	if err == nil && len(verifier) == 0 {
-		verifier, err = pwd.NewSCRAMPassword(password).Build()
+		verifier, err = passwd.NewSCRAMPassword(password).Build()
 		err = errors.WithStack(err)
 	}
 
