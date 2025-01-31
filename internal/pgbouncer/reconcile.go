@@ -55,6 +55,12 @@ func Secret(ctx context.Context,
 	initialize.Map(&outSecret.Data)
 
 	// Use the existing password and verifier. Generate when one is missing.
+	// PgBouncer can login to PostgreSQL using either MD5 or SCRAM-SHA-256.
+	// When using MD5, the (hashed) verifier can be stored in PgBouncer's
+	// authentication file. When using SCRAM, the plaintext password must be
+	// stored.
+	// - https://www.pgbouncer.org/config.html#authentication-file-format
+	// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
 	// NOTE(cbandy): We don't have a function to compare a plaintext password
 	// to a SCRAM verifier.
 	password := string(inSecret.Data[passwordSecretKey])
