@@ -39,6 +39,10 @@ exporters:
   debug:
     verbosity: detailed
 extensions:
+  file_storage/pgbackrest_logs:
+    create_directory: true
+    directory: /pgdata/pgbackrest/log/receiver
+    fsync: true
   file_storage/postgres_logs:
     create_directory: true
     directory: /pgdata/logs/postgres/receiver
@@ -49,6 +53,17 @@ processors:
   batch/200ms:
     timeout: 200ms
   groupbyattrs/compact: {}
+  resource/pgbackrest:
+    attributes:
+    - action: insert
+      key: k8s.container.name
+      value: database
+    - action: insert
+      key: k8s.namespace.name
+      value: ${env:K8S_POD_NAMESPACE}
+    - action: insert
+      key: k8s.pod.name
+      value: ${env:K8S_POD_NAME}
   resource/postgres:
     attributes:
     - action: insert
@@ -66,6 +81,26 @@ processors:
     - action: insert
       key: db.version
       value: "99"
+  transform/pgbackrest_logs:
+    log_statements:
+    - context: log
+      statements:
+      - set(instrumentation_scope.name, "pgbackrest")
+      - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
+      - 'merge_maps(cache, ExtractPatterns(body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
+        \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (?<process_id>P\\d{2,3})\\s*(?<error_severity>\\S*):
+        (?<message>(?s).*)$"), "insert") where Len(body) > 0'
+      - set(severity_text, cache["error_severity"]) where IsString(cache["error_severity"])
+      - set(severity_number, SEVERITY_NUMBER_TRACE) where severity_text == "TRACE"
+      - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "DEBUG"
+      - set(severity_number, SEVERITY_NUMBER_DEBUG2) where severity_text == "DETAIL"
+      - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "INFO"
+      - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text == "WARN"
+      - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "ERROR"
+      - set(time, Time(cache["timestamp"], "%Y-%m-%d %H:%M:%S.%L")) where IsString(cache["timestamp"])
+      - set(attributes["process.pid"], cache["process_id"])
+      - set(attributes["log.record.original"], body)
+      - set(body, cache["message"])
   transform/postgres_logs:
     log_statements:
     - conditions:
@@ -146,6 +181,12 @@ processors:
         delimiter=",", mode="strict"))
       - set(instrumentation_scope.name, "pgaudit") where Len(body["pgaudit"]) > 0
 receivers:
+  filelog/pgbackrest_log:
+    include:
+    - /pgdata/pgbackrest/log/*.log
+    multiline:
+      line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}|^-{19}
+    storage: file_storage/pgbackrest_logs
   filelog/postgres_csvlog:
     include:
     - /pgdata/logs/postgres/*.csv
@@ -175,8 +216,19 @@ receivers:
     storage: file_storage/postgres_logs
 service:
   extensions:
+  - file_storage/pgbackrest_logs
   - file_storage/postgres_logs
   pipelines:
+    logs/pgbackrest:
+      exporters:
+      - debug
+      processors:
+      - resource/pgbackrest
+      - transform/pgbackrest_logs
+      - batch/200ms
+      - groupbyattrs/compact
+      receivers:
+      - filelog/pgbackrest_log
     logs/postgres:
       exporters:
       - debug
