@@ -202,5 +202,59 @@ func EnablePostgresLogging(
 			},
 			Exporters: []ComponentID{DebugExporter},
 		}
+
+		// pgBackRest pipeline
+		outConfig.Extensions["file_storage/pgbackrest_logs"] = map[string]any{
+			"directory":        naming.PGBackRestPGDataLogPath + "/receiver",
+			"create_directory": true,
+			"fsync":            true,
+		}
+
+		outConfig.Receivers["filelog/pgbackrest_log"] = map[string]any{
+			"include": []string{naming.PGBackRestPGDataLogPath + "/*.log"},
+			"storage": "file_storage/pgbackrest_logs",
+
+			// pgBackRest prints logs with a log prefix, which includes a timestamp
+			// as long as the timestamp is not turned off in the configuration.
+			// When pgBackRest starts a process, it also will print a newline
+			// (if the file has already been written to) and a process "banner"
+			// which looks like "-------------------PROCESS START-------------------\n".
+			// Therefore we break multiline on the timestamp or the 19 dashes that start the banner.
+			// - https://github.com/pgbackrest/pgbackrest/blob/main/src/common/log.c#L451
+			"multiline": map[string]string{
+				"line_start_pattern": `^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}|^-{19}`,
+			},
+		}
+
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/resourceprocessor#readme
+		outConfig.Processors["resource/pgbackrest"] = map[string]any{
+			"attributes": []map[string]any{
+				// Container and Namespace names need no escaping because they are DNS labels.
+				// Pod names need no escaping because they are DNS subdomains.
+				//
+				// https://kubernetes.io/docs/concepts/overview/working-with-objects/names
+				// https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/resource/k8s.md
+				{"action": "insert", "key": "k8s.container.name", "value": naming.ContainerDatabase},
+				{"action": "insert", "key": "k8s.namespace.name", "value": "${env:K8S_POD_NAMESPACE}"},
+				{"action": "insert", "key": "k8s.pod.name", "value": "${env:K8S_POD_NAME}"},
+			},
+		}
+
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/transformprocessor#readme
+		outConfig.Processors["transform/pgbackrest_logs"] = map[string]any{
+			"log_statements": slices.Clone(pgBackRestLogsTransforms),
+		}
+
+		outConfig.Pipelines["logs/pgbackrest"] = Pipeline{
+			Extensions: []ComponentID{"file_storage/pgbackrest_logs"},
+			Receivers:  []ComponentID{"filelog/pgbackrest_log"},
+			Processors: []ComponentID{
+				"resource/pgbackrest",
+				"transform/pgbackrest_logs",
+				SubSecondBatchProcessor,
+				CompactingProcessor,
+			},
+			Exporters: []ComponentID{DebugExporter},
+		}
 	}
 }

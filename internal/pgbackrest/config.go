@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -66,9 +67,11 @@ const (
 // pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
-func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
+func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
-	instanceNames []string) *corev1.ConfigMap {
+	instanceNames []string) (*corev1.ConfigMap, error) {
+
+	var err error
 
 	meta := naming.PGBackRestConfig(postgresCluster)
 	meta.Annotations = naming.Merge(
@@ -123,11 +126,16 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
 			).String()
+
+		err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
+			ctx,
+			postgresCluster.Spec.Backups.PGBackRest.Repos,
+		), cm)
 	}
 
 	cm.Data[ConfigHashKey] = configHash
 
-	return cm
+	return cm, err
 }
 
 // MakePGBackrestLogDir creates the pgBackRest default log path directory used when a
@@ -144,7 +152,7 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 	}
 
 	container := corev1.Container{
-		Command:         []string{"bash", "-c", "mkdir -p " + pgBackRestLogPath},
+		Command:         []string{"bash", "-c", "umask 000 && mkdir -m 777 -p " + pgBackRestLogPath},
 		Image:           config.PGBackRestContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerPGBackRestLogDirInit,
