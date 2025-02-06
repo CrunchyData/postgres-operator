@@ -122,24 +122,12 @@ func statefulset(
 	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
 
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
-		// Mount for file_storage/pgadmin
-		pgAdminLogVolumeMount := corev1.VolumeMount{
-			Name:      "pgadmin-log",
-			MountPath: "/var/log/pgadmin",
-		}
-		// Mount for file_storage/gunicorn
-		gunicornLogVolumeMount := corev1.VolumeMount{
-			Name:      "gunicorn-log",
-			MountPath: "/var/log/gunicorn",
-		}
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
 		dataVolumeMount := corev1.VolumeMount{
 			Name:      "pgadmin-data",
 			MountPath: "/var/lib/pgadmin",
 		}
 		volumeMounts := []corev1.VolumeMount{
-			pgAdminLogVolumeMount,
-			gunicornLogVolumeMount,
 			dataVolumeMount,
 		}
 

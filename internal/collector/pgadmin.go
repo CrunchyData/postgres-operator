@@ -21,24 +21,20 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 		return nil
 	}
 	otelConfig := NewConfig(spec)
-	otelConfig.Extensions["file_storage/pgadmin"] = map[string]any{
-		"directory":        "/var/log/pgadmin/receiver",
-		"create_directory": true,
-		"fsync":            true,
-	}
-	otelConfig.Extensions["file_storage/gunicorn"] = map[string]any{
-		"directory":        "/var/log/gunicorn" + "/receiver",
-		"create_directory": true,
+
+	otelConfig.Extensions["file_storage/pgadmin_data_logs"] = map[string]any{
+		"directory":        "/var/lib/pgadmin/logs/receiver",
+		"create_directory": false,
 		"fsync":            true,
 	}
 
 	otelConfig.Receivers["filelog/pgadmin"] = map[string]any{
 		"include": []string{"/var/lib/pgadmin/logs/pgadmin.log"},
-		"storage": "file_storage/pgadmin",
+		"storage": "file_storage/pgadmin_data_logs",
 	}
 	otelConfig.Receivers["filelog/gunicorn"] = map[string]any{
 		"include": []string{"/var/lib/pgadmin/logs/gunicorn.log"},
-		"storage": "file_storage/gunicorn",
+		"storage": "file_storage/pgadmin_data_logs",
 	}
 
 	otelConfig.Processors["resource/pgadmin"] = map[string]any{
@@ -101,7 +97,7 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 	}
 
 	otelConfig.Pipelines["logs/pgadmin"] = Pipeline{
-		Extensions: []ComponentID{"file_storage/pgadmin"},
+		Extensions: []ComponentID{"file_storage/pgadmin_data_logs"},
 		Receivers:  []ComponentID{"filelog/pgadmin"},
 		Processors: []ComponentID{
 			"resource/pgadmin",
@@ -113,7 +109,7 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 	}
 
 	otelConfig.Pipelines["logs/gunicorn"] = Pipeline{
-		Extensions: []ComponentID{"file_storage/gunicorn"},
+		Extensions: []ComponentID{"file_storage/pgadmin_data_logs"},
 		Receivers:  []ComponentID{"filelog/gunicorn"},
 		Processors: []ComponentID{
 			"resource/pgadmin",
@@ -125,9 +121,8 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 	}
 
 	otelYAML, err := otelConfig.ToYAML()
-	if err != nil {
-		return err
+	if err == nil {
+		configmap.Data["collector.yaml"] = otelYAML
 	}
-	configmap.Data["collector.yaml"] = otelYAML
-	return nil
+	return err
 }
