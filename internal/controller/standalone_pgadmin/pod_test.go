@@ -127,10 +127,6 @@ containers:
     readOnly: true
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
-  - mountPath: /var/log/gunicorn
-    name: gunicorn-log
-  - mountPath: /var/log/pgadmin
-    name: pgadmin-log
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
     readOnly: true
@@ -142,7 +138,8 @@ initContainers:
   - -ceu
   - --
   - |-
-    mkdir -p /etc/pgadmin/conf.d
+    mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
+    mkdir -p '/var/lib/pgadmin/logs/receiver' && chmod 0775 '/var/lib/pgadmin/logs/receiver' '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
@@ -176,6 +173,7 @@ initContainers:
         _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+
     gunicorn.SERVER_SOFTWARE = 'Python'
     logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
     logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
@@ -211,6 +209,8 @@ initContainers:
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
+  - mountPath: /var/lib/pgadmin
+    name: pgadmin-data
 volumes:
 - name: pgadmin-config
   projected:
@@ -226,12 +226,6 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
-- emptyDir:
-    medium: Memory
-  name: pgadmin-log
-- emptyDir:
-    medium: Memory
-  name: gunicorn-log
 - emptyDir:
     medium: Memory
     sizeLimit: 32Ki
@@ -352,10 +346,6 @@ containers:
     readOnly: true
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
-  - mountPath: /var/log/gunicorn
-    name: gunicorn-log
-  - mountPath: /var/log/pgadmin
-    name: pgadmin-log
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
     readOnly: true
@@ -367,7 +357,8 @@ initContainers:
   - -ceu
   - --
   - |-
-    mkdir -p /etc/pgadmin/conf.d
+    mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
+    mkdir -p '/var/lib/pgadmin/logs/receiver' && chmod 0775 '/var/lib/pgadmin/logs/receiver' '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
@@ -401,6 +392,7 @@ initContainers:
         _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+
     gunicorn.SERVER_SOFTWARE = 'Python'
     logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
     logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
@@ -440,6 +432,8 @@ initContainers:
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
+  - mountPath: /var/lib/pgadmin
+    name: pgadmin-data
 volumes:
 - name: pgadmin-config
   projected:
@@ -455,12 +449,6 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
-- emptyDir:
-    medium: Memory
-  name: pgadmin-log
-- emptyDir:
-    medium: Memory
-  name: gunicorn-log
 - emptyDir:
     medium: Memory
     sizeLimit: 32Ki

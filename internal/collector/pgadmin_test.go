@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package collector
+package collector_test
 
 import (
 	"context"
@@ -10,10 +10,12 @@ import (
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
+	pgadmin "github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
-	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -27,10 +29,9 @@ func TestEnablePgAdminLogging(t *testing.T) {
 
 		ctx := feature.NewContext(context.Background(), gate)
 
-		pgadmin := new(v1beta1.PGAdmin)
-		configmap := &corev1.ConfigMap{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
+		configmap := new(corev1.ConfigMap)
 		initialize.Map(&configmap.Data)
-		err := EnablePgAdminLogging(ctx, pgadmin.Spec.Instrumentation, configmap)
+		err := collector.EnablePgAdminLogging(ctx, nil, configmap)
 		assert.NilError(t, err)
 
 		assert.Assert(t, cmp.MarshalMatches(configmap.Data, `
@@ -41,13 +42,9 @@ collector.yaml: |
     debug:
       verbosity: detailed
   extensions:
-    file_storage/gunicorn:
-      create_directory: true
-      directory: /var/log/gunicorn/receiver
-      fsync: true
-    file_storage/pgadmin:
-      create_directory: true
-      directory: /var/log/pgadmin/receiver
+    file_storage/pgadmin_data_logs:
+      create_directory: false
+      directory: `+pgadmin.LogDirectoryAbsolutePath+`/receiver
       fsync: true
   processors:
     batch/1s:
@@ -86,16 +83,15 @@ collector.yaml: |
   receivers:
     filelog/gunicorn:
       include:
-      - /var/lib/pgadmin/logs/gunicorn.log
-      storage: file_storage/gunicorn
+      - `+pgadmin.GunicornLogFileAbsolutePath+`
+      storage: file_storage/pgadmin_data_logs
     filelog/pgadmin:
       include:
-      - /var/lib/pgadmin/logs/pgadmin.log
-      storage: file_storage/pgadmin
+      - `+pgadmin.LogFileAbsolutePath+`
+      storage: file_storage/pgadmin_data_logs
   service:
     extensions:
-    - file_storage/gunicorn
-    - file_storage/pgadmin
+    - file_storage/pgadmin_data_logs
     pipelines:
       logs/gunicorn:
         exporters:
@@ -128,12 +124,22 @@ collector.yaml: |
 
 		ctx := feature.NewContext(context.Background(), gate)
 
-		pgadmin := new(v1beta1.PGAdmin)
-		pgadmin.Spec.Instrumentation = testInstrumentationSpec()
+		var spec v1beta1.InstrumentationSpec
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			config: {
+				exporters: {
+					googlecloud: {
+						log: { default_log_name: opentelemetry.io/collector-exported-log },
+						project: google-project-name,
+					},
+				},
+			},
+			logs: { exporters: [googlecloud] },
+		}`), &spec))
 
-		configmap := &corev1.ConfigMap{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
+		configmap := new(corev1.ConfigMap)
 		initialize.Map(&configmap.Data)
-		err := EnablePgAdminLogging(ctx, pgadmin.Spec.Instrumentation, configmap)
+		err := collector.EnablePgAdminLogging(ctx, &spec, configmap)
 		assert.NilError(t, err)
 
 		assert.Assert(t, cmp.MarshalMatches(configmap.Data, `
@@ -148,13 +154,9 @@ collector.yaml: |
         default_log_name: opentelemetry.io/collector-exported-log
       project: google-project-name
   extensions:
-    file_storage/gunicorn:
-      create_directory: true
-      directory: /var/log/gunicorn/receiver
-      fsync: true
-    file_storage/pgadmin:
-      create_directory: true
-      directory: /var/log/pgadmin/receiver
+    file_storage/pgadmin_data_logs:
+      create_directory: false
+      directory: `+pgadmin.LogDirectoryAbsolutePath+`/receiver
       fsync: true
   processors:
     batch/1s:
@@ -193,16 +195,15 @@ collector.yaml: |
   receivers:
     filelog/gunicorn:
       include:
-      - /var/lib/pgadmin/logs/gunicorn.log
-      storage: file_storage/gunicorn
+      - `+pgadmin.GunicornLogFileAbsolutePath+`
+      storage: file_storage/pgadmin_data_logs
     filelog/pgadmin:
       include:
-      - /var/lib/pgadmin/logs/pgadmin.log
-      storage: file_storage/pgadmin
+      - `+pgadmin.LogFileAbsolutePath+`
+      storage: file_storage/pgadmin_data_logs
   service:
     extensions:
-    - file_storage/gunicorn
-    - file_storage/pgadmin
+    - file_storage/pgadmin_data_logs
     pipelines:
       logs/gunicorn:
         exporters:
