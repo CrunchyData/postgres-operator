@@ -44,6 +44,17 @@ processors:
   batch/200ms:
     timeout: 200ms
   groupbyattrs/compact: {}
+  resource/patroni:
+    attributes:
+    - action: insert
+      key: k8s.container.name
+      value: database
+    - action: insert
+      key: k8s.namespace.name
+      value: ${env:K8S_POD_NAMESPACE}
+    - action: insert
+      key: k8s.pod.name
+      value: ${env:K8S_POD_NAME}
   transform/patroni_logs:
     log_statements:
     - context: log
@@ -76,8 +87,10 @@ service:
       exporters:
       - debug
       processors:
+      - resource/patroni
       - transform/patroni_logs
       - batch/200ms
+      - groupbyattrs/compact
       receivers:
       - filelog/patroni_jsonlog
 `)
