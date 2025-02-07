@@ -152,7 +152,7 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 	}
 
 	container := corev1.Container{
-		Command:         []string{"bash", "-c", "umask 000 && mkdir -m 777 -p " + pgBackRestLogPath},
+		Command:         []string{"bash", "-c", "umask 000 && install -m 777 -d " + pgBackRestLogPath},
 		Image:           config.PGBackRestContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerPGBackRestLogDirInit,
