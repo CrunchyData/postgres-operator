@@ -410,10 +410,11 @@ type PostgresClusterStatus struct {
 
 // PostgresClusterStatus condition types.
 const (
-	PersistentVolumeResizing   = "PersistentVolumeResizing"
-	PostgresClusterProgressing = "Progressing"
-	ProxyAvailable             = "ProxyAvailable"
-	Registered                 = "Registered"
+	PersistentVolumeResizing    = "PersistentVolumeResizing"
+	PersistentVolumeResizeError = "PersistentVolumeResizeError"
+	PostgresClusterProgressing  = "Progressing"
+	ProxyAvailable              = "ProxyAvailable"
+	Registered                  = "Registered"
 )
 
 type PostgresInstanceSetSpec struct {
