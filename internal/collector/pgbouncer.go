@@ -32,7 +32,7 @@ func NewConfigForPgBouncerPod(
 		return nil
 	}
 
-	config := NewConfig()
+	config := NewConfig(cluster.Spec.Instrumentation)
 
 	EnablePgBouncerLogging(ctx, cluster, config)
 	EnablePgBouncerMetrics(ctx, config, sqlQueryUsername)
@@ -132,6 +132,17 @@ func EnablePgBouncerLogging(ctx context.Context,
 			}},
 		}
 
+		// If there are exporters to be added to the logs pipelines defined in
+		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
+		var exporters []ComponentID
+		if inCluster.Spec.Instrumentation != nil &&
+			inCluster.Spec.Instrumentation.Logs != nil &&
+			inCluster.Spec.Instrumentation.Logs.Exporters != nil {
+			exporters = inCluster.Spec.Instrumentation.Logs.Exporters
+		} else {
+			exporters = []ComponentID{DebugExporter}
+		}
+
 		outConfig.Pipelines["logs/pgbouncer"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/pgbouncer_logs"},
 			Receivers:  []ComponentID{"filelog/pgbouncer_log"},
@@ -141,7 +152,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 				SubSecondBatchProcessor,
 				CompactingProcessor,
 			},
-			Exporters: []ComponentID{DebugExporter},
+			Exporters: exporters,
 		}
 	}
 }

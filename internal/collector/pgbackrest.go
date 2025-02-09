@@ -24,9 +24,10 @@ var pgBackRestLogsTransforms json.RawMessage
 
 func NewConfigForPgBackrestRepoHostPod(
 	ctx context.Context,
+	spec *v1beta1.InstrumentationSpec,
 	repos []v1beta1.PGBackRestRepo,
 ) *Config {
-	config := NewConfig()
+	config := NewConfig(spec)
 
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 
@@ -90,6 +91,15 @@ func NewConfigForPgBackrestRepoHostPod(
 			"log_statements": slices.Clone(pgBackRestLogsTransforms),
 		}
 
+		// If there are exporters to be added to the logs pipelines defined in
+		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
+		var exporters []ComponentID
+		if spec != nil && spec.Logs != nil && spec.Logs.Exporters != nil {
+			exporters = spec.Logs.Exporters
+		} else {
+			exporters = []ComponentID{DebugExporter}
+		}
+
 		config.Pipelines["logs/pgbackrest"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/pgbackrest_logs"},
 			Receivers:  []ComponentID{"filelog/pgbackrest_log"},
@@ -99,7 +109,7 @@ func NewConfigForPgBackrestRepoHostPod(
 				SubSecondBatchProcessor,
 				CompactingProcessor,
 			},
-			Exporters: []ComponentID{DebugExporter},
+			Exporters: exporters,
 		}
 	}
 	return config

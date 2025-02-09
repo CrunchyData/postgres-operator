@@ -95,6 +95,11 @@ type PostgresClusterSpec struct {
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=2
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 
+	// Configuration for the OpenTelemetry collector container used to collect
+	// logs and metrics.
+	// +optional
+	Instrumentation *InstrumentationSpec `json:"instrumentation,omitempty"`
+
 	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift
 	// environment. If the field is unset, the operator will automatically
 	// detect the environment.

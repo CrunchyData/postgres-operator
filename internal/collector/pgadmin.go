@@ -11,13 +11,16 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-func EnablePgAdminLogging(ctx context.Context, configmap *corev1.ConfigMap) error {
+func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec,
+	configmap *corev1.ConfigMap,
+) error {
 	if !feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		return nil
 	}
-	otelConfig := NewConfig()
+	otelConfig := NewConfig(spec)
 	otelConfig.Extensions["file_storage/pgadmin"] = map[string]any{
 		"directory":        "/var/log/pgadmin/receiver",
 		"create_directory": true,
@@ -28,6 +31,7 @@ func EnablePgAdminLogging(ctx context.Context, configmap *corev1.ConfigMap) erro
 		"create_directory": true,
 		"fsync":            true,
 	}
+
 	otelConfig.Receivers["filelog/pgadmin"] = map[string]any{
 		"include": []string{"/var/lib/pgadmin/logs/pgadmin.log"},
 		"storage": "file_storage/pgadmin",
@@ -70,6 +74,15 @@ func EnablePgAdminLogging(ctx context.Context, configmap *corev1.ConfigMap) erro
 		},
 	}
 
+	// If there are exporters to be added to the logs pipelines defined in
+	// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
+	var exporters []ComponentID
+	if spec != nil && spec.Logs != nil && spec.Logs.Exporters != nil {
+		exporters = spec.Logs.Exporters
+	} else {
+		exporters = []ComponentID{DebugExporter}
+	}
+
 	otelConfig.Pipelines["logs/pgadmin"] = Pipeline{
 		Extensions: []ComponentID{"file_storage/pgadmin"},
 		Receivers:  []ComponentID{"filelog/pgadmin"},
@@ -79,7 +92,7 @@ func EnablePgAdminLogging(ctx context.Context, configmap *corev1.ConfigMap) erro
 			SubSecondBatchProcessor,
 			CompactingProcessor,
 		},
-		Exporters: []ComponentID{DebugExporter},
+		Exporters: exporters,
 	}
 
 	otelConfig.Pipelines["logs/gunicorn"] = Pipeline{
@@ -91,7 +104,7 @@ func EnablePgAdminLogging(ctx context.Context, configmap *corev1.ConfigMap) erro
 			SubSecondBatchProcessor,
 			CompactingProcessor,
 		},
-		Exporters: []ComponentID{DebugExporter},
+		Exporters: exporters,
 	}
 
 	otelYAML, err := otelConfig.ToYAML()

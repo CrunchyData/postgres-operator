@@ -21,7 +21,7 @@ func NewConfigForPostgresPod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	outParameters *postgres.Parameters,
 ) *Config {
-	config := NewConfig()
+	config := NewConfig(inCluster.Spec.Instrumentation)
 
 	EnablePatroniLogging(ctx, inCluster, config)
 	EnablePatroniMetrics(ctx, inCluster, config)
@@ -187,6 +187,17 @@ func EnablePostgresLogging(
 			"log_statements": slices.Clone(postgresLogsTransforms),
 		}
 
+		// If there are exporters to be added to the logs pipelines defined in
+		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
+		var exporters []ComponentID
+		if inCluster.Spec.Instrumentation != nil &&
+			inCluster.Spec.Instrumentation.Logs != nil &&
+			inCluster.Spec.Instrumentation.Logs.Exporters != nil {
+			exporters = inCluster.Spec.Instrumentation.Logs.Exporters
+		} else {
+			exporters = []ComponentID{DebugExporter}
+		}
+
 		outConfig.Pipelines["logs/postgres"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/postgres_logs"},
 			// TODO(logs): Choose only one receiver, maybe?
@@ -200,7 +211,7 @@ func EnablePostgresLogging(
 				SubSecondBatchProcessor,
 				CompactingProcessor,
 			},
-			Exporters: []ComponentID{DebugExporter},
+			Exporters: exporters,
 		}
 
 		// pgBackRest pipeline
@@ -254,7 +265,7 @@ func EnablePostgresLogging(
 				SubSecondBatchProcessor,
 				CompactingProcessor,
 			},
-			Exporters: []ComponentID{DebugExporter},
+			Exporters: exporters,
 		}
 	}
 }

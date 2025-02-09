@@ -129,6 +129,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 
 		err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
 			ctx,
+			postgresCluster.Spec.Instrumentation,
 			postgresCluster.Spec.Backups.PGBackRest.Repos,
 		), cm)
 	}
