@@ -7,12 +7,19 @@ package collector
 import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/yaml"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // ComponentID represents a component identifier within an OpenTelemetry
 // Collector YAML configuration. Each value is a "type" followed by an optional
 // slash-then-name: `type[/name]`
-type ComponentID string
+type ComponentID = string
+
+// PipelineID represents a pipeline identifier within an OpenTelemetry Collector
+// YAML configuration. Each value is a signal followed by an optional
+// slash-then-name: `signal[/name]`
+type PipelineID = string
 
 // Config represents an OpenTelemetry Collector YAML configuration.
 // See: https://opentelemetry.io/docs/collector/configuration
@@ -34,11 +41,6 @@ type Pipeline struct {
 	Processors []ComponentID
 	Receivers  []ComponentID
 }
-
-// PipelineID represents a pipeline identifier within an OpenTelemetry Collector
-// YAML configuration. Each value is a signal followed by an optional
-// slash-then-name: `signal[/name]`
-type PipelineID string
 
 func (c *Config) ToYAML() (string, error) {
 	const yamlGeneratedWarning = "" +
@@ -71,8 +73,8 @@ func (c *Config) ToYAML() (string, error) {
 }
 
 // NewConfig creates a base config for an OTel collector container
-func NewConfig() *Config {
-	return &Config{
+func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
+	config := &Config{
 		Exporters: map[ComponentID]any{
 			// TODO: Do we want a DebugExporter outside of development?
 			// https://pkg.go.dev/go.opentelemetry.io/collector/exporter/debugexporter#section-readme
@@ -90,4 +92,13 @@ func NewConfig() *Config {
 		Receivers: map[ComponentID]any{},
 		Pipelines: map[PipelineID]Pipeline{},
 	}
+
+	// If there are exporters defined in the spec, add them to the config.
+	if spec != nil && spec.Config != nil && spec.Config.Exporters != nil {
+		for k, v := range spec.Config.Exporters {
+			config.Exporters[k] = v
+		}
+	}
+
+	return config
 }

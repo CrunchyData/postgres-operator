@@ -84,6 +84,11 @@ type PGAdminSpec struct {
 	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
+	// Configuration for the OpenTelemetry collector container used to collect
+	// logs and metrics.
+	// +optional
+	Instrumentation *InstrumentationSpec `json:"instrumentation,omitempty"`
+
 	// Resource requirements for the PGAdmin container.
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`

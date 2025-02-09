@@ -37,7 +37,7 @@ func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 		return configmap, err
 	}
 
-	err = collector.EnablePgAdminLogging(ctx, configmap)
+	err = collector.EnablePgAdminLogging(ctx, pgadmin.Spec.Instrumentation, configmap)
 
 	if err == nil {
 		err = errors.WithStack(r.setControllerReference(pgadmin, configmap))

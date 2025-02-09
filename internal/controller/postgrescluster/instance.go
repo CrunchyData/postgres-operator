@@ -1202,7 +1202,7 @@ func (r *Reconciler) reconcileInstance(
 
 	if err == nil &&
 		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
-		collector.AddToPod(ctx, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
+		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
 			[]corev1.VolumeMount{postgres.DataVolumeMount()}, "")
 	}
 
