@@ -47,6 +47,7 @@ func NewConfigForPgBackrestRepoHostPod(
 
 		// Keep track of what log records and files have been processed.
 		// Use a subdirectory of the logs directory to stay within the same failure domain.
+		// TODO(log-rotation): Create this directory during Collector startup.
 		config.Extensions["file_storage/pgbackrest_logs"] = map[string]any{
 			"directory":        directory + "/receiver",
 			"create_directory": true,

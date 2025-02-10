@@ -50,6 +50,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 
 		// Keep track of what log records and files have been processed.
 		// Use a subdirectory of the logs directory to stay within the same failure domain.
+		// TODO(log-rotation): Create this directory during Collector startup.
 		//
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/extension/storage/filestorage#readme
 		outConfig.Extensions["file_storage/pgbouncer_logs"] = map[string]any{

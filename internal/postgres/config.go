@@ -14,6 +14,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -297,9 +298,9 @@ chmod +x /tmp/pg_rewind_tde.sh
 `
 	}
 
-	args := []string{version, walDir, naming.PGBackRestPGDataLogPath, naming.PatroniPGDataLogPath}
+	args := []string{version, walDir}
 	script := strings.Join([]string{
-		`declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3" patroniLog_directory="$4"`,
+		`declare -r expected_major_version="$1" pgwal_directory="$2"`,
 
 		// Function to print the permissions of a file or directory and its parents.
 		bashPermissions,
@@ -370,17 +371,12 @@ chmod +x /tmp/pg_rewind_tde.sh
 		`else (halt Permissions!); fi ||`,
 		`halt "$(permissions "${postgres_data_directory}" ||:)"`,
 
-		// Create the pgBackRest log directory.
-		`results 'pgBackRest log directory' "${pgbrLog_directory}"`,
-		`install --directory --mode=0775 "${pgbrLog_directory}" ||`,
-		`halt "$(permissions "${pgbrLog_directory}" ||:)"`,
-
-		// Create the Patroni log directory.
-		`results 'Patroni log directory' "${patroniLog_directory}"`,
-		`install --directory --mode=0775 "${patroniLog_directory}" ||`,
-		`halt "$(permissions "${patroniLog_directory}" ||:)"`,
-
-		`install --directory --mode=0775 ` + LogDirectory() + ` ||`,
+		// Create log directories.
+		`(` + shell.MakeDirectories(0o775, dataMountPath, naming.PGBackRestPGDataLogPath) + `) ||`,
+		`halt "$(permissions ` + naming.PGBackRestPGDataLogPath + ` ||:)"`,
+		`(` + shell.MakeDirectories(0o775, dataMountPath, naming.PatroniPGDataLogPath) + `) ||`,
+		`halt "$(permissions ` + naming.PatroniPGDataLogPath + ` ||:)"`,
+		`(` + shell.MakeDirectories(0o775, dataMountPath, LogDirectory()) + `) ||`,
 		`halt "$(permissions ` + LogDirectory() + ` ||:)"`,
 
 		// Copy replication client certificate files

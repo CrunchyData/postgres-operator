@@ -110,6 +110,7 @@ func EnablePostgresLogging(
 
 		// Keep track of what log records and files have been processed.
 		// Use a subdirectory of the logs directory to stay within the same failure domain.
+		// TODO(log-rotation): Create this directory during Collector startup.
 		//
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/extension/storage/filestorage#readme
 		outConfig.Extensions["file_storage/postgres_logs"] = map[string]any{
@@ -215,6 +216,7 @@ func EnablePostgresLogging(
 		}
 
 		// pgBackRest pipeline
+		// TODO(log-rotation): Create this directory during Collector startup.
 		outConfig.Extensions["file_storage/pgbackrest_logs"] = map[string]any{
 			"directory":        naming.PGBackRestPGDataLogPath + "/receiver",
 			"create_directory": true,
