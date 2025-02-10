@@ -64,7 +64,7 @@ type ServiceSpec struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
-	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicyType `json:"internalTrafficPolicy,omitempty"`
+	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicy `json:"internalTrafficPolicy,omitempty"`
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
@@ -75,7 +75,7 @@ type ServiceSpec struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
-	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty"`
+	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicy `json:"externalTrafficPolicy,omitempty"`
 }
 
 // Sidecar defines the configuration of a sidecar container
