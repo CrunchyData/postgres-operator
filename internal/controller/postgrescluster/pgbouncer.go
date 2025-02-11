@@ -103,6 +103,11 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		err = collector.AddToConfigMap(ctx, otelConfig, configmap)
 	}
+	// If OTel logging is enabled and retentionPeriod is set, add logrotate config
+	// FIXME: change `true` to checking for retentionPeriod existence
+	if err == nil && otelConfig != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) && true {
+		err = collector.AddPgBouncerLogrotateConfig(ctx, configmap)
+	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, configmap))
 	}

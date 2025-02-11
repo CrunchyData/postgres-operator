@@ -5,11 +5,22 @@
 package collector
 
 import (
+	_ "embed"
+	"errors"
+	"fmt"
+	"regexp"
+
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+// The contents of "logrotate.conf" as a string.
+// See: https://pkg.go.dev/embed
+//
+//go:embed "logrotate.conf"
+var logrotateConfigFormatString string
 
 // ComponentID represents a component identifier within an OpenTelemetry
 // Collector YAML configuration. Each value is a "type" followed by an optional
@@ -101,4 +112,64 @@ func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 	}
 
 	return config
+}
+
+func generateLogrotateConfig(logFilePath string, retentionPeriod string, postrotateScript string) (string, error) {
+	retentionPeriodMap, err := parseRetentionPeriodForLogrotate(retentionPeriod)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf(
+		logrotateConfigFormatString,
+		logFilePath,
+		retentionPeriodMap["number"],
+		retentionPeriodMap["interval"],
+		postrotateScript,
+	), err
+}
+
+func parseRetentionPeriodForLogrotate(retentionPeriod string) (map[string]string, error) {
+	// logrotate does not have an "hourly" interval, but if an interval is not
+	// set it will rotate whenever logrotate is called, so set an empty string
+	// in the config file for hourly
+	unitIntervalMap := map[string]string{
+		"h":    "",
+		"hr":   "",
+		"hour": "",
+		"d":    "daily",
+		"day":  "daily",
+		"w":    "weekly",
+		"wk":   "weekly",
+		"week": "weekly",
+	}
+
+	// Define duration regex and capture matches
+	durationMatcher := regexp.MustCompile(`(?P<number>\d+)\s*(?P<interval>[A-Za-zµ]+)`)
+	matches := durationMatcher.FindStringSubmatch(retentionPeriod)
+
+	// If three matches were not found (whole match and two submatch captures),
+	// the retentionPeriod format must be invalid. Return an error.
+	if len(matches) < 3 {
+		return nil, errors.New("invalid retentionPeriod; must be number of hours, days, or weeks")
+	}
+
+	// Create a map with "number" and "interval" keys
+	retentionPeriodMap := make(map[string]string)
+	for i, name := range durationMatcher.SubexpNames() {
+		if i > 0 && i <= len(matches) {
+			retentionPeriodMap[name] = matches[i]
+		}
+	}
+
+	// If the duration unit provided is found in the unitIntervalMap, set the
+	// "interval" value to the "interval" string expected by logrotate; otherwise,
+	// return an error
+	if _, exists := unitIntervalMap[retentionPeriodMap["interval"]]; exists {
+		retentionPeriodMap["interval"] = unitIntervalMap[retentionPeriodMap["interval"]]
+	} else {
+		return nil, fmt.Errorf("invalid retentionPeriod; %s is not a valid unit", retentionPeriodMap["interval"])
+	}
+
+	return retentionPeriodMap, nil
 }

@@ -71,6 +71,28 @@ func AddToPod(
 		configVolume.Projected.Sources = append(configVolume.Projected.Sources, spec.Config.Files...)
 	}
 
+	// TODO: wrap the following in `if` statement that checks for existence of
+	// retentionPeriod in the API
+	logrotateConfigVolumeMount := corev1.VolumeMount{
+		Name:      "logrotate-config",
+		MountPath: "/etc/logrotate.d",
+		ReadOnly:  true,
+	}
+	logrotateConfigVolume := corev1.Volume{Name: logrotateConfigVolumeMount.Name}
+	logrotateConfigVolume.Projected = &corev1.ProjectedVolumeSource{
+		Sources: []corev1.VolumeProjection{{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: inInstanceConfigMap.Name,
+				},
+				Items: []corev1.KeyToPath{{
+					Key:  "logrotate.conf",
+					Path: "logrotate.conf",
+				}},
+			},
+		}},
+	}
+
 	container := corev1.Container{
 		Name:            naming.ContainerCollector,
 		Image:           config.CollectorContainerImage(spec),
@@ -96,7 +118,7 @@ func AddToPod(
 		},
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
-		VolumeMounts:    append(volumeMounts, configVolumeMount),
+		VolumeMounts:    append(volumeMounts, configVolumeMount, logrotateConfigVolumeMount),
 	}
 
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
@@ -108,5 +130,5 @@ func AddToPod(
 	}
 
 	outPod.Containers = append(outPod.Containers, container)
-	outPod.Volumes = append(outPod.Volumes, configVolume)
+	outPod.Volumes = append(outPod.Volumes, configVolume, logrotateConfigVolume)
 }

@@ -61,3 +61,111 @@ service:
 `)
 	})
 }
+
+func TestParseRetentionPeriodForLogrotate(t *testing.T) {
+	t.Run("SuccessfulParse", func(t *testing.T) {
+		for _, tt := range []struct {
+			retentionPeriod    string
+			retentionPeriodMap map[string]string
+		}{
+			{
+				retentionPeriod: "12h",
+				retentionPeriodMap: map[string]string{
+					"number":   "12",
+					"interval": "",
+				},
+			},
+			{
+				retentionPeriod: "24hr",
+				retentionPeriodMap: map[string]string{
+					"number":   "24",
+					"interval": "",
+				},
+			},
+			{
+				retentionPeriod: "36hour",
+				retentionPeriodMap: map[string]string{
+					"number":   "36",
+					"interval": "",
+				},
+			},
+			{
+				retentionPeriod: "3d",
+				retentionPeriodMap: map[string]string{
+					"number":   "3",
+					"interval": "daily",
+				},
+			},
+			{
+				retentionPeriod: "365day",
+				retentionPeriodMap: map[string]string{
+					"number":   "365",
+					"interval": "daily",
+				},
+			},
+			{
+				retentionPeriod: "1w",
+				retentionPeriodMap: map[string]string{
+					"number":   "1",
+					"interval": "weekly",
+				},
+			},
+			{
+				retentionPeriod: "4wk",
+				retentionPeriodMap: map[string]string{
+					"number":   "4",
+					"interval": "weekly",
+				},
+			},
+			{
+				retentionPeriod: "52week",
+				retentionPeriodMap: map[string]string{
+					"number":   "52",
+					"interval": "weekly",
+				},
+			},
+		} {
+			t.Run(tt.retentionPeriod, func(t *testing.T) {
+				rpm, err := parseRetentionPeriodForLogrotate(tt.retentionPeriod)
+				assert.NilError(t, err)
+				assert.Equal(t, tt.retentionPeriodMap["number"], rpm["number"])
+			})
+		}
+	})
+
+	t.Run("UnsuccessfulParse", func(t *testing.T) {
+		for _, tt := range []struct {
+			retentionPeriod string
+			errMessage      string
+		}{
+			{
+				retentionPeriod: "",
+				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
+			},
+			{
+				retentionPeriod: "asdf",
+				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
+			},
+			{
+				retentionPeriod: "1234",
+				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
+			},
+			{
+				retentionPeriod: "d2",
+				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
+			},
+			{
+				retentionPeriod: "1000z",
+				errMessage:      "invalid retentionPeriod; z is not a valid unit",
+			},
+		} {
+			t.Run(tt.retentionPeriod, func(t *testing.T) {
+				rpm, err := parseRetentionPeriodForLogrotate(tt.retentionPeriod)
+				assert.Assert(t, rpm == nil)
+				assert.Assert(t, err != nil)
+				assert.ErrorContains(t, err, tt.errMessage)
+				// assert.Equal(t, tt.retentionPeriodMap["number"], rpm["number"])
+			})
+		}
+	})
+}

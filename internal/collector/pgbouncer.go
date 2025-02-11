@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"slices"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -181,4 +183,25 @@ func EnablePgBouncerMetrics(ctx context.Context, config *Config, sqlQueryUsernam
 			Exporters: []ComponentID{Prometheus},
 		}
 	}
+}
+
+func AddPgBouncerLogrotateConfig(ctx context.Context, outInstanceConfigMap *corev1.ConfigMap) error {
+	var err error
+	if outInstanceConfigMap.Data == nil {
+		outInstanceConfigMap.Data = make(map[string]string)
+	}
+
+	// FIXME: get retentionPeriod from instrumentationSpec
+	pgbouncerLogPath := naming.PGBouncerLogPath + "/pgbouncer.log"
+	retentionPeriod := "1d"
+	postrotateScript := "/bin/kill -HUP `cat /var/pgbouncer-postgres/pgbouncer.pid 2> /dev/null` 2>/dev/null ||true"
+
+	logrotateConfig, err := generateLogrotateConfig(pgbouncerLogPath, retentionPeriod, postrotateScript)
+	if err != nil {
+		return err
+	}
+
+	outInstanceConfigMap.Data["logrotate.conf"] = logrotateConfig
+
+	return err
 }
