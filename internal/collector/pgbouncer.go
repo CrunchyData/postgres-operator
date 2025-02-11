@@ -193,8 +193,8 @@ func AddPgBouncerLogrotateConfig(ctx context.Context, outInstanceConfigMap *core
 
 	// FIXME: get retentionPeriod from instrumentationSpec
 	pgbouncerLogPath := naming.PGBouncerLogPath + "/pgbouncer.log"
-	retentionPeriod := "1d"
-	postrotateScript := "/bin/kill -HUP `cat /var/pgbouncer-postgres/pgbouncer.pid 2> /dev/null` 2>/dev/null ||true"
+	retentionPeriod := "1h"
+	postrotateScript := "pkill -HUP --exact pgbouncer"
 
 	logrotateConfig, err := generateLogrotateConfig(pgbouncerLogPath, retentionPeriod, postrotateScript)
 	if err != nil {
