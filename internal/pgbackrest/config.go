@@ -7,6 +7,7 @@ package pgbackrest
 import (
 	"context"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -153,7 +155,9 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 	}
 
 	container := corev1.Container{
-		Command:         []string{"bash", "-c", "umask 000 && install -m 777 -d " + pgBackRestLogPath},
+		// TODO(log-rotation): The second argument here should be the path
+		// of the volume mount. Find a way to calculate that consistently.
+		Command:         []string{"bash", "-c", shell.MakeDirectories(0o775, path.Dir(pgBackRestLogPath), pgBackRestLogPath)},
 		Image:           config.PGBackRestContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerPGBackRestLogDirInit,

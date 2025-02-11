@@ -292,7 +292,7 @@ func TestMakePGBackrestLogDir(t *testing.T) {
 	for _, c := range podTemplate.Spec.InitContainers {
 		if c.Name == naming.ContainerPGBackRestLogDirInit {
 			// ignore "bash -c", should skip repo with no volume
-			assert.Equal(t, "umask 000 && install -m 777 -d /pgbackrest/repo2/log", c.Command[2])
+			assert.Equal(t, `mkdir -p '/pgbackrest/repo2/log' && chmod 0775 '/pgbackrest/repo2/log'`, c.Command[2])
 			assert.Equal(t, c.Image, "test-image")
 			assert.Equal(t, c.ImagePullPolicy, corev1.PullAlways)
 			assert.Assert(t, !cmp.DeepEqual(c.SecurityContext,
