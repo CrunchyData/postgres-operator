@@ -52,4 +52,18 @@ type InstrumentationLogsSpec struct {
 	// the logs pipeline.
 	// +optional
 	Exporters []string `json:"exporters,omitempty"`
+
+	// How long to retain log files locally. An RFC 3339 duration or a number
+	// and unit: `3d`, `4 weeks`, `12 hr`, etc.
+	// ---
+	// Kubernetes ensures the value is in the "duration" format, but go ahead
+	// and loosely validate the format to show some acceptable units.
+	// +kubebuilder:validation:Pattern=`^(PT)?(0|[0-9]+ *(?i:(h|hr|d|w|wk)|(hour|day|week)s?))+$`
+	//
+	// `controller-gen` needs to know "Type=string" to allow a "Pattern".
+	// +kubebuilder:validation:Type=string
+	//
+	// +kubebuilder:validation:XValidation:rule=`self == duration("0") || (self >= duration("1h") && self <= duration("8760h"))`,message="must be greater than one hour"
+	// +optional
+	RetentionPeriod *Duration `json:"retentionPeriod,omitempty"`
 }

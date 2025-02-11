@@ -221,6 +221,12 @@ func (p *PGAdmin) Default() {
 	}
 }
 
+func NewPGAdmin() *PGAdmin {
+	p := &PGAdmin{}
+	p.Default()
+	return p
+}
+
 //+kubebuilder:object:root=true
 
 // PGAdminList contains a list of PGAdmin
