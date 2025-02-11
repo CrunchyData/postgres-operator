@@ -191,8 +191,9 @@ func Pod(
 	outPod.Volumes = []corev1.Volume{configVolume}
 
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-		collector.AddToPod(ctx, inCluster.Spec.Instrumentation, inCluster.Spec.ImagePullPolicy, inConfigMap, outPod, []corev1.VolumeMount{configVolumeMount},
-			string(inSecret.Data["pgbouncer-password"]))
+		collector.AddToPod(ctx, inCluster.Spec.Instrumentation, inCluster.Spec.ImagePullPolicy, inConfigMap,
+			outPod, []corev1.VolumeMount{configVolumeMount}, string(inSecret.Data["pgbouncer-password"]),
+			true)
 	}
 }
 

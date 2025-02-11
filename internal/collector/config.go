@@ -5,11 +5,23 @@
 package collector
 
 import (
+	"context"
+	_ "embed"
+	"fmt"
+	"math"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+// The contents of "logrotate.conf" as a string.
+// See: https://pkg.go.dev/embed
+//
+//go:embed "logrotate.conf"
+var logrotateConfigFormatString string
 
 // ComponentID represents a component identifier within an OpenTelemetry
 // Collector YAML configuration. Each value is a "type" followed by an optional
@@ -101,4 +113,62 @@ func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 	}
 
 	return config
+}
+
+// AddLogrotateConfig generates a logrotate configuration and adds it to the
+// provided configmap
+func AddLogrotateConfig(ctx context.Context, spec *v1beta1.InstrumentationSpec,
+	outInstanceConfigMap *corev1.ConfigMap, logFilePath, postrotateScript string,
+) error {
+	var err error
+	var retentionPeriod *v1beta1.Duration
+
+	if outInstanceConfigMap.Data == nil {
+		outInstanceConfigMap.Data = make(map[string]string)
+	}
+
+	// If retentionPeriod is set in the spec, use that value; otherwise, we want
+	// to use a reasonably short duration. Defaulting to 1 day.
+	if spec != nil && spec.Logs != nil && spec.Logs.RetentionPeriod != nil {
+		retentionPeriod = spec.Logs.RetentionPeriod
+	} else {
+		retentionPeriod, err = v1beta1.NewDuration("1d")
+		if err != nil {
+			return err
+		}
+	}
+
+	outInstanceConfigMap.Data["logrotate.conf"] = generateLogrotateConfig(logFilePath,
+		retentionPeriod, postrotateScript)
+
+	return err
+}
+
+// generateLogrotateConfig generates a configuration string for logrotate based
+// on the provided full log file path, retention period, and postrotate script
+func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Duration,
+	postrotateScript string,
+) string {
+	number, interval := parseDurationForLogrotate(retentionPeriod)
+
+	return fmt.Sprintf(
+		logrotateConfigFormatString,
+		logFilePath,
+		number,
+		interval,
+		postrotateScript,
+	)
+}
+
+// parseDurationForLogrotate takes a retention period and returns the rotate
+// number and interval string that should be used in the logrotate config.
+// If the retentionPeriod is less than 24 hours, the function will return the
+// number of hours and "hourly"; otherwise, we will round up to the nearest day
+// and return the day count and "daily"
+func parseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
+	hours := math.Ceil(retentionPeriod.AsDuration().Hours())
+	if hours < 24 {
+		return int(hours), "hourly"
+	}
+	return int(math.Ceil(hours / 24)), "daily"
 }

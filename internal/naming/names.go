@@ -158,6 +158,9 @@ const (
 	// PGBouncerLogPath is the pgBouncer default log path configuration
 	PGBouncerLogPath = "/tmp"
 
+	// PGbouncerFullLogPath is the full path to the pgbouncer log file
+	PGBouncerFullLogPath = PGBouncerLogPath + "/pgbouncer.log"
+
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
