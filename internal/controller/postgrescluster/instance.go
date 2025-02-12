@@ -1201,16 +1201,32 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	if err == nil &&
-		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		(feature.Enabled(ctx, feature.OpenTelemetryLogs) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+
 		// TODO: Setting the includeLogrotate argument to false for now. This
 		// should be changed when we implement log rotation for postgres
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
 			[]corev1.VolumeMount{postgres.DataVolumeMount()}, "", false)
 	}
 
-	// Add pgMonitor resources to the instance Pod spec
-	if err == nil {
-		err = addPGMonitorToInstancePodSpec(ctx, cluster, &instance.Spec.Template, exporterQueriesConfig, exporterWebConfig)
+	if err == nil &&
+		feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+
+		monitoringUserSecret := &corev1.Secret{ObjectMeta: naming.MonitoringUserSecret(cluster)}
+		err := errors.WithStack(
+			r.Client.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
+
+		if client.IgnoreNotFound(err) != nil {
+			return err
+		}
+
+		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
+			[]corev1.VolumeMount{postgres.DataVolumeMount()}, string(monitoringUserSecret.Data["password"]), false)
+	}
+
+	// Add postgres-exporter to the instance Pod spec
+	if err == nil && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		err = addPGExporterToInstancePodSpec(ctx, cluster, &instance.Spec.Template, exporterQueriesConfig, exporterWebConfig)
 	}
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest

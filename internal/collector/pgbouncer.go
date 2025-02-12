@@ -184,7 +184,7 @@ func EnablePgBouncerMetrics(ctx context.Context, config *Config, sqlQueryUsernam
 		}
 
 		// Add Metrics Pipeline
-		config.Pipelines[Metrics] = Pipeline{
+		config.Pipelines[PGBouncerMetrics] = Pipeline{
 			Receivers: []ComponentID{SqlQuery},
 			Exporters: []ComponentID{Prometheus},
 		}

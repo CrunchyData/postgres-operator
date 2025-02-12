@@ -6,6 +6,7 @@ package postgrescluster
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
@@ -26,6 +27,9 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+//go:embed "metrics_setup.sql"
+var metricsSetupForOTelCollector string
 
 // If pgMonitor is enabled the pgMonitor sidecar(s) have been added to the
 // instance pod. reconcilePGMonitor will update the database to
@@ -75,13 +79,17 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 			return err
 		}
 
-		// TODO: Revisit how pgbackrest_info.sh is used with pgMonitor.
-		// pgMonitor queries expect a path to a script that runs pgBackRest
-		// info and provides json output. In the queries yaml for pgBackRest
-		// the default path is `/usr/bin/pgbackrest-info.sh`. We update
-		// the path to point to the script in our database image.
-		setup = strings.ReplaceAll(string(sql), "/usr/bin/pgbackrest-info.sh",
-			"/opt/crunchy/bin/postgres/pgbackrest_info.sh")
+		if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+			setup = metricsSetupForOTelCollector
+		} else {
+			// TODO: Revisit how pgbackrest_info.sh is used with pgMonitor.
+			// pgMonitor queries expect a path to a script that runs pgBackRest
+			// info and provides json output. In the queries yaml for pgBackRest
+			// the default path is `/usr/bin/pgbackrest-info.sh`. We update
+			// the path to point to the script in our database image.
+			setup = strings.ReplaceAll(string(sql), "/usr/bin/pgbackrest-info.sh",
+				"/opt/crunchy/bin/postgres/pgbackrest_info.sh")
+		}
 
 		for _, containerStatus := range writablePod.Status.ContainerStatuses {
 			if containerStatus.Name == naming.ContainerDatabase {
@@ -227,9 +235,9 @@ func (r *Reconciler) reconcileMonitoringSecret(
 	return nil, err
 }
 
-// addPGMonitorToInstancePodSpec performs the necessary setup to add
-// pgMonitor resources on a PodTemplateSpec
-func addPGMonitorToInstancePodSpec(
+// addPGExporterToInstancePodSpec performs the necessary setup to add
+// pgMonitor resources on a PodTemplateSpec for running postgres-exporter.
+func addPGExporterToInstancePodSpec(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	template *corev1.PodTemplateSpec,
@@ -456,7 +464,7 @@ func (r *Reconciler) reconcileExporterQueriesConfig(ctx context.Context,
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) {
+	if !pgmonitor.ExporterEnabled(cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// We could still have a NotFound error here so check the err.
 		// If no error that means the configmap is found and needs to be deleted
 		if err == nil {

@@ -11,43 +11,45 @@
         attribute_columns: ["database", "user", "state", "application_name", "link"]
         description: "Current waiting time in seconds"
 
+  # NOTE: Avoid collecting "host" column because it can be null; the collector will warn against null.
+  # The host column should always point either to pgBouncer's virtual database (the null case) or to the primary.
   - sql: "SHOW DATABASES"
     metrics:
       - metric_name: ccp_pgbouncer_databases_pool_size
         value_column: pool_size
-        attribute_columns: ["name", "host", "port", "database", "force_user", "pool_mode"]
+        attribute_columns: ["name", "port", "database", "force_user", "pool_mode"]
         description: "Maximum number of server connections"
 
       - metric_name: ccp_pgbouncer_databases_min_pool_size
         value_column: min_pool_size
-        attribute_columns: ["name", "host", "port", "database", "force_user", "pool_mode"]
+        attribute_columns: ["name", "port", "database", "force_user", "pool_mode"]
         description: "Minimum number of server connections"
 
       - metric_name: ccp_pgbouncer_databases_reserve_pool
         value_column: reserve_pool
-        attribute_columns: ["name", "host", "port", "database", "force_user", "pool_mode"]
+        attribute_columns: ["name", "port", "database", "force_user", "pool_mode"]
         description: "Maximum number of additional connections for this database"
 
       - metric_name: ccp_pgbouncer_databases_max_connections
         value_column: max_connections
-        attribute_columns: ["name", "host", "port", "database", "force_user", "pool_mode"]
+        attribute_columns: ["name", "port", "database", "force_user", "pool_mode"]
         description: >-
           Maximum number of allowed connections for this database,
           as set by max_db_connections, either globally or per database
 
       - metric_name: ccp_pgbouncer_databases_current_connections
         value_column: current_connections
-        attribute_columns: ["name", "host", "port", "database", "force_user", "pool_mode"]
+        attribute_columns: ["name", "port", "database", "force_user", "pool_mode"]
         description: "Current number of connections for this database"
 
       - metric_name: ccp_pgbouncer_databases_paused
         value_column: paused
-        attribute_columns: ["name", "host", "port", "database", "force_user", "pool_mode"]
+        attribute_columns: ["name", "port", "database", "force_user", "pool_mode"]
         description: "1 if this database is currently paused, else 0"
 
       - metric_name: ccp_pgbouncer_databases_disabled
         value_column: disabled
-        attribute_columns: ["name", "host", "port", "database", "force_user", "pool_mode"]
+        attribute_columns: ["name", "port", "database", "force_user", "pool_mode"]
         description: "1 if this database is currently disabled, else 0"
 
   - sql: "SHOW LISTS"
