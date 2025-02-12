@@ -99,6 +99,17 @@ func PGExporterContainerImage(cluster *v1beta1.PostgresCluster) string {
 	return defaultFromEnv(image, "RELATED_IMAGE_PGEXPORTER")
 }
 
+// CollectorContainerImage returns the container image to use for the
+// collector container.
+func CollectorContainerImage(instrumentation *v1beta1.InstrumentationSpec) string {
+	var image string
+	if instrumentation != nil {
+		image = instrumentation.Image
+	}
+
+	return defaultFromEnv(image, "RELATED_IMAGE_COLLECTOR")
+}
+
 // PostgresContainerImage returns the container image to use for PostgreSQL.
 func PostgresContainerImage(cluster *v1beta1.PostgresCluster) string {
 	image := cluster.Spec.Image
@@ -136,6 +147,12 @@ func VerifyImageValues(cluster *v1beta1.PostgresCluster) error {
 		cluster.Spec.Proxy != nil &&
 		cluster.Spec.Proxy.PGBouncer != nil {
 		images = append(images, "crunchy-pgbouncer")
+	}
+	if PGExporterContainerImage(cluster) == "" &&
+		cluster.Spec.Monitoring != nil &&
+		cluster.Spec.Monitoring.PGMonitor != nil &&
+		cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
+		images = append(images, "crunchy-postgres-exporter")
 	}
 	if PGExporterContainerImage(cluster) == "" &&
 		cluster.Spec.Monitoring != nil &&

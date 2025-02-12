@@ -44,6 +44,8 @@ spec:
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:latest"
         - name: RELATED_IMAGE_STANDALONE_PGADMIN
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-8.14-1"
+        - name: RELATED_IMAGE_COLLECTOR
+          value: "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.119.0"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities: { drop: [ALL] }

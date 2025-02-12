@@ -143,6 +143,7 @@ jobs:
             --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-17.2-2' \
             --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-17.2-3.4-2' \
             --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-8.14-1' \
+            --env 'RELATED_IMAGE_COLLECTOR=ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.119.0' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true' \
             --name 'postgres-operator' ubuntu \
             postgres-operator
