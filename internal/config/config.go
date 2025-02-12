@@ -154,11 +154,9 @@ func VerifyImageValues(cluster *v1beta1.PostgresCluster) error {
 		cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
 		images = append(images, "crunchy-postgres-exporter")
 	}
-	if PGExporterContainerImage(cluster) == "" &&
-		cluster.Spec.Monitoring != nil &&
-		cluster.Spec.Monitoring.PGMonitor != nil &&
-		cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
-		images = append(images, "crunchy-postgres-exporter")
+	if CollectorContainerImage(cluster.Spec.Instrumentation) == "" &&
+		cluster.Spec.Instrumentation != nil {
+		images = append(images, "crunchy-collector")
 	}
 	if PostgresContainerImage(cluster) == "" {
 		if cluster.Spec.PostGISVersion != "" {
