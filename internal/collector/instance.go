@@ -9,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -72,7 +73,7 @@ func AddToPod(
 
 	container := corev1.Container{
 		Name:            naming.ContainerCollector,
-		Image:           "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.117.0",
+		Image:           config.CollectorContainerImage(spec),
 		ImagePullPolicy: pullPolicy,
 		Command:         []string{"/otelcol-contrib", "--config", "/etc/otel-collector/config.yaml"},
 		Env: []corev1.EnvVar{
