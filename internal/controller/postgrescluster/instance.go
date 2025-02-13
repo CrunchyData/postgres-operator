@@ -1202,8 +1202,10 @@ func (r *Reconciler) reconcileInstance(
 
 	if err == nil &&
 		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		// TODO: Setting the includeLogrotate argument to false for now. This
+		// should be changed when we implement log rotation for postgres
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
-			[]corev1.VolumeMount{postgres.DataVolumeMount()}, "")
+			[]corev1.VolumeMount{postgres.DataVolumeMount()}, "", false)
 	}
 
 	// Add pgMonitor resources to the instance Pod spec
@@ -1407,6 +1409,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 			naming.LabelInstance:    instance.Name,
 		})
 
+	// If OTel logging or metrics is enabled, add collector config
 	if err == nil && (feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		err = collector.AddToConfigMap(ctx, otelConfig, instanceConfigMap)
 	}

@@ -11,8 +11,6 @@ import (
 	"fmt"
 	"slices"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -64,7 +62,11 @@ func EnablePgBouncerLogging(ctx context.Context,
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/filelogreceiver#readme
 		outConfig.Receivers["filelog/pgbouncer_log"] = map[string]any{
 			// Read the log files and keep track of what has been processed.
-			"include": []string{directory + "/*.log"},
+			// We want to watch the ".log.1" file as well as it is possible that
+			// a log entry or two will end up there after the original ".log"
+			// file is renamed to ".log.1" during rotation. OTel will not create
+			// duplicate log entries.
+			"include": []string{directory + "/*.log", directory + "/*.log.1"},
 			"storage": "file_storage/pgbouncer_logs",
 		}
 
@@ -183,25 +185,4 @@ func EnablePgBouncerMetrics(ctx context.Context, config *Config, sqlQueryUsernam
 			Exporters: []ComponentID{Prometheus},
 		}
 	}
-}
-
-func AddPgBouncerLogrotateConfig(ctx context.Context, outInstanceConfigMap *corev1.ConfigMap) error {
-	var err error
-	if outInstanceConfigMap.Data == nil {
-		outInstanceConfigMap.Data = make(map[string]string)
-	}
-
-	// FIXME: get retentionPeriod from instrumentationSpec
-	pgbouncerLogPath := naming.PGBouncerLogPath + "/pgbouncer.log"
-	retentionPeriod := "1h"
-	postrotateScript := "pkill -HUP --exact pgbouncer"
-
-	logrotateConfig, err := generateLogrotateConfig(pgbouncerLogPath, retentionPeriod, postrotateScript)
-	if err != nil {
-		return err
-	}
-
-	outInstanceConfigMap.Data["logrotate.conf"] = logrotateConfig
-
-	return err
 }

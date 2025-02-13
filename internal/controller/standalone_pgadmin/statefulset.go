@@ -132,7 +132,7 @@ func statefulset(
 		}
 
 		collector.AddToPod(ctx, pgadmin.Spec.Instrumentation, pgadmin.Spec.ImagePullPolicy,
-			configmap, &sts.Spec.Template.Spec, volumeMounts, "")
+			configmap, &sts.Spec.Template.Spec, volumeMounts, "", false)
 	}
 
 	return sts

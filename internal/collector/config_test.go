@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestConfigToYAML(t *testing.T) {
@@ -62,110 +64,67 @@ service:
 	})
 }
 
-func TestParseRetentionPeriodForLogrotate(t *testing.T) {
-	t.Run("SuccessfulParse", func(t *testing.T) {
-		for _, tt := range []struct {
-			retentionPeriod    string
-			retentionPeriodMap map[string]string
-		}{
-			{
-				retentionPeriod: "12h",
-				retentionPeriodMap: map[string]string{
-					"number":   "12",
-					"interval": "",
-				},
-			},
-			{
-				retentionPeriod: "24hr",
-				retentionPeriodMap: map[string]string{
-					"number":   "24",
-					"interval": "",
-				},
-			},
-			{
-				retentionPeriod: "36hour",
-				retentionPeriodMap: map[string]string{
-					"number":   "36",
-					"interval": "",
-				},
-			},
-			{
-				retentionPeriod: "3d",
-				retentionPeriodMap: map[string]string{
-					"number":   "3",
-					"interval": "daily",
-				},
-			},
-			{
-				retentionPeriod: "365day",
-				retentionPeriodMap: map[string]string{
-					"number":   "365",
-					"interval": "daily",
-				},
-			},
-			{
-				retentionPeriod: "1w",
-				retentionPeriodMap: map[string]string{
-					"number":   "1",
-					"interval": "weekly",
-				},
-			},
-			{
-				retentionPeriod: "4wk",
-				retentionPeriodMap: map[string]string{
-					"number":   "4",
-					"interval": "weekly",
-				},
-			},
-			{
-				retentionPeriod: "52week",
-				retentionPeriodMap: map[string]string{
-					"number":   "52",
-					"interval": "weekly",
-				},
-			},
-		} {
-			t.Run(tt.retentionPeriod, func(t *testing.T) {
-				rpm, err := parseRetentionPeriodForLogrotate(tt.retentionPeriod)
-				assert.NilError(t, err)
-				assert.Equal(t, tt.retentionPeriodMap["number"], rpm["number"])
-			})
-		}
-	})
+// TODO: write this test after rebasing on new retention API changes.
+// func TestGenerateLogrotateConfig(t *testing.T) {
 
-	t.Run("UnsuccessfulParse", func(t *testing.T) {
-		for _, tt := range []struct {
-			retentionPeriod string
-			errMessage      string
-		}{
-			{
-				retentionPeriod: "",
-				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
-			},
-			{
-				retentionPeriod: "asdf",
-				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
-			},
-			{
-				retentionPeriod: "1234",
-				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
-			},
-			{
-				retentionPeriod: "d2",
-				errMessage:      "invalid retentionPeriod; must be number of hours, days, or weeks",
-			},
-			{
-				retentionPeriod: "1000z",
-				errMessage:      "invalid retentionPeriod; z is not a valid unit",
-			},
-		} {
-			t.Run(tt.retentionPeriod, func(t *testing.T) {
-				rpm, err := parseRetentionPeriodForLogrotate(tt.retentionPeriod)
-				assert.Assert(t, rpm == nil)
-				assert.Assert(t, err != nil)
-				assert.ErrorContains(t, err, tt.errMessage)
-				// assert.Equal(t, tt.retentionPeriodMap["number"], rpm["number"])
-			})
-		}
-	})
+// }
+
+// FIXME: This test is currently broken. Fix after rebasing on new
+// retention API changes.
+func TestParseDurationForLogrotate(t *testing.T) {
+	for _, tt := range []struct {
+		retentionPeriod string
+		number          int
+		interval        string
+	}{
+		{
+			retentionPeriod: "12h",
+			number:          12,
+			interval:        "hourly",
+		},
+		{
+			retentionPeriod: "24hr",
+			number:          1,
+			interval:        "daily",
+		},
+		{
+			retentionPeriod: "36hour",
+			number:          2,
+			interval:        "daily",
+		},
+		{
+			retentionPeriod: "3d",
+			number:          3,
+			interval:        "daily",
+		},
+		{
+			retentionPeriod: "365day",
+			number:          365,
+			interval:        "daily",
+		},
+		{
+			retentionPeriod: "1w",
+			number:          7,
+			interval:        "daily",
+		},
+		{
+			retentionPeriod: "4wk",
+			number:          28,
+			interval:        "daily",
+		},
+		{
+			retentionPeriod: "52week",
+			number:          364,
+			interval:        "daily",
+		},
+	} {
+		t.Run(tt.retentionPeriod, func(t *testing.T) {
+			var duration *v1beta1.Duration
+			err := duration.UnmarshalJSON([]byte(tt.retentionPeriod))
+			assert.NilError(t, err)
+			number, interval := parseDurationForLogrotate(duration)
+			assert.Equal(t, tt.number, number)
+			assert.Equal(t, tt.interval, interval)
+		})
+	}
 }

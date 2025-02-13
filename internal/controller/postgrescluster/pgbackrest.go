@@ -695,9 +695,11 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		// If OpenTelemetryLogs is enabled, we want to add the collector to the pod
 		// and also add the RepoVolumes to the container.
 		if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+			// TODO: Setting the includeLogrotate argument to false for now. This
+			// should be changed when we implement log rotation for pgbackrest
 			collector.AddToPod(ctx, postgresCluster.Spec.Instrumentation, postgresCluster.Spec.ImagePullPolicy,
 				&corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(postgresCluster)},
-				&repo.Spec.Template.Spec, []corev1.VolumeMount{}, "")
+				&repo.Spec.Template.Spec, []corev1.VolumeMount{}, "", false)
 
 			containersToAdd = append(containersToAdd, naming.ContainerCollector)
 		}

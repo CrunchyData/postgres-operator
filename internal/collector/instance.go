@@ -41,11 +41,13 @@ func AddToPod(
 	outPod *corev1.PodSpec,
 	volumeMounts []corev1.VolumeMount,
 	sqlQueryPassword string,
+	includeLogrotate bool,
 ) {
 	if !(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		return
 	}
 
+	// Create volume and volume mound for otel collector config
 	configVolumeMount := corev1.VolumeMount{
 		Name:      "collector-config",
 		MountPath: "/etc/otel-collector",
@@ -71,33 +73,15 @@ func AddToPod(
 		configVolume.Projected.Sources = append(configVolume.Projected.Sources, spec.Config.Files...)
 	}
 
-	// TODO: wrap the following in `if` statement that checks for existence of
-	// retentionPeriod in the API
-	logrotateConfigVolumeMount := corev1.VolumeMount{
-		Name:      "logrotate-config",
-		MountPath: "/etc/logrotate.d",
-		ReadOnly:  true,
-	}
-	logrotateConfigVolume := corev1.Volume{Name: logrotateConfigVolumeMount.Name}
-	logrotateConfigVolume.Projected = &corev1.ProjectedVolumeSource{
-		Sources: []corev1.VolumeProjection{{
-			ConfigMap: &corev1.ConfigMapProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: inInstanceConfigMap.Name,
-				},
-				Items: []corev1.KeyToPath{{
-					Key:  "logrotate.conf",
-					Path: "logrotate.conf",
-				}},
-			},
-		}},
-	}
+	// Add configVolume to the pod's volumes
+	outPod.Volumes = append(outPod.Volumes, configVolume)
 
+	// Create collector container
 	container := corev1.Container{
 		Name:            naming.ContainerCollector,
 		Image:           config.CollectorContainerImage(spec),
 		ImagePullPolicy: pullPolicy,
-		Command:         []string{"/otelcol-contrib", "--config", "/etc/otel-collector/config.yaml"},
+		Command:         startCommand(includeLogrotate),
 		Env: []corev1.EnvVar{
 			{
 				Name: "K8S_POD_NAMESPACE",
@@ -118,7 +102,33 @@ func AddToPod(
 		},
 
 		SecurityContext: initialize.RestrictedSecurityContext(),
-		VolumeMounts:    append(volumeMounts, configVolumeMount, logrotateConfigVolumeMount),
+		VolumeMounts:    append(volumeMounts, configVolumeMount),
+	}
+
+	// If a retentionPeriod is set and this is a pod that uses logrotate for
+	// log rotation, add config volume and mount for logrotate config
+	if includeLogrotate && spec != nil && spec.Logs != nil && spec.Logs.RetentionPeriod != nil {
+		logrotateConfigVolumeMount := corev1.VolumeMount{
+			Name:      "logrotate-config",
+			MountPath: "/etc/logrotate.d",
+			ReadOnly:  true,
+		}
+		logrotateConfigVolume := corev1.Volume{Name: logrotateConfigVolumeMount.Name}
+		logrotateConfigVolume.Projected = &corev1.ProjectedVolumeSource{
+			Sources: []corev1.VolumeProjection{{
+				ConfigMap: &corev1.ConfigMapProjection{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: inInstanceConfigMap.Name,
+					},
+					Items: []corev1.KeyToPath{{
+						Key:  "logrotate.conf",
+						Path: "logrotate.conf",
+					}},
+				},
+			}},
+		}
+		container.VolumeMounts = append(container.VolumeMounts, logrotateConfigVolumeMount)
+		outPod.Volumes = append(outPod.Volumes, logrotateConfigVolume)
 	}
 
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
@@ -130,5 +140,26 @@ func AddToPod(
 	}
 
 	outPod.Containers = append(outPod.Containers, container)
-	outPod.Volumes = append(outPod.Volumes, configVolume, logrotateConfigVolume)
+}
+
+// startCommand generates the command script used by the collector container
+func startCommand(includeLogrotate bool) []string {
+	var startScript = `
+/otelcol-contrib --config /etc/otel-collector/config.yaml
+`
+
+	if includeLogrotate {
+		startScript = `
+/otelcol-contrib --config /etc/otel-collector/config.yaml &
+
+exec {fd}<> <(:||:)
+while read -r -t 5 -u "${fd}" ||:; do
+	logrotate -s /tmp/logrotate.status /etc/logrotate.d/logrotate.conf
+done
+`
+	}
+
+	wrapper := `monitor() {` + startScript + `}; export -f monitor; exec -a "$0" bash -ceu monitor`
+
+	return []string{"bash", "-ceu", "--", wrapper, "collector"}
 }

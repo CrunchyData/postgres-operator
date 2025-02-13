@@ -5,11 +5,12 @@
 package collector
 
 import (
+	"context"
 	_ "embed"
-	"errors"
 	"fmt"
-	"regexp"
+	"math"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/yaml"
 
@@ -114,62 +115,52 @@ func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 	return config
 }
 
-func generateLogrotateConfig(logFilePath string, retentionPeriod string, postrotateScript string) (string, error) {
-	retentionPeriodMap, err := parseRetentionPeriodForLogrotate(retentionPeriod)
-	if err != nil {
-		return "", err
+// AddLogrotateConfig generates a logrotate configuration and adds it to the
+// provided configmap
+func AddLogrotateConfig(ctx context.Context, spec *v1beta1.InstrumentationSpec,
+	outInstanceConfigMap *corev1.ConfigMap, logFilePath, postrotateScript string,
+) {
+	var logrotateConfig string
+	if outInstanceConfigMap.Data == nil {
+		outInstanceConfigMap.Data = make(map[string]string)
 	}
+
+	if spec != nil && spec.Logs != nil && spec.Logs.RetentionPeriod != nil {
+		logrotateConfig = generateLogrotateConfig(logFilePath, spec.Logs.RetentionPeriod,
+			postrotateScript)
+	}
+
+	outInstanceConfigMap.Data["logrotate.conf"] = logrotateConfig
+}
+
+// generateLogrotateConfig generates a configuration string for logrotate based
+// on the provided full log file path, retention period, and postrotate script
+func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Duration,
+	postrotateScript string,
+) string {
+	number, interval := parseDurationForLogrotate(retentionPeriod)
 
 	return fmt.Sprintf(
 		logrotateConfigFormatString,
 		logFilePath,
-		retentionPeriodMap["number"],
-		retentionPeriodMap["interval"],
+		number,
+		interval,
 		postrotateScript,
-	), err
+	)
 }
 
-func parseRetentionPeriodForLogrotate(retentionPeriod string) (map[string]string, error) {
-	// logrotate does not have an "hourly" interval, but if an interval is not
-	// set it will rotate whenever logrotate is called, so set an empty string
-	// in the config file for hourly
-	unitIntervalMap := map[string]string{
-		"h":    "",
-		"hr":   "",
-		"hour": "",
-		"d":    "daily",
-		"day":  "daily",
-		"w":    "weekly",
-		"wk":   "weekly",
-		"week": "weekly",
+// FIXME: If the rotate count is 0, logrotate will not keep any archives, it will
+// essentially just empty out the working file during rotation, but it will still
+// rotate on the interval specified (hourly, daily, weekly, etc). If the user
+// sets the retentionPeriod to 0, we currently default to hourly regardless of
+// what unit the user provides. E.g. If the user sets the retentionPeriod to "0w"
+// they might expect that it will rotate once a week, but not keep any archives,
+// but we will actually rotate every hour... Is there a way to get the unit
+// provided in the Duration??
+func parseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
+	hours := math.Round(retentionPeriod.Duration.Hours())
+	if hours < 24 {
+		return int(hours), "hourly"
 	}
-
-	// Define duration regex and capture matches
-	durationMatcher := regexp.MustCompile(`(?P<number>\d+)\s*(?P<interval>[A-Za-zµ]+)`)
-	matches := durationMatcher.FindStringSubmatch(retentionPeriod)
-
-	// If three matches were not found (whole match and two submatch captures),
-	// the retentionPeriod format must be invalid. Return an error.
-	if len(matches) < 3 {
-		return nil, errors.New("invalid retentionPeriod; must be number of hours, days, or weeks")
-	}
-
-	// Create a map with "number" and "interval" keys
-	retentionPeriodMap := make(map[string]string)
-	for i, name := range durationMatcher.SubexpNames() {
-		if i > 0 && i <= len(matches) {
-			retentionPeriodMap[name] = matches[i]
-		}
-	}
-
-	// If the duration unit provided is found in the unitIntervalMap, set the
-	// "interval" value to the "interval" string expected by logrotate; otherwise,
-	// return an error
-	if _, exists := unitIntervalMap[retentionPeriodMap["interval"]]; exists {
-		retentionPeriodMap["interval"] = unitIntervalMap[retentionPeriodMap["interval"]]
-	} else {
-		return nil, fmt.Errorf("invalid retentionPeriod; %s is not a valid unit", retentionPeriodMap["interval"])
-	}
-
-	return retentionPeriodMap, nil
+	return int(math.Round(hours / 24)), "daily"
 }

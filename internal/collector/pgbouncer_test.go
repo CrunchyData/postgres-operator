@@ -78,6 +78,7 @@ receivers:
   filelog/pgbouncer_log:
     include:
     - /tmp/*.log
+    - /tmp/*.log.1
     storage: file_storage/pgbouncer_logs
 service:
   extensions:
@@ -166,6 +167,7 @@ receivers:
   filelog/pgbouncer_log:
     include:
     - /tmp/*.log
+    - /tmp/*.log.1
     storage: file_storage/pgbouncer_logs
 service:
   extensions:
