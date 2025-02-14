@@ -103,12 +103,10 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		err = collector.AddToConfigMap(ctx, otelConfig, configmap)
 	}
-	// If OTel logging is enabled and retentionPeriod is set, add logrotate config
-	if err == nil && otelConfig != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) &&
-		cluster.Spec.Instrumentation != nil && cluster.Spec.Instrumentation.Logs != nil &&
-		cluster.Spec.Instrumentation.Logs.RetentionPeriod != nil {
-		collector.AddLogrotateConfig(ctx, cluster.Spec.Instrumentation, configmap,
-			naming.PGBouncerFullLogPath, naming.PGBouncerPostRotateScript)
+	// If OTel logging is enabled, add logrotate config
+	if err == nil && otelConfig != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+		err = collector.AddLogrotateConfig(ctx, cluster.Spec.Instrumentation, configmap,
+			naming.PGBouncerFullLogPath, collector.PGBouncerPostRotateScript)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, configmap))

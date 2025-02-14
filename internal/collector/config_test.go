@@ -64,7 +64,6 @@ service:
 	})
 }
 
-// TODO: write this test after rebasing on new retention API changes.
 func TestGenerateLogrotateConfig(t *testing.T) {
 	for _, tt := range []struct {
 		logFilePath      string
@@ -151,7 +150,7 @@ func TestParseDurationForLogrotate(t *testing.T) {
 		},
 		{
 			retentionPeriod: "35hour",
-			number:          1,
+			number:          2,
 			interval:        "daily",
 		},
 		{

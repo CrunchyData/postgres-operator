@@ -119,18 +119,29 @@ func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 // provided configmap
 func AddLogrotateConfig(ctx context.Context, spec *v1beta1.InstrumentationSpec,
 	outInstanceConfigMap *corev1.ConfigMap, logFilePath, postrotateScript string,
-) {
-	var logrotateConfig string
+) error {
+	var err error
+	var retentionPeriod *v1beta1.Duration
+
 	if outInstanceConfigMap.Data == nil {
 		outInstanceConfigMap.Data = make(map[string]string)
 	}
 
+	// If retentionPeriod is set in the spec, use that value; otherwise, we want
+	// to use a reasonably short duration. Defaulting to 1 day.
 	if spec != nil && spec.Logs != nil && spec.Logs.RetentionPeriod != nil {
-		logrotateConfig = generateLogrotateConfig(logFilePath, spec.Logs.RetentionPeriod,
-			postrotateScript)
+		retentionPeriod = spec.Logs.RetentionPeriod
+	} else {
+		retentionPeriod, err = v1beta1.NewDuration("1d")
+		if err != nil {
+			return err
+		}
 	}
 
-	outInstanceConfigMap.Data["logrotate.conf"] = logrotateConfig
+	outInstanceConfigMap.Data["logrotate.conf"] = generateLogrotateConfig(logFilePath,
+		retentionPeriod, postrotateScript)
+
+	return err
 }
 
 // generateLogrotateConfig generates a configuration string for logrotate based
@@ -150,11 +161,14 @@ func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Durati
 }
 
 // parseDurationForLogrotate takes a retention period and returns the rotate
-// number and interval string that should be used in the logrotate config
+// number and interval string that should be used in the logrotate config.
+// If the retentionPeriod is less than 24 hours, the function will return the
+// number of hours and "hourly"; otherwise, we will round up to the nearest day
+// and return the day count and "daily"
 func parseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
 	hours := math.Round(retentionPeriod.AsDuration().Hours())
 	if hours < 24 {
 		return int(hours), "hourly"
 	}
-	return int(math.Round(hours / 24)), "daily"
+	return int(math.Ceil(hours / 24)), "daily"
 }

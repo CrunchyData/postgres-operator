@@ -22,6 +22,10 @@ import (
 //go:embed "generated/pgbouncer_metrics_queries.json"
 var pgBouncerMetricsQueries json.RawMessage
 
+// PGBouncerPostRotateScript is the script that is run after pgBouncer's log
+// files have been rotated. The pgbouncer process is sent a sighup signal.
+const PGBouncerPostRotateScript = "pkill -HUP --exact pgbouncer"
+
 // NewConfigForPgBouncerPod creates a config for the OTel collector container
 // that runs as a sidecar in the pgBouncer Pod
 func NewConfigForPgBouncerPod(

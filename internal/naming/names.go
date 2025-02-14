@@ -161,12 +161,6 @@ const (
 	// PGbouncerFullLogPath is the full path to the pgbouncer log file
 	PGBouncerFullLogPath = PGBouncerLogPath + "/pgbouncer.log"
 
-	// PGBouncerPostRotateScript is the script that is run after pgBouncer's log
-	// files have been rotated. The pgbouncer process is sent a sighup signal.
-	// TODO: Should this go here or in controller/postgrescluster/pgbouncer.go?
-	// Or somewhere in the internal/pgbouncer folder, for that matter?
-	PGBouncerPostRotateScript = "pkill -HUP --exact pgbouncer"
-
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
