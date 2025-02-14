@@ -60,8 +60,6 @@ func TestPGAdminInstrumentation(t *testing.T) {
 				"28 weeks",
 				"90 DAY",
 				"1 hr",
-				"0 days",
-				"0",
 				"PT1D",
 			} {
 				u, err := runtime.ToUnstructuredObject(pgadmin)
@@ -70,6 +68,22 @@ func TestPGAdminInstrumentation(t *testing.T) {
 					tt, "spec", "instrumentation", "logs", "retentionPeriod"))
 
 				assert.NilError(t, cc.Create(ctx, u, client.DryRunAll), tt)
+			}
+		})
+
+		t.Run("Invalid", func(t *testing.T) {
+			for _, tt := range []string{
+				"0 days",
+				"0",
+			} {
+				u, err := runtime.ToUnstructuredObject(pgadmin)
+				assert.NilError(t, err)
+				assert.NilError(t, unstructured.SetNestedField(u.Object,
+					tt, "spec", "instrumentation", "logs", "retentionPeriod"))
+
+				err = cc.Create(ctx, u, client.DryRunAll)
+				assert.Assert(t, apierrors.IsInvalid(err), tt)
+				assert.ErrorContains(t, err, "retentionPeriod")
 			}
 		})
 	})

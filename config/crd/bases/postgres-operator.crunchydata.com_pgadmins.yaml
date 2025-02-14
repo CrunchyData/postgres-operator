@@ -1955,12 +1955,11 @@ spec:
                           and unit: `3d`, `4 weeks`, `12 hr`, etc.
                         format: duration
                         minLength: 1
-                        pattern: ^(PT)?(0|[0-9]+ *(?i:(h|hr|d|w|wk)|(hour|day|week)s?))+$
+                        pattern: ^(PT)?[0-9]+ *(?i:(h|hr|d|w|wk)|(hour|day|week)s?)+$
                         type: string
                         x-kubernetes-validations:
-                        - message: must be greater than one hour
-                          rule: self == duration("0") || (self >= duration("1h") &&
-                            self <= duration("8760h"))
+                        - message: must be at least one hour
+                          rule: duration("1h") <= self && self <= duration("8760h")
                     type: object
                   resources:
                     description: Resources holds the resource requirements for the
