@@ -65,12 +65,74 @@ service:
 }
 
 // TODO: write this test after rebasing on new retention API changes.
-// func TestGenerateLogrotateConfig(t *testing.T) {
+func TestGenerateLogrotateConfig(t *testing.T) {
+	for _, tt := range []struct {
+		logFilePath      string
+		retentionPeriod  string
+		postrotateScript string
+		result           string
+	}{
+		{
+			logFilePath:      "/this/is/a/file.path",
+			retentionPeriod:  "12h",
+			postrotateScript: "echo 'Hello, World'",
+			result: `/this/is/a/file.path {
+      rotate 12
+      missingok
+      sharedscripts
+      notifempty
+      nocompress
+      hourly
+      postrotate
+            echo 'Hello, World'
+      endscript
+}
+`,
+		},
+		{
+			logFilePath:      "/tmp/test.log",
+			retentionPeriod:  "5 days",
+			postrotateScript: "",
+			result: `/tmp/test.log {
+      rotate 5
+      missingok
+      sharedscripts
+      notifempty
+      nocompress
+      daily
+      postrotate
+            
+      endscript
+}
+`,
+		},
+		{
+			logFilePath:      "/tmp/test.log",
+			retentionPeriod:  "5wk",
+			postrotateScript: "pkill -HUP --exact pgbouncer",
+			result: `/tmp/test.log {
+      rotate 35
+      missingok
+      sharedscripts
+      notifempty
+      nocompress
+      daily
+      postrotate
+            pkill -HUP --exact pgbouncer
+      endscript
+}
+`,
+		},
+	} {
+		t.Run(tt.retentionPeriod, func(t *testing.T) {
+			duration, err := v1beta1.NewDuration(tt.retentionPeriod)
+			assert.NilError(t, err)
+			result := generateLogrotateConfig(tt.logFilePath, duration, tt.postrotateScript)
+			assert.Equal(t, tt.result, result)
+		})
+	}
+}
 
-// }
-
-// FIXME: This test is currently broken. Fix after rebasing on new
-// retention API changes.
 func TestParseDurationForLogrotate(t *testing.T) {
 	for _, tt := range []struct {
 		retentionPeriod string
@@ -88,7 +150,12 @@ func TestParseDurationForLogrotate(t *testing.T) {
 			interval:        "daily",
 		},
 		{
-			retentionPeriod: "36hour",
+			retentionPeriod: "35hour",
+			number:          1,
+			interval:        "daily",
+		},
+		{
+			retentionPeriod: "36 hours",
 			number:          2,
 			interval:        "daily",
 		},
@@ -119,8 +186,7 @@ func TestParseDurationForLogrotate(t *testing.T) {
 		},
 	} {
 		t.Run(tt.retentionPeriod, func(t *testing.T) {
-			var duration *v1beta1.Duration
-			err := duration.UnmarshalJSON([]byte(tt.retentionPeriod))
+			duration, err := v1beta1.NewDuration(tt.retentionPeriod)
 			assert.NilError(t, err)
 			number, interval := parseDurationForLogrotate(duration)
 			assert.Equal(t, tt.number, number)

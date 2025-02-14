@@ -149,16 +149,10 @@ func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Durati
 	)
 }
 
-// FIXME: If the rotate count is 0, logrotate will not keep any archives, it will
-// essentially just empty out the working file during rotation, but it will still
-// rotate on the interval specified (hourly, daily, weekly, etc). If the user
-// sets the retentionPeriod to 0, we currently default to hourly regardless of
-// what unit the user provides. E.g. If the user sets the retentionPeriod to "0w"
-// they might expect that it will rotate once a week, but not keep any archives,
-// but we will actually rotate every hour... Is there a way to get the unit
-// provided in the Duration??
+// parseDurationForLogrotate takes a retention period and returns the rotate
+// number and interval string that should be used in the logrotate config
 func parseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
-	hours := math.Round(retentionPeriod.Duration.Hours())
+	hours := math.Round(retentionPeriod.AsDuration().Hours())
 	if hours < 24 {
 		return int(hours), "hourly"
 	}
