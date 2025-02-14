@@ -28,7 +28,7 @@ func TestPostgresUserOptions(t *testing.T) {
 	base := v1beta1.NewPostgresCluster()
 
 	// Start with a bunch of required fields.
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
+	assert.NilError(t, yaml.UnmarshalStrict([]byte(`{
 		postgresVersion: 16,
 		backups: {
 			pgbackrest: {
