@@ -48,6 +48,9 @@ func TestDurationYAML(t *testing.T) {
 	})
 
 	t.Run("UnitsIn", func(t *testing.T) {
+		const Day = 24 * time.Hour
+		const Week = 7 * Day
+
 		for _, tt := range []struct {
 			input  string
 			result time.Duration
@@ -91,16 +94,19 @@ func TestDurationYAML(t *testing.T) {
 			{"4 hours", 4 * time.Hour},
 			{"5 hourglass", 5 * time.Hour},
 
-			{"1d", 24 * time.Hour},
-			{"2 day", 2 * 24 * time.Hour},
-			{"3 days", 3 * 24 * time.Hour},
-			{"4 dayrock", 4 * 24 * time.Hour},
+			{"1d", Day},
+			{"2 day", 2 * Day},
+			{"3 days", 3 * Day},
+			{"4 dayrock", 4 * Day},
 
-			{"1w", 7 * 24 * time.Hour},
-			{"2 wk", 2 * 7 * 24 * time.Hour},
-			{"3 week", 3 * 7 * 24 * time.Hour},
-			{"4 weeks", 4 * 7 * 24 * time.Hour},
-			{"5 weekpasta", 5 * 7 * 24 * time.Hour},
+			{"1w", Week},
+			{"2 wk", 2 * Week},
+			{"3 week", 3 * Week},
+			{"4 weeks", 4 * Week},
+			{"5 weekpasta", 5 * Week},
+
+			// ISO 8601 / RFC 33339
+			{"PT2D9H", (2 * Day) + 9*time.Hour},
 		} {
 			var parsed Duration
 			assert.NilError(t, yaml.Unmarshal([]byte(tt.input), &parsed))

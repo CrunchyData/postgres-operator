@@ -58,12 +58,15 @@ type InstrumentationLogsSpec struct {
 	// ---
 	// Kubernetes ensures the value is in the "duration" format, but go ahead
 	// and loosely validate the format to show some acceptable units.
-	// +kubebuilder:validation:Pattern=`^(PT)?[0-9]+ *(?i:(h|hr|d|w|wk)|(hour|day|week)s?)+$`
+	// +kubebuilder:validation:Pattern=`^(PT)?( *[0-9]+ *(?i:(h|hr|d|w|wk)|(hour|day|week)s?))+$`
 	//
 	// `controller-gen` needs to know "Type=string" to allow a "Pattern".
 	// +kubebuilder:validation:Type=string
 	//
+	// Set a max length to keep rule costs low.
+	// +kubebuilder:validation:MaxLength=20
 	// +kubebuilder:validation:XValidation:rule=`duration("1h") <= self && self <= duration("8760h")`,message="must be at least one hour"
+	//
 	// +optional
 	RetentionPeriod *Duration `json:"retentionPeriod,omitempty"`
 }

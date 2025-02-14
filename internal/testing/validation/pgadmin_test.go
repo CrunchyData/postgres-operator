@@ -60,7 +60,8 @@ func TestPGAdminInstrumentation(t *testing.T) {
 				"28 weeks",
 				"90 DAY",
 				"1 hr",
-				"PT1D",
+				"PT1D2H",
+				"1 week 2 days",
 			} {
 				u, err := runtime.ToUnstructuredObject(pgadmin)
 				assert.NilError(t, err)
@@ -73,8 +74,12 @@ func TestPGAdminInstrumentation(t *testing.T) {
 
 		t.Run("Invalid", func(t *testing.T) {
 			for _, tt := range []string{
+				// Amount too small
 				"0 days",
 				"0",
+
+				// Text too long
+				"2 weeks 3 days 4 hours",
 			} {
 				u, err := runtime.ToUnstructuredObject(pgadmin)
 				assert.NilError(t, err)

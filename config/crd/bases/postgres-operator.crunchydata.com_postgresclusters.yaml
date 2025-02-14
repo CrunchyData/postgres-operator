@@ -11487,8 +11487,9 @@ spec:
                           How long to retain log files locally. An RFC 3339 duration or a number
                           and unit: `3d`, `4 weeks`, `12 hr`, etc.
                         format: duration
+                        maxLength: 20
                         minLength: 1
-                        pattern: ^(PT)?[0-9]+ *(?i:(h|hr|d|w|wk)|(hour|day|week)s?)+$
+                        pattern: ^(PT)?( *[0-9]+ *(?i:(h|hr|d|w|wk)|(hour|day|week)s?))+$
                         type: string
                         x-kubernetes-validations:
                         - message: must be at least one hour
