@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"gotest.tools/v3/assert"
+	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"sigs.k8s.io/yaml"
 )
 
@@ -104,6 +105,10 @@ func TestDurationYAML(t *testing.T) {
 			var parsed Duration
 			assert.NilError(t, yaml.Unmarshal([]byte(tt.input), &parsed))
 			assert.Equal(t, parsed.AsDuration().Duration, tt.result)
+
+			// This is what Kubernetes calls when validating the "duration" format.
+			// - https://releases.k8s.io/v1.32.0/staging/src/k8s.io/apiextensions-apiserver/pkg/apiserver/validation/validation.go#L116
+			assert.Assert(t, strfmt.IsDuration(tt.input))
 		}
 
 		for _, tt := range []string{
@@ -122,6 +127,10 @@ func TestDurationYAML(t *testing.T) {
 		} {
 			assert.ErrorContains(t,
 				yaml.Unmarshal([]byte(tt), new(Duration)), "unable to parse")
+
+			// This is what Kubernetes calls when validating the "duration" format.
+			// - https://releases.k8s.io/v1.32.0/staging/src/k8s.io/apiextensions-apiserver/pkg/apiserver/validation/validation.go#L116
+			assert.Assert(t, !strfmt.IsDuration(tt))
 		}
 	})
 }
