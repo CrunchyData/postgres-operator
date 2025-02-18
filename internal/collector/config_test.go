@@ -139,6 +139,11 @@ func TestParseDurationForLogrotate(t *testing.T) {
 		interval        string
 	}{
 		{
+			retentionPeriod: "1 h 20 min",
+			number:          2,
+			interval:        "hourly",
+		},
+		{
 			retentionPeriod: "12h",
 			number:          12,
 			interval:        "hourly",

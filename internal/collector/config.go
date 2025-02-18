@@ -166,7 +166,7 @@ func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Durati
 // number of hours and "hourly"; otherwise, we will round up to the nearest day
 // and return the day count and "daily"
 func parseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
-	hours := math.Round(retentionPeriod.AsDuration().Hours())
+	hours := math.Ceil(retentionPeriod.AsDuration().Hours())
 	if hours < 24 {
 		return int(hours), "hourly"
 	}

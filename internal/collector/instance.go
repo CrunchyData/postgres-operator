@@ -47,7 +47,7 @@ func AddToPod(
 		return
 	}
 
-	// Create volume and volume mound for otel collector config
+	// Create volume and volume mount for otel collector config
 	configVolumeMount := corev1.VolumeMount{
 		Name:      "collector-config",
 		MountPath: "/etc/otel-collector",
@@ -105,9 +105,9 @@ func AddToPod(
 		VolumeMounts:    append(volumeMounts, configVolumeMount),
 	}
 
-	// If a retentionPeriod is set and this is a pod that uses logrotate for
-	// log rotation, add config volume and mount for logrotate config
-	if includeLogrotate && spec != nil && spec.Logs != nil && spec.Logs.RetentionPeriod != nil {
+	// If this is a pod that uses logrotate for log rotation, add config volume
+	// and mount for logrotate config
+	if includeLogrotate {
 		logrotateConfigVolumeMount := corev1.VolumeMount{
 			Name:      "logrotate-config",
 			MountPath: "/etc/logrotate.d",
