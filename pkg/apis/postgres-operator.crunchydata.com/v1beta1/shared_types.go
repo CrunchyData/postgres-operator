@@ -40,6 +40,9 @@ import (
 // - https://docs.k8s.io/reference/using-api/cel/#type-system-integration
 // - https://github.com/google/cel-spec/blob/-/doc/langdef.md#types-and-conversions
 //
+// NOTE: When using this type, reject fractional numbers using a Pattern to
+// avoid an upstream bug: https://github.com/kubernetes/kube-openapi/issues/523
+//
 // [defined by OpenAPI]: https://spec.openapis.org/registry/format/duration.html
 // [format]: https://spec.openapis.org/oas/latest.html#data-type-format
 type Duration struct {

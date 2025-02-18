@@ -11485,7 +11485,7 @@ spec:
                       retentionPeriod:
                         description: |-
                           How long to retain log files locally. An RFC 3339 duration or a number
-                          and unit: `3d`, `4 weeks`, `12 hr`, etc.
+                          and unit: `12 hr`, `3d`, `4 weeks`, etc.
                         format: duration
                         maxLength: 20
                         minLength: 1
