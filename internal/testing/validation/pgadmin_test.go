@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -49,7 +50,7 @@ func TestPGAdminInstrumentation(t *testing.T) {
 		//nolint:errorlint // This is a test, and a panic is unlikely.
 		status := err.(apierrors.APIStatus).Status()
 		assert.Assert(t, status.Details != nil)
-		assert.Equal(t, len(status.Details.Causes), 2)
+		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
 
 		for _, cause := range status.Details.Causes {
 			assert.Equal(t, cause.Field, "spec.instrumentation.logs.retentionPeriod")

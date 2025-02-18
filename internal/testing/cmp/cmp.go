@@ -5,6 +5,7 @@
 package cmp
 
 import (
+	"regexp"
 	"strings"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -46,8 +47,13 @@ func Contains(collection, item any) Comparison {
 // succeeds if the values are equal. The comparison can be customized using
 // comparison Options. See [github.com/google/go-cmp/cmp.Option] constructors
 // and [github.com/google/go-cmp/cmp/cmpopts].
-func DeepEqual(x, y any, opts ...gocmp.Option) Comparison {
+func DeepEqual[T any](x, y T, opts ...gocmp.Option) Comparison {
 	return gotest.DeepEqual(x, y, opts...)
+}
+
+// Len succeeds if actual has the expected length.
+func Len[Slice ~[]E, E any](actual Slice, expected int) Comparison {
+	return gotest.Len(actual, expected)
 }
 
 // MarshalContains converts actual to YAML and succeeds if expected is in the result.
@@ -71,6 +77,6 @@ func MarshalMatches(actual any, expected string) Comparison {
 // Regexp succeeds if value contains any match of the regular expression re.
 // The regular expression may be a *regexp.Regexp or a string that is a valid
 // regexp pattern.
-func Regexp(re any, value string) Comparison {
+func Regexp[RE *regexp.Regexp | ~string](re RE, value string) Comparison {
 	return gotest.Regexp(re, value)
 }

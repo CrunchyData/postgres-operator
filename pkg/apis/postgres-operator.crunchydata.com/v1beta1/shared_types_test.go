@@ -139,6 +139,18 @@ func TestDurationYAML(t *testing.T) {
 			assert.Assert(t, !strfmt.IsDuration(tt))
 		}
 	})
+
+	t.Run("DoNotUsePartialAmounts", func(t *testing.T) {
+		var parsed Duration
+		assert.NilError(t, yaml.Unmarshal([]byte(`1.5 hours`), &parsed))
+
+		expected, err := time.ParseDuration(`1.5h`)
+		assert.NilError(t, err)
+
+		// The parsed value is *not* the expected amount.
+		assert.Assert(t, parsed.AsDuration().Duration != expected,
+			"expected https://github.com/kubernetes/kube-openapi/issues/523")
+	})
 }
 
 func TestSchemalessObjectDeepCopy(t *testing.T) {
