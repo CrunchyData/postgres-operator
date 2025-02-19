@@ -153,6 +153,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	setStatusToProgressingIfReasonWas("", upgrade)
 
 	// The "from" version must be smaller than the "to" version.
+	// NOTE: CRD validation also rejects these values.
 	// An invalid PGUpgrade should not be requeued.
 	if upgrade.Spec.FromPostgresVersion >= upgrade.Spec.ToPostgresVersion {
 
