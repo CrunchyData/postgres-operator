@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: cluster-migrate
+spec:
+  steps:
+  - name: step-01
+    try:
+    - apply:
+        file: 01--non-crunchy-cluster.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-02
+    try:
+    - apply:
+        file: 02--create-data.yaml
+    - assert:
+        file: 02-assert.yaml
+  - name: step-03
+    try:
+    - script:
+        content: |
+          set -e
+          VOLUME_NAME=$(
+            kubectl get pvc --namespace "${NAMESPACE}" \
+              --output=jsonpath={.items..spec.volumeName}
+          )
+
+          ORIGINAL_POLICY=$(
+            kubectl get pv "${VOLUME_NAME}" \
+              --output=jsonpath={.spec.persistentVolumeReclaimPolicy}
+          )
+
+          kubectl create configmap persistent-volume-reclaim-policy --namespace "${NAMESPACE}" \
+            --from-literal=ORIGINAL_POLICY="${ORIGINAL_POLICY}" \
+            --from-literal=VOLUME_NAME="${VOLUME_NAME}"
+
+          kubectl patch pv "${VOLUME_NAME}" -p '{"spec":{"persistentVolumeReclaimPolicy":"Retain"}}'
+
+          kubectl label pv "${VOLUME_NAME}" postgres-operator-test=kuttl app.kubernetes.io/name=postgresql app.kubernetes.io/instance=non-crunchy-cluster test-namespace="${NAMESPACE}"
+  - name: step-04
+    try:
+    - delete:
+        ref:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          name: non-crunchy-cluster
+    - delete:
+        ref:
+          apiVersion: v1
+          kind: Service
+          name: non-crunchy-cluster
+    - delete:
+        ref:
+          apiVersion: v1
+          kind: Service
+          name: non-crunchy-cluster-hl
+    - delete:
+        ref:
+          apiVersion: v1
+          kind: Secret
+          name: non-crunchy-cluster
+    - error:
+        file: 04-errors.yaml
+  - name: step-05
+    try:
+    - apply:
+        file: 05--cluster.yaml
+  - name: step-06
+    try:
+    - assert:
+        file: 06-assert.yaml
+  - name: step-07
+    try:
+    - script:
+        content: |
+          set -e
+          if [[ ${KUTTL_PG_VERSION} -ge 15 ]]; then
+            PRIMARY=
+            while [[ -z "${PRIMARY}" ]]; do
+              PRIMARY=$(
+                kubectl get pod --namespace "${NAMESPACE}" \
+                  --output name --selector '
+                    postgres-operator.crunchydata.com/cluster=cluster-migrate,
+                    postgres-operator.crunchydata.com/role=master'
+              )
+            done
+
+            # Ignore warnings about collation changes. This is DANGEROUS on real data!
+            # Only do this automatic step in test conditions; with real data, this may cause
+            # more problems as you may need to reindex.
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -c database \
+                -- psql -qAt --command \
+                'ALTER DATABASE postgres REFRESH COLLATION VERSION; ALTER DATABASE template1 REFRESH COLLATION VERSION;'
+          fi
+  - name: step-08
+    try:
+    - script:
+        content: |
+          set -e
+          SAVED_DATA=$(
+            kubectl get configmap persistent-volume-reclaim-policy --namespace "${NAMESPACE}" \
+              --output=jsonpath="{.data..['ORIGINAL_POLICY','VOLUME_NAME']}"
+          )
+
+          IFS=' '
+          read ORIGINAL_POLICY VOLUME_NAME <<< "${SAVED_DATA}"
+
+          kubectl patch pv "${VOLUME_NAME}" -p '{"spec":{"persistentVolumeReclaimPolicy":"'${ORIGINAL_POLICY}'"}}'
+  - name: step-09
+    try:
+    - script:
+        content: |
+          set -e
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=cluster-migrate,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          TREASURE=$(
+            kubectl exec "${PRIMARY}" --namespace "${NAMESPACE}" \
+              --container database \
+              -- psql -U postgres -qt -c "select data from important"
+          )
+
+          if [[ "${TREASURE}" != " treasure" ]]; then
+            echo "Migration from 3rd-party PG pod failed, result from query: ${TREASURE}"
+            exit 1
+          fi

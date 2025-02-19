@@ -1,0 +1,41 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: gssapi
+spec:
+  config:
+    files:
+    - secret:
+        name: krb5-keytab
+    - configMap:
+        name: krb5
+  patroni:
+    dynamicConfiguration:
+      postgresql:
+        pg_hba:
+        - host postgres postgres 0.0.0.0/0 scram-sha-256
+        - host all krb5hippo@PGO.CRUNCHYDATA.COM 0.0.0.0/0 gss
+        parameters:
+          krb_server_keyfile: /etc/postgres/krb5.keytab
+  users:
+  - name: postgres
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
