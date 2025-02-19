@@ -4718,7 +4718,7 @@ spec:
                     - message: domain socket paths cannot be changed
                       rule: '!self.exists(k, k.startsWith("unix_socket_"))'
                     - message: wal_level must be "replica" or higher
-                      rule: '!has(self.wal_level) || self.wal_level in ["replica","logical"]'
+                      rule: '!has(self.wal_level) || self.wal_level in ["logical"]'
                     - message: wal_log_hints are always enabled
                       rule: '!has(self.wal_log_hints)'
                     - rule: '!has(self.archive_mode) && !has(self.archive_command)

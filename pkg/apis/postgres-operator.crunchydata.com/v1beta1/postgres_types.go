@@ -43,7 +43,7 @@ type PostgresConfig struct {
 	// # Write Ahead Log
 	// - https://www.postgresql.org/docs/current/runtime-config-wal.html
 	//
-	// +kubebuilder:validation:XValidation:rule=`!has(self.wal_level) || self.wal_level in ["replica","logical"]`,message=`wal_level must be "replica" or higher`
+	// +kubebuilder:validation:XValidation:rule=`!has(self.wal_level) || self.wal_level in ["logical"]`,message=`wal_level must be "replica" or higher`
 	// +kubebuilder:validation:XValidation:rule=`!has(self.wal_log_hints)`,message=`wal_log_hints are always enabled`
 	// +kubebuilder:validation:XValidation:rule=`!has(self.archive_mode) && !has(self.archive_command) && !has(self.restore_command)`
 	// +kubebuilder:validation:XValidation:rule=`!has(self.recovery_target) && !self.exists(k, k.startsWith("recovery_target_"))`

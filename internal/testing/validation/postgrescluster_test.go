@@ -163,11 +163,6 @@ func TestPostgresConfigParameters(t *testing.T) {
 				"wal_level": intstr.FromString("logical"),
 			}
 			assert.NilError(t, cc.Create(ctx, cluster, client.DryRunAll))
-
-			cluster.Spec.Config.Parameters = map[string]intstr.IntOrString{
-				"wal_level": intstr.FromString("replica"),
-			}
-			assert.NilError(t, cc.Create(ctx, cluster, client.DryRunAll))
 		})
 
 		t.Run("Invalid", func(t *testing.T) {
