@@ -5,7 +5,8 @@
 # https://github.com/CrunchyData/pgmonitor/blob/development/sql_exporter/common/crunchy_global_collector.yml
 
 # NOTE: Some of the columns below can return NULL values, for which sqlqueryreceiver will warn.
-# Those columns are idx_scan and idx_tup_fetch.
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/sqlqueryreceiver#null-values
+# Those columns are idx_scan and idx_tup_fetch and we avoid NULL by using COALESCE.
   - sql: >
       SELECT
           current_database() as dbname
