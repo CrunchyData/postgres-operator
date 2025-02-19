@@ -1213,15 +1213,13 @@ func (r *Reconciler) reconcileInstance(
 		feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 
 		monitoringUserSecret := &corev1.Secret{ObjectMeta: naming.MonitoringUserSecret(cluster)}
-		err := errors.WithStack(
+		err = errors.WithStack(
 			r.Client.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
 
-		if client.IgnoreNotFound(err) != nil {
-			return err
+		if err == nil {
+			collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
+				[]corev1.VolumeMount{postgres.DataVolumeMount()}, string(monitoringUserSecret.Data["password"]), false)
 		}
-
-		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
-			[]corev1.VolumeMount{postgres.DataVolumeMount()}, string(monitoringUserSecret.Data["password"]), false)
 	}
 
 	// Add postgres-exporter to the instance Pod spec
