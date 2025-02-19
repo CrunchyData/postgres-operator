@@ -153,6 +153,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	setStatusToProgressingIfReasonWas("", upgrade)
 
 	// The "from" version must be smaller than the "to" version.
+	// NOTE: CRD validation also rejects these values.
 	// An invalid PGUpgrade should not be requeued.
 	if upgrade.Spec.FromPostgresVersion >= upgrade.Spec.ToPostgresVersion {
 
@@ -418,7 +419,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			// Set the cluster status when we know the upgrade has completed successfully.
 			// This will serve to help the user see that the upgrade has completed if they
 			// are only watching the PostgresCluster
-			patch.Status.PostgresVersion = upgrade.Spec.ToPostgresVersion
+			patch.Status.PostgresVersion = int(upgrade.Spec.ToPostgresVersion)
 
 			// Set the pgBackRest status for bootstrapping
 			patch.Status.PGBackRest.Repos = []v1beta1.RepoStatus{}
