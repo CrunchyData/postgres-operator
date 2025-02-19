@@ -9,6 +9,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -94,16 +95,9 @@ func podConfigFiles(configmap *corev1.ConfigMap, spec v1beta1.PGAdminPodSpec) []
 	// - https://www.pgadmin.org/docs/pgadmin4/development/enabling_ldap_authentication.html
 	if spec.Config.LDAPBindPassword != nil {
 		config = append(config, corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: spec.Config.LDAPBindPassword.LocalObjectReference,
-				Optional:             spec.Config.LDAPBindPassword.Optional,
-				Items: []corev1.KeyToPath{
-					{
-						Key:  spec.Config.LDAPBindPassword.Key,
-						Path: ldapPasswordPath,
-					},
-				},
-			},
+			Secret: initialize.Pointer(
+				spec.Config.LDAPBindPassword.AsProjection(ldapPasswordPath),
+			),
 		})
 	}
 
