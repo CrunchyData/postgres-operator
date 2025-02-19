@@ -76,6 +76,7 @@ type PGUpgradeSpec struct {
 // Arguments and settings for the pg_upgrade tool.
 // See: https://www.postgresql.org/docs/current/pgupgrade.html
 // ---
+// +kubebuilder:validation:XValidation:rule=`self.fromPostgresVersion < self.toPostgresVersion`
 // +kubebuilder:validation:XValidation:rule=`!has(self.transferMethod) || (self.toPostgresVersion < 12 ? self.transferMethod in ["Copy","Link"] : true)`,message="Only Copy or Link before PostgreSQL 12"
 // +kubebuilder:validation:XValidation:rule=`!has(self.transferMethod) || (self.toPostgresVersion < 17 ? self.transferMethod in ["Clone","Copy","Link"] : true)`,message="Only Clone, Copy, or Link before PostgreSQL 17"
 type PGUpgradeSettings struct {

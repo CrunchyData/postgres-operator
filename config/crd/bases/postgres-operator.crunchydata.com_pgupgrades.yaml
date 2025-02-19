@@ -1155,6 +1155,7 @@ spec:
             - toPostgresVersion
             type: object
             x-kubernetes-validations:
+            - rule: self.fromPostgresVersion < self.toPostgresVersion
             - message: Only Copy or Link before PostgreSQL 12
               rule: '!has(self.transferMethod) || (self.toPostgresVersion < 12 ? self.transferMethod
                 in ["Copy","Link"] : true)'
