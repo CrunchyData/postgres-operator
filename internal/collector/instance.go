@@ -6,6 +6,7 @@ package collector
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -15,6 +16,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+const configDirectory = "/etc/otel-collector"
 
 // AddToConfigMap populates the shared ConfigMap with fields needed to run the Collector.
 func AddToConfigMap(
@@ -50,7 +53,7 @@ func AddToPod(
 	// Create volume and volume mount for otel collector config
 	configVolumeMount := corev1.VolumeMount{
 		Name:      "collector-config",
-		MountPath: "/etc/otel-collector",
+		MountPath: configDirectory,
 		ReadOnly:  true,
 	}
 	configVolume := corev1.Volume{Name: configVolumeMount.Name}
@@ -144,22 +147,37 @@ func AddToPod(
 
 // startCommand generates the command script used by the collector container
 func startCommand(includeLogrotate bool) []string {
-	var startScript = `
-/otelcol-contrib --config /etc/otel-collector/config.yaml
-`
-
+	var logrotateCommand string
 	if includeLogrotate {
-		startScript = `
-/otelcol-contrib --config /etc/otel-collector/config.yaml &
+		logrotateCommand = `logrotate -s /tmp/logrotate.status /etc/logrotate.d/logrotate.conf`
+	}
+
+	var startScript = fmt.Sprintf(`
+OTEL_PIDFILE=/tmp/otel.pid
+
+start_otel_collector() {
+	echo "Starting OTel Collector"
+	/otelcol-contrib --config %s/config.yaml &
+	echo $! > $OTEL_PIDFILE
+}
+start_otel_collector
 
 exec {fd}<> <(:||:)
 while read -r -t 5 -u "${fd}" ||:; do
-	logrotate -s /tmp/logrotate.status /etc/logrotate.d/logrotate.conf
+	%s
+	if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && kill -HUP $(head -1 ${OTEL_PIDFILE?});
+	then
+		echo "OTel configuration changed..."
+		exec {fd}>&- && exec {fd}<> <(:||:)
+		stat --format='Loaded configuration dated %%y' "${directory}"
+	fi
+	if [[ ! -e /proc/$(head -1 ${OTEL_PIDFILE?}) ]] ; then
+		start_otel_collector
+	fi
 done
-`
-	}
+`, configDirectory, logrotateCommand)
 
-	wrapper := `monitor() {` + startScript + `}; export -f monitor; exec -a "$0" bash -ceu monitor`
+	wrapper := `monitor() {` + startScript + `}; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
 
-	return []string{"bash", "-ceu", "--", wrapper, "collector"}
+	return []string{"bash", "-ceu", "--", wrapper, "collector", configDirectory}
 }
