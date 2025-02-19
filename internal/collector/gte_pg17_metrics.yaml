@@ -1,0 +1,71 @@
+# This list of queries configures an OTel SQL Query Receiver to read pgMonitor
+# metrics from Postgres.
+#
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/sqlqueryreceiver#metrics-queries
+# https://github.com/CrunchyData/pgmonitor/blob/development/sql_exporter/common/crunchy_global_collector.yml
+
+  - sql: >
+      SELECT c.buffers_written
+      FROM pg_catalog.pg_stat_checkpointer c;
+    metrics:
+      - metric_name: ccp_stat_bgwriter_buffers_checkpoint
+        data_type: sum
+        description: Number of buffers written during checkpoints and restartpoints
+        static_attributes:
+          server: "localhost:5432"
+
+  - sql: >
+      SELECT
+          s.writes
+          , s.fsyncs
+      FROM pg_catalog.pg_stat_io s
+      WHERE backend_type = 'background writer';
+    metrics:
+      - metric_name: ccp_stat_bgwriter_buffers_backend
+        value_column: writes
+        data_type: sum
+        description: Number of write operations, each of the size specified in op_bytes.
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_stat_bgwriter_buffers_backend_fsync
+        value_column: fsyncs
+        data_type: sum
+        description: Number of fsync calls. These are only tracked in context normal.
+        static_attributes:
+          server: "localhost:5432"
+
+  - sql: >
+      SELECT
+          c.num_timed
+          , c.num_requested
+          , c.write_time
+          , c.sync_time
+          , c.buffers_written
+      FROM pg_catalog.pg_stat_checkpointer c;
+    metrics:
+      - metric_name: ccp_stat_bgwriter_checkpoint_sync_time
+        value_column: sync_time
+        description: Total amount of time that has been spent in the portion of checkpoint processing where files are synchronized to disk, in milliseconds
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_stat_bgwriter_checkpoint_write_time
+        value_column: write_time
+        value_type: double
+        description: Total amount of time that has been spent in the portion of checkpoint processing where files are written to disk, in milliseconds
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_stat_bgwriter_checkpoints_req
+        value_column: num_requested
+        description: Number of requested checkpoints that have been performed
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_stat_bgwriter_checkpoints_timed
+        value_column: num_timed
+        description: Number of scheduled checkpoints that have been performed
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_stat_checkpointer_buffers_written
+        description: Number of buffers written during checkpoints and restartpoints
+        value_column: buffers_written
+        static_attributes:
+          server: "localhost:5432"

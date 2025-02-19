@@ -160,7 +160,7 @@ func EnablePatroniMetrics(ctx context.Context,
 		}
 
 		// Add Metrics Pipeline
-		outConfig.Pipelines[Metrics] = Pipeline{
+		outConfig.Pipelines[PatroniMetrics] = Pipeline{
 			Receivers: []ComponentID{Prometheus},
 			Exporters: []ComponentID{Prometheus},
 		}
