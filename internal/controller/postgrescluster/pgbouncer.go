@@ -105,8 +105,12 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 	}
 	// If OTel logging is enabled, add logrotate config
 	if err == nil && otelConfig != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
-		err = collector.AddLogrotateConfig(ctx, cluster.Spec.Instrumentation, configmap,
-			naming.PGBouncerFullLogPath, collector.PGBouncerPostRotateScript)
+		logrotateConfig := collector.LogrotateConfig{
+			LogFiles:         []string{naming.PGBouncerFullLogPath},
+			PostrotateScript: collector.PGBouncerPostRotateScript,
+		}
+		collector.AddLogrotateConfigs(ctx, cluster.Spec.Instrumentation, configmap,
+			[]collector.LogrotateConfig{logrotateConfig})
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, configmap))

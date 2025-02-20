@@ -9,8 +9,11 @@ import (
 	_ "embed"
 	"fmt"
 	"math"
+	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/yaml"
 
@@ -52,6 +55,13 @@ type Pipeline struct {
 	Exporters  []ComponentID
 	Processors []ComponentID
 	Receivers  []ComponentID
+}
+
+// LogrotateConfig represents the configurable pieces of a log rotate config
+// that can vary based on the specific component whose logs are being rotated
+type LogrotateConfig struct {
+	LogFiles         []string
+	PostrotateScript string
 }
 
 func (c *Config) ToYAML() (string, error) {
@@ -114,48 +124,43 @@ func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 	return config
 }
 
-// AddLogrotateConfig generates a logrotate configuration and adds it to the
-// provided configmap
-func AddLogrotateConfig(ctx context.Context, spec *v1beta1.InstrumentationSpec,
-	outInstanceConfigMap *corev1.ConfigMap, logFilePath, postrotateScript string,
-) error {
-	var err error
-	var retentionPeriod *v1beta1.Duration
-
+// AddLogrotateConfigs generates a logrotate configuration for each LogrotateConfig
+// provided via the configs parameter and adds them to the provided configmap.
+func AddLogrotateConfigs(ctx context.Context, spec *v1beta1.InstrumentationSpec,
+	outInstanceConfigMap *corev1.ConfigMap, configs []LogrotateConfig,
+) {
 	if outInstanceConfigMap.Data == nil {
 		outInstanceConfigMap.Data = make(map[string]string)
 	}
 
 	// If retentionPeriod is set in the spec, use that value; otherwise, we want
 	// to use a reasonably short duration. Defaulting to 1 day.
+	retentionPeriod := metav1.Duration{Duration: 24 * time.Hour}
 	if spec != nil && spec.Logs != nil && spec.Logs.RetentionPeriod != nil {
-		retentionPeriod = spec.Logs.RetentionPeriod
-	} else {
-		retentionPeriod, err = v1beta1.NewDuration("1d")
-		if err != nil {
-			return err
-		}
+		retentionPeriod = spec.Logs.RetentionPeriod.AsDuration()
 	}
 
-	outInstanceConfigMap.Data["logrotate.conf"] = generateLogrotateConfig(logFilePath,
-		retentionPeriod, postrotateScript)
+	logrotateConfig := ""
+	for _, config := range configs {
+		logrotateConfig += generateLogrotateConfig(config, retentionPeriod)
+	}
 
-	return err
+	outInstanceConfigMap.Data["logrotate.conf"] = logrotateConfig
 }
 
 // generateLogrotateConfig generates a configuration string for logrotate based
 // on the provided full log file path, retention period, and postrotate script
-func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Duration,
-	postrotateScript string,
+func generateLogrotateConfig(
+	config LogrotateConfig, retentionPeriod metav1.Duration,
 ) string {
 	number, interval := parseDurationForLogrotate(retentionPeriod)
 
 	return fmt.Sprintf(
 		logrotateConfigFormatString,
-		logFilePath,
+		strings.Join(config.LogFiles, " "),
 		number,
 		interval,
-		postrotateScript,
+		config.PostrotateScript,
 	)
 }
 
@@ -164,8 +169,8 @@ func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Durati
 // If the retentionPeriod is less than 24 hours, the function will return the
 // number of hours and "hourly"; otherwise, we will round up to the nearest day
 // and return the day count and "daily"
-func parseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
-	hours := math.Ceil(retentionPeriod.AsDuration().Hours())
+func parseDurationForLogrotate(retentionPeriod metav1.Duration) (int, string) {
+	hours := math.Ceil(retentionPeriod.Hours())
 	if hours < 24 {
 		return int(hours), "hourly"
 	}

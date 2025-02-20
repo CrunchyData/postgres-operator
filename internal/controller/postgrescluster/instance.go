@@ -1200,26 +1200,27 @@ func (r *Reconciler) reconcileInstance(
 			spec, instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
+	// If either OpenTelemetry feature is enabled, we want to add the collector config to the pod
 	if err == nil &&
-		(feature.Enabled(ctx, feature.OpenTelemetryLogs) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 
-		// TODO: Setting the includeLogrotate argument to false for now. This
-		// should be changed when we implement log rotation for postgres
-		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
-			[]corev1.VolumeMount{postgres.DataVolumeMount()}, "", false)
-	}
-
-	if err == nil &&
-		feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-
-		monitoringUserSecret := &corev1.Secret{ObjectMeta: naming.MonitoringUserSecret(cluster)}
-		err = errors.WithStack(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
-
-		if err == nil {
-			collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
-				[]corev1.VolumeMount{postgres.DataVolumeMount()}, string(monitoringUserSecret.Data["password"]), false)
+		// If the OpenTelemetryMetrics feature is enabled, we need to get the pgpassword from the
+		// monitoring user secret
+		pgPassword := ""
+		if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+			monitoringUserSecret := &corev1.Secret{ObjectMeta: naming.MonitoringUserSecret(cluster)}
+			// Create new err variable to avoid abandoning the rest of the reconcile loop if there
+			// is an error getting the monitoring user secret
+			err := errors.WithStack(
+				r.Client.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
+			if err == nil {
+				pgPassword = string(monitoringUserSecret.Data["password"])
+			}
 		}
+
+		// For now, we are not using logrotate to rotate postgres or patroni logs
+		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
+			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword, false)
 	}
 
 	// Add postgres-exporter to the instance Pod spec
