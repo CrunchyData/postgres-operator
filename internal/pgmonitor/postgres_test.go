@@ -5,6 +5,7 @@
 package pgmonitor
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -15,10 +16,12 @@ import (
 )
 
 func TestPostgreSQLHBA(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		inCluster := &v1beta1.PostgresCluster{}
 		outHBAs := postgres.HBAs{}
-		PostgreSQLHBAs(inCluster, &outHBAs)
+		PostgreSQLHBAs(ctx, inCluster, &outHBAs)
 		assert.Equal(t, len(outHBAs.Mandatory), 0)
 	})
 
@@ -33,7 +36,7 @@ func TestPostgreSQLHBA(t *testing.T) {
 		}
 
 		outHBAs := postgres.HBAs{}
-		PostgreSQLHBAs(inCluster, &outHBAs)
+		PostgreSQLHBAs(ctx, inCluster, &outHBAs)
 
 		assert.Equal(t, len(outHBAs.Mandatory), 3)
 		assert.Equal(t, outHBAs.Mandatory[0].String(), `host all "ccp_monitoring" "127.0.0.0/8" scram-sha-256`)
@@ -43,10 +46,12 @@ func TestPostgreSQLHBA(t *testing.T) {
 }
 
 func TestPostgreSQLParameters(t *testing.T) {
+	ctx := context.Background()
+
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		inCluster := &v1beta1.PostgresCluster{}
 		outParameters := postgres.NewParameters()
-		PostgreSQLParameters(inCluster, &outParameters)
+		PostgreSQLParameters(ctx, inCluster, &outParameters)
 		assert.Assert(t, !outParameters.Mandatory.Has("shared_preload_libraries"))
 	})
 
@@ -61,7 +66,7 @@ func TestPostgreSQLParameters(t *testing.T) {
 		}
 		outParameters := postgres.NewParameters()
 
-		PostgreSQLParameters(inCluster, &outParameters)
+		PostgreSQLParameters(ctx, inCluster, &outParameters)
 		libs, found := outParameters.Mandatory.Get("shared_preload_libraries")
 		assert.Assert(t, found)
 		assert.Assert(t, strings.Contains(libs, "pg_stat_statements"))
@@ -80,7 +85,7 @@ func TestPostgreSQLParameters(t *testing.T) {
 		outParameters := postgres.NewParameters()
 		outParameters.Mandatory.Add("shared_preload_libraries", "daisy")
 
-		PostgreSQLParameters(inCluster, &outParameters)
+		PostgreSQLParameters(ctx, inCluster, &outParameters)
 		libs, found := outParameters.Mandatory.Get("shared_preload_libraries")
 		assert.Assert(t, found)
 		assert.Assert(t, strings.Contains(libs, "pg_stat_statements"))
