@@ -9,6 +9,7 @@
       FROM pg_catalog.pg_stat_checkpointer c;
     metrics:
       - metric_name: ccp_stat_bgwriter_buffers_checkpoint
+        value_column: buffers_written
         data_type: sum
         description: Number of buffers written during checkpoints and restartpoints
         static_attributes:
