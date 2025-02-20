@@ -73,7 +73,8 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	// We use this ImageID and the setup.sql file in the hash we make to see if the operator needs to rerun
 	// the `EnableExporterInPostgreSQL` funcs; that way we are always running
 	// that function against an updated and running pod.
-	if pgmonitor.ExporterEnabled(cluster) {
+
+	if pgmonitor.ExporterEnabled(cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		sql, err := os.ReadFile(fmt.Sprintf("%s/pg%d/setup.sql", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
 		if err != nil {
 			return err
@@ -110,7 +111,7 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 		return pgmonitor.EnableExporterInPostgreSQL(ctx, exec, monitoringSecret, pgmonitor.ExporterDB, setup)
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) {
+	if !pgmonitor.ExporterEnabled(cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		action = func(ctx context.Context, exec postgres.Executor) error {
 			return pgmonitor.DisableExporterInPostgreSQL(ctx, exec)
 		}
@@ -168,7 +169,7 @@ func (r *Reconciler) reconcileMonitoringSecret(
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) {
+	if !pgmonitor.ExporterEnabled(cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// TODO: Checking if the exporter is enabled to determine when monitoring
 		// secret should be created. If more tools are added to the monitoring
 		// suite, they could need the secret when the exporter is not enabled.
@@ -259,7 +260,7 @@ func addPGMonitorExporterToInstancePodSpec(
 	template *corev1.PodTemplateSpec,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
 
-	if !pgmonitor.ExporterEnabled(cluster) {
+	if !pgmonitor.ExporterEnabled(cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		return nil
 	}
 
@@ -407,7 +408,7 @@ func (r *Reconciler) reconcileExporterWebConfig(ctx context.Context,
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) || cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret == nil {
+	if !pgmonitor.ExporterEnabled(cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) || cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret == nil {
 		// We could still have a NotFound error here so check the err.
 		// If no error that means the configmap is found and needs to be deleted
 		if err == nil {

@@ -235,13 +235,13 @@ func (r *Reconciler) Reconcile(
 	}
 
 	pgHBAs := postgres.NewHBAs()
-	pgmonitor.PostgreSQLHBAs(cluster, &pgHBAs)
+	pgmonitor.PostgreSQLHBAs(ctx, cluster, &pgHBAs)
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
 	pgParameters := postgres.NewParameters()
 	pgaudit.PostgreSQLParameters(&pgParameters)
 	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)
-	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
+	pgmonitor.PostgreSQLParameters(ctx, cluster, &pgParameters)
 
 	otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, &pgParameters)
 
