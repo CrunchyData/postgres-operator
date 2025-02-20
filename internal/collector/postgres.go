@@ -9,7 +9,11 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"math"
 	"slices"
+	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -84,14 +88,22 @@ func EnablePostgresLogging(
 		// PostgreSQL v8.3 adds support for CSV logging, and
 		// PostgreSQL v15 adds support for JSON logging. The latter is preferred
 		// because newlines are escaped as "\n", U+005C + U+006E.
-		if inCluster.Spec.PostgresVersion < 15 {
+		if inCluster != nil && inCluster.Spec.PostgresVersion < 15 {
 			outParameters.Add("log_destination", "csvlog")
 		} else {
 			outParameters.Add("log_destination", "jsonlog")
 		}
 
-		// Keep seven days of logs named for the day of the week;
-		// this has been the default produced by `initdb` for some time now.
+		// If retentionPeriod is set in the spec, use that value; otherwise, we want
+		// to use a reasonably short duration. Defaulting to 1 day.
+		retentionPeriod := metav1.Duration{Duration: 24 * time.Hour}
+		if inCluster != nil && inCluster.Spec.Instrumentation != nil &&
+			inCluster.Spec.Instrumentation.Logs != nil &&
+			inCluster.Spec.Instrumentation.Logs.RetentionPeriod != nil {
+			retentionPeriod = inCluster.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration()
+		}
+		logFilename, logRotationAge := generateLogFilenameAndRotationAge(retentionPeriod)
+
 		// NOTE: The automated portions of log_filename are *entirely* based
 		// on time. There is no spelling that is guaranteed to be unique or
 		// monotonically increasing.
@@ -100,9 +112,9 @@ func EnablePostgresLogging(
 		// probably requires another process that deletes the oldest files.
 		//
 		// The ".log" suffix is replaced by ".json" for JSON log files.
-		outParameters.Add("log_filename", "postgresql-%a.log")
+		outParameters.Add("log_filename", logFilename)
 		outParameters.Add("log_file_mode", "0660")
-		outParameters.Add("log_rotation_age", "1d")
+		outParameters.Add("log_rotation_age", logRotationAge)
 		outParameters.Add("log_rotation_size", "0")
 		outParameters.Add("log_truncate_on_rotation", "on")
 
@@ -271,4 +283,38 @@ func EnablePostgresLogging(
 			Exporters: exporters,
 		}
 	}
+}
+
+// generateLogFilenameAndRotationAge takes a retentionPeriod and returns a
+// log_filename and log_rotation_age to be used to configure postgres logging
+func generateLogFilenameAndRotationAge(
+	retentionPeriod metav1.Duration,
+) (logFilename, logRotationAge string) {
+	// Given how postgres does its log rotation with the truncate feature, we
+	// will always need to make up the total retention period with multiple log
+	// files that hold subunits of the total time (e.g. if the retentionPeriod
+	// is an hour, there will be 60 1-minute long files; if the retentionPeriod
+	// is a day, there will be 24 1-hour long files, etc)
+
+	hours := math.Ceil(retentionPeriod.Hours())
+
+	switch true {
+	case hours <= 1: // One hour's worth of logs in 60 minute long log files
+		logFilename = "postgresql-%M.log"
+		logRotationAge = "1min"
+	case hours <= 24: // One day's worth of logs in 24 hour long log files
+		logFilename = "postgresql-%H.log"
+		logRotationAge = "1h"
+	case hours <= 24*7: // One week's worth of logs in 7 day long log files
+		logFilename = "postgresql-%a.log"
+		logRotationAge = "1d"
+	case hours <= 24*28: // One month's worth of logs in 28-31 day long log files
+		logFilename = "postgresql-%d.log"
+		logRotationAge = "1d"
+	default: // One year's worth of logs in 365 day long log files
+		logFilename = "postgresql-%j.log"
+		logRotationAge = "1d"
+	}
+
+	return
 }

@@ -66,15 +66,16 @@ service:
 
 func TestGenerateLogrotateConfig(t *testing.T) {
 	for _, tt := range []struct {
-		logFilePath      string
-		retentionPeriod  string
-		postrotateScript string
-		result           string
+		config          LogrotateConfig
+		retentionPeriod string
+		result          string
 	}{
 		{
-			logFilePath:      "/this/is/a/file.path",
-			retentionPeriod:  "12h",
-			postrotateScript: "echo 'Hello, World'",
+			config: LogrotateConfig{
+				LogFiles:         []string{"/this/is/a/file.path"},
+				PostrotateScript: "echo 'Hello, World'",
+			},
+			retentionPeriod: "12h",
 			result: `/this/is/a/file.path {
       rotate 12
       missingok
@@ -89,9 +90,11 @@ func TestGenerateLogrotateConfig(t *testing.T) {
 `,
 		},
 		{
-			logFilePath:      "/tmp/test.log",
-			retentionPeriod:  "5 days",
-			postrotateScript: "",
+			config: LogrotateConfig{
+				LogFiles:         []string{"/tmp/test.log"},
+				PostrotateScript: "",
+			},
+			retentionPeriod: "5 days",
 			result: `/tmp/test.log {
       rotate 5
       missingok
@@ -106,10 +109,12 @@ func TestGenerateLogrotateConfig(t *testing.T) {
 `,
 		},
 		{
-			logFilePath:      "/tmp/test.log",
-			retentionPeriod:  "5wk",
-			postrotateScript: "pkill -HUP --exact pgbouncer",
-			result: `/tmp/test.log {
+			config: LogrotateConfig{
+				LogFiles:         []string{"/tmp/test.csv", "/tmp/test.json"},
+				PostrotateScript: "pkill -HUP --exact pgbouncer",
+			},
+			retentionPeriod: "5wk",
+			result: `/tmp/test.csv /tmp/test.json {
       rotate 35
       missingok
       sharedscripts
@@ -126,7 +131,7 @@ func TestGenerateLogrotateConfig(t *testing.T) {
 		t.Run(tt.retentionPeriod, func(t *testing.T) {
 			duration, err := v1beta1.NewDuration(tt.retentionPeriod)
 			assert.NilError(t, err)
-			result := generateLogrotateConfig(tt.logFilePath, duration, tt.postrotateScript)
+			result := generateLogrotateConfig(tt.config, duration.AsDuration())
 			assert.Equal(t, tt.result, result)
 		})
 	}
@@ -192,7 +197,7 @@ func TestParseDurationForLogrotate(t *testing.T) {
 		t.Run(tt.retentionPeriod, func(t *testing.T) {
 			duration, err := v1beta1.NewDuration(tt.retentionPeriod)
 			assert.NilError(t, err)
-			number, interval := parseDurationForLogrotate(duration)
+			number, interval := parseDurationForLogrotate(duration.AsDuration())
 			assert.Equal(t, tt.number, number)
 			assert.Equal(t, tt.interval, interval)
 		})
