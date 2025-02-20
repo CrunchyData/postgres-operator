@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// TODO fold this back into postgres.go once the collector package stabilizes.
 package collector
 
 import (
@@ -20,13 +19,10 @@ import (
 // https://pkg.go.dev/embed
 //
 //go:embed "generated/postgres_5s_metrics.json"
-var defaultFiveSecondMetrics json.RawMessage
+var fiveSecondMetrics json.RawMessage
 
 //go:embed "generated/postgres_5m_metrics.json"
 var fiveMinuteMetrics json.RawMessage
-
-//go:embed "generated/pgbackrest_metrics.json"
-var pgBackRestMetrics json.RawMessage
 
 //go:embed "generated/gte_pg17_metrics.json"
 var gtePG17 json.RawMessage
@@ -42,9 +38,6 @@ var ltPG16 json.RawMessage
 
 func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresCluster, config *Config) {
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-		var fiveSecondMetrics json.RawMessage
-		fiveSecondMetrics, _ = appendToJSONArray(defaultFiveSecondMetrics, pgBackRestMetrics)
-
 		if inCluster.Spec.PostgresVersion >= 17 {
 			fiveSecondMetrics, _ = appendToJSONArray(fiveSecondMetrics, gtePG17)
 		} else {

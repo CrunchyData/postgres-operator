@@ -9,8 +9,8 @@
       SELECT
           pg_database.datname,
           tmp.state,
-          tmp2.usename,
-          tmp2.application_name,
+          COALESCE(tmp2.usename, '') as usename,
+          COALESCE(tmp2.application_name, '') as application_name,
           COALESCE(count,0) as count,
           COALESCE(max_tx_duration,0) as max_tx_duration
       FROM
@@ -626,10 +626,9 @@
         static_attributes:
           server: "localhost:5432"
 
-  # ccp_replication_lag_size_bytes will return NULL on a replica
+  # get_replication_lag is created in metrics_setup.sql
   - sql: >
-      SELECT pg_wal_lsn_diff(sent_lsn, replay_lsn) AS bytes
-          FROM pg_catalog.pg_stat_replication;
+      SELECT * FROM get_replication_lag();
     metrics:
       - metric_name: ccp_replication_lag_size_bytes
         value_column: bytes
@@ -640,21 +639,24 @@
 
   - sql: >
       SELECT
+         COALESCE(
+            CASE
+               WHEN (pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn()) OR (pg_is_in_recovery() = false) THEN 0
+               ELSE EXTRACT (EPOCH FROM clock_timestamp() - pg_last_xact_replay_timestamp())::INTEGER
+            END,
+            0
+         ) AS replay_time,
+         COALESCE(
+            CASE
+               WHEN pg_is_in_recovery() = false THEN 0
+               ELSE EXTRACT (EPOCH FROM clock_timestamp() - pg_last_xact_replay_timestamp())::INTEGER
+            END,
+            0
+         ) AS received_time,
          CASE
-         WHEN (pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn()) OR (pg_is_in_recovery() = false) THEN 0
-         ELSE EXTRACT (EPOCH FROM clock_timestamp() - pg_last_xact_replay_timestamp())::INTEGER
-         END
-      AS replay_time
-      ,  CASE
-         WHEN pg_is_in_recovery() = false THEN 0
-         ELSE EXTRACT (EPOCH FROM clock_timestamp() - pg_last_xact_replay_timestamp())::INTEGER
-         END
-      AS received_time
-      ,  CASE
-         WHEN pg_is_in_recovery() = true THEN 'replica'
-         ELSE 'primary'
-         END
-      AS role;
+            WHEN pg_is_in_recovery() = true THEN 'replica'
+            ELSE 'primary'
+         END AS role;
     metrics:
       - metric_name: ccp_replication_lag_received_time 
         value_column: received_time
@@ -877,3 +879,70 @@
         static_attributes:
           server: "localhost:5432"
 
+  - sql: |
+      SELECT * FROM get_pgbackrest_info();
+    metrics:
+      - metric_name: ccp_backrest_last_diff_backup_time_since_completion_seconds 
+        description: Seconds since the last completed full or differential backup. Differential is always based off last full.
+        value_column: last_diff_backup
+        attribute_columns: ["repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_last_full_backup_time_since_completion_seconds 
+        description: Seconds since the last completed full backup
+        value_column: last_full_backup
+        attribute_columns: ["repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_last_incr_backup_time_since_completion_seconds
+        description: |
+          Seconds since the last completed full, differential or incremental backup.
+          Incremental is always based off last full or differential.
+        value_column: last_incr_backup
+        attribute_columns: ["repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_last_info_backrest_repo_version 
+        description: pgBackRest version number when this backup was performed
+        value_column: last_info_backrest_repo_version
+        attribute_columns: ["backup_type", "repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_last_info_backup_error
+        description: An error has been encountered in the backup. Check logs for more information.
+        value_column: last_info_backup_error
+        attribute_columns: ["backup_type", "repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_last_info_backup_runtime_seconds 
+        description: Total runtime in seconds of this backup
+        value_column: backup_runtime_seconds
+        attribute_columns: ["backup_type", "repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_last_info_repo_backup_size_bytes
+        description: Actual size of only this individual backup in the pgbackrest repository
+        value_column: repo_backup_size_bytes
+        attribute_columns: ["backup_type", "repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_last_info_repo_total_size_bytes
+        description: Total size of this backup in the pgbackrest repository, including all required previous backups and WAL
+        value_column: repo_total_size_bytes
+        attribute_columns: ["backup_type", "repo"]
+        static_attributes:
+          server: "localhost:5432"
+          stanza: "db"
+      - metric_name: ccp_backrest_oldest_full_backup_time_seconds 
+        description: Seconds since the oldest completed full backup
+        value_column: oldest_full_backup
+        attribute_columns: ["repo"]
+        static_attributes:
+          server: "localhost:5432"
