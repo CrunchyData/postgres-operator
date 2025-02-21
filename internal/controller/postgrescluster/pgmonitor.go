@@ -402,6 +402,10 @@ func addPGMonitorExporterToInstancePodSpec(
 func (r *Reconciler) reconcileExporterWebConfig(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) (*corev1.ConfigMap, error) {
 
+	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		return nil, nil
+	}
+
 	existing := &corev1.ConfigMap{ObjectMeta: naming.ExporterWebConfigMap(cluster)}
 	err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 	if client.IgnoreNotFound(err) != nil {

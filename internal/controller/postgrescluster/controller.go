@@ -30,7 +30,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -345,7 +344,7 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		exporterQueriesConfig, err = r.reconcileExporterQueriesConfig(ctx, cluster)
 	}
-	if err == nil && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if err == nil {
 		exporterWebConfig, err = r.reconcileExporterWebConfig(ctx, cluster)
 	}
 	if err == nil {
