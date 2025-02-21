@@ -133,7 +133,7 @@ func EnablePatroniMetrics(ctx context.Context,
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// Add Prometheus exporter
 		outConfig.Exporters[Prometheus] = map[string]any{
-			"endpoint": "0.0.0.0:8889",
+			"endpoint": "0.0.0.0:9187",
 		}
 
 		// Add Prometheus Receiver

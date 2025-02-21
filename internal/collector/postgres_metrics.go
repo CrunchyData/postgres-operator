@@ -51,7 +51,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 		}
 		// Add Prometheus exporter
 		config.Exporters[Prometheus] = map[string]any{
-			"endpoint": "0.0.0.0:8889",
+			"endpoint": "0.0.0.0:9187",
 		}
 
 		config.Receivers[FiveSecondSqlQuery] = map[string]any{

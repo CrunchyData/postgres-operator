@@ -172,7 +172,7 @@ func EnablePgBouncerMetrics(ctx context.Context, config *Config, sqlQueryUsernam
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// Add Prometheus exporter
 		config.Exporters[Prometheus] = map[string]any{
-			"endpoint": "0.0.0.0:8889",
+			"endpoint": "0.0.0.0:9187",
 		}
 
 		// Add SqlQuery Receiver
