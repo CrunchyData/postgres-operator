@@ -236,19 +236,6 @@ func (r *Reconciler) reconcileMonitoringSecret(
 	return nil, err
 }
 
-// addPGExporterToInstancePodSpec performs the necessary setup to add
-// pgMonitor resources on a PodTemplateSpec for running postgres-exporter.
-func addPGExporterToInstancePodSpec(
-	ctx context.Context,
-	cluster *v1beta1.PostgresCluster,
-	template *corev1.PodTemplateSpec,
-	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
-
-	err := addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, exporterWebConfig)
-
-	return err
-}
-
 // addPGMonitorExporterToInstancePodSpec performs the necessary setup to
 // add pgMonitor exporter resources to a PodTemplateSpec
 // TODO (jmckulk): refactor to pass around monitoring secret; Without the secret
