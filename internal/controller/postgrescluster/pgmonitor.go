@@ -157,12 +157,9 @@ func (r *Reconciler) reconcileMonitoringSecret(
 		return nil, err
 	}
 
+	// Checking if the exporter is enabled to determine when monitoring
+	// secret should be created.
 	if !pgmonitor.ExporterEnabled(ctx, cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-		// TODO: Checking if the exporter is enabled to determine when monitoring
-		// secret should be created. If more tools are added to the monitoring
-		// suite, they could need the secret when the exporter is not enabled.
-		// This check may need to be updated.
-		// Exporter is disabled; delete monitoring secret if it exists.
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
 		}
