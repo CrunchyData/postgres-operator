@@ -162,6 +162,10 @@ func EnablePatroniMetrics(ctx context.Context,
 		// Add Metrics Pipeline
 		outConfig.Pipelines[PatroniMetrics] = Pipeline{
 			Receivers: []ComponentID{Prometheus},
+			Processors: []ComponentID{
+				SubSecondBatchProcessor,
+				CompactingProcessor,
+			},
 			Exporters: []ComponentID{Prometheus},
 		}
 	}
