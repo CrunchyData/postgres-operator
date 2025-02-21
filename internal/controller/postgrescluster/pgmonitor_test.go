@@ -39,7 +39,7 @@ func testExporterCollectorsAnnotation(t *testing.T, ctx context.Context, cluster
 				naming.PostgresExporterCollectorsAnnotation: "wrong-value",
 			})
 
-			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig))
+			addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig)
 
 			assert.Equal(t, len(template.Spec.Containers), 1)
 			container := template.Spec.Containers[0]
@@ -56,7 +56,7 @@ func testExporterCollectorsAnnotation(t *testing.T, ctx context.Context, cluster
 				naming.PostgresExporterCollectorsAnnotation: "None",
 			})
 
-			assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig))
+			addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig)
 
 			assert.Equal(t, len(template.Spec.Containers), 1)
 			container := template.Spec.Containers[0]
@@ -71,7 +71,7 @@ func testExporterCollectorsAnnotation(t *testing.T, ctx context.Context, cluster
 					naming.PostgresExporterCollectorsAnnotation: "none",
 				})
 
-				assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig))
+				addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, queriesConfig, webConfig)
 				assert.Assert(t, cmp.Contains(strings.Join(template.Spec.Containers[0].Command, "\n"), "--[no-]collector"))
 			})
 		})
@@ -100,7 +100,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 
 	t.Run("ExporterDisabled", func(t *testing.T) {
 		template := &corev1.PodTemplateSpec{}
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, nil, nil))
+		addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, nil, nil)
 		assert.DeepEqual(t, template, &corev1.PodTemplateSpec{})
 	})
 
@@ -121,8 +121,7 @@ func TestAddPGMonitorExporterToInstancePodSpec(t *testing.T) {
 			},
 		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil))
-
+		addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil)
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
 
@@ -205,8 +204,7 @@ volumeMounts:
 			},
 		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil))
-
+		addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil)
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
 
@@ -255,8 +253,7 @@ name: exporter-config
 			},
 		}
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil))
-
+		addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, nil)
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
 
@@ -301,8 +298,7 @@ name: exporter-config
 		testConfigMap := new(corev1.ConfigMap)
 		testConfigMap.Name = "test-web-conf"
 
-		assert.NilError(t, addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, testConfigMap))
-
+		addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, testConfigMap)
 		assert.Equal(t, len(template.Spec.Containers), 2)
 		container := template.Spec.Containers[1]
 

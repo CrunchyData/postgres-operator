@@ -6,6 +6,7 @@ package postgrescluster
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"io"
 	"os"
@@ -27,17 +28,8 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// If pgMonitor is enabled the pgMonitor sidecar(s) have been added to the
-// instance pod. reconcilePGMonitor will update the database to
-// create the necessary objects for the tool to run
-func (r *Reconciler) reconcilePGMonitor(ctx context.Context,
-	cluster *v1beta1.PostgresCluster, instances *observedInstances,
-	monitoringSecret *corev1.Secret) error {
-
-	err := r.reconcilePGMonitorExporter(ctx, cluster, instances, monitoringSecret)
-
-	return err
-}
+//go:embed "metrics_setup.sql"
+var metricsSetupForOTelCollector string
 
 // reconcilePGMonitorExporter performs setup the postgres_exporter sidecar
 // - PodExec to run the sql in the primary database
@@ -69,19 +61,24 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	// We use this ImageID and the setup.sql file in the hash we make to see if the operator needs to rerun
 	// the `EnableExporterInPostgreSQL` funcs; that way we are always running
 	// that function against an updated and running pod.
-	if pgmonitor.ExporterEnabled(cluster) {
+
+	if pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		sql, err := os.ReadFile(fmt.Sprintf("%s/pg%d/setup.sql", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
 		if err != nil {
 			return err
 		}
 
-		// TODO: Revisit how pgbackrest_info.sh is used with pgMonitor.
-		// pgMonitor queries expect a path to a script that runs pgBackRest
-		// info and provides json output. In the queries yaml for pgBackRest
-		// the default path is `/usr/bin/pgbackrest-info.sh`. We update
-		// the path to point to the script in our database image.
-		setup = strings.ReplaceAll(string(sql), "/usr/bin/pgbackrest-info.sh",
-			"/opt/crunchy/bin/postgres/pgbackrest_info.sh")
+		if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+			setup = metricsSetupForOTelCollector
+		} else {
+			// TODO: Revisit how pgbackrest_info.sh is used with pgMonitor.
+			// pgMonitor queries expect a path to a script that runs pgBackRest
+			// info and provides json output. In the queries yaml for pgBackRest
+			// the default path is `/usr/bin/pgbackrest-info.sh`. We update
+			// the path to point to the script in our database image.
+			setup = strings.ReplaceAll(string(sql), "/usr/bin/pgbackrest-info.sh",
+				"/opt/crunchy/bin/postgres/pgbackrest_info.sh")
+		}
 
 		for _, containerStatus := range writablePod.Status.ContainerStatuses {
 			if containerStatus.Name == naming.ContainerDatabase {
@@ -102,9 +99,9 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 		return pgmonitor.EnableExporterInPostgreSQL(ctx, exec, monitoringSecret, pgmonitor.ExporterDB, setup)
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		action = func(ctx context.Context, exec postgres.Executor) error {
-			return pgmonitor.DisableExporterInPostgreSQL(ctx, exec)
+			return pgmonitor.DisableMonitoringUserInPostgres(ctx, exec)
 		}
 	}
 
@@ -160,12 +157,11 @@ func (r *Reconciler) reconcileMonitoringSecret(
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) {
-		// TODO: Checking if the exporter is enabled to determine when monitoring
-		// secret should be created. If more tools are added to the monitoring
-		// suite, they could need the secret when the exporter is not enabled.
-		// This check may need to be updated.
-		// Exporter is disabled; delete monitoring secret if it exists.
+	// Checking if the exporter is enabled or OpenTelemetryMetrics feature
+	// is enabled to determine when monitoring secret should be created,
+	// since our implementation of the SqlQuery receiver in the OTel Collector
+	// uses the monitoring user as well.
+	if !pgmonitor.ExporterEnabled(ctx, cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
 		}
@@ -227,19 +223,6 @@ func (r *Reconciler) reconcileMonitoringSecret(
 	return nil, err
 }
 
-// addPGMonitorToInstancePodSpec performs the necessary setup to add
-// pgMonitor resources on a PodTemplateSpec
-func addPGMonitorToInstancePodSpec(
-	ctx context.Context,
-	cluster *v1beta1.PostgresCluster,
-	template *corev1.PodTemplateSpec,
-	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
-
-	err := addPGMonitorExporterToInstancePodSpec(ctx, cluster, template, exporterQueriesConfig, exporterWebConfig)
-
-	return err
-}
-
 // addPGMonitorExporterToInstancePodSpec performs the necessary setup to
 // add pgMonitor exporter resources to a PodTemplateSpec
 // TODO (jmckulk): refactor to pass around monitoring secret; Without the secret
@@ -249,10 +232,10 @@ func addPGMonitorExporterToInstancePodSpec(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	template *corev1.PodTemplateSpec,
-	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
+	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) {
 
-	if !pgmonitor.ExporterEnabled(cluster) {
-		return nil
+	if !pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		return
 	}
 
 	certSecret := cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret
@@ -385,13 +368,15 @@ func addPGMonitorExporterToInstancePodSpec(
 	// add the proper label to support Pod discovery by Prometheus per pgMonitor configuration
 	initialize.Labels(template)
 	template.Labels[naming.LabelPGMonitorDiscovery] = "true"
-
-	return nil
 }
 
 // reconcileExporterWebConfig reconciles the configmap containing the webconfig for exporter tls
 func (r *Reconciler) reconcileExporterWebConfig(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) (*corev1.ConfigMap, error) {
+
+	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		return nil, nil
+	}
 
 	existing := &corev1.ConfigMap{ObjectMeta: naming.ExporterWebConfigMap(cluster)}
 	err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
@@ -399,7 +384,7 @@ func (r *Reconciler) reconcileExporterWebConfig(ctx context.Context,
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) || cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret == nil {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) || cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret == nil {
 		// We could still have a NotFound error here so check the err.
 		// If no error that means the configmap is found and needs to be deleted
 		if err == nil {
@@ -456,7 +441,7 @@ func (r *Reconciler) reconcileExporterQueriesConfig(ctx context.Context,
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(cluster) {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// We could still have a NotFound error here so check the err.
 		// If no error that means the configmap is found and needs to be deleted
 		if err == nil {
