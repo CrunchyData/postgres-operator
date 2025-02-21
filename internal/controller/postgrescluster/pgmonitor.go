@@ -157,8 +157,10 @@ func (r *Reconciler) reconcileMonitoringSecret(
 		return nil, err
 	}
 
-	// Checking if the exporter is enabled to determine when monitoring
-	// secret should be created.
+	// Checking if the exporter is enabled or OpenTelemetryMetrics feature
+	// is enabled to determine when monitoring secret should be created,
+	// since our implementation of the SqlQuery receiver in the OTel Collector
+	// uses the monitoring user as well.
 	if !pgmonitor.ExporterEnabled(ctx, cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
