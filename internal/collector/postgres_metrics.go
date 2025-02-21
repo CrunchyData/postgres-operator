@@ -56,7 +56,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 
 		config.Receivers[FiveSecondSqlQuery] = map[string]any{
 			"driver":              "postgres",
-			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD} sslmode=disable`, pgmonitor.MonitoringUser),
+			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`, pgmonitor.MonitoringUser),
 			"collection_interval": "5s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "10s",
@@ -65,7 +65,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 
 		config.Receivers[FiveMinuteSqlQuery] = map[string]any{
 			"driver":              "postgres",
-			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD} sslmode=disable`, pgmonitor.MonitoringUser),
+			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`, pgmonitor.MonitoringUser),
 			"collection_interval": "300s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "10s",
