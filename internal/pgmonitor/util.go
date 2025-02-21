@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -26,7 +27,7 @@ func GetQueriesConfigDir(ctx context.Context) string {
 }
 
 // ExporterEnabled returns true if the monitoring exporter is enabled
-func ExporterEnabled(cluster *v1beta1.PostgresCluster) bool {
+func ExporterEnabled(ctx context.Context, cluster *v1beta1.PostgresCluster) bool {
 	if cluster.Spec.Monitoring == nil {
 		return false
 	}
@@ -34,6 +35,9 @@ func ExporterEnabled(cluster *v1beta1.PostgresCluster) bool {
 		return false
 	}
 	if cluster.Spec.Monitoring.PGMonitor.Exporter == nil {
+		return false
+	}
+	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		return false
 	}
 	return true

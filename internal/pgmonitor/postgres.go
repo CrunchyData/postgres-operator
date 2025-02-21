@@ -24,7 +24,7 @@ const (
 // PostgreSQLHBAs provides the Postgres HBA rules for allowing the monitoring
 // exporter to be accessible
 func PostgreSQLHBAs(ctx context.Context, inCluster *v1beta1.PostgresCluster, outHBAs *postgres.HBAs) {
-	if ExporterEnabled(inCluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if ExporterEnabled(ctx, inCluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// Limit the monitoring user to local connections using SCRAM.
 		outHBAs.Mandatory = append(outHBAs.Mandatory,
 			postgres.NewHBA().TCP().User(MonitoringUser).Method("scram-sha-256").Network("127.0.0.0/8"),
@@ -36,7 +36,7 @@ func PostgreSQLHBAs(ctx context.Context, inCluster *v1beta1.PostgresCluster, out
 // PostgreSQLParameters provides additional required configuration parameters
 // that Postgres needs to support monitoring
 func PostgreSQLParameters(ctx context.Context, inCluster *v1beta1.PostgresCluster, outParameters *postgres.Parameters) {
-	if ExporterEnabled(inCluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if ExporterEnabled(ctx, inCluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// Exporter expects that shared_preload_libraries are installed
 		// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
 		// pgnodemx: https://github.com/CrunchyData/pgnodemx
