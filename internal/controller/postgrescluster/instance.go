@@ -1224,7 +1224,7 @@ func (r *Reconciler) reconcileInstance(
 
 	// Add postgres-exporter to the instance Pod spec
 	if err == nil {
-		err = addPGMonitorExporterToInstancePodSpec(ctx, cluster, &instance.Spec.Template, exporterQueriesConfig, exporterWebConfig)
+		addPGMonitorExporterToInstancePodSpec(ctx, cluster, &instance.Spec.Template, exporterQueriesConfig, exporterWebConfig)
 	}
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest

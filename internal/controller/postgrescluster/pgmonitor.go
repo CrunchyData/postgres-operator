@@ -233,10 +233,10 @@ func addPGMonitorExporterToInstancePodSpec(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	template *corev1.PodTemplateSpec,
-	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
+	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) {
 
 	if !pgmonitor.ExporterEnabled(cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-		return nil
+		return
 	}
 
 	certSecret := cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret
@@ -369,8 +369,6 @@ func addPGMonitorExporterToInstancePodSpec(
 	// add the proper label to support Pod discovery by Prometheus per pgMonitor configuration
 	initialize.Labels(template)
 	template.Labels[naming.LabelPGMonitorDiscovery] = "true"
-
-	return nil
 }
 
 // reconcileExporterWebConfig reconciles the configmap containing the webconfig for exporter tls
