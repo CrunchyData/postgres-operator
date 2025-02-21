@@ -31,18 +31,6 @@ import (
 //go:embed "metrics_setup.sql"
 var metricsSetupForOTelCollector string
 
-// If pgMonitor is enabled the pgMonitor sidecar(s) have been added to the
-// instance pod. reconcilePGMonitor will update the database to
-// create the necessary objects for the tool to run
-func (r *Reconciler) reconcilePGMonitor(ctx context.Context,
-	cluster *v1beta1.PostgresCluster, instances *observedInstances,
-	monitoringSecret *corev1.Secret) error {
-
-	err := r.reconcilePGMonitorExporter(ctx, cluster, instances, monitoringSecret)
-
-	return err
-}
-
 // reconcilePGMonitorExporter performs setup the postgres_exporter sidecar
 // - PodExec to run the sql in the primary database
 // Status.Monitoring.ExporterConfiguration is used to determine when the
@@ -247,7 +235,7 @@ func addPGMonitorExporterToInstancePodSpec(
 	template *corev1.PodTemplateSpec,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) error {
 
-	if !pgmonitor.ExporterEnabled(cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if !pgmonitor.ExporterEnabled(cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		return nil
 	}
 

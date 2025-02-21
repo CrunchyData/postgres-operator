@@ -1223,7 +1223,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	// Add postgres-exporter to the instance Pod spec
-	if err == nil && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if err == nil {
 		err = addPGMonitorExporterToInstancePodSpec(ctx, cluster, &instance.Spec.Template, exporterQueriesConfig, exporterWebConfig)
 	}
 

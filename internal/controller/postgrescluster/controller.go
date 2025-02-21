@@ -383,7 +383,7 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcilePGBouncer(ctx, cluster, instances, primaryCertificate, rootCA)
 	}
 	if err == nil {
-		err = r.reconcilePGMonitor(ctx, cluster, instances, monitoringSecret)
+		err = r.reconcilePGMonitorExporter(ctx, cluster, instances, monitoringSecret)
 	}
 	if err == nil {
 		err = r.reconcileDatabaseInitSQL(ctx, cluster, instances)
