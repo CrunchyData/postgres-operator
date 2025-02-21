@@ -74,6 +74,10 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 		// Add Metrics Pipeline
 		config.Pipelines[PostgresMetrics] = Pipeline{
 			Receivers: []ComponentID{FiveSecondSqlQuery, FiveMinuteSqlQuery},
+			Processors: []ComponentID{
+				SubSecondBatchProcessor,
+				CompactingProcessor,
+			},
 			Exporters: []ComponentID{Prometheus},
 		}
 	}
