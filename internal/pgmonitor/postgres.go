@@ -46,11 +46,11 @@ func PostgreSQLParameters(ctx context.Context, inCluster *v1beta1.PostgresCluste
 	}
 }
 
-// DisableExporterInPostgreSQL disables the exporter configuration in PostgreSQL.
+// DisableMonitoringUserInPostgres disables the exporter configuration in PostgreSQL.
 // Currently the exporter is disabled by removing login permissions for the
 // monitoring user.
 // TODO: evaluate other uninstall/removal options
-func DisableExporterInPostgreSQL(ctx context.Context, exec postgres.Executor) error {
+func DisableMonitoringUserInPostgres(ctx context.Context, exec postgres.Executor) error {
 	log := logging.FromContext(ctx)
 
 	stdout, stderr, err := exec.Exec(ctx, strings.NewReader(`

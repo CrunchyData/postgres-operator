@@ -101,7 +101,7 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 
 	if !pgmonitor.ExporterEnabled(ctx, cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		action = func(ctx context.Context, exec postgres.Executor) error {
-			return pgmonitor.DisableExporterInPostgreSQL(ctx, exec)
+			return pgmonitor.DisableMonitoringUserInPostgres(ctx, exec)
 		}
 	}
 
