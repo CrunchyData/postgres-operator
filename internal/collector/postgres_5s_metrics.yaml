@@ -43,8 +43,9 @@
 
   - sql: >
       SELECT
-      EXTRACT(epoch from (CURRENT_TIMESTAMP - last_archived_time)) AS seconds_since_last_archive
-      FROM pg_catalog.pg_stat_archiver
+      COALESCE(EXTRACT(epoch from (CURRENT_TIMESTAMP - last_archived_time)), 0) AS seconds_since_last_archive
+      FROM pg_catalog.pg_stat_archiver;
+
     metrics:
       - metric_name: ccp_archive_command_status_seconds_since_last_archive
         value_column: seconds_since_last_archive
