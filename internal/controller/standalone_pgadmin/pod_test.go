@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -28,8 +29,9 @@ func TestPod(t *testing.T) {
 	config := new(corev1.ConfigMap)
 	testpod := new(corev1.PodSpec)
 	pvc := new(corev1.PersistentVolumeClaim)
+	ctx := context.Background()
 
-	call := func() { pod(pgadmin, config, testpod, pvc) }
+	call := func() { pod(ctx, pgadmin, config, testpod, pvc) }
 
 	t.Run("Defaults", func(t *testing.T) {
 
@@ -247,6 +249,20 @@ volumes:
 		pgadmin.Spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
 		}
+		retentionPeriod, err := v1beta1.NewDuration("12 hours")
+		assert.NilError(t, err)
+		pgadmin.Spec.Instrumentation = &v1beta1.InstrumentationSpec{
+			Logs: &v1beta1.InstrumentationLogsSpec{
+				RetentionPeriod: retentionPeriod,
+			},
+		}
+
+		// Turn on the Feature gate
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx = feature.NewContext(context.Background(), gate)
 
 		call()
 
@@ -378,9 +394,9 @@ initContainers:
 
     DATA_DIR = '/var/lib/pgadmin'
     LOG_FILE = '/var/lib/pgadmin/logs/pgadmin.log'
-    LOG_ROTATION_AGE = 24 * 60 # minutes
+    LOG_ROTATION_AGE = 60 # minutes
     LOG_ROTATION_SIZE = 5 # MiB
-    LOG_ROTATION_MAX_LOG_FILES = 1
+    LOG_ROTATION_MAX_LOG_FILES = 11
 
     JSON_LOGGER = True
     CONSOLE_LOG_LEVEL = logging.WARNING
@@ -400,7 +416,7 @@ initContainers:
     logconfig_dict['handlers']['file'] = {
       'class': 'logging.handlers.RotatingFileHandler',
       'filename': '/var/lib/pgadmin/logs/gunicorn.log',
-      'backupCount': 1, 'maxBytes': 2 << 20, # MiB
+      'backupCount': 11, 'maxBytes': 2 << 20, # MiB
       'formatter': 'json',
     }
     logconfig_dict['formatters']['json'] = {
