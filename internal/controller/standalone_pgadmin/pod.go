@@ -8,13 +8,16 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strconv"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -45,6 +48,7 @@ const (
 
 // pod populates a PodSpec with the container and volumes needed to run pgAdmin.
 func pod(
+	ctx context.Context,
 	inPGAdmin *v1beta1.PGAdmin,
 	inConfigMap *corev1.ConfigMap,
 	outPod *corev1.PodSpec,
@@ -168,7 +172,7 @@ func pod(
 
 	startup := corev1.Container{
 		Name:            naming.ContainerPGAdminStartup,
-		Command:         startupCommand(),
+		Command:         startupCommand(ctx, inPGAdmin),
 		Image:           container.Image,
 		ImagePullPolicy: container.ImagePullPolicy,
 		Resources:       container.Resources,
@@ -352,7 +356,7 @@ done
 }
 
 // startupCommand returns an entrypoint that prepares the filesystem for pgAdmin.
-func startupCommand() []string {
+func startupCommand(ctx context.Context, inPgadmin *v1beta1.PGAdmin) []string {
 	// pgAdmin reads from the `/etc/pgadmin/config_system.py` file during startup
 	// after all other config files.
 	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-7_7/docs/en_US/config_py.rst
@@ -374,10 +378,33 @@ func startupCommand() []string {
 
 		// configDatabaseURIPath is the path for mounting the database URI connection string
 		configDatabaseURIPathAbsolutePath = configMountPath + "/" + configDatabaseURIPath
+	)
+	var (
+		maxBackupRetentionNumber = "1"
+		retentionPeriod          = "24 * 60"
+	)
 
-		// The constants set in configSystem will not be overridden through
-		// spec.config.settings.
-		configSystem = `
+	// If the OpenTelemetryLogs Feature is enabled and the user has set a retention period,
+	// we will use those values for pgAdmin log rotation, which is otherwise managed by python.
+	if feature.Enabled(ctx, feature.OpenTelemetryLogs) &&
+		inPgadmin.Spec.Instrumentation != nil &&
+		inPgadmin.Spec.Instrumentation.Logs != nil &&
+		inPgadmin.Spec.Instrumentation.Logs.RetentionPeriod != nil {
+
+		retentionNumber, period := collector.ParseDurationForLogrotate(inPgadmin.Spec.Instrumentation.Logs.RetentionPeriod)
+		// `LOG_ROTATION_MAX_LOG_FILES`` in pgadmin refers to the already rotated logs.
+		// `backupCount` for gunicorn is similar.
+		// Our retention unit is for total number of log files, so subtract 1 to account
+		// for the currently-used log file.
+		maxBackupRetentionNumber = strconv.Itoa(retentionNumber - 1)
+		if period == "hourly" {
+			retentionPeriod = "60"
+		}
+	}
+
+	// The constants set in configSystem will not be overridden through
+	// spec.config.settings.
+	var configSystem = `
 import glob, json, re, os, logging
 DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
@@ -393,30 +420,30 @@ if os.path.isfile('` + configDatabaseURIPathAbsolutePath + `'):
 
 DATA_DIR = '` + dataMountPath + `'
 LOG_FILE = '` + LogFileAbsolutePath + `'
-LOG_ROTATION_AGE = 24 * 60 # minutes
+LOG_ROTATION_AGE = ` + retentionPeriod + ` # minutes
 LOG_ROTATION_SIZE = 5 # MiB
-LOG_ROTATION_MAX_LOG_FILES = 1
+LOG_ROTATION_MAX_LOG_FILES = ` + maxBackupRetentionNumber + `
 
 JSON_LOGGER = True
 CONSOLE_LOG_LEVEL = logging.WARNING
 FILE_LOG_LEVEL = logging.INFO
 FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
 `
-		// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
-		// after all other config files.
-		// - https://docs.gunicorn.org/en/latest/configure.html#configuration-file
-		//
-		// This command writes a script in `/etc/pgadmin/gunicorn_config.py` that reads
-		// from the `gunicorn-config.json` file and sets those variables globally.
-		// That way those values are available as settings when Gunicorn starts.
-		//
-		// Note: All Gunicorn settings are lowercase with underscores, so ignore
-		// any keys/names that are not.
-		//
-		// Gunicorn uses the Python logging package, which sets the following attributes:
-		// https://docs.python.org/3/library/logging.html#logrecord-attributes.
-		// JsonFormatter is used to format the log: https://pypi.org/project/jsonformatter/
-		gunicornConfig = `
+	// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
+	// after all other config files.
+	// - https://docs.gunicorn.org/en/latest/configure.html#configuration-file
+	//
+	// This command writes a script in `/etc/pgadmin/gunicorn_config.py` that reads
+	// from the `gunicorn-config.json` file and sets those variables globally.
+	// That way those values are available as settings when Gunicorn starts.
+	//
+	// Note: All Gunicorn settings are lowercase with underscores, so ignore
+	// any keys/names that are not.
+	//
+	// Gunicorn uses the Python logging package, which sets the following attributes:
+	// https://docs.python.org/3/library/logging.html#logrecord-attributes.
+	// JsonFormatter is used to format the log: https://pypi.org/project/jsonformatter/
+	var gunicornConfig = `
 import json, re, collections, copy, gunicorn, gunicorn.glogging
 with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
     _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
@@ -430,7 +457,7 @@ logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
 logconfig_dict['handlers']['file'] = {
   'class': 'logging.handlers.RotatingFileHandler',
   'filename': '` + GunicornLogFileAbsolutePath + `',
-  'backupCount': 1, 'maxBytes': 2 << 20, # MiB
+  'backupCount': ` + maxBackupRetentionNumber + `, 'maxBytes': 2 << 20, # MiB
   'formatter': 'json',
 }
 logconfig_dict['formatters']['json'] = {
@@ -444,7 +471,6 @@ logconfig_dict['formatters']['json'] = {
   ])
 }
 `
-	)
 
 	args := []string{strings.TrimLeft(configSystem, "\n"), strings.TrimLeft(gunicornConfig, "\n")}
 

@@ -149,7 +149,7 @@ func AddLogrotateConfig(ctx context.Context, spec *v1beta1.InstrumentationSpec,
 func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Duration,
 	postrotateScript string,
 ) string {
-	number, interval := parseDurationForLogrotate(retentionPeriod)
+	number, interval := ParseDurationForLogrotate(retentionPeriod)
 
 	return fmt.Sprintf(
 		logrotateConfigFormatString,
@@ -160,12 +160,12 @@ func generateLogrotateConfig(logFilePath string, retentionPeriod *v1beta1.Durati
 	)
 }
 
-// parseDurationForLogrotate takes a retention period and returns the rotate
+// ParseDurationForLogrotate takes a retention period and returns the rotate
 // number and interval string that should be used in the logrotate config.
 // If the retentionPeriod is less than 24 hours, the function will return the
 // number of hours and "hourly"; otherwise, we will round up to the nearest day
 // and return the day count and "daily"
-func parseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
+func ParseDurationForLogrotate(retentionPeriod *v1beta1.Duration) (int, string) {
 	hours := math.Ceil(retentionPeriod.AsDuration().Hours())
 	if hours < 24 {
 		return int(hours), "hourly"

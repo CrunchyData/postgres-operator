@@ -119,7 +119,7 @@ func statefulset(
 
 	sts.Spec.Template.Spec.SecurityContext = podSecurityContext(ctx)
 
-	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
+	pod(ctx, pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
 
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
