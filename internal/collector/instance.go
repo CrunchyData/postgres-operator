@@ -103,7 +103,7 @@ func AddToPod(
 				Value: sqlQueryPassword,
 			},
 		},
-
+		Resources:       spec.Resources,
 		SecurityContext: initialize.RestrictedSecurityContext(),
 		VolumeMounts:    append(volumeMounts, configVolumeMount),
 	}

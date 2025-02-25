@@ -161,7 +161,6 @@
     # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/attributes-registry/db.md
     - set(attributes["db.namespace"], body["dbname"]) where IsString(body["dbname"])
     - set(attributes["db.response.status_code"], body["state_code"]) where IsString(body["state_code"])
-    # TODO(benjb): discuss db.query.summary, db.query.text
 
     # Postgres is multiprocess so some client/backend details align here.
     #
