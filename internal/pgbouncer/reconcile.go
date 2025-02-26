@@ -78,8 +78,6 @@ func Secret(ctx context.Context,
 		// If the password is non-empty and the verifier is empty, generate a new verifier.
 		verifier, err = passwd.NewSCRAMPassword(password).Build()
 		err = errors.WithStack(err)
-	} else if len(password) != 0 && len(verifier) != 0 {
-		// If both the password and verifier are non-empty, use them.
 	}
 
 	if err == nil {
