@@ -39,7 +39,7 @@ const (
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
 	cluster *v1beta1.PostgresCluster,
-	pgHBAs postgres.HBAs, parameters *postgres.ParameterSet, patroniLogStorageLimit int64,
+	pgHBAs *postgres.OrderedHBAs, parameters *postgres.ParameterSet, patroniLogStorageLimit int64,
 ) (string, error) {
 	root := map[string]any{
 		// The cluster identifier. This value cannot change during the cluster's
@@ -208,7 +208,7 @@ func clusterYAML(
 // and returns a value that can be marshaled to JSON.
 func DynamicConfiguration(
 	spec *v1beta1.PostgresClusterSpec,
-	pgHBAs postgres.HBAs, parameters *postgres.ParameterSet,
+	pgHBAs *postgres.OrderedHBAs, parameters *postgres.ParameterSet,
 ) map[string]any {
 	// Copy the entire configuration before making any changes.
 	root := make(map[string]any)
@@ -239,32 +239,13 @@ func DynamicConfiguration(
 			postgresql[k] = v
 		}
 	}
-	root["postgresql"] = postgresql
-
 	if m := parameters.AsMap(); m != nil {
 		postgresql["parameters"] = m
 	}
-
-	// Copy the "postgresql.pg_hba" section after any mandatory values.
-	hba := make([]string, 0, len(pgHBAs.Mandatory))
-	for i := range pgHBAs.Mandatory {
-		hba = append(hba, pgHBAs.Mandatory[i].String())
+	if pgHBAs != nil {
+		postgresql["pg_hba"] = pgHBAs.AsStrings()
 	}
-	if section, ok := postgresql["pg_hba"].([]any); ok {
-		for i := range section {
-			// any pg_hba values that are not strings will be skipped
-			if value, ok := section[i].(string); ok {
-				hba = append(hba, value)
-			}
-		}
-	}
-	// When the section is missing or empty, include the recommended defaults.
-	if len(hba) == len(pgHBAs.Mandatory) {
-		for i := range pgHBAs.Default {
-			hba = append(hba, pgHBAs.Default[i].String())
-		}
-	}
-	postgresql["pg_hba"] = hba
+	root["postgresql"] = postgresql
 
 	// Enabling `pg_rewind` allows a former primary to automatically rejoin the
 	// cluster even if it has commits that were not sent to a replica. In other

@@ -6,6 +6,7 @@ package postgres
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -150,4 +151,42 @@ func (hba *HostBasedAuthentication) String() string {
 
 	return strings.TrimSpace(fmt.Sprintf("%s %s %s %s %s %s",
 		hba.origin, hba.database, hba.user, hba.address, hba.method, hba.options))
+}
+
+// OrderedHBAs is an append-only sequence of pg_hba.conf lines.
+type OrderedHBAs struct {
+	records []string
+}
+
+// Append renders and adds pg_hba.conf lines to o. Nil pointers are ignored.
+func (o *OrderedHBAs) Append(hbas ...*HostBasedAuthentication) {
+	for _, hba := range hbas {
+		if hba != nil {
+			o.records = append(o.records, hba.String())
+		}
+	}
+}
+
+// AppendUnstructured trims and adds unvalidated pg_hba.conf lines to o.
+// Empty lines and lines that are entirely control characters are omitted.
+func (o *OrderedHBAs) AppendUnstructured(hbas ...string) {
+	for _, hba := range hbas {
+		hba = strings.TrimFunc(hba, func(r rune) bool {
+			// control characters, space, and backslash
+			return r > '~' || r < '!' || r == '\\'
+		})
+		if len(hba) > 0 {
+			o.records = append(o.records, hba)
+		}
+	}
+}
+
+// AsStrings returns a copy of o as a slice.
+func (o *OrderedHBAs) AsStrings() []string {
+	return slices.Clone(o.records)
+}
+
+// Length returns the number of records in o.
+func (o *OrderedHBAs) Length() int {
+	return len(o.records)
 }
