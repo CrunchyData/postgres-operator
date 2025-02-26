@@ -232,7 +232,7 @@ func InstancePod(ctx context.Context,
 		startup.VolumeMounts = append(startup.VolumeMounts, tablespaceVolumeMount)
 	}
 
-	if len(inCluster.Spec.Config.Files) != 0 {
+	if inCluster.Spec.Config != nil && len(inCluster.Spec.Config.Files) != 0 {
 		additionalConfigVolumeMount := ConfigVolumeMount()
 		additionalConfigVolume := corev1.Volume{Name: additionalConfigVolumeMount.Name}
 		additionalConfigVolume.Projected = &corev1.ProjectedVolumeSource{

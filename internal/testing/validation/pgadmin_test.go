@@ -46,8 +46,7 @@ func TestPGAdminInstrumentation(t *testing.T) {
 		assert.ErrorContains(t, err, "hour|day|week")
 		assert.ErrorContains(t, err, "one hour")
 
-		//nolint:errorlint // This is a test, and a panic is unlikely.
-		status := err.(apierrors.APIStatus).Status()
+		status := require.StatusError(t, err)
 		assert.Assert(t, status.Details != nil)
 		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
 
