@@ -12,6 +12,33 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// PostgresHBAs returns the HBA rules in spec, if any.
+func PostgresHBAs(spec *v1beta1.PatroniSpec) []string {
+	var result []string
+
+	if spec != nil {
+		// DynamicConfiguration lacks an OpenAPI schema, so it may contain any type
+		// at any depth. Navigate the object and skip HBA values that aren't string.
+		//
+		// Patroni expects a list of strings:
+		// https://github.com/patroni/patroni/blob/v4.0.0/patroni/validator.py#L1170
+		//
+		if root := spec.DynamicConfiguration; root != nil {
+			if postgresql, ok := root["postgresql"].(map[string]any); ok {
+				if section, ok := postgresql["pg_hba"].([]any); ok {
+					for i := range section {
+						if value, ok := section[i].(string); ok {
+							result = append(result, value)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return result
+}
+
 // PostgresParameters returns the Postgres parameters in spec, if any.
 func PostgresParameters(spec *v1beta1.PatroniSpec) *postgres.ParameterSet {
 	result := postgres.NewParameterSet()

@@ -60,3 +60,69 @@ func TestHostBasedAuthentication(t *testing.T) {
 	assert.Equal(t, `hostnossl all all all reject`,
 		NewHBA().NoSSL().Method("reject").String())
 }
+
+func TestOrderedHBAs(t *testing.T) {
+	ordered := new(OrderedHBAs)
+
+	// The zero value is empty.
+	assert.Equal(t, ordered.Length(), 0)
+	assert.Assert(t, cmp.Len(ordered.AsStrings(), 0))
+
+	// Append can be called without arguments.
+	ordered.Append()
+	ordered.AppendUnstructured()
+	assert.Assert(t, cmp.Len(ordered.AsStrings(), 0))
+
+	// Append adds to the end of the slice.
+	ordered.Append(NewHBA())
+	assert.Equal(t, ordered.Length(), 1)
+	assert.DeepEqual(t, ordered.AsStrings(), []string{
+		`all all all`,
+	})
+
+	// AppendUnstructured adds to the end of the slice.
+	ordered.AppendUnstructured("could be anything, really")
+	assert.Equal(t, ordered.Length(), 2)
+	assert.DeepEqual(t, ordered.AsStrings(), []string{
+		`all all all`,
+		`could be anything, really`,
+	})
+
+	// Append and AppendUnstructured do not have a separate order.
+	ordered.Append(NewHBA().User("zoro"))
+	assert.Equal(t, ordered.Length(), 3)
+	assert.DeepEqual(t, ordered.AsStrings(), []string{
+		`all all all`,
+		`could be anything, really`,
+		`all "zoro" all`,
+	})
+
+	t.Run("NilPointersIgnored", func(t *testing.T) {
+		rules := new(OrderedHBAs)
+		rules.Append(
+			NewHBA(), nil,
+			NewHBA(), nil,
+		)
+		assert.DeepEqual(t, rules.AsStrings(), []string{
+			`all all all`,
+			`all all all`,
+		})
+	})
+
+	t.Run("SpecialCharactersStripped", func(t *testing.T) {
+		rules := new(OrderedHBAs)
+		rules.AppendUnstructured(
+			" \n\t things \n\n\n",
+			`with # comment`,
+			" \n\t \\\\ \f", // entirely special characters
+			`trailing slashes \\\`,
+			"multiple \\\n lines okay",
+		)
+		assert.DeepEqual(t, rules.AsStrings(), []string{
+			`things`,
+			`with # comment`,
+			`trailing slashes`,
+			"multiple \\\n lines okay",
+		})
+	})
+}

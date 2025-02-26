@@ -29,7 +29,7 @@ func ClusterBootstrapped(postgresCluster *v1beta1.PostgresCluster) bool {
 // ClusterConfigMap populates the shared ConfigMap with fields needed to run Patroni.
 func ClusterConfigMap(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
-	inHBAs postgres.HBAs,
+	inHBAs *postgres.OrderedHBAs,
 	inParameters *postgres.ParameterSet,
 	outClusterConfigMap *corev1.ConfigMap,
 	patroniLogStorageLimit int64,
