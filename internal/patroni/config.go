@@ -255,8 +255,10 @@ func DynamicConfiguration(
 		}
 	}
 	// Copy spec.config.parameters over spec.patroni...parameters.
-	for k, v := range spec.Config.Parameters {
-		parameters[k] = v
+	if spec.Config != nil {
+		for k, v := range spec.Config.Parameters {
+			parameters[k] = v
+		}
 	}
 	// Override all of the above with mandatory parameters.
 	if pgParameters.Mandatory != nil {

@@ -25,6 +25,9 @@ type PostgresClusterSpec struct {
 	// +optional
 	Backups Backups `json:"backups,omitempty"`
 
+	// +optional
+	Config *PostgresConfig `json:"config,omitempty"`
+
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the
 	// Certificate Authority certificate with the data keys set to tls.crt,
@@ -188,8 +191,6 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:MaxItems=64
 	// +optional
 	Users []PostgresUserSpec `json:"users,omitempty"`
-
-	Config PostgresConfig `json:"config,omitempty"`
 }
 
 // DataSource defines data sources for a new PostgresCluster.

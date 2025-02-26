@@ -16,6 +16,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -480,15 +481,9 @@ volumes:
 
 	t.Run("WithAdditionalConfigFiles", func(t *testing.T) {
 		clusterWithConfig := cluster.DeepCopy()
-		clusterWithConfig.Spec.Config.Files = []corev1.VolumeProjection{
-			{
-				Secret: &corev1.SecretProjection{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "keytab",
-					},
-				},
-			},
-		}
+		require.UnmarshalInto(t, &clusterWithConfig.Spec.Config, `{
+			files: [{ secret: { name: keytab } }],
+		}`)
 
 		pod := new(corev1.PodSpec)
 		InstancePod(ctx, clusterWithConfig, instance,
