@@ -106,16 +106,25 @@ func TestSCRAMVerifier(t *testing.T) {
 	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 	cluster.Default()
 
-	// Simulate the generation of SCRAM verifier
+	// Simulate the setting of a password only
 	existing.Data = map[string][]byte{
-		"pgbouncer-verifier": []byte("SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey"),
+		"pgbouncer-password": []byte("password"),
 	}
 
+	// Verify that a SCRAM verifier is set
 	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
-
-	// Verify that the SCRAM verifier is correctly set in the intent secret
 	assert.Assert(t, len(intent.Data["pgbouncer-verifier"]) != 0)
+
+	// Simulate the setting of a password and a verifier
+	intent = new(corev1.Secret)
+	existing.Data = map[string][]byte{
+		"pgbouncer-verifier": []byte("SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey"),
+		"pgbouncer-password": []byte("password"),
+	}
+	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
 	assert.Equal(t, string(intent.Data["pgbouncer-verifier"]), "SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey")
+	assert.Equal(t, string(intent.Data["pgbouncer-password"]), "password")
+
 }
 
 func TestPod(t *testing.T) {
