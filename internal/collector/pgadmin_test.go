@@ -10,13 +10,13 @@ import (
 
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	pgadmin "github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -125,7 +125,7 @@ collector.yaml: |
 		ctx := feature.NewContext(context.Background(), gate)
 
 		var spec v1beta1.InstrumentationSpec
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, &spec, `{
 			config: {
 				exporters: {
 					googlecloud: {
@@ -135,7 +135,7 @@ collector.yaml: |
 				},
 			},
 			logs: { exporters: [googlecloud] },
-		}`), &spec))
+		}`)
 
 		configmap := new(corev1.ConfigMap)
 		initialize.Map(&configmap.Data)

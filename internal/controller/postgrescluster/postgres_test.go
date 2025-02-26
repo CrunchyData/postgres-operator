@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -198,9 +197,9 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 	})
 
 	t.Run("PgBouncer", func(t *testing.T) {
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, &cluster.Spec, `{
 			proxy: { pgBouncer: { port: 10220 } },
-		}`), &cluster.Spec))
+		}`)
 
 		secret, err := reconciler.generatePostgresUserSecret(cluster, spec, nil)
 		assert.NilError(t, err)
@@ -250,14 +249,14 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance, nil, nil)
@@ -290,14 +289,14 @@ volumeMode: Filesystem
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		recorder := events.NewRecorder(t, runtime.Scheme)
@@ -392,14 +391,14 @@ volumeMode: Filesystem
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		recorder := events.NewRecorder(t, runtime.Scheme)
@@ -455,14 +454,14 @@ volumeMode: Filesystem
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		observed := &Instance{}
@@ -475,13 +474,13 @@ volumeMode: Filesystem
 
 		t.Run("Specified", func(t *testing.T) {
 			spec := spec.DeepCopy()
-			assert.NilError(t, yaml.Unmarshal([]byte(`{
+			require.UnmarshalInto(t, spec, `{
 				walVolumeClaimSpec: {
 					accessModes: [ReadWriteMany],
 					resources: { requests: { storage: 2Gi } },
 					storageClassName: "storage-class-for-wal",
 				},
-			}`), spec))
+			}`)
 
 			pvc, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 			assert.NilError(t, err)
