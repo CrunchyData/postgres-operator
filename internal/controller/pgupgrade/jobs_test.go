@@ -19,6 +19,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -54,7 +55,7 @@ func TestLargestWholeCPU(t *testing.T) {
 	} {
 		t.Run(tt.Name, func(t *testing.T) {
 			var resources corev1.ResourceRequirements
-			assert.NilError(t, yaml.Unmarshal([]byte(tt.ResourcesYAML), &resources))
+			require.UnmarshalInto(t, &resources, tt.ResourcesYAML)
 			assert.Equal(t, tt.Result, largestWholeCPU(resources))
 		})
 	}
@@ -383,8 +384,7 @@ func TestPGUpgradeContainerImage(t *testing.T) {
 	t.Setenv("RELATED_IMAGE_PGUPGRADE", "env-var-pgbackrest")
 	assert.Equal(t, pgUpgradeContainerImage(upgrade), "env-var-pgbackrest")
 
-	assert.NilError(t, yaml.Unmarshal(
-		[]byte(`{ image: spec-image }`), &upgrade.Spec))
+	require.UnmarshalInto(t, &upgrade.Spec, `{ image: spec-image }`)
 	assert.Equal(t, pgUpgradeContainerImage(upgrade), "spec-image")
 }
 

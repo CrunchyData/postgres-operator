@@ -263,7 +263,7 @@ func TestDynamicConfiguration(t *testing.T) {
 			expected: map[string]any{
 				"loop_wait":     int32(10),
 				"ttl":           int32(30),
-				"retry_timeout": float64(5),
+				"retry_timeout": int64(5),
 				"postgresql": map[string]any{
 					"parameters":    map[string]any{},
 					"pg_hba":        []string{},
@@ -380,7 +380,7 @@ func TestDynamicConfiguration(t *testing.T) {
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
 						"something": "str",
-						"another":   float64(5),
+						"another":   int64(5),
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
@@ -413,7 +413,7 @@ func TestDynamicConfiguration(t *testing.T) {
 				"postgresql": map[string]any{
 					"parameters": map[string]any{
 						"something": intstr.FromString("this"),
-						"another":   float64(5),
+						"another":   int64(5),
 					},
 					"pg_hba":        []string{},
 					"use_pg_rewind": true,
@@ -909,7 +909,7 @@ func TestDynamicConfiguration(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			cluster := new(v1beta1.PostgresCluster)
-			assert.NilError(t, yaml.Unmarshal([]byte(tt.spec), &cluster.Spec))
+			require.UnmarshalInto(t, &cluster.Spec, tt.spec)
 			if cluster.Spec.PostgresVersion == 0 {
 				cluster.Spec.PostgresVersion = 14
 			}

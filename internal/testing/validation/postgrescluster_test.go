@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -31,7 +30,7 @@ func TestPostgresConfigParameters(t *testing.T) {
 	base := v1beta1.NewPostgresCluster()
 
 	// Start with a bunch of required fields.
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
+	require.UnmarshalInto(t, &base.Spec, `{
 		postgresVersion: 16,
 		backups: {
 			pgbackrest: {
@@ -44,7 +43,7 @@ func TestPostgresConfigParameters(t *testing.T) {
 				resources: { requests: { storage: 1Mi } },
 			},
 		}],
-	}`), &base.Spec))
+	}`)
 
 	base.Namespace = namespace.Name
 	base.Name = "postgres-config-parameters"
@@ -217,7 +216,7 @@ func TestPostgresUserOptions(t *testing.T) {
 	base := v1beta1.NewPostgresCluster()
 
 	// Start with a bunch of required fields.
-	assert.NilError(t, yaml.UnmarshalStrict([]byte(`{
+	require.UnmarshalInto(t, &base.Spec, `{
 		postgresVersion: 16,
 		backups: {
 			pgbackrest: {
@@ -230,7 +229,7 @@ func TestPostgresUserOptions(t *testing.T) {
 				resources: { requests: { storage: 1Mi } },
 			},
 		}],
-	}`), &base.Spec))
+	}`)
 
 	base.Namespace = namespace.Name
 	base.Name = "postgres-user-options"

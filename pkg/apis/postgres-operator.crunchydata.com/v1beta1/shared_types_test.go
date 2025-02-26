@@ -23,13 +23,13 @@ func TestDurationYAML(t *testing.T) {
 		assert.DeepEqual(t, zero, []byte(`"0"`+"\n"))
 
 		var parsed Duration
-		assert.NilError(t, yaml.Unmarshal(zero, &parsed))
+		assert.NilError(t, yaml.UnmarshalStrict(zero, &parsed))
 		assert.Equal(t, parsed.AsDuration().Duration, 0*time.Second)
 	})
 
 	t.Run("Small", func(t *testing.T) {
 		var parsed Duration
-		assert.NilError(t, yaml.Unmarshal([]byte(`3ns`), &parsed))
+		assert.NilError(t, yaml.UnmarshalStrict([]byte(`3ns`), &parsed))
 		assert.Equal(t, parsed.AsDuration().Duration, 3*time.Nanosecond)
 
 		b, err := yaml.Marshal(parsed)
@@ -39,7 +39,7 @@ func TestDurationYAML(t *testing.T) {
 
 	t.Run("Large", func(t *testing.T) {
 		var parsed Duration
-		assert.NilError(t, yaml.Unmarshal([]byte(`52 weeks`), &parsed))
+		assert.NilError(t, yaml.UnmarshalStrict([]byte(`52 weeks`), &parsed))
 		assert.Equal(t, parsed.AsDuration().Duration, 364*24*time.Hour)
 
 		b, err := yaml.Marshal(parsed)
@@ -109,7 +109,7 @@ func TestDurationYAML(t *testing.T) {
 			{"PT2D9H", (2 * Day) + 9*time.Hour},
 		} {
 			var parsed Duration
-			assert.NilError(t, yaml.Unmarshal([]byte(tt.input), &parsed))
+			assert.NilError(t, yaml.UnmarshalStrict([]byte(tt.input), &parsed))
 			assert.Equal(t, parsed.AsDuration().Duration, tt.result)
 
 			// This is what Kubernetes calls when validating the "duration" format.
@@ -132,7 +132,7 @@ func TestDurationYAML(t *testing.T) {
 			"11 wks",
 		} {
 			assert.ErrorContains(t,
-				yaml.Unmarshal([]byte(tt), new(Duration)), "unable to parse")
+				yaml.UnmarshalStrict([]byte(tt), new(Duration)), "unable to parse")
 
 			// This is what Kubernetes calls when validating the "duration" format.
 			// - https://releases.k8s.io/v1.32.0/staging/src/k8s.io/apiextensions-apiserver/pkg/apiserver/validation/validation.go#L116
@@ -142,7 +142,7 @@ func TestDurationYAML(t *testing.T) {
 
 	t.Run("DoNotUsePartialAmounts", func(t *testing.T) {
 		var parsed Duration
-		assert.NilError(t, yaml.Unmarshal([]byte(`1.5 hours`), &parsed))
+		assert.NilError(t, yaml.UnmarshalStrict([]byte(`1.5 hours`), &parsed))
 
 		expected, err := time.ParseDuration(`1.5h`)
 		assert.NilError(t, err)
@@ -160,7 +160,7 @@ func TestSchemalessObjectDeepCopy(t *testing.T) {
 	assert.DeepEqual(t, z, z.DeepCopy())
 
 	var one SchemalessObject
-	assert.NilError(t, yaml.Unmarshal(
+	assert.NilError(t, yaml.UnmarshalStrict(
 		[]byte(`{ str: value, num: 1, arr: [a, 2, true] }`), &one,
 	))
 

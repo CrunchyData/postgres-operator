@@ -12,7 +12,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -35,11 +34,11 @@ func TestPGAdminInstrumentation(t *testing.T) {
 
 	t.Run("LogsRetentionPeriod", func(t *testing.T) {
 		pgadmin := base.DeepCopy()
-		assert.NilError(t, yaml.UnmarshalStrict([]byte(`{
+		require.UnmarshalInto(t, &pgadmin.Spec, `{
 			instrumentation: {
 				logs: { retentionPeriod: 5m },
 			},
-		}`), &pgadmin.Spec))
+		}`)
 
 		err := cc.Create(ctx, pgadmin, client.DryRunAll)
 		assert.Assert(t, apierrors.IsInvalid(err))
