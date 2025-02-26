@@ -19,7 +19,7 @@ import (
 
 func NewConfigForPostgresPod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
-	outParameters *postgres.Parameters,
+	outParameters *postgres.ParameterSet,
 ) *Config {
 	config := NewConfig(inCluster.Spec.Instrumentation)
 
@@ -72,22 +72,22 @@ func EnablePostgresLogging(
 	ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	outConfig *Config,
-	outParameters *postgres.Parameters,
+	outParameters *postgres.ParameterSet,
 ) {
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		directory := postgres.LogDirectory()
 
 		// https://www.postgresql.org/docs/current/runtime-config-logging.html
-		outParameters.Mandatory.Add("logging_collector", "on")
-		outParameters.Mandatory.Add("log_directory", directory)
+		outParameters.Add("logging_collector", "on")
+		outParameters.Add("log_directory", directory)
 
 		// PostgreSQL v8.3 adds support for CSV logging, and
 		// PostgreSQL v15 adds support for JSON logging. The latter is preferred
 		// because newlines are escaped as "\n", U+005C + U+006E.
 		if inCluster.Spec.PostgresVersion < 15 {
-			outParameters.Mandatory.Add("log_destination", "csvlog")
+			outParameters.Add("log_destination", "csvlog")
 		} else {
-			outParameters.Mandatory.Add("log_destination", "jsonlog")
+			outParameters.Add("log_destination", "jsonlog")
 		}
 
 		// Keep seven days of logs named for the day of the week;
@@ -100,14 +100,14 @@ func EnablePostgresLogging(
 		// probably requires another process that deletes the oldest files.
 		//
 		// The ".log" suffix is replaced by ".json" for JSON log files.
-		outParameters.Mandatory.Add("log_filename", "postgresql-%a.log")
-		outParameters.Mandatory.Add("log_file_mode", "0660")
-		outParameters.Mandatory.Add("log_rotation_age", "1d")
-		outParameters.Mandatory.Add("log_rotation_size", "0")
-		outParameters.Mandatory.Add("log_truncate_on_rotation", "on")
+		outParameters.Add("log_filename", "postgresql-%a.log")
+		outParameters.Add("log_file_mode", "0660")
+		outParameters.Add("log_rotation_age", "1d")
+		outParameters.Add("log_rotation_size", "0")
+		outParameters.Add("log_truncate_on_rotation", "on")
 
 		// Log in a timezone that the OpenTelemetry Collector will understand.
-		outParameters.Mandatory.Add("log_timezone", "UTC")
+		outParameters.Add("log_timezone", "UTC")
 
 		// Keep track of what log records and files have been processed.
 		// Use a subdirectory of the logs directory to stay within the same failure domain.

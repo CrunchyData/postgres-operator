@@ -34,6 +34,123 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestGeneratePostgresParameters(t *testing.T) {
+	ctx := context.Background()
+	reconciler := &Reconciler{}
+
+	builtin := reconciler.generatePostgresParameters(ctx, v1beta1.NewPostgresCluster(), false)
+	assert.Assert(t, len(builtin.AsMap()) > 0,
+		"expected an empty cluster to have some builtin parameters")
+
+	assert.Equal(t, builtin.Value("jit"), "off",
+		"BUG IN TEST: expected JIT to be disabled")
+
+	assert.Equal(t, builtin.Value("shared_preload_libraries"), "pgaudit",
+		"BUG IN TEST: expected pgAudit to be mandatory")
+
+	t.Run("Config", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Config, `{
+			parameters: {
+				something: str,
+				another: 5,
+			},
+		}`)
+
+		result := reconciler.generatePostgresParameters(ctx, cluster, false)
+		assert.Assert(t, cmp.LenMap(result.AsMap(), len(builtin.AsMap())+2),
+			"expected two parameters from the Config section")
+
+		assert.Equal(t, result.Value("another"), "5")
+		assert.Equal(t, result.Value("something"), "str")
+	})
+
+	t.Run("Patroni", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Patroni, `{
+			dynamicConfiguration: {
+				postgresql: { parameters: {
+					something: str,
+					another: 5.1,
+				} },
+			},
+		}`)
+
+		result := reconciler.generatePostgresParameters(ctx, cluster, false)
+		assert.Assert(t, cmp.LenMap(result.AsMap(), len(builtin.AsMap())+2),
+			"expected two parameters from the Patroni section")
+
+		assert.Equal(t, result.Value("another"), "5.1")
+		assert.Equal(t, result.Value("something"), "str")
+	})
+
+	t.Run("Precedence", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Config, `{
+			parameters: {
+				something: replaced,
+				unrelated: used,
+				jit: "on",
+			},
+		}`)
+		require.UnmarshalInto(t, &cluster.Spec.Patroni, `{
+			dynamicConfiguration: {
+				postgresql: { parameters: {
+					something: str,
+					another: 5.1,
+				} },
+			},
+		}`)
+
+		result := reconciler.generatePostgresParameters(ctx, cluster, false)
+		assert.Assert(t, cmp.LenMap(result.AsMap(), len(builtin.AsMap())+3+1-1),
+			"expected three parameters from the Config section,"+
+				"plus one from the Patroni section, minus one default")
+
+		assert.Equal(t, result.Value("another"), "5.1")        // Patroni
+		assert.Equal(t, result.Value("something"), "replaced") // Config
+		assert.Equal(t, result.Value("unrelated"), "used")     // Config
+		assert.Equal(t, result.Value("jit"), "on")             // Config
+	})
+
+	t.Run("shared_preload_libraries", func(t *testing.T) {
+		t.Run("NumericIncluded", func(t *testing.T) {
+			cluster := v1beta1.NewPostgresCluster()
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					shared_preload_libraries: 123,
+				},
+			}`)
+
+			result := reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Assert(t, cmp.Contains(result.Value("shared_preload_libraries"), "123"))
+		})
+
+		t.Run("Precedence", func(t *testing.T) {
+			cluster := v1beta1.NewPostgresCluster()
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					shared_preload_libraries: given,
+				},
+			}`)
+
+			result := reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Equal(t, result.Value("shared_preload_libraries"), "pgaudit,given",
+				"expected mandatory ahead of specified")
+
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					shared_preload_libraries: 'given, citus,other'
+				},
+			}`)
+
+			result = reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Equal(t, result.Value("shared_preload_libraries"), "citus,pgaudit,given, citus,other",
+				"expected citus in front")
+		})
+	})
+}
+
 func TestGeneratePostgresUserSecret(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)

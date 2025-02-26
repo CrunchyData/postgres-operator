@@ -29,6 +29,7 @@ func TestUnmarshalInto(t *testing.T) {
 		{input: `asdf`, expected: "asdf"},
 		{input: `"asdf"`, expected: "asdf"},
 		{input: `[1, 2.3, true]`, expected: []any{int64(1), float64(2.3), true}},
+		{input: `{a: b, c, d}`, expected: map[string]any{"a": "b", "c": nil, "d": nil}},
 	} {
 		sink := reflect.Zero(reflect.TypeOf(tt.expected)).Interface()
 		require.UnmarshalInto(t, &sink, tt.input)

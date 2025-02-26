@@ -30,7 +30,7 @@ import (
 // files (etc) that apply to the entire cluster.
 func (r *Reconciler) reconcileClusterConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+	pgHBAs postgres.HBAs, pgParameters *postgres.ParameterSet,
 ) (*corev1.ConfigMap, error) {
 	clusterConfigMap := &corev1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
 	clusterConfigMap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))

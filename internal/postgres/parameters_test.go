@@ -31,6 +31,16 @@ func TestNewParameters(t *testing.T) {
 }
 
 func TestParameterSet(t *testing.T) {
+	t.Run("NilAsMap", func(t *testing.T) {
+		m := (*ParameterSet)(nil).AsMap()
+		assert.Assert(t, m == nil)
+	})
+
+	t.Run("NilDeepCopy", func(t *testing.T) {
+		ps := (*ParameterSet)(nil).DeepCopy()
+		assert.Assert(t, ps == nil)
+	})
+
 	ps := NewParameterSet()
 
 	ps.Add("x", "y")

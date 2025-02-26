@@ -6,6 +6,7 @@ package postgrescluster
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"fmt"
 	"io"
@@ -29,13 +30,77 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
+	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/postgis"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+// generatePostgresParameters produces the parameter set for cluster that
+// incorporates, from highest to lowest precedence:
+//  1. mandatory values determined by controllers
+//  2. parameters in cluster.spec.config.parameters
+//  3. parameters in cluster.spec.patroni.dynamicConfiguration
+//  4. default values determined by contollers
+func (*Reconciler) generatePostgresParameters(
+	ctx context.Context, cluster *v1beta1.PostgresCluster, backupsSpecFound bool,
+) *postgres.ParameterSet {
+	builtin := postgres.NewParameters()
+	pgaudit.PostgreSQLParameters(&builtin)
+	pgbackrest.PostgreSQL(cluster, &builtin, backupsSpecFound)
+	pgmonitor.PostgreSQLParameters(ctx, cluster, &builtin)
+	postgres.SetHugePages(cluster, &builtin)
+
+	// Last write wins, so start with the recommended defaults.
+	result := cmp.Or(builtin.Default.DeepCopy(), postgres.NewParameterSet())
+
+	// Overwrite the above with any parameters specified in the Patroni section.
+	for k, v := range patroni.PostgresParameters(cluster.Spec.Patroni).AsMap() {
+		result.Add(k, v)
+	}
+
+	// Overwrite the above with any parameters specified in the Config section.
+	if config := cluster.Spec.Config; config != nil {
+		for k, v := range config.Parameters {
+			result.Add(k, v.String())
+		}
+	}
+
+	// Overwrite the above with mandatory values.
+	if builtin.Mandatory != nil {
+		// This parameter is a comma-separated list. Rather than overwrite the
+		// user-defined value, we want to combine it with the mandatory one.
+		preload := result.Value("shared_preload_libraries")
+
+		for k, v := range builtin.Mandatory.AsMap() {
+			// Load mandatory libraries ahead of user-defined libraries.
+			if k == "shared_preload_libraries" && len(v) > 0 && len(preload) > 0 {
+				v = v + "," + preload
+			}
+
+			result.Add(k, v)
+		}
+	}
+
+	// Some preload libraries belong at specific positions in this list.
+	if preload, ok := result.Get("shared_preload_libraries"); ok {
+		// Load "citus" ahead of any other libraries.
+		// - https://github.com/citusdata/citus/blob/v12.0.0/src/backend/distributed/shared_library_init.c#L417-L419
+		// - https://github.com/citusdata/citus/blob/v13.0.0/src/backend/distributed/shared_library_init.c#L420-L422
+		if strings.Contains(preload, "citus") {
+			preload = "citus," + preload
+		}
+
+		result.Add("shared_preload_libraries", preload)
+	}
+
+	return result
+}
 
 // generatePostgresUserSecret returns a Secret containing a password and
 // connection details for the first database in spec. When existing is nil or
