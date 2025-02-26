@@ -66,24 +66,20 @@ func Secret(ctx context.Context,
 	password := string(inSecret.Data[passwordSecretKey])
 	verifier := string(inSecret.Data[verifierSecretKey])
 
-	if len(password) == 0 && len(verifier) == 0 {
-		// If both the password and verifier are empty, generate new password and verifier.
+	if len(password) == 0 {
+		// If the password is empty, generate new password and verifier.
 		password, err = util.GenerateASCIIPassword(32)
 		err = errors.WithStack(err)
 		if err == nil {
 			verifier, err = passwd.NewSCRAMPassword(password).Build()
 			err = errors.WithStack(err)
 		}
-	} else if len(password) != 0 && len(verifier) != 0 {
-		// If both the password and verifier are non-empty, use them.
-	} else if len(password) == 0 && len(verifier) != 0 {
-		// If the password is empty and the verifier is non-empty, generate a new password.
-		password, err = util.GenerateASCIIPassword(32)
-		err = errors.WithStack(err)
 	} else if len(password) != 0 && len(verifier) == 0 {
 		// If the password is non-empty and the verifier is empty, generate a new verifier.
 		verifier, err = passwd.NewSCRAMPassword(password).Build()
 		err = errors.WithStack(err)
+	} else if len(password) != 0 && len(verifier) != 0 {
+		// If both the password and verifier are non-empty, use them.
 	}
 
 	if err == nil {
