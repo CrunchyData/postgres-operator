@@ -25,7 +25,7 @@ func TestClusterConfigMap(t *testing.T) {
 
 	cluster := new(v1beta1.PostgresCluster)
 	pgHBAs := postgres.HBAs{}
-	pgParameters := postgres.Parameters{}
+	pgParameters := postgres.NewParameterSet()
 
 	cluster.Default()
 	config := new(corev1.ConfigMap)

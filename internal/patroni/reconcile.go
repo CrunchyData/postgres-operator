@@ -30,7 +30,7 @@ func ClusterBootstrapped(postgresCluster *v1beta1.PostgresCluster) bool {
 func ClusterConfigMap(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	inHBAs postgres.HBAs,
-	inParameters postgres.Parameters,
+	inParameters *postgres.ParameterSet,
 	outClusterConfigMap *corev1.ConfigMap,
 	patroniLogStorageLimit int64,
 ) error {

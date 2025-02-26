@@ -56,6 +56,15 @@ func Len[Slice ~[]E, E any](actual Slice, expected int) Comparison {
 	return gotest.Len(actual, expected)
 }
 
+// LenMap succeeds if actual has the expected length.
+func LenMap[Map ~map[K]V, K comparable, V any](actual Map, expected int) Comparison {
+	// There doesn't seem to be a way to express "map or slice" in type constraints
+	// that [Go 1.22] compiler can nicely infer. Ideally, this function goes
+	// away when a better constraint can be expressed on [Len].
+
+	return gotest.Len(actual, expected)
+}
+
 // MarshalContains converts actual to YAML and succeeds if expected is in the result.
 func MarshalContains(actual any, expected string) Comparison {
 	b, err := yaml.Marshal(actual)

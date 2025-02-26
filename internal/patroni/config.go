@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -40,7 +39,7 @@ const (
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
 	cluster *v1beta1.PostgresCluster,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters, patroniLogStorageLimit int64,
+	pgHBAs postgres.HBAs, parameters *postgres.ParameterSet, patroniLogStorageLimit int64,
 ) (string, error) {
 	root := map[string]any{
 		// The cluster identifier. This value cannot change during the cluster's
@@ -193,7 +192,7 @@ func clusterYAML(
 		// facilitate it. When Patroni is already bootstrapped, this field is ignored.
 
 		root["bootstrap"] = map[string]any{
-			"dcs": DynamicConfiguration(&cluster.Spec, pgHBAs, pgParameters),
+			"dcs": DynamicConfiguration(&cluster.Spec, pgHBAs, parameters),
 
 			// Missing here is "users" which runs *after* "post_bootstrap". It is
 			// not possible to use roles created by the former in the latter.
@@ -209,7 +208,7 @@ func clusterYAML(
 // and returns a value that can be marshaled to JSON.
 func DynamicConfiguration(
 	spec *v1beta1.PostgresClusterSpec,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+	pgHBAs postgres.HBAs, parameters *postgres.ParameterSet,
 ) map[string]any {
 	// Copy the entire configuration before making any changes.
 	root := make(map[string]any)
@@ -242,55 +241,9 @@ func DynamicConfiguration(
 	}
 	root["postgresql"] = postgresql
 
-	// Copy the "postgresql.parameters" section over any defaults.
-	parameters := make(map[string]any)
-	if pgParameters.Default != nil {
-		for k, v := range pgParameters.Default.AsMap() {
-			parameters[k] = v
-		}
+	if m := parameters.AsMap(); m != nil {
+		postgresql["parameters"] = m
 	}
-	if section, ok := postgresql["parameters"].(map[string]any); ok {
-		for k, v := range section {
-			parameters[k] = v
-		}
-	}
-	// Copy spec.config.parameters over spec.patroni...parameters.
-	if spec.Config != nil {
-		for k, v := range spec.Config.Parameters {
-			parameters[k] = v
-		}
-	}
-	// Override all of the above with mandatory parameters.
-	if pgParameters.Mandatory != nil {
-		for k, v := range pgParameters.Mandatory.AsMap() {
-
-			// This parameter is a comma-separated list. Rather than overwrite the
-			// user-defined value, we want to combine it with the mandatory one.
-			// Some libraries belong at specific positions in the list, so figure
-			// that out as well.
-			if k == "shared_preload_libraries" {
-				// Load mandatory libraries ahead of user-defined libraries.
-				switch s := parameters[k].(type) {
-				case string:
-					if len(s) > 0 {
-						v = v + "," + s
-					}
-				case intstr.IntOrString:
-					if len(s.StrVal) > 0 {
-						v = v + "," + s.StrVal
-					}
-				}
-				// Load "citus" ahead of any other libraries.
-				// - https://github.com/citusdata/citus/blob/v12.0.0/src/backend/distributed/shared_library_init.c#L417-L419
-				if strings.Contains(v, "citus") {
-					v = "citus," + v
-				}
-			}
-
-			parameters[k] = v
-		}
-	}
-	postgresql["parameters"] = parameters
 
 	// Copy the "postgresql.pg_hba" section after any mandatory values.
 	hba := make([]string, 0, len(pgHBAs.Mandatory))
@@ -350,7 +303,7 @@ func DynamicConfiguration(
 			// Populate the standby leader by shipping logs through pgBackRest.
 			// This also overrides the "restore_command" used by standby replicas.
 			// - https://www.postgresql.org/docs/current/warm-standby.html
-			standby["restore_command"] = pgParameters.Mandatory.Value("restore_command")
+			standby["restore_command"] = parameters.Value("restore_command")
 		}
 
 		standby["create_replica_methods"] = methods

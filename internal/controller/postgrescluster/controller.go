@@ -33,8 +33,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/pgaudit"
-	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -237,15 +235,9 @@ func (r *Reconciler) Reconcile(
 	pgmonitor.PostgreSQLHBAs(ctx, cluster, &pgHBAs)
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
-	pgParameters := postgres.NewParameters()
-	pgaudit.PostgreSQLParameters(&pgParameters)
-	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)
-	pgmonitor.PostgreSQLParameters(ctx, cluster, &pgParameters)
+	pgParameters := r.generatePostgresParameters(ctx, cluster, backupsSpecFound)
 
-	otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, &pgParameters)
-
-	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
-	postgres.SetHugePages(cluster, &pgParameters)
+	otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
 
 	if err == nil {
 		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
