@@ -88,7 +88,6 @@ func (c *Config) ToYAML() (string, error) {
 func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 	config := &Config{
 		Exporters: map[ComponentID]any{
-			// TODO: Do we want a DebugExporter outside of development?
 			// https://pkg.go.dev/go.opentelemetry.io/collector/exporter/debugexporter#section-readme
 			DebugExporter: map[string]any{"verbosity": "detailed"},
 		},
