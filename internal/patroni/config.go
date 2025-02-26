@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/shell"
@@ -151,8 +152,16 @@ func clusterYAML(
 		},
 	}
 
-	// if a Patroni log file size is configured, configure volume file storage
+	// If a Patroni log file size is configured (the user set it in the
+	// spec or the OpenTelemetryLogs feature gate is enabled), we need to
+	// configure volume file storage
 	if patroniLogStorageLimit != 0 {
+
+		logLevel := initialize.Pointer("INFO")
+		if cluster.Spec.Patroni != nil && cluster.Spec.Patroni.Logging != nil &&
+			cluster.Spec.Patroni.Logging.Level != nil {
+			logLevel = cluster.Spec.Patroni.Logging.Level
+		}
 
 		// Configure the Patroni log settings
 		// - https://patroni.readthedocs.io/en/latest/yaml_configuration.html#log
@@ -162,7 +171,7 @@ func clusterYAML(
 			"type": "json",
 
 			// defaults to "INFO"
-			"level": cluster.Spec.Patroni.Logging.Level,
+			"level": logLevel,
 
 			// Setting group read permissions so that the OTel filelog receiver can
 			// read the log files.
