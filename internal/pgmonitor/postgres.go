@@ -27,9 +27,9 @@ func PostgreSQLHBAs(ctx context.Context, inCluster *v1beta1.PostgresCluster, out
 	if ExporterEnabled(ctx, inCluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// Limit the monitoring user to local connections using SCRAM.
 		outHBAs.Mandatory = append(outHBAs.Mandatory,
-			postgres.NewHBA().TCP().User(MonitoringUser).Method("scram-sha-256").Network("127.0.0.0/8"),
-			postgres.NewHBA().TCP().User(MonitoringUser).Method("scram-sha-256").Network("::1/128"),
-			postgres.NewHBA().TCP().User(MonitoringUser).Method("reject"))
+			postgres.NewHBA().TCP().Users(MonitoringUser).Method("scram-sha-256").Network("127.0.0.0/8"),
+			postgres.NewHBA().TCP().Users(MonitoringUser).Method("scram-sha-256").Network("::1/128"),
+			postgres.NewHBA().TCP().Users(MonitoringUser).Method("reject"))
 	}
 }
 

@@ -186,6 +186,6 @@ COMMIT;`))
 func TestPostgreSQLHBAs(t *testing.T) {
 	rules := postgresqlHBAs()
 	assert.Equal(t, len(rules), 2)
-	assert.Equal(t, rules[0].String(), `hostssl all "_crunchypgbouncer" all scram-sha-256`)
-	assert.Equal(t, rules[1].String(), `host all "_crunchypgbouncer" all reject`)
+	assert.Equal(t, rules[0].String(), `hostssl all "_crunchypgbouncer" all "scram-sha-256"`)
+	assert.Equal(t, rules[1].String(), `host all "_crunchypgbouncer" all "reject"`)
 }
