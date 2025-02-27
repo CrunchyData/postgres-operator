@@ -42,12 +42,40 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// generatePostgresHBA converts one API rule into a structured HBA rule that
+// safely formats its values.
+func (*Reconciler) generatePostgresHBA(spec *v1beta1.PostgresHBARule) *postgres.HostBasedAuthentication {
+	if spec == nil {
+		return nil
+	}
+
+	result := postgres.NewHBA()
+	result.Origin(spec.Connection)
+	result.Method(spec.Method)
+
+	if len(spec.Databases) > 0 {
+		result.Databases(spec.Databases[0], spec.Databases[1:]...)
+	}
+	if len(spec.Users) > 0 {
+		result.Users(spec.Users[0], spec.Users[1:]...)
+	}
+	if len(spec.Options) > 0 {
+		opts := make(map[string]string, len(spec.Options))
+		for k, v := range spec.Options {
+			opts[k] = v.String()
+		}
+		result.Options(opts)
+	}
+
+	return result
+}
+
 // generatePostgresHBAs produces the HBA rules for cluster that incorporates,
 // from highest to lowest precedence:
 //  1. mandatory rules determined by controllers
 //  2. rules in cluster.spec.patroni.dynamicConfiguration
 //  3. default rules, when none were in cluster.spec
-func (*Reconciler) generatePostgresHBAs(
+func (r *Reconciler) generatePostgresHBAs(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) *postgres.OrderedHBAs {
 	builtin := postgres.NewHBAs()
@@ -58,13 +86,25 @@ func (*Reconciler) generatePostgresHBAs(
 	// so connections are matched against them first.
 	result := new(postgres.OrderedHBAs)
 	result.Append(builtin.Mandatory...)
+	mandatory := result.Length()
+
+	// Append any rules specified in the Authentication section.
+	// These take precedence over any in the Patroni section.
+	if authn := cluster.Spec.Authentication; authn != nil {
+		for _, in := range authn.Rules {
+			if len(in.HBA) > 0 {
+				result.AppendUnstructured(in.HBA)
+			} else {
+				result.Append(r.generatePostgresHBA(&in.PostgresHBARule))
+			}
+		}
+	}
 
 	// Append any rules specified in the Patroni section.
-	before := result.Length()
 	result.AppendUnstructured(patroni.PostgresHBAs(cluster.Spec.Patroni)...)
 
 	// When there are no specified rules, include the recommended defaults.
-	if result.Length() == before {
+	if result.Length() == mandatory {
 		result.Append(builtin.Default...)
 	}
 

@@ -21,6 +21,105 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestPostgresAuthenticationRules(t *testing.T) {
+	ctx := context.Background()
+	cc := require.Kubernetes(t)
+	t.Parallel()
+
+	namespace := require.Namespace(t, cc)
+	base := v1beta1.NewPostgresCluster()
+
+	// Start with a bunch of required fields.
+	require.UnmarshalInto(t, &base.Spec, `{
+		postgresVersion: 16,
+		backups: {
+			pgbackrest: {
+				repos: [{ name: repo1 }],
+			},
+		},
+		instances: [{
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Mi } },
+			},
+		}],
+	}`)
+
+	base.Namespace = namespace.Name
+	base.Name = "postgres-authentication-rules"
+
+	assert.NilError(t, cc.Create(ctx, base.DeepCopy(), client.DryRunAll),
+		"expected this base cluster to be valid")
+
+	t.Run("OneTopLevel", func(t *testing.T) {
+		cluster := base.DeepCopy()
+		require.UnmarshalInto(t, &cluster.Spec.Authentication, `{
+			rules: [
+				{ connection: host, hba: anything },
+				{ users: [alice, bob], hba: anything },
+			],
+		}`)
+
+		err := cc.Create(ctx, cluster, client.DryRunAll)
+		assert.Assert(t, apierrors.IsInvalid(err))
+
+		status := require.StatusError(t, err)
+		assert.Assert(t, status.Details != nil)
+		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+
+		for i, cause := range status.Details.Causes {
+			assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d]", i))
+			assert.Assert(t, cmp.Contains(cause.Message, "cannot be combined"))
+		}
+	})
+
+	t.Run("NoInclude", func(t *testing.T) {
+		cluster := base.DeepCopy()
+		require.UnmarshalInto(t, &cluster.Spec.Authentication, `{
+			rules: [
+				{ hba: 'include "/etc/passwd"' },
+				{ hba: '   include_dir /tmp' },
+				{ hba: 'include_if_exists postgresql.auto.conf' },
+			],
+		}`)
+
+		err := cc.Create(ctx, cluster, client.DryRunAll)
+		assert.Assert(t, apierrors.IsInvalid(err))
+
+		status := require.StatusError(t, err)
+		assert.Assert(t, status.Details != nil)
+		assert.Assert(t, cmp.Len(status.Details.Causes, 3))
+
+		for i, cause := range status.Details.Causes {
+			assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d].hba", i))
+			assert.Assert(t, cmp.Contains(cause.Message, "cannot include"))
+		}
+	})
+
+	t.Run("NoStructuredTrust", func(t *testing.T) {
+		cluster := base.DeepCopy()
+		require.UnmarshalInto(t, &cluster.Spec.Authentication, `{
+			rules: [
+				{ connection: local, method: trust },
+				{ connection: hostssl, method: trust },
+				{ connection: hostgssenc, method: trust },
+			],
+		}`)
+
+		err := cc.Create(ctx, cluster, client.DryRunAll)
+		assert.Assert(t, apierrors.IsInvalid(err))
+
+		status := require.StatusError(t, err)
+		assert.Assert(t, status.Details != nil)
+		assert.Assert(t, cmp.Len(status.Details.Causes, 3))
+
+		for i, cause := range status.Details.Causes {
+			assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d].method", i))
+			assert.Assert(t, cmp.Contains(cause.Message, "unsafe"))
+		}
+	})
+}
+
 func TestPostgresConfigParameters(t *testing.T) {
 	ctx := context.Background()
 	cc := require.Kubernetes(t)
