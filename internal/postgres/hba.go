@@ -116,12 +116,6 @@ func (hba *HostBasedAuthentication) Replication() *HostBasedAuthentication {
 	return hba
 }
 
-// Role makes hba match connections by users that are members of a specific role.
-func (hba *HostBasedAuthentication) Role(name string) *HostBasedAuthentication {
-	hba.user = "+" + hba.quote(name)
-	return hba
-}
-
 // SameNetwork makes hba match connection attempts from IP addresses in any
 // subnet to which the server is directly connected.
 func (hba *HostBasedAuthentication) SameNetwork() *HostBasedAuthentication {
