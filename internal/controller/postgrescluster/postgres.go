@@ -51,7 +51,16 @@ func (*Reconciler) generatePostgresHBA(spec *v1beta1.PostgresHBARule) *postgres.
 
 	result := postgres.NewHBA()
 	result.Origin(spec.Connection)
-	result.Method(spec.Method)
+
+	// The "password" method is not recommended. More likely, the user wants to
+	// use passwords generally. The most compatible method for that is "md5"
+	// which accepts a password in the format in which it is hashed in the database.
+	// - https://www.postgresql.org/docs/current/auth-password.html
+	if spec.Method == "password" {
+		result.Method("md5")
+	} else {
+		result.Method(spec.Method)
+	}
 
 	if len(spec.Databases) > 0 {
 		result.Databases(spec.Databases[0], spec.Databases[1:]...)
