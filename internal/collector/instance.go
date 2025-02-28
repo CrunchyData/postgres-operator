@@ -7,6 +7,7 @@ package collector
 import (
 	"context"
 	"fmt"
+	"path"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -44,9 +46,12 @@ func AddToPod(
 	outPod *corev1.PodSpec,
 	volumeMounts []corev1.VolumeMount,
 	sqlQueryPassword string,
+	logDirectories []string,
 	includeLogrotate bool,
 ) {
-	if !(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+	if spec == nil ||
+		!(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
+			feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		return
 	}
 
@@ -84,7 +89,7 @@ func AddToPod(
 		Name:            naming.ContainerCollector,
 		Image:           config.CollectorContainerImage(spec),
 		ImagePullPolicy: pullPolicy,
-		Command:         startCommand(includeLogrotate),
+		Command:         startCommand(logDirectories, includeLogrotate),
 		Env: []corev1.EnvVar{
 			{
 				Name: "K8S_POD_NAMESPACE",
@@ -146,13 +151,23 @@ func AddToPod(
 }
 
 // startCommand generates the command script used by the collector container
-func startCommand(includeLogrotate bool) []string {
+func startCommand(logDirectories []string, includeLogrotate bool) []string {
+	var mkdirScript string
+	if len(logDirectories) != 0 {
+		for _, logDir := range logDirectories {
+			mkdirScript = mkdirScript + `
+` + shell.MakeDirectories(0o775, logDir,
+				path.Join(logDir, "receiver"))
+		}
+	}
+
 	var logrotateCommand string
 	if includeLogrotate {
 		logrotateCommand = `logrotate -s /tmp/logrotate.status /etc/logrotate.d/logrotate.conf`
 	}
 
 	var startScript = fmt.Sprintf(`
+%s
 OTEL_PIDFILE=/tmp/otel.pid
 
 start_otel_collector() {
@@ -175,7 +190,7 @@ while read -r -t 5 -u "${fd}" ||:; do
 		start_otel_collector
 	fi
 done
-`, configDirectory, logrotateCommand)
+`, mkdirScript, configDirectory, logrotateCommand)
 
 	wrapper := `monitor() {` + startScript + `}; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
 

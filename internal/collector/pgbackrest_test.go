@@ -39,7 +39,7 @@ exporters:
     verbosity: detailed
 extensions:
   file_storage/pgbackrest_logs:
-    create_directory: true
+    create_directory: false
     directory: /pgbackrest/repo1/log/receiver
     fsync: true
 processors:
@@ -131,7 +131,7 @@ exporters:
     project: google-project-name
 extensions:
   file_storage/pgbackrest_logs:
-    create_directory: true
+    create_directory: false
     directory: /pgbackrest/repo1/log/receiver
     fsync: true
 processors:

@@ -100,7 +100,8 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 	}
 	// If OTel logging or metrics is enabled, add collector config
 	if otelConfig != nil &&
-		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
+			feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		err = collector.AddToConfigMap(ctx, otelConfig, configmap)
 	}
 	// If OTel logging is enabled, add logrotate config
