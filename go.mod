@@ -1,5 +1,6 @@
 module github.com/crunchydata/postgres-operator
 
+// If this is changing when you don't want it to, see hack/go-get.sh
 go 1.22.7
 
 require (
