@@ -38,17 +38,22 @@ var ltPG16 json.RawMessage
 
 func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresCluster, config *Config) {
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		// We must create a copy of the fiveSecondMetrics variable, otherwise we
+		// will continually append to it and blow up our ConfigMap
+		fiveSecondMetricsClone := slices.Clone(fiveSecondMetrics)
+
 		if inCluster.Spec.PostgresVersion >= 17 {
-			fiveSecondMetrics, _ = appendToJSONArray(fiveSecondMetrics, gtePG17)
+			fiveSecondMetricsClone, _ = appendToJSONArray(fiveSecondMetricsClone, gtePG17)
 		} else {
-			fiveSecondMetrics, _ = appendToJSONArray(fiveSecondMetrics, ltPG17)
+			fiveSecondMetricsClone, _ = appendToJSONArray(fiveSecondMetricsClone, ltPG17)
 		}
 
 		if inCluster.Spec.PostgresVersion >= 16 {
-			fiveSecondMetrics, _ = appendToJSONArray(fiveSecondMetrics, gtePG16)
+			fiveSecondMetricsClone, _ = appendToJSONArray(fiveSecondMetricsClone, gtePG16)
 		} else {
-			fiveSecondMetrics, _ = appendToJSONArray(fiveSecondMetrics, ltPG16)
+			fiveSecondMetricsClone, _ = appendToJSONArray(fiveSecondMetricsClone, ltPG16)
 		}
+
 		// Add Prometheus exporter
 		config.Exporters[Prometheus] = map[string]any{
 			"endpoint": "0.0.0.0:9187",
@@ -60,7 +65,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			"collection_interval": "5s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "10s",
-			"queries":       slices.Clone(fiveSecondMetrics),
+			"queries":       slices.Clone(fiveSecondMetricsClone),
 		}
 
 		config.Receivers[FiveMinuteSqlQuery] = map[string]any{
