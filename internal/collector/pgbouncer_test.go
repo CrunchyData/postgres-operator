@@ -35,7 +35,7 @@ exporters:
     verbosity: detailed
 extensions:
   file_storage/pgbouncer_logs:
-    create_directory: true
+    create_directory: false
     directory: /tmp/receiver
     fsync: true
 processors:
@@ -124,7 +124,7 @@ exporters:
     project: google-project-name
 extensions:
   file_storage/pgbouncer_logs:
-    create_directory: true
+    create_directory: false
     directory: /tmp/receiver
     fsync: true
 processors:

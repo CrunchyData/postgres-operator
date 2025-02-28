@@ -1219,8 +1219,10 @@ func (r *Reconciler) reconcileInstance(
 		}
 
 		// For now, we are not using logrotate to rotate postgres or patroni logs
+		// but we are using it for pgbackrest logs in the postgres pod
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
-			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword, []string{}, false)
+			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword,
+			[]string{naming.PGBackRestPGDataLogPath}, true)
 	}
 
 	// Add postgres-exporter to the instance Pod spec
