@@ -32,6 +32,132 @@ func TestPGAdminInstrumentation(t *testing.T) {
 	assert.NilError(t, cc.Create(ctx, base.DeepCopy(), client.DryRunAll),
 		"expected this base to be valid")
 
+	t.Run("LogsBatches", func(t *testing.T) {
+		t.Run("Disable", func(t *testing.T) {
+			for _, tt := range []struct {
+				batches string
+				valid   bool
+			}{
+				{valid: true, batches: ``},              // both null
+				{valid: true, batches: `minRecords: 1`}, // one null
+				{valid: true, batches: `maxDelay: 1s`},  // other null
+
+				{valid: false, batches: `minRecords: 0`}, // one zero
+				{valid: false, batches: `maxDelay: 0m`},  // other zero
+
+				{valid: true, batches: `minRecords: 0, maxDelay: 0m`}, // both zero
+				{valid: true, batches: `minRecords: 1, maxDelay: 1s`}, // both non-zero
+			} {
+				pgadmin := base.DeepCopy()
+				require.UnmarshalInto(t, &pgadmin.Spec.Instrumentation, `{
+					logs: { batches: { `+tt.batches+` } }
+				}`)
+
+				err := cc.Create(ctx, pgadmin, client.DryRunAll)
+				if tt.valid {
+					assert.NilError(t, err)
+				} else {
+					assert.Assert(t, apierrors.IsInvalid(err))
+					assert.ErrorContains(t, err, "disable")
+					assert.ErrorContains(t, err, "minRecords")
+					assert.ErrorContains(t, err, "maxDelay")
+
+					status := require.StatusError(t, err)
+					assert.Assert(t, status.Details != nil)
+					assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+
+					for _, cause := range status.Details.Causes {
+						assert.Equal(t, cause.Field, "spec.instrumentation.logs.batches")
+						assert.Assert(t, cmp.Contains(cause.Message, "disable batching"))
+						assert.Assert(t, cmp.Contains(cause.Message, "minRecords and maxDelay must be zero"))
+					}
+				}
+			}
+		})
+
+		t.Run("MaxDelay", func(t *testing.T) {
+			pgadmin := base.DeepCopy()
+			require.UnmarshalInto(t, &pgadmin.Spec.Instrumentation, `{
+				logs: {
+					batches: { maxDelay: 100min },
+				},
+			}`)
+
+			err := cc.Create(ctx, pgadmin, client.DryRunAll)
+			assert.Assert(t, apierrors.IsInvalid(err))
+			assert.ErrorContains(t, err, "maxDelay")
+			assert.ErrorContains(t, err, "5m")
+
+			status := require.StatusError(t, err)
+			assert.Assert(t, status.Details != nil)
+			assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+
+			for _, cause := range status.Details.Causes {
+				assert.Equal(t, cause.Field, "spec.instrumentation.logs.batches.maxDelay")
+			}
+		})
+
+		t.Run("MinMaxRecords", func(t *testing.T) {
+			pgadmin := base.DeepCopy()
+			require.UnmarshalInto(t, &pgadmin.Spec.Instrumentation, `{
+				logs: {
+					batches: { minRecords: -11, maxRecords: 0 },
+				},
+			}`)
+
+			err := cc.Create(ctx, pgadmin, client.DryRunAll)
+			assert.Assert(t, apierrors.IsInvalid(err))
+			assert.ErrorContains(t, err, "minRecords")
+			assert.ErrorContains(t, err, "greater than or equal to 0")
+			assert.ErrorContains(t, err, "maxRecords")
+			assert.ErrorContains(t, err, "greater than or equal to 1")
+
+			status := require.StatusError(t, err)
+			assert.Assert(t, status.Details != nil)
+			assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+
+			for _, cause := range status.Details.Causes {
+				switch cause.Field {
+				case "spec.instrumentation.logs.batches.maxRecords":
+					assert.Assert(t, cmp.Contains(cause.Message, "0"))
+					assert.Assert(t, cmp.Contains(cause.Message, "greater than or equal to 1"))
+
+				case "spec.instrumentation.logs.batches.minRecords":
+					assert.Assert(t, cmp.Contains(cause.Message, "-11"))
+					assert.Assert(t, cmp.Contains(cause.Message, "greater than or equal to 0"))
+				}
+			}
+
+			t.Run("Reversed", func(t *testing.T) {
+				for _, batches := range []string{
+					`maxRecords: 99`,                 // default minRecords
+					`minRecords: 99, maxRecords: 21`, //
+				} {
+					pgadmin := base.DeepCopy()
+					require.UnmarshalInto(t, &pgadmin.Spec.Instrumentation, `{
+						logs: {
+							batches: { `+batches+` },
+						},
+					}`)
+
+					err := cc.Create(ctx, pgadmin, client.DryRunAll)
+					assert.Assert(t, apierrors.IsInvalid(err))
+					assert.ErrorContains(t, err, "minRecords")
+					assert.ErrorContains(t, err, "maxRecords")
+
+					status := require.StatusError(t, err)
+					assert.Assert(t, status.Details != nil)
+					assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+
+					for _, cause := range status.Details.Causes {
+						assert.Equal(t, cause.Field, "spec.instrumentation.logs.batches")
+						assert.Assert(t, cmp.Contains(cause.Message, "minRecords cannot be larger than maxRecords"))
+					}
+				}
+			})
+		})
+	})
+
 	t.Run("LogsRetentionPeriod", func(t *testing.T) {
 		pgadmin := base.DeepCopy()
 		require.UnmarshalInto(t, &pgadmin.Spec, `{

@@ -48,6 +48,11 @@ type InstrumentationConfigSpec struct {
 // InstrumentationLogsSpec defines the configuration for collecting logs via
 // OpenTelemetry.
 type InstrumentationLogsSpec struct {
+	// Log records are exported in small batches. Set this field to change their size and frequency.
+	// ---
+	// +optional
+	Batches *OpenTelemetryLogsBatchSpec `json:"batches,omitempty"`
+
 	// Exporters allows users to specify which exporters they want to use in
 	// the logs pipeline.
 	// +optional
@@ -70,4 +75,60 @@ type InstrumentationLogsSpec struct {
 	//
 	// +optional
 	RetentionPeriod *Duration `json:"retentionPeriod,omitempty"`
+}
+
+// ---
+// Configuration for the OpenTelemetry Batch Processor
+// https://pkg.go.dev/go.opentelemetry.io/collector/processor/batchprocessor#section-readme
+//
+// The batch processor stops batching when *either* of these is zero, but that is confusing.
+// Make the user set both so it is evident there is *no* motivation to create any batch.
+// +kubebuilder:validation:XValidation:rule=`(has(self.minRecords) && self.minRecords == 0) == (has(self.maxDelay) && self.maxDelay == duration('0'))`,message=`to disable batching, both minRecords and maxDelay must be zero`
+//
+// +kubebuilder:validation:XValidation:rule=`!has(self.maxRecords) || self.minRecords <= self.maxRecords`,message=`minRecords cannot be larger than maxRecords`
+// +structType=atomic
+type OpenTelemetryLogsBatchSpec struct {
+	// Maximum time to wait before exporting a log record. Higher numbers
+	// allow more records to be deduplicated and compressed before export.
+	// ---
+	// Kubernetes ensures the value is in the "duration" format, but go ahead
+	// and loosely validate the format to show some acceptable units.
+	// NOTE: This rejects fractional numbers: https://github.com/kubernetes/kube-openapi/issues/523
+	// +kubebuilder:validation:Pattern=`^((PT)?( *[0-9]+ *(?i:(ms|s|m)|(milli|sec|min)s?))+|0)$`
+	//
+	// `controller-gen` needs to know "Type=string" to allow a "Pattern".
+	// +kubebuilder:validation:Type=string
+	//
+	// Set a max length to keep rule costs low.
+	// +kubebuilder:validation:MaxLength=20
+	// +kubebuilder:validation:XValidation:rule=`duration("0") <= self && self <= duration("5m")`
+	//
+	// +default="200ms"
+	// +optional
+	MaxDelay *Duration `json:"maxDelay,omitempty"`
+
+	// Maximum number of records to include in an exported batch. When present,
+	// batches this size are sent without any further delay.
+	// ---
+	// +kubebuilder:validation:Minimum=1
+	// +optional
+	MaxRecords *int32 `json:"maxRecords,omitempty"`
+
+	// Number of records to wait for before exporting a batch. Higher numbers
+	// allow more records to be deduplicated and compressed before export.
+	// ---
+	// +kubebuilder:validation:Minimum=0
+	// +default=8192
+	// +optional
+	MinRecords *int32 `json:"minRecords,omitempty"`
+}
+
+func (s *OpenTelemetryLogsBatchSpec) Default() {
+	if s.MaxDelay == nil {
+		s.MaxDelay, _ = NewDuration("200ms")
+	}
+	if s.MinRecords == nil {
+		s.MinRecords = new(int32)
+		*s.MinRecords = 8192
+	}
 }

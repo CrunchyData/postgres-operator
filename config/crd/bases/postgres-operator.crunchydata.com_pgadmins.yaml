@@ -1948,6 +1948,46 @@ spec:
                     description: Logs is the place for users to configure the log
                       collection.
                     properties:
+                      batches:
+                        description: Log records are exported in small batches. Set
+                          this field to change their size and frequency.
+                        properties:
+                          maxDelay:
+                            default: 200ms
+                            description: |-
+                              Maximum time to wait before exporting a log record. Higher numbers
+                              allow more records to be deduplicated and compressed before export.
+                            format: duration
+                            maxLength: 20
+                            minLength: 1
+                            pattern: ^((PT)?( *[0-9]+ *(?i:(ms|s|m)|(milli|sec|min)s?))+|0)$
+                            type: string
+                            x-kubernetes-validations:
+                            - rule: duration("0") <= self && self <= duration("5m")
+                          maxRecords:
+                            description: |-
+                              Maximum number of records to include in an exported batch. When present,
+                              batches this size are sent without any further delay.
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          minRecords:
+                            default: 8192
+                            description: |-
+                              Number of records to wait for before exporting a batch. Higher numbers
+                              allow more records to be deduplicated and compressed before export.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                        type: object
+                        x-kubernetes-map-type: atomic
+                        x-kubernetes-validations:
+                        - message: to disable batching, both minRecords and maxDelay
+                            must be zero
+                          rule: (has(self.minRecords) && self.minRecords == 0) ==
+                            (has(self.maxDelay) && self.maxDelay == duration('0'))
+                        - message: minRecords cannot be larger than maxRecords
+                          rule: '!has(self.maxRecords) || self.minRecords <= self.maxRecords'
                       exporters:
                         description: |-
                           Exporters allows users to specify which exporters they want to use in
