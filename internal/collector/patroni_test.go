@@ -58,6 +58,10 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/patroni_logs:
     log_statements:
     - context: log
@@ -92,6 +96,7 @@ service:
       processors:
       - resource/patroni
       - transform/patroni_logs
+      - resourcedetection
       - batch/logs
       - groupbyattrs/compact
       receivers:
@@ -148,6 +153,10 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/patroni_logs:
     log_statements:
     - context: log
@@ -182,6 +191,7 @@ service:
       processors:
       - resource/patroni
       - transform/patroni_logs
+      - resourcedetection
       - batch/logs
       - groupbyattrs/compact
       receivers:

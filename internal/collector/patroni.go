@@ -120,6 +120,7 @@ func EnablePatroniLogging(ctx context.Context,
 			Processors: []ComponentID{
 				"resource/patroni",
 				"transform/patroni_logs",
+				ResourceDetectionProcessor,
 				LogsBatchProcessor,
 				CompactingProcessor,
 			},

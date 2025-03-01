@@ -13,6 +13,7 @@ const Prometheus = "prometheus"
 const PGBouncerMetrics = "metrics/pgbouncer"
 const PostgresMetrics = "metrics/postgres"
 const PatroniMetrics = "metrics/patroni"
+const ResourceDetectionProcessor = "resourcedetection"
 
 const SqlQuery = "sqlquery"
 

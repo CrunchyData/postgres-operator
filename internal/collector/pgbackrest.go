@@ -104,6 +104,7 @@ func NewConfigForPgBackrestRepoHostPod(
 			Processors: []ComponentID{
 				"resource/pgbackrest",
 				"transform/pgbackrest_logs",
+				ResourceDetectionProcessor,
 				LogsBatchProcessor,
 				CompactingProcessor,
 			},
