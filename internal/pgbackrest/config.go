@@ -17,6 +17,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -129,11 +130,32 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 				postgresCluster.Spec.Backups.PGBackRest.Global,
 			).String()
 
-		err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
-			ctx,
-			postgresCluster.Spec.Instrumentation,
-			postgresCluster.Spec.Backups.PGBackRest.Repos,
-		), cm)
+		if RepoHostVolumeDefined(postgresCluster) &&
+			(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
+				feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+			err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
+				ctx,
+				postgresCluster.Spec.Instrumentation,
+				postgresCluster.Spec.Backups.PGBackRest.Repos,
+			), cm)
+
+			// If OTel logging is enabled, add logrotate config for the RepoHost
+			if err == nil &&
+				postgresCluster.Spec.Instrumentation != nil &&
+				feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+				var pgBackRestLogPath string
+				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+					if repo.Volume != nil {
+						pgBackRestLogPath = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
+						break
+					}
+				}
+
+				collector.AddLogrotateConfigs(ctx, postgresCluster.Spec.Instrumentation, cm, []collector.LogrotateConfig{{
+					LogFiles: []string{pgBackRestLogPath + "/*.log"},
+				}})
+			}
+		}
 	}
 
 	cm.Data[ConfigHashKey] = configHash
@@ -144,7 +166,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 // MakePGBackrestLogDir creates the pgBackRest default log path directory used when a
 // dedicated repo host is configured.
 func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
-	cluster *v1beta1.PostgresCluster) {
+	cluster *v1beta1.PostgresCluster) string {
 
 	var pgBackRestLogPath string
 	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
@@ -172,6 +194,8 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 		}
 	}
 	template.Spec.InitContainers = append(template.Spec.InitContainers, container)
+
+	return pgBackRestLogPath
 }
 
 // RestoreCommand returns the command for performing a pgBackRest restore.  In addition to calling

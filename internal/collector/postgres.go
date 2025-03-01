@@ -27,10 +27,13 @@ func NewConfigForPostgresPod(ctx context.Context,
 ) *Config {
 	config := NewConfig(inCluster.Spec.Instrumentation)
 
+	// Metrics
 	EnablePostgresMetrics(ctx, inCluster, config)
 	EnablePatroniMetrics(ctx, inCluster, config)
-	EnablePatroniLogging(ctx, inCluster, config)
+
+	// Logging
 	EnablePostgresLogging(ctx, inCluster, config, outParameters)
+	EnablePatroniLogging(ctx, inCluster, config)
 
 	return config
 }
@@ -229,10 +232,9 @@ func EnablePostgresLogging(
 		}
 
 		// pgBackRest pipeline
-		// TODO(log-rotation): Create this directory during Collector startup.
 		outConfig.Extensions["file_storage/pgbackrest_logs"] = map[string]any{
 			"directory":        naming.PGBackRestPGDataLogPath + "/receiver",
-			"create_directory": true,
+			"create_directory": false,
 			"fsync":            true,
 		}
 

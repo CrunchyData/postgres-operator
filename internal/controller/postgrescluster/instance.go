@@ -1219,8 +1219,10 @@ func (r *Reconciler) reconcileInstance(
 		}
 
 		// For now, we are not using logrotate to rotate postgres or patroni logs
+		// but we are using it for pgbackrest logs in the postgres pod
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template.Spec,
-			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword, false)
+			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword,
+			[]string{naming.PGBackRestPGDataLogPath}, true)
 	}
 
 	// Add postgres-exporter to the instance Pod spec
@@ -1425,8 +1427,24 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 		})
 
 	// If OTel logging or metrics is enabled, add collector config
-	if err == nil && (feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+	if err == nil &&
+		(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
+			feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
 		err = collector.AddToConfigMap(ctx, otelConfig, instanceConfigMap)
+
+		// Add pgbackrest logrotate if OpenTelemetryLogs is enabled and
+		// local volumes are available
+		if err == nil &&
+			feature.Enabled(ctx, feature.OpenTelemetryLogs) &&
+			pgbackrest.RepoHostVolumeDefined(cluster) &&
+			cluster.Spec.Instrumentation != nil {
+
+			collector.AddLogrotateConfigs(ctx, cluster.Spec.Instrumentation,
+				instanceConfigMap,
+				[]collector.LogrotateConfig{{
+					LogFiles: []string{naming.PGBackRestPGDataLogPath + "/*.log"},
+				}})
+		}
 	}
 	if err == nil {
 		err = patroni.InstanceConfigMap(ctx, cluster, spec, instanceConfigMap)

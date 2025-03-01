@@ -40,7 +40,7 @@ exporters:
     verbosity: detailed
 extensions:
   file_storage/pgbackrest_logs:
-    create_directory: true
+    create_directory: false
     directory: /pgdata/pgbackrest/log/receiver
     fsync: true
   file_storage/postgres_logs:
@@ -272,7 +272,7 @@ exporters:
     project: google-project-name
 extensions:
   file_storage/pgbackrest_logs:
-    create_directory: true
+    create_directory: false
     directory: /pgdata/pgbackrest/log/receiver
     fsync: true
   file_storage/postgres_logs:
