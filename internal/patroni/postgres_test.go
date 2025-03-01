@@ -13,6 +13,91 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestPostgresHBAs(t *testing.T) {
+	t.Run("Zero", func(t *testing.T) {
+		result := PostgresHBAs(nil)
+
+		assert.Assert(t, result == nil)
+	})
+
+	t.Run("NoDynamicConfig", func(t *testing.T) {
+		spec := new(v1beta1.PatroniSpec)
+		result := PostgresHBAs(spec)
+
+		assert.Assert(t, result == nil)
+	})
+
+	t.Run("NoPostgreSQL", func(t *testing.T) {
+		spec := new(v1beta1.PatroniSpec)
+		require.UnmarshalInto(t, spec, `{
+			dynamicConfiguration: {},
+		}`)
+
+		result := PostgresHBAs(spec)
+		assert.Assert(t, result == nil)
+
+		t.Run("WrongType", func(t *testing.T) {
+			require.UnmarshalInto(t, spec, `{
+				dynamicConfiguration: {
+					postgresql: asdf,
+				},
+			}`)
+
+			result := PostgresHBAs(spec)
+			assert.Assert(t, result == nil)
+		})
+	})
+
+	t.Run("NoHBAs", func(t *testing.T) {
+		spec := new(v1beta1.PatroniSpec)
+		require.UnmarshalInto(t, spec, `{
+			dynamicConfiguration: {
+				postgresql: {
+					use_pg_rewind: true,
+				},
+			},
+		}`)
+
+		result := PostgresHBAs(spec)
+		assert.Assert(t, result == nil)
+
+		t.Run("WrongType", func(t *testing.T) {
+			require.UnmarshalInto(t, spec, `{
+				dynamicConfiguration: {
+					postgresql: {
+						pg_hba: asdf,
+					},
+				},
+			}`)
+
+			result := PostgresHBAs(spec)
+			assert.Assert(t, result == nil)
+		})
+	})
+
+	t.Run("HBAs", func(t *testing.T) {
+		spec := new(v1beta1.PatroniSpec)
+		require.UnmarshalInto(t, spec, `{
+			dynamicConfiguration: {
+				postgresql: {
+					pg_hba: [
+						"host all all all trust",
+						true,
+						"total garbage, yikes",
+						123,
+					],
+				},
+			},
+		}`)
+
+		result := PostgresHBAs(spec)
+		assert.DeepEqual(t, result, []string{
+			"host all all all trust",
+			"total garbage, yikes",
+		})
+	})
+}
+
 func TestPostgresParameters(t *testing.T) {
 	t.Run("Zero", func(t *testing.T) {
 		result := PostgresParameters(nil)
