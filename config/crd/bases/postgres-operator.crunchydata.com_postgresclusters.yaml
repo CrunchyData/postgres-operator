@@ -11181,6 +11181,38 @@ spec:
                     description: Config is the place for users to configure exporters
                       and provide files.
                     properties:
+                      detectors:
+                        description: |-
+                          Resource detectors add identifying attributes to logs and metrics. These run in the order they are defined.
+                          More info: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/resourcedetectionprocessor#readme
+                        items:
+                          properties:
+                            attributes:
+                              additionalProperties:
+                                type: boolean
+                              description: |-
+                                Attributes to use from this detector. Detectors usually add every attribute
+                                they know automatically. Names omitted here behave according to detector defaults.
+                              maxProperties: 30
+                              minProperties: 1
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            name:
+                              description: 'Name of the resource detector to enable:
+                                `aks`, `eks`, `gcp`, etc.'
+                              maxLength: 20
+                              minLength: 1
+                              type: string
+                          required:
+                          - name
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        maxItems: 10
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       exporters:
                         description: |-
                           Exporters allows users to configure OpenTelemetry exporters that exist
@@ -11513,7 +11545,9 @@ spec:
                               - path
                               type: object
                           type: object
+                        minItems: 1
                         type: array
+                        x-kubernetes-list-type: atomic
                     type: object
                   image:
                     description: |-
@@ -11565,12 +11599,12 @@ spec:
                         - message: minRecords cannot be larger than maxRecords
                           rule: '!has(self.maxRecords) || self.minRecords <= self.maxRecords'
                       exporters:
-                        description: |-
-                          Exporters allows users to specify which exporters they want to use in
-                          the logs pipeline.
+                        description: The names of exporters that should send logs.
                         items:
                           type: string
+                        minItems: 1
                         type: array
+                        x-kubernetes-list-type: set
                       retentionPeriod:
                         description: |-
                           How long to retain log files locally. An RFC 3339 duration or a number

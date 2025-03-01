@@ -33,6 +33,10 @@ processors:
     send_batch_size: 8192
     timeout: 200ms
   groupbyattrs/compact: {}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
 receivers: {}
 service:
   extensions: []
@@ -64,6 +68,10 @@ processors:
     send_batch_size: 8192
     timeout: 200ms
   groupbyattrs/compact: {}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
 receivers: {}
 service:
   extensions: []
@@ -108,6 +116,33 @@ service:
     timeout: 0s
 `))
 		})
+	})
+
+	t.Run("Detectors", func(t *testing.T) {
+		var spec *v1beta1.InstrumentationSpec
+		require.UnmarshalInto(t, &spec, `{
+			config: {
+				detectors: [
+					{ name: gcp },
+					{ name: aks, attributes: { k8s.cluster.name: true } },
+				],
+			},
+		}`)
+
+		result, err := NewConfig(spec).ToYAML()
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Contains(result, `
+  resourcedetection:
+    aks:
+      resource_attributes:
+        k8s.cluster.name:
+          enabled: true
+    detectors:
+    - gcp
+    - aks
+    override: false
+    timeout: 30s
+`))
 	})
 }
 

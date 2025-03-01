@@ -159,6 +159,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 			Processors: []ComponentID{
 				"resource/pgbouncer",
 				"transform/pgbouncer_logs",
+				ResourceDetectionProcessor,
 				LogsBatchProcessor,
 				CompactingProcessor,
 			},

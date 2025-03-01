@@ -84,6 +84,10 @@ processors:
     - action: insert
       key: db.version
       value: "99"
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
     - context: log
@@ -228,6 +232,7 @@ service:
       processors:
       - resource/pgbackrest
       - transform/pgbackrest_logs
+      - resourcedetection
       - batch/logs
       - groupbyattrs/compact
       receivers:
@@ -238,6 +243,7 @@ service:
       processors:
       - resource/postgres
       - transform/postgres_logs
+      - resourcedetection
       - batch/logs
       - groupbyattrs/compact
       receivers:
@@ -319,6 +325,10 @@ processors:
     - action: insert
       key: db.version
       value: "99"
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
     - context: log
@@ -463,6 +473,7 @@ service:
       processors:
       - resource/pgbackrest
       - transform/pgbackrest_logs
+      - resourcedetection
       - batch/logs
       - groupbyattrs/compact
       receivers:
@@ -473,6 +484,7 @@ service:
       processors:
       - resource/postgres
       - transform/postgres_logs
+      - resourcedetection
       - batch/logs
       - groupbyattrs/compact
       receivers:

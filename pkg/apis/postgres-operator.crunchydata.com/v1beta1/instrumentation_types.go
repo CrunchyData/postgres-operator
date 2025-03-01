@@ -12,7 +12,6 @@ type InstrumentationSpec struct {
 	// Image name to use for collector containers. When omitted, the value
 	// comes from an operator environment variable.
 	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
 	Image string `json:"image,omitempty"`
 
 	// Resources holds the resource requirements for the collector container.
@@ -31,6 +30,16 @@ type InstrumentationSpec struct {
 // InstrumentationConfigSpec allows users to configure their own exporters,
 // add files, etc.
 type InstrumentationConfigSpec struct {
+	// Resource detectors add identifying attributes to logs and metrics. These run in the order they are defined.
+	// More info: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/resourcedetectionprocessor#readme
+	// ---
+	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MinItems=1
+	// +listMapKey=name
+	// +listType=map
+	// +optional
+	Detectors []OpenTelemetryResourceDetector `json:"detectors,omitempty"`
+
 	// Exporters allows users to configure OpenTelemetry exporters that exist
 	// in the collector image.
 	// +kubebuilder:pruning:PreserveUnknownFields
@@ -41,6 +50,9 @@ type InstrumentationConfigSpec struct {
 
 	// Files allows the user to mount projected volumes into the collector
 	// Pod so that files can be referenced by the collector as needed.
+	// ---
+	// +kubebuilder:validation:MinItems=1
+	// +listType=atomic
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 }
@@ -53,8 +65,10 @@ type InstrumentationLogsSpec struct {
 	// +optional
 	Batches *OpenTelemetryLogsBatchSpec `json:"batches,omitempty"`
 
-	// Exporters allows users to specify which exporters they want to use in
-	// the logs pipeline.
+	// The names of exporters that should send logs.
+	// ---
+	// +kubebuilder:validation:MinItems=1
+	// +listType=set
 	// +optional
 	Exporters []string `json:"exporters,omitempty"`
 
@@ -131,4 +145,24 @@ func (s *OpenTelemetryLogsBatchSpec) Default() {
 		s.MinRecords = new(int32)
 		*s.MinRecords = 8192
 	}
+}
+
+// ---
+// +structType=atomic
+type OpenTelemetryResourceDetector struct {
+	// Name of the resource detector to enable: `aks`, `eks`, `gcp`, etc.
+	// ---
+	// +kubebuilder:validation:MaxLength=20
+	// +kubebuilder:validation:MinLength=1
+	// +required
+	Name string `json:"name"`
+
+	// Attributes to use from this detector. Detectors usually add every attribute
+	// they know automatically. Names omitted here behave according to detector defaults.
+	// ---
+	// +kubebuilder:validation:MaxProperties=30
+	// +kubebuilder:validation:MinProperties=1
+	// +mapType=atomic
+	// +optional
+	Attributes map[string]bool `json:"attributes,omitempty"`
 }

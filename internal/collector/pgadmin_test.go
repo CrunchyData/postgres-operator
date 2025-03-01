@@ -66,6 +66,10 @@ collector.yaml: |
       - action: insert
         key: k8s.pod.name
         value: ${env:K8S_POD_NAME}
+    resourcedetection:
+      detectors: []
+      override: false
+      timeout: 30s
     transform/pgadmin_log:
       log_statements:
       - context: log
@@ -102,6 +106,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
+        - resourcedetection
         - batch/logs
         - groupbyattrs/compact
         receivers:
@@ -112,6 +117,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
+        - resourcedetection
         - batch/logs
         - groupbyattrs/compact
         receivers:
@@ -181,6 +187,10 @@ collector.yaml: |
       - action: insert
         key: k8s.pod.name
         value: ${env:K8S_POD_NAME}
+    resourcedetection:
+      detectors: []
+      override: false
+      timeout: 30s
     transform/pgadmin_log:
       log_statements:
       - context: log
@@ -217,6 +227,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
+        - resourcedetection
         - batch/logs
         - groupbyattrs/compact
         receivers:
@@ -227,6 +238,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
+        - resourcedetection
         - batch/logs
         - groupbyattrs/compact
         receivers:

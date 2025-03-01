@@ -101,6 +101,7 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 		Processors: []ComponentID{
 			"resource/pgadmin",
 			"transform/pgadmin_log",
+			ResourceDetectionProcessor,
 			LogsBatchProcessor,
 			CompactingProcessor,
 		},
@@ -113,6 +114,7 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 		Processors: []ComponentID{
 			"resource/pgadmin",
 			"transform/pgadmin_log",
+			ResourceDetectionProcessor,
 			LogsBatchProcessor,
 			CompactingProcessor,
 		},

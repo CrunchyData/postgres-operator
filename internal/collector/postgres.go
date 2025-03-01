@@ -225,6 +225,7 @@ func EnablePostgresLogging(
 			Processors: []ComponentID{
 				"resource/postgres",
 				"transform/postgres_logs",
+				ResourceDetectionProcessor,
 				LogsBatchProcessor,
 				CompactingProcessor,
 			},
@@ -279,6 +280,7 @@ func EnablePostgresLogging(
 			Processors: []ComponentID{
 				"resource/pgbackrest",
 				"transform/pgbackrest_logs",
+				ResourceDetectionProcessor,
 				LogsBatchProcessor,
 				CompactingProcessor,
 			},
