@@ -114,6 +114,29 @@ func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 		Pipelines: map[PipelineID]Pipeline{},
 	}
 
+	// Configure a batch processor for logs according to the API spec.
+	// Use API defaults for any unspecified fields.
+	{
+		var batches v1beta1.OpenTelemetryLogsBatchSpec
+		if spec != nil && spec.Logs != nil && spec.Logs.Batches != nil {
+			spec.Logs.Batches.DeepCopyInto(&batches)
+		}
+		batches.Default()
+
+		// https://pkg.go.dev/go.opentelemetry.io/collector/processor/batchprocessor#section-readme
+		processor := map[string]any{}
+		if batches.MaxDelay != nil {
+			processor["timeout"] = batches.MaxDelay.AsDuration().Duration.String()
+		}
+		if batches.MaxRecords != nil {
+			processor["send_batch_max_size"] = *batches.MaxRecords
+		}
+		if batches.MinRecords != nil {
+			processor["send_batch_size"] = *batches.MinRecords
+		}
+		config.Processors[LogsBatchProcessor] = processor
+	}
+
 	// If there are exporters defined in the spec, add them to the config.
 	if spec != nil && spec.Config != nil && spec.Config.Exporters != nil {
 		for k, v := range spec.Config.Exporters {

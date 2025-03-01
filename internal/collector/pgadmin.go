@@ -6,6 +6,7 @@ package collector
 
 import (
 	"context"
+	"slices"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -89,11 +90,9 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 
 	// If there are exporters to be added to the logs pipelines defined in
 	// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
-	var exporters []ComponentID
+	exporters := []ComponentID{DebugExporter}
 	if spec != nil && spec.Logs != nil && spec.Logs.Exporters != nil {
-		exporters = spec.Logs.Exporters
-	} else {
-		exporters = []ComponentID{DebugExporter}
+		exporters = slices.Clone(spec.Logs.Exporters)
 	}
 
 	otelConfig.Pipelines["logs/pgadmin"] = Pipeline{
@@ -102,7 +101,7 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 		Processors: []ComponentID{
 			"resource/pgadmin",
 			"transform/pgadmin_log",
-			SubSecondBatchProcessor,
+			LogsBatchProcessor,
 			CompactingProcessor,
 		},
 		Exporters: exporters,
@@ -114,7 +113,7 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 		Processors: []ComponentID{
 			"resource/pgadmin",
 			"transform/pgadmin_log",
-			SubSecondBatchProcessor,
+			LogsBatchProcessor,
 			CompactingProcessor,
 		},
 		Exporters: exporters,

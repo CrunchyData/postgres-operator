@@ -43,6 +43,9 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
   resource/patroni:
     attributes:
@@ -89,7 +92,7 @@ service:
       processors:
       - resource/patroni
       - transform/patroni_logs
-      - batch/200ms
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/patroni_jsonlog
@@ -129,6 +132,9 @@ processors:
   batch/1s:
     timeout: 1s
   batch/200ms:
+    timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
     timeout: 200ms
   groupbyattrs/compact: {}
   resource/patroni:
@@ -176,7 +182,7 @@ service:
       processors:
       - resource/patroni
       - transform/patroni_logs
-      - batch/200ms
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/patroni_jsonlog

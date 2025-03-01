@@ -93,11 +93,9 @@ func NewConfigForPgBackrestRepoHostPod(
 
 		// If there are exporters to be added to the logs pipelines defined in
 		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
-		var exporters []ComponentID
+		exporters := []ComponentID{DebugExporter}
 		if spec != nil && spec.Logs != nil && spec.Logs.Exporters != nil {
-			exporters = spec.Logs.Exporters
-		} else {
-			exporters = []ComponentID{DebugExporter}
+			exporters = slices.Clone(spec.Logs.Exporters)
 		}
 
 		config.Pipelines["logs/pgbackrest"] = Pipeline{
@@ -106,7 +104,7 @@ func NewConfigForPgBackrestRepoHostPod(
 			Processors: []ComponentID{
 				"resource/pgbackrest",
 				"transform/pgbackrest_logs",
-				SubSecondBatchProcessor,
+				LogsBatchProcessor,
 				CompactingProcessor,
 			},
 			Exporters: exporters,
