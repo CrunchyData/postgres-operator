@@ -9,6 +9,8 @@ import (
 
 	"gotest.tools/v3/assert"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -26,6 +28,9 @@ processors:
   batch/1s:
     timeout: 1s
   batch/200ms:
+    timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
     timeout: 200ms
   groupbyattrs/compact: {}
 receivers: {}
@@ -55,12 +60,54 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
 receivers: {}
 service:
   extensions: []
   pipelines: {}
 `)
+	})
+
+	t.Run("LogsBatches", func(t *testing.T) {
+		var spec *v1beta1.InstrumentationSpec
+		require.UnmarshalInto(t, &spec, `{
+			logs: {
+				batches: {
+					maxDelay: 5min 12sec,
+					maxRecords: 123,
+					minRecords: 45,
+				},
+			},
+		}`)
+
+		result, err := NewConfig(spec).ToYAML()
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Contains(result, `
+  batch/logs:
+    send_batch_max_size: 123
+    send_batch_size: 45
+    timeout: 5m12s
+`))
+
+		t.Run("Disable", func(t *testing.T) {
+			var spec *v1beta1.InstrumentationSpec
+			require.UnmarshalInto(t, &spec, `{
+				logs: {
+					batches: { minRecords: 0, maxDelay: "0" },
+				},
+			}`)
+
+			result, err := NewConfig(spec).ToYAML()
+			assert.NilError(t, err)
+			assert.Assert(t, cmp.Contains(result, `
+  batch/logs:
+    send_batch_size: 0
+    timeout: 0s
+`))
+		})
 	})
 }
 

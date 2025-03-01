@@ -25,6 +25,10 @@ func TestDurationYAML(t *testing.T) {
 		var parsed Duration
 		assert.NilError(t, yaml.UnmarshalStrict(zero, &parsed))
 		assert.Equal(t, parsed.AsDuration().Duration, 0*time.Second)
+
+		// This is what Kubernetes calls when validating the "duration" format.
+		// - https://releases.k8s.io/v1.32.0/staging/src/k8s.io/apiextensions-apiserver/pkg/apiserver/validation/validation.go#L116
+		assert.Assert(t, strfmt.IsDuration("0"))
 	})
 
 	t.Run("Small", func(t *testing.T) {

@@ -43,6 +43,9 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
   resource/pgbouncer:
     attributes:
@@ -90,7 +93,7 @@ service:
       processors:
       - resource/pgbouncer
       - transform/pgbouncer_logs
-      - batch/200ms
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/pgbouncer_log
@@ -131,6 +134,9 @@ processors:
   batch/1s:
     timeout: 1s
   batch/200ms:
+    timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
     timeout: 200ms
   groupbyattrs/compact: {}
   resource/pgbouncer:
@@ -179,7 +185,7 @@ service:
       processors:
       - resource/pgbouncer
       - transform/pgbouncer_logs
-      - batch/200ms
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/pgbouncer_log

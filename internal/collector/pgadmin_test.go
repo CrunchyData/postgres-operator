@@ -51,6 +51,9 @@ collector.yaml: |
       timeout: 1s
     batch/200ms:
       timeout: 200ms
+    batch/logs:
+      send_batch_size: 8192
+      timeout: 200ms
     groupbyattrs/compact: {}
     resource/pgadmin:
       attributes:
@@ -99,7 +102,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
-        - batch/200ms
+        - batch/logs
         - groupbyattrs/compact
         receivers:
         - filelog/gunicorn
@@ -109,7 +112,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
-        - batch/200ms
+        - batch/logs
         - groupbyattrs/compact
         receivers:
         - filelog/pgadmin
@@ -163,6 +166,9 @@ collector.yaml: |
       timeout: 1s
     batch/200ms:
       timeout: 200ms
+    batch/logs:
+      send_batch_size: 8192
+      timeout: 200ms
     groupbyattrs/compact: {}
     resource/pgadmin:
       attributes:
@@ -211,7 +217,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
-        - batch/200ms
+        - batch/logs
         - groupbyattrs/compact
         receivers:
         - filelog/gunicorn
@@ -221,7 +227,7 @@ collector.yaml: |
         processors:
         - resource/pgadmin
         - transform/pgadmin_log
-        - batch/200ms
+        - batch/logs
         - groupbyattrs/compact
         receivers:
         - filelog/pgadmin
