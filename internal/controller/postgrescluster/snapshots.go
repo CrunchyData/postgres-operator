@@ -394,7 +394,7 @@ func (r *Reconciler) dedicatedSnapshotVolumeRestore(ctx context.Context,
 		cluster.Spec.ImagePullPolicy,
 		&restoreJob.Spec.Template)
 
-	addTMPEmptyDir(&restoreJob.Spec.Template)
+	AddTMPEmptyDir(&restoreJob.Spec.Template)
 
 	restoreJob.Annotations[naming.PGBackRestBackupJobCompletion] = backupJob.Status.CompletionTime.Format(time.RFC3339)
 	return errors.WithStack(r.apply(ctx, restoreJob))

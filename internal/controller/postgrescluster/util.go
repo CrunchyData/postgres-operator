@@ -134,13 +134,13 @@ func addDevSHM(template *corev1.PodTemplateSpec) {
 	}
 }
 
-// addTMPEmptyDir adds a "tmp" EmptyDir volume to the provided Pod template, while then also adding a
+// AddTMPEmptyDir adds a "tmp" EmptyDir volume to the provided Pod template, while then also adding a
 // volume mount at /tmp for all containers defined within the Pod template
 // The '/tmp' directory is currently utilized for the following:
 //   - As the pgBackRest lock directory (this is the default lock location for pgBackRest)
 //   - The location where the replication client certificates can be loaded with the proper
 //     permissions set
-func addTMPEmptyDir(template *corev1.PodTemplateSpec) {
+func AddTMPEmptyDir(template *corev1.PodTemplateSpec) {
 
 	template.Spec.Volumes = append(template.Spec.Volumes, corev1.Volume{
 		Name: "tmp",

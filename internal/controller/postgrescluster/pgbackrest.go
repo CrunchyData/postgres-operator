@@ -720,7 +720,7 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		postgresCluster.Spec.ImagePullPolicy,
 		&repo.Spec.Template)
 
-	addTMPEmptyDir(&repo.Spec.Template)
+	AddTMPEmptyDir(&repo.Spec.Template)
 
 	// set ownership references
 	if err := r.setControllerReference(postgresCluster, repo); err != nil {
@@ -1272,7 +1272,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		cluster.Spec.ImagePullPolicy,
 		&restoreJob.Spec.Template)
 
-	addTMPEmptyDir(&restoreJob.Spec.Template)
+	AddTMPEmptyDir(&restoreJob.Spec.Template)
 
 	return errors.WithStack(r.apply(ctx, restoreJob))
 }

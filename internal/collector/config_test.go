@@ -197,7 +197,7 @@ func TestParseDurationForLogrotate(t *testing.T) {
 		t.Run(tt.retentionPeriod, func(t *testing.T) {
 			duration, err := v1beta1.NewDuration(tt.retentionPeriod)
 			assert.NilError(t, err)
-			number, interval := parseDurationForLogrotate(duration.AsDuration())
+			number, interval := ParseDurationForLogrotate(duration.AsDuration())
 			assert.Equal(t, tt.number, number)
 			assert.Equal(t, tt.interval, interval)
 		})
