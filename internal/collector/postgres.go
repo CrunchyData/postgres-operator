@@ -81,8 +81,14 @@ func EnablePostgresLogging(
 	outConfig *Config,
 	outParameters *postgres.ParameterSet,
 ) {
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	var spec *v1beta1.InstrumentationLogsSpec
+	if inCluster != nil && inCluster.Spec.Instrumentation != nil {
+		spec = inCluster.Spec.Instrumentation.Logs
+	}
+
+	if inCluster != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		directory := postgres.LogDirectory()
+		version := inCluster.Spec.PostgresVersion
 
 		// https://www.postgresql.org/docs/current/runtime-config-logging.html
 		outParameters.Add("logging_collector", "on")
@@ -91,7 +97,7 @@ func EnablePostgresLogging(
 		// PostgreSQL v8.3 adds support for CSV logging, and
 		// PostgreSQL v15 adds support for JSON logging. The latter is preferred
 		// because newlines are escaped as "\n", U+005C + U+006E.
-		if inCluster != nil && inCluster.Spec.PostgresVersion < 15 {
+		if version < 15 {
 			outParameters.Add("log_destination", "csvlog")
 		} else {
 			outParameters.Add("log_destination", "jsonlog")
@@ -100,10 +106,8 @@ func EnablePostgresLogging(
 		// If retentionPeriod is set in the spec, use that value; otherwise, we want
 		// to use a reasonably short duration. Defaulting to 1 day.
 		retentionPeriod := metav1.Duration{Duration: 24 * time.Hour}
-		if inCluster != nil && inCluster.Spec.Instrumentation != nil &&
-			inCluster.Spec.Instrumentation.Logs != nil &&
-			inCluster.Spec.Instrumentation.Logs.RetentionPeriod != nil {
-			retentionPeriod = inCluster.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration()
+		if spec != nil && spec.RetentionPeriod != nil {
+			retentionPeriod = spec.RetentionPeriod.AsDuration()
 		}
 		logFilename, logRotationAge := generateLogFilenameAndRotationAge(retentionPeriod)
 
@@ -163,7 +167,7 @@ func EnablePostgresLogging(
 			"operators": []map[string]any{
 				{"type": "move", "from": "body", "to": "body.original"},
 				{"type": "add", "field": "body.format", "value": "csv"},
-				{"type": "add", "field": "body.headers", "value": postgresCSVNames(inCluster.Spec.PostgresVersion)},
+				{"type": "add", "field": "body.headers", "value": postgresCSVNames(version)},
 			},
 		}
 
@@ -206,13 +210,9 @@ func EnablePostgresLogging(
 
 		// If there are exporters to be added to the logs pipelines defined in
 		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
-		var exporters []ComponentID
-		if inCluster.Spec.Instrumentation != nil &&
-			inCluster.Spec.Instrumentation.Logs != nil &&
-			inCluster.Spec.Instrumentation.Logs.Exporters != nil {
-			exporters = inCluster.Spec.Instrumentation.Logs.Exporters
-		} else {
-			exporters = []ComponentID{DebugExporter}
+		exporters := []ComponentID{DebugExporter}
+		if spec != nil && spec.Exporters != nil {
+			exporters = slices.Clone(spec.Exporters)
 		}
 
 		outConfig.Pipelines["logs/postgres"] = Pipeline{
@@ -225,7 +225,7 @@ func EnablePostgresLogging(
 			Processors: []ComponentID{
 				"resource/postgres",
 				"transform/postgres_logs",
-				SubSecondBatchProcessor,
+				LogsBatchProcessor,
 				CompactingProcessor,
 			},
 			Exporters: exporters,
@@ -279,7 +279,7 @@ func EnablePostgresLogging(
 			Processors: []ComponentID{
 				"resource/pgbackrest",
 				"transform/pgbackrest_logs",
-				SubSecondBatchProcessor,
+				LogsBatchProcessor,
 				CompactingProcessor,
 			},
 			Exporters: exporters,

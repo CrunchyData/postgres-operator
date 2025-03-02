@@ -6,6 +6,7 @@ package collector
 
 const CompactingProcessor = "groupbyattrs/compact"
 const DebugExporter = "debug"
+const LogsBatchProcessor = "batch/logs"
 const OneSecondBatchProcessor = "batch/1s"
 const SubSecondBatchProcessor = "batch/200ms"
 const Prometheus = "prometheus"
