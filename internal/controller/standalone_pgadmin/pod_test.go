@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -28,8 +29,9 @@ func TestPod(t *testing.T) {
 	config := new(corev1.ConfigMap)
 	testpod := new(corev1.PodSpec)
 	pvc := new(corev1.PersistentVolumeClaim)
+	ctx := context.Background()
 
-	call := func() { pod(pgadmin, config, testpod, pvc) }
+	call := func() { pod(ctx, pgadmin, config, testpod, pvc) }
 
 	t.Run("Defaults", func(t *testing.T) {
 
@@ -130,8 +132,6 @@ containers:
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
     readOnly: true
-  - mountPath: /tmp
-    name: tmp
 initContainers:
 - command:
   - bash
@@ -139,7 +139,6 @@ initContainers:
   - --
   - |-
     mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
-    mkdir -p '/var/lib/pgadmin/logs/receiver' && chmod 0775 '/var/lib/pgadmin/logs/receiver' '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
@@ -159,41 +158,12 @@ initContainers:
 
     DATA_DIR = '/var/lib/pgadmin'
     LOG_FILE = '/var/lib/pgadmin/logs/pgadmin.log'
-    LOG_ROTATION_AGE = 24 * 60 # minutes
-    LOG_ROTATION_SIZE = 5 # MiB
-    LOG_ROTATION_MAX_LOG_FILES = 1
-
-    JSON_LOGGER = True
-    CONSOLE_LOG_LEVEL = logging.WARNING
-    FILE_LOG_LEVEL = logging.INFO
-    FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
   - |
-    import json, re, collections, copy, gunicorn, gunicorn.glogging
+    import json, re
     with open('/etc/pgadmin/conf.d/~postgres-operator/gunicorn-config.json') as _f:
         _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
-
-    gunicorn.SERVER_SOFTWARE = 'Python'
-    logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
-    logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
-    logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
-    logconfig_dict['handlers']['file'] = {
-      'class': 'logging.handlers.RotatingFileHandler',
-      'filename': '/var/lib/pgadmin/logs/gunicorn.log',
-      'backupCount': 1, 'maxBytes': 2 << 20, # MiB
-      'formatter': 'json',
-    }
-    logconfig_dict['formatters']['json'] = {
-      'class': 'jsonformatter.JsonFormatter',
-      'separators': (',', ':'),
-      'format': collections.OrderedDict([
-        ('time', 'created'),
-        ('name', 'name'),
-        ('level', 'levelname'),
-        ('message', 'message'),
-      ])
-    }
   name: pgadmin-startup
   resources: {}
   securityContext:
@@ -230,9 +200,6 @@ volumes:
     medium: Memory
     sizeLimit: 32Ki
   name: pgadmin-config-system
-- emptyDir:
-    medium: Memory
-  name: tmp
 `))
 
 		// No change when called again.
@@ -247,6 +214,20 @@ volumes:
 		pgadmin.Spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
 		}
+		retentionPeriod, err := v1beta1.NewDuration("12 hours")
+		assert.NilError(t, err)
+		pgadmin.Spec.Instrumentation = &v1beta1.InstrumentationSpec{
+			Logs: &v1beta1.InstrumentationLogsSpec{
+				RetentionPeriod: retentionPeriod,
+			},
+		}
+
+		// Turn on the Feature gate
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx = feature.NewContext(context.Background(), gate)
 
 		call()
 
@@ -349,8 +330,6 @@ containers:
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
     readOnly: true
-  - mountPath: /tmp
-    name: tmp
 initContainers:
 - command:
   - bash
@@ -358,7 +337,6 @@ initContainers:
   - --
   - |-
     mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
-    mkdir -p '/var/lib/pgadmin/logs/receiver' && chmod 0775 '/var/lib/pgadmin/logs/receiver' '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
@@ -378,29 +356,33 @@ initContainers:
 
     DATA_DIR = '/var/lib/pgadmin'
     LOG_FILE = '/var/lib/pgadmin/logs/pgadmin.log'
-    LOG_ROTATION_AGE = 24 * 60 # minutes
+
+    LOG_ROTATION_AGE = 60 # minutes
     LOG_ROTATION_SIZE = 5 # MiB
-    LOG_ROTATION_MAX_LOG_FILES = 1
+    LOG_ROTATION_MAX_LOG_FILES = 11
 
     JSON_LOGGER = True
     CONSOLE_LOG_LEVEL = logging.WARNING
     FILE_LOG_LEVEL = logging.INFO
     FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
   - |
-    import json, re, collections, copy, gunicorn, gunicorn.glogging
+    import json, re
     with open('/etc/pgadmin/conf.d/~postgres-operator/gunicorn-config.json') as _f:
         _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
 
+    import collections, copy, gunicorn, gunicorn.glogging
     gunicorn.SERVER_SOFTWARE = 'Python'
     logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
     logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
     logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
     logconfig_dict['handlers']['file'] = {
-      'class': 'logging.handlers.RotatingFileHandler',
+      'class': 'logging.handlers.TimedRotatingFileHandler',
       'filename': '/var/lib/pgadmin/logs/gunicorn.log',
-      'backupCount': 1, 'maxBytes': 2 << 20, # MiB
+      'backupCount': 11,
+      'interval': 1, # every one unit (defined by when), rotate
+      'when': 'H',
       'formatter': 'json',
     }
     logconfig_dict['formatters']['json'] = {
@@ -453,9 +435,6 @@ volumes:
     medium: Memory
     sizeLimit: 32Ki
   name: pgadmin-config-system
-- emptyDir:
-    medium: Memory
-  name: tmp
 `))
 	})
 }

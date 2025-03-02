@@ -476,7 +476,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	}
 
 	// Add tmp directory and volume for log files
-	addTMPEmptyDir(&deploy.Spec.Template)
+	AddTMPEmptyDir(&deploy.Spec.Template)
 
 	return deploy, true, err
 }
