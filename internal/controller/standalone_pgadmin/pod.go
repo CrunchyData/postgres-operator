@@ -435,7 +435,6 @@ with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
 
 		configSystem = configSystem + `
 LOG_ROTATION_AGE = ` + pgAdminRetentionPeriod + ` # minutes
-LOG_ROTATION_SIZE = 5 # MiB
 LOG_ROTATION_MAX_LOG_FILES = ` + maxBackupRetentionNumber + `
 
 JSON_LOGGER = True
@@ -447,6 +446,9 @@ FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname',
 		// Gunicorn uses the Python logging package, which sets the following attributes:
 		// https://docs.python.org/3/library/logging.html#logrecord-attributes.
 		// JsonFormatter is used to format the log: https://pypi.org/project/jsonformatter/
+		// We override the gunicorn defaults (using `logconfig_dict`) to set our own file handler.
+		// - https://docs.gunicorn.org/en/stable/settings.html#logconfig-dict
+		// - https://github.com/benoitc/gunicorn/blob/23.0.0/gunicorn/glogging.py#L47
 		gunicornConfig = gunicornConfig + `
 import collections, copy, gunicorn, gunicorn.glogging
 gunicorn.SERVER_SOFTWARE = 'Python'
@@ -480,6 +482,9 @@ logconfig_dict['formatters']['json'] = {
 		// Create the config directory so Kubernetes can mount it later.
 		// - https://issue.k8s.io/121294
 		shell.MakeDirectories(0o775, scriptMountPath, configMountPath),
+
+		// Create the logs directory with g+rwx to ensure pgAdmin can write to it as well.
+		shell.MakeDirectories(0o775, dataMountPath, LogDirectoryAbsolutePath),
 
 		// Write the system and server configurations.
 		`echo "$1" > ` + scriptMountPath + `/config_system.py`,

@@ -139,6 +139,7 @@ initContainers:
   - --
   - |-
     mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
+    mkdir -p '/var/lib/pgadmin/logs' && chmod 0775 '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
@@ -337,6 +338,7 @@ initContainers:
   - --
   - |-
     mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
+    mkdir -p '/var/lib/pgadmin/logs' && chmod 0775 '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
@@ -358,7 +360,6 @@ initContainers:
     LOG_FILE = '/var/lib/pgadmin/logs/pgadmin.log'
 
     LOG_ROTATION_AGE = 60 # minutes
-    LOG_ROTATION_SIZE = 5 # MiB
     LOG_ROTATION_MAX_LOG_FILES = 11
 
     JSON_LOGGER = True
