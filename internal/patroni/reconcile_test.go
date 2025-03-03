@@ -14,7 +14,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
-	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -24,20 +23,18 @@ func TestClusterConfigMap(t *testing.T) {
 	ctx := context.Background()
 
 	cluster := new(v1beta1.PostgresCluster)
-	pgHBAs := postgres.HBAs{}
-	pgParameters := postgres.NewParameterSet()
-
 	cluster.Default()
+
 	config := new(corev1.ConfigMap)
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, config, 0))
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, nil, nil, config, 0))
 
 	// The output of clusterYAML should go into config.
-	data, _ := clusterYAML(cluster, pgHBAs, pgParameters, 0)
+	data, _ := clusterYAML(cluster, nil, nil, 0)
 	assert.DeepEqual(t, config.Data["patroni.yaml"], data)
 
 	// No change when called again.
 	before := config.DeepCopy()
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, config, 0))
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, nil, nil, config, 0))
 	assert.DeepEqual(t, config, before)
 }
 

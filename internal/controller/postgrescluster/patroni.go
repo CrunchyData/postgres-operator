@@ -173,7 +173,7 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 
 func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, instances *observedInstances,
-	pgHBAs postgres.HBAs, pgParameters *postgres.ParameterSet,
+	pgHBAs *postgres.OrderedHBAs, pgParameters *postgres.ParameterSet,
 ) error {
 	if !patroni.ClusterBootstrapped(cluster) {
 		// Patroni has not yet bootstrapped. Dynamic configuration happens through

@@ -34,6 +34,42 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestGeneratePostgresHBAs(t *testing.T) {
+	ctx := context.Background()
+	reconciler := &Reconciler{}
+
+	builtin := reconciler.generatePostgresHBAs(ctx, v1beta1.NewPostgresCluster()).AsStrings()
+	assert.Assert(t, len(builtin) > 0,
+		"expected an empty cluster to have some builtin rules")
+
+	defaults := builtin[len(builtin)-1:]
+	assert.Assert(t, len(defaults) > 0,
+		"expected at least one default rule")
+
+	required := builtin[:len(builtin)-len(defaults)]
+	assert.Assert(t, len(required) > 0,
+		"expected at least one mandatory rule")
+
+	t.Run("Patroni", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Patroni, `{
+				dynamicConfiguration: {
+						postgresql: { pg_hba: [ "first custom", "another" ] },
+				},
+		}`)
+
+		result := reconciler.generatePostgresHBAs(ctx, cluster).AsStrings()
+		assert.Assert(t, cmp.Len(result, len(required)+2),
+			"expected two rules from the Patroni section and no defaults")
+
+		// mandatory rules should be first
+		assert.DeepEqual(t, result[:len(required)], required)
+
+		// specified rules should be last and in their original order
+		assert.DeepEqual(t, result[len(required):], []string{`first custom`, `another`})
+	})
+}
+
 func TestGeneratePostgresParameters(t *testing.T) {
 	ctx := context.Background()
 	reconciler := &Reconciler{}

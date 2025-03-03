@@ -33,8 +33,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
-	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/registration"
@@ -231,10 +229,7 @@ func (r *Reconciler) Reconcile(
 		}
 	}
 
-	pgHBAs := postgres.NewHBAs()
-	pgmonitor.PostgreSQLHBAs(ctx, cluster, &pgHBAs)
-	pgbouncer.PostgreSQL(cluster, &pgHBAs)
-
+	pgHBAs := r.generatePostgresHBAs(ctx, cluster)
 	pgParameters := r.generatePostgresParameters(ctx, cluster, backupsSpecFound)
 
 	otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
