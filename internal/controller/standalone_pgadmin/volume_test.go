@@ -12,13 +12,11 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/events"
@@ -37,19 +35,16 @@ func TestReconcilePGAdminDataVolume(t *testing.T) {
 	}
 
 	ns := setupNamespace(t, cc)
-	pgadmin := &v1beta1.PGAdmin{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-standalone-pgadmin",
-			Namespace: ns.Name,
+	pgadmin := v1beta1.NewPGAdmin()
+	pgadmin.Namespace = ns.Name
+	pgadmin.Name = "test-standalone-pgadmin"
+	require.UnmarshalInto(t, &pgadmin.Spec, `{
+		dataVolumeClaimSpec: {
+			accessModes: [ReadWriteOnce],
+			resources: { requests: { storage: 1Gi } },
+			storageClassName: storage-class-for-data,
 		},
-		Spec: v1beta1.PGAdminSpec{
-			DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
-				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-				Resources: corev1.VolumeResourceRequirements{
-					Requests: map[corev1.ResourceName]resource.Quantity{
-						corev1.ResourceStorage: resource.MustParse("1Gi")}},
-				StorageClassName: initialize.String("storage-class-for-data"),
-			}}}
+	}`)
 
 	assert.NilError(t, cc.Create(ctx, pgadmin))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pgadmin)) })

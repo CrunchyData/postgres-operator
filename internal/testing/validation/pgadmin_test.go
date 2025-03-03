@@ -19,6 +19,88 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestPGAdminDataVolume(t *testing.T) {
+	ctx := context.Background()
+	cc := require.Kubernetes(t)
+	t.Parallel()
+
+	namespace := require.Namespace(t, cc)
+	base := v1beta1.NewPGAdmin()
+	base.Namespace = namespace.Name
+	base.Name = "pgadmin-data-volume"
+	require.UnmarshalInto(t, &base.Spec, `{
+		dataVolumeClaimSpec: {
+			accessModes: [ReadWriteOnce],
+			resources: { requests: { storage: 1Gi } },
+		},
+	}`)
+
+	assert.NilError(t, cc.Create(ctx, base.DeepCopy(), client.DryRunAll),
+		"expected this base to be valid")
+
+	t.Run("Required", func(t *testing.T) {
+		u := require.Value(runtime.ToUnstructuredObject(base))
+		unstructured.RemoveNestedField(u.Object, "spec", "dataVolumeClaimSpec")
+
+		err := cc.Create(ctx, u, client.DryRunAll)
+		assert.Assert(t, apierrors.IsInvalid(err))
+		assert.ErrorContains(t, err, "dataVolumeClaimSpec")
+		assert.ErrorContains(t, err, "Required")
+
+		status := require.StatusError(t, err)
+		assert.Assert(t, status.Details != nil)
+		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+
+		assert.Equal(t, status.Details.Causes[0].Field, "spec.dataVolumeClaimSpec")
+		assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, "Required"))
+
+		assert.Equal(t, string(status.Details.Causes[1].Type), "FieldValueInvalid")
+		assert.Assert(t, cmp.Contains(status.Details.Causes[1].Message, "rules were not checked"))
+	})
+
+	t.Run("AccessModes", func(t *testing.T) {
+		t.Run("Missing", func(t *testing.T) {
+			u := require.Value(runtime.ToUnstructuredObject(base))
+			unstructured.RemoveNestedField(u.Object, "spec", "dataVolumeClaimSpec", "accessModes")
+
+			err := cc.Create(ctx, u, client.DryRunAll)
+			assert.Assert(t, apierrors.IsInvalid(err))
+			assert.ErrorContains(t, err, "dataVolumeClaimSpec")
+			assert.ErrorContains(t, err, "accessModes")
+		})
+
+		t.Run("Empty", func(t *testing.T) {
+			pgadmin := base.DeepCopy()
+			require.UnmarshalInto(t, &pgadmin.Spec.DataVolumeClaimSpec, `{
+				accessModes: [],
+			}`)
+
+			err := cc.Create(ctx, pgadmin, client.DryRunAll)
+			assert.Assert(t, apierrors.IsInvalid(err))
+			assert.ErrorContains(t, err, "dataVolumeClaimSpec")
+			assert.ErrorContains(t, err, "accessModes")
+		})
+	})
+
+	t.Run("Resources", func(t *testing.T) {
+		t.Run("Missing", func(t *testing.T) {
+			for _, tt := range [][]string{
+				{"spec", "dataVolumeClaimSpec", "resources"},
+				{"spec", "dataVolumeClaimSpec", "resources", "requests"},
+				{"spec", "dataVolumeClaimSpec", "resources", "requests", "storage"},
+			} {
+				u := require.Value(runtime.ToUnstructuredObject(base))
+				unstructured.RemoveNestedField(u.Object, tt...)
+
+				err := cc.Create(ctx, u, client.DryRunAll)
+				assert.Assert(t, apierrors.IsInvalid(err))
+				assert.ErrorContains(t, err, "dataVolumeClaimSpec")
+				assert.ErrorContains(t, err, "storage request")
+			}
+		})
+	})
+}
+
 func TestPGAdminInstrumentation(t *testing.T) {
 	ctx := context.Background()
 	cc := require.Kubernetes(t)
@@ -28,6 +110,12 @@ func TestPGAdminInstrumentation(t *testing.T) {
 	base := v1beta1.NewPGAdmin()
 	base.Namespace = namespace.Name
 	base.Name = "pgadmin-instrumentation"
+	require.UnmarshalInto(t, &base.Spec, `{
+		dataVolumeClaimSpec: {
+			accessModes: [ReadWriteOnce],
+			resources: { requests: { storage: 1Gi } },
+		},
+	}`)
 
 	assert.NilError(t, cc.Create(ctx, base.DeepCopy(), client.DryRunAll),
 		"expected this base to be valid")

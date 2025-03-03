@@ -280,7 +280,7 @@ func TestStoreDesiredRequest(t *testing.T) {
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name:     "red",
 				Replicas: initialize.Int32(1),
-				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 					Resources: corev1.VolumeResourceRequirements{
 						Limits: map[corev1.ResourceName]resource.Quantity{
@@ -1850,7 +1850,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &corev1.PersistentVolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1877,7 +1877,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &corev1.PersistentVolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1901,7 +1901,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &corev1.PersistentVolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},

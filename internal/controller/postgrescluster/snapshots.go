@@ -313,7 +313,7 @@ func (r *Reconciler) createDedicatedSnapshotVolume(ctx context.Context,
 		return pvc, err
 	}
 
-	pvc.Spec = instanceSpec.DataVolumeClaimSpec
+	pvc.Spec = instanceSpec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	// Set the snapshot volume to the same size as the pgdata volume. The size should scale with auto-grow.
 	r.setVolumeSize(ctx, cluster, pvc, instanceSpec.Name)
