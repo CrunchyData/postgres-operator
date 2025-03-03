@@ -48,8 +48,9 @@ type PGAdminPodSpec struct {
 
 	// Defines a PersistentVolumeClaim for pgAdmin data.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
-	// +kubebuilder:validation:Required
-	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	// ---
+	// +required
+	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
 
 	// Name of a container image that can run pgAdmin 4. Changing this value causes
 	// pgAdmin to restart. The image may also be set using the RELATED_IMAGE_PGADMIN

@@ -608,7 +608,7 @@ volumes:
 		walVolume.Name = "walvol"
 
 		instance := new(v1beta1.PostgresInstanceSetSpec)
-		instance.WALVolumeClaimSpec = new(corev1.PersistentVolumeClaimSpec)
+		instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpec)
 
 		pod := new(corev1.PodSpec)
 		InstancePod(ctx, cluster, instance,

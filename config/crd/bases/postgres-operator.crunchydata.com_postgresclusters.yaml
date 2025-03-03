@@ -3117,6 +3117,7 @@ spec:
                                         to the PersistentVolume backing this claim.
                                       type: string
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                   x-kubernetes-validations:
                                   - message: missing accessModes
                                     rule: has(self.accessModes) && size(self.accessModes)
@@ -6444,6 +6445,7 @@ spec:
                                       to the PersistentVolume backing this claim.
                                     type: string
                                 type: object
+                                x-kubernetes-map-type: atomic
                                 x-kubernetes-validations:
                                 - message: missing accessModes
                                   rule: has(self.accessModes) && size(self.accessModes)
@@ -10332,6 +10334,7 @@ spec:
                             PersistentVolume backing this claim.
                           type: string
                       type: object
+                      x-kubernetes-map-type: atomic
                       x-kubernetes-validations:
                       - message: missing accessModes
                         rule: has(self.accessModes) && size(self.accessModes) > 0
@@ -10717,6 +10720,7 @@ spec:
                                   the PersistentVolume backing this claim.
                                 type: string
                             type: object
+                            x-kubernetes-map-type: atomic
                             x-kubernetes-validations:
                             - message: missing accessModes
                               rule: has(self.accessModes) && size(self.accessModes)
@@ -11158,6 +11162,7 @@ spec:
                             PersistentVolume backing this claim.
                           type: string
                       type: object
+                      x-kubernetes-map-type: atomic
                       x-kubernetes-validations:
                       - message: missing accessModes
                         rule: has(self.accessModes) && size(self.accessModes) > 0
@@ -17214,6 +17219,14 @@ spec:
                               PersistentVolume backing this claim.
                             type: string
                         type: object
+                        x-kubernetes-map-type: atomic
+                        x-kubernetes-validations:
+                        - message: missing accessModes
+                          rule: has(self.accessModes) && size(self.accessModes) >
+                            0
+                        - message: missing storage request
+                          rule: has(self.resources) && has(self.resources.requests)
+                            && has(self.resources.requests.storage)
                       image:
                         description: |-
                           Name of a container image that can run pgAdmin 4. Changing this value causes

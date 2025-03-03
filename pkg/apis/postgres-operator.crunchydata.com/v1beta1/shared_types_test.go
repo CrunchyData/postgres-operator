@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"sigs.k8s.io/yaml"
 )
@@ -198,4 +200,33 @@ func TestSchemalessObjectDeepCopy(t *testing.T) {
 		assert.Assert(t, reflect.DeepEqual(one, same))
 		assert.Assert(t, !reflect.DeepEqual(one, change))
 	}
+}
+
+func TestVolumeClaimSpecYAML(t *testing.T) {
+	t.Parallel()
+
+	var zero VolumeClaimSpec
+	out, err := yaml.Marshal(zero)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, string(out), "resources: {}\n")
+
+	var parsed VolumeClaimSpec
+	assert.NilError(t, yaml.Unmarshal([]byte(`{
+		accessModes: [ReadWriteMany],
+		resources: { requests: { storage: 1Gi } },
+		storageClassName: zork,
+	}`), &parsed))
+
+	zork := "zork"
+	assert.DeepEqual(t, parsed, VolumeClaimSpec{
+		StorageClassName: &zork,
+		AccessModes: []corev1.PersistentVolumeAccessMode{
+			corev1.ReadWriteMany,
+		},
+		Resources: corev1.VolumeResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceStorage: resource.MustParse("1Gi"),
+			},
+		},
+	})
 }

@@ -388,8 +388,9 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 					naming.LabelData:    naming.DataPostgres,
 				},
 			},
-			Spec: testVolumeClaimSpec(),
 		}
+		spec := testVolumeClaimSpec()
+		pvc.Spec = spec.AsPersistentVolumeClaimSpec()
 		assert.NilError(t, r.setControllerReference(cluster, pvc))
 		assert.NilError(t, r.apply(ctx, pvc))
 

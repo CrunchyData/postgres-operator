@@ -35,6 +35,12 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Name = "test-standalone-pgadmin"
 	pgadmin.Namespace = ns.Name
+	require.UnmarshalInto(t, &pgadmin.Spec, `{
+		dataVolumeClaimSpec: {
+			accessModes: [ReadWriteOnce],
+			resources: { requests: { storage: 1Gi } },
+		},
+	}`)
 
 	assert.NilError(t, cc.Create(ctx, pgadmin))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pgadmin)) })
@@ -105,6 +111,12 @@ terminationGracePeriodSeconds: 30
 		// add pod level customizations
 		custompgadmin.Name = "custom-pgadmin"
 		custompgadmin.Namespace = ns.Name
+		require.UnmarshalInto(t, &custompgadmin.Spec, `{
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
+			},
+		}`)
 
 		// annotation and label
 		custompgadmin.Spec.Metadata = &v1beta1.Metadata{

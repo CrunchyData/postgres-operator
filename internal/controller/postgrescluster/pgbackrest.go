@@ -2628,7 +2628,8 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 		if repo.Volume == nil {
 			continue
 		}
-		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, repo.Volume.VolumeClaimSpec,
+		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster,
+			repo.Volume.VolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 			repo.Name, repoResources)
 		if err != nil {
 			log.Error(err, errMsg)

@@ -28,6 +28,12 @@ func TestPGAdminInstrumentation(t *testing.T) {
 	base := v1beta1.NewPGAdmin()
 	base.Namespace = namespace.Name
 	base.Name = "pgadmin-instrumentation"
+	require.UnmarshalInto(t, &base.Spec, `{
+		dataVolumeClaimSpec: {
+			accessModes: [ReadWriteOnce],
+			resources: { requests: { storage: 1Gi } },
+		},
+	}`)
 
 	assert.NilError(t, cc.Create(ctx, base.DeepCopy(), client.DryRunAll),
 		"expected this base to be valid")
