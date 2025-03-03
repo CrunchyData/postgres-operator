@@ -59,7 +59,7 @@ func (*Reconciler) generatePostgresHBAs(
 	result := new(postgres.OrderedHBAs)
 	result.Append(builtin.Mandatory...)
 
-	// Append any rules specified in the the Patroni section.
+	// Append any rules specified in the Patroni section.
 	before := result.Length()
 	result.AppendUnstructured(patroni.PostgresHBAs(cluster.Spec.Patroni)...)
 

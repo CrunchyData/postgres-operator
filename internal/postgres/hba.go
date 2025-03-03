@@ -160,8 +160,6 @@ type OrderedHBAs struct {
 
 // Append renders and adds pg_hba.conf lines to o. Nil pointers are ignored.
 func (o *OrderedHBAs) Append(hbas ...*HostBasedAuthentication) {
-	o.records = slices.Grow(o.records, len(hbas))
-
 	for _, hba := range hbas {
 		if hba != nil {
 			o.records = append(o.records, hba.String())
@@ -172,8 +170,6 @@ func (o *OrderedHBAs) Append(hbas ...*HostBasedAuthentication) {
 // AppendUnstructured trims and adds unvalidated pg_hba.conf lines to o.
 // Empty lines and lines that are entirely control characters are omitted.
 func (o *OrderedHBAs) AppendUnstructured(hbas ...string) {
-	o.records = slices.Grow(o.records, len(hbas))
-
 	for _, hba := range hbas {
 		hba = strings.TrimFunc(hba, func(r rune) bool {
 			// control characters, space, and backslash
