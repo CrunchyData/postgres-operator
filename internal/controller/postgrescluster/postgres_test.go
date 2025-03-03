@@ -883,7 +883,7 @@ func TestSetVolumeSize(t *testing.T) {
 	instanceSetSpec := func(request, limit string) *v1beta1.PostgresInstanceSetSpec {
 		return &v1beta1.PostgresInstanceSetSpec{
 			Name: "some-instance",
-			DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+			DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 				Resources: corev1.VolumeResourceRequirements{
 					Requests: map[corev1.ResourceName]resource.Quantity{
@@ -911,7 +911,7 @@ func TestSetVolumeSize(t *testing.T) {
 
 		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 		spec := instanceSetSpec("4Gi", "3Gi")
-		pvc.Spec = spec.DataVolumeClaimSpec
+		pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -948,7 +948,7 @@ resources:
 			}},
 		}
 
-		pvc.Spec = spec.DataVolumeClaimSpec
+		pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -984,14 +984,14 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := &v1beta1.PostgresInstanceSetSpec{
 				Name: "some-instance",
-				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 					Resources: corev1.VolumeResourceRequirements{
 						Requests: map[corev1.ResourceName]resource.Quantity{
 							corev1.ResourceStorage: resource.MustParse("1Gi"),
 						}}}}
 			cluster.Status = desiredStatus("2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -1016,7 +1016,7 @@ resources:
 
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -1041,7 +1041,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "3Gi")
 			cluster.Status = desiredStatus("NotAValidValue")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -1068,7 +1068,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "3Gi")
 			cluster.Status = desiredStatus("2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -1093,7 +1093,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "2Gi")
 			cluster.Status = desiredStatus("2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -1122,7 +1122,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("4Gi", "5Gi")
 			cluster.Status = desiredStatus("10Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 

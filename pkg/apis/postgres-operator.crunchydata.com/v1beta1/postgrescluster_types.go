@@ -467,20 +467,8 @@ type PostgresInstanceSetSpec struct {
 	// Defines a PersistentVolumeClaim for PostgreSQL data.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// ---
-	// +kubebuilder:validation:Required
-	//
-	// NOTE(validation): Every PVC must have at least one accessMode. NOTE(KEP-4153)
-	// TODO(k8s-1.28): fieldPath=`.accessModes`,reason="FieldValueRequired"
-	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2098-L2100
-	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2292-L2294
-	// +kubebuilder:validation:XValidation:rule=`has(self.accessModes) && size(self.accessModes) > 0`,message=`missing accessModes`
-	//
-	// NOTE(validation): Every PVC must have a positive storage request. NOTE(KEP-4153)
-	// TODO(k8s-1.28): fieldPath=`.resources.requests.storage`,reason="FieldValueRequired"
-	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2126-L2133
-	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2318-L2325
-	// +kubebuilder:validation:XValidation:rule=`has(self.resources) && has(self.resources.requests) && has(self.resources.requests.storage)`,message=`missing storage request`
-	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	// +required
+	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
 
 	// Priority class name for the PostgreSQL pod. Changing this value causes
 	// PostgreSQL to restart.
@@ -521,20 +509,8 @@ type PostgresInstanceSetSpec struct {
 	// Defines a separate PersistentVolumeClaim for PostgreSQL's write-ahead log.
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// ---
-	// +kubebuilder:validation:Optional
-	//
-	// NOTE(validation): Every PVC must have at least one accessMode. NOTE(KEP-4153)
-	// TODO(k8s-1.28): fieldPath=`.accessModes`,reason="FieldValueRequired"
-	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2098-L2100
-	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2292-L2294
-	// +kubebuilder:validation:XValidation:rule=`has(self.accessModes) && size(self.accessModes) > 0`,message=`missing accessModes`
-	//
-	// NOTE(validation): Every PVC must have a positive storage request. NOTE(KEP-4153)
-	// TODO(k8s-1.28): fieldPath=`.resources.requests.storage`,reason="FieldValueRequired"
-	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2126-L2133
-	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2318-L2325
-	// +kubebuilder:validation:XValidation:rule=`has(self.resources) && has(self.resources.requests) && has(self.resources.requests.storage)`,message=`missing storage request`
-	WALVolumeClaimSpec *corev1.PersistentVolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
+	// +optional
+	WALVolumeClaimSpec *VolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
 
 	// The list of tablespaces volumes to mount for this postgrescluster
 	// This field requires enabling TablespaceVolumes feature gate
@@ -563,20 +539,8 @@ type TablespaceVolume struct {
 	// Defines a PersistentVolumeClaim for a tablespace.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// ---
-	// +kubebuilder:validation:Required
-	//
-	// NOTE(validation): Every PVC must have at least one accessMode. NOTE(KEP-4153)
-	// TODO(k8s-1.28): fieldPath=`.accessModes`,reason="FieldValueRequired"
-	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2098-L2100
-	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2292-L2294
-	// +kubebuilder:validation:XValidation:rule=`has(self.accessModes) && size(self.accessModes) > 0`,message=`missing accessModes`
-	//
-	// NOTE(validation): Every PVC must have a positive storage request. NOTE(KEP-4153)
-	// TODO(k8s-1.28): fieldPath=`.resources.requests.storage`,reason="FieldValueRequired"
-	// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2126-L2133
-	// - https://releases.k8s.io/v1.31.0/pkg/apis/core/validation/validation.go#L2318-L2325
-	// +kubebuilder:validation:XValidation:rule=`has(self.resources) && has(self.resources.requests) && has(self.resources.requests.storage)`,message=`missing storage request`
-	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	// +required
+	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
 }
 
 // InstanceSidecars defines the configuration for instance sidecar containers

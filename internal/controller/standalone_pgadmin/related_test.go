@@ -41,18 +41,19 @@ func TestFindPGAdminsForSecret(t *testing.T) {
 		pgadmin1 := new(v1beta1.PGAdmin)
 		pgadmin1.Namespace = ns.Name
 		pgadmin1.Name = "first-pgadmin"
-		pgadmin1.Spec.Users = []v1beta1.PGAdminUser{
-			{
-				PasswordRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "first-password-secret",
-					},
-					Key: "password",
-				},
-				Username: "testuser",
-				Role:     "Administrator",
+		require.UnmarshalInto(t, &pgadmin1.Spec, `{
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
 			},
-		}
+			users: [
+				{
+					username: testuser,
+					role: Administrator,
+					passwordRef: { name: first-password-secret, key: password },
+				},
+			],
+		}`)
 		assert.NilError(t, tClient.Create(ctx, pgadmin1))
 
 		pgadmins := reconciler.findPGAdminsForSecret(ctx, secretObjectKey)
@@ -65,18 +66,19 @@ func TestFindPGAdminsForSecret(t *testing.T) {
 		pgadmin2 := new(v1beta1.PGAdmin)
 		pgadmin2.Namespace = ns.Name
 		pgadmin2.Name = "second-pgadmin"
-		pgadmin2.Spec.Users = []v1beta1.PGAdminUser{
-			{
-				PasswordRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "first-password-secret",
-					},
-					Key: "password",
-				},
-				Username: "testuser2",
-				Role:     "Administrator",
+		require.UnmarshalInto(t, &pgadmin2.Spec, `{
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
 			},
-		}
+			users: [
+				{
+					username: testuser2,
+					role: Administrator,
+					passwordRef: { name: first-password-secret, key: password },
+				},
+			],
+		}`)
 		assert.NilError(t, tClient.Create(ctx, pgadmin2))
 
 		pgadmins := reconciler.findPGAdminsForSecret(ctx, secretObjectKey)
@@ -94,18 +96,19 @@ func TestFindPGAdminsForSecret(t *testing.T) {
 		pgadmin3 := new(v1beta1.PGAdmin)
 		pgadmin3.Namespace = ns.Name
 		pgadmin3.Name = "third-pgadmin"
-		pgadmin3.Spec.Users = []v1beta1.PGAdminUser{
-			{
-				PasswordRef: &corev1.SecretKeySelector{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "other-password-secret",
-					},
-					Key: "password",
-				},
-				Username: "testuser2",
-				Role:     "Administrator",
+		require.UnmarshalInto(t, &pgadmin3.Spec, `{
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
 			},
-		}
+			users: [
+				{
+					username: testuser2,
+					role: Administrator,
+					passwordRef: { name: other-password-secret, key: password },
+				},
+			],
+		}`)
 		assert.NilError(t, tClient.Create(ctx, pgadmin3))
 
 		pgadmins := reconciler.findPGAdminsForSecret(ctx, secretObjectKey)

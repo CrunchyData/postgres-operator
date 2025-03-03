@@ -64,7 +64,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Image: "example.com/crunchy-postgres-ha:test",
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 					Resources: corev1.VolumeResourceRequirements{
 						Requests: corev1.ResourceList{
@@ -115,7 +115,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 		postgresCluster.Spec.Backups.PGBackRest.Repos[0] = v1beta1.PGBackRestRepo{
 			Name: "repo1",
 			Volume: &v1beta1.RepoPVC{
-				VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+				VolumeClaimSpec: v1beta1.VolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 					Resources: corev1.VolumeResourceRequirements{
 						Requests: map[corev1.ResourceName]resource.Quantity{
@@ -2268,7 +2268,7 @@ func TestCopyConfigurationResources(t *testing.T) {
 				Image:           "example.com/crunchy-postgres-ha:test",
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 						Resources: corev1.VolumeResourceRequirements{
 							Requests: corev1.ResourceList{
@@ -2320,7 +2320,7 @@ func TestCopyConfigurationResources(t *testing.T) {
 				},
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
 						Resources: corev1.VolumeResourceRequirements{
 							Requests: corev1.ResourceList{
