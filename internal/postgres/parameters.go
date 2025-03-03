@@ -6,6 +6,7 @@ package postgres
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -68,17 +69,21 @@ func NewParameterSet() *ParameterSet {
 
 // AsMap returns a copy of ps as a map.
 func (ps *ParameterSet) AsMap() map[string]string {
-	out := make(map[string]string, len(ps.values))
-	for name, value := range ps.values {
-		out[name] = value
+	if ps == nil {
+		return nil
 	}
-	return out
+
+	return maps.Clone(ps.values)
 }
 
 // DeepCopy returns a copy of ps.
-func (ps *ParameterSet) DeepCopy() (out *ParameterSet) {
+func (ps *ParameterSet) DeepCopy() *ParameterSet {
+	if ps == nil {
+		return nil
+	}
+
 	return &ParameterSet{
-		values: ps.AsMap(),
+		values: maps.Clone(ps.values),
 	}
 }
 

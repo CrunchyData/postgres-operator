@@ -15,6 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
@@ -29,7 +30,7 @@ import (
 // files (etc) that apply to the entire cluster.
 func (r *Reconciler) reconcileClusterConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+	pgHBAs postgres.HBAs, pgParameters *postgres.ParameterSet,
 ) (*corev1.ConfigMap, error) {
 	clusterConfigMap := &corev1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
 	clusterConfigMap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -44,7 +45,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 
 	if err == nil {
 		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters,
-			clusterConfigMap, r.patroniLogSize(cluster))
+			clusterConfigMap, r.patroniLogSize(ctx, cluster))
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, clusterConfigMap))
@@ -57,25 +58,25 @@ func (r *Reconciler) reconcileClusterConfigMap(
 // If a value is set, this enables volume based log storage and triggers the
 // relevant Patroni configuration. If the value given is less than 25M, the log
 // file size storage limit defaults to 25M and an event is triggered.
-func (r *Reconciler) patroniLogSize(cluster *v1beta1.PostgresCluster) int64 {
+// If a value is not set, but the OpenTelemetryLogs feature gate is enabled, the
+// log file size storage limit will be set to 25M.
+func (r *Reconciler) patroniLogSize(ctx context.Context, cluster *v1beta1.PostgresCluster) int64 {
+	if cluster.Spec.Patroni != nil && cluster.Spec.Patroni.Logging != nil &&
+		cluster.Spec.Patroni.Logging.StorageLimit != nil {
 
-	if cluster.Spec.Patroni != nil {
-		if cluster.Spec.Patroni.Logging != nil {
-			if cluster.Spec.Patroni.Logging.StorageLimit != nil {
+		sizeInBytes := cluster.Spec.Patroni.Logging.StorageLimit.Value()
 
-				sizeInBytes := cluster.Spec.Patroni.Logging.StorageLimit.Value()
+		if sizeInBytes < 25000000 {
+			// TODO(validation): Eventually we should be able to remove this in favor of CEL validation.
+			// - https://kubernetes.io/docs/reference/using-api/cel/
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "PatroniLogStorageLimitTooSmall",
+				"Configured Patroni log storage limit is too small. File size will default to 25M.")
 
-				if sizeInBytes < 25000000 {
-					// TODO(validation): Eventually we should be able to remove this in favor of CEL validation.
-					// - https://kubernetes.io/docs/reference/using-api/cel/
-					r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "PatroniLogStorageLimitTooSmall",
-						"Configured Patroni log storage limit is too small. File size will default to 25M.")
-
-					sizeInBytes = 25000000
-				}
-				return sizeInBytes
-			}
+			sizeInBytes = 25000000
 		}
+		return sizeInBytes
+	} else if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+		return 25000000
 	}
 	return 0
 }

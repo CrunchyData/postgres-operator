@@ -9,74 +9,121 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestFetchKeyCommand(t *testing.T) {
+	t.Run("missing", func(t *testing.T) {
+		spec1 := v1beta1.PostgresClusterSpec{}
+		assert.Assert(t, FetchKeyCommand(&spec1) == "")
 
-	spec1 := v1beta1.PostgresClusterSpec{}
-	assert.Assert(t, FetchKeyCommand(&spec1) == "")
+		spec2 := v1beta1.PostgresClusterSpec{
+			Patroni: &v1beta1.PatroniSpec{},
+		}
+		assert.Assert(t, FetchKeyCommand(&spec2) == "")
 
-	spec2 := v1beta1.PostgresClusterSpec{
-		Patroni: &v1beta1.PatroniSpec{},
-	}
-	assert.Assert(t, FetchKeyCommand(&spec2) == "")
-
-	spec3 := v1beta1.PostgresClusterSpec{
-		Patroni: &v1beta1.PatroniSpec{
-			DynamicConfiguration: map[string]any{},
-		},
-	}
-	assert.Assert(t, FetchKeyCommand(&spec3) == "")
-
-	spec4 := v1beta1.PostgresClusterSpec{
-		Patroni: &v1beta1.PatroniSpec{
-			DynamicConfiguration: map[string]any{
-				"postgresql": map[string]any{},
+		spec3 := v1beta1.PostgresClusterSpec{
+			Patroni: &v1beta1.PatroniSpec{
+				DynamicConfiguration: map[string]any{},
 			},
-		},
-	}
-	assert.Assert(t, FetchKeyCommand(&spec4) == "")
+		}
+		assert.Assert(t, FetchKeyCommand(&spec3) == "")
 
-	spec5 := v1beta1.PostgresClusterSpec{
-		Patroni: &v1beta1.PatroniSpec{
-			DynamicConfiguration: map[string]any{
-				"postgresql": map[string]any{
-					"parameters": map[string]any{},
+		spec4 := v1beta1.PostgresClusterSpec{
+			Patroni: &v1beta1.PatroniSpec{
+				DynamicConfiguration: map[string]any{
+					"postgresql": map[string]any{},
 				},
 			},
-		},
-	}
-	assert.Assert(t, FetchKeyCommand(&spec5) == "")
+		}
+		assert.Assert(t, FetchKeyCommand(&spec4) == "")
 
-	spec6 := v1beta1.PostgresClusterSpec{
-		Patroni: &v1beta1.PatroniSpec{
-			DynamicConfiguration: map[string]any{
-				"postgresql": map[string]any{
-					"parameters": map[string]any{
-						"encryption_key_command": "",
+		spec5 := v1beta1.PostgresClusterSpec{
+			Patroni: &v1beta1.PatroniSpec{
+				DynamicConfiguration: map[string]any{
+					"postgresql": map[string]any{
+						"parameters": map[string]any{},
 					},
 				},
 			},
-		},
-	}
-	assert.Assert(t, FetchKeyCommand(&spec6) == "")
+		}
+		assert.Assert(t, FetchKeyCommand(&spec5) == "")
+	})
 
-	spec7 := v1beta1.PostgresClusterSpec{
-		Patroni: &v1beta1.PatroniSpec{
-			DynamicConfiguration: map[string]any{
-				"postgresql": map[string]any{
-					"parameters": map[string]any{
-						"encryption_key_command": "echo mykey",
+	t.Run("blank", func(t *testing.T) {
+		var spec1 v1beta1.PostgresClusterSpec
+		require.UnmarshalInto(t, &spec1, `{
+			patroni: {
+				dynamicConfiguration: {
+					postgresql: {
+						parameters: {
+							encryption_key_command: "",
+						},
 					},
 				},
 			},
-		},
-	}
-	assert.Assert(t, FetchKeyCommand(&spec7) == "echo mykey")
+		}`)
+		assert.Equal(t, "", FetchKeyCommand(&spec1))
 
+		var spec2 v1beta1.PostgresClusterSpec
+		require.UnmarshalInto(t, &spec2, `{
+			config: {
+				parameters: {
+					encryption_key_command: "",
+				},
+			},
+		}`)
+		assert.Equal(t, "", FetchKeyCommand(&spec2))
+	})
+
+	t.Run("exists", func(t *testing.T) {
+		var spec1 v1beta1.PostgresClusterSpec
+		require.UnmarshalInto(t, &spec1, `{
+			patroni: {
+				dynamicConfiguration: {
+					postgresql: {
+						parameters: {
+							encryption_key_command: "echo mykey",
+						},
+					},
+				},
+			},
+		}`)
+		assert.Equal(t, "echo mykey", FetchKeyCommand(&spec1))
+
+		var spec2 v1beta1.PostgresClusterSpec
+		require.UnmarshalInto(t, &spec2, `{
+			config: {
+				parameters: {
+					encryption_key_command: "cat somefile",
+				},
+			},
+		}`)
+		assert.Equal(t, "cat somefile", FetchKeyCommand(&spec2))
+	})
+
+	t.Run("config.parameters takes precedence", func(t *testing.T) {
+		var spec v1beta1.PostgresClusterSpec
+		require.UnmarshalInto(t, &spec, `{
+			config: {
+				parameters: {
+					encryption_key_command: "cat somefile",
+				},
+			},
+			patroni: {
+				dynamicConfiguration: {
+					postgresql: {
+						parameters: {
+							encryption_key_command: "echo mykey",
+						},
+					},
+				},
+			},
+		}`)
+		assert.Equal(t, "cat somefile", FetchKeyCommand(&spec))
+	})
 }
 
 func TestPGAdminContainerImage(t *testing.T) {
@@ -92,9 +139,9 @@ func TestPGAdminContainerImage(t *testing.T) {
 	t.Setenv("RELATED_IMAGE_PGADMIN", "env-var-pgadmin")
 	assert.Equal(t, PGAdminContainerImage(cluster), "env-var-pgadmin")
 
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
+	require.UnmarshalInto(t, &cluster.Spec, `{
 		userInterface: { pgAdmin: { image: spec-image } },
-	}`), &cluster.Spec))
+	}`)
 	assert.Equal(t, PGAdminContainerImage(cluster), "spec-image")
 }
 
@@ -111,9 +158,9 @@ func TestPGBackRestContainerImage(t *testing.T) {
 	t.Setenv("RELATED_IMAGE_PGBACKREST", "env-var-pgbackrest")
 	assert.Equal(t, PGBackRestContainerImage(cluster), "env-var-pgbackrest")
 
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
-		backups: { pgBackRest: { image: spec-image } },
-	}`), &cluster.Spec))
+	require.UnmarshalInto(t, &cluster.Spec, `{
+		backups: { pgbackrest: { image: spec-image } },
+	}`)
 	assert.Equal(t, PGBackRestContainerImage(cluster), "spec-image")
 }
 
@@ -130,9 +177,9 @@ func TestPGBouncerContainerImage(t *testing.T) {
 	t.Setenv("RELATED_IMAGE_PGBOUNCER", "env-var-pgbouncer")
 	assert.Equal(t, PGBouncerContainerImage(cluster), "env-var-pgbouncer")
 
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
+	require.UnmarshalInto(t, &cluster.Spec, `{
 		proxy: { pgBouncer: { image: spec-image } },
-	}`), &cluster.Spec))
+	}`)
 	assert.Equal(t, PGBouncerContainerImage(cluster), "spec-image")
 }
 
@@ -149,9 +196,9 @@ func TestPGExporterContainerImage(t *testing.T) {
 	t.Setenv("RELATED_IMAGE_PGEXPORTER", "env-var-pgexporter")
 	assert.Equal(t, PGExporterContainerImage(cluster), "env-var-pgexporter")
 
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
-		monitoring: { pgMonitor: { exporter: { image: spec-image } } },
-	}`), &cluster.Spec))
+	require.UnmarshalInto(t, &cluster.Spec, `{
+		monitoring: { pgmonitor: { exporter: { image: spec-image } } },
+	}`)
 	assert.Equal(t, PGExporterContainerImage(cluster), "spec-image")
 }
 
@@ -168,9 +215,9 @@ func TestStandalonePGAdminContainerImage(t *testing.T) {
 	t.Setenv("RELATED_IMAGE_STANDALONE_PGADMIN", "env-var-pgadmin")
 	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "env-var-pgadmin")
 
-	assert.NilError(t, yaml.Unmarshal([]byte(`{
+	require.UnmarshalInto(t, &pgadmin.Spec, `{
 		image: spec-image
-	}`), &pgadmin.Spec))
+	}`)
 	assert.Equal(t, StandalonePGAdminContainerImage(pgadmin), "spec-image")
 }
 

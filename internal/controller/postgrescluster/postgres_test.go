@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -34,6 +33,123 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestGeneratePostgresParameters(t *testing.T) {
+	ctx := context.Background()
+	reconciler := &Reconciler{}
+
+	builtin := reconciler.generatePostgresParameters(ctx, v1beta1.NewPostgresCluster(), false)
+	assert.Assert(t, len(builtin.AsMap()) > 0,
+		"expected an empty cluster to have some builtin parameters")
+
+	assert.Equal(t, builtin.Value("jit"), "off",
+		"BUG IN TEST: expected JIT to be disabled")
+
+	assert.Equal(t, builtin.Value("shared_preload_libraries"), "pgaudit",
+		"BUG IN TEST: expected pgAudit to be mandatory")
+
+	t.Run("Config", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Config, `{
+			parameters: {
+				something: str,
+				another: 5,
+			},
+		}`)
+
+		result := reconciler.generatePostgresParameters(ctx, cluster, false)
+		assert.Assert(t, cmp.LenMap(result.AsMap(), len(builtin.AsMap())+2),
+			"expected two parameters from the Config section")
+
+		assert.Equal(t, result.Value("another"), "5")
+		assert.Equal(t, result.Value("something"), "str")
+	})
+
+	t.Run("Patroni", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Patroni, `{
+			dynamicConfiguration: {
+				postgresql: { parameters: {
+					something: str,
+					another: 5.1,
+				} },
+			},
+		}`)
+
+		result := reconciler.generatePostgresParameters(ctx, cluster, false)
+		assert.Assert(t, cmp.LenMap(result.AsMap(), len(builtin.AsMap())+2),
+			"expected two parameters from the Patroni section")
+
+		assert.Equal(t, result.Value("another"), "5.1")
+		assert.Equal(t, result.Value("something"), "str")
+	})
+
+	t.Run("Precedence", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Config, `{
+			parameters: {
+				something: replaced,
+				unrelated: used,
+				jit: "on",
+			},
+		}`)
+		require.UnmarshalInto(t, &cluster.Spec.Patroni, `{
+			dynamicConfiguration: {
+				postgresql: { parameters: {
+					something: str,
+					another: 5.1,
+				} },
+			},
+		}`)
+
+		result := reconciler.generatePostgresParameters(ctx, cluster, false)
+		assert.Assert(t, cmp.LenMap(result.AsMap(), len(builtin.AsMap())+3+1-1),
+			"expected three parameters from the Config section,"+
+				"plus one from the Patroni section, minus one default")
+
+		assert.Equal(t, result.Value("another"), "5.1")        // Patroni
+		assert.Equal(t, result.Value("something"), "replaced") // Config
+		assert.Equal(t, result.Value("unrelated"), "used")     // Config
+		assert.Equal(t, result.Value("jit"), "on")             // Config
+	})
+
+	t.Run("shared_preload_libraries", func(t *testing.T) {
+		t.Run("NumericIncluded", func(t *testing.T) {
+			cluster := v1beta1.NewPostgresCluster()
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					shared_preload_libraries: 123,
+				},
+			}`)
+
+			result := reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Assert(t, cmp.Contains(result.Value("shared_preload_libraries"), "123"))
+		})
+
+		t.Run("Precedence", func(t *testing.T) {
+			cluster := v1beta1.NewPostgresCluster()
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					shared_preload_libraries: given,
+				},
+			}`)
+
+			result := reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Equal(t, result.Value("shared_preload_libraries"), "pgaudit,given",
+				"expected mandatory ahead of specified")
+
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					shared_preload_libraries: 'given, citus,other'
+				},
+			}`)
+
+			result = reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Equal(t, result.Value("shared_preload_libraries"), "citus,pgaudit,given, citus,other",
+				"expected citus in front")
+		})
+	})
+}
 
 func TestGeneratePostgresUserSecret(t *testing.T) {
 	_, tClient := setupKubernetes(t)
@@ -163,7 +279,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 		}
 
 		// Present when specified.
-		spec.Databases = []v1beta1.PostgresIdentifier{"db1"}
+		spec.Databases = []string{"db1"}
 
 		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
 		assert.NilError(t, err)
@@ -180,7 +296,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 		}
 
 		// Only the first in the list.
-		spec.Databases = []v1beta1.PostgresIdentifier{"first", "asdf"}
+		spec.Databases = []string{"first", "asdf"}
 
 		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
 		assert.NilError(t, err)
@@ -198,9 +314,9 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 	})
 
 	t.Run("PgBouncer", func(t *testing.T) {
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, &cluster.Spec, `{
 			proxy: { pgBouncer: { port: 10220 } },
-		}`), &cluster.Spec))
+		}`)
 
 		secret, err := reconciler.generatePostgresUserSecret(cluster, spec, nil)
 		assert.NilError(t, err)
@@ -214,7 +330,7 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 
 		// Includes a URI when possible.
 		spec := *spec
-		spec.Databases = []v1beta1.PostgresIdentifier{"yes", "no"}
+		spec.Databases = []string{"yes", "no"}
 
 		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, nil)
 		assert.NilError(t, err)
@@ -250,14 +366,14 @@ func TestReconcilePostgresVolumes(t *testing.T) {
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		pvc, err := reconciler.reconcilePostgresDataVolume(ctx, cluster, spec, instance, nil, nil)
@@ -290,14 +406,14 @@ volumeMode: Filesystem
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		recorder := events.NewRecorder(t, runtime.Scheme)
@@ -392,14 +508,14 @@ volumeMode: Filesystem
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		recorder := events.NewRecorder(t, runtime.Scheme)
@@ -455,14 +571,14 @@ volumeMode: Filesystem
 		t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
 		spec := &v1beta1.PostgresInstanceSetSpec{}
-		assert.NilError(t, yaml.Unmarshal([]byte(`{
+		require.UnmarshalInto(t, spec, `{
 			name: "some-instance",
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
 				resources: { requests: { storage: 1Gi } },
 				storageClassName: "storage-class-for-data",
 			},
-		}`), spec))
+		}`)
 		instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, spec)}
 
 		observed := &Instance{}
@@ -475,13 +591,13 @@ volumeMode: Filesystem
 
 		t.Run("Specified", func(t *testing.T) {
 			spec := spec.DeepCopy()
-			assert.NilError(t, yaml.Unmarshal([]byte(`{
+			require.UnmarshalInto(t, spec, `{
 				walVolumeClaimSpec: {
 					accessModes: [ReadWriteMany],
 					resources: { requests: { storage: 2Gi } },
 					storageClassName: "storage-class-for-wal",
 				},
-			}`), spec))
+			}`)
 
 			pvc, err := reconciler.reconcilePostgresWALVolume(ctx, cluster, spec, instance, observed, nil)
 			assert.NilError(t, err)

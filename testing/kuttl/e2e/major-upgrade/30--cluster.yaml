@@ -6,11 +6,9 @@ metadata:
   name: major-upgrade
 spec:
   postgresVersion: ${KUTTL_PG_UPGRADE_FROM_VERSION}
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          shared_preload_libraries: pgaudit, set_user, pg_stat_statements, pgnodemx, pg_cron
+  config:
+    parameters:
+      shared_preload_libraries: pgaudit, set_user, pg_stat_statements, pgnodemx, pg_cron
   instances:
     - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
       replicas: 3

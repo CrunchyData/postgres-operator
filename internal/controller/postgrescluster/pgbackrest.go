@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -687,12 +688,25 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 
 	if pgbackrest.RepoHostVolumeDefined(postgresCluster) {
 		// add the init container to make the pgBackRest repo volume log directory
-		pgbackrest.MakePGBackrestLogDir(&repo.Spec.Template, postgresCluster)
+		pgBackRestLogPath := pgbackrest.MakePGBackrestLogDir(&repo.Spec.Template, postgresCluster)
 
-		// add pgBackRest repo volumes to pod
+		containersToAdd := []string{naming.PGBackRestRepoContainerName}
+
+		// If OpenTelemetryLogs is enabled, we want to add the collector to the pod
+		// and also add the RepoVolumes to the container.
+		if postgresCluster.Spec.Instrumentation != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+			collector.AddToPod(ctx, postgresCluster.Spec.Instrumentation, postgresCluster.Spec.ImagePullPolicy,
+				&corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(postgresCluster)},
+				&repo.Spec.Template.Spec, []corev1.VolumeMount{}, "",
+				[]string{pgBackRestLogPath}, true)
+
+			containersToAdd = append(containersToAdd, naming.ContainerCollector)
+		}
+
+		// add pgBackRest repo volumes to pod and to containers
 		if err := pgbackrest.AddRepoVolumesToPod(postgresCluster, &repo.Spec.Template,
 			getRepoPVCNames(postgresCluster, repoResources.pvcs),
-			naming.PGBackRestRepoContainerName); err != nil {
+			containersToAdd...); err != nil {
 			return nil, errors.WithStack(err)
 		}
 	}
@@ -2003,8 +2017,12 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) error {
 
-	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
+	backrestConfig, err := pgbackrest.CreatePGBackRestConfigMapIntent(ctx, postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, instanceNames)
+	if err != nil {
+		return err
+	}
+
 	if err := r.setControllerReference(postgresCluster, backrestConfig); err != nil {
 		return err
 	}

@@ -15,6 +15,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -118,6 +120,20 @@ func statefulset(
 	sts.Spec.Template.Spec.SecurityContext = podSecurityContext(ctx)
 
 	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
+
+	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
+		dataVolumeMount := corev1.VolumeMount{
+			Name:      "pgadmin-data",
+			MountPath: "/var/lib/pgadmin",
+		}
+		volumeMounts := []corev1.VolumeMount{
+			dataVolumeMount,
+		}
+
+		collector.AddToPod(ctx, pgadmin.Spec.Instrumentation, pgadmin.Spec.ImagePullPolicy,
+			configmap, &sts.Spec.Template.Spec, volumeMounts, "", []string{}, false)
+	}
 
 	return sts
 }

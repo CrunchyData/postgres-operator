@@ -22,6 +22,7 @@ import (
 
 func TestConfigMap(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 
 	cluster := new(v1beta1.PostgresCluster)
 	config := new(corev1.ConfigMap)
@@ -29,7 +30,7 @@ func TestConfigMap(t *testing.T) {
 	t.Run("Disabled", func(t *testing.T) {
 		// Nothing happens when PgBouncer is disabled.
 		constant := config.DeepCopy()
-		ConfigMap(cluster, config)
+		ConfigMap(ctx, cluster, config)
 		assert.DeepEqual(t, constant, config)
 	})
 
@@ -37,15 +38,15 @@ func TestConfigMap(t *testing.T) {
 	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 	cluster.Default()
 
-	ConfigMap(cluster, config)
+	ConfigMap(ctx, cluster, config)
 
 	// The output of clusterINI should go into config.
-	data := clusterINI(cluster)
+	data := clusterINI(ctx, cluster)
 	assert.DeepEqual(t, config.Data["pgbouncer.ini"], data)
 
 	// No change when called again.
 	before := config.DeepCopy()
-	ConfigMap(cluster, config)
+	ConfigMap(ctx, cluster, config)
 	assert.DeepEqual(t, before, config)
 }
 

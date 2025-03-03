@@ -6,6 +6,7 @@ package postgrescluster
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"fmt"
 	"io"
@@ -29,7 +30,10 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
+	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/postgis"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
@@ -37,13 +41,74 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+// generatePostgresParameters produces the parameter set for cluster that
+// incorporates, from highest to lowest precedence:
+//  1. mandatory values determined by controllers
+//  2. parameters in cluster.spec.config.parameters
+//  3. parameters in cluster.spec.patroni.dynamicConfiguration
+//  4. default values determined by contollers
+func (*Reconciler) generatePostgresParameters(
+	ctx context.Context, cluster *v1beta1.PostgresCluster, backupsSpecFound bool,
+) *postgres.ParameterSet {
+	builtin := postgres.NewParameters()
+	pgaudit.PostgreSQLParameters(&builtin)
+	pgbackrest.PostgreSQL(cluster, &builtin, backupsSpecFound)
+	pgmonitor.PostgreSQLParameters(ctx, cluster, &builtin)
+	postgres.SetHugePages(cluster, &builtin)
+
+	// Last write wins, so start with the recommended defaults.
+	result := cmp.Or(builtin.Default.DeepCopy(), postgres.NewParameterSet())
+
+	// Overwrite the above with any parameters specified in the Patroni section.
+	for k, v := range patroni.PostgresParameters(cluster.Spec.Patroni).AsMap() {
+		result.Add(k, v)
+	}
+
+	// Overwrite the above with any parameters specified in the Config section.
+	if config := cluster.Spec.Config; config != nil {
+		for k, v := range config.Parameters {
+			result.Add(k, v.String())
+		}
+	}
+
+	// Overwrite the above with mandatory values.
+	if builtin.Mandatory != nil {
+		// This parameter is a comma-separated list. Rather than overwrite the
+		// user-defined value, we want to combine it with the mandatory one.
+		preload := result.Value("shared_preload_libraries")
+
+		for k, v := range builtin.Mandatory.AsMap() {
+			// Load mandatory libraries ahead of user-defined libraries.
+			if k == "shared_preload_libraries" && len(v) > 0 && len(preload) > 0 {
+				v = v + "," + preload
+			}
+
+			result.Add(k, v)
+		}
+	}
+
+	// Some preload libraries belong at specific positions in this list.
+	if preload, ok := result.Get("shared_preload_libraries"); ok {
+		// Load "citus" ahead of any other libraries.
+		// - https://github.com/citusdata/citus/blob/v12.0.0/src/backend/distributed/shared_library_init.c#L417-L419
+		// - https://github.com/citusdata/citus/blob/v13.0.0/src/backend/distributed/shared_library_init.c#L420-L422
+		if strings.Contains(preload, "citus") {
+			preload = "citus," + preload
+		}
+
+		result.Add("shared_preload_libraries", preload)
+	}
+
+	return result
+}
+
 // generatePostgresUserSecret returns a Secret containing a password and
 // connection details for the first database in spec. When existing is nil or
 // lacks a password or verifier, a new password and verifier are generated.
 func (r *Reconciler) generatePostgresUserSecret(
 	cluster *v1beta1.PostgresCluster, spec *v1beta1.PostgresUserSpec, existing *corev1.Secret,
 ) (*corev1.Secret, error) {
-	username := string(spec.Name)
+	username := spec.Name
 	intent := &corev1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster, username)}
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	initialize.Map(&intent.Data)
@@ -100,7 +165,7 @@ func (r *Reconciler) generatePostgresUserSecret(
 	// When a database has been specified, include it and a connection URI.
 	// - https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 	if len(spec.Databases) > 0 {
-		database := string(spec.Databases[0])
+		database := spec.Databases[0]
 
 		intent.Data["dbname"] = []byte(database)
 		intent.Data["uri"] = []byte((&url.URL{
@@ -133,7 +198,7 @@ func (r *Reconciler) generatePostgresUserSecret(
 		intent.Data["pgbouncer-port"] = []byte(port)
 
 		if len(spec.Databases) > 0 {
-			database := string(spec.Databases[0])
+			database := spec.Databases[0]
 
 			intent.Data["pgbouncer-uri"] = []byte((&url.URL{
 				Scheme: "postgresql",
@@ -216,9 +281,7 @@ func (r *Reconciler) reconcilePostgresDatabases(
 		}
 	} else {
 		for _, user := range cluster.Spec.Users {
-			for _, database := range user.Databases {
-				databases.Insert(string(database))
-			}
+			databases.Insert(user.Databases...)
 		}
 	}
 
@@ -379,10 +442,9 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 			r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidUser",
 				allErrors.ToAggregate().Error())
 		} else {
-			identifier := v1beta1.PostgresIdentifier(cluster.Name)
 			specUsers = []v1beta1.PostgresUserSpec{{
-				Name:      identifier,
-				Databases: []v1beta1.PostgresIdentifier{identifier},
+				Name:      cluster.Name,
+				Databases: []string{cluster.Name},
 			}}
 		}
 	}
@@ -390,7 +452,7 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 	// Index user specifications by PostgreSQL user name.
 	userSpecs := make(map[string]*v1beta1.PostgresUserSpec, len(specUsers))
 	for i := range specUsers {
-		userSpecs[string(specUsers[i].Name)] = &specUsers[i]
+		userSpecs[specUsers[i].Name] = &specUsers[i]
 	}
 
 	secrets := &corev1.SecretList{}

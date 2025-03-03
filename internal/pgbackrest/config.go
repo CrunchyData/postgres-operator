@@ -7,6 +7,7 @@ package pgbackrest
 import (
 	"context"
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -14,10 +15,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -66,9 +70,11 @@ const (
 // pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
-func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
+func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
-	instanceNames []string) *corev1.ConfigMap {
+	instanceNames []string) (*corev1.ConfigMap, error) {
+
+	var err error
 
 	meta := naming.PGBackRestConfig(postgresCluster)
 	meta.Annotations = naming.Merge(
@@ -123,17 +129,44 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
 			).String()
+
+		if RepoHostVolumeDefined(postgresCluster) &&
+			(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
+				feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+			err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
+				ctx,
+				postgresCluster.Spec.Instrumentation,
+				postgresCluster.Spec.Backups.PGBackRest.Repos,
+			), cm)
+
+			// If OTel logging is enabled, add logrotate config for the RepoHost
+			if err == nil &&
+				postgresCluster.Spec.Instrumentation != nil &&
+				feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+				var pgBackRestLogPath string
+				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+					if repo.Volume != nil {
+						pgBackRestLogPath = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
+						break
+					}
+				}
+
+				collector.AddLogrotateConfigs(ctx, postgresCluster.Spec.Instrumentation, cm, []collector.LogrotateConfig{{
+					LogFiles: []string{pgBackRestLogPath + "/*.log"},
+				}})
+			}
+		}
 	}
 
 	cm.Data[ConfigHashKey] = configHash
 
-	return cm
+	return cm, err
 }
 
 // MakePGBackrestLogDir creates the pgBackRest default log path directory used when a
 // dedicated repo host is configured.
 func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
-	cluster *v1beta1.PostgresCluster) {
+	cluster *v1beta1.PostgresCluster) string {
 
 	var pgBackRestLogPath string
 	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
@@ -144,7 +177,9 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 	}
 
 	container := corev1.Container{
-		Command:         []string{"bash", "-c", "mkdir -p " + pgBackRestLogPath},
+		// TODO(log-rotation): The second argument here should be the path
+		// of the volume mount. Find a way to calculate that consistently.
+		Command:         []string{"bash", "-c", shell.MakeDirectories(0o775, path.Dir(pgBackRestLogPath), pgBackRestLogPath)},
 		Image:           config.PGBackRestContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerPGBackRestLogDirInit,
@@ -159,6 +194,8 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 		}
 	}
 	template.Spec.InitContainers = append(template.Spec.InitContainers, container)
+
+	return pgBackRestLogPath
 }
 
 // RestoreCommand returns the command for performing a pgBackRest restore.  In addition to calling

@@ -37,10 +37,11 @@ func TestCreatePGBackRestConfigMapIntent(t *testing.T) {
 		cluster := cluster.DeepCopy()
 		cluster.Spec.Backups.PGBackRest.Repos = nil
 
-		configmap := CreatePGBackRestConfigMapIntent(cluster,
+		configmap, err := CreatePGBackRestConfigMapIntent(context.Background(), cluster,
 			"", "number", "pod-service-name", "test-ns",
 			[]string{"some-instance"})
 
+		assert.NilError(t, err)
 		assert.Equal(t, configmap.Data["config-hash"], "number")
 		assert.Equal(t, configmap.Data["pgbackrest-server.conf"], "")
 	})
@@ -71,10 +72,11 @@ func TestCreatePGBackRestConfigMapIntent(t *testing.T) {
 			},
 		}
 
-		configmap := CreatePGBackRestConfigMapIntent(cluster,
+		configmap, err := CreatePGBackRestConfigMapIntent(context.Background(), cluster,
 			"repo-hostname", "abcde12345", "pod-service-name", "test-ns",
 			[]string{"some-instance"})
 
+		assert.NilError(t, err)
 		assert.DeepEqual(t, configmap.Annotations, map[string]string{})
 		assert.DeepEqual(t, configmap.Labels, map[string]string{
 			"postgres-operator.crunchydata.com/cluster":           "hippo-dance",
@@ -176,9 +178,10 @@ pg1-socket-path = /tmp/postgres
 			},
 		}
 
-		configmap := CreatePGBackRestConfigMapIntent(cluster,
+		configmap, err := CreatePGBackRestConfigMapIntent(context.Background(), cluster,
 			"any", "any", "any", "any", nil)
 
+		assert.NilError(t, err)
 		assert.DeepEqual(t, configmap.Annotations, map[string]string{
 			"ak1": "cluster-av1",
 			"ak2": "backups-av2",
@@ -207,10 +210,11 @@ pg1-socket-path = /tmp/postgres
 			},
 		}
 
-		configmap := CreatePGBackRestConfigMapIntent(cluster,
+		configmap, err := CreatePGBackRestConfigMapIntent(context.Background(), cluster,
 			"", "number", "pod-service-name", "test-ns",
 			[]string{"some-instance"})
 
+		assert.NilError(t, err)
 		assert.Assert(t,
 			cmp.Contains(configmap.Data["pgbackrest_instance.conf"],
 				"archive-header-check = n"))
@@ -228,10 +232,11 @@ pg1-socket-path = /tmp/postgres
 			},
 		}
 
-		configmap = CreatePGBackRestConfigMapIntent(cluster,
+		configmap, err = CreatePGBackRestConfigMapIntent(context.Background(), cluster,
 			"repo1", "number", "pod-service-name", "test-ns",
 			[]string{"some-instance"})
 
+		assert.NilError(t, err)
 		assert.Assert(t,
 			cmp.Contains(configmap.Data["pgbackrest_repo.conf"],
 				"archive-header-check = n"))
@@ -287,7 +292,7 @@ func TestMakePGBackrestLogDir(t *testing.T) {
 	for _, c := range podTemplate.Spec.InitContainers {
 		if c.Name == naming.ContainerPGBackRestLogDirInit {
 			// ignore "bash -c", should skip repo with no volume
-			assert.Equal(t, "mkdir -p /pgbackrest/repo2/log", c.Command[2])
+			assert.Equal(t, `mkdir -p '/pgbackrest/repo2/log' && chmod 0775 '/pgbackrest/repo2/log'`, c.Command[2])
 			assert.Equal(t, c.Image, "test-image")
 			assert.Equal(t, c.ImagePullPolicy, corev1.PullAlways)
 			assert.Assert(t, !cmp.DeepEqual(c.SecurityContext,

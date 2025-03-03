@@ -42,7 +42,6 @@ spec:
   backups:
     pgbackrest:
       repos: null
-  config: {}
   instances: null
   patroni:
     leaderLeaseDurationSeconds: 30
@@ -75,7 +74,6 @@ spec:
   backups:
     pgbackrest:
       repos: null
-  config: {}
   instances:
   - dataVolumeClaimSpec:
       resources: {}

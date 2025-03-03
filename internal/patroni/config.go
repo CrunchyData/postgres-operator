@@ -13,8 +13,10 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -34,16 +36,10 @@ const (
 		"# Your changes will not be saved.\n"
 )
 
-// quoteShellWord ensures that s is interpreted by a shell as single word.
-func quoteShellWord(s string) string {
-	// https://www.gnu.org/software/bash/manual/html_node/Quoting.html
-	return `'` + strings.ReplaceAll(s, `'`, `'"'"'`) + `'`
-}
-
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
 	cluster *v1beta1.PostgresCluster,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters, patroniLogStorageLimit int64,
+	pgHBAs postgres.HBAs, parameters *postgres.ParameterSet, patroniLogStorageLimit int64,
 ) (string, error) {
 	root := map[string]any{
 		// The cluster identifier. This value cannot change during the cluster's
@@ -155,8 +151,16 @@ func clusterYAML(
 		},
 	}
 
-	// if a Patroni log file size is configured, configure volume file storage
+	// If a Patroni log file size is configured (the user set it in the
+	// spec or the OpenTelemetryLogs feature gate is enabled), we need to
+	// configure volume file storage
 	if patroniLogStorageLimit != 0 {
+
+		logLevel := initialize.Pointer("INFO")
+		if cluster.Spec.Patroni != nil && cluster.Spec.Patroni.Logging != nil &&
+			cluster.Spec.Patroni.Logging.Level != nil {
+			logLevel = cluster.Spec.Patroni.Logging.Level
+		}
 
 		// Configure the Patroni log settings
 		// - https://patroni.readthedocs.io/en/latest/yaml_configuration.html#log
@@ -166,7 +170,12 @@ func clusterYAML(
 			"type": "json",
 
 			// defaults to "INFO"
-			"level": cluster.Spec.Patroni.Logging.Level,
+			"level": logLevel,
+
+			// Setting group read permissions so that the OTel filelog receiver can
+			// read the log files.
+			// NOTE: This log configuration setting is only available in Patroni v4
+			"mode": "0660",
 
 			// There will only be two log files. Cannot set to 1 or the logs won't rotate.
 			// - https://github.com/python/cpython/blob/3.11/Lib/logging/handlers.py#L134
@@ -183,7 +192,7 @@ func clusterYAML(
 		// facilitate it. When Patroni is already bootstrapped, this field is ignored.
 
 		root["bootstrap"] = map[string]any{
-			"dcs": DynamicConfiguration(&cluster.Spec, pgHBAs, pgParameters),
+			"dcs": DynamicConfiguration(&cluster.Spec, pgHBAs, parameters),
 
 			// Missing here is "users" which runs *after* "post_bootstrap". It is
 			// not possible to use roles created by the former in the latter.
@@ -199,7 +208,7 @@ func clusterYAML(
 // and returns a value that can be marshaled to JSON.
 func DynamicConfiguration(
 	spec *v1beta1.PostgresClusterSpec,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+	pgHBAs postgres.HBAs, parameters *postgres.ParameterSet,
 ) map[string]any {
 	// Copy the entire configuration before making any changes.
 	root := make(map[string]any)
@@ -232,42 +241,9 @@ func DynamicConfiguration(
 	}
 	root["postgresql"] = postgresql
 
-	// Copy the "postgresql.parameters" section over any defaults.
-	parameters := make(map[string]any)
-	if pgParameters.Default != nil {
-		for k, v := range pgParameters.Default.AsMap() {
-			parameters[k] = v
-		}
+	if m := parameters.AsMap(); m != nil {
+		postgresql["parameters"] = m
 	}
-	if section, ok := postgresql["parameters"].(map[string]any); ok {
-		for k, v := range section {
-			parameters[k] = v
-		}
-	}
-	// Override the above with mandatory parameters.
-	if pgParameters.Mandatory != nil {
-		for k, v := range pgParameters.Mandatory.AsMap() {
-
-			// This parameter is a comma-separated list. Rather than overwrite the
-			// user-defined value, we want to combine it with the mandatory one.
-			// Some libraries belong at specific positions in the list, so figure
-			// that out as well.
-			if k == "shared_preload_libraries" {
-				// Load mandatory libraries ahead of user-defined libraries.
-				if s, ok := parameters[k].(string); ok && len(s) > 0 {
-					v = v + "," + s
-				}
-				// Load "citus" ahead of any other libraries.
-				// - https://github.com/citusdata/citus/blob/v12.0.0/src/backend/distributed/shared_library_init.c#L417-L419
-				if strings.Contains(v, "citus") {
-					v = "citus," + v
-				}
-			}
-
-			parameters[k] = v
-		}
-	}
-	postgresql["parameters"] = parameters
 
 	// Copy the "postgresql.pg_hba" section after any mandatory values.
 	hba := make([]string, 0, len(pgHBAs.Mandatory))
@@ -327,7 +303,7 @@ func DynamicConfiguration(
 			// Populate the standby leader by shipping logs through pgBackRest.
 			// This also overrides the "restore_command" used by standby replicas.
 			// - https://www.postgresql.org/docs/current/warm-standby.html
-			standby["restore_command"] = pgParameters.Mandatory.Value("restore_command")
+			standby["restore_command"] = parameters.Value("restore_command")
 		}
 
 		standby["create_replica_methods"] = methods
@@ -576,15 +552,11 @@ func instanceYAML(
 			"-",
 		}, command...)
 
-		quoted := make([]string, len(command))
-		for i := range command {
-			quoted[i] = quoteShellWord(command[i])
-		}
 		postgresql[pgBackRestCreateReplicaMethod] = map[string]any{
-			"command":   strings.Join(quoted, " "),
-			"keep_data": true,
-			"no_leader": true,
-			"no_params": true,
+			"command":   strings.Join(shell.QuoteWords(command...), " "),
+			"keep_data": true, // Use the data directory from a prior method.
+			"no_leader": true, // Works without a replication connection.
+			"no_params": true, // Patroni should not add "--scope", "--role", etc.
 		}
 		methods = append([]string{pgBackRestCreateReplicaMethod}, methods...)
 	}

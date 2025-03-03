@@ -18,6 +18,8 @@ import (
 )
 
 const (
+	ContainerCollector = "collector"
+
 	// ContainerDatabase is the name of the container running PostgreSQL and
 	// supporting tools: Patroni, pgBackRest, etc.
 	ContainerDatabase = "database"
@@ -152,6 +154,12 @@ const (
 	// PGBackRestRepoLogPath is the pgBackRest default log path configuration used by the
 	// dedicated repo host, if configured.
 	PGBackRestRepoLogPath = "/pgbackrest/%s/log"
+
+	// PGBouncerLogPath is the pgBouncer default log path configuration
+	PGBouncerLogPath = "/tmp"
+
+	// PGbouncerFullLogPath is the full path to the pgbouncer log file
+	PGBouncerFullLogPath = PGBouncerLogPath + "/pgbouncer.log"
 
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the

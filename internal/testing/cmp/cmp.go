@@ -5,6 +5,7 @@
 package cmp
 
 import (
+	"regexp"
 	"strings"
 
 	gocmp "github.com/google/go-cmp/cmp"
@@ -46,8 +47,22 @@ func Contains(collection, item any) Comparison {
 // succeeds if the values are equal. The comparison can be customized using
 // comparison Options. See [github.com/google/go-cmp/cmp.Option] constructors
 // and [github.com/google/go-cmp/cmp/cmpopts].
-func DeepEqual(x, y any, opts ...gocmp.Option) Comparison {
+func DeepEqual[T any](x, y T, opts ...gocmp.Option) Comparison {
 	return gotest.DeepEqual(x, y, opts...)
+}
+
+// Len succeeds if actual has the expected length.
+func Len[Slice ~[]E, E any](actual Slice, expected int) Comparison {
+	return gotest.Len(actual, expected)
+}
+
+// LenMap succeeds if actual has the expected length.
+func LenMap[Map ~map[K]V, K comparable, V any](actual Map, expected int) Comparison {
+	// There doesn't seem to be a way to express "map or slice" in type constraints
+	// that [Go 1.22] compiler can nicely infer. Ideally, this function goes
+	// away when a better constraint can be expressed on [Len].
+
+	return gotest.Len(actual, expected)
 }
 
 // MarshalContains converts actual to YAML and succeeds if expected is in the result.
@@ -68,9 +83,9 @@ func MarshalMatches(actual any, expected string) Comparison {
 	return gotest.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
 }
 
-// Regexp succeeds if value contains any match of the regular expression re.
+// Regexp succeeds if value contains any match of the regular expression.
 // The regular expression may be a *regexp.Regexp or a string that is a valid
 // regexp pattern.
-func Regexp(re any, value string) Comparison {
-	return gotest.Regexp(re, value)
+func Regexp[RE *regexp.Regexp | ~string](regex RE, value string) Comparison {
+	return gotest.Regexp(regex, value)
 }

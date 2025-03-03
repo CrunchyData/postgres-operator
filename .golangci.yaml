@@ -114,11 +114,6 @@ issues:
       path: internal/kubernetes/discovery.go
       text: k8s.io/client-go/discovery
 
-    # PGO-2010
-    - linters: [exhaustive]
-      path: internal/controller/postgrescluster/volumes.go
-      text: 'v1.PersistentVolumeClaimConditionType: v1.PersistentVolumeClaimControllerResizeError, v1.PersistentVolumeClaimNodeResizeError$'
-
     # These value types have unmarshal methods.
     # https://github.com/raeperd/recvcheck/issues/7
     - linters: [recvcheck]

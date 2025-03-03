@@ -18,10 +18,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestExtractSecretContract(t *testing.T) {
@@ -136,7 +136,7 @@ func TestInstallationReconcile(t *testing.T) {
 			assert.Assert(t, cmp.Contains(applies[0], `"kind":"Secret"`))
 
 			var decoded corev1.Secret
-			assert.NilError(t, yaml.Unmarshal([]byte(applies[0]), &decoded))
+			require.UnmarshalInto(t, &decoded, applies[0])
 			assert.Assert(t, cmp.Contains(string(decoded.Data["bridge-token"]), `"id":"abc"`))
 			assert.Assert(t, cmp.Contains(string(decoded.Data["bridge-token"]), `"secret":"xyz"`))
 		})
@@ -230,7 +230,7 @@ func TestInstallationReconcile(t *testing.T) {
 				assert.Assert(t, cmp.Contains(applies[0], `"kind":"Secret"`))
 
 				var decoded corev1.Secret
-				assert.NilError(t, yaml.Unmarshal([]byte(applies[0]), &decoded))
+				require.UnmarshalInto(t, &decoded, applies[0])
 				assert.Assert(t, cmp.Contains(string(decoded.Data["bridge-token"]), `"id":"asdf"`))
 			})
 		}
@@ -326,7 +326,7 @@ func TestInstallationReconcile(t *testing.T) {
 			assert.Assert(t, cmp.Contains(applies[0], `"kind":"Secret"`))
 
 			var decoded corev1.Secret
-			assert.NilError(t, yaml.Unmarshal([]byte(applies[0]), &decoded))
+			require.UnmarshalInto(t, &decoded, applies[0])
 			assert.Assert(t, cmp.Contains(string(decoded.Data["bridge-token"]), `"id":"xyz"`))
 			assert.Assert(t, cmp.Contains(string(decoded.Data["bridge-token"]), `"secret":"def"`))
 		})
@@ -373,7 +373,7 @@ func TestInstallationReconcile(t *testing.T) {
 			assert.Assert(t, cmp.Contains(applies[0], `"kind":"Secret"`))
 
 			var decoded corev1.Secret
-			assert.NilError(t, yaml.Unmarshal([]byte(applies[0]), &decoded))
+			require.UnmarshalInto(t, &decoded, applies[0])
 			assert.Equal(t, len(decoded.Data["bridge-token"]), 0)
 
 			archived := string(decoded.Data["bridge-token--2020-10-28"])
@@ -463,7 +463,7 @@ func TestInstallationReconcile(t *testing.T) {
 				assert.Assert(t, cmp.Contains(applies[0], `"kind":"Secret"`))
 
 				var decoded corev1.Secret
-				assert.NilError(t, yaml.Unmarshal([]byte(applies[0]), &decoded))
+				require.UnmarshalInto(t, &decoded, applies[0])
 				assert.Assert(t, cmp.Contains(string(decoded.Data["bridge-token"]), `"id":"ddd"`))
 				assert.Assert(t, cmp.Contains(string(decoded.Data["bridge-token"]), `"secret":"fresh"`))
 			})

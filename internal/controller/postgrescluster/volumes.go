@@ -31,7 +31,8 @@ import (
 // +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={list}
 
 // observePersistentVolumeClaims reads all PVCs for cluster from the Kubernetes
-// API and sets the PersistentVolumeResizing condition as appropriate.
+// API and sets the PersistentVolumeResizing and/or the PersistentVolumeResizeError
+// conditions as appropriate.
 func (r *Reconciler) observePersistentVolumeClaims(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) ([]*corev1.PersistentVolumeClaim, error) {
@@ -50,6 +51,12 @@ func (r *Reconciler) observePersistentVolumeClaims(
 		Type:    v1beta1.PersistentVolumeResizing,
 		Message: "One or more volumes are changing size",
 
+		ObservedGeneration: cluster.Generation,
+	}
+
+	// create a condition for surfacing any PVC resize error conditions
+	resizingError := metav1.Condition{
+		Type:               v1beta1.PersistentVolumeResizeError,
 		ObservedGeneration: cluster.Generation,
 	}
 
@@ -119,7 +126,31 @@ func (r *Reconciler) observePersistentVolumeClaims(
 					resizing.LastTransitionTime = minNotZero(
 						resizing.LastTransitionTime, condition.LastTransitionTime)
 				}
+			case
+				// The "ControllerResizeError" and "NodeResizeError" conditions were added in
+				// Kubernetes v1.31 for indicating node and controller failures when resizing
+				// a volume:
+				// - https://github.com/kubernetes/enhancements/pull/4692
+				// - https://github.com/kubernetes/kubernetes/pull/126108
+				corev1.PersistentVolumeClaimControllerResizeError,
+				corev1.PersistentVolumeClaimNodeResizeError:
 
+				// Add pertinent details from the resize error condition in the PVC to the resize
+				// error condition in the PostgresCluster status.  In the event that there is both
+				// a controller resize error and a node resize error, only the details from one
+				// will be displayed at a time in the PostgresCluster condition.
+				if condition.Status == corev1.ConditionTrue {
+					resizingError.Status = metav1.ConditionStatus(condition.Status)
+					resizingError.Reason = condition.Reason
+					resizingError.Message = condition.Message
+					resizingError.LastTransitionTime = condition.LastTransitionTime
+
+					// corev1.PersistentVolumeClaimCondition.Reason is optional
+					// while metav1.Condition.Reason is required.
+					if resizingError.Reason == "" {
+						resizingError.Reason = string(condition.Type)
+					}
+				}
 			case
 				// The "ModifyingVolume" and "ModifyVolumeError" conditions occur
 				// when the attribute class of a PVC is changing. These attributes
@@ -138,6 +169,12 @@ func (r *Reconciler) observePersistentVolumeClaims(
 		// NOTE(cbandy): This clears the condition, but it may immediately
 		// return with a new LastTransitionTime when a PVC spec is invalid.
 		meta.RemoveStatusCondition(&cluster.Status.Conditions, resizing.Type)
+	}
+
+	if resizingError.Status != "" {
+		meta.SetStatusCondition(&cluster.Status.Conditions, resizingError)
+	} else {
+		meta.RemoveStatusCondition(&cluster.Status.Conditions, resizingError.Type)
 	}
 
 	return initialize.Pointers(volumes.Items...), err

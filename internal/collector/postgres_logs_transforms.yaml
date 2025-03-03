@@ -1,0 +1,211 @@
+# This list of transform statements configures an OTel Transform Processor to
+# parse PostgreSQL logs.
+#
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/transformprocessor#readme
+# https://www.postgresql.org/docs/current/runtime-config-logging.html
+
+
+# TODO(postgres-14): We can stop parsing CSV logs when 14 is EOL.
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#readme
+- context: log
+  conditions:
+    - body["format"] == "csv"
+  statements:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/ottlfuncs#parsecsv
+    - set(cache, ParseCSV(body["original"], body["headers"], delimiter=",", mode="strict"))
+
+    # Extract the optional "remote_port" value from the "connection_from" field. It is either:
+    #  1. a Unix socket starting with "[local]:" or
+    #  2. a TCP socket ending with a colon U+003A and a port.
+    #
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_10_0;f=src/backend/utils/error/elog.c#l2701
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_10_0;f=src/common/ip.c#l227
+    #
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_17_0;f=src/backend/utils/error/csvlog.c#l108
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_17_0;f=src/common/ip.c#l224
+    - >-
+      merge_maps(cache,
+      ExtractPatterns(cache["connection_from"], "(?:^[[]local[]]:(?<remote_port>.+)|:(?<remote_port>[^:]+))$"),
+      "insert")
+      where Len(cache["connection_from"]) > 0
+
+    # When there is a "remote_port" value, everything before it is the "remote_host" value.
+    - >-
+      set(cache["remote_host"],
+      Substring(cache["connection_from"], 0, Len(cache["connection_from"]) - Len(cache["remote_port"]) - 1))
+      where Len(cache["connection_from"]) > 0 and IsString(cache["remote_port"])
+
+    # When there is still no "remote_host" value, copy the "connection_from" value, if any.
+    - >-
+      set(cache["remote_host"], cache["connection_from"])
+      where Len(cache["connection_from"]) > 0 and not IsString(cache["remote_host"])
+
+    # Extract the values encoded in the "location" field.
+    #
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_10_0;f=src/backend/utils/error/elog.c#l2805
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_17_0;f=src/backend/utils/error/csvlog.c#l207
+    - >-
+      merge_maps(cache,
+      ExtractPatterns(cache["location"], "^(?:(?<func_name>[^,]+), )?(?<file_name>[^:]+):(?<file_line_num>\\d+)$"),
+      "insert")
+      where Len(cache["location"]) > 0
+
+    # These values are numeric in JSON logs.
+    - >-
+      set(cache["cursor_position"], Double(cache["cursor_position"]))
+      where IsMatch(cache["cursor_position"], "^[0-9.]+$")
+    - >-
+      set(cache["file_line_num"], Double(cache["file_line_num"]))
+      where IsMatch(cache["file_line_num"], "^[0-9.]+$")
+    - >-
+      set(cache["internal_position"], Double(cache["internal_position"]))
+      where IsMatch(cache["internal_position"], "^[0-9.]+$")
+    - >-
+      set(cache["leader_pid"], Double(cache["leader_pid"]))
+      where IsMatch(cache["leader_pid"], "^[0-9.]+$")
+    - >-
+      set(cache["line_num"], Double(cache["line_num"]))
+      where IsMatch(cache["line_num"], "^[0-9.]+$")
+    - >-
+      set(cache["pid"], Double(cache["pid"]))
+      where IsMatch(cache["pid"], "^[0-9.]+$")
+    - >-
+      set(cache["query_id"], Double(cache["query_id"]))
+      where IsMatch(cache["query_id"], "^[0-9.]+$")
+    - >-
+      set(cache["remote_port"], Double(cache["remote_port"]))
+      where IsMatch(cache["remote_port"], "^[0-9.]+$")
+
+    # Pass the results to the next set of statements.
+    - set(body["parsed"], cache)
+
+
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#readme
+- context: log
+  statements:
+    - set(instrumentation_scope.name, "postgres")
+    - set(instrumentation_scope.version, resource.attributes["db.version"])
+
+    # TODO(postgres-14): We can stop parsing CSV logs when 14 is EOL.
+    - set(cache, body["parsed"]) where body["format"] == "csv"
+
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/ottlfuncs#parsejson
+    - set(cache, ParseJSON(body["original"])) where body["format"] == "json"
+
+    # The log severity is in the "error_severity" field.
+    # https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext
+    - set(severity_text, cache["error_severity"])
+
+    # Map severity text to OpenTelemetry severity levels.
+    # Postgres has levels beyond the typical ones:
+    # - Multiple DEBUG levels, with DEBUG5 being the most detailed.
+    # - NOTICE is more severe than INFO.
+    # - PANIC is more severe than FATAL.
+    #
+    # https://www.postgresql.org/docs/current/runtime-config-logging.html#RUNTIME-CONFIG-SEVERITY-LEVELS
+    # https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
+    # https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/#appendix-b-severitynumber-example-mappings
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#enums
+    - set(severity_number, SEVERITY_NUMBER_TRACE)  where severity_text == "DEBUG5"
+    - set(severity_number, SEVERITY_NUMBER_TRACE2) where severity_text == "DEBUG4"
+    - set(severity_number, SEVERITY_NUMBER_TRACE3) where severity_text == "DEBUG3"
+    - set(severity_number, SEVERITY_NUMBER_TRACE4) where severity_text == "DEBUG2"
+    - set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "DEBUG1"
+    - set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "INFO" or severity_text == "LOG"
+    - set(severity_number, SEVERITY_NUMBER_INFO2)  where severity_text == "NOTICE"
+    - set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"
+    - set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"
+    - set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "FATAL"
+    - set(severity_number, SEVERITY_NUMBER_FATAL2) where severity_text == "PANIC"
+
+    # Parse the "timestamp" field into the record timestamp.
+    # The format is neither RFC 3339 nor ISO 8601:
+    #
+    # The date and time are separated by a single space U+0020,
+    # followed by a dot U+002E, milliseconds, another space U+0020,
+    # then a timezone abbreviation.
+    #
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/ottlfuncs#time
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_10_0;f=src/backend/utils/error/elog.c#l2246
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;hb=REL_17_0;f=src/backend/utils/error/elog.c#l2671
+    - set(time, Time(cache["timestamp"], "%F %T.%L %Z"))
+
+    # Rename fields emitted by Postgres to align with OpenTelemetry semantic conventions.
+    #
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs#readme
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/database#readme
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/database/postgresql.md
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/database/sql.md
+    - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
+    - set(resource.attributes["db.system"], "postgresql")
+
+    # Keep the unparsed log record in a standard attribute,
+    # and replace the log record body with the parsed fields.
+    #
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/general/logs.md
+    - set(attributes["log.record.original"], body["original"])
+    - set(body, cache)
+
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/attributes-registry/client.md
+    - set(attributes["client.address"],  body["remote_host"])  where IsString(body["remote_host"])
+    - set(attributes["client.port"], Int(body["remote_port"])) where IsDouble(body["remote_port"])
+
+    # These values are populated when the "log_error_verbosity" parameter is VERBOSE.
+    #
+    # https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-ERROR-VERBOSITY
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/attributes-registry/code.md
+    - set(attributes["code.filepath"], body["file_name"]) where IsString(body["file_name"])
+    - set(attributes["code.function"], body["func_name"]) where IsString(body["func_name"])
+    - set(attributes["code.lineno"], Int(body["file_line_num"])) where IsDouble(body["file_line_num"])
+
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/attributes-registry/db.md
+    - set(attributes["db.namespace"], body["dbname"]) where IsString(body["dbname"])
+    - set(attributes["db.response.status_code"], body["state_code"]) where IsString(body["state_code"])
+
+    # Postgres is multiprocess so some client/backend details align here.
+    #
+    # The "session_start" value is formatted as "%F %T UTC", but "process.creation.time" should be ISO 8601.
+    #
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/error/elog.c;hb=REL_10_0#l2256
+    # https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/error/elog.c;hb=REL_17_0#l2697
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/attributes-registry/process.md
+    - >-
+      set(attributes["process.creation.time"], Concat([
+      Substring(body["session_start"], 0, 10), "T",
+      Substring(body["session_start"], 11, 8), "Z"], ""))
+      where IsMatch(body["session_start"], "^[^ ]{10} [^ ]{8} UTC$")
+    - >-
+      set(attributes["process.pid"], Int(body["pid"]))
+      where IsDouble(body["pid"])
+    - >-
+      set(attributes["process.title"], body["ps"])
+      where IsString(body["ps"])
+
+    # https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/attributes-registry/user.md
+    - >-
+      set(attributes["user.name"], body["user"])
+      where IsString(body["user"])
+
+
+# Look for and parse the CSV of a pgAudit message.
+#
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#readme
+# https://github.com/pgaudit/pgaudit#format
+- context: log
+  conditions:
+    # Messages from pgAudit have always been prefixed with "AUDIT:", but that
+    # could change in the future.
+    #
+    # https://github.com/pgaudit/pgaudit/blame/17.0/pgaudit.c#L876
+    # TODO(postgres-18): Check this prefix and update the URL above.
+    - >-
+      Len(body["message"]) > 7 and Substring(body["message"], 0, 7) == "AUDIT: "
+  statements:
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/ottlfuncs#parsecsv
+    - >-
+      set(body["pgaudit"], ParseCSV(Substring(body["message"], 7, Len(body["message"]) - 7),
+      "audit_type,statement_id,substatement_id,class,command,object_type,object_name,statement,parameter",
+      delimiter=",", mode="strict"))
+    - >-
+      set(instrumentation_scope.name, "pgaudit")
+      where Len(body["pgaudit"]) > 0

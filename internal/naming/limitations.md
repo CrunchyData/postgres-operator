@@ -83,6 +83,8 @@ name to 63 characters or less.
 The strategy for [generating Pod names](https://releases.k8s.io/v1.23.0/pkg/registry/core/pod/strategy.go#L62) truncates to 63 characters.
 The `.spec.hostname` field must be 63 characters or less.
 
+[Container names are DNS labels](https://releases.k8s.io/v1.32.0/pkg/apis/core/validation/validation.go#L3563).
+
 PodDisruptionBudget (PDB)
 
 [ReplicaSet names are DNS subdomains](https://releases.k8s.io/v1.23.0/pkg/apis/apps/validation/validation.go#L655).

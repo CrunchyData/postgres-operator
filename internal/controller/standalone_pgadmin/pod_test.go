@@ -127,8 +127,6 @@ containers:
     readOnly: true
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
-  - mountPath: /var/log/pgadmin
-    name: pgadmin-log
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
     readOnly: true
@@ -140,12 +138,13 @@ initContainers:
   - -ceu
   - --
   - |-
-    mkdir -p /etc/pgadmin/conf.d
+    mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
+    mkdir -p '/var/lib/pgadmin/logs/receiver' && chmod 0775 '/var/lib/pgadmin/logs/receiver' '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
   - |
-    import glob, json, re, os
+    import glob, json, re, os, logging
     DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
         _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
@@ -157,12 +156,44 @@ initContainers:
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri') as _f:
             CONFIG_DATABASE_URI = _f.read()
+
+    DATA_DIR = '/var/lib/pgadmin'
+    LOG_FILE = '/var/lib/pgadmin/logs/pgadmin.log'
+    LOG_ROTATION_AGE = 24 * 60 # minutes
+    LOG_ROTATION_SIZE = 5 # MiB
+    LOG_ROTATION_MAX_LOG_FILES = 1
+
+    JSON_LOGGER = True
+    CONSOLE_LOG_LEVEL = logging.WARNING
+    FILE_LOG_LEVEL = logging.INFO
+    FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
   - |
-    import json, re
+    import json, re, collections, copy, gunicorn, gunicorn.glogging
     with open('/etc/pgadmin/conf.d/~postgres-operator/gunicorn-config.json') as _f:
         _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+
+    gunicorn.SERVER_SOFTWARE = 'Python'
+    logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
+    logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
+    logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
+    logconfig_dict['handlers']['file'] = {
+      'class': 'logging.handlers.RotatingFileHandler',
+      'filename': '/var/lib/pgadmin/logs/gunicorn.log',
+      'backupCount': 1, 'maxBytes': 2 << 20, # MiB
+      'formatter': 'json',
+    }
+    logconfig_dict['formatters']['json'] = {
+      'class': 'jsonformatter.JsonFormatter',
+      'separators': (',', ':'),
+      'format': collections.OrderedDict([
+        ('time', 'created'),
+        ('name', 'name'),
+        ('level', 'levelname'),
+        ('message', 'message'),
+      ])
+    }
   name: pgadmin-startup
   resources: {}
   securityContext:
@@ -178,6 +209,8 @@ initContainers:
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
+  - mountPath: /var/lib/pgadmin
+    name: pgadmin-data
 volumes:
 - name: pgadmin-config
   projected:
@@ -193,9 +226,6 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
-- emptyDir:
-    medium: Memory
-  name: pgadmin-log
 - emptyDir:
     medium: Memory
     sizeLimit: 32Ki
@@ -316,8 +346,6 @@ containers:
     readOnly: true
   - mountPath: /var/lib/pgadmin
     name: pgadmin-data
-  - mountPath: /var/log/pgadmin
-    name: pgadmin-log
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
     readOnly: true
@@ -329,12 +357,13 @@ initContainers:
   - -ceu
   - --
   - |-
-    mkdir -p /etc/pgadmin/conf.d
+    mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
+    mkdir -p '/var/lib/pgadmin/logs/receiver' && chmod 0775 '/var/lib/pgadmin/logs/receiver' '/var/lib/pgadmin/logs'
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
   - |
-    import glob, json, re, os
+    import glob, json, re, os, logging
     DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
         _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
@@ -346,12 +375,44 @@ initContainers:
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri') as _f:
             CONFIG_DATABASE_URI = _f.read()
+
+    DATA_DIR = '/var/lib/pgadmin'
+    LOG_FILE = '/var/lib/pgadmin/logs/pgadmin.log'
+    LOG_ROTATION_AGE = 24 * 60 # minutes
+    LOG_ROTATION_SIZE = 5 # MiB
+    LOG_ROTATION_MAX_LOG_FILES = 1
+
+    JSON_LOGGER = True
+    CONSOLE_LOG_LEVEL = logging.WARNING
+    FILE_LOG_LEVEL = logging.INFO
+    FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
   - |
-    import json, re
+    import json, re, collections, copy, gunicorn, gunicorn.glogging
     with open('/etc/pgadmin/conf.d/~postgres-operator/gunicorn-config.json') as _f:
         _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+
+    gunicorn.SERVER_SOFTWARE = 'Python'
+    logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
+    logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
+    logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
+    logconfig_dict['handlers']['file'] = {
+      'class': 'logging.handlers.RotatingFileHandler',
+      'filename': '/var/lib/pgadmin/logs/gunicorn.log',
+      'backupCount': 1, 'maxBytes': 2 << 20, # MiB
+      'formatter': 'json',
+    }
+    logconfig_dict['formatters']['json'] = {
+      'class': 'jsonformatter.JsonFormatter',
+      'separators': (',', ':'),
+      'format': collections.OrderedDict([
+        ('time', 'created'),
+        ('name', 'name'),
+        ('level', 'levelname'),
+        ('message', 'message'),
+      ])
+    }
   image: new-image
   imagePullPolicy: Always
   name: pgadmin-startup
@@ -371,6 +432,8 @@ initContainers:
   volumeMounts:
   - mountPath: /etc/pgadmin
     name: pgadmin-config-system
+  - mountPath: /var/lib/pgadmin
+    name: pgadmin-data
 volumes:
 - name: pgadmin-config
   projected:
@@ -386,9 +449,6 @@ volumes:
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
-- emptyDir:
-    medium: Memory
-  name: pgadmin-log
 - emptyDir:
     medium: Memory
     sizeLimit: 32Ki

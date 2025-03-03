@@ -19,7 +19,7 @@ type StandalonePGAdminConfiguration struct {
 	// A Secret containing the value for the CONFIG_DATABASE_URI setting.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/external_database.html
 	// +optional
-	ConfigDatabaseURI *corev1.SecretKeySelector `json:"configDatabaseURI,omitempty"`
+	ConfigDatabaseURI *OptionalSecretKeyRef `json:"configDatabaseURI,omitempty"`
 
 	// Settings for the gunicorn server.
 	// More info: https://docs.gunicorn.org/en/latest/settings.html
@@ -32,7 +32,7 @@ type StandalonePGAdminConfiguration struct {
 	// A Secret containing the value for the LDAP_BIND_PASSWORD setting.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/ldap.html
 	// +optional
-	LDAPBindPassword *corev1.SecretKeySelector `json:"ldapBindPassword,omitempty"`
+	LDAPBindPassword *OptionalSecretKeyRef `json:"ldapBindPassword,omitempty"`
 
 	// Settings for the pgAdmin server process. Keys should be uppercase and
 	// values must be constants.
@@ -83,6 +83,11 @@ type PGAdminSpec struct {
 	// https://k8s.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 	// +optional
 	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
+	// Configuration for the OpenTelemetry collector container used to collect
+	// logs and metrics.
+	// +optional
+	Instrumentation *InstrumentationSpec `json:"instrumentation,omitempty"`
 
 	// Resource requirements for the PGAdmin container.
 	// +optional
@@ -214,6 +219,12 @@ func (p *PGAdmin) Default() {
 	if len(p.Kind) == 0 {
 		p.Kind = "PGAdmin"
 	}
+}
+
+func NewPGAdmin() *PGAdmin {
+	p := &PGAdmin{}
+	p.Default()
+	return p
 }
 
 //+kubebuilder:object:root=true

@@ -16,6 +16,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -230,7 +231,7 @@ initContainers:
   - -ceu
   - --
   - |-
-    declare -r expected_major_version="$1" pgwal_directory="$2" pgbrLog_directory="$3" patroniLog_directory="$4"
+    declare -r expected_major_version="$1" pgwal_directory="$2"
     permissions() { while [[ -n "$1" ]]; do set "${1%/*}" "$@"; done; shift; stat -Lc '%A %4u %4g %n' "$@"; }
     halt() { local rc=$?; >&2 echo "$@"; exit "${rc/#0/1}"; }
     results() { printf '::postgres-operator: %s::%s\n' "$@"; }
@@ -267,12 +268,12 @@ initContainers:
     recreate "${postgres_data_directory}" '0700'
     else (halt Permissions!); fi ||
     halt "$(permissions "${postgres_data_directory}" ||:)"
-    results 'pgBackRest log directory' "${pgbrLog_directory}"
-    install --directory --mode=0775 "${pgbrLog_directory}" ||
-    halt "$(permissions "${pgbrLog_directory}" ||:)"
-    results 'Patroni log directory' "${patroniLog_directory}"
-    install --directory --mode=0775 "${patroniLog_directory}" ||
-    halt "$(permissions "${patroniLog_directory}" ||:)"
+    (mkdir -p '/pgdata/pgbackrest/log' && chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest') ||
+    halt "$(permissions /pgdata/pgbackrest/log ||:)"
+    (mkdir -p '/pgdata/patroni/log' && chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni') ||
+    halt "$(permissions /pgdata/patroni/log ||:)"
+    (mkdir -p '/pgdata/logs/postgres' && chmod 0775 '/pgdata/logs/postgres' '/pgdata/logs') ||
+    halt "$(permissions /pgdata/logs/postgres ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
 
 
@@ -288,8 +289,6 @@ initContainers:
   - startup
   - "11"
   - /pgdata/pg11_wal
-  - /pgdata/pgbackrest/log
-  - /pgdata/patroni/log
   env:
   - name: PGDATA
     value: /pgdata/pg11
@@ -477,20 +476,14 @@ volumes:
 
 		// Startup moves WAL files to data volume.
 		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
-			[]string{"startup", "11", "/pgdata/pg11_wal", "/pgdata/pgbackrest/log", "/pgdata/patroni/log"})
+			[]string{"startup", "11", "/pgdata/pg11_wal"})
 	})
 
 	t.Run("WithAdditionalConfigFiles", func(t *testing.T) {
 		clusterWithConfig := cluster.DeepCopy()
-		clusterWithConfig.Spec.Config.Files = []corev1.VolumeProjection{
-			{
-				Secret: &corev1.SecretProjection{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: "keytab",
-					},
-				},
-			},
-		}
+		require.UnmarshalInto(t, &clusterWithConfig.Spec.Config, `{
+			files: [{ secret: { name: keytab } }],
+		}`)
 
 		pod := new(corev1.PodSpec)
 		InstancePod(ctx, clusterWithConfig, instance,
@@ -707,7 +700,7 @@ volumes:
 
 		// Startup moves WAL files to WAL volume.
 		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
-			[]string{"startup", "11", "/pgwal/pg11_wal", "/pgdata/pgbackrest/log", "/pgdata/patroni/log"})
+			[]string{"startup", "11", "/pgwal/pg11_wal"})
 	})
 }
 

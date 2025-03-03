@@ -18,6 +18,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -40,10 +42,11 @@ func (r *Reconciler) reconcilePGBouncer(
 
 	service, err := r.reconcilePGBouncerService(ctx, cluster)
 	if err == nil {
-		configmap, err = r.reconcilePGBouncerConfigMap(ctx, cluster)
+		secret, err = r.reconcilePGBouncerSecret(ctx, cluster, root, service)
 	}
 	if err == nil {
-		secret, err = r.reconcilePGBouncerSecret(ctx, cluster, root, service)
+		config := collector.NewConfigForPgBouncerPod(ctx, cluster, pgbouncer.PostgresqlUser)
+		configmap, err = r.reconcilePGBouncerConfigMap(ctx, cluster, config)
 	}
 	if err == nil {
 		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret)
@@ -63,6 +66,7 @@ func (r *Reconciler) reconcilePGBouncer(
 // reconcilePGBouncerConfigMap writes the ConfigMap for a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncerConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	otelConfig *collector.Config,
 ) (*corev1.ConfigMap, error) {
 	configmap := &corev1.ConfigMap{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	configmap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -92,7 +96,22 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 		})
 
 	if err == nil {
-		pgbouncer.ConfigMap(cluster, configmap)
+		pgbouncer.ConfigMap(ctx, cluster, configmap)
+	}
+	// If OTel logging or metrics is enabled, add collector config
+	if otelConfig != nil &&
+		(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
+			feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		err = collector.AddToConfigMap(ctx, otelConfig, configmap)
+	}
+	// If OTel logging is enabled, add logrotate config
+	if err == nil && otelConfig != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+		logrotateConfig := collector.LogrotateConfig{
+			LogFiles:         []string{naming.PGBouncerFullLogPath},
+			PostrotateScript: collector.PGBouncerPostRotateScript,
+		}
+		collector.AddLogrotateConfigs(ctx, cluster.Spec.Instrumentation, configmap,
+			[]collector.LogrotateConfig{logrotateConfig})
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, configmap))
@@ -455,6 +474,9 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	if err == nil {
 		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)
 	}
+
+	// Add tmp directory and volume for log files
+	addTMPEmptyDir(&deploy.Spec.Template)
 
 	return deploy, true, err
 }

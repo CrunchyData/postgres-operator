@@ -1,6 +1,7 @@
 module github.com/crunchydata/postgres-operator
 
-go 1.22.7
+// If this is changing when you don't want it to, see hack/go-get.sh
+go 1.23.0
 
 require (
 	github.com/go-logr/logr v1.4.2
@@ -20,14 +21,16 @@ require (
 	go.opentelemetry.io/otel v1.32.0
 	go.opentelemetry.io/otel/sdk v1.32.0
 	go.opentelemetry.io/otel/trace v1.32.0
-	golang.org/x/crypto v0.31.0
+	golang.org/x/crypto v0.35.0
 	golang.org/x/tools v0.28.0
 	gotest.tools/v3 v3.5.1
 	k8s.io/api v0.31.0
 	k8s.io/apimachinery v0.31.0
 	k8s.io/client-go v0.31.0
 	k8s.io/component-base v0.31.0
+	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a
 	sigs.k8s.io/controller-runtime v0.19.3
+	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -102,11 +105,11 @@ require (
 	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/oauth2 v0.27.0 // indirect
+	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241104194629-dd2ea8efbc28 // indirect
@@ -120,9 +123,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.31.0 // indirect
 	k8s.io/apiserver v0.31.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a // indirect
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8 // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.30.3 // indirect
-	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )

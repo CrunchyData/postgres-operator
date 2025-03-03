@@ -27,13 +27,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/pgaudit"
-	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -233,16 +232,12 @@ func (r *Reconciler) Reconcile(
 	}
 
 	pgHBAs := postgres.NewHBAs()
-	pgmonitor.PostgreSQLHBAs(cluster, &pgHBAs)
+	pgmonitor.PostgreSQLHBAs(ctx, cluster, &pgHBAs)
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
-	pgParameters := postgres.NewParameters()
-	pgaudit.PostgreSQLParameters(&pgParameters)
-	pgbackrest.PostgreSQL(cluster, &pgParameters, backupsSpecFound)
-	pgmonitor.PostgreSQLParameters(cluster, &pgParameters)
+	pgParameters := r.generatePostgresParameters(ctx, cluster, backupsSpecFound)
 
-	// Set huge_pages = try if a hugepages resource limit > 0, otherwise set "off"
-	postgres.SetHugePages(cluster, &pgParameters)
+	otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
 
 	if err == nil {
 		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
@@ -349,7 +344,7 @@ func (r *Reconciler) Reconcile(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret, rootCA,
 			clusterPodService, instanceServiceAccount, instances, patroniLeaderService,
 			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound,
+			backupsSpecFound, otelConfig,
 		)
 	}
 
@@ -380,7 +375,7 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcilePGBouncer(ctx, cluster, instances, primaryCertificate, rootCA)
 	}
 	if err == nil {
-		err = r.reconcilePGMonitor(ctx, cluster, instances, monitoringSecret)
+		err = r.reconcilePGMonitorExporter(ctx, cluster, instances, monitoringSecret)
 	}
 	if err == nil {
 		err = r.reconcileDatabaseInitSQL(ctx, cluster, instances)

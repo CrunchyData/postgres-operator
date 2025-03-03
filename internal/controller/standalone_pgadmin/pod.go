@@ -7,6 +7,7 @@ package standalone_pgadmin
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,6 +18,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -28,8 +30,17 @@ const (
 	ldapFilePath           = "~postgres-operator/ldap-bind-password"
 	gunicornConfigFilePath = "~postgres-operator/" + gunicornConfigKey
 
-	// Nothing should be mounted to this location except the script our initContainer writes
+	// scriptMountPath is where to mount a temporary directory that is only
+	// writable during Pod initialization.
+	//
+	// NOTE: No ConfigMap nor Secret should ever be mounted here because they
+	// could be used to inject code through "config_system.py".
 	scriptMountPath = "/etc/pgadmin"
+
+	dataMountPath               = "/var/lib/pgadmin"
+	LogDirectoryAbsolutePath    = dataMountPath + "/logs"
+	GunicornLogFileAbsolutePath = LogDirectoryAbsolutePath + "/gunicorn.log"
+	LogFileAbsolutePath         = LogDirectoryAbsolutePath + "/pgadmin.log"
 )
 
 // pod populates a PodSpec with the container and volumes needed to run pgAdmin.
@@ -39,19 +50,10 @@ func pod(
 	outPod *corev1.PodSpec,
 	pgAdminVolume *corev1.PersistentVolumeClaim,
 ) {
-	const (
-		// config and data volume names
-		configVolumeName = "pgadmin-config"
-		dataVolumeName   = "pgadmin-data"
-		logVolumeName    = "pgadmin-log"
-		scriptVolumeName = "pgadmin-config-system"
-		tempVolumeName   = "tmp"
-	)
-
 	// create the projected volume of config maps for use in
 	// 1. dynamic server discovery
 	// 2. adding the config variables during pgAdmin startup
-	configVolume := corev1.Volume{Name: configVolumeName}
+	configVolume := corev1.Volume{Name: "pgadmin-config"}
 	configVolume.VolumeSource = corev1.VolumeSource{
 		Projected: &corev1.ProjectedVolumeSource{
 			Sources: podConfigFiles(inConfigMap, *inPGAdmin),
@@ -59,7 +61,7 @@ func pod(
 	}
 
 	// create the data volume for the persistent database
-	dataVolume := corev1.Volume{Name: dataVolumeName}
+	dataVolume := corev1.Volume{Name: "pgadmin-data"}
 	dataVolume.VolumeSource = corev1.VolumeSource{
 		PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 			ClaimName: pgAdminVolume.Name,
@@ -67,17 +69,9 @@ func pod(
 		},
 	}
 
-	// create the temp volume for logs
-	logVolume := corev1.Volume{Name: logVolumeName}
-	logVolume.VolumeSource = corev1.VolumeSource{
-		EmptyDir: &corev1.EmptyDirVolumeSource{
-			Medium: corev1.StorageMediumMemory,
-		},
-	}
-
 	// Volume used to write a custom config_system.py file in the initContainer
 	// which then loads the configs found in the `configVolume`
-	scriptVolume := corev1.Volume{Name: scriptVolumeName}
+	scriptVolume := corev1.Volume{Name: "pgadmin-config-system"}
 	scriptVolume.VolumeSource = corev1.VolumeSource{
 		EmptyDir: &corev1.EmptyDirVolumeSource{
 			Medium: corev1.StorageMediumMemory,
@@ -92,7 +86,7 @@ func pod(
 
 	// create a temp volume for restart pid/other/debugging use
 	// TODO: discuss tmp vol vs. persistent vol
-	tmpVolume := corev1.Volume{Name: tempVolumeName}
+	tmpVolume := corev1.Volume{Name: "tmp"}
 	tmpVolume.VolumeSource = corev1.VolumeSource{
 		EmptyDir: &corev1.EmptyDirVolumeSource{
 			Medium: corev1.StorageMediumMemory,
@@ -133,25 +127,21 @@ func pod(
 		},
 		VolumeMounts: []corev1.VolumeMount{
 			{
-				Name:      configVolumeName,
+				Name:      configVolume.Name,
 				MountPath: configMountPath,
 				ReadOnly:  true,
 			},
 			{
-				Name:      dataVolumeName,
-				MountPath: "/var/lib/pgadmin",
+				Name:      dataVolume.Name,
+				MountPath: dataMountPath,
 			},
 			{
-				Name:      logVolumeName,
-				MountPath: "/var/log/pgadmin",
-			},
-			{
-				Name:      scriptVolumeName,
+				Name:      scriptVolume.Name,
 				MountPath: scriptMountPath,
 				ReadOnly:  true,
 			},
 			{
-				Name:      tempVolumeName,
+				Name:      tmpVolume.Name,
 				MountPath: "/tmp",
 			},
 		},
@@ -186,9 +176,13 @@ func pod(
 		VolumeMounts: []corev1.VolumeMount{
 			// Volume to write a custom `config_system.py` file to.
 			{
-				Name:      scriptVolumeName,
+				Name:      scriptVolume.Name,
 				MountPath: scriptMountPath,
 				ReadOnly:  false,
+			},
+			{
+				Name:      dataVolume.Name,
+				MountPath: dataMountPath,
 			},
 		},
 	}
@@ -197,7 +191,6 @@ func pod(
 	outPod.Volumes = []corev1.Volume{
 		configVolume,
 		dataVolume,
-		logVolume,
 		scriptVolume,
 		tmpVolume,
 	}
@@ -236,16 +229,9 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 
 	if pgadmin.Spec.Config.ConfigDatabaseURI != nil {
 		config = append(config, corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: pgadmin.Spec.Config.ConfigDatabaseURI.LocalObjectReference,
-				Optional:             pgadmin.Spec.Config.ConfigDatabaseURI.Optional,
-				Items: []corev1.KeyToPath{
-					{
-						Key:  pgadmin.Spec.Config.ConfigDatabaseURI.Key,
-						Path: configDatabaseURIPath,
-					},
-				},
-			},
+			Secret: initialize.Pointer(
+				pgadmin.Spec.Config.ConfigDatabaseURI.AsProjection(configDatabaseURIPath),
+			),
 		})
 	}
 
@@ -259,16 +245,9 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 	// - https://www.pgadmin.org/docs/pgadmin4/development/enabling_ldap_authentication.html
 	if pgadmin.Spec.Config.LDAPBindPassword != nil {
 		config = append(config, corev1.VolumeProjection{
-			Secret: &corev1.SecretProjection{
-				LocalObjectReference: pgadmin.Spec.Config.LDAPBindPassword.LocalObjectReference,
-				Optional:             pgadmin.Spec.Config.LDAPBindPassword.Optional,
-				Items: []corev1.KeyToPath{
-					{
-						Key:  pgadmin.Spec.Config.LDAPBindPassword.Key,
-						Path: ldapFilePath,
-					},
-				},
-			},
+			Secret: initialize.Pointer(
+				pgadmin.Spec.Config.LDAPBindPassword.AsProjection(ldapFilePath),
+			),
 		})
 	}
 
@@ -396,8 +375,10 @@ func startupCommand() []string {
 		// configDatabaseURIPath is the path for mounting the database URI connection string
 		configDatabaseURIPathAbsolutePath = configMountPath + "/" + configDatabaseURIPath
 
+		// The constants set in configSystem will not be overridden through
+		// spec.config.settings.
 		configSystem = `
-import glob, json, re, os
+import glob, json, re, os, logging
 DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
     _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
@@ -409,32 +390,74 @@ if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
 if os.path.isfile('` + configDatabaseURIPathAbsolutePath + `'):
     with open('` + configDatabaseURIPathAbsolutePath + `') as _f:
         CONFIG_DATABASE_URI = _f.read()
+
+DATA_DIR = '` + dataMountPath + `'
+LOG_FILE = '` + LogFileAbsolutePath + `'
+LOG_ROTATION_AGE = 24 * 60 # minutes
+LOG_ROTATION_SIZE = 5 # MiB
+LOG_ROTATION_MAX_LOG_FILES = 1
+
+JSON_LOGGER = True
+CONSOLE_LOG_LEVEL = logging.WARNING
+FILE_LOG_LEVEL = logging.INFO
+FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
 `
-		// gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
+		// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
 		// after all other config files.
 		// - https://docs.gunicorn.org/en/latest/configure.html#configuration-file
 		//
 		// This command writes a script in `/etc/pgadmin/gunicorn_config.py` that reads
 		// from the `gunicorn-config.json` file and sets those variables globally.
-		// That way those values are available as settings when gunicorn starts.
+		// That way those values are available as settings when Gunicorn starts.
 		//
-		// Note: All gunicorn settings are lowercase with underscores, so ignore
+		// Note: All Gunicorn settings are lowercase with underscores, so ignore
 		// any keys/names that are not.
+		//
+		// Gunicorn uses the Python logging package, which sets the following attributes:
+		// https://docs.python.org/3/library/logging.html#logrecord-attributes.
+		// JsonFormatter is used to format the log: https://pypi.org/project/jsonformatter/
 		gunicornConfig = `
-import json, re
+import json, re, collections, copy, gunicorn, gunicorn.glogging
 with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
     _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
     if type(_data) is dict:
         globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+
+gunicorn.SERVER_SOFTWARE = 'Python'
+logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
+logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
+logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
+logconfig_dict['handlers']['file'] = {
+  'class': 'logging.handlers.RotatingFileHandler',
+  'filename': '` + GunicornLogFileAbsolutePath + `',
+  'backupCount': 1, 'maxBytes': 2 << 20, # MiB
+  'formatter': 'json',
+}
+logconfig_dict['formatters']['json'] = {
+  'class': 'jsonformatter.JsonFormatter',
+  'separators': (',', ':'),
+  'format': collections.OrderedDict([
+    ('time', 'created'),
+    ('name', 'name'),
+    ('level', 'levelname'),
+    ('message', 'message'),
+  ])
+}
 `
 	)
 
 	args := []string{strings.TrimLeft(configSystem, "\n"), strings.TrimLeft(gunicornConfig, "\n")}
 
 	script := strings.Join([]string{
-		// Use the initContainer to create this path to avoid the error noted here:
+		// Create the config directory so Kubernetes can mount it later.
 		// - https://issue.k8s.io/121294
-		`mkdir -p ` + configMountPath,
+		shell.MakeDirectories(0o775, scriptMountPath, configMountPath),
+
+		// Create the logs directory with g+rwx so the OTel Collector can
+		// write to it as well.
+		// TODO(log-rotation): Move the last segment into the Collector startup.
+		shell.MakeDirectories(0o775, dataMountPath, path.Join(LogDirectoryAbsolutePath, "receiver")),
+
 		// Write the system and server configurations.
 		`echo "$1" > ` + scriptMountPath + `/config_system.py`,
 		`echo "$2" > ` + scriptMountPath + `/gunicorn_config.py`,

@@ -25,6 +25,9 @@ type PostgresClusterSpec struct {
 	// +optional
 	Backups Backups `json:"backups,omitempty"`
 
+	// +optional
+	Config *PostgresConfig `json:"config,omitempty"`
+
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the
 	// Certificate Authority certificate with the data keys set to tls.crt,
@@ -94,6 +97,11 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:MinItems=1
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=2
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
+
+	// Configuration for the OpenTelemetry collector container used to collect
+	// logs and metrics.
+	// +optional
+	Instrumentation *InstrumentationSpec `json:"instrumentation,omitempty"`
 
 	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift
 	// environment. If the field is unset, the operator will automatically
@@ -183,8 +191,6 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:MaxItems=64
 	// +optional
 	Users []PostgresUserSpec `json:"users,omitempty"`
-
-	Config PostgresAdditionalConfig `json:"config,omitempty"`
 }
 
 // DataSource defines data sources for a new PostgresCluster.
@@ -410,10 +416,11 @@ type PostgresClusterStatus struct {
 
 // PostgresClusterStatus condition types.
 const (
-	PersistentVolumeResizing   = "PersistentVolumeResizing"
-	PostgresClusterProgressing = "Progressing"
-	ProxyAvailable             = "ProxyAvailable"
-	Registered                 = "Registered"
+	PersistentVolumeResizing    = "PersistentVolumeResizing"
+	PersistentVolumeResizeError = "PersistentVolumeResizeError"
+	PostgresClusterProgressing  = "Progressing"
+	ProxyAvailable              = "ProxyAvailable"
+	Registered                  = "Registered"
 )
 
 type PostgresInstanceSetSpec struct {
@@ -674,10 +681,6 @@ type PostgresUserInterfaceStatus struct {
 
 	// The state of the pgAdmin user interface.
 	PGAdmin PGAdminPodStatus `json:"pgAdmin,omitempty"`
-}
-
-type PostgresAdditionalConfig struct {
-	Files []corev1.VolumeProjection `json:"files,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -22,20 +22,26 @@ func defaultFromEnv(value, key string) string {
 // FetchKeyCommand returns the fetch_key_cmd value stored in the encryption_key_command
 // variable used to enable TDE.
 func FetchKeyCommand(spec *v1beta1.PostgresClusterSpec) string {
+	if config := spec.Config; config != nil {
+		if parameters := config.Parameters; parameters != nil {
+			if v, ok := parameters["encryption_key_command"]; ok {
+				return v.String()
+			}
+		}
+	}
+
 	if spec.Patroni != nil {
-		if spec.Patroni.DynamicConfiguration != nil {
-			configuration := spec.Patroni.DynamicConfiguration
-			if configuration != nil {
-				if postgresql, ok := configuration["postgresql"].(map[string]any); ok {
-					if parameters, ok := postgresql["parameters"].(map[string]any); ok {
-						if parameters["encryption_key_command"] != nil {
-							return fmt.Sprintf("%s", parameters["encryption_key_command"])
-						}
+		if configuration := spec.Patroni.DynamicConfiguration; configuration != nil {
+			if postgresql, ok := configuration["postgresql"].(map[string]any); ok {
+				if parameters, ok := postgresql["parameters"].(map[string]any); ok {
+					if parameters["encryption_key_command"] != nil {
+						return fmt.Sprintf("%s", parameters["encryption_key_command"])
 					}
 				}
 			}
 		}
 	}
+
 	return ""
 }
 
@@ -99,6 +105,17 @@ func PGExporterContainerImage(cluster *v1beta1.PostgresCluster) string {
 	return defaultFromEnv(image, "RELATED_IMAGE_PGEXPORTER")
 }
 
+// CollectorContainerImage returns the container image to use for the
+// collector container.
+func CollectorContainerImage(instrumentation *v1beta1.InstrumentationSpec) string {
+	var image string
+	if instrumentation != nil {
+		image = instrumentation.Image
+	}
+
+	return defaultFromEnv(image, "RELATED_IMAGE_COLLECTOR")
+}
+
 // PostgresContainerImage returns the container image to use for PostgreSQL.
 func PostgresContainerImage(cluster *v1beta1.PostgresCluster) string {
 	image := cluster.Spec.Image
@@ -142,6 +159,10 @@ func VerifyImageValues(cluster *v1beta1.PostgresCluster) error {
 		cluster.Spec.Monitoring.PGMonitor != nil &&
 		cluster.Spec.Monitoring.PGMonitor.Exporter != nil {
 		images = append(images, "crunchy-postgres-exporter")
+	}
+	if CollectorContainerImage(cluster.Spec.Instrumentation) == "" &&
+		cluster.Spec.Instrumentation != nil {
+		images = append(images, "crunchy-collector")
 	}
 	if PostgresContainerImage(cluster) == "" {
 		if cluster.Spec.PostGISVersion != "" {

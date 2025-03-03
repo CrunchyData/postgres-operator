@@ -5,9 +5,110 @@
 package v1beta1
 
 import (
+	"encoding/json"
+
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/kube-openapi/pkg/validation/strfmt"
 )
+
+// ---
+// https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsConfigMapKey
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=253
+// +kubebuilder:validation:Pattern=`^[-._a-zA-Z0-9]+$`
+// +kubebuilder:validation:XValidation:rule=`self != "." && !self.startsWith("..")`,message=`cannot be "." or start with ".."`
+type ConfigDataKey = string
+
+// ---
+// https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
+// https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsDNS1123Subdomain
+// https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Format
+//
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:MaxLength=253
+// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+type DNS1123Subdomain = string
+
+// ---
+// Duration represents a string accepted by the Kubernetes API in the "duration"
+// [format]. This format extends the "duration" [defined by OpenAPI] by allowing
+// some whitespace and more units:
+//
+//   - nanoseconds: ns, nano, nanos
+//   - microseconds: us, µs, micro, micros
+//   - milliseconds: ms, milli, millis
+//   - seconds: s, sec, secs
+//   - minutes: m, min, mins
+//   - hours: h, hr, hour, hours
+//   - days: d, day, days
+//   - weeks: w, wk, week, weeks
+//
+// An empty amount is represented as "0" with no unit.
+// One day is always 24 hours and one week is always 7 days (168 hours).
+//
+// +kubebuilder:validation:Format=duration
+// +kubebuilder:validation:MinLength=1
+// +kubebuilder:validation:Type=string
+//
+// During CEL validation, a value of this type is a "google.protobuf.Duration".
+// It is safe to pass the value to `duration()` but not necessary.
+//
+// - https://docs.k8s.io/reference/using-api/cel/#type-system-integration
+// - https://github.com/google/cel-spec/blob/-/doc/langdef.md#types-and-conversions
+//
+// NOTE: When using this type, reject fractional numbers using a Pattern to
+// avoid an upstream bug: https://github.com/kubernetes/kube-openapi/issues/523
+//
+// [defined by OpenAPI]: https://spec.openapis.org/registry/format/duration.html
+// [format]: https://spec.openapis.org/oas/latest.html#data-type-format
+type Duration struct {
+	parsed metav1.Duration
+	string
+}
+
+// NewDuration creates a duration from the Kubernetes "duration" format in s.
+func NewDuration(s string) (*Duration, error) {
+	td, err := strfmt.ParseDuration(s)
+
+	// The unkeyed fields here helpfully raise warnings from the compiler
+	// if [metav1.Duration] changes shape in the future.
+	type unkeyed metav1.Duration
+	umd := unkeyed{td}
+
+	return &Duration{metav1.Duration(umd), s}, err
+}
+
+// AsDuration returns d as a [metav1.Duration].
+func (d *Duration) AsDuration() metav1.Duration {
+	return d.parsed
+}
+
+// MarshalJSON implements [encoding/json.Marshaler].
+func (d Duration) MarshalJSON() ([]byte, error) {
+	if d.parsed.Duration == 0 {
+		return json.Marshal("0")
+	}
+
+	return json.Marshal(d.string)
+}
+
+// UnmarshalJSON implements [encoding/json.Unmarshaler].
+func (d *Duration) UnmarshalJSON(data []byte) error {
+	var next *Duration
+	var str string
+
+	err := json.Unmarshal(data, &str)
+	if err == nil {
+		next, err = NewDuration(str)
+	}
+	if err == nil {
+		*d = *next
+	}
+	return err
+}
 
 // SchemalessObject is a map compatible with JSON object.
 //
@@ -64,7 +165,7 @@ type ServiceSpec struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
-	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicyType `json:"internalTrafficPolicy,omitempty"`
+	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicy `json:"internalTrafficPolicy,omitempty"`
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
@@ -75,7 +176,7 @@ type ServiceSpec struct {
 	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
-	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicyType `json:"externalTrafficPolicy,omitempty"`
+	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicy `json:"externalTrafficPolicy,omitempty"`
 }
 
 // Sidecar defines the configuration of a sidecar container
