@@ -64,7 +64,38 @@ func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 
 	// TODO(tjmoore4): Populate configuration details.
 	initialize.Map(&configmap.Data)
-	configSettings, err := generateConfig(ctx, pgadmin)
+	var (
+		logRetention             bool
+		maxBackupRetentionNumber = 1
+		// One day in minutes for pgadmin rotation
+		pgAdminRetentionPeriod = 24 * 60
+		// Daily rotation for gunicorn rotation
+		gunicornRetentionPeriod = "D"
+	)
+	// If OTel logs feature gate is enabled, we want to change the pgAdmin/gunicorn logging
+	if feature.Enabled(ctx, feature.OpenTelemetryLogs) && pgadmin.Spec.Instrumentation != nil {
+		logRetention = true
+
+		// If the user has set a retention period, we will use those values for log rotation,
+		// which is otherwise managed by python.
+		if pgadmin.Spec.Instrumentation.Logs != nil &&
+			pgadmin.Spec.Instrumentation.Logs.RetentionPeriod != nil {
+
+			retentionNumber, period := collector.ParseDurationForLogrotate(pgadmin.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration())
+			// `LOG_ROTATION_MAX_LOG_FILES`` in pgadmin refers to the already rotated logs.
+			// `backupCount` for gunicorn is similar.
+			// Our retention unit is for total number of log files, so subtract 1 to account
+			// for the currently-used log file.
+			maxBackupRetentionNumber = retentionNumber - 1
+			if period == "hourly" {
+				// If the period is hourly, set the pgadmin
+				// and gunicorn retention periods to hourly.
+				pgAdminRetentionPeriod = 60
+				gunicornRetentionPeriod = "H"
+			}
+		}
+	}
+	configSettings, err := generateConfig(pgadmin, logRetention, maxBackupRetentionNumber, pgAdminRetentionPeriod)
 	if err == nil {
 		configmap.Data[settingsConfigMapKey] = configSettings
 	}
@@ -74,7 +105,8 @@ func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 		configmap.Data[settingsClusterMapKey] = clusterSettings
 	}
 
-	gunicornSettings, gunicornLoggingSettings, err := generateGunicornConfig(ctx, pgadmin)
+	gunicornSettings, gunicornLoggingSettings, err := generateGunicornConfig(pgadmin,
+		logRetention, maxBackupRetentionNumber, gunicornRetentionPeriod)
 	if err == nil {
 		configmap.Data[gunicornConfigKey] = gunicornSettings
 		configmap.Data[gunicornLoggingConfigKey] = gunicornLoggingSettings
@@ -84,7 +116,9 @@ func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 }
 
 // generateConfigs generates the config settings for the pgAdmin and gunicorn
-func generateConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (string, error) {
+func generateConfig(pgadmin *v1beta1.PGAdmin,
+	logRetention bool, maxBackupRetentionNumber, pgAdminRetentionPeriod int) (
+	string, error) {
 	settings := map[string]any{
 		// Bind to all IPv4 addresses by default. "0.0.0.0" here represents INADDR_ANY.
 		// - https://flask.palletsprojects.com/en/2.2.x/api/#flask.Flask.run
@@ -107,33 +141,7 @@ func generateConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (string, erro
 	settings["DATA_DIR"] = dataMountPath
 	settings["LOG_FILE"] = LogFileAbsolutePath
 
-	// If OTel logs feature gate is enabled, we want to change the pgAdmin/gunicorn logging
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) && pgadmin.Spec.Instrumentation != nil {
-
-		var (
-			maxBackupRetentionNumber = 1
-			// One day in minutes for pgadmin rotation
-			pgAdminRetentionPeriod = 24 * 60
-		)
-
-		// If the user has set a retention period, we will use those values for log rotation,
-		// which is otherwise managed by python.
-		if pgadmin.Spec.Instrumentation.Logs != nil &&
-			pgadmin.Spec.Instrumentation.Logs.RetentionPeriod != nil {
-
-			retentionNumber, period := collector.ParseDurationForLogrotate(pgadmin.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration())
-			// `LOG_ROTATION_MAX_LOG_FILES`` in pgadmin refers to the already rotated logs.
-			// `backupCount` for gunicorn is similar.
-			// Our retention unit is for total number of log files, so subtract 1 to account
-			// for the currently-used log file.
-			maxBackupRetentionNumber = retentionNumber - 1
-			if period == "hourly" {
-				// If the period is hourly, set the pgadmin
-				// and gunicorn retention periods to hourly.
-				pgAdminRetentionPeriod = 60
-			}
-		}
-
+	if logRetention {
 		settings["LOG_ROTATION_AGE"] = pgAdminRetentionPeriod
 		settings["LOG_ROTATION_MAX_LOG_FILES"] = maxBackupRetentionNumber
 		settings["JSON_LOGGER"] = true
@@ -229,9 +237,9 @@ func generateClusterConfig(
 
 // generateGunicornConfig generates the config settings for the gunicorn server
 // - https://docs.gunicorn.org/en/latest/settings.html
-func generateGunicornConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (
-	string, string, error,
-) {
+func generateGunicornConfig(pgadmin *v1beta1.PGAdmin,
+	logRetention bool, maxBackupRetentionNumber int, gunicornRetentionPeriod string,
+) (string, string, error) {
 	settings := map[string]any{
 		// Bind to all IPv4 addresses and set 25 threads by default.
 		// - https://docs.gunicorn.org/en/latest/settings.html#bind
@@ -266,33 +274,8 @@ func generateGunicornConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (
 	// Gunicorn logging dict settings
 	logSettings := map[string]any{}
 
-	// If OTel logs feature gate is enabled, we want to change the pgAdmin/gunicorn logging
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) &&
-		pgadmin.Spec.Instrumentation != nil {
-
-		var (
-			maxBackupRetentionNumber = "1"
-			// Daily rotation for gunicorn rotation
-			gunicornRetentionPeriod = "D"
-		)
-
-		// If the user has set a retention period, we will use those values for log rotation,
-		// which is otherwise managed by python.
-		if pgadmin.Spec.Instrumentation.Logs != nil &&
-			pgadmin.Spec.Instrumentation.Logs.RetentionPeriod != nil {
-
-			retentionNumber, period := collector.ParseDurationForLogrotate(pgadmin.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration())
-			// `LOG_ROTATION_MAX_LOG_FILES`` in pgadmin refers to the already rotated logs.
-			// `backupCount` for gunicorn is similar.
-			// Our retention unit is for total number of log files, so subtract 1 to account
-			// for the currently-used log file.
-			maxBackupRetentionNumber = strconv.Itoa(retentionNumber - 1)
-			if period == "hourly" {
-				// If the period is hourly, set the pgadmin
-				// and gunicorn retention periods to hourly.
-				gunicornRetentionPeriod = "H"
-			}
-		}
+	// If OTel logs feature gate is enabled, we want to change the gunicorn logging
+	if logRetention {
 
 		// Gunicorn uses the Python logging package, which sets the following attributes:
 		// https://docs.python.org/3/library/logging.html#logrecord-attributes.

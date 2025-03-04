@@ -11,7 +11,6 @@ import (
 
 	"gotest.tools/v3/assert"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -19,11 +18,10 @@ import (
 
 func TestGenerateConfig(t *testing.T) {
 	require.ParallelCapacity(t, 0)
-	ctx := context.Background()
 
 	t.Run("Default", func(t *testing.T) {
 		pgadmin := new(v1beta1.PGAdmin)
-		result, err := generateConfig(ctx, pgadmin)
+		result, err := generateConfig(pgadmin, false, 0, 0)
 
 		assert.NilError(t, err)
 		assert.Equal(t, result, `{
@@ -43,7 +41,7 @@ func TestGenerateConfig(t *testing.T) {
 			"SERVER_MODE":           false,
 			"UPGRADE_CHECK_ENABLED": true,
 		}
-		result, err := generateConfig(ctx, pgadmin)
+		result, err := generateConfig(pgadmin, false, 0, 0)
 
 		assert.NilError(t, err)
 		assert.Equal(t, result, `{
@@ -63,7 +61,7 @@ func TestGenerateConfig(t *testing.T) {
 			"ALLOWED_HOSTS":  []any{"225.0.0.0/8", "226.0.0.0/7", "228.0.0.0/6"},
 			"DEFAULT_SERVER": "::",
 		}
-		result, err := generateConfig(ctx, pgadmin)
+		result, err := generateConfig(pgadmin, false, 0, 0)
 
 		assert.NilError(t, err)
 		assert.Equal(t, result, `{
@@ -83,18 +81,13 @@ func TestGenerateConfig(t *testing.T) {
 	})
 
 	t.Run("OTel enabled", func(t *testing.T) {
-		gate := feature.NewGate()
-		assert.NilError(t, gate.SetFromMap(map[string]bool{
-			feature.OpenTelemetryLogs: true,
-		}))
-		ctx := feature.NewContext(context.Background(), gate)
 		pgadmin := new(v1beta1.PGAdmin)
 		require.UnmarshalInto(t, &pgadmin.Spec, `{
 			instrumentation: {
 				logs: { retentionPeriod: 5h },
 			},
 		}`)
-		result, err := generateConfig(ctx, pgadmin)
+		result, err := generateConfig(pgadmin, true, 4, 60)
 
 		assert.NilError(t, err)
 		assert.Equal(t, result, `{
@@ -257,7 +250,6 @@ namespace: some-ns
 
 func TestGenerateGunicornConfig(t *testing.T) {
 	require.ParallelCapacity(t, 0)
-	ctx := context.Background()
 
 	t.Run("Default", func(t *testing.T) {
 		pgAdmin := &v1beta1.PGAdmin{}
@@ -270,7 +262,7 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
+		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
 		assert.Assert(t, strings.Contains(logString, "{}"))
@@ -293,7 +285,7 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
+		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
 		assert.Assert(t, strings.Contains(logString, "{}"))
@@ -314,7 +306,7 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
+		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
 		assert.Assert(t, strings.Contains(logString, "{}"))
@@ -334,18 +326,13 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
+		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
 		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("OTel enabled", func(t *testing.T) {
-		gate := feature.NewGate()
-		assert.NilError(t, gate.SetFromMap(map[string]bool{
-			feature.OpenTelemetryLogs: true,
-		}))
-		ctx := feature.NewContext(context.Background(), gate)
 		pgAdmin := &v1beta1.PGAdmin{}
 		pgAdmin.Name = "test"
 		pgAdmin.Namespace = "postgres-operator"
@@ -354,7 +341,7 @@ func TestGenerateGunicornConfig(t *testing.T) {
 				logs: { retentionPeriod: 5h },
 			},
 		}`)
-		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
+		actualString, logString, err := generateGunicornConfig(pgAdmin, true, 4, "H")
 
 		expectedString := `{
   "bind": "0.0.0.0:5050",
@@ -390,7 +377,7 @@ func TestGenerateGunicornConfig(t *testing.T) {
       "stream": "ext://sys.stdout"
     },
     "file": {
-      "backupCount": "4",
+      "backupCount": 4,
       "class": "logging.handlers.TimedRotatingFileHandler",
       "filename": "/var/lib/pgadmin/logs/gunicorn.log",
       "formatter": "json",
