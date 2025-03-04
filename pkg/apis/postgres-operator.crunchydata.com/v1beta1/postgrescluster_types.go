@@ -518,6 +518,16 @@ type PostgresInstanceSetSpec struct {
 	// +listMapKey=name
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
+
+	Volumes *PostgresVolumesSpec `json:"volumes,omitempty"`
+}
+
+type PostgresVolumesSpec struct {
+	// An ephemeral volume for temporary files.
+	// More info: https://kubernetes.io/docs/concepts/storage/ephemeral-volumes
+	// ---
+	// +optional
+	Temp *VolumeClaimSpec `json:"temp,omitempty"`
 }
 
 type TablespaceVolume struct {
