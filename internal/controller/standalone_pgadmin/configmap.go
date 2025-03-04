@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -32,7 +33,7 @@ func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
 	clusters map[string][]*v1beta1.PostgresCluster,
 ) (*corev1.ConfigMap, error) {
-	configmap, err := configmap(pgadmin, clusters)
+	configmap, err := configmap(ctx, pgadmin, clusters)
 	if err != nil {
 		return configmap, err
 	}
@@ -50,7 +51,7 @@ func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
 }
 
 // configmap returns a v1.ConfigMap for pgAdmin.
-func configmap(pgadmin *v1beta1.PGAdmin,
+func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 	clusters map[string][]*v1beta1.PostgresCluster,
 ) (*corev1.ConfigMap, error) {
 	configmap := &corev1.ConfigMap{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
@@ -63,9 +64,9 @@ func configmap(pgadmin *v1beta1.PGAdmin,
 
 	// TODO(tjmoore4): Populate configuration details.
 	initialize.Map(&configmap.Data)
-	configSettings, err := generateConfig(pgadmin)
+	pgadminConfigSettings, err := generateConfig(ctx, pgadmin)
 	if err == nil {
-		configmap.Data[settingsConfigMapKey] = configSettings
+		configmap.Data[settingsConfigMapKey] = pgadminConfigSettings
 	}
 
 	clusterSettings, err := generateClusterConfig(clusters)
@@ -73,16 +74,19 @@ func configmap(pgadmin *v1beta1.PGAdmin,
 		configmap.Data[settingsClusterMapKey] = clusterSettings
 	}
 
-	gunicornSettings, err := generateGunicornConfig(pgadmin)
+	gunicornSettings, gunicornLoggingSettings, err := generateGunicornConfig(ctx, pgadmin)
 	if err == nil {
 		configmap.Data[gunicornConfigKey] = gunicornSettings
+		configmap.Data[gunicornLoggingConfigKey] = gunicornLoggingSettings
 	}
 
 	return configmap, err
 }
 
-// generateConfig generates the config settings for the pgAdmin
-func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
+// generateConfigs generates the config settings for the pgAdmin and gunicorn
+func generateConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (
+	string, error,
+) {
 	settings := map[string]any{
 		// Bind to all IPv4 addresses by default. "0.0.0.0" here represents INADDR_ANY.
 		// - https://flask.palletsprojects.com/en/2.2.x/api/#flask.Flask.run
@@ -102,6 +106,48 @@ func generateConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
 	settings["UPGRADE_CHECK_ENABLED"] = false
 	settings["UPGRADE_CHECK_URL"] = ""
 	settings["UPGRADE_CHECK_KEY"] = ""
+	settings["DATA_DIR"] = dataMountPath
+	settings["LOG_FILE"] = LogFileAbsolutePath
+
+	// If OTel logs feature gate is enabled, we want to change the pgAdmin/gunicorn logging
+	if feature.Enabled(ctx, feature.OpenTelemetryLogs) && pgadmin.Spec.Instrumentation != nil {
+
+		var (
+			maxBackupRetentionNumber = 1
+			// One day in minutes for pgadmin rotation
+			pgAdminRetentionPeriod = 24 * 60
+		)
+
+		// If the user has set a retention period, we will use those values for log rotation,
+		// which is otherwise managed by python.
+		if pgadmin.Spec.Instrumentation.Logs != nil &&
+			pgadmin.Spec.Instrumentation.Logs.RetentionPeriod != nil {
+
+			retentionNumber, period := collector.ParseDurationForLogrotate(pgadmin.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration())
+			// `LOG_ROTATION_MAX_LOG_FILES`` in pgadmin refers to the already rotated logs.
+			// `backupCount` for gunicorn is similar.
+			// Our retention unit is for total number of log files, so subtract 1 to account
+			// for the currently-used log file.
+			maxBackupRetentionNumber = retentionNumber - 1
+			if period == "hourly" {
+				// If the period is hourly, set the pgadmin
+				// and gunicorn retention periods to hourly.
+				pgAdminRetentionPeriod = 60
+			}
+		}
+
+		settings["LOG_ROTATION_AGE"] = pgAdminRetentionPeriod
+		settings["LOG_ROTATION_MAX_LOG_FILES"] = maxBackupRetentionNumber
+		settings["JSON_LOGGER"] = true
+		settings["CONSOLE_LOG_LEVEL"] = "WARNING"
+		settings["FILE_LOG_LEVEL"] = "INFO"
+		settings["FILE_LOG_FORMAT_JSON"] = map[string]string{
+			"time":    "created",
+			"name":    "name",
+			"level":   "levelname",
+			"message": "message",
+		}
+	}
 
 	// To avoid spurious reconciles, the following value must not change when
 	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
@@ -185,7 +231,9 @@ func generateClusterConfig(
 
 // generateGunicornConfig generates the config settings for the gunicorn server
 // - https://docs.gunicorn.org/en/latest/settings.html
-func generateGunicornConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
+func generateGunicornConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (
+	string, string, error,
+) {
 	settings := map[string]any{
 		// Bind to all IPv4 addresses and set 25 threads by default.
 		// - https://docs.gunicorn.org/en/latest/settings.html#bind
@@ -213,5 +261,105 @@ func generateGunicornConfig(pgadmin *v1beta1.PGAdmin) (string, error) {
 	encoder.SetIndent("", "  ")
 	err := encoder.Encode(settings)
 
-	return buffer.String(), err
+	// Gunicorn logging dict settings
+	logSettings := map[string]any{}
+
+	// If OTel logs feature gate is enabled, we want to change the pgAdmin/gunicorn logging
+	if feature.Enabled(ctx, feature.OpenTelemetryLogs) &&
+		pgadmin.Spec.Instrumentation != nil {
+
+		var (
+			maxBackupRetentionNumber = "1"
+			// Daily rotation for gunicorn rotation
+			gunicornRetentionPeriod = "D"
+		)
+
+		// If the user has set a retention period, we will use those values for log rotation,
+		// which is otherwise managed by python.
+		if pgadmin.Spec.Instrumentation.Logs != nil &&
+			pgadmin.Spec.Instrumentation.Logs.RetentionPeriod != nil {
+
+			retentionNumber, period := collector.ParseDurationForLogrotate(pgadmin.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration())
+			// `LOG_ROTATION_MAX_LOG_FILES`` in pgadmin refers to the already rotated logs.
+			// `backupCount` for gunicorn is similar.
+			// Our retention unit is for total number of log files, so subtract 1 to account
+			// for the currently-used log file.
+			maxBackupRetentionNumber = strconv.Itoa(retentionNumber - 1)
+			if period == "hourly" {
+				// If the period is hourly, set the pgadmin
+				// and gunicorn retention periods to hourly.
+				gunicornRetentionPeriod = "H"
+			}
+		}
+
+		// Gunicorn uses the Python logging package, which sets the following attributes:
+		// https://docs.python.org/3/library/logging.html#logrecord-attributes.
+		// JsonFormatter is used to format the log: https://pypi.org/project/jsonformatter/
+		// We override the gunicorn defaults (using `logconfig_dict`) to set our own file handler.
+		// - https://docs.gunicorn.org/en/stable/settings.html#logconfig-dict
+		// - https://github.com/benoitc/gunicorn/blob/23.0.0/gunicorn/glogging.py#L47
+		logSettings = map[string]any{
+
+			"loggers": map[string]any{
+				"gunicorn.access": map[string]any{
+					"handlers":  []string{"file"},
+					"level":     "INFO",
+					"propagate": true,
+					"qualname":  "gunicorn.access",
+				},
+				"gunicorn.error": map[string]any{
+					"handlers":  []string{"file"},
+					"level":     "INFO",
+					"propagate": true,
+					"qualname":  "gunicorn.error",
+				},
+			},
+			"handlers": map[string]any{
+				"file": map[string]any{
+					"class":       "logging.handlers.TimedRotatingFileHandler",
+					"filename":    GunicornLogFileAbsolutePath,
+					"backupCount": maxBackupRetentionNumber,
+					"interval":    1,
+					"when":        gunicornRetentionPeriod,
+					"formatter":   "json",
+				},
+				"console": map[string]any{
+					"class":     "logging.StreamHandler",
+					"formatter": "generic",
+					"stream":    "ext://sys.stdout",
+				},
+			},
+			"formatters": map[string]any{
+				"generic": map[string]any{
+					"class":   "logging.Formatter",
+					"datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+					"format":  "%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
+				},
+				"json": map[string]any{
+					"class":      "jsonformatter.JsonFormatter",
+					"separators": []string{",", ":"},
+					"format": map[string]string{
+						"time":    "created",
+						"name":    "name",
+						"level":   "levelname",
+						"message": "message",
+					},
+				},
+			},
+		}
+	}
+
+	// To avoid spurious reconciles, the following value must not change when
+	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
+	// emitting map keys in sorted order. Indent so the value is not rendered
+	// as one long line by `kubectl`.
+	logBuffer := new(bytes.Buffer)
+	logEncoder := json.NewEncoder(logBuffer)
+	logEncoder.SetEscapeHTML(false)
+	logEncoder.SetIndent("", "  ")
+
+	// Combine errors
+	err = logEncoder.Encode(logSettings)
+
+	return buffer.String(), logBuffer.String(), err
 }

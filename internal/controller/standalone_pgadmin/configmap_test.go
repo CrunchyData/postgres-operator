@@ -5,10 +5,13 @@
 package standalone_pgadmin
 
 import (
+	"context"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
 
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -16,14 +19,17 @@ import (
 
 func TestGenerateConfig(t *testing.T) {
 	require.ParallelCapacity(t, 0)
+	ctx := context.Background()
 
 	t.Run("Default", func(t *testing.T) {
 		pgadmin := new(v1beta1.PGAdmin)
-		result, err := generateConfig(pgadmin)
+		result, err := generateConfig(ctx, pgadmin)
 
 		assert.NilError(t, err)
 		assert.Equal(t, result, `{
+  "DATA_DIR": "/var/lib/pgadmin",
   "DEFAULT_SERVER": "0.0.0.0",
+  "LOG_FILE": "/var/lib/pgadmin/logs/pgadmin.log",
   "SERVER_MODE": true,
   "UPGRADE_CHECK_ENABLED": false,
   "UPGRADE_CHECK_KEY": "",
@@ -37,11 +43,13 @@ func TestGenerateConfig(t *testing.T) {
 			"SERVER_MODE":           false,
 			"UPGRADE_CHECK_ENABLED": true,
 		}
-		result, err := generateConfig(pgadmin)
+		result, err := generateConfig(ctx, pgadmin)
 
 		assert.NilError(t, err)
 		assert.Equal(t, result, `{
+  "DATA_DIR": "/var/lib/pgadmin",
   "DEFAULT_SERVER": "0.0.0.0",
+  "LOG_FILE": "/var/lib/pgadmin/logs/pgadmin.log",
   "SERVER_MODE": true,
   "UPGRADE_CHECK_ENABLED": false,
   "UPGRADE_CHECK_KEY": "",
@@ -55,7 +63,7 @@ func TestGenerateConfig(t *testing.T) {
 			"ALLOWED_HOSTS":  []any{"225.0.0.0/8", "226.0.0.0/7", "228.0.0.0/6"},
 			"DEFAULT_SERVER": "::",
 		}
-		result, err := generateConfig(pgadmin)
+		result, err := generateConfig(ctx, pgadmin)
 
 		assert.NilError(t, err)
 		assert.Equal(t, result, `{
@@ -64,7 +72,46 @@ func TestGenerateConfig(t *testing.T) {
     "226.0.0.0/7",
     "228.0.0.0/6"
   ],
+  "DATA_DIR": "/var/lib/pgadmin",
   "DEFAULT_SERVER": "::",
+  "LOG_FILE": "/var/lib/pgadmin/logs/pgadmin.log",
+  "SERVER_MODE": true,
+  "UPGRADE_CHECK_ENABLED": false,
+  "UPGRADE_CHECK_KEY": "",
+  "UPGRADE_CHECK_URL": ""
+}`+"\n")
+	})
+
+	t.Run("OTel enabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+		pgadmin := new(v1beta1.PGAdmin)
+		require.UnmarshalInto(t, &pgadmin.Spec, `{
+			instrumentation: {
+				logs: { retentionPeriod: 5h },
+			},
+		}`)
+		result, err := generateConfig(ctx, pgadmin)
+
+		assert.NilError(t, err)
+		assert.Equal(t, result, `{
+  "CONSOLE_LOG_LEVEL": "WARNING",
+  "DATA_DIR": "/var/lib/pgadmin",
+  "DEFAULT_SERVER": "0.0.0.0",
+  "FILE_LOG_FORMAT_JSON": {
+    "level": "levelname",
+    "message": "message",
+    "name": "name",
+    "time": "created"
+  },
+  "FILE_LOG_LEVEL": "INFO",
+  "JSON_LOGGER": true,
+  "LOG_FILE": "/var/lib/pgadmin/logs/pgadmin.log",
+  "LOG_ROTATION_AGE": 60,
+  "LOG_ROTATION_MAX_LOG_FILES": 4,
   "SERVER_MODE": true,
   "UPGRADE_CHECK_ENABLED": false,
   "UPGRADE_CHECK_KEY": "",
@@ -161,10 +208,11 @@ func TestGeneratePGAdminConfigMap(t *testing.T) {
 	pgadmin.Namespace = "some-ns"
 	pgadmin.Name = "pg1"
 	clusters := map[string][]*v1beta1.PostgresCluster{}
+	ctx := context.Background()
 	t.Run("Data,ObjectMeta,TypeMeta", func(t *testing.T) {
 		pgadmin := pgadmin.DeepCopy()
 
-		configmap, err := configmap(pgadmin, clusters)
+		configmap, err := configmap(ctx, pgadmin, clusters)
 
 		assert.NilError(t, err)
 		assert.Assert(t, cmp.MarshalMatches(configmap.TypeMeta, `
@@ -190,7 +238,7 @@ namespace: some-ns
 			Labels:      map[string]string{"c": "v3", "d": "v4"},
 		}
 
-		configmap, err := configmap(pgadmin, clusters)
+		configmap, err := configmap(ctx, pgadmin, clusters)
 
 		assert.NilError(t, err)
 		// Annotations present in the metadata.
@@ -209,6 +257,7 @@ namespace: some-ns
 
 func TestGenerateGunicornConfig(t *testing.T) {
 	require.ParallelCapacity(t, 0)
+	ctx := context.Background()
 
 	t.Run("Default", func(t *testing.T) {
 		pgAdmin := &v1beta1.PGAdmin{}
@@ -221,9 +270,10 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, err := generateGunicornConfig(pgAdmin)
+		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
+		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("Add Settings", func(t *testing.T) {
@@ -243,9 +293,10 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, err := generateGunicornConfig(pgAdmin)
+		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
+		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("Update Defaults", func(t *testing.T) {
@@ -263,9 +314,10 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, err := generateGunicornConfig(pgAdmin)
+		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
+		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("Update Mandatory", func(t *testing.T) {
@@ -282,9 +334,93 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "workers": 1
 }
 `
-		actualString, err := generateGunicornConfig(pgAdmin)
+		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
+		assert.Assert(t, strings.Contains(logString, "{}"))
+	})
+
+	t.Run("OTel enabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+		pgAdmin := &v1beta1.PGAdmin{}
+		pgAdmin.Name = "test"
+		pgAdmin.Namespace = "postgres-operator"
+		require.UnmarshalInto(t, &pgAdmin.Spec, `{
+			instrumentation: {
+				logs: { retentionPeriod: 5h },
+			},
+		}`)
+		actualString, logString, err := generateGunicornConfig(ctx, pgAdmin)
+
+		expectedString := `{
+  "bind": "0.0.0.0:5050",
+  "threads": 25,
+  "workers": 1
+}
+`
+		expectedLogString := `{
+  "formatters": {
+    "generic": {
+      "class": "logging.Formatter",
+      "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+      "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s"
+    },
+    "json": {
+      "class": "jsonformatter.JsonFormatter",
+      "format": {
+        "level": "levelname",
+        "message": "message",
+        "name": "name",
+        "time": "created"
+      },
+      "separators": [
+        ",",
+        ":"
+      ]
+    }
+  },
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "formatter": "generic",
+      "stream": "ext://sys.stdout"
+    },
+    "file": {
+      "backupCount": "4",
+      "class": "logging.handlers.TimedRotatingFileHandler",
+      "filename": "/var/lib/pgadmin/logs/gunicorn.log",
+      "formatter": "json",
+      "interval": 1,
+      "when": "H"
+    }
+  },
+  "loggers": {
+    "gunicorn.access": {
+      "handlers": [
+        "file"
+      ],
+      "level": "INFO",
+      "propagate": true,
+      "qualname": "gunicorn.access"
+    },
+    "gunicorn.error": {
+      "handlers": [
+        "file"
+      ],
+      "level": "INFO",
+      "propagate": true,
+      "qualname": "gunicorn.error"
+    }
+  }
+}
+`
+		assert.NilError(t, err)
+		assert.Equal(t, actualString, expectedString)
+		assert.Equal(t, logString, expectedLogString)
 	})
 
 }

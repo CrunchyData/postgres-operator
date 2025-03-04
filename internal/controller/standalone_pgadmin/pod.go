@@ -7,16 +7,13 @@ package standalone_pgadmin
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -25,12 +22,13 @@ import (
 )
 
 const (
-	configMountPath        = "/etc/pgadmin/conf.d"
-	configFilePath         = "~postgres-operator/" + settingsConfigMapKey
-	clusterFilePath        = "~postgres-operator/" + settingsClusterMapKey
-	configDatabaseURIPath  = "~postgres-operator/config-database-uri"
-	ldapFilePath           = "~postgres-operator/ldap-bind-password"
-	gunicornConfigFilePath = "~postgres-operator/" + gunicornConfigKey
+	configMountPath         = "/etc/pgadmin/conf.d"
+	configFilePath          = "~postgres-operator/" + settingsConfigMapKey
+	clusterFilePath         = "~postgres-operator/" + settingsClusterMapKey
+	configDatabaseURIPath   = "~postgres-operator/config-database-uri"
+	ldapFilePath            = "~postgres-operator/ldap-bind-password"
+	gunicornConfigFilePath  = "~postgres-operator/" + gunicornConfigKey
+	gunicornLogConfFilePath = "~postgres-operator/" + gunicornLoggingConfigKey
 
 	// scriptMountPath is where to mount a temporary directory that is only
 	// writable during Pod initialization.
@@ -211,6 +209,10 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 							Key:  gunicornConfigKey,
 							Path: gunicornConfigFilePath,
 						},
+						{
+							Key:  gunicornLoggingConfigKey,
+							Path: gunicornLogConfFilePath,
+						},
 					},
 				},
 			},
@@ -266,7 +268,11 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 
 	// startCommands (v8 image includes Gunicorn)
 	var startCommandV7 = "pgadmin4 &"
-	var startCommandV8 = "gunicorn -c /etc/pgadmin/gunicorn_config.py --chdir $PGADMIN_DIR pgAdmin4:app &"
+	// For Gunicorn, watch the logging config and reload if changes are detected.
+	var startCommandV8 = "gunicorn -c /etc/pgadmin/gunicorn_config.py" +
+		" --reload-extra-file " + configMountPath + `/` + gunicornLogConfFilePath +
+		" --log-config-json " + configMountPath + `/` + gunicornLogConfFilePath +
+		" --chdir $PGADMIN_DIR pgAdmin4:app &"
 
 	// This script sets up, starts pgadmin, and runs the appropriate `loadServerCommand` to register the discovered servers.
 	// pgAdmin is hosted by Gunicorn and uses a config file.
@@ -368,7 +374,7 @@ func startupCommand(ctx context.Context, inPgadmin *v1beta1.PGAdmin) []string {
 	// The values set in configSystem will not be overridden through
 	// spec.config.settings.
 	var configSystem = `
-import glob, json, re, os, logging
+import glob, json, re, os
 DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
     _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
@@ -380,9 +386,6 @@ if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
 if os.path.isfile('` + configDatabaseURIPathAbsolutePath + `'):
     with open('` + configDatabaseURIPathAbsolutePath + `') as _f:
         CONFIG_DATABASE_URI = _f.read()
-
-DATA_DIR = '` + dataMountPath + `'
-LOG_FILE = '` + LogFileAbsolutePath + `'
 `
 
 	// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
@@ -396,85 +399,13 @@ LOG_FILE = '` + LogFileAbsolutePath + `'
 	// Note: All Gunicorn settings are lowercase with underscores, so ignore
 	// any keys/names that are not.
 	var gunicornConfig = `
-import json, re
+import json, re, gunicorn
+gunicorn.SERVER_SOFTWARE = 'Python'
 with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
     _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
     if type(_data) is dict:
         globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
 `
-
-	// If OTel logs feature gate is enabled, we want to change the pgAdmin/gunicorn logging
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) && inPgadmin.Spec.Instrumentation != nil {
-
-		var (
-			maxBackupRetentionNumber = "1"
-			// One day in minutes for pgadmin rotation
-			pgAdminRetentionPeriod = "24 * 60"
-			// Daily rotation for gunicorn rotation
-			gunicornRetentionPeriod = "D"
-		)
-
-		// If the user has set a retention period, we will use those values for log rotation,
-		// which is otherwise managed by python.
-		if inPgadmin.Spec.Instrumentation.Logs != nil &&
-			inPgadmin.Spec.Instrumentation.Logs.RetentionPeriod != nil {
-
-			retentionNumber, period := collector.ParseDurationForLogrotate(inPgadmin.Spec.Instrumentation.Logs.RetentionPeriod.AsDuration())
-			// `LOG_ROTATION_MAX_LOG_FILES`` in pgadmin refers to the already rotated logs.
-			// `backupCount` for gunicorn is similar.
-			// Our retention unit is for total number of log files, so subtract 1 to account
-			// for the currently-used log file.
-			maxBackupRetentionNumber = strconv.Itoa(retentionNumber - 1)
-			if period == "hourly" {
-				// If the period is hourly, set the pgadmin
-				// and gunicorn retention periods to hourly.
-				pgAdminRetentionPeriod = "60"
-				gunicornRetentionPeriod = "H"
-			}
-		}
-
-		configSystem = configSystem + `
-LOG_ROTATION_AGE = ` + pgAdminRetentionPeriod + ` # minutes
-LOG_ROTATION_MAX_LOG_FILES = ` + maxBackupRetentionNumber + `
-
-JSON_LOGGER = True
-CONSOLE_LOG_LEVEL = logging.WARNING
-FILE_LOG_LEVEL = logging.INFO
-FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
-`
-
-		// Gunicorn uses the Python logging package, which sets the following attributes:
-		// https://docs.python.org/3/library/logging.html#logrecord-attributes.
-		// JsonFormatter is used to format the log: https://pypi.org/project/jsonformatter/
-		// We override the gunicorn defaults (using `logconfig_dict`) to set our own file handler.
-		// - https://docs.gunicorn.org/en/stable/settings.html#logconfig-dict
-		// - https://github.com/benoitc/gunicorn/blob/23.0.0/gunicorn/glogging.py#L47
-		gunicornConfig = gunicornConfig + `
-import collections, copy, gunicorn, gunicorn.glogging
-gunicorn.SERVER_SOFTWARE = 'Python'
-logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
-logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
-logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
-logconfig_dict['handlers']['file'] = {
-  'class': 'logging.handlers.TimedRotatingFileHandler',
-  'filename': '` + GunicornLogFileAbsolutePath + `',
-  'backupCount': ` + maxBackupRetentionNumber + `,
-  'interval': 1, # every one unit (defined by when), rotate
-  'when': '` + gunicornRetentionPeriod + `',
-  'formatter': 'json',
-}
-logconfig_dict['formatters']['json'] = {
-  'class': 'jsonformatter.JsonFormatter',
-  'separators': (',', ':'),
-  'format': collections.OrderedDict([
-    ('time', 'created'),
-    ('name', 'name'),
-    ('level', 'levelname'),
-    ('message', 'message'),
-  ])
-}
-`
-	}
 
 	args := []string{strings.TrimLeft(configSystem, "\n"), strings.TrimLeft(gunicornConfig, "\n")}
 
