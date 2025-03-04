@@ -29,6 +29,7 @@ const (
 	configDatabaseURIPath  = "~postgres-operator/config-database-uri"
 	ldapFilePath           = "~postgres-operator/ldap-bind-password"
 	gunicornConfigFilePath = "~postgres-operator/" + gunicornConfigKey
+	oauthConfigDir         = "~postgres-operator/oauth-config/"
 
 	// scriptMountPath is where to mount a temporary directory that is only
 	// writable during Pod initialization.
@@ -49,6 +50,7 @@ func pod(
 	inConfigMap *corev1.ConfigMap,
 	outPod *corev1.PodSpec,
 	pgAdminVolume *corev1.PersistentVolumeClaim,
+	oauthSecrets []corev1.Secret,
 ) {
 	// create the projected volume of config maps for use in
 	// 1. dynamic server discovery
@@ -56,7 +58,7 @@ func pod(
 	configVolume := corev1.Volume{Name: "pgadmin-config"}
 	configVolume.VolumeSource = corev1.VolumeSource{
 		Projected: &corev1.ProjectedVolumeSource{
-			Sources: podConfigFiles(inConfigMap, *inPGAdmin),
+			Sources: podConfigFiles(inConfigMap, *inPGAdmin, oauthSecrets),
 		},
 	}
 
@@ -200,7 +202,8 @@ func pod(
 
 // podConfigFiles returns projections of pgAdmin's configuration files to
 // include in the configuration volume.
-func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []corev1.VolumeProjection {
+func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin,
+	oauthSecrets []corev1.Secret) []corev1.VolumeProjection {
 
 	config := append(append([]corev1.VolumeProjection{}, pgadmin.Spec.Config.Files...),
 		[]corev1.VolumeProjection{
@@ -226,6 +229,24 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 				},
 			},
 		}...)
+
+	if pgadmin.Spec.Config.OauthConfigurations != nil {
+		for _, secret := range oauthSecrets {
+			config = append(config, corev1.VolumeProjection{
+				Secret: &corev1.SecretProjection{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: secret.Name,
+					},
+					Items: []corev1.KeyToPath{
+						{
+							Key:  "oauth-config.json",
+							Path: fmt.Sprintf("%s%s.json", oauthConfigDir, secret.Name),
+						},
+					},
+				},
+			})
+		}
+	}
 
 	if pgadmin.Spec.Config.ConfigDatabaseURI != nil {
 		config = append(config, corev1.VolumeProjection{

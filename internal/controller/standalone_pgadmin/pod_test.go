@@ -29,7 +29,7 @@ func TestPod(t *testing.T) {
 	testpod := new(corev1.PodSpec)
 	pvc := new(corev1.PersistentVolumeClaim)
 
-	call := func() { pod(pgadmin, config, testpod, pvc) }
+	call := func() { pod(pgadmin, config, testpod, pvc, nil) }
 
 	t.Run("Defaults", func(t *testing.T) {
 
@@ -477,7 +477,7 @@ func TestPodConfigFiles(t *testing.T) {
 		},
 	}
 
-	projections := podConfigFiles(configmap, pgadmin)
+	projections := podConfigFiles(configmap, pgadmin, nil)
 	assert.Assert(t, cmp.MarshalMatches(projections, `
 - secret:
     name: test-secret

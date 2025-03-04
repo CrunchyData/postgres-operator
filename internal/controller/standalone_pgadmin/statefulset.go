@@ -26,8 +26,9 @@ import (
 func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap, dataVolume *corev1.PersistentVolumeClaim,
+	oauthSecrets []corev1.Secret,
 ) error {
-	sts := statefulset(ctx, pgadmin, configmap, dataVolume)
+	sts := statefulset(ctx, pgadmin, configmap, dataVolume, oauthSecrets)
 
 	// Previous versions of PGO used a StatefulSet Pod Management Policy that could leave the Pod
 	// in a failed state. When we see that it has the wrong policy, we will delete the StatefulSet
@@ -64,6 +65,7 @@ func statefulset(
 	pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap,
 	dataVolume *corev1.PersistentVolumeClaim,
+	oauthSecrets []corev1.Secret,
 ) *appsv1.StatefulSet {
 	sts := &appsv1.StatefulSet{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
 	sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
@@ -119,7 +121,7 @@ func statefulset(
 
 	sts.Spec.Template.Spec.SecurityContext = podSecurityContext(ctx)
 
-	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
+	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume, oauthSecrets)
 
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs

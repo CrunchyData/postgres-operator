@@ -42,6 +42,13 @@ type StandalonePGAdminConfiguration struct {
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:validation:Type=object
 	Settings SchemalessObject `json:"settings,omitempty"`
+
+	// OauthConfigurations allows the user to reference a Secret containing the
+	// OAUTH2 configuration settings for pgAdmin.
+	// The Secret should contain a single data key called oauth-config.json.
+	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/oauth2.html
+	// +optional
+	OauthConfigurations []corev1.LocalObjectReference `json:"oauthConfigurations,omitempty"`
 }
 
 // PGAdminSpec defines the desired state of PGAdmin

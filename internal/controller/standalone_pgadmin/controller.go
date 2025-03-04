@@ -73,6 +73,12 @@ func (r *PGAdminReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return runtime.Requests(r.findPGAdminsForSecret(ctx, client.ObjectKeyFromObject(secret))...)
 			}),
 		).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []ctrl.Request {
+				return runtime.Requests(r.findPGAdminsForOauthSecret(ctx, client.ObjectKeyFromObject(secret))...)
+			}),
+		).
 		Complete(r)
 }
 
@@ -116,14 +122,18 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	pgAdmin.Default()
 
 	var (
-		configmap  *corev1.ConfigMap
-		dataVolume *corev1.PersistentVolumeClaim
-		clusters   map[string][]*v1beta1.PostgresCluster
-		_          *corev1.Service
+		configmap    *corev1.ConfigMap
+		dataVolume   *corev1.PersistentVolumeClaim
+		clusters     map[string][]*v1beta1.PostgresCluster
+		oauthSecrets []corev1.Secret
+		_            *corev1.Service
 	)
 
 	if err == nil {
 		clusters, err = r.getClustersForPGAdmin(ctx, pgAdmin)
+	}
+	if err == nil {
+		oauthSecrets, err = r.reconcileOauthConfigSecrets(ctx, pgAdmin)
 	}
 	if err == nil {
 		configmap, err = r.reconcilePGAdminConfigMap(ctx, pgAdmin, clusters)
@@ -135,7 +145,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		err = r.reconcilePGAdminService(ctx, pgAdmin)
 	}
 	if err == nil {
-		err = r.reconcilePGAdminStatefulSet(ctx, pgAdmin, configmap, dataVolume)
+		err = r.reconcilePGAdminStatefulSet(ctx, pgAdmin, configmap, dataVolume, oauthSecrets)
 	}
 	if err == nil {
 		err = r.reconcilePGAdminUsers(ctx, pgAdmin)

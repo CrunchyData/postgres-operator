@@ -79,6 +79,33 @@ func (r *PGAdminReconciler) findPGAdminsForSecret(
 	return matching
 }
 
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={list}
+
+// findPGAdminsForOauthSecret returns PGAdmins with an OauthConfiguration referencing a Secret
+func (r *PGAdminReconciler) findPGAdminsForOauthSecret(
+	ctx context.Context, secret client.ObjectKey,
+) []*v1beta1.PGAdmin {
+
+	var matching []*v1beta1.PGAdmin
+	var pgadmins v1beta1.PGAdminList
+
+	if err := r.Client.List(ctx, &pgadmins, &client.ListOptions{
+		Namespace: secret.Namespace,
+	}); err == nil {
+		for i := range pgadmins.Items {
+
+			for j := range pgadmins.Items[i].Spec.Config.OauthConfigurations {
+				if pgadmins.Items[i].Spec.Config.OauthConfigurations[j].Name == secret.Name {
+					matching = append(matching, &pgadmins.Items[i])
+					break
+				}
+			}
+
+		}
+	}
+	return matching
+}
+
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list}
 
 // getClustersForPGAdmin returns clusters managed by the given pgAdmin

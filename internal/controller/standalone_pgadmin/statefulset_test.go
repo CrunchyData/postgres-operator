@@ -46,7 +46,7 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	pvc.Name = "test-pvc"
 
 	t.Run("verify StatefulSet", func(t *testing.T) {
-		err := reconciler.reconcilePGAdminStatefulSet(ctx, pgadmin, configmap, pvc)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, pgadmin, configmap, pvc, nil)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -144,7 +144,7 @@ terminationGracePeriodSeconds: 30
 		assert.NilError(t, cc.Create(ctx, custompgadmin))
 		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, custompgadmin)) })
 
-		err := reconciler.reconcilePGAdminStatefulSet(ctx, custompgadmin, configmap, pvc)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, custompgadmin, configmap, pvc, nil)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
