@@ -115,11 +115,11 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 // TODO(k8s-1.28): fieldPath=`.accessModes`,reason="FieldValueRequired"
 // - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2098-L2100
 // - https://releases.k8s.io/v1.32.0/pkg/apis/core/validation/validation.go#L2303-L2305
-// +kubebuilder:validation:XValidation:rule=`has(self.accessModes) && size(self.accessModes) > 0`,message=`missing accessModes`
+// +kubebuilder:validation:XValidation:rule=`has(self.accessModes) && 0 < size(self.accessModes)`,message=`missing accessModes`
 //
 // NOTE(validation): Every PVC must have a positive storage request. NOTE(KEP-5073)
 // TODO(k8s-1.28): fieldPath=`.resources.requests.storage`,reason="FieldValueRequired"
-// TODO(k8s-1.29): `&& duration(self.resources.requests.storage).sign() > 0`
+// TODO(k8s-1.29): `&& 0 < duration(self.resources.requests.storage).sign()`
 // - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2126-L2133
 // - https://releases.k8s.io/v1.32.0/pkg/apis/core/validation/validation.go#L2329-L2336
 // +kubebuilder:validation:XValidation:rule=`has(self.resources) && has(self.resources.requests) && has(self.resources.requests.storage)`,message=`missing storage request`

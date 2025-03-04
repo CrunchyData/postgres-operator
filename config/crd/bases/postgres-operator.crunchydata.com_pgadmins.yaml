@@ -1563,7 +1563,7 @@ spec:
                 x-kubernetes-map-type: atomic
                 x-kubernetes-validations:
                 - message: missing accessModes
-                  rule: has(self.accessModes) && size(self.accessModes) > 0
+                  rule: has(self.accessModes) && 0 < size(self.accessModes)
                 - message: missing storage request
                   rule: has(self.resources) && has(self.resources.requests) && has(self.resources.requests.storage)
               image:

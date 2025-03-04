@@ -58,6 +58,9 @@ safelink() (
 	// dataMountPath is where to mount the main data volume.
 	tablespaceMountPath = "/tablespaces"
 
+	// tmpMountPath is where to mount the optional ephemeral volume.
+	tmpMountPath = "/pgtmp"
+
 	// walMountPath is where to mount the optional WAL volume.
 	walMountPath = "/pgwal"
 
