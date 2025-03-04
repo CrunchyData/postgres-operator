@@ -293,6 +293,10 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 				`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/db1`+
 					`[?]password=[^&]+&user=some-user-name$`,
 				string(secret.Data["jdbc-uri"])))
+			assert.Assert(t, cmp.Regexp(
+				`^r2dbc:postgresql://hippo2-primary.ns1.svc:9999/db1`+
+					`[?]password=[^&]+&user=some-user-name$`,
+				string(secret.Data["r2dbc-uri"])))
 		}
 
 		// Only the first in the list.
@@ -309,7 +313,9 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 			assert.Assert(t, cmp.Regexp(
 				`^jdbc:postgresql://hippo2-primary.ns1.svc:9999/first[?].+$`,
 				string(secret.Data["jdbc-uri"])))
-
+			assert.Assert(t, cmp.Regexp(
+				`^r2dbc:postgresql://hippo2-primary.ns1.svc:9999/first[?].+$`,
+				string(secret.Data["r2dbc-uri"])))
 		}
 	})
 
@@ -343,6 +349,10 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 				`^jdbc:postgresql://hippo2-pgbouncer.ns1.svc:10220/yes`+
 					`[?]password=[^&]+&prepareThreshold=0&user=some-user-name$`,
 				string(secret.Data["pgbouncer-jdbc-uri"])))
+			assert.Assert(t, cmp.Regexp(
+				`^r2dbc:postgresql://hippo2-pgbouncer.ns1.svc:10220/yes`+
+					`[?]password=[^&]+&prepareThreshold=0&user=some-user-name$`,
+				string(secret.Data["pgbouncer-r2dbc-uri"])))
 		}
 	})
 }
