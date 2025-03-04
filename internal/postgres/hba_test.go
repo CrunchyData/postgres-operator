@@ -60,6 +60,14 @@ func TestHostBasedAuthentication(t *testing.T) {
 	assert.Equal(t, `hostnossl all all all "reject"`,
 		NewHBA().NoSSL().Method("reject").String())
 
+	t.Run("OptionsSorted", func(t *testing.T) {
+		assert.Equal(t, `hostssl all all all "ldap"  "ldapbasedn"="dc=example,dc=org" "ldapserver"="example.org"`,
+			NewHBA().TLS().Method("ldap").Options(map[string]string{
+				"ldapserver": "example.org",
+				"ldapbasedn": "dc=example,dc=org",
+			}).String())
+	})
+
 	t.Run("SpecialCharactersEscaped", func(t *testing.T) {
 		// Databases; slash U+002F triggers regex escaping; regex characters themselves do not
 		assert.Equal(t, `local "/^[/]asdf_[+][?]1234$","/^[/][*][$]$","+*$" all`,

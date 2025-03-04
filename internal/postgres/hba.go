@@ -6,6 +6,7 @@ package postgres
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -155,8 +156,8 @@ func (hba *HostBasedAuthentication) NoSSL() *HostBasedAuthentication {
 // Options specifies any options for the authentication method.
 func (hba *HostBasedAuthentication) Options(opts map[string]string) *HostBasedAuthentication {
 	hba.options = ""
-	for k, v := range opts {
-		hba.options = fmt.Sprintf("%s %s=%s", hba.options, hba.quote(k), hba.quote(v))
+	for _, k := range slices.Sorted(maps.Keys(opts)) {
+		hba.options = fmt.Sprintf("%s %s=%s", hba.options, hba.quote(k), hba.quote(opts[k]))
 	}
 	return hba
 }
