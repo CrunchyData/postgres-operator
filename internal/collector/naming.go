@@ -10,6 +10,7 @@ const LogsBatchProcessor = "batch/logs"
 const OneSecondBatchProcessor = "batch/1s"
 const SubSecondBatchProcessor = "batch/200ms"
 const Prometheus = "prometheus"
+const PrometheusPort = 9187
 const PGBouncerMetrics = "metrics/pgbouncer"
 const PostgresMetrics = "metrics/postgres"
 const PatroniMetrics = "metrics/patroni"

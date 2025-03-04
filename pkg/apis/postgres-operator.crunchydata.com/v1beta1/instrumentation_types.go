@@ -11,20 +11,29 @@ import corev1 "k8s.io/api/core/v1"
 type InstrumentationSpec struct {
 	// Image name to use for collector containers. When omitted, the value
 	// comes from an operator environment variable.
+	// ---
 	// +optional
 	Image string `json:"image,omitempty"`
 
 	// Resources holds the resource requirements for the collector container.
+	// ---
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Config is the place for users to configure exporters and provide files.
+	// ---
 	// +optional
 	Config *InstrumentationConfigSpec `json:"config,omitempty"`
 
 	// Logs is the place for users to configure the log collection.
+	// ---
 	// +optional
 	Logs *InstrumentationLogsSpec `json:"logs,omitempty"`
+
+	// Metrics is the place for users to configure metrics collection.
+	// ---
+	// +optional
+	Metrics *InstrumentationMetricsSpec `json:"metrics,omitempty"`
 }
 
 // InstrumentationConfigSpec allows users to configure their own exporters,
@@ -42,6 +51,7 @@ type InstrumentationConfigSpec struct {
 
 	// Exporters allows users to configure OpenTelemetry exporters that exist
 	// in the collector image.
+	// ---
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:validation:Type=object
@@ -91,10 +101,70 @@ type InstrumentationLogsSpec struct {
 	RetentionPeriod *Duration `json:"retentionPeriod,omitempty"`
 }
 
+type InstrumentationMetricsSpec struct {
+	// Where users can turn off built-in metrics and also provide their own
+	// custom queries.
+	// ---
+	// +optional
+	CustomQueries *InstrumentationCustomQueriesSpec `json:"customQueries,omitempty"`
+}
+
+type InstrumentationCustomQueriesSpec struct {
+	// User defined queries and metrics.
+	// ---
+	// +optional
+	Add []InstrumentationCustomQueries `json:"add,omitempty"`
+
+	// A list of built-in queries that should be removed. If all queries for a
+	// given SQL statement are removed, the SQL statement will no longer be run.
+	// ---
+	// +optional
+	Remove []string `json:"remove,omitempty"`
+}
+
+type InstrumentationCustomQueries struct {
+	// The name of this batch of queries, which will be used in naming the OTel
+	// SqlQuery receiver.
+	// ---
+	// OTel restricts component names from having whitespace, control characters,
+	// or symbols.
+	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/component/identifiable.go#L23-L26
+	// +kubebuilder:validation:Pattern=`^[^\pZ\pC\pS]+$`
+	//
+	// Set a max length to keep rule costs low.
+	// +kubebuilder:validation:MaxLength=20
+	//
+	// +required
+	Name string `json:"name"`
+
+	// A ConfigMap holding the yaml file that contains the queries.
+	// ---
+	// +required
+	Queries ConfigMapKeyRef `json:"queries"`
+
+	// How often the queries should be run.
+	// ---
+	// Kubernetes ensures the value is in the "duration" format, but go ahead
+	// and loosely validate the format to show some acceptable units.
+	// NOTE: This rejects fractional numbers: https://github.com/kubernetes/kube-openapi/issues/523
+	// +kubebuilder:validation:Pattern=`^((PT)?( *[0-9]+ *(?i:(ms|s|m)|(milli|sec|min)s?))+|0)$`
+	//
+	// `controller-gen` needs to know "Type=string" to allow a "Pattern".
+	// +kubebuilder:validation:Type=string
+	//
+	// Set a max length to keep rule costs low.
+	// +kubebuilder:validation:MaxLength=20
+	// +kubebuilder:validation:XValidation:rule=`duration("0") <= self && self <= duration("60m")`
+	//
+	// +default="5s"
+	// +optional
+	CollectionInterval *Duration `json:"collectionInterval,omitempty"`
+}
+
 // ---
 // Configuration for the OpenTelemetry Batch Processor
 // https://pkg.go.dev/go.opentelemetry.io/collector/processor/batchprocessor#section-readme
-//
+// ---
 // The batch processor stops batching when *either* of these is zero, but that is confusing.
 // Make the user set both so it is evident there is *no* motivation to create any batch.
 // +kubebuilder:validation:XValidation:rule=`(has(self.minRecords) && self.minRecords == 0) == (has(self.maxDelay) && self.maxDelay == duration('0'))`,message=`to disable batching, both minRecords and maxDelay must be zero`

@@ -40,6 +40,10 @@ const (
 	// LabelMovePGWalDir is used to identify the Job that moves an existing pg_wal directory.
 	LabelMovePGWalDir = labelPrefix + "move-pgwal-dir"
 
+	// LabelCollectorDiscovery is added to Pods running the OpenTelemetry "collector"
+	// container to support discovery by Prometheus
+	LabelCollectorDiscovery = labelPrefix + "crunchy-otel-collector"
+
 	// LabelPGBackRest is used to indicate that a resource is for pgBackRest
 	LabelPGBackRest = labelPrefix + "pgbackrest"
 
