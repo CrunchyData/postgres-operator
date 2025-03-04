@@ -697,8 +697,8 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		if postgresCluster.Spec.Instrumentation != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 			collector.AddToPod(ctx, postgresCluster.Spec.Instrumentation, postgresCluster.Spec.ImagePullPolicy,
 				&corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(postgresCluster)},
-				&repo.Spec.Template.Spec, []corev1.VolumeMount{}, "",
-				[]string{pgBackRestLogPath}, true)
+				&repo.Spec.Template, []corev1.VolumeMount{}, "",
+				[]string{pgBackRestLogPath}, true, false)
 
 			containersToAdd = append(containersToAdd, naming.ContainerCollector)
 		}

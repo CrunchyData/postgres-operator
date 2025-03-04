@@ -127,7 +127,7 @@ func Pod(
 	inConfigMap *corev1.ConfigMap,
 	inPostgreSQLCertificate *corev1.SecretProjection,
 	inSecret *corev1.Secret,
-	outPod *corev1.PodSpec,
+	template *corev1.PodTemplateSpec,
 ) {
 	if inCluster.Spec.Proxy == nil || inCluster.Spec.Proxy.PGBouncer == nil {
 		// PgBouncer is disabled; there is nothing to do.
@@ -196,21 +196,21 @@ func Pod(
 		reloader.Resources = *inCluster.Spec.Proxy.PGBouncer.Sidecars.PGBouncerConfig.Resources
 	}
 
-	outPod.Containers = []corev1.Container{container, reloader}
+	template.Spec.Containers = []corev1.Container{container, reloader}
 
 	// If the PGBouncerSidecars feature gate is enabled and custom pgBouncer
 	// sidecars are defined, add the defined container to the Pod.
 	if feature.Enabled(ctx, feature.PGBouncerSidecars) &&
 		inCluster.Spec.Proxy.PGBouncer.Containers != nil {
-		outPod.Containers = append(outPod.Containers, inCluster.Spec.Proxy.PGBouncer.Containers...)
+		template.Spec.Containers = append(template.Spec.Containers, inCluster.Spec.Proxy.PGBouncer.Containers...)
 	}
 
-	outPod.Volumes = []corev1.Volume{configVolume}
+	template.Spec.Volumes = []corev1.Volume{configVolume}
 
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		collector.AddToPod(ctx, inCluster.Spec.Instrumentation, inCluster.Spec.ImagePullPolicy, inConfigMap,
-			outPod, []corev1.VolumeMount{configVolumeMount}, string(inSecret.Data["pgbouncer-password"]), []string{naming.PGBouncerLogPath},
-			true)
+			template, []corev1.VolumeMount{configVolumeMount}, string(inSecret.Data["pgbouncer-password"]),
+			[]string{naming.PGBouncerLogPath}, true, true)
 	}
 }
 

@@ -134,7 +134,8 @@ func statefulset(
 		}
 
 		collector.AddToPod(ctx, pgadmin.Spec.Instrumentation, pgadmin.Spec.ImagePullPolicy,
-			configmap, &sts.Spec.Template.Spec, volumeMounts, "", []string{LogDirectoryAbsolutePath}, false)
+			configmap, &sts.Spec.Template, volumeMounts, "", []string{LogDirectoryAbsolutePath},
+			false, false)
 	}
 
 	postgrescluster.AddTMPEmptyDir(&sts.Spec.Template)

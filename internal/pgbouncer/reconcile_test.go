@@ -148,16 +148,16 @@ func TestPod(t *testing.T) {
 	configMap := new(corev1.ConfigMap)
 	primaryCertificate := new(corev1.SecretProjection)
 	secret := new(corev1.Secret)
-	pod := new(corev1.PodSpec)
+	template := new(corev1.PodTemplateSpec)
 
-	call := func() { Pod(ctx, cluster, configMap, primaryCertificate, secret, pod) }
+	call := func() { Pod(ctx, cluster, configMap, primaryCertificate, secret, template) }
 
 	t.Run("Disabled", func(t *testing.T) {
-		before := pod.DeepCopy()
+		before := template.DeepCopy()
 		call()
 
 		// No change when PgBouncer is not requested in the spec.
-		assert.DeepEqual(t, before, pod)
+		assert.DeepEqual(t, before, template)
 	})
 
 	t.Run("Defaults", func(t *testing.T) {
@@ -167,7 +167,7 @@ func TestPod(t *testing.T) {
 
 		call()
 
-		assert.Assert(t, cmp.MarshalMatches(pod, `
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
   - pgbouncer
@@ -256,9 +256,9 @@ volumes:
 		`))
 
 		// No change when called again.
-		before := pod.DeepCopy()
+		before := template.DeepCopy()
 		call()
-		assert.DeepEqual(t, before, pod)
+		assert.DeepEqual(t, before, template)
 	})
 
 	t.Run("Customizations", func(t *testing.T) {
@@ -277,7 +277,7 @@ volumes:
 
 		call()
 
-		assert.Assert(t, cmp.MarshalMatches(pod, `
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
   - pgbouncer
@@ -387,7 +387,7 @@ volumes:
 
 		call()
 
-		assert.Assert(t, cmp.MarshalMatches(pod, `
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
   - pgbouncer
@@ -491,7 +491,7 @@ volumes:
 		t.Run("SidecarNotEnabled", func(t *testing.T) {
 
 			call()
-			assert.Equal(t, len(pod.Containers), 2, "expected 2 containers in Pod, got %d", len(pod.Containers))
+			assert.Equal(t, len(template.Spec.Containers), 2, "expected 2 containers in Pod, got %d", len(template.Spec.Containers))
 		})
 
 		t.Run("SidecarEnabled", func(t *testing.T) {
@@ -500,11 +500,11 @@ volumes:
 			}))
 			call()
 
-			assert.Equal(t, len(pod.Containers), 3, "expected 3 containers in Pod, got %d", len(pod.Containers))
+			assert.Equal(t, len(template.Spec.Containers), 3, "expected 3 containers in Pod, got %d", len(template.Spec.Containers))
 
 			var found bool
-			for i := range pod.Containers {
-				if pod.Containers[i].Name == "customsidecar1" {
+			for i := range template.Spec.Containers {
+				if template.Spec.Containers[i].Name == "customsidecar1" {
 					found = true
 					break
 				}

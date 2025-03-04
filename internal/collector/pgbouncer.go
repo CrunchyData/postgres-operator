@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -174,13 +175,14 @@ func EnablePgBouncerMetrics(ctx context.Context, config *Config, sqlQueryUsernam
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
 		// Add Prometheus exporter
 		config.Exporters[Prometheus] = map[string]any{
-			"endpoint": "0.0.0.0:9187",
+			"endpoint": "0.0.0.0:" + strconv.Itoa(PrometheusPort),
 		}
 
 		// Add SqlQuery Receiver
 		config.Receivers[SqlQuery] = map[string]any{
 			"driver": "postgres",
-			"datasource": fmt.Sprintf(`host=localhost dbname=pgbouncer port=5432 user=%s password=${env:PGPASSWORD}`,
+			"datasource": fmt.Sprintf(
+				`host=localhost dbname=pgbouncer port=5432 user=%s password=${env:PGPASSWORD}`,
 				sqlQueryUsername),
 			"queries": slices.Clone(pgBouncerMetricsQueries),
 		}
