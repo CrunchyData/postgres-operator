@@ -155,7 +155,7 @@ func pod(
 
 	startup := corev1.Container{
 		Name:            naming.ContainerPGAdminStartup,
-		Command:         startupCommand(inPGAdmin),
+		Command:         startupCommand(),
 		Image:           container.Image,
 		ImagePullPolicy: container.ImagePullPolicy,
 		Resources:       container.Resources,
@@ -346,7 +346,7 @@ done
 }
 
 // startupCommand returns an entrypoint that prepares the filesystem for pgAdmin.
-func startupCommand(inPgadmin *v1beta1.PGAdmin) []string {
+func startupCommand() []string {
 	// pgAdmin reads from the `/etc/pgadmin/config_system.py` file during startup
 	// after all other config files.
 	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-7_7/docs/en_US/config_py.rst
