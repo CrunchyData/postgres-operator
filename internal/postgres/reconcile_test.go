@@ -115,11 +115,11 @@ func TestInstancePod(t *testing.T) {
 	}
 
 	// without WAL volume nor WAL volume spec
-	pod := new(corev1.PodSpec)
+	pod := new(corev1.PodTemplateSpec)
 	InstancePod(ctx, cluster, instance,
 		serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
-	assert.Assert(t, cmp.MarshalMatches(pod, `
+	assert.Assert(t, cmp.MarshalMatches(pod.Spec, `
 containers:
 - env:
   - name: PGDATA
@@ -384,15 +384,15 @@ volumes:
 		walVolume := new(corev1.PersistentVolumeClaim)
 		walVolume.Name = "walvol"
 
-		pod := new(corev1.PodSpec)
+		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
 			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
 
-		assert.Assert(t, len(pod.Containers) > 0)
-		assert.Assert(t, len(pod.InitContainers) > 0)
+		assert.Assert(t, len(pod.Spec.Containers) > 0)
+		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
 
 		// Container has all mountPaths, including downwardAPI
-		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -402,19 +402,19 @@ volumes:
   name: database-containerinfo
   readOnly: true
 - mountPath: /pgwal
-  name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
+  name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Spec.Containers[0].Name)
 
 		// InitContainer has all mountPaths, except downwardAPI
-		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
 - mountPath: /pgwal
-  name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
+  name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.Spec.InitContainers[0].Name)
 
-		assert.Assert(t, cmp.MarshalMatches(pod.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Volumes, `
 - name: cert-volume
   projected:
     defaultMode: 384
@@ -475,7 +475,7 @@ volumes:
 		`), "expected WAL volume")
 
 		// Startup moves WAL files to data volume.
-		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
+		assert.DeepEqual(t, pod.Spec.InitContainers[0].Command[4:],
 			[]string{"startup", "11", "/pgdata/pg11_wal"})
 	})
 
@@ -485,16 +485,16 @@ volumes:
 			files: [{ secret: { name: keytab } }],
 		}`)
 
-		pod := new(corev1.PodSpec)
+		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, clusterWithConfig, instance,
 			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
-		assert.Assert(t, len(pod.Containers) > 0)
-		assert.Assert(t, len(pod.InitContainers) > 0)
+		assert.Assert(t, len(pod.Spec.Containers) > 0)
+		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
 
 		// Container has all mountPaths, including downwardAPI,
 		// and the postgres-config
-		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -505,15 +505,15 @@ volumes:
   readOnly: true
 - mountPath: /etc/postgres
   name: postgres-config
-  readOnly: true`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
+  readOnly: true`), "expected WAL and downwardAPI mounts in %q container", pod.Spec.Containers[0].Name)
 
 		// InitContainer has all mountPaths, except downwardAPI and additionalConfig
-		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
-  name: postgres-data`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
+  name: postgres-data`), "expected WAL mount, no downwardAPI mount in %q container", pod.Spec.InitContainers[0].Name)
 	})
 
 	t.Run("WithCustomSidecarContainer", func(t *testing.T) {
@@ -526,7 +526,7 @@ volumes:
 			InstancePod(ctx, cluster, sidecarInstance,
 				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
-			assert.Equal(t, len(pod.Containers), 2, "expected 2 containers in Pod, got %d", len(pod.Containers))
+			assert.Equal(t, len(pod.Spec.Containers), 2, "expected 2 containers in Pod")
 		})
 
 		t.Run("SidecarEnabled", func(t *testing.T) {
@@ -539,11 +539,11 @@ volumes:
 			InstancePod(ctx, cluster, sidecarInstance,
 				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
 
-			assert.Equal(t, len(pod.Containers), 3, "expected 3 containers in Pod, got %d", len(pod.Containers))
+			assert.Equal(t, len(pod.Spec.Containers), 3, "expected 3 containers in Pod")
 
 			var found bool
-			for i := range pod.Containers {
-				if pod.Containers[i].Name == "customsidecar1" {
+			for i := range pod.Spec.Containers {
+				if pod.Spec.Containers[i].Name == "customsidecar1" {
 					found = true
 					break
 				}
@@ -576,7 +576,7 @@ volumes:
 		InstancePod(ctx, cluster, instance,
 			serverSecretProjection, clientSecretProjection, dataVolume, nil, tablespaceVolumes, pod)
 
-		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -588,10 +588,10 @@ volumes:
 - mountPath: /tablespaces/castle
   name: tablespace-castle
 - mountPath: /tablespaces/trial
-  name: tablespace-trial`), "expected tablespace mount(s) in %q container", pod.Containers[0].Name)
+  name: tablespace-trial`), "expected tablespace mount(s) in %q container", pod.Spec.Containers[0].Name)
 
 		// InitContainer has all mountPaths, except downwardAPI and additionalConfig
-		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -600,7 +600,7 @@ volumes:
 - mountPath: /tablespaces/castle
   name: tablespace-castle
 - mountPath: /tablespaces/trial
-  name: tablespace-trial`), "expected tablespace mount(s) in %q container", pod.InitContainers[0].Name)
+  name: tablespace-trial`), "expected tablespace mount(s) in %q container", pod.Spec.InitContainers[0].Name)
 	})
 
 	t.Run("WithWALVolumeWithWALVolumeSpec", func(t *testing.T) {
@@ -610,14 +610,14 @@ volumes:
 		instance := new(v1beta1.PostgresInstanceSetSpec)
 		instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpec)
 
-		pod := new(corev1.PodSpec)
+		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
 			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
 
-		assert.Assert(t, len(pod.Containers) > 0)
-		assert.Assert(t, len(pod.InitContainers) > 0)
+		assert.Assert(t, len(pod.Spec.Containers) > 0)
+		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
 
-		assert.Assert(t, cmp.MarshalMatches(pod.Containers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
@@ -627,18 +627,18 @@ volumes:
   name: database-containerinfo
   readOnly: true
 - mountPath: /pgwal
-  name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Containers[0].Name)
+  name: postgres-wal`), "expected WAL and downwardAPI mounts in %q container", pod.Spec.Containers[0].Name)
 
-		assert.Assert(t, cmp.MarshalMatches(pod.InitContainers[0].VolumeMounts, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.InitContainers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
   name: cert-volume
   readOnly: true
 - mountPath: /pgdata
   name: postgres-data
 - mountPath: /pgwal
-  name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.InitContainers[0].Name)
+  name: postgres-wal`), "expected WAL mount, no downwardAPI mount in %q container", pod.Spec.InitContainers[0].Name)
 
-		assert.Assert(t, cmp.MarshalMatches(pod.Volumes, `
+		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Volumes, `
 - name: cert-volume
   projected:
     defaultMode: 384
@@ -699,8 +699,70 @@ volumes:
 		`), "expected WAL volume")
 
 		// Startup moves WAL files to WAL volume.
-		assert.DeepEqual(t, pod.InitContainers[0].Command[4:],
+		assert.DeepEqual(t, pod.Spec.InitContainers[0].Command[4:],
 			[]string{"startup", "11", "/pgwal/pg11_wal"})
+	})
+
+	t.Run("TempVolume", func(t *testing.T) {
+		instance := new(v1beta1.PostgresInstanceSetSpec)
+		require.UnmarshalInto(t, &instance, `{
+			volumes: { temp: {
+				resources: { requests: { storage: 99Mi } },
+				storageClassName: somesuch,
+			} },
+		}`)
+
+		pod := new(corev1.PodTemplateSpec)
+		InstancePod(ctx, cluster, instance,
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+
+		assert.Assert(t, len(pod.Spec.Containers) > 0)
+		assert.Assert(t, cmp.MarshalContains(pod.Spec.Containers[0].VolumeMounts, `
+- mountPath: /pgtmp
+  name: postgres-temp
+`), "expected temp mount in %q container", pod.Spec.Containers[0].Name)
+
+		// NOTE: `creationTimestamp: null` appears in the resulting pod,
+		// but it does not affect the PVC or reconciliation events;
+		// possibly https://pr.k8s.io/100032
+		assert.Assert(t, cmp.MarshalContains(pod.Spec.Volumes, `
+- ephemeral:
+    volumeClaimTemplate:
+      metadata:
+        creationTimestamp: null
+      spec:
+        resources:
+          requests:
+            storage: 99Mi
+        storageClassName: somesuch
+  name: postgres-temp
+`), "expected definition in the pod")
+
+		t.Run("Metadata", func(t *testing.T) {
+			annotated := pod.DeepCopy()
+			annotated.Annotations = map[string]string{"n1": "etc"}
+			annotated.Labels = map[string]string{"gg": "asdf"}
+
+			InstancePod(ctx, cluster, instance,
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, annotated)
+
+			assert.Assert(t, cmp.MarshalContains(annotated.Spec.Volumes, `
+- ephemeral:
+    volumeClaimTemplate:
+      metadata:
+        annotations:
+          n1: etc
+        creationTimestamp: null
+        labels:
+          gg: asdf
+      spec:
+        resources:
+          requests:
+            storage: 99Mi
+        storageClassName: somesuch
+  name: postgres-temp
+`), "expected definition in the pod")
+		})
 	})
 }
 
