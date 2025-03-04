@@ -45,7 +45,6 @@ const (
 
 // pod populates a PodSpec with the container and volumes needed to run pgAdmin.
 func pod(
-	ctx context.Context,
 	inPGAdmin *v1beta1.PGAdmin,
 	inConfigMap *corev1.ConfigMap,
 	outPod *corev1.PodSpec,
@@ -156,7 +155,7 @@ func pod(
 
 	startup := corev1.Container{
 		Name:            naming.ContainerPGAdminStartup,
-		Command:         startupCommand(ctx, inPGAdmin),
+		Command:         startupCommand(inPGAdmin),
 		Image:           container.Image,
 		ImagePullPolicy: container.ImagePullPolicy,
 		Resources:       container.Resources,
@@ -347,7 +346,7 @@ done
 }
 
 // startupCommand returns an entrypoint that prepares the filesystem for pgAdmin.
-func startupCommand(ctx context.Context, inPgadmin *v1beta1.PGAdmin) []string {
+func startupCommand(inPgadmin *v1beta1.PGAdmin) []string {
 	// pgAdmin reads from the `/etc/pgadmin/config_system.py` file during startup
 	// after all other config files.
 	// - https://github.com/pgadmin-org/pgadmin4/blob/REL-7_7/docs/en_US/config_py.rst

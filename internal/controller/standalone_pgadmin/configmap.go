@@ -64,9 +64,9 @@ func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 
 	// TODO(tjmoore4): Populate configuration details.
 	initialize.Map(&configmap.Data)
-	pgadminConfigSettings, err := generateConfig(ctx, pgadmin)
+	configSettings, err := generateConfig(ctx, pgadmin)
 	if err == nil {
-		configmap.Data[settingsConfigMapKey] = pgadminConfigSettings
+		configmap.Data[settingsConfigMapKey] = configSettings
 	}
 
 	clusterSettings, err := generateClusterConfig(clusters)
@@ -84,9 +84,7 @@ func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 }
 
 // generateConfigs generates the config settings for the pgAdmin and gunicorn
-func generateConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (
-	string, error,
-) {
+func generateConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (string, error) {
 	settings := map[string]any{
 		// Bind to all IPv4 addresses by default. "0.0.0.0" here represents INADDR_ANY.
 		// - https://flask.palletsprojects.com/en/2.2.x/api/#flask.Flask.run
@@ -261,6 +259,10 @@ func generateGunicornConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (
 	encoder.SetIndent("", "  ")
 	err := encoder.Encode(settings)
 
+	if err != nil {
+		return buffer.String(), "", err
+	}
+
 	// Gunicorn logging dict settings
 	logSettings := map[string]any{}
 
@@ -357,8 +359,6 @@ func generateGunicornConfig(ctx context.Context, pgadmin *v1beta1.PGAdmin) (
 	logEncoder := json.NewEncoder(logBuffer)
 	logEncoder.SetEscapeHTML(false)
 	logEncoder.SetIndent("", "  ")
-
-	// Combine errors
 	err = logEncoder.Encode(logSettings)
 
 	return buffer.String(), logBuffer.String(), err

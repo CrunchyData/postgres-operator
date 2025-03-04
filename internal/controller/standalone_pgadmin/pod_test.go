@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -29,9 +28,8 @@ func TestPod(t *testing.T) {
 	config := new(corev1.ConfigMap)
 	testpod := new(corev1.PodSpec)
 	pvc := new(corev1.PersistentVolumeClaim)
-	ctx := context.Background()
 
-	call := func() { pod(ctx, pgadmin, config, testpod, pvc) }
+	call := func() { pod(pgadmin, config, testpod, pvc) }
 
 	t.Run("Defaults", func(t *testing.T) {
 
@@ -222,13 +220,6 @@ volumes:
 				RetentionPeriod: retentionPeriod,
 			},
 		}
-
-		// Turn on the Feature gate
-		gate := feature.NewGate()
-		assert.NilError(t, gate.SetFromMap(map[string]bool{
-			feature.OpenTelemetryLogs: true,
-		}))
-		ctx = feature.NewContext(context.Background(), gate)
 
 		call()
 
