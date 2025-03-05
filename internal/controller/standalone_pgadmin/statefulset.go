@@ -6,6 +6,9 @@ package standalone_pgadmin
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -137,5 +140,51 @@ func statefulset(
 			configmap, &sts.Spec.Template.Spec, volumeMounts, "", []string{}, false)
 	}
 
+	// Determine if a rollout because Secrets and ConfigMaps have changed
+	checkOauthSecretsChange(oauthSecrets, sts)
+	checkConfigMapChange(configmap, sts)
+
 	return sts
+}
+
+func checkOauthSecretsChange(oauthSecrets []corev1.Secret, sts *appsv1.StatefulSet) {
+	var secretHash, currentHash string
+	var sb strings.Builder
+
+	for _, secret := range oauthSecrets {
+		hash := sha256.New()
+		for key, value := range secret.Data {
+			hash.Write([]byte(key))
+			hash.Write(value)
+		}
+		encoding := hex.EncodeToString(hash.Sum(nil))
+		sb.WriteString(encoding)
+	}
+	secretHash = sb.String()
+	currentHash = sts.Spec.Template.Annotations["oauthSecretsHash"]
+
+	if currentHash != secretHash {
+		if sts.Spec.Template.Annotations == nil {
+			sts.Spec.Template.Annotations = map[string]string{}
+		}
+		sts.Spec.Template.Annotations["oauthSecretsHash"] = secretHash
+	}
+}
+
+func checkConfigMapChange(configmap *corev1.ConfigMap, sts *appsv1.StatefulSet) {
+	var secretHash, currentHash string
+	hash := sha256.New()
+	for key, value := range configmap.Data {
+		hash.Write([]byte(key))
+		hash.Write([]byte(value))
+	}
+	secretHash = hex.EncodeToString(hash.Sum(nil))
+	currentHash = sts.Spec.Template.Annotations["configMapHash"]
+
+	if currentHash != secretHash {
+		if sts.Spec.Template.Annotations == nil {
+			sts.Spec.Template.Annotations = map[string]string{}
+		}
+		sts.Spec.Template.Annotations["configMapHash"] = secretHash
+	}
 }
