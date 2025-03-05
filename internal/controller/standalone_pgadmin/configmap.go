@@ -28,7 +28,7 @@ import (
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={get}
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={create,delete,patch}
 
-// reconcileOauthConfigSecrets reconciles the ConfigMap for pgAdmin.
+// reconcileOauthConfigSecrets reconciles the Oauth Configuration Secrets for pgAdmin.
 func (r *PGAdminReconciler) reconcileOauthConfigSecrets(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
 ) ([]corev1.Secret, error) {
