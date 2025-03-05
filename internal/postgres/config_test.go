@@ -16,7 +16,6 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -47,7 +46,7 @@ func TestWALDirectory(t *testing.T) {
 	assert.Equal(t, WALDirectory(cluster, instance), "/pgdata/pg13_wal")
 
 	// with WAL volume
-	instance.WALVolumeClaimSpec = new(corev1.PersistentVolumeClaimSpec)
+	instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpec)
 	assert.Equal(t, WALDirectory(cluster, instance), "/pgwal/pg13_wal")
 }
 

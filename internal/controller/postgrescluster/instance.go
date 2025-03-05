@@ -1188,7 +1188,7 @@ func (r *Reconciler) reconcileInstance(
 			ctx, cluster, spec,
 			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret),
 			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
-			&instance.Spec.Template.Spec)
+			&instance.Spec.Template)
 
 		if backupsSpecFound {
 			addPGBackRestToInstancePodSpec(

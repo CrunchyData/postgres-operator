@@ -32,6 +32,11 @@ func TablespaceVolumeMount(tablespaceName string) corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "tablespace-" + tablespaceName, MountPath: tablespaceMountPath + "/" + tablespaceName}
 }
 
+// TempVolumeMount returns the name and mount path of the ephemeral volume.
+func TempVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{Name: "postgres-temp", MountPath: tmpMountPath}
+}
+
 // WALVolumeMount returns the name and mount path of the PostgreSQL WAL volume.
 func WALVolumeMount() corev1.VolumeMount {
 	return corev1.VolumeMount{Name: "postgres-wal", MountPath: walMountPath}
@@ -63,7 +68,7 @@ func InstancePod(ctx context.Context,
 	inClusterCertificates, inClientCertificates *corev1.SecretProjection,
 	inDataVolume, inWALVolume *corev1.PersistentVolumeClaim,
 	inTablespaceVolumes []*corev1.PersistentVolumeClaim,
-	outInstancePod *corev1.PodSpec,
+	outInstancePod *corev1.PodTemplateSpec,
 ) {
 	certVolumeMount := corev1.VolumeMount{
 		Name:      naming.CertVolume,
@@ -207,7 +212,7 @@ func InstancePod(ctx context.Context,
 		VolumeMounts: []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
 	}
 
-	outInstancePod.Volumes = []corev1.Volume{
+	outInstancePod.Spec.Volumes = []corev1.Volume{
 		certVolume,
 		dataVolume,
 		downwardAPIVolume,
@@ -227,7 +232,7 @@ func InstancePod(ctx context.Context,
 				},
 			},
 		}
-		outInstancePod.Volumes = append(outInstancePod.Volumes, tablespaceVolume)
+		outInstancePod.Spec.Volumes = append(outInstancePod.Spec.Volumes, tablespaceVolume)
 		container.VolumeMounts = append(container.VolumeMounts, tablespaceVolumeMount)
 		startup.VolumeMounts = append(startup.VolumeMounts, tablespaceVolumeMount)
 	}
@@ -239,7 +244,7 @@ func InstancePod(ctx context.Context,
 			Sources: append([]corev1.VolumeProjection{}, inCluster.Spec.Config.Files...),
 		}
 		container.VolumeMounts = append(container.VolumeMounts, additionalConfigVolumeMount)
-		outInstancePod.Volumes = append(outInstancePod.Volumes, additionalConfigVolume)
+		outInstancePod.Spec.Volumes = append(outInstancePod.Spec.Volumes, additionalConfigVolume)
 	}
 
 	// Mount the WAL PVC whenever it exists. The startup command will move WAL
@@ -258,19 +263,37 @@ func InstancePod(ctx context.Context,
 
 		container.VolumeMounts = append(container.VolumeMounts, walVolumeMount)
 		startup.VolumeMounts = append(startup.VolumeMounts, walVolumeMount)
-		outInstancePod.Volumes = append(outInstancePod.Volumes, walVolume)
+		outInstancePod.Spec.Volumes = append(outInstancePod.Spec.Volumes, walVolume)
 	}
 
-	outInstancePod.Containers = []corev1.Container{container, reloader}
+	// Mount an ephemeral volume, if specified.
+	if inInstanceSpec.Volumes != nil && inInstanceSpec.Volumes.Temp != nil {
+		tmpVolumeMount := TempVolumeMount()
+		tmpVolume := corev1.Volume{Name: tmpVolumeMount.Name}
+		tmpVolume.Ephemeral = &corev1.EphemeralVolumeSource{
+			VolumeClaimTemplate: &corev1.PersistentVolumeClaimTemplate{
+				Spec: inInstanceSpec.Volumes.Temp.AsPersistentVolumeClaimSpec(),
+			},
+		}
+
+		// Create the PVC with the same labels and annotations as the pod.
+		tmpVolume.Ephemeral.VolumeClaimTemplate.Annotations = outInstancePod.Annotations
+		tmpVolume.Ephemeral.VolumeClaimTemplate.Labels = outInstancePod.Labels
+
+		container.VolumeMounts = append(container.VolumeMounts, tmpVolumeMount)
+		outInstancePod.Spec.Volumes = append(outInstancePod.Spec.Volumes, tmpVolume)
+	}
+
+	outInstancePod.Spec.Containers = []corev1.Container{container, reloader}
 
 	// If the InstanceSidecars feature gate is enabled and instance sidecars are
 	// defined, add the defined container to the Pod.
 	if feature.Enabled(ctx, feature.InstanceSidecars) &&
 		inInstanceSpec.Containers != nil {
-		outInstancePod.Containers = append(outInstancePod.Containers, inInstanceSpec.Containers...)
+		outInstancePod.Spec.Containers = append(outInstancePod.Spec.Containers, inInstanceSpec.Containers...)
 	}
 
-	outInstancePod.InitContainers = []corev1.Container{startup}
+	outInstancePod.Spec.InitContainers = []corev1.Container{startup}
 }
 
 // PodSecurityContext returns a v1.PodSecurityContext for cluster that can write

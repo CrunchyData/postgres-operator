@@ -698,7 +698,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 		labelMap,
 	)
 
-	pvc.Spec = instanceSpec.DataVolumeClaimSpec
+	pvc.Spec = instanceSpec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	// If a source cluster was provided and VolumeSnapshots are turned on in the source cluster and
 	// there is a VolumeSnapshot available for the source cluster that is ReadyToUse, use it as the
@@ -861,7 +861,7 @@ func (r *Reconciler) reconcileTablespaceVolumes(
 			labelMap,
 		)
 
-		pvc.Spec = vol.DataVolumeClaimSpec
+		pvc.Spec = vol.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 		if err == nil {
 			err = r.handlePersistentVolumeClaimError(cluster,
@@ -968,7 +968,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 		labelMap,
 	)
 
-	pvc.Spec = *instanceSpec.WALVolumeClaimSpec
+	pvc.Spec = instanceSpec.WALVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,
