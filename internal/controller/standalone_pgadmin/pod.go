@@ -239,7 +239,7 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin,
 					},
 					Items: []corev1.KeyToPath{
 						{
-							Key:  "oauth-config.json",
+							Key:  "oauth-config",
 							Path: fmt.Sprintf("%s%s.json", oauthConfigDir, secret.Name),
 						},
 					},
@@ -403,6 +403,20 @@ import glob, json, re, os, logging
 DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
     _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
+    folder_path = '` + configMountPath + `/` + oauthConfigDir + `'
+    if os.path.isdir(folder_path):
+        for filename in os.listdir(folder_path):
+            with open(os.path.join(folder_path, filename), "r", encoding="utf-8") as f:
+                try:
+                    oath = json.load(f)
+                    if oath.get("OAUTH2_NAME") not in [
+                        o.get("OAUTH2_NAME") for o in _data.get("OAUTH2_CONFIG")]:
+                        _data.get("OAUTH2_CONFIG").append(oath)
+                    for o in _data.get("OAUTH2_CONFIG"):
+                        if o.get("OAUTH2_NAME") == oath.get("OAUTH2_NAME"):
+                            o.update(oath)
+                except Exception as e:
+                    print(f"An unexpected error occurred: {e}")
     if type(_data) is dict:
         globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
 if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
