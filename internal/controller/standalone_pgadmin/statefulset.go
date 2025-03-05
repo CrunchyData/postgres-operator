@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
+	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -121,8 +122,9 @@ func statefulset(
 
 	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
 
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if pgadmin.Spec.Instrumentation != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
+		// so the collector needs access to that that path.
 		dataVolumeMount := corev1.VolumeMount{
 			Name:      "pgadmin-data",
 			MountPath: "/var/lib/pgadmin",
@@ -132,8 +134,10 @@ func statefulset(
 		}
 
 		collector.AddToPod(ctx, pgadmin.Spec.Instrumentation, pgadmin.Spec.ImagePullPolicy,
-			configmap, &sts.Spec.Template.Spec, volumeMounts, "", []string{}, false)
+			configmap, &sts.Spec.Template.Spec, volumeMounts, "", []string{LogDirectoryAbsolutePath}, false)
 	}
+
+	postgrescluster.AddTMPEmptyDir(&sts.Spec.Template)
 
 	return sts
 }

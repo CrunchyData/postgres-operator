@@ -1242,7 +1242,7 @@ func (r *Reconciler) reconcileInstance(
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
 	// all containers included within that spec
 	if err == nil {
-		addTMPEmptyDir(&instance.Spec.Template)
+		AddTMPEmptyDir(&instance.Spec.Template)
 	}
 
 	// mount shared memory to the Postgres instance
