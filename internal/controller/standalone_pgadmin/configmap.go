@@ -105,11 +105,10 @@ func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 		configmap.Data[settingsClusterMapKey] = clusterSettings
 	}
 
-	gunicornSettings, gunicornLoggingSettings, err := generateGunicornConfig(pgadmin,
+	gunicornSettings, err := generateGunicornConfig(pgadmin,
 		logRetention, maxBackupRetentionNumber, gunicornRetentionPeriod)
 	if err == nil {
 		configmap.Data[gunicornConfigKey] = gunicornSettings
-		configmap.Data[gunicornLoggingConfigKey] = gunicornLoggingSettings
 	}
 
 	return configmap, err
@@ -239,7 +238,7 @@ func generateClusterConfig(
 // - https://docs.gunicorn.org/en/latest/settings.html
 func generateGunicornConfig(pgadmin *v1beta1.PGAdmin,
 	logRetention bool, maxBackupRetentionNumber int, gunicornRetentionPeriod string,
-) (string, string, error) {
+) (string, error) {
 	settings := map[string]any{
 		// Bind to all IPv4 addresses and set 25 threads by default.
 		// - https://docs.gunicorn.org/en/latest/settings.html#bind
@@ -256,21 +255,6 @@ func generateGunicornConfig(pgadmin *v1beta1.PGAdmin,
 	// Write mandatory settings over any specified ones.
 	// - https://docs.gunicorn.org/en/latest/settings.html#workers
 	settings["workers"] = 1
-
-	// To avoid spurious reconciles, the following value must not change when
-	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
-	// emitting map keys in sorted order. Indent so the value is not rendered
-	// as one long line by `kubectl`.
-	buffer := new(bytes.Buffer)
-	encoder := json.NewEncoder(buffer)
-	encoder.SetEscapeHTML(false)
-	encoder.SetIndent("", "  ")
-	err := encoder.Encode(settings)
-
-	if err != nil {
-		return buffer.String(), "", err
-	}
-
 	// Gunicorn logging dict settings
 	logSettings := map[string]any{}
 
@@ -333,16 +317,17 @@ func generateGunicornConfig(pgadmin *v1beta1.PGAdmin,
 			},
 		}
 	}
+	settings["logconfig_dict"] = logSettings
 
 	// To avoid spurious reconciles, the following value must not change when
 	// the spec does not change. [json.Encoder] and [json.Marshal] do this by
 	// emitting map keys in sorted order. Indent so the value is not rendered
 	// as one long line by `kubectl`.
-	logBuffer := new(bytes.Buffer)
-	logEncoder := json.NewEncoder(logBuffer)
-	logEncoder.SetEscapeHTML(false)
-	logEncoder.SetIndent("", "  ")
-	err = logEncoder.Encode(logSettings)
+	buffer := new(bytes.Buffer)
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+	err := encoder.Encode(settings)
 
-	return buffer.String(), logBuffer.String(), err
+	return buffer.String(), err
 }

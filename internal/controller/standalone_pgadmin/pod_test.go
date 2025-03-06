@@ -59,7 +59,7 @@ containers:
     if [ $APP_RELEASE -eq 7 ]; then
         pgadmin4 &
     else
-        gunicorn -c /etc/pgadmin/gunicorn_config.py --reload-extra-file /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --log-config-json /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --chdir $PGADMIN_DIR pgAdmin4:app &
+        gunicorn -c /etc/pgadmin/gunicorn_config.py --chdir $PGADMIN_DIR pgAdmin4:app &
     fi
     echo $! > $PGADMIN4_PIDFILE
 
@@ -74,7 +74,7 @@ containers:
 
     exec {fd}<> <(:||:)
     while read -r -t 5 -u "${fd}" ||:; do
-        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand
+        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -KILL $(head -1 ${PGADMIN4_PIDFILE?});
         then
             exec {fd}>&- && exec {fd}<> <(:||:)
             stat --format='Loaded shared servers dated %y' "${cluster_file}"
@@ -84,7 +84,7 @@ containers:
             if [[ $APP_RELEASE -eq 7 ]]; then
                 pgadmin4 &
             else
-                gunicorn -c /etc/pgadmin/gunicorn_config.py --reload-extra-file /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --log-config-json /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --chdir $PGADMIN_DIR pgAdmin4:app &
+                gunicorn -c /etc/pgadmin/gunicorn_config.py --chdir $PGADMIN_DIR pgAdmin4:app &
             fi
             echo $! > $PGADMIN4_PIDFILE
             echo "Restarting pgAdmin4"
@@ -190,8 +190,6 @@ volumes:
           path: ~postgres-operator/pgadmin-shared-clusters.json
         - key: gunicorn-config.json
           path: ~postgres-operator/gunicorn-config.json
-        - key: gunicorn-logging-config.json
-          path: ~postgres-operator/gunicorn-logging-config.json
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
@@ -247,7 +245,7 @@ containers:
     if [ $APP_RELEASE -eq 7 ]; then
         pgadmin4 &
     else
-        gunicorn -c /etc/pgadmin/gunicorn_config.py --reload-extra-file /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --log-config-json /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --chdir $PGADMIN_DIR pgAdmin4:app &
+        gunicorn -c /etc/pgadmin/gunicorn_config.py --chdir $PGADMIN_DIR pgAdmin4:app &
     fi
     echo $! > $PGADMIN4_PIDFILE
 
@@ -262,7 +260,7 @@ containers:
 
     exec {fd}<> <(:||:)
     while read -r -t 5 -u "${fd}" ||:; do
-        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand
+        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -KILL $(head -1 ${PGADMIN4_PIDFILE?});
         then
             exec {fd}>&- && exec {fd}<> <(:||:)
             stat --format='Loaded shared servers dated %y' "${cluster_file}"
@@ -272,7 +270,7 @@ containers:
             if [[ $APP_RELEASE -eq 7 ]]; then
                 pgadmin4 &
             else
-                gunicorn -c /etc/pgadmin/gunicorn_config.py --reload-extra-file /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --log-config-json /etc/pgadmin/conf.d/~postgres-operator/gunicorn-logging-config.json --chdir $PGADMIN_DIR pgAdmin4:app &
+                gunicorn -c /etc/pgadmin/gunicorn_config.py --chdir $PGADMIN_DIR pgAdmin4:app &
             fi
             echo $! > $PGADMIN4_PIDFILE
             echo "Restarting pgAdmin4"
@@ -386,8 +384,6 @@ volumes:
           path: ~postgres-operator/pgadmin-shared-clusters.json
         - key: gunicorn-config.json
           path: ~postgres-operator/gunicorn-config.json
-        - key: gunicorn-logging-config.json
-          path: ~postgres-operator/gunicorn-logging-config.json
 - name: pgadmin-data
   persistentVolumeClaim:
     claimName: ""
@@ -430,8 +426,6 @@ func TestPodConfigFiles(t *testing.T) {
       path: ~postgres-operator/pgadmin-shared-clusters.json
     - key: gunicorn-config.json
       path: ~postgres-operator/gunicorn-config.json
-    - key: gunicorn-logging-config.json
-      path: ~postgres-operator/gunicorn-logging-config.json
     name: some-cm
 	`))
 }

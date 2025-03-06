@@ -6,7 +6,6 @@ package standalone_pgadmin
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -258,14 +257,14 @@ func TestGenerateGunicornConfig(t *testing.T) {
 
 		expectedString := `{
   "bind": "0.0.0.0:5050",
+  "logconfig_dict": {},
   "threads": 25,
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
+		actualString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
-		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("Add Settings", func(t *testing.T) {
@@ -281,14 +280,14 @@ func TestGenerateGunicornConfig(t *testing.T) {
   "bind": "0.0.0.0:5050",
   "certfile": "/path/to/certfile",
   "keyfile": "/path/to/keyfile",
+  "logconfig_dict": {},
   "threads": 25,
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
+		actualString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
-		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("Update Defaults", func(t *testing.T) {
@@ -302,14 +301,14 @@ func TestGenerateGunicornConfig(t *testing.T) {
 
 		expectedString := `{
   "bind": "127.0.0.1:5051",
+  "logconfig_dict": {},
   "threads": 30,
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
+		actualString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
-		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("Update Mandatory", func(t *testing.T) {
@@ -322,14 +321,14 @@ func TestGenerateGunicornConfig(t *testing.T) {
 
 		expectedString := `{
   "bind": "0.0.0.0:5050",
+  "logconfig_dict": {},
   "threads": 25,
   "workers": 1
 }
 `
-		actualString, logString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
+		actualString, err := generateGunicornConfig(pgAdmin, false, 0, "H")
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
-		assert.Assert(t, strings.Contains(logString, "{}"))
 	})
 
 	t.Run("OTel enabled", func(t *testing.T) {
@@ -341,73 +340,72 @@ func TestGenerateGunicornConfig(t *testing.T) {
 				logs: { retentionPeriod: 5h },
 			},
 		}`)
-		actualString, logString, err := generateGunicornConfig(pgAdmin, true, 4, "H")
+		actualString, err := generateGunicornConfig(pgAdmin, true, 4, "H")
 
 		expectedString := `{
   "bind": "0.0.0.0:5050",
+  "logconfig_dict": {
+    "formatters": {
+      "generic": {
+        "class": "logging.Formatter",
+        "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
+        "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s"
+      },
+      "json": {
+        "class": "jsonformatter.JsonFormatter",
+        "format": {
+          "level": "levelname",
+          "message": "message",
+          "name": "name",
+          "time": "created"
+        },
+        "separators": [
+          ",",
+          ":"
+        ]
+      }
+    },
+    "handlers": {
+      "console": {
+        "class": "logging.StreamHandler",
+        "formatter": "generic",
+        "stream": "ext://sys.stdout"
+      },
+      "file": {
+        "backupCount": 4,
+        "class": "logging.handlers.TimedRotatingFileHandler",
+        "filename": "/var/lib/pgadmin/logs/gunicorn.log",
+        "formatter": "json",
+        "interval": 1,
+        "when": "H"
+      }
+    },
+    "loggers": {
+      "gunicorn.access": {
+        "handlers": [
+          "file"
+        ],
+        "level": "INFO",
+        "propagate": true,
+        "qualname": "gunicorn.access"
+      },
+      "gunicorn.error": {
+        "handlers": [
+          "file"
+        ],
+        "level": "INFO",
+        "propagate": true,
+        "qualname": "gunicorn.error"
+      }
+    }
+  },
   "threads": 25,
   "workers": 1
 }
 `
-		expectedLogString := `{
-  "formatters": {
-    "generic": {
-      "class": "logging.Formatter",
-      "datefmt": "[%Y-%m-%d %H:%M:%S %z]",
-      "format": "%(asctime)s [%(process)d] [%(levelname)s] %(message)s"
-    },
-    "json": {
-      "class": "jsonformatter.JsonFormatter",
-      "format": {
-        "level": "levelname",
-        "message": "message",
-        "name": "name",
-        "time": "created"
-      },
-      "separators": [
-        ",",
-        ":"
-      ]
-    }
-  },
-  "handlers": {
-    "console": {
-      "class": "logging.StreamHandler",
-      "formatter": "generic",
-      "stream": "ext://sys.stdout"
-    },
-    "file": {
-      "backupCount": 4,
-      "class": "logging.handlers.TimedRotatingFileHandler",
-      "filename": "/var/lib/pgadmin/logs/gunicorn.log",
-      "formatter": "json",
-      "interval": 1,
-      "when": "H"
-    }
-  },
-  "loggers": {
-    "gunicorn.access": {
-      "handlers": [
-        "file"
-      ],
-      "level": "INFO",
-      "propagate": true,
-      "qualname": "gunicorn.access"
-    },
-    "gunicorn.error": {
-      "handlers": [
-        "file"
-      ],
-      "level": "INFO",
-      "propagate": true,
-      "qualname": "gunicorn.error"
-    }
-  }
-}
-`
+
 		assert.NilError(t, err)
 		assert.Equal(t, actualString, expectedString)
-		assert.Equal(t, logString, expectedLogString)
 	})
 
 }

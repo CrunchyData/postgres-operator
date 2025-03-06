@@ -22,13 +22,12 @@ import (
 )
 
 const (
-	configMountPath         = "/etc/pgadmin/conf.d"
-	configFilePath          = "~postgres-operator/" + settingsConfigMapKey
-	clusterFilePath         = "~postgres-operator/" + settingsClusterMapKey
-	configDatabaseURIPath   = "~postgres-operator/config-database-uri"
-	ldapFilePath            = "~postgres-operator/ldap-bind-password"
-	gunicornConfigFilePath  = "~postgres-operator/" + gunicornConfigKey
-	gunicornLogConfFilePath = "~postgres-operator/" + gunicornLoggingConfigKey
+	configMountPath        = "/etc/pgadmin/conf.d"
+	configFilePath         = "~postgres-operator/" + settingsConfigMapKey
+	clusterFilePath        = "~postgres-operator/" + settingsClusterMapKey
+	configDatabaseURIPath  = "~postgres-operator/config-database-uri"
+	ldapFilePath           = "~postgres-operator/ldap-bind-password"
+	gunicornConfigFilePath = "~postgres-operator/" + gunicornConfigKey
 
 	// scriptMountPath is where to mount a temporary directory that is only
 	// writable during Pod initialization.
@@ -208,10 +207,6 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []core
 							Key:  gunicornConfigKey,
 							Path: gunicornConfigFilePath,
 						},
-						{
-							Key:  gunicornLoggingConfigKey,
-							Path: gunicornLogConfFilePath,
-						},
 					},
 				},
 			},
@@ -267,10 +262,7 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 
 	// startCommands (v8 image includes Gunicorn)
 	var startCommandV7 = "pgadmin4 &"
-	// For Gunicorn, watch the logging config and reload if changes are detected.
 	var startCommandV8 = "gunicorn -c /etc/pgadmin/gunicorn_config.py" +
-		" --reload-extra-file " + configMountPath + `/` + gunicornLogConfFilePath +
-		" --log-config-json " + configMountPath + `/` + gunicornLogConfFilePath +
 		" --chdir $PGADMIN_DIR pgAdmin4:app &"
 
 	// This script sets up, starts pgadmin, and runs the appropriate `loadServerCommand` to register the discovered servers.
@@ -319,10 +311,15 @@ loadServerCommand
 	// descriptor and uses the timeout of the builtin `read` to wait. That same
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check mtimes.
 	// - https://unix.stackexchange.com/a/407383
+	// In order to get gunicorn to reload the logging config
+	// we need to send a KILL rather than a HUP signal.
+	// - https://github.com/benoitc/gunicorn/issues/3353
+	// Right now the config file is on the same configMap as the cluster file
+	// so if the mtime changes for any of those files, it will change for all.
 	var reloadScript = `
 exec {fd}<> <(:||:)
 while read -r -t 5 -u "${fd}" ||:; do
-    if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand
+    if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -KILL $(head -1 ${PGADMIN4_PIDFILE?});
     then
         exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded shared servers dated %y' "${cluster_file}"

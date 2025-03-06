@@ -7,10 +7,9 @@ package standalone_pgadmin
 // Include configs here used by multiple files
 const (
 	// ConfigMap keys used also in mounting volume to pod
-	settingsConfigMapKey     = "pgadmin-settings.json"
-	settingsClusterMapKey    = "pgadmin-shared-clusters.json"
-	gunicornLoggingConfigKey = "gunicorn-logging-config.json"
-	gunicornConfigKey        = "gunicorn-config.json"
+	settingsConfigMapKey  = "pgadmin-settings.json"
+	settingsClusterMapKey = "pgadmin-shared-clusters.json"
+	gunicornConfigKey     = "gunicorn-config.json"
 
 	// Port address used to define pod and service
 	pgAdminPort = 5050
