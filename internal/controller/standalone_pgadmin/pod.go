@@ -270,7 +270,7 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 	// - https://www.pgadmin.org/docs/pgadmin4/development/server_deployment.html#standalone-gunicorn-configuration
 	// - https://docs.gunicorn.org/en/latest/configure.html
 	var startScript = fmt.Sprintf(`
-export PGADMIN_SETUP_PASSWORD="$(date +%%s | sha256sum | base64 | head -c 32)"
+export PGADMIN_SETUP_PASSWORD="admin"
 PGADMIN_DIR=%s
 APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
@@ -365,11 +365,10 @@ func startupCommand() []string {
 
 		// configDatabaseURIPath is the path for mounting the database URI connection string
 		configDatabaseURIPathAbsolutePath = configMountPath + "/" + configDatabaseURIPath
-	)
 
-	// The values set in configSystem will not be overridden through
-	// spec.config.settings.
-	var configSystem = `
+		// The values set in configSystem will not be overridden through
+		// spec.config.settings.
+		configSystem = `
 import glob, json, re, os
 DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
@@ -384,17 +383,17 @@ if os.path.isfile('` + configDatabaseURIPathAbsolutePath + `'):
         CONFIG_DATABASE_URI = _f.read()
 `
 
-	// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
-	// after all other config files.
-	// - https://docs.gunicorn.org/en/latest/configure.html#configuration-file
-	//
-	// This command writes a script in `/etc/pgadmin/gunicorn_config.py` that reads
-	// from the `gunicorn-config.json` file and sets those variables globally.
-	// That way those values are available as settings when Gunicorn starts.
-	//
-	// Note: All Gunicorn settings are lowercase with underscores, so ignore
-	// any keys/names that are not.
-	var gunicornConfig = `
+		// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
+		// after all other config files.
+		// - https://docs.gunicorn.org/en/latest/configure.html#configuration-file
+		//
+		// This command writes a script in `/etc/pgadmin/gunicorn_config.py` that reads
+		// from the `gunicorn-config.json` file and sets those variables globally.
+		// That way those values are available as settings when Gunicorn starts.
+		//
+		// Note: All Gunicorn settings are lowercase with underscores, so ignore
+		// any keys/names that are not.
+		gunicornConfig = `
 import json, re, gunicorn
 gunicorn.SERVER_SOFTWARE = 'Python'
 with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
@@ -402,6 +401,7 @@ with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
     if type(_data) is dict:
         globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
 `
+	)
 
 	args := []string{strings.TrimLeft(configSystem, "\n"), strings.TrimLeft(gunicornConfig, "\n")}
 
