@@ -29,11 +29,11 @@ func NewHBAs() HBAs {
 		},
 
 		Default: []*HostBasedAuthentication{
-			// Allow TLS connections to any database using passwords. The "md5"
-			// authentication method automatically verifies passwords encrypted
-			// using either MD5 or SCRAM-SHA-256.
+			// Allow TLS connections to any database using passwords. Passwords are
+			// hashed and stored using SCRAM-SHA-256 by default. Since PostgreSQL 10,
+			// the "scram-sha-256" method is the preferred way to use those passwords.
 			// - https://www.postgresql.org/docs/current/auth-password.html
-			NewHBA().TLS().Method("md5"),
+			NewHBA().TLS().Method("scram-sha-256"),
 		},
 	}
 }

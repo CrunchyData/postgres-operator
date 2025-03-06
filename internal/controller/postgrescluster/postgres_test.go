@@ -59,10 +59,10 @@ func TestGeneratePostgresHBA(t *testing.T) {
 			rule:     `{ connection: hostssl, method: md5, options: { clientcert: verify-ca } }`,
 			expected: `"hostssl" all all all "md5"  "clientcert"="verify-ca"`,
 		},
-		// "password" input should be "md5" output
+		// "password" input should be "scram-sha-256" output
 		{
 			rule:     `{ connection: hostssl, method: password }`,
-			expected: `"hostssl" all all all "md5"`,
+			expected: `"hostssl" all all all "scram-sha-256"`,
 		},
 	} {
 		var rule *v1beta1.PostgresHBARule
