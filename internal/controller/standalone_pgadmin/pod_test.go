@@ -148,6 +148,20 @@ initContainers:
     DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
         _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
+        folder_path = '/etc/pgadmin/conf.d/~postgres-operator/oauth-config/'
+        if os.path.isdir(folder_path):
+            for filename in os.listdir(folder_path):
+                with open(os.path.join(folder_path, filename), "r", encoding="utf-8") as f:
+                    try:
+                        oath = json.load(f)
+                        if oath.get("OAUTH2_NAME") not in [
+                            o.get("OAUTH2_NAME") for o in _data.get("OAUTH2_CONFIG")]:
+                            _data.get("OAUTH2_CONFIG").append(oath)
+                        for o in _data.get("OAUTH2_CONFIG"):
+                            if o.get("OAUTH2_NAME") == oath.get("OAUTH2_NAME"):
+                                o.update(oath)
+                    except Exception as e:
+                        print(f"An unexpected error occurred: {e}")
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
@@ -367,6 +381,20 @@ initContainers:
     DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
     with open('/etc/pgadmin/conf.d/~postgres-operator/pgadmin-settings.json') as _f:
         _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
+        folder_path = '/etc/pgadmin/conf.d/~postgres-operator/oauth-config/'
+        if os.path.isdir(folder_path):
+            for filename in os.listdir(folder_path):
+                with open(os.path.join(folder_path, filename), "r", encoding="utf-8") as f:
+                    try:
+                        oath = json.load(f)
+                        if oath.get("OAUTH2_NAME") not in [
+                            o.get("OAUTH2_NAME") for o in _data.get("OAUTH2_CONFIG")]:
+                            _data.get("OAUTH2_CONFIG").append(oath)
+                        for o in _data.get("OAUTH2_CONFIG"):
+                            if o.get("OAUTH2_NAME") == oath.get("OAUTH2_NAME"):
+                                o.update(oath)
+                    except Exception as e:
+                        print(f"An unexpected error occurred: {e}")
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
