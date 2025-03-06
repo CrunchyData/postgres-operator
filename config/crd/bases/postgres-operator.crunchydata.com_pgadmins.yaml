@@ -1629,6 +1629,38 @@ spec:
                     description: Config is the place for users to configure exporters
                       and provide files.
                     properties:
+                      detectors:
+                        description: |-
+                          Resource detectors add identifying attributes to logs and metrics. These run in the order they are defined.
+                          More info: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/resourcedetectionprocessor#readme
+                        items:
+                          properties:
+                            attributes:
+                              additionalProperties:
+                                type: boolean
+                              description: |-
+                                Attributes to use from this detector. Detectors usually add every attribute
+                                they know automatically. Names omitted here behave according to detector defaults.
+                              maxProperties: 30
+                              minProperties: 1
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            name:
+                              description: 'Name of the resource detector to enable:
+                                `aks`, `eks`, `gcp`, etc.'
+                              maxLength: 20
+                              minLength: 1
+                              type: string
+                          required:
+                          - name
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        maxItems: 10
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
                       exporters:
                         description: |-
                           Exporters allows users to configure OpenTelemetry exporters that exist
@@ -1961,7 +1993,9 @@ spec:
                               - path
                               type: object
                           type: object
+                        minItems: 1
                         type: array
+                        x-kubernetes-list-type: atomic
                     type: object
                   image:
                     description: |-
@@ -1972,13 +2006,53 @@ spec:
                     description: Logs is the place for users to configure the log
                       collection.
                     properties:
+                      batches:
+                        description: Log records are exported in small batches. Set
+                          this field to change their size and frequency.
+                        properties:
+                          maxDelay:
+                            default: 200ms
+                            description: |-
+                              Maximum time to wait before exporting a log record. Higher numbers
+                              allow more records to be deduplicated and compressed before export.
+                            format: duration
+                            maxLength: 20
+                            minLength: 1
+                            pattern: ^((PT)?( *[0-9]+ *(?i:(ms|s|m)|(milli|sec|min)s?))+|0)$
+                            type: string
+                            x-kubernetes-validations:
+                            - rule: duration("0") <= self && self <= duration("5m")
+                          maxRecords:
+                            description: |-
+                              Maximum number of records to include in an exported batch. When present,
+                              batches this size are sent without any further delay.
+                            format: int32
+                            minimum: 1
+                            type: integer
+                          minRecords:
+                            default: 8192
+                            description: |-
+                              Number of records to wait for before exporting a batch. Higher numbers
+                              allow more records to be deduplicated and compressed before export.
+                            format: int32
+                            minimum: 0
+                            type: integer
+                        type: object
+                        x-kubernetes-map-type: atomic
+                        x-kubernetes-validations:
+                        - message: to disable batching, both minRecords and maxDelay
+                            must be zero
+                          rule: (has(self.minRecords) && self.minRecords == 0) ==
+                            (has(self.maxDelay) && self.maxDelay == duration('0'))
+                        - message: minRecords cannot be larger than maxRecords
+                          rule: '!has(self.maxRecords) || self.minRecords <= self.maxRecords'
                       exporters:
-                        description: |-
-                          Exporters allows users to specify which exporters they want to use in
-                          the logs pipeline.
+                        description: The names of exporters that should send logs.
                         items:
                           type: string
+                        minItems: 1
                         type: array
+                        x-kubernetes-list-type: set
                       retentionPeriod:
                         description: |-
                           How long to retain log files locally. An RFC 3339 duration or a number

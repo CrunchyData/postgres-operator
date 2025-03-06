@@ -43,6 +43,9 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
   resource/patroni:
     attributes:
@@ -55,6 +58,10 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/patroni_logs:
     log_statements:
     - context: log
@@ -89,7 +96,8 @@ service:
       processors:
       - resource/patroni
       - transform/patroni_logs
-      - batch/200ms
+      - resourcedetection
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/patroni_jsonlog
@@ -130,6 +138,9 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
   resource/patroni:
     attributes:
@@ -142,6 +153,10 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/patroni_logs:
     log_statements:
     - context: log
@@ -176,7 +191,8 @@ service:
       processors:
       - resource/patroni
       - transform/patroni_logs
-      - batch/200ms
+      - resourcedetection
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/patroni_jsonlog

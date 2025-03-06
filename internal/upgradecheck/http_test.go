@@ -67,7 +67,8 @@ func TestCheckForUpgrades(t *testing.T) {
 		assert.Equal(t, data.RegistrationToken, "speakFriend")
 		assert.Equal(t, data.BridgeClustersTotal, 2)
 		assert.Equal(t, data.PGOClustersTotal, 2)
-		assert.Equal(t, data.FeatureGatesEnabled, "AutoCreateUserSchema=true,PGUpgradeCPUConcurrency=true,TablespaceVolumes=true")
+		assert.Equal(t, data.FeatureGatesEnabled,
+			"AutoCreateUserSchema=true,InstanceSidecars=true,PGUpgradeCPUConcurrency=true,TablespaceVolumes=true")
 	}
 
 	t.Run("success", func(t *testing.T) {

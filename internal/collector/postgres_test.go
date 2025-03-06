@@ -52,6 +52,9 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
   resource/pgbackrest:
     attributes:
@@ -81,6 +84,10 @@ processors:
     - action: insert
       key: db.version
       value: "99"
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
     - context: log
@@ -225,7 +232,8 @@ service:
       processors:
       - resource/pgbackrest
       - transform/pgbackrest_logs
-      - batch/200ms
+      - resourcedetection
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/pgbackrest_log
@@ -235,7 +243,8 @@ service:
       processors:
       - resource/postgres
       - transform/postgres_logs
-      - batch/200ms
+      - resourcedetection
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/postgres_csvlog
@@ -284,6 +293,9 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
   resource/pgbackrest:
     attributes:
@@ -313,6 +325,10 @@ processors:
     - action: insert
       key: db.version
       value: "99"
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
     - context: log
@@ -457,7 +473,8 @@ service:
       processors:
       - resource/pgbackrest
       - transform/pgbackrest_logs
-      - batch/200ms
+      - resourcedetection
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/pgbackrest_log
@@ -467,7 +484,8 @@ service:
       processors:
       - resource/postgres
       - transform/postgres_logs
-      - batch/200ms
+      - resourcedetection
+      - batch/logs
       - groupbyattrs/compact
       receivers:
       - filelog/postgres_csvlog

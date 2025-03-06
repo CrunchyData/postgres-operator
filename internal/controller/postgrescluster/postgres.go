@@ -33,6 +33,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pgaudit"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
+	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/postgis"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -40,6 +41,35 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+// generatePostgresHBAs produces the HBA rules for cluster that incorporates,
+// from highest to lowest precedence:
+//  1. mandatory rules determined by controllers
+//  2. rules in cluster.spec.patroni.dynamicConfiguration
+//  3. default rules, when none were in cluster.spec
+func (*Reconciler) generatePostgresHBAs(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) *postgres.OrderedHBAs {
+	builtin := postgres.NewHBAs()
+	pgmonitor.PostgreSQLHBAs(ctx, cluster, &builtin)
+	pgbouncer.PostgreSQL(cluster, &builtin)
+
+	// Postgres processes HBA rules in order. Start with mandatory rules
+	// so connections are matched against them first.
+	result := new(postgres.OrderedHBAs)
+	result.Append(builtin.Mandatory...)
+
+	// Append any rules specified in the Patroni section.
+	before := result.Length()
+	result.AppendUnstructured(patroni.PostgresHBAs(cluster.Spec.Patroni)...)
+
+	// When there are no specified rules, include the recommended defaults.
+	if result.Length() == before {
+		result.Append(builtin.Default...)
+	}
+
+	return result
+}
 
 // generatePostgresParameters produces the parameter set for cluster that
 // incorporates, from highest to lowest precedence:

@@ -9,6 +9,8 @@ import (
 
 	"gotest.tools/v3/assert"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -27,7 +29,14 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
 receivers: {}
 service:
   extensions: []
@@ -55,12 +64,85 @@ processors:
     timeout: 1s
   batch/200ms:
     timeout: 200ms
+  batch/logs:
+    send_batch_size: 8192
+    timeout: 200ms
   groupbyattrs/compact: {}
+  resourcedetection:
+    detectors: []
+    override: false
+    timeout: 30s
 receivers: {}
 service:
   extensions: []
   pipelines: {}
 `)
+	})
+
+	t.Run("LogsBatches", func(t *testing.T) {
+		var spec *v1beta1.InstrumentationSpec
+		require.UnmarshalInto(t, &spec, `{
+			logs: {
+				batches: {
+					maxDelay: 5min 12sec,
+					maxRecords: 123,
+					minRecords: 45,
+				},
+			},
+		}`)
+
+		result, err := NewConfig(spec).ToYAML()
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Contains(result, `
+  batch/logs:
+    send_batch_max_size: 123
+    send_batch_size: 45
+    timeout: 5m12s
+`))
+
+		t.Run("Disable", func(t *testing.T) {
+			var spec *v1beta1.InstrumentationSpec
+			require.UnmarshalInto(t, &spec, `{
+				logs: {
+					batches: { minRecords: 0, maxDelay: "0" },
+				},
+			}`)
+
+			result, err := NewConfig(spec).ToYAML()
+			assert.NilError(t, err)
+			assert.Assert(t, cmp.Contains(result, `
+  batch/logs:
+    send_batch_size: 0
+    timeout: 0s
+`))
+		})
+	})
+
+	t.Run("Detectors", func(t *testing.T) {
+		var spec *v1beta1.InstrumentationSpec
+		require.UnmarshalInto(t, &spec, `{
+			config: {
+				detectors: [
+					{ name: gcp },
+					{ name: aks, attributes: { k8s.cluster.name: true } },
+				],
+			},
+		}`)
+
+		result, err := NewConfig(spec).ToYAML()
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Contains(result, `
+  resourcedetection:
+    aks:
+      resource_attributes:
+        k8s.cluster.name:
+          enabled: true
+    detectors:
+    - gcp
+    - aks
+    override: false
+    timeout: 30s
+`))
 	})
 }
 

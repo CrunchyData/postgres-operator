@@ -48,7 +48,13 @@ func NewConfigForPgBouncerPod(
 // logs from pgBouncer when the OpenTelemetryLogging feature flag is enabled.
 func EnablePgBouncerLogging(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
-	outConfig *Config) {
+	outConfig *Config,
+) {
+	var spec *v1beta1.InstrumentationLogsSpec
+	if inCluster != nil && inCluster.Spec.Instrumentation != nil {
+		spec = inCluster.Spec.Instrumentation.Logs
+	}
+
 	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		directory := naming.PGBouncerLogPath
 
@@ -142,13 +148,9 @@ func EnablePgBouncerLogging(ctx context.Context,
 
 		// If there are exporters to be added to the logs pipelines defined in
 		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
-		var exporters []ComponentID
-		if inCluster.Spec.Instrumentation != nil &&
-			inCluster.Spec.Instrumentation.Logs != nil &&
-			inCluster.Spec.Instrumentation.Logs.Exporters != nil {
-			exporters = inCluster.Spec.Instrumentation.Logs.Exporters
-		} else {
-			exporters = []ComponentID{DebugExporter}
+		exporters := []ComponentID{DebugExporter}
+		if spec != nil && spec.Exporters != nil {
+			exporters = slices.Clone(spec.Exporters)
 		}
 
 		outConfig.Pipelines["logs/pgbouncer"] = Pipeline{
@@ -157,7 +159,8 @@ func EnablePgBouncerLogging(ctx context.Context,
 			Processors: []ComponentID{
 				"resource/pgbouncer",
 				"transform/pgbouncer_logs",
-				SubSecondBatchProcessor,
+				ResourceDetectionProcessor,
+				LogsBatchProcessor,
 				CompactingProcessor,
 			},
 			Exporters: exporters,

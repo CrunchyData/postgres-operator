@@ -12,7 +12,6 @@ type InstrumentationSpec struct {
 	// Image name to use for collector containers. When omitted, the value
 	// comes from an operator environment variable.
 	// +optional
-	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
 	Image string `json:"image,omitempty"`
 
 	// Resources holds the resource requirements for the collector container.
@@ -31,6 +30,16 @@ type InstrumentationSpec struct {
 // InstrumentationConfigSpec allows users to configure their own exporters,
 // add files, etc.
 type InstrumentationConfigSpec struct {
+	// Resource detectors add identifying attributes to logs and metrics. These run in the order they are defined.
+	// More info: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/resourcedetectionprocessor#readme
+	// ---
+	// +kubebuilder:validation:MaxItems=10
+	// +kubebuilder:validation:MinItems=1
+	// +listMapKey=name
+	// +listType=map
+	// +optional
+	Detectors []OpenTelemetryResourceDetector `json:"detectors,omitempty"`
+
 	// Exporters allows users to configure OpenTelemetry exporters that exist
 	// in the collector image.
 	// +kubebuilder:pruning:PreserveUnknownFields
@@ -41,6 +50,9 @@ type InstrumentationConfigSpec struct {
 
 	// Files allows the user to mount projected volumes into the collector
 	// Pod so that files can be referenced by the collector as needed.
+	// ---
+	// +kubebuilder:validation:MinItems=1
+	// +listType=atomic
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 }
@@ -48,8 +60,15 @@ type InstrumentationConfigSpec struct {
 // InstrumentationLogsSpec defines the configuration for collecting logs via
 // OpenTelemetry.
 type InstrumentationLogsSpec struct {
-	// Exporters allows users to specify which exporters they want to use in
-	// the logs pipeline.
+	// Log records are exported in small batches. Set this field to change their size and frequency.
+	// ---
+	// +optional
+	Batches *OpenTelemetryLogsBatchSpec `json:"batches,omitempty"`
+
+	// The names of exporters that should send logs.
+	// ---
+	// +kubebuilder:validation:MinItems=1
+	// +listType=set
 	// +optional
 	Exporters []string `json:"exporters,omitempty"`
 
@@ -70,4 +89,80 @@ type InstrumentationLogsSpec struct {
 	//
 	// +optional
 	RetentionPeriod *Duration `json:"retentionPeriod,omitempty"`
+}
+
+// ---
+// Configuration for the OpenTelemetry Batch Processor
+// https://pkg.go.dev/go.opentelemetry.io/collector/processor/batchprocessor#section-readme
+//
+// The batch processor stops batching when *either* of these is zero, but that is confusing.
+// Make the user set both so it is evident there is *no* motivation to create any batch.
+// +kubebuilder:validation:XValidation:rule=`(has(self.minRecords) && self.minRecords == 0) == (has(self.maxDelay) && self.maxDelay == duration('0'))`,message=`to disable batching, both minRecords and maxDelay must be zero`
+//
+// +kubebuilder:validation:XValidation:rule=`!has(self.maxRecords) || self.minRecords <= self.maxRecords`,message=`minRecords cannot be larger than maxRecords`
+// +structType=atomic
+type OpenTelemetryLogsBatchSpec struct {
+	// Maximum time to wait before exporting a log record. Higher numbers
+	// allow more records to be deduplicated and compressed before export.
+	// ---
+	// Kubernetes ensures the value is in the "duration" format, but go ahead
+	// and loosely validate the format to show some acceptable units.
+	// NOTE: This rejects fractional numbers: https://github.com/kubernetes/kube-openapi/issues/523
+	// +kubebuilder:validation:Pattern=`^((PT)?( *[0-9]+ *(?i:(ms|s|m)|(milli|sec|min)s?))+|0)$`
+	//
+	// `controller-gen` needs to know "Type=string" to allow a "Pattern".
+	// +kubebuilder:validation:Type=string
+	//
+	// Set a max length to keep rule costs low.
+	// +kubebuilder:validation:MaxLength=20
+	// +kubebuilder:validation:XValidation:rule=`duration("0") <= self && self <= duration("5m")`
+	//
+	// +default="200ms"
+	// +optional
+	MaxDelay *Duration `json:"maxDelay,omitempty"`
+
+	// Maximum number of records to include in an exported batch. When present,
+	// batches this size are sent without any further delay.
+	// ---
+	// +kubebuilder:validation:Minimum=1
+	// +optional
+	MaxRecords *int32 `json:"maxRecords,omitempty"`
+
+	// Number of records to wait for before exporting a batch. Higher numbers
+	// allow more records to be deduplicated and compressed before export.
+	// ---
+	// +kubebuilder:validation:Minimum=0
+	// +default=8192
+	// +optional
+	MinRecords *int32 `json:"minRecords,omitempty"`
+}
+
+func (s *OpenTelemetryLogsBatchSpec) Default() {
+	if s.MaxDelay == nil {
+		s.MaxDelay, _ = NewDuration("200ms")
+	}
+	if s.MinRecords == nil {
+		s.MinRecords = new(int32)
+		*s.MinRecords = 8192
+	}
+}
+
+// ---
+// +structType=atomic
+type OpenTelemetryResourceDetector struct {
+	// Name of the resource detector to enable: `aks`, `eks`, `gcp`, etc.
+	// ---
+	// +kubebuilder:validation:MaxLength=20
+	// +kubebuilder:validation:MinLength=1
+	// +required
+	Name string `json:"name"`
+
+	// Attributes to use from this detector. Detectors usually add every attribute
+	// they know automatically. Names omitted here behave according to detector defaults.
+	// ---
+	// +kubebuilder:validation:MaxProperties=30
+	// +kubebuilder:validation:MinProperties=1
+	// +mapType=atomic
+	// +optional
+	Attributes map[string]bool `json:"attributes,omitempty"`
 }

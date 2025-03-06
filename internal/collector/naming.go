@@ -6,12 +6,14 @@ package collector
 
 const CompactingProcessor = "groupbyattrs/compact"
 const DebugExporter = "debug"
+const LogsBatchProcessor = "batch/logs"
 const OneSecondBatchProcessor = "batch/1s"
 const SubSecondBatchProcessor = "batch/200ms"
 const Prometheus = "prometheus"
 const PGBouncerMetrics = "metrics/pgbouncer"
 const PostgresMetrics = "metrics/postgres"
 const PatroniMetrics = "metrics/patroni"
+const ResourceDetectionProcessor = "resourcedetection"
 
 const SqlQuery = "sqlquery"
 

@@ -86,7 +86,7 @@ func (d *Duration) AsDuration() metav1.Duration {
 	return d.parsed
 }
 
-// MarshalJSON implements [encoding/json.Marshaler].
+// MarshalJSON implements [json.Marshaler].
 func (d Duration) MarshalJSON() ([]byte, error) {
 	if d.parsed.Duration == 0 {
 		return json.Marshal("0")
@@ -95,7 +95,7 @@ func (d Duration) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.string)
 }
 
-// UnmarshalJSON implements [encoding/json.Unmarshaler].
+// UnmarshalJSON implements [json.Unmarshaler].
 func (d *Duration) UnmarshalJSON(data []byte) error {
 	var next *Duration
 	var str string
