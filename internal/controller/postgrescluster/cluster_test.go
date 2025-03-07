@@ -870,6 +870,11 @@ func TestPatroniLogSize(t *testing.T) {
 		reconciler := &Reconciler{Recorder: recorder}
 
 		cluster.Spec.Patroni = nil
+		require.UnmarshalInto(t, &cluster.Spec, `{
+			instrumentation: {
+				logs: { retentionPeriod: 5h },
+			},
+		}`)
 
 		size := reconciler.patroniLogSize(ctx, &cluster)
 

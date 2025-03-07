@@ -27,8 +27,15 @@ func TestNewConfigForPgBackrestRepoHostPod(t *testing.T) {
 				Volume: new(v1beta1.RepoPVC),
 			},
 		}
+		retentionPeriod, err := v1beta1.NewDuration("12 hours")
+		assert.NilError(t, err)
+		instrumentation := v1beta1.InstrumentationSpec{
+			Logs: &v1beta1.InstrumentationLogsSpec{
+				RetentionPeriod: retentionPeriod,
+			},
+		}
 
-		config := NewConfigForPgBackrestRepoHostPod(ctx, nil, repos)
+		config := NewConfigForPgBackrestRepoHostPod(ctx, &instrumentation, repos)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)
