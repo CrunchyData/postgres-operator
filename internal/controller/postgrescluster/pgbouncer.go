@@ -19,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -99,13 +98,11 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 		pgbouncer.ConfigMap(ctx, cluster, configmap)
 	}
 	// If OTel logging or metrics is enabled, add collector config
-	if otelConfig != nil &&
-		(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
-			feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+	if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, cluster) {
 		err = collector.AddToConfigMap(ctx, otelConfig, configmap)
 	}
 	// If OTel logging is enabled, add logrotate config
-	if err == nil && otelConfig != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if err == nil && collector.OpenTelemetryLogsEnabled(ctx, cluster) {
 		logrotateConfig := collector.LogrotateConfig{
 			LogFiles:         []string{naming.PGBouncerFullLogPath},
 			PostrotateScript: collector.PGBouncerPostRotateScript,

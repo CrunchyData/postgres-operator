@@ -694,7 +694,7 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 
 		// If OpenTelemetryLogs is enabled, we want to add the collector to the pod
 		// and also add the RepoVolumes to the container.
-		if postgresCluster.Spec.Instrumentation != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+		if collector.OpenTelemetryLogsEnabled(ctx, postgresCluster) {
 			collector.AddToPod(ctx, postgresCluster.Spec.Instrumentation, postgresCluster.Spec.ImagePullPolicy,
 				&corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(postgresCluster)},
 				&repo.Spec.Template.Spec, []corev1.VolumeMount{}, "",

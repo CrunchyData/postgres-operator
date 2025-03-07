@@ -19,7 +19,7 @@ func OpenTelemetrySpecPresent[T CrunchyCRD](object T) bool {
 
 	switch v := any(object).(type) {
 	case *v1beta1.InstrumentationSpec:
-		return true
+		return v != nil
 	case *v1beta1.PostgresCluster:
 		return v.Spec.Instrumentation != nil
 	case *v1beta1.PGAdmin:

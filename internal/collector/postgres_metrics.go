@@ -11,8 +11,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
-	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
+	// "github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -37,7 +36,7 @@ var gtePG16 json.RawMessage
 var ltPG16 json.RawMessage
 
 func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresCluster, config *Config) {
-	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if OpenTelemetryMetricsEnabled(ctx, inCluster) {
 		// We must create a copy of the fiveSecondMetrics variable, otherwise we
 		// will continually append to it and blow up our ConfigMap
 		fiveSecondMetricsClone := slices.Clone(fiveSecondMetrics)
@@ -61,7 +60,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 
 		config.Receivers[FiveSecondSqlQuery] = map[string]any{
 			"driver":              "postgres",
-			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`, pgmonitor.MonitoringUser),
+			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`, MonitoringUser),
 			"collection_interval": "5s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "10s",
@@ -70,7 +69,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 
 		config.Receivers[FiveMinuteSqlQuery] = map[string]any{
 			"driver":              "postgres",
-			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`, pgmonitor.MonitoringUser),
+			"datasource":          fmt.Sprintf(`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`, MonitoringUser),
 			"collection_interval": "300s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "10s",

@@ -15,7 +15,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -86,7 +85,7 @@ func EnablePostgresLogging(
 		spec = inCluster.Spec.Instrumentation.Logs
 	}
 
-	if inCluster != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if OpenTelemetryLogsEnabled(ctx, inCluster) {
 		directory := postgres.LogDirectory()
 		version := inCluster.Spec.PostgresVersion
 

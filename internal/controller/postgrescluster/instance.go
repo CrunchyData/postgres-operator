@@ -1202,7 +1202,7 @@ func (r *Reconciler) reconcileInstance(
 
 	// If either OpenTelemetry feature is enabled, we want to add the collector config to the pod
 	if err == nil &&
-		(feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		collector.OpenTelemetryLogsOrMetricsEnabled(ctx, cluster) {
 
 		// If the OpenTelemetryMetrics feature is enabled, we need to get the pgpassword from the
 		// monitoring user secret
@@ -1428,8 +1428,8 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 
 	// If OTel logging or metrics is enabled, add collector config
 	if err == nil &&
-		(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
-			feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+		collector.OpenTelemetryLogsOrMetricsEnabled(ctx, cluster) {
+
 		err = collector.AddToConfigMap(ctx, otelConfig, instanceConfigMap)
 
 		// Add pgbackrest logrotate if OpenTelemetryLogs is enabled and

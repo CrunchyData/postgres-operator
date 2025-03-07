@@ -12,7 +12,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -127,13 +127,13 @@ func clusterINI(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
 	}
 
 	// If OpenTelemetryLogs feature is enabled, enable logging to file
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if collector.OpenTelemetryLogsEnabled(ctx, cluster) {
 		global["logfile"] = naming.PGBouncerLogPath + "/pgbouncer.log"
 	}
 
 	// When OTel metrics are enabled, allow pgBouncer's postgres user
 	// to run read-only console queries on pgBouncer's virtual db
-	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		global["stats_users"] = PostgresqlUser
 	}
 

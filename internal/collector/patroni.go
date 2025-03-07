@@ -8,7 +8,6 @@ import (
 	"context"
 	"slices"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -22,7 +21,7 @@ func EnablePatroniLogging(ctx context.Context,
 		spec = inCluster.Spec.Instrumentation.Logs
 	}
 
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if OpenTelemetryLogsEnabled(ctx, inCluster) {
 		directory := naming.PatroniPGDataLogPath
 
 		// Keep track of what log records and files have been processed.
@@ -133,7 +132,7 @@ func EnablePatroniMetrics(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	outConfig *Config,
 ) {
-	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if OpenTelemetryMetricsEnabled(ctx, inCluster) {
 		// Add Prometheus exporter
 		outConfig.Exporters[Prometheus] = map[string]any{
 			"endpoint": "0.0.0.0:9187",

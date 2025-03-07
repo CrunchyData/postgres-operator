@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
@@ -75,7 +75,7 @@ func (r *Reconciler) patroniLogSize(ctx context.Context, cluster *v1beta1.Postgr
 			sizeInBytes = 25000000
 		}
 		return sizeInBytes
-	} else if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	} else if collector.OpenTelemetryLogsEnabled(ctx, cluster) {
 		return 25000000
 	}
 	return 0
