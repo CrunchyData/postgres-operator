@@ -87,7 +87,7 @@ func TestUpgradeCommand(t *testing.T) {
 			spec := &v1beta1.PGUpgradeSettings{Jobs: tt.Spec}
 			command := upgradeCommand(spec, "")
 			assert.Assert(t, len(command) > 3)
-			assert.DeepEqual(t, []string{"bash", "-ceu", "--"}, command[:3])
+			assert.DeepEqual(t, []string{"bash", "-c", "--"}, command[:3])
 
 			script := command[3]
 			assert.Assert(t, cmp.Contains(script, tt.Args))
@@ -111,7 +111,7 @@ func TestUpgradeCommand(t *testing.T) {
 			spec := &v1beta1.PGUpgradeSettings{TransferMethod: tt.Spec}
 			command := upgradeCommand(spec, "")
 			assert.Assert(t, len(command) > 3)
-			assert.DeepEqual(t, []string{"bash", "-ceu", "--"}, command[:3])
+			assert.DeepEqual(t, []string{"bash", "-c", "--"}, command[:3])
 
 			script := command[3]
 			assert.Assert(t, cmp.Contains(script, tt.Args))
@@ -196,11 +196,14 @@ spec:
       containers:
       - command:
         - bash
-        - -ceu
+        - -c
         - --
         - |-
+          shopt -so errexit nounset
           declare -r data_volume='/pgdata' old_version="$1" new_version="$2"
-          printf 'Performing PostgreSQL upgrade from version "%s" to "%s" ...\n\n' "$@"
+          printf 'Performing PostgreSQL upgrade from version "%s" to "%s" ...\n' "$@"
+          section() { printf '\n\n%s\n' "$@"; }
+          section 'Step 1 of 7: Ensuring username is postgres...'
           gid=$(id -G); NSS_WRAPPER_GROUP=$(mktemp)
           (sed "/^postgres:x:/ d; /^[^:]*:x:${gid%% *}:/ d" /etc/group
           echo "postgres:x:${gid%% *}:") > "${NSS_WRAPPER_GROUP}"
@@ -209,30 +212,28 @@ spec:
           echo "postgres:x:${uid}:${gid%% *}::${data_volume}:") > "${NSS_WRAPPER_PASSWD}"
           export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD
           id; [[ "$(id -nu)" == 'postgres' && "$(id -ng)" == 'postgres' ]]
-          [[ -x /usr/pgsql-"${old_version}"/bin/postgres ]]
-          [[ -x /usr/pgsql-"${new_version}"/bin/initdb ]]
-          [[ -d /pgdata/pg"${old_version}" ]]
-          cd /pgdata || exit
-          echo -e "Step 1: Making new pgdata directory...\n"
-          mkdir /pgdata/pg"${new_version}"
-          echo -e "Step 2: Initializing new pgdata directory...\n"
-          /usr/pgsql-"${new_version}"/bin/initdb --allow-group-access -k -D /pgdata/pg"${new_version}"
-          echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"
-          chmod 750 /pgdata/pg"${old_version}"
-          echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"
-          echo "shared_preload_libraries = '$(/usr/pgsql-"""${old_version}"""/bin/postgres -D \
-          /pgdata/pg"""${old_version}""" -C shared_preload_libraries)'" >> /pgdata/pg"${new_version}"/postgresql.conf
-          echo -e "Step 5: Running pg_upgrade check...\n"
-          time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \
-          --new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}"\
-           --new-datadir /pgdata/pg"${new_version}" --check --link --jobs=1
-          echo -e "\nStep 6: Running pg_upgrade...\n"
-          time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \
-          --new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}" \
-          --new-datadir /pgdata/pg"${new_version}" --link --jobs=1
-          echo -e "\nStep 7: Copying patroni.dynamic.json...\n"
-          cp /pgdata/pg"${old_version}"/patroni.dynamic.json /pgdata/pg"${new_version}"
-          echo -e "\npg_upgrade Job Complete!"
+          section 'Step 2 of 7: Finding data and tools...'
+          old_bin="/usr/pgsql-${old_version}/bin" && [[ -x "${old_bin}/postgres" ]]
+          new_bin="/usr/pgsql-${new_version}/bin" && [[ -x "${new_bin}/initdb" ]]
+          old_data="${data_volume}/pg${old_version}" && [[ -d "${old_data}" ]]
+          new_data="${data_volume}/pg${new_version}"
+          cd "${data_volume}"
+          section 'Step 3 of 7: Initializing new data directory...'
+          PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access --data-checksums
+          section 'Step 4 of 7: Copying shared_preload_libraries parameter...'
+          value=$(LC_ALL=C PGDATA="${old_data}" "${old_bin}/postgres" -C shared_preload_libraries)
+          echo >> "${new_data}/postgresql.conf" "shared_preload_libraries = '${value//$'\''/$'\'\''}'"
+          section 'Step 5 of 7: Checking for potential issues...'
+          "${new_bin}/pg_upgrade" --check --link --jobs=1 \
+          --old-bindir="${old_bin}" --old-datadir="${old_data}" \
+          --new-bindir="${new_bin}" --new-datadir="${new_data}"
+          section 'Step 6 of 7: Performing upgrade...'
+          (set -x && time "${new_bin}/pg_upgrade" --link --jobs=1 \
+          --old-bindir="${old_bin}" --old-datadir="${old_data}" \
+          --new-bindir="${new_bin}" --new-datadir="${new_data}")
+          section 'Step 7 of 7: Copying Patroni settings...'
+          (set -x && cp "${old_data}/patroni.dynamic.json" "${new_data}")
+          section 'Success!'
         - upgrade
         - "19"
         - "25"
@@ -267,7 +268,7 @@ status: {}
 
 	tdeJob := reconciler.generateUpgradeJob(ctx, upgrade, startup, "echo testKey")
 	assert.Assert(t, cmp.MarshalContains(tdeJob,
-		`/usr/pgsql-"${new_version}"/bin/initdb --allow-group-access -k -D /pgdata/pg"${new_version}" --encryption-key-command "echo testKey"`))
+		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access --data-checksums --encryption-key-command='echo testKey'`))
 }
 
 func TestGenerateRemoveDataJob(t *testing.T) {
@@ -343,17 +344,19 @@ spec:
       containers:
       - command:
         - bash
-        - -ceu
+        - -c
         - --
         - |-
-          declare -r old_version="$1"
-          printf 'Removing PostgreSQL data dir for pg%s...\n\n' "$@"
-          echo -e "Checking the directory exists and isn't being used...\n"
-          cd /pgdata || exit
-          if [ "$(/usr/pgsql-"${old_version}"/bin/pg_controldata /pgdata/pg"${old_version}" | grep -c "shut down in recovery")" -ne 1 ]; then echo -e "Directory in use, cannot remove..."; exit 1; fi
-          echo -e "Removing old pgdata directory...\n"
-          rm -rf /pgdata/pg"${old_version}" "$(realpath /pgdata/pg${old_version}/pg_wal)"
-          echo -e "Remove Data Job Complete!"
+          shopt -so errexit nounset
+          declare -r data_volume='/pgdata' old_version="$1"
+          printf 'Removing PostgreSQL %s data...\n\n' "$@"
+          delete() (set -x && rm -rf -- "$@")
+          old_data="${data_volume}/pg${old_version}"
+          control=$(LC_ALL=C /usr/pgsql-${old_version}/bin/pg_controldata "${old_data}")
+          read -r state <<< "${control##*cluster state:}"
+          [[ "${state}" == 'shut down in recovery' ]] || { printf >&2 'Unexpected state! %q\n' "${state}"; exit 1; }
+          delete "${old_data}/pg_wal/"
+          delete "${old_data}" && echo 'Success!'
         - remove
         - "19"
         image: img4
