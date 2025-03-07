@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
@@ -109,7 +108,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 		populatePGInstanceConfigurationMap(
 			serviceName, serviceNamespace, repoHostName, pgdataDir,
 			config.FetchKeyCommand(&postgresCluster.Spec),
-			strconv.Itoa(postgresCluster.Spec.PostgresVersion),
+			fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 			pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
 			util.GetPGBackRestLogPathForInstance(postgresCluster),
@@ -130,7 +129,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 			populateRepoHostConfigurationMap(
 				serviceName, serviceNamespace,
 				pgdataDir, config.FetchKeyCommand(&postgresCluster.Spec),
-				strconv.Itoa(postgresCluster.Spec.PostgresVersion),
+				fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 				pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
@@ -161,7 +160,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 			populateCloudRepoConfigurationMap(
 				serviceName, serviceNamespace, pgdataDir,
 				config.FetchKeyCommand(&postgresCluster.Spec),
-				strconv.Itoa(postgresCluster.Spec.PostgresVersion),
+				fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 				cloudLogPath, pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,

@@ -20,7 +20,7 @@ var finalReleaseDates = map[int]time.Time{
 
 // ReleaseIsFinal returns whether or not t is definitively past the final
 // scheduled release of a Postgres version.
-func ReleaseIsFinal(majorVersion int, t time.Time) bool {
-	known, ok := finalReleaseDates[majorVersion]
+func ReleaseIsFinal[N ~int | ~int32](majorVersion N, t time.Time) bool {
+	known, ok := finalReleaseDates[int(majorVersion)]
 	return ok && t.After(known)
 }

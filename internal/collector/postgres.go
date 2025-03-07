@@ -92,7 +92,7 @@ func NewConfigForPostgresPod(ctx context.Context,
 var postgresLogsTransforms json.RawMessage
 
 // postgresCSVNames returns the names of fields in the CSV logs for version.
-func postgresCSVNames(version int) string {
+func postgresCSVNames(version int32) string {
 	// JSON is the preferred format, so use those names.
 	// https://www.postgresql.org/docs/current/runtime-config-logging.html#RUNTIME-CONFIG-LOGGING-JSONLOG
 

@@ -42,7 +42,7 @@ func TestDataDirectory(t *testing.T) {
 
 func TestDataStorage(t *testing.T) {
 	cluster := new(v1beta1.PostgresCluster)
-	cluster.Spec.PostgresVersion = rand.IntN(20)
+	cluster.Spec.PostgresVersion = rand.Int32N(20)
 
 	assert.Equal(t, DataStorage(cluster), "/pgdata")
 }
