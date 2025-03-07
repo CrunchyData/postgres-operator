@@ -49,9 +49,7 @@ func AddToPod(
 	logDirectories []string,
 	includeLogrotate bool,
 ) {
-	if spec == nil ||
-		!(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
-			feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+	if !OpenTelemetryLogsOrMetricsEnabled(ctx, spec) {
 		return
 	}
 

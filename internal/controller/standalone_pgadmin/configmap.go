@@ -19,7 +19,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -73,7 +72,7 @@ func configmap(ctx context.Context, pgadmin *v1beta1.PGAdmin,
 		gunicornRetentionPeriod = "D"
 	)
 	// If OTel logs feature gate is enabled, we want to change the pgAdmin/gunicorn logging
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) && pgadmin.Spec.Instrumentation != nil {
+	if collector.OpenTelemetryLogsEnabled(ctx, pgadmin) {
 		logRetention = true
 
 		// If the user has set a retention period, we will use those values for log rotation,
