@@ -754,12 +754,17 @@ containers:
 - command:
   - bash
   - -ceu
-  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pgdata_pvc=testpgdata\"\n
-    \   echo \"Current PG data directory volume contents:\" \n    ls -lh \"/pgdata\"\n
-    \   echo \"Now updating PG data directory...\"\n    [ -d \"/pgdata/testpgdatadir\"
-    ] && mv \"/pgdata/testpgdatadir\" \"/pgdata/pg13_bootstrap\"\n    rm -f \"/pgdata/pg13/patroni.dynamic.json\"\n
-    \   echo \"Updated PG data directory contents:\" \n    ls -lh \"/pgdata\"\n    echo
-    \"PG Data directory preparation complete\"\n    "
+  - |-
+    echo "Preparing cluster testcluster volumes for PGO v5.x"
+    echo "pgdata_pvc=testpgdata"
+    echo "Current PG data directory volume contents:"
+    ls -lh "/pgdata"
+    echo "Now updating PG data directory..."
+    [ -d "/pgdata/testpgdatadir" ] && mv "/pgdata/testpgdatadir" "/pgdata/pg13_bootstrap"
+    rm -f "/pgdata/pg13/patroni.dynamic.json"
+    echo "Updated PG data directory contents:"
+    ls -lh "/pgdata"
+    echo "PG Data directory preparation complete"
   image: example.com/crunchy-postgres-ha:test
   imagePullPolicy: Always
   name: pgdata-move-job
@@ -814,12 +819,16 @@ containers:
 - command:
   - bash
   - -ceu
-  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pg_wal_pvc=testwal\"\n
-    \   echo \"Current PG WAL directory volume contents:\"\n    ls -lh \"/pgwal\"\n
-    \   echo \"Now updating PG WAL directory...\"\n    [ -d \"/pgwal/testwaldir\"
-    ] && mv \"/pgwal/testwaldir\" \"/pgwal/testcluster-wal\"\n    echo \"Updated PG
-    WAL directory contents:\"\n    ls -lh \"/pgwal\"\n    echo \"PG WAL directory
-    preparation complete\"\n    "
+  - |-
+    echo "Preparing cluster testcluster volumes for PGO v5.x"
+    echo "pg_wal_pvc=testwal"
+    echo "Current PG WAL directory volume contents:"
+    ls -lh "/pgwal"
+    echo "Now updating PG WAL directory..."
+    [ -d "/pgwal/testwaldir" ] && mv "/pgwal/testwaldir" "/pgwal/testcluster-wal"
+    echo "Updated PG WAL directory contents:"
+    ls -lh "/pgwal"
+    echo "PG WAL directory preparation complete"
   image: example.com/crunchy-postgres-ha:test
   imagePullPolicy: Always
   name: pgwal-move-job
@@ -874,14 +883,19 @@ containers:
 - command:
   - bash
   - -ceu
-  - "echo \"Preparing cluster testcluster pgBackRest repo volume for PGO v5.x\"\n
-    \   echo \"repo_pvc=testrepo\"\n    echo \"pgbackrest directory:\"\n    ls -lh
-    /pgbackrest\n    echo \"Current pgBackRest repo directory volume contents:\" \n
-    \   ls -lh \"/pgbackrest/testrepodir\"\n    echo \"Now updating repo directory...\"\n
-    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/archive\"\n
-    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/backup\"\n
-    \   echo \"Updated /pgbackrest directory contents:\"\n    ls -lh \"/pgbackrest\"\n
-    \   echo \"Repo directory preparation complete\"\n    "
+  - |-
+    echo "Preparing cluster testcluster pgBackRest repo volume for PGO v5.x"
+    echo "repo_pvc=testrepo"
+    echo "pgbackrest directory:"
+    ls -lh /pgbackrest
+    echo "Current pgBackRest repo directory volume contents:"
+    ls -lh "/pgbackrest/testrepodir"
+    echo "Now updating repo directory..."
+    [ -d "/pgbackrest/testrepodir" ] && mv -t "/pgbackrest/" "/pgbackrest/testrepodir/archive"
+    [ -d "/pgbackrest/testrepodir" ] && mv -t "/pgbackrest/" "/pgbackrest/testrepodir/backup"
+    echo "Updated /pgbackrest directory contents:"
+    ls -lh "/pgbackrest"
+    echo "Repo directory preparation complete"
   image: example.com/crunchy-pgbackrest:test
   imagePullPolicy: Always
   name: repo-move-job

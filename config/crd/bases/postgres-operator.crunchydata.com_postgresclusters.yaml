@@ -13035,6 +13035,7 @@ spec:
               postgresVersion:
                 description: The major version of PostgreSQL installed in the PostgreSQL
                   image
+                format: int32
                 maximum: 17
                 minimum: 11
                 type: integer
@@ -18812,6 +18813,7 @@ spec:
                 description: |-
                   Stores the current PostgreSQL major version following a successful
                   major PostgreSQL upgrade.
+                format: int32
                 type: integer
               proxy:
                 description: Current state of the PostgreSQL proxy.
@@ -31867,6 +31869,7 @@ spec:
               postgresVersion:
                 description: The major version of PostgreSQL installed in the PostgreSQL
                   image
+                format: int32
                 maximum: 17
                 minimum: 11
                 type: integer
@@ -37612,6 +37615,7 @@ spec:
                 description: |-
                   Stores the current PostgreSQL major version following a successful
                   major PostgreSQL upgrade.
+                format: int32
                 type: integer
               proxy:
                 description: Current state of the PostgreSQL proxy.

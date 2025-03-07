@@ -7,7 +7,6 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
@@ -476,21 +475,20 @@ func (r *Reconciler) reconcileMovePGDataDir(ctx context.Context,
 	// `patroni.dynamic.json` holds the previous state of the DCS. Since we are
 	// migrating the volumes, we want to clear out any obsolete configuration info.
 	script := fmt.Sprintf(`echo "Preparing cluster %s volumes for PGO v5.x"
-    echo "pgdata_pvc=%s"
-    echo "Current PG data directory volume contents:" 
-    ls -lh "/pgdata"
-    echo "Now updating PG data directory..."
-    [ -d "/pgdata/%s" ] && mv "/pgdata/%s" "/pgdata/pg%s_bootstrap"
-    rm -f "/pgdata/pg%s/patroni.dynamic.json"
-    echo "Updated PG data directory contents:" 
-    ls -lh "/pgdata"
-    echo "PG Data directory preparation complete"
-    `, cluster.Name,
+echo "pgdata_pvc=%s"
+echo "Current PG data directory volume contents:"
+ls -lh "/pgdata"
+echo "Now updating PG data directory..."
+[ -d "/pgdata/%s" ] && mv "/pgdata/%s" "/pgdata/pg%d_bootstrap"
+rm -f "/pgdata/pg%d/patroni.dynamic.json"
+echo "Updated PG data directory contents:"
+ls -lh "/pgdata"
+echo "PG Data directory preparation complete"`, cluster.Name,
 		cluster.Spec.DataSource.Volumes.PGDataVolume.PVCName,
 		cluster.Spec.DataSource.Volumes.PGDataVolume.Directory,
 		cluster.Spec.DataSource.Volumes.PGDataVolume.Directory,
-		strconv.Itoa(cluster.Spec.PostgresVersion),
-		strconv.Itoa(cluster.Spec.PostgresVersion))
+		cluster.Spec.PostgresVersion,
+		cluster.Spec.PostgresVersion)
 
 	container := corev1.Container{
 		Command:         []string{"bash", "-ceu", script},
@@ -596,15 +594,14 @@ func (r *Reconciler) reconcileMoveWALDir(ctx context.Context,
 	moveDirJob.Labels = labels
 
 	script := fmt.Sprintf(`echo "Preparing cluster %s volumes for PGO v5.x"
-    echo "pg_wal_pvc=%s"
-    echo "Current PG WAL directory volume contents:"
-    ls -lh "/pgwal"
-    echo "Now updating PG WAL directory..."
-    [ -d "/pgwal/%s" ] && mv "/pgwal/%s" "/pgwal/%s-wal"
-    echo "Updated PG WAL directory contents:"
-    ls -lh "/pgwal"
-    echo "PG WAL directory preparation complete"
-    `, cluster.Name,
+echo "pg_wal_pvc=%s"
+echo "Current PG WAL directory volume contents:"
+ls -lh "/pgwal"
+echo "Now updating PG WAL directory..."
+[ -d "/pgwal/%s" ] && mv "/pgwal/%s" "/pgwal/%s-wal"
+echo "Updated PG WAL directory contents:"
+ls -lh "/pgwal"
+echo "PG WAL directory preparation complete"`, cluster.Name,
 		cluster.Spec.DataSource.Volumes.PGWALVolume.PVCName,
 		cluster.Spec.DataSource.Volumes.PGWALVolume.Directory,
 		cluster.Spec.DataSource.Volumes.PGWALVolume.Directory,
@@ -714,18 +711,17 @@ func (r *Reconciler) reconcileMoveRepoDir(ctx context.Context,
 	moveDirJob.Labels = labels
 
 	script := fmt.Sprintf(`echo "Preparing cluster %s pgBackRest repo volume for PGO v5.x"
-    echo "repo_pvc=%s"
-    echo "pgbackrest directory:"
-    ls -lh /pgbackrest
-    echo "Current pgBackRest repo directory volume contents:" 
-    ls -lh "/pgbackrest/%s"
-    echo "Now updating repo directory..."
-    [ -d "/pgbackrest/%s" ] && mv -t "/pgbackrest/" "/pgbackrest/%s/archive"
-    [ -d "/pgbackrest/%s" ] && mv -t "/pgbackrest/" "/pgbackrest/%s/backup"
-    echo "Updated /pgbackrest directory contents:"
-    ls -lh "/pgbackrest"
-    echo "Repo directory preparation complete"
-    `, cluster.Name,
+echo "repo_pvc=%s"
+echo "pgbackrest directory:"
+ls -lh /pgbackrest
+echo "Current pgBackRest repo directory volume contents:"
+ls -lh "/pgbackrest/%s"
+echo "Now updating repo directory..."
+[ -d "/pgbackrest/%s" ] && mv -t "/pgbackrest/" "/pgbackrest/%s/archive"
+[ -d "/pgbackrest/%s" ] && mv -t "/pgbackrest/" "/pgbackrest/%s/backup"
+echo "Updated /pgbackrest directory contents:"
+ls -lh "/pgbackrest"
+echo "Repo directory preparation complete"`, cluster.Name,
 		cluster.Spec.DataSource.Volumes.PGBackRestVolume.PVCName,
 		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory,
 		cluster.Spec.DataSource.Volumes.PGBackRestVolume.Directory,
