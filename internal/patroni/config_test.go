@@ -56,6 +56,7 @@ kubernetes:
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
+  standby_leader_label_value: master
   use_endpoints: true
 postgresql:
   authentication:
@@ -113,6 +114,7 @@ kubernetes:
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
+  standby_leader_label_value: master
   use_endpoints: true
 postgresql:
   authentication:
@@ -179,6 +181,7 @@ kubernetes:
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
   scope_label: postgres-operator.crunchydata.com/patroni
+  standby_leader_label_value: master
   use_endpoints: true
 log:
   dir: /pgdata/patroni/log
