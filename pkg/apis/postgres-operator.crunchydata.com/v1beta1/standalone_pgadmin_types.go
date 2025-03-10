@@ -45,7 +45,7 @@ type StandalonePGAdminConfiguration struct {
 
 	// OauthConfigurations allows the user to reference one or more Secrets
 	// containing OAUTH2 configuration settings for pgAdmin.
-	// Each Secret shall contain a single data key called oauth-config.json
+	// Each Secret shall contain a single data key called oauth-config
 	// whose value is a JSON object containing the OAUTH2 configuration settings.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/oauth2.html
 	// +optional
