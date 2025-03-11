@@ -140,13 +140,20 @@ func statefulset(
 			configmap, &sts.Spec.Template.Spec, volumeMounts, "", []string{}, false)
 	}
 
-	// Determine if a rollout because Secrets and ConfigMaps have changed
+	// Determine if a rollout is needed because Secrets and ConfigMaps have changed.
+	// If the OAuth Secrets are changed, or if the OAUTH2_CONFIG changes in the
+	// PGAdmin ConfigMap, then we need to restart the pgAdmin process and re-run
+	// the init container.
+	// We therefore store hashes of these configurations in annotations on the
+	// pgAdmin statefulset, which force a Pod restart when they change.
 	checkOauthSecretsChange(oauthSecrets, sts)
 	checkConfigMapChange(configmap, sts)
 
 	return sts
 }
 
+// Checks if the Oauth Secrets have changed by calculating and comparing a hash
+// of the data. We update the hash when changed to trigger a rollout.
 func checkOauthSecretsChange(oauthSecrets []corev1.Secret, sts *appsv1.StatefulSet) {
 	var secretHash, currentHash string
 	var sb strings.Builder
@@ -171,6 +178,8 @@ func checkOauthSecretsChange(oauthSecrets []corev1.Secret, sts *appsv1.StatefulS
 	}
 }
 
+// Checks if the OAUTH2_CONFIG ConfigMap has changed by calculating and comparing a hash
+// of the data. We update the hash when changed to trigger a rollout.
 func checkConfigMapChange(configmap *corev1.ConfigMap, sts *appsv1.StatefulSet) {
 	var secretHash, currentHash string
 	hash := sha256.New()
