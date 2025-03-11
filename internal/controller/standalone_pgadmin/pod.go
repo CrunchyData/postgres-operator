@@ -155,13 +155,13 @@ func pod(
 		},
 	}
 
-	// Creating a readiness probe that will check that the pgAdmin `/login`
+	// Creating a readiness probe that will check that the pgAdmin `/misc/ping`
 	// endpoint is reachable at the specified port
 	readinessProbe := &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Port:   intstr.FromInt32(pgAdminPort),
-				Path:   "/login",
+				Path:   "/misc/ping",
 				Scheme: corev1.URISchemeHTTP,
 			},
 		},

@@ -105,7 +105,7 @@ containers:
     protocol: TCP
   readinessProbe:
     httpGet:
-      path: /login
+      path: /misc/ping
       port: 5050
       scheme: HTTP
   resources: {}
@@ -292,7 +292,7 @@ containers:
     protocol: TCP
   readinessProbe:
     httpGet:
-      path: /login
+      path: /misc/ping
       port: 5050
       scheme: HTTP
   resources:
