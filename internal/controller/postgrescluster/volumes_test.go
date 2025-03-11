@@ -391,7 +391,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{
 						corev1.ReadWriteMany},
 					Resources: corev1.VolumeResourceRequirements{
@@ -407,7 +407,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
 								AccessModes: []corev1.PersistentVolumeAccessMode{
 									corev1.ReadWriteMany},
 								Resources: corev1.VolumeResourceRequirements{
@@ -439,7 +439,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					"somelabel": "labelvalue-pgdata",
 				},
 			},
-			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 		}
 
 		assert.NilError(t, tClient.Create(ctx, volume))
@@ -504,7 +504,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					"somelabel": "labelvalue-pgwal",
 				},
 			},
-			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 		}
 
 		assert.NilError(t, tClient.Create(ctx, pgWALVolume))
@@ -570,7 +570,7 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					"somelabel": "labelvalue-repo",
 				},
 			},
-			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 		}
 
 		assert.NilError(t, tClient.Create(ctx, volume))
@@ -674,7 +674,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					},
 				},
 				PriorityClassName: initialize.String("some-priority-class"),
-				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{
 						corev1.ReadWriteMany},
 					Resources: corev1.VolumeResourceRequirements{
@@ -698,7 +698,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
 								AccessModes: []corev1.PersistentVolumeAccessMode{
 									corev1.ReadWriteMany},
 								Resources: corev1.VolumeResourceRequirements{

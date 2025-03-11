@@ -365,7 +365,7 @@ func (r *Reconciler) reconcilePGAdminStatefulSet(
 
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp'
 	// volume mount to all containers included within that spec
-	addTMPEmptyDir(&sts.Spec.Template)
+	AddTMPEmptyDir(&sts.Spec.Template)
 
 	return errors.WithStack(r.apply(ctx, sts))
 }
@@ -405,7 +405,7 @@ func (r *Reconciler) reconcilePGAdminDataVolume(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		labelMap,
 	)
-	pvc.Spec = cluster.Spec.UserInterface.PGAdmin.DataVolumeClaimSpec
+	pvc.Spec = cluster.Spec.UserInterface.PGAdmin.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	err := errors.WithStack(r.setControllerReference(cluster, pvc))
 

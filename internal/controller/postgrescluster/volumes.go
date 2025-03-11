@@ -254,7 +254,7 @@ func (r *Reconciler) configureExistingPGVolumes(
 					Name:      volName,
 					Namespace: cluster.Namespace,
 				},
-				Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+				Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 			}
 
 			volume.ObjectMeta.Labels = map[string]string{
@@ -307,7 +307,7 @@ func (r *Reconciler) configureExistingPGWALVolume(
 				Name:      volName,
 				Namespace: cluster.Namespace,
 			},
-			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec,
+			Spec: cluster.Spec.InstanceSets[0].DataVolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 		}
 
 		volume.ObjectMeta.Labels = map[string]string{
@@ -362,7 +362,7 @@ func (r *Reconciler) configureExistingRepoVolumes(
 						cluster.Spec.Backups.PGBackRest.Repos[0].Name),
 				},
 				Spec: cluster.Spec.Backups.PGBackRest.Repos[0].Volume.
-					VolumeClaimSpec,
+					VolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 			}
 
 			//volume.ObjectMeta = naming.PGBackRestRepoVolume(cluster, cluster.Spec.Backups.PGBackRest.Repos[0].Name)

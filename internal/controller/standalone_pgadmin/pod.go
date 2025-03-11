@@ -7,7 +7,6 @@ package standalone_pgadmin
 import (
 	"context"
 	"fmt"
-	"path"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -86,15 +85,6 @@ func pod(
 		},
 	}
 
-	// create a temp volume for restart pid/other/debugging use
-	// TODO: discuss tmp vol vs. persistent vol
-	tmpVolume := corev1.Volume{Name: "tmp"}
-	tmpVolume.VolumeSource = corev1.VolumeSource{
-		EmptyDir: &corev1.EmptyDirVolumeSource{
-			Medium: corev1.StorageMediumMemory,
-		},
-	}
-
 	// pgadmin container
 	container := corev1.Container{
 		Name:            naming.ContainerPGAdmin,
@@ -141,10 +131,6 @@ func pod(
 				Name:      scriptVolume.Name,
 				MountPath: scriptMountPath,
 				ReadOnly:  true,
-			},
-			{
-				Name:      tmpVolume.Name,
-				MountPath: "/tmp",
 			},
 		},
 	}
@@ -194,7 +180,6 @@ func pod(
 		configVolume,
 		dataVolume,
 		scriptVolume,
-		tmpVolume,
 	}
 	outPod.Containers = []corev1.Container{container}
 	outPod.InitContainers = []corev1.Container{startup}
@@ -298,7 +283,8 @@ func startupScript(pgadmin *v1beta1.PGAdmin) []string {
 
 	// startCommands (v8 image includes Gunicorn)
 	var startCommandV7 = "pgadmin4 &"
-	var startCommandV8 = "gunicorn -c /etc/pgadmin/gunicorn_config.py --chdir $PGADMIN_DIR pgAdmin4:app &"
+	var startCommandV8 = "gunicorn -c /etc/pgadmin/gunicorn_config.py" +
+		" --chdir $PGADMIN_DIR pgAdmin4:app &"
 
 	// This script sets up, starts pgadmin, and runs the appropriate `loadServerCommand` to register the discovered servers.
 	// pgAdmin is hosted by Gunicorn and uses a config file.
@@ -346,10 +332,15 @@ loadServerCommand
 	// descriptor and uses the timeout of the builtin `read` to wait. That same
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check mtimes.
 	// - https://unix.stackexchange.com/a/407383
+	// In order to get gunicorn to reload the logging config
+	// we need to send a KILL rather than a HUP signal.
+	// - https://github.com/benoitc/gunicorn/issues/3353
+	// Right now the config file is on the same configMap as the cluster file
+	// so if the mtime changes for any of those files, it will change for all.
 	var reloadScript = `
 exec {fd}<> <(:||:)
 while read -r -t 5 -u "${fd}" ||:; do
-    if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand
+    if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -KILL $(head -1 ${PGADMIN4_PIDFILE?});
     then
         exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded shared servers dated %y' "${cluster_file}"
@@ -396,10 +387,10 @@ func startupCommand() []string {
 		// configDatabaseURIPath is the path for mounting the database URI connection string
 		configDatabaseURIPathAbsolutePath = configMountPath + "/" + configDatabaseURIPath
 
-		// The constants set in configSystem will not be overridden through
+		// The values set in configSystem will not be overridden through
 		// spec.config.settings.
 		configSystem = `
-import glob, json, re, os, logging
+import glob, json, re, os
 DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
     _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
@@ -425,18 +416,8 @@ if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
 if os.path.isfile('` + configDatabaseURIPathAbsolutePath + `'):
     with open('` + configDatabaseURIPathAbsolutePath + `') as _f:
         CONFIG_DATABASE_URI = _f.read()
-
-DATA_DIR = '` + dataMountPath + `'
-LOG_FILE = '` + LogFileAbsolutePath + `'
-LOG_ROTATION_AGE = 24 * 60 # minutes
-LOG_ROTATION_SIZE = 5 # MiB
-LOG_ROTATION_MAX_LOG_FILES = 1
-
-JSON_LOGGER = True
-CONSOLE_LOG_LEVEL = logging.WARNING
-FILE_LOG_LEVEL = logging.INFO
-FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname', 'message': 'message'}
 `
+
 		// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup
 		// after all other config files.
 		// - https://docs.gunicorn.org/en/latest/configure.html#configuration-file
@@ -447,37 +428,13 @@ FILE_LOG_FORMAT_JSON = {'time': 'created', 'name': 'name', 'level': 'levelname',
 		//
 		// Note: All Gunicorn settings are lowercase with underscores, so ignore
 		// any keys/names that are not.
-		//
-		// Gunicorn uses the Python logging package, which sets the following attributes:
-		// https://docs.python.org/3/library/logging.html#logrecord-attributes.
-		// JsonFormatter is used to format the log: https://pypi.org/project/jsonformatter/
 		gunicornConfig = `
-import json, re, collections, copy, gunicorn, gunicorn.glogging
+import json, re, gunicorn
+gunicorn.SERVER_SOFTWARE = 'Python'
 with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
     _conf, _data = re.compile(r'[a-z_]+'), json.load(_f)
     if type(_data) is dict:
         globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
-
-gunicorn.SERVER_SOFTWARE = 'Python'
-logconfig_dict = copy.deepcopy(gunicorn.glogging.CONFIG_DEFAULTS)
-logconfig_dict['loggers']['gunicorn.access']['handlers'] = ['file']
-logconfig_dict['loggers']['gunicorn.error']['handlers'] = ['file']
-logconfig_dict['handlers']['file'] = {
-  'class': 'logging.handlers.RotatingFileHandler',
-  'filename': '` + GunicornLogFileAbsolutePath + `',
-  'backupCount': 1, 'maxBytes': 2 << 20, # MiB
-  'formatter': 'json',
-}
-logconfig_dict['formatters']['json'] = {
-  'class': 'jsonformatter.JsonFormatter',
-  'separators': (',', ':'),
-  'format': collections.OrderedDict([
-    ('time', 'created'),
-    ('name', 'name'),
-    ('level', 'levelname'),
-    ('message', 'message'),
-  ])
-}
 `
 	)
 
@@ -488,10 +445,8 @@ logconfig_dict['formatters']['json'] = {
 		// - https://issue.k8s.io/121294
 		shell.MakeDirectories(0o775, scriptMountPath, configMountPath),
 
-		// Create the logs directory with g+rwx so the OTel Collector can
-		// write to it as well.
-		// TODO(log-rotation): Move the last segment into the Collector startup.
-		shell.MakeDirectories(0o775, dataMountPath, path.Join(LogDirectoryAbsolutePath, "receiver")),
+		// Create the logs directory with g+rwx to ensure pgAdmin can write to it as well.
+		shell.MakeDirectories(0o775, dataMountPath, LogDirectoryAbsolutePath),
 
 		// Write the system and server configurations.
 		`echo "$1" > ` + scriptMountPath + `/config_system.py`,

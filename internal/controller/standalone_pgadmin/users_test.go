@@ -236,6 +236,12 @@ func TestWritePGAdminUsers(t *testing.T) {
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Name = "test-standalone-pgadmin"
 	pgadmin.Namespace = ns.Name
+	require.UnmarshalInto(t, &pgadmin.Spec, `{
+		dataVolumeClaimSpec: {
+			accessModes: [ReadWriteOnce],
+			resources: { requests: { storage: 1Gi } },
+		},
+	}`)
 	assert.NilError(t, cc.Create(ctx, pgadmin))
 
 	userPasswordSecret1 := &corev1.Secret{

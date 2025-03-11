@@ -9,6 +9,15 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
+type PostgresAuthenticationSpec struct {
+	// More info: https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
+	// ---
+	// +kubebuilder:validation:MaxItems=10
+	// +listType=atomic
+	// +optional
+	Rules []PostgresHBARuleSpec `json:"rules,omitempty"`
+}
+
 type PostgresConfig struct {
 	// Files to mount under "/etc/postgres".
 	// ---
@@ -66,6 +75,70 @@ type PostgresConfig struct {
 	// +mapType=granular
 	// +optional
 	Parameters map[string]intstr.IntOrString `json:"parameters,omitempty"`
+}
+
+// ---
+type PostgresHBARule struct {
+	// The connection transport this rule matches. Typical values are:
+	//  1. "host" for network connections that may or may not be encrypted.
+	//  2. "hostssl" for network connections encrypted using TLS.
+	//  3. "hostgssenc" for network connections encrypted using GSSAPI.
+	// ---
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=20
+	// +kubebuilder:validation:Pattern=`^[-a-z0-9]+$`
+	// +optional
+	Connection string `json:"connection,omitempty"`
+
+	// Which databases this rule matches. When omitted or empty, this rule matches all databases.
+	// ---
+	// +kubebuilder:validation:MaxItems=20
+	// +listType=atomic
+	// +optional
+	Databases []PostgresIdentifier `json:"databases,omitempty"`
+
+	// The authentication method to use when a connection matches this rule.
+	// The special value "reject" refuses connections that match this rule.
+	// More info: https://www.postgresql.org/docs/current/auth-methods.html
+	// ---
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=20
+	// +kubebuilder:validation:Pattern=`^[-a-z0-9]+$`
+	// +kubebuilder:validation:XValidation:rule=`self != "trust"`,message=`the "trust" method is unsafe`
+	// +optional
+	Method string `json:"method,omitempty"`
+
+	// ---
+	// +kubebuilder:validation:MaxProperties=20
+	// +mapType=atomic
+	// +optional
+	Options map[string]intstr.IntOrString `json:"options,omitempty"`
+
+	// Which user names this rule matches. When omitted or empty, this rule matches all users.
+	// ---
+	// +kubebuilder:validation:MaxItems=20
+	// +listType=atomic
+	// +optional
+	Users []PostgresIdentifier `json:"users,omitempty"`
+}
+
+// ---
+// Emulate OpenAPI "anyOf" aka Kubernetes union.
+// +kubebuilder:validation:XValidation:rule=`has(self.hba) ? !has(self.connection) && !has(self.databases) && !has(self.method) && !has(self.options) && !has(self.users) : true`,message=`"hba" cannot be combined with other fields`
+// +kubebuilder:validation:XValidation:rule=`has(self.hba) ? true : has(self.connection) && has(self.method)`,message=`"connection" and "method" are required`
+//
+// +structType=atomic
+type PostgresHBARuleSpec struct {
+	// One line of the "pg_hba.conf" file. Changes to this value will be automatically reloaded without validation.
+	// ---
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=100
+	// +kubebuilder:validation:Pattern=`^[[:print:]]+$`
+	// +kubebuilder:validation:XValidation:rule=`!self.trim().startsWith("include")`,message=`cannot include other files`
+	// +optional
+	HBA string `json:"hba,omitempty"`
+
+	PostgresHBARule `json:",inline"`
 }
 
 // ---

@@ -39,6 +39,86 @@ spec:
           spec:
             description: PostgresClusterSpec defines the desired state of PostgresCluster
             properties:
+              authentication:
+                properties:
+                  rules:
+                    description: 'More info: https://www.postgresql.org/docs/current/auth-pg-hba-conf.html'
+                    items:
+                      properties:
+                        connection:
+                          description: |-
+                            The connection transport this rule matches. Typical values are:
+                             1. "host" for network connections that may or may not be encrypted.
+                             2. "hostssl" for network connections encrypted using TLS.
+                             3. "hostgssenc" for network connections encrypted using GSSAPI.
+                          maxLength: 20
+                          minLength: 1
+                          pattern: ^[-a-z0-9]+$
+                          type: string
+                        databases:
+                          description: Which databases this rule matches. When omitted
+                            or empty, this rule matches all databases.
+                          items:
+                            maxLength: 63
+                            minLength: 1
+                            type: string
+                          maxItems: 20
+                          type: array
+                          x-kubernetes-list-type: atomic
+                        hba:
+                          description: One line of the "pg_hba.conf" file. Changes
+                            to this value will be automatically reloaded without validation.
+                          maxLength: 100
+                          minLength: 1
+                          pattern: ^[[:print:]]+$
+                          type: string
+                          x-kubernetes-validations:
+                          - message: cannot include other files
+                            rule: '!self.trim().startsWith("include")'
+                        method:
+                          description: |-
+                            The authentication method to use when a connection matches this rule.
+                            The special value "reject" refuses connections that match this rule.
+                            More info: https://www.postgresql.org/docs/current/auth-methods.html
+                          maxLength: 20
+                          minLength: 1
+                          pattern: ^[-a-z0-9]+$
+                          type: string
+                          x-kubernetes-validations:
+                          - message: the "trust" method is unsafe
+                            rule: self != "trust"
+                        options:
+                          additionalProperties:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            x-kubernetes-int-or-string: true
+                          maxProperties: 20
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        users:
+                          description: Which user names this rule matches. When omitted
+                            or empty, this rule matches all users.
+                          items:
+                            maxLength: 63
+                            minLength: 1
+                            type: string
+                          maxItems: 20
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      type: object
+                      x-kubernetes-map-type: atomic
+                      x-kubernetes-validations:
+                      - message: '"hba" cannot be combined with other fields'
+                        rule: 'has(self.hba) ? !has(self.connection) && !has(self.databases)
+                          && !has(self.method) && !has(self.options) && !has(self.users)
+                          : true'
+                      - message: '"connection" and "method" are required'
+                        rule: 'has(self.hba) ? true : has(self.connection) && has(self.method)'
+                    maxItems: 10
+                    type: array
+                    x-kubernetes-list-type: atomic
+                type: object
               backups:
                 description: PostgreSQL backup configuration
                 properties:
@@ -3117,13 +3197,12 @@ spec:
                                         to the PersistentVolume backing this claim.
                                       type: string
                                   type: object
+                                  x-kubernetes-map-type: atomic
                                   x-kubernetes-validations:
                                   - message: missing accessModes
-                                    rule: has(self.accessModes) && size(self.accessModes)
-                                      > 0
+                                    rule: 0 < size(self.accessModes)
                                   - message: missing storage request
-                                    rule: has(self.resources) && has(self.resources.requests)
-                                      && has(self.resources.requests.storage)
+                                    rule: has(self.resources.requests.storage)
                               required:
                               - volumeClaimSpec
                               type: object
@@ -6444,13 +6523,12 @@ spec:
                                       to the PersistentVolume backing this claim.
                                     type: string
                                 type: object
+                                x-kubernetes-map-type: atomic
                                 x-kubernetes-validations:
                                 - message: missing accessModes
-                                  rule: has(self.accessModes) && size(self.accessModes)
-                                    > 0
+                                  rule: 0 < size(self.accessModes)
                                 - message: missing storage request
-                                  rule: has(self.resources) && has(self.resources.requests)
-                                    && has(self.resources.requests.storage)
+                                  rule: has(self.resources.requests.storage)
                             required:
                             - volumeClaimSpec
                             type: object
@@ -10332,12 +10410,12 @@ spec:
                             PersistentVolume backing this claim.
                           type: string
                       type: object
+                      x-kubernetes-map-type: atomic
                       x-kubernetes-validations:
                       - message: missing accessModes
-                        rule: has(self.accessModes) && size(self.accessModes) > 0
+                        rule: 0 < size(self.accessModes)
                       - message: missing storage request
-                        rule: has(self.resources) && has(self.resources.requests)
-                          && has(self.resources.requests.storage)
+                        rule: has(self.resources.requests.storage)
                     metadata:
                       description: Metadata contains metadata for custom resources
                       properties:
@@ -10717,13 +10795,12 @@ spec:
                                   the PersistentVolume backing this claim.
                                 type: string
                             type: object
+                            x-kubernetes-map-type: atomic
                             x-kubernetes-validations:
                             - message: missing accessModes
-                              rule: has(self.accessModes) && size(self.accessModes)
-                                > 0
+                              rule: 0 < size(self.accessModes)
                             - message: missing storage request
-                              rule: has(self.resources) && has(self.resources.requests)
-                                && has(self.resources.requests.storage)
+                              rule: has(self.resources.requests.storage)
                           name:
                             description: |-
                               The name for the tablespace, used as the path name for the volume.
@@ -11158,12 +11235,12 @@ spec:
                             PersistentVolume backing this claim.
                           type: string
                       type: object
+                      x-kubernetes-map-type: atomic
                       x-kubernetes-validations:
                       - message: missing accessModes
-                        rule: has(self.accessModes) && size(self.accessModes) > 0
+                        rule: 0 < size(self.accessModes)
                       - message: missing storage request
-                        rule: has(self.resources) && has(self.resources.requests)
-                          && has(self.resources.requests.storage)
+                        rule: has(self.resources.requests.storage)
                   required:
                   - dataVolumeClaimSpec
                   type: object
@@ -17248,6 +17325,12 @@ spec:
                               PersistentVolume backing this claim.
                             type: string
                         type: object
+                        x-kubernetes-map-type: atomic
+                        x-kubernetes-validations:
+                        - message: missing accessModes
+                          rule: 0 < size(self.accessModes)
+                        - message: missing storage request
+                          rule: has(self.resources.requests.storage)
                       image:
                         description: |-
                           Name of a container image that can run pgAdmin 4. Changing this value causes

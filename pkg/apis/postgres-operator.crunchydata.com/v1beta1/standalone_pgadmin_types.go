@@ -66,8 +66,9 @@ type PGAdminSpec struct {
 
 	// Defines a PersistentVolumeClaim for pgAdmin data.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
-	// +kubebuilder:validation:Required
-	DataVolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	// ---
+	// +required
+	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
 
 	// The image name to use for pgAdmin instance.
 	// +optional

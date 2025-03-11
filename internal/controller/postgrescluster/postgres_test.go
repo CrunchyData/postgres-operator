@@ -34,6 +34,45 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func TestGeneratePostgresHBA(t *testing.T) {
+	reconciler := &Reconciler{}
+
+	assert.Assert(t, reconciler.generatePostgresHBA(nil) == nil,
+		"expected nil to return nil")
+
+	for _, tt := range []struct {
+		rule, expected string
+	}{
+		{
+			rule:     `{ connection: host, method: scram }`,
+			expected: `"host" all all all "scram"`,
+		},
+		{
+			rule:     `{ connection: local, method: peer, databases: [one, two] }`,
+			expected: `"local" "one","two" all all "peer"`,
+		},
+		{
+			rule:     `{ connection: local, method: peer, users: [alice, bob] }`,
+			expected: `"local" all "alice","bob" all "peer"`,
+		},
+		{
+			rule:     `{ connection: hostssl, method: md5, options: { clientcert: verify-ca } }`,
+			expected: `"hostssl" all all all "md5"  "clientcert"="verify-ca"`,
+		},
+		// "password" input should be "scram-sha-256" output
+		{
+			rule:     `{ connection: hostssl, method: password }`,
+			expected: `"hostssl" all all all "scram-sha-256"`,
+		},
+	} {
+		var rule *v1beta1.PostgresHBARule
+		require.UnmarshalInto(t, &rule, tt.rule)
+
+		hba := reconciler.generatePostgresHBA(rule)
+		assert.Equal(t, hba.String(), tt.expected, "\n%#v", rule)
+	}
+}
+
 func TestGeneratePostgresHBAs(t *testing.T) {
 	ctx := context.Background()
 	reconciler := &Reconciler{}
@@ -50,12 +89,35 @@ func TestGeneratePostgresHBAs(t *testing.T) {
 	assert.Assert(t, len(required) > 0,
 		"expected at least one mandatory rule")
 
+	t.Run("Authentication", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Authentication, `{
+			rules: [
+				{ connection: host, method: scram },
+				{ connection: local, method: peer, users: [alice, bob] },
+			],
+		}`)
+
+		result := reconciler.generatePostgresHBAs(ctx, cluster).AsStrings()
+		assert.Assert(t, cmp.Len(result, len(required)+2),
+			"expected two rules from the Authentication section and no defaults")
+
+		// mandatory rules should be first
+		assert.DeepEqual(t, result[:len(required)], required)
+
+		// specified rules should be last and in their original order
+		assert.DeepEqual(t, result[len(required):], []string{
+			`"host" all all all "scram"`,
+			`"local" all "alice","bob" all "peer"`,
+		})
+	})
+
 	t.Run("Patroni", func(t *testing.T) {
 		cluster := v1beta1.NewPostgresCluster()
 		require.UnmarshalInto(t, &cluster.Spec.Patroni, `{
-				dynamicConfiguration: {
-						postgresql: { pg_hba: [ "first custom", "another" ] },
-				},
+			dynamicConfiguration: {
+				postgresql: { pg_hba: [ "first custom", "another" ] },
+			},
 		}`)
 
 		result := reconciler.generatePostgresHBAs(ctx, cluster).AsStrings()
@@ -67,6 +129,36 @@ func TestGeneratePostgresHBAs(t *testing.T) {
 
 		// specified rules should be last and in their original order
 		assert.DeepEqual(t, result[len(required):], []string{`first custom`, `another`})
+	})
+
+	t.Run("Precedence", func(t *testing.T) {
+		cluster := v1beta1.NewPostgresCluster()
+		require.UnmarshalInto(t, &cluster.Spec.Authentication, `{
+			rules: [
+				{ connection: host, method: scram },
+				{ connection: local, method: peer, users: [alice, bob] },
+			],
+		}`)
+		require.UnmarshalInto(t, &cluster.Spec.Patroni, `{
+			dynamicConfiguration: {
+				postgresql: { pg_hba: [ "another" ] },
+			},
+		}`)
+
+		result := reconciler.generatePostgresHBAs(ctx, cluster).AsStrings()
+		assert.Assert(t, cmp.Len(result, len(required)+2+1),
+			"expected two rules from the Authentication section"+
+				" plus one from the Patroni section")
+
+		// mandatory rules should be first
+		assert.DeepEqual(t, result[:len(required)], required)
+
+		// specified rules are next, no defaults
+		assert.DeepEqual(t, result[len(required):], []string{
+			`"host" all all all "scram"`,           // Authentication
+			`"local" all "alice","bob" all "peer"`, // Authentication
+			`another`,                              // Patroni
+		})
 	})
 }
 
@@ -791,7 +883,7 @@ func TestSetVolumeSize(t *testing.T) {
 	instanceSetSpec := func(request, limit string) *v1beta1.PostgresInstanceSetSpec {
 		return &v1beta1.PostgresInstanceSetSpec{
 			Name: "some-instance",
-			DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+			DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 				AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 				Resources: corev1.VolumeResourceRequirements{
 					Requests: map[corev1.ResourceName]resource.Quantity{
@@ -819,7 +911,7 @@ func TestSetVolumeSize(t *testing.T) {
 
 		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 		spec := instanceSetSpec("4Gi", "3Gi")
-		pvc.Spec = spec.DataVolumeClaimSpec
+		pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -856,7 +948,7 @@ resources:
 			}},
 		}
 
-		pvc.Spec = spec.DataVolumeClaimSpec
+		pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 		reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -892,14 +984,14 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := &v1beta1.PostgresInstanceSetSpec{
 				Name: "some-instance",
-				DataVolumeClaimSpec: corev1.PersistentVolumeClaimSpec{
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
 					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 					Resources: corev1.VolumeResourceRequirements{
 						Requests: map[corev1.ResourceName]resource.Quantity{
 							corev1.ResourceStorage: resource.MustParse("1Gi"),
 						}}}}
 			cluster.Status = desiredStatus("2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -924,7 +1016,7 @@ resources:
 
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -949,7 +1041,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "3Gi")
 			cluster.Status = desiredStatus("NotAValidValue")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -976,7 +1068,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "3Gi")
 			cluster.Status = desiredStatus("2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -1001,7 +1093,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("1Gi", "2Gi")
 			cluster.Status = desiredStatus("2Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 
@@ -1030,7 +1122,7 @@ resources:
 			pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
 			spec := instanceSetSpec("4Gi", "5Gi")
 			cluster.Status = desiredStatus("10Gi")
-			pvc.Spec = spec.DataVolumeClaimSpec
+			pvc.Spec = spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 			reconciler.setVolumeSize(ctx, &cluster, pvc, spec.Name)
 

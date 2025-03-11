@@ -12,8 +12,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/internal/postgres/password"
-	"github.com/crunchydata/postgres-operator/internal/util"
 )
 
 const (
@@ -203,21 +201,6 @@ REVOKE ALL PRIVILEGES
 	return err
 }
 
-func generatePassword() (plaintext, verifier string, err error) {
-	// PgBouncer can login to PostgreSQL using either MD5 or SCRAM-SHA-256.
-	// When using MD5, the (hashed) verifier can be stored in PgBouncer's
-	// authentication file. When using SCRAM, the plaintext password must be
-	// stored.
-	// - https://www.pgbouncer.org/config.html#authentication-file-format
-	// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
-
-	plaintext, err = util.GenerateASCIIPassword(32)
-	if err == nil {
-		verifier, err = password.NewSCRAMPassword(plaintext).Build()
-	}
-	return
-}
-
 func postgresqlHBAs() []*postgres.HostBasedAuthentication {
 	// PgBouncer must connect over TLS using a SCRAM password. Other network
 	// connections are forbidden.
@@ -225,7 +208,7 @@ func postgresqlHBAs() []*postgres.HostBasedAuthentication {
 	// - https://www.postgresql.org/docs/current/auth-password.html
 
 	return []*postgres.HostBasedAuthentication{
-		postgres.NewHBA().User(PostgresqlUser).TLS().Method("scram-sha-256"),
-		postgres.NewHBA().User(PostgresqlUser).TCP().Method("reject"),
+		postgres.NewHBA().Users(PostgresqlUser).TLS().Method("scram-sha-256"),
+		postgres.NewHBA().Users(PostgresqlUser).TCP().Method("reject"),
 	}
 }

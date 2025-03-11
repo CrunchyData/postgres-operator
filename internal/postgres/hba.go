@@ -6,6 +6,8 @@ package postgres
 
 import (
 	"fmt"
+	"maps"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -15,23 +17,23 @@ func NewHBAs() HBAs {
 	return HBAs{
 		Mandatory: []*HostBasedAuthentication{
 			// The "postgres" superuser must always be able to connect locally.
-			NewHBA().Local().User("postgres").Method("peer"),
+			NewHBA().Local().Users("postgres").Method("peer"),
 
 			// The replication user must always connect over TLS using certificate
 			// authentication. Patroni also connects to the "postgres" database
 			// when calling `pg_rewind`.
 			// - https://www.postgresql.org/docs/current/warm-standby.html#STREAMING-REPLICATION-AUTHENTICATION
-			NewHBA().TLS().User(ReplicationUser).Method("cert").Replication(),
-			NewHBA().TLS().User(ReplicationUser).Method("cert").Database("postgres"),
-			NewHBA().TCP().User(ReplicationUser).Method("reject"),
+			NewHBA().TLS().Users(ReplicationUser).Method("cert").Replication(),
+			NewHBA().TLS().Users(ReplicationUser).Method("cert").Databases("postgres"),
+			NewHBA().TCP().Users(ReplicationUser).Method("reject"),
 		},
 
 		Default: []*HostBasedAuthentication{
-			// Allow TLS connections to any database using passwords. The "md5"
-			// authentication method automatically verifies passwords encrypted
-			// using either MD5 or SCRAM-SHA-256.
+			// Allow TLS connections to any database using passwords. Passwords are
+			// hashed and stored using SCRAM-SHA-256 by default. Since PostgreSQL 10,
+			// the "scram-sha-256" method is the preferred way to use those passwords.
 			// - https://www.postgresql.org/docs/current/auth-password.html
-			NewHBA().TLS().Method("md5"),
+			NewHBA().TLS().Method("scram-sha-256"),
 		},
 	}
 }
@@ -50,8 +52,49 @@ func NewHBA() *HostBasedAuthentication {
 	return new(HostBasedAuthentication).AllDatabases().AllNetworks().AllUsers()
 }
 
+// hbaRegexSpecialCharacters matches a superset of the special characters in
+// PostgreSQL [regular expressions] for:
+//
+//   - [HostBasedAuthentication.quoteDatabase]
+//   - [HostBasedAuthentication.quoteUser]
+//
+// [regular expressions]: https://www.postgresql.org/docs/current/functions-matching.html#POSIX-SYNTAX-DETAILS
+var hbaRegexSpecialCharacters = regexp.MustCompile(`[^\pL\pN_]`)
+
 func (*HostBasedAuthentication) quote(value string) string {
 	return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`
+}
+
+func (hba *HostBasedAuthentication) quoteDatabase(name string) string {
+	// Since PostgreSQL 16, a quoted string beginning with slash U+002F is
+	// interpreted as a regular expression. Express these names as a Postgres
+	// regex that exactly matches the entire name.
+	if len(name) > 0 && name[0] == '/' {
+		name = "/^" +
+			hbaRegexSpecialCharacters.ReplaceAllStringFunc(name,
+				func(match string) string { return "[" + match + "]" }) +
+			"$"
+	}
+
+	// Quotes indicate the value is NOT a keyword (all, sameuser, etc.)
+	// and NOT to be expanded as a filename (at sign U+0040).
+	return hba.quote(name)
+}
+
+func (hba *HostBasedAuthentication) quoteUser(name string) string {
+	// Since PostgreSQL 16, a quoted string beginning with slash U+002F is
+	// interpreted as a regular expression. Express these names as a Postgres
+	// regex that exactly matches the entire name.
+	if len(name) > 0 && name[0] == '/' {
+		name = "/^" +
+			hbaRegexSpecialCharacters.ReplaceAllStringFunc(name,
+				func(match string) string { return "[" + match + "]" }) +
+			"$"
+	}
+
+	// Quotes indicate the value is NOT a keyword (all), NOT a group (plus U+002B),
+	// and NOT to be expanded as a filename (at sign U+0040).
+	return hba.quote(name)
 }
 
 // AllDatabases makes hba match connections made to any database.
@@ -72,9 +115,12 @@ func (hba *HostBasedAuthentication) AllUsers() *HostBasedAuthentication {
 	return hba
 }
 
-// Database makes hba match connections made to a specific database.
-func (hba *HostBasedAuthentication) Database(name string) *HostBasedAuthentication {
-	hba.database = hba.quote(name)
+// Databases makes hba match connections made to specific databases.
+func (hba *HostBasedAuthentication) Databases(name string, names ...string) *HostBasedAuthentication {
+	hba.database = hba.quoteDatabase(name)
+	for _, n := range names {
+		hba.database += "," + hba.quoteDatabase(n)
+	}
 	return hba
 }
 
@@ -86,7 +132,12 @@ func (hba *HostBasedAuthentication) Local() *HostBasedAuthentication {
 
 // Method specifies the authentication method to use when a connection matches hba.
 func (hba *HostBasedAuthentication) Method(name string) *HostBasedAuthentication {
-	hba.method = name
+	hba.method = hba.quote(name)
+	return hba
+}
+
+func (hba *HostBasedAuthentication) Origin(name string) *HostBasedAuthentication {
+	hba.origin = hba.quote(name)
 	return hba
 }
 
@@ -105,8 +156,8 @@ func (hba *HostBasedAuthentication) NoSSL() *HostBasedAuthentication {
 // Options specifies any options for the authentication method.
 func (hba *HostBasedAuthentication) Options(opts map[string]string) *HostBasedAuthentication {
 	hba.options = ""
-	for k, v := range opts {
-		hba.options = fmt.Sprintf("%s %s=%s", hba.options, k, hba.quote(v))
+	for _, k := range slices.Sorted(maps.Keys(opts)) {
+		hba.options = fmt.Sprintf("%s %s=%s", hba.options, hba.quote(k), hba.quote(opts[k]))
 	}
 	return hba
 }
@@ -136,9 +187,12 @@ func (hba *HostBasedAuthentication) TCP() *HostBasedAuthentication {
 	return hba
 }
 
-// User makes hba match connections by a specific user.
-func (hba *HostBasedAuthentication) User(name string) *HostBasedAuthentication {
-	hba.user = hba.quote(name)
+// Users makes hba match connections by specific users.
+func (hba *HostBasedAuthentication) Users(name string, names ...string) *HostBasedAuthentication {
+	hba.user = hba.quoteUser(name)
+	for _, n := range names {
+		hba.user += "," + hba.quoteUser(n)
+	}
 	return hba
 }
 
@@ -175,7 +229,9 @@ func (o *OrderedHBAs) AppendUnstructured(hbas ...string) {
 			// control characters, space, and backslash
 			return r > '~' || r < '!' || r == '\\'
 		})
-		if len(hba) > 0 {
+
+		// NOTE: Skipping "include" directives here is a security measure.
+		if len(hba) > 0 && !strings.HasPrefix(hba, "include") {
 			o.records = append(o.records, hba)
 		}
 	}

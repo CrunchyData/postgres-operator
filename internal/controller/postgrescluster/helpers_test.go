@@ -90,9 +90,9 @@ func setupNamespace(t testing.TB, cc client.Client) *corev1.Namespace {
 	return require.Namespace(t, cc)
 }
 
-func testVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {
+func testVolumeClaimSpec() v1beta1.VolumeClaimSpec {
 	// Defines a volume claim spec that can be used to create instances
-	return corev1.PersistentVolumeClaimSpec{
+	return v1beta1.VolumeClaimSpec{
 		AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 		Resources: corev1.VolumeResourceRequirements{
 			Requests: map[corev1.ResourceName]resource.Quantity{

@@ -30,35 +30,53 @@ func TestNewHBAs(t *testing.T) {
 
 	hba := NewHBAs()
 	assert.Assert(t, matches(hba.Mandatory, `
-local    all          "postgres"      peer
-hostssl  replication  "_crunchyrepl"  all   cert
-hostssl  "postgres"   "_crunchyrepl"  all   cert
-host     all          "_crunchyrepl"  all   reject
+local    all          "postgres"      "peer"
+hostssl  replication  "_crunchyrepl"  all   "cert"
+hostssl  "postgres"   "_crunchyrepl"  all   "cert"
+host     all          "_crunchyrepl"  all   "reject"
 	`))
 	assert.Assert(t, matches(hba.Default, `
-hostssl  all  all  all  md5
+hostssl  all  all  all  "scram-sha-256"
 	`))
 }
 
 func TestHostBasedAuthentication(t *testing.T) {
-	assert.Equal(t, `local all "postgres" peer`,
-		NewHBA().Local().User("postgres").Method("peer").String())
+	assert.Equal(t, `local all "postgres","pgo" "peer"`,
+		NewHBA().Local().Users("postgres", "pgo").Method("peer").String())
 
-	assert.Equal(t, `host all all "::1/128" trust`,
+	assert.Equal(t, `host all all "::1/128" "trust"`,
 		NewHBA().TCP().Network("::1/128").Method("trust").String())
 
-	assert.Equal(t, `host replication "KD6-3.7" samenet scram-sha-256`,
+	assert.Equal(t, `host replication "KD6-3.7" samenet "scram-sha-256"`,
 		NewHBA().TCP().SameNetwork().Replication().
-			User("KD6-3.7").Method("scram-sha-256").
+			Users("KD6-3.7").Method("scram-sha-256").
 			String())
 
-	assert.Equal(t, `hostssl "data" all all md5  clientcert="verify-ca"`,
-		NewHBA().TLS().Database("data").
+	assert.Equal(t, `hostssl "data","bits" all all "md5"  "clientcert"="verify-ca"`,
+		NewHBA().TLS().Databases("data", "bits").
 			Method("md5").Options(map[string]string{"clientcert": "verify-ca"}).
 			String())
 
-	assert.Equal(t, `hostnossl all all all reject`,
+	assert.Equal(t, `hostnossl all all all "reject"`,
 		NewHBA().NoSSL().Method("reject").String())
+
+	t.Run("OptionsSorted", func(t *testing.T) {
+		assert.Equal(t, `hostssl all all all "ldap"  "ldapbasedn"="dc=example,dc=org" "ldapserver"="example.org"`,
+			NewHBA().TLS().Method("ldap").Options(map[string]string{
+				"ldapserver": "example.org",
+				"ldapbasedn": "dc=example,dc=org",
+			}).String())
+	})
+
+	t.Run("SpecialCharactersEscaped", func(t *testing.T) {
+		// Databases; slash U+002F triggers regex escaping; regex characters themselves do not
+		assert.Equal(t, `local "/^[/]asdf_[+][?]1234$","/^[/][*][$]$","+*$" all`,
+			NewHBA().Local().Databases(`/asdf_+?1234`, `/*$`, `+*$`).String())
+
+		// Users; slash U+002F triggers regex escaping; regex characters themselves do not
+		assert.Equal(t, `local all "/^[/]asdf_[+][?]1234$","/^[/][*][$]$","+*$"`,
+			NewHBA().Local().Users(`/asdf_+?1234`, `/*$`, `+*$`).String())
+	})
 }
 
 func TestOrderedHBAs(t *testing.T) {
@@ -89,7 +107,7 @@ func TestOrderedHBAs(t *testing.T) {
 	})
 
 	// Append and AppendUnstructured do not have a separate order.
-	ordered.Append(NewHBA().User("zoro"))
+	ordered.Append(NewHBA().Users("zoro"))
 	assert.Equal(t, ordered.Length(), 3)
 	assert.DeepEqual(t, ordered.AsStrings(), []string{
 		`all all all`,
@@ -106,6 +124,22 @@ func TestOrderedHBAs(t *testing.T) {
 		assert.DeepEqual(t, rules.AsStrings(), []string{
 			`all all all`,
 			`all all all`,
+		})
+	})
+
+	// See [internal/testing/validation.TestPostgresAuthenticationRules]
+	t.Run("NoInclude", func(t *testing.T) {
+		rules := new(OrderedHBAs)
+		rules.AppendUnstructured(
+			`one`,
+			`include "/etc/passwd"`,
+			`   include_dir /tmp`,
+			`include_if_exists postgresql.auto.conf`,
+			`two`,
+		)
+		assert.DeepEqual(t, rules.AsStrings(), []string{
+			`one`,
+			`two`,
 		})
 	})
 

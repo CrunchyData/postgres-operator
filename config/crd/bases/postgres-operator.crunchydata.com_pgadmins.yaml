@@ -1584,6 +1584,12 @@ spec:
                       backing this claim.
                     type: string
                 type: object
+                x-kubernetes-map-type: atomic
+                x-kubernetes-validations:
+                - message: missing accessModes
+                  rule: 0 < size(self.accessModes)
+                - message: missing storage request
+                  rule: has(self.resources.requests.storage)
               image:
                 description: The image name to use for pgAdmin instance.
                 type: string

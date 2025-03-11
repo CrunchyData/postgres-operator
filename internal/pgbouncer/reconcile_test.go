@@ -91,6 +91,53 @@ func TestSecret(t *testing.T) {
 	assert.DeepEqual(t, before, intent)
 }
 
+func TestSCRAMVerifier(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	cluster := new(v1beta1.PostgresCluster)
+	service := new(corev1.Service)
+	existing := new(corev1.Secret)
+	intent := new(corev1.Secret)
+
+	root, err := pki.NewRootCertificateAuthority()
+	assert.NilError(t, err)
+
+	cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
+	cluster.Default()
+
+	// Simulate the setting of a password only
+	existing.Data = map[string][]byte{
+		"pgbouncer-password": []byte("password"),
+	}
+
+	// Verify that a SCRAM verifier is set
+	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
+	assert.Assert(t, len(intent.Data["pgbouncer-verifier"]) != 0)
+
+	// Simulate the setting of a password and a verifier
+	intent = new(corev1.Secret)
+	existing.Data = map[string][]byte{
+		"pgbouncer-verifier": []byte("SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey"),
+		"pgbouncer-password": []byte("password"),
+	}
+	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
+	assert.Equal(t, string(intent.Data["pgbouncer-verifier"]), "SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey")
+	assert.Equal(t, string(intent.Data["pgbouncer-password"]), "password")
+
+	// Simulate the setting of a verifier only
+	intent = new(corev1.Secret)
+	existing.Data = map[string][]byte{
+		"pgbouncer-verifier": []byte("SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey"),
+	}
+	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
+	assert.Assert(t, string(intent.Data["pgbouncer-verifier"]) != "SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey")
+	assert.Assert(t, len(intent.Data["pgbouncer-password"]) != 0)
+	assert.Assert(t, len(intent.Data["pgbouncer-verifier"]) != 0)
+
+}
+
 func TestPod(t *testing.T) {
 	t.Parallel()
 

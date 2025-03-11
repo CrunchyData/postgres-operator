@@ -29,6 +29,12 @@ func TestDeleteControlled(t *testing.T) {
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Namespace = ns.Name
 	pgadmin.Name = strings.ToLower(t.Name())
+	require.UnmarshalInto(t, &pgadmin.Spec, `{
+		dataVolumeClaimSpec: {
+			accessModes: [ReadWriteOnce],
+			resources: { requests: { storage: 1Gi } },
+		},
+	}`)
 	assert.NilError(t, cc.Create(ctx, pgadmin))
 
 	t.Run("NoOwnership", func(t *testing.T) {
