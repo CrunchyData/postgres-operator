@@ -7,6 +7,7 @@ package collector
 import (
 	"context"
 	"slices"
+	"strconv"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -135,7 +136,7 @@ func EnablePatroniMetrics(ctx context.Context,
 	if OpenTelemetryMetricsEnabled(ctx, inCluster) {
 		// Add Prometheus exporter
 		outConfig.Exporters[Prometheus] = map[string]any{
-			"endpoint": "0.0.0.0:9187",
+			"endpoint": "0.0.0.0:" + strconv.Itoa(PrometheusPort),
 		}
 
 		// Add Prometheus Receiver

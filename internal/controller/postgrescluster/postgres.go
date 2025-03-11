@@ -53,11 +53,11 @@ func (*Reconciler) generatePostgresHBA(spec *v1beta1.PostgresHBARule) *postgres.
 	result.Origin(spec.Connection)
 
 	// The "password" method is not recommended. More likely, the user wants to
-	// use passwords generally. The most compatible method for that is "md5"
-	// which accepts a password in the format in which it is hashed in the database.
+	// use passwords generally. The "scram-sha-256" method is the preferred way
+	// to do that.
 	// - https://www.postgresql.org/docs/current/auth-password.html
 	if spec.Method == "password" {
-		result.Method("md5")
+		result.Method("scram-sha-256")
 	} else {
 		result.Method(spec.Method)
 	}
@@ -747,7 +747,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 		labelMap,
 	)
 
-	pvc.Spec = instanceSpec.DataVolumeClaimSpec
+	pvc.Spec = instanceSpec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	// If a source cluster was provided and VolumeSnapshots are turned on in the source cluster and
 	// there is a VolumeSnapshot available for the source cluster that is ReadyToUse, use it as the
@@ -910,7 +910,7 @@ func (r *Reconciler) reconcileTablespaceVolumes(
 			labelMap,
 		)
 
-		pvc.Spec = vol.DataVolumeClaimSpec
+		pvc.Spec = vol.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 		if err == nil {
 			err = r.handlePersistentVolumeClaimError(cluster,
@@ -1017,7 +1017,7 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 		labelMap,
 	)
 
-	pvc.Spec = *instanceSpec.WALVolumeClaimSpec
+	pvc.Spec = instanceSpec.WALVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,

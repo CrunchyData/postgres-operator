@@ -405,7 +405,7 @@ func (r *Reconciler) reconcilePGAdminDataVolume(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		labelMap,
 	)
-	pvc.Spec = cluster.Spec.UserInterface.PGAdmin.DataVolumeClaimSpec
+	pvc.Spec = cluster.Spec.UserInterface.PGAdmin.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	err := errors.WithStack(r.setControllerReference(cluster, pvc))
 

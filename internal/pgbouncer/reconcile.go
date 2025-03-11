@@ -18,6 +18,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	passwd "github.com/crunchydata/postgres-operator/internal/postgres/password"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -54,14 +56,29 @@ func Secret(ctx context.Context,
 	var err error
 	initialize.Map(&outSecret.Data)
 
-	// Use the existing password and verifier. Generate both when either is missing.
+	// Use the existing password and verifier. Generate when one is missing.
+	// PgBouncer can login to PostgreSQL using either MD5 or SCRAM-SHA-256.
+	// When using MD5, the (hashed) verifier can be stored in PgBouncer's
+	// authentication file. When using SCRAM, the plaintext password must be
+	// stored.
+	// - https://www.pgbouncer.org/config.html#authentication-file-format
+	// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
 	// NOTE(cbandy): We don't have a function to compare a plaintext password
 	// to a SCRAM verifier.
 	password := string(inSecret.Data[passwordSecretKey])
 	verifier := string(inSecret.Data[verifierSecretKey])
 
-	if err == nil && (len(password) == 0 || len(verifier) == 0) {
-		password, verifier, err = generatePassword()
+	if len(password) == 0 {
+		// If the password is empty, generate new password and verifier.
+		password, err = util.GenerateASCIIPassword(32)
+		err = errors.WithStack(err)
+		if err == nil {
+			verifier, err = passwd.NewSCRAMPassword(password).Build()
+			err = errors.WithStack(err)
+		}
+	} else if len(password) != 0 && len(verifier) == 0 {
+		// If the password is non-empty and the verifier is empty, generate a new verifier.
+		verifier, err = passwd.NewSCRAMPassword(password).Build()
 		err = errors.WithStack(err)
 	}
 
@@ -110,7 +127,7 @@ func Pod(
 	inConfigMap *corev1.ConfigMap,
 	inPostgreSQLCertificate *corev1.SecretProjection,
 	inSecret *corev1.Secret,
-	outPod *corev1.PodSpec,
+	template *corev1.PodTemplateSpec,
 ) {
 	if inCluster.Spec.Proxy == nil || inCluster.Spec.Proxy.PGBouncer == nil {
 		// PgBouncer is disabled; there is nothing to do.
@@ -179,21 +196,21 @@ func Pod(
 		reloader.Resources = *inCluster.Spec.Proxy.PGBouncer.Sidecars.PGBouncerConfig.Resources
 	}
 
-	outPod.Containers = []corev1.Container{container, reloader}
+	template.Spec.Containers = []corev1.Container{container, reloader}
 
 	// If the PGBouncerSidecars feature gate is enabled and custom pgBouncer
 	// sidecars are defined, add the defined container to the Pod.
 	if feature.Enabled(ctx, feature.PGBouncerSidecars) &&
 		inCluster.Spec.Proxy.PGBouncer.Containers != nil {
-		outPod.Containers = append(outPod.Containers, inCluster.Spec.Proxy.PGBouncer.Containers...)
+		template.Spec.Containers = append(template.Spec.Containers, inCluster.Spec.Proxy.PGBouncer.Containers...)
 	}
 
-	outPod.Volumes = []corev1.Volume{configVolume}
+	template.Spec.Volumes = []corev1.Volume{configVolume}
 
 	if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, inCluster) {
 		collector.AddToPod(ctx, inCluster.Spec.Instrumentation, inCluster.Spec.ImagePullPolicy, inConfigMap,
-			outPod, []corev1.VolumeMount{configVolumeMount}, string(inSecret.Data["pgbouncer-password"]), []string{naming.PGBouncerLogPath},
-			true)
+			template, []corev1.VolumeMount{configVolumeMount}, string(inSecret.Data["pgbouncer-password"]),
+			[]string{naming.PGBouncerLogPath}, true, true)
 	}
 }
 

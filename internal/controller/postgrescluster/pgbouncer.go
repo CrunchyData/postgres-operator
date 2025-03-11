@@ -469,7 +469,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	err := errors.WithStack(r.setControllerReference(cluster, deploy))
 
 	if err == nil {
-		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)
+		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template)
 	}
 
 	// Add tmp directory and volume for log files

@@ -51,7 +51,7 @@ func pvc(pgadmin *v1beta1.PGAdmin) *corev1.PersistentVolumeClaim {
 		pgadmin.Spec.Metadata.GetLabelsOrNil(),
 		naming.StandalonePGAdminDataLabels(pgadmin.Name),
 	)
-	pvc.Spec = pgadmin.Spec.DataVolumeClaimSpec
+	pvc.Spec = pgadmin.Spec.DataVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
 	return pvc
 }

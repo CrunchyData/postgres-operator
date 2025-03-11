@@ -43,11 +43,12 @@ func AddToPod(
 	spec *v1beta1.InstrumentationSpec,
 	pullPolicy corev1.PullPolicy,
 	inInstanceConfigMap *corev1.ConfigMap,
-	outPod *corev1.PodSpec,
+	template *corev1.PodTemplateSpec,
 	volumeMounts []corev1.VolumeMount,
 	sqlQueryPassword string,
 	logDirectories []string,
 	includeLogrotate bool,
+	thisPodServesMetrics bool,
 ) {
 	if !OpenTelemetryLogsOrMetricsEnabled(ctx, spec) {
 		return
@@ -74,13 +75,12 @@ func AddToPod(
 		}},
 	}
 
-	// If the user has specified files to be mounted in the spec, add them to the projected config volume
-	if spec != nil && spec.Config != nil && spec.Config.Files != nil {
-		configVolume.Projected.Sources = append(configVolume.Projected.Sources, spec.Config.Files...)
+	// If the user has specified files to be mounted in the spec, add them to
+	// the projected config volume
+	if spec.Config != nil && spec.Config.Files != nil {
+		configVolume.Projected.Sources = append(configVolume.Projected.Sources,
+			spec.Config.Files...)
 	}
-
-	// Add configVolume to the pod's volumes
-	outPod.Volumes = append(outPod.Volumes, configVolume)
 
 	// Create collector container
 	container := corev1.Container{
@@ -111,6 +111,28 @@ func AddToPod(
 		VolumeMounts:    append(volumeMounts, configVolumeMount),
 	}
 
+	// If metrics feature is enabled and this Pod serves metrics, add the
+	// Prometheus port to this container
+	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) && thisPodServesMetrics {
+		container.Ports = []corev1.ContainerPort{{
+			ContainerPort: int32(PrometheusPort),
+			Name:          "otel-metrics",
+			Protocol:      corev1.ProtocolTCP,
+		}}
+
+		// If the user has specified custom queries to add, put the queries
+		// file(s) in the projected config volume
+		if spec.Metrics != nil && spec.Metrics.CustomQueries != nil &&
+			spec.Metrics.CustomQueries.Add != nil {
+			for _, querySet := range spec.Metrics.CustomQueries.Add {
+				projection := querySet.Queries.AsProjection(querySet.Name +
+					"/" + querySet.Queries.Key)
+				configVolume.Projected.Sources = append(configVolume.Projected.Sources,
+					corev1.VolumeProjection{ConfigMap: &projection})
+			}
+		}
+	}
+
 	// If this is a pod that uses logrotate for log rotation, add config volume
 	// and mount for logrotate config
 	if includeLogrotate {
@@ -134,18 +156,17 @@ func AddToPod(
 			}},
 		}
 		container.VolumeMounts = append(container.VolumeMounts, logrotateConfigVolumeMount)
-		outPod.Volumes = append(outPod.Volumes, logrotateConfigVolume)
+		template.Spec.Volumes = append(template.Spec.Volumes, logrotateConfigVolume)
 	}
 
-	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
-		container.Ports = []corev1.ContainerPort{{
-			ContainerPort: int32(8889),
-			Name:          "otel-metrics",
-			Protocol:      corev1.ProtocolTCP,
-		}}
-	}
+	// Add configVolume to the Pod's volumes and add the collector container to
+	// the Pod's containers
+	template.Spec.Volumes = append(template.Spec.Volumes, configVolume)
+	template.Spec.Containers = append(template.Spec.Containers, container)
 
-	outPod.Containers = append(outPod.Containers, container)
+	// add the OTel collector label to the Pod
+	initialize.Labels(template)
+	template.Labels[naming.LabelCollectorDiscovery] = "true"
 }
 
 // startCommand generates the command script used by the collector container
@@ -190,7 +211,8 @@ while read -r -t 5 -u "${fd}" ||:; do
 done
 `, mkdirScript, configDirectory, logrotateCommand)
 
-	wrapper := `monitor() {` + startScript + `}; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
+	wrapper := `monitor() {` + startScript +
+		`}; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
 
 	return []string{"bash", "-ceu", "--", wrapper, "collector", configDirectory}
 }

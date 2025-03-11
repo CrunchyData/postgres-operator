@@ -110,6 +110,35 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	return err
 }
 
+// ---
+// NOTE(validation): Every PVC must have at least one accessMode. NOTE(KEP-5073)
+// TODO(k8s-1.28): fieldPath=`.accessModes`,reason="FieldValueRequired"
+// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2098-L2100
+// - https://releases.k8s.io/v1.32.0/pkg/apis/core/validation/validation.go#L2303-L2305
+// +kubebuilder:validation:XValidation:rule=`0 < size(self.accessModes)`,message=`missing accessModes`
+//
+// NOTE(validation): Every PVC must have a positive storage request. NOTE(KEP-5073)
+// TODO(k8s-1.28): fieldPath=`.resources.requests.storage`,reason="FieldValueRequired"
+// TODO(k8s-1.29): `&& 0 < quantity(self.resources.requests.storage).sign()`
+// - https://releases.k8s.io/v1.25.0/pkg/apis/core/validation/validation.go#L2126-L2133
+// - https://releases.k8s.io/v1.32.0/pkg/apis/core/validation/validation.go#L2329-L2336
+// +kubebuilder:validation:XValidation:rule=`has(self.resources.requests.storage)`,message=`missing storage request`
+//
+// +structType=atomic
+type VolumeClaimSpec corev1.PersistentVolumeClaimSpec
+
+// DeepCopyInto copies the receiver into out. Both must be non-nil.
+func (spec *VolumeClaimSpec) DeepCopyInto(out *VolumeClaimSpec) {
+	(*corev1.PersistentVolumeClaimSpec)(spec).DeepCopyInto((*corev1.PersistentVolumeClaimSpec)(out))
+}
+
+// AsPersistentVolumeClaimSpec returns a copy of spec as a [corev1.PersistentVolumeClaimSpec].
+func (spec *VolumeClaimSpec) AsPersistentVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {
+	var out corev1.PersistentVolumeClaimSpec
+	spec.DeepCopyInto((*VolumeClaimSpec)(&out))
+	return out
+}
+
 // SchemalessObject is a map compatible with JSON object.
 //
 // Use with the following markers:
@@ -121,7 +150,6 @@ type SchemalessObject map[string]any
 // DeepCopy creates a new SchemalessObject by copying the receiver.
 func (in SchemalessObject) DeepCopy() SchemalessObject {
 	return runtime.DeepCopyJSON(in)
-
 }
 
 type ServiceSpec struct {

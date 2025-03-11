@@ -9,6 +9,49 @@ import (
 )
 
 // +structType=atomic
+type OptionalConfigMapKeyRef struct {
+	ConfigMapKeyRef `json:",inline"`
+
+	// Whether or not the ConfigMap or its data must be defined. Defaults to false.
+	// +optional
+	Optional *bool `json:"optional,omitempty"`
+}
+
+// AsProjection returns a copy of this as a [corev1.ConfigMapProjection].
+func (in *OptionalConfigMapKeyRef) AsProjection(path string) corev1.ConfigMapProjection {
+	out := in.ConfigMapKeyRef.AsProjection(path)
+	if in.Optional != nil {
+		v := *in.Optional
+		out.Optional = &v
+	}
+	return out
+}
+
+// +structType=atomic
+type ConfigMapKeyRef struct {
+	// Name of the ConfigMap.
+	// ---
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidateConfigMapName
+	// +required
+	Name DNS1123Subdomain `json:"name"`
+
+	// Name of the data field within the ConfigMap.
+	// ---
+	// https://github.com/kubernetes/kubernetes/blob/v1.32.0/pkg/apis/core/validation/validation.go#L2849
+	// https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsConfigMapKey
+	// +required
+	Key ConfigDataKey `json:"key"`
+}
+
+// AsProjection returns a copy of this as a [corev1.ConfigMapProjection].
+func (in *ConfigMapKeyRef) AsProjection(path string) corev1.ConfigMapProjection {
+	var out corev1.ConfigMapProjection
+	out.Name = in.Name
+	out.Items = []corev1.KeyToPath{{Key: in.Key, Path: path}}
+	return out
+}
+
+// +structType=atomic
 type OptionalSecretKeyRef struct {
 	SecretKeyRef `json:",inline"`
 

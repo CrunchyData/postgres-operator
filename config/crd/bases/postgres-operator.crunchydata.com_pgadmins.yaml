@@ -1560,6 +1560,12 @@ spec:
                       backing this claim.
                     type: string
                 type: object
+                x-kubernetes-map-type: atomic
+                x-kubernetes-validations:
+                - message: missing accessModes
+                  rule: 0 < size(self.accessModes)
+                - message: missing storage request
+                  rule: has(self.resources.requests.storage)
               image:
                 description: The image name to use for pgAdmin instance.
                 type: string
@@ -2041,6 +2047,75 @@ spec:
                         x-kubernetes-validations:
                         - message: must be at least one hour
                           rule: duration("1h") <= self && self <= duration("8760h")
+                    type: object
+                  metrics:
+                    description: Metrics is the place for users to configure metrics
+                      collection.
+                    properties:
+                      customQueries:
+                        description: |-
+                          Where users can turn off built-in metrics and also provide their own
+                          custom queries.
+                        properties:
+                          add:
+                            description: User defined queries and metrics.
+                            items:
+                              properties:
+                                collectionInterval:
+                                  default: 5s
+                                  description: How often the queries should be run.
+                                  format: duration
+                                  maxLength: 20
+                                  minLength: 1
+                                  pattern: ^((PT)?( *[0-9]+ *(?i:(ms|s|m)|(milli|sec|min)s?))+|0)$
+                                  type: string
+                                  x-kubernetes-validations:
+                                  - rule: duration("0") <= self && self <= duration("60m")
+                                name:
+                                  description: |-
+                                    The name of this batch of queries, which will be used in naming the OTel
+                                    SqlQuery receiver.
+                                  maxLength: 20
+                                  pattern: ^[^\pZ\pC\pS]+$
+                                  type: string
+                                queries:
+                                  description: A ConfigMap holding the yaml file that
+                                    contains the queries.
+                                  properties:
+                                    key:
+                                      description: Name of the data field within the
+                                        ConfigMap.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[-._a-zA-Z0-9]+$
+                                      type: string
+                                      x-kubernetes-validations:
+                                      - message: cannot be "." or start with ".."
+                                        rule: self != "." && !self.startsWith("..")
+                                    name:
+                                      description: Name of the ConfigMap.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                  required:
+                                  - key
+                                  - name
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                              required:
+                              - name
+                              - queries
+                              type: object
+                            type: array
+                          remove:
+                            description: |-
+                              A list of built-in queries that should be removed. If all queries for a
+                              given SQL statement are removed, the SQL statement will no longer be run.
+                            items:
+                              type: string
+                            type: array
+                        type: object
                     type: object
                   resources:
                     description: Resources holds the resource requirements for the

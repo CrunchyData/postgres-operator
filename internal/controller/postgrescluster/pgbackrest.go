@@ -697,8 +697,8 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		if collector.OpenTelemetryLogsEnabled(ctx, postgresCluster) {
 			collector.AddToPod(ctx, postgresCluster.Spec.Instrumentation, postgresCluster.Spec.ImagePullPolicy,
 				&corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(postgresCluster)},
-				&repo.Spec.Template.Spec, []corev1.VolumeMount{}, "",
-				[]string{pgBackRestLogPath}, true)
+				&repo.Spec.Template, []corev1.VolumeMount{}, "",
+				[]string{pgBackRestLogPath}, true, false)
 
 			containersToAdd = append(containersToAdd, naming.ContainerCollector)
 		}
@@ -2628,7 +2628,8 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 		if repo.Volume == nil {
 			continue
 		}
-		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, repo.Volume.VolumeClaimSpec,
+		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster,
+			repo.Volume.VolumeClaimSpec.AsPersistentVolumeClaimSpec(),
 			repo.Name, repoResources)
 		if err != nil {
 			log.Error(err, errMsg)

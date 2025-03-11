@@ -115,8 +115,9 @@ func TestGenerateConfig(t *testing.T) {
 func TestGenerateClusterConfig(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
-	cluster := testCluster()
+	cluster := v1beta1.NewPostgresCluster()
 	cluster.Namespace = "postgres-operator"
+	cluster.Name = "hippo"
 	clusters := map[string][]*v1beta1.PostgresCluster{
 		"shared": {cluster, cluster},
 		"test":   {cluster, cluster},

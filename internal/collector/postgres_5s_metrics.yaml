@@ -195,7 +195,7 @@
       - metric_name: ccp_locks_count
         value_column: count
         attribute_columns: ["dbname", "mode"]
-        description: Return value of 1 means database is in recovery. Otherwise 2 it is a primary.
+        description: Number of locks per mode type
         static_attributes:
           server: "localhost:5432"
 
@@ -657,8 +657,18 @@
          CASE
             WHEN pg_is_in_recovery() = true THEN 'replica'
             ELSE 'primary'
-         END AS role;
+         END AS role,
+         CASE
+            WHEN pg_is_in_recovery() = true THEN 1
+            ELSE 2
+         END AS status;
     metrics:
+      - metric_name: ccp_is_in_recovery_status
+        value_column: status
+        value_type: double
+        description: Return value of 1 means database is in recovery. Otherwise 2 it is a primary
+        static_attributes:
+          server: "localhost:5432"
       - metric_name: ccp_replication_lag_received_time 
         value_column: received_time
         value_type: double
