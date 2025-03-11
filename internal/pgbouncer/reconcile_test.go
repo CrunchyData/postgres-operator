@@ -126,6 +126,16 @@ func TestSCRAMVerifier(t *testing.T) {
 	assert.Equal(t, string(intent.Data["pgbouncer-verifier"]), "SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey")
 	assert.Equal(t, string(intent.Data["pgbouncer-password"]), "password")
 
+	// Simulate the setting of a verifier only
+	intent = new(corev1.Secret)
+	existing.Data = map[string][]byte{
+		"pgbouncer-verifier": []byte("SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey"),
+	}
+	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
+	assert.Assert(t, string(intent.Data["pgbouncer-verifier"]) != "SCRAM-SHA-256$4096:randomsalt:storedkey:serverkey")
+	assert.Assert(t, len(intent.Data["pgbouncer-password"]) != 0)
+	assert.Assert(t, len(intent.Data["pgbouncer-verifier"]) != 0)
+
 }
 
 func TestPod(t *testing.T) {
