@@ -10,7 +10,6 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -18,9 +17,10 @@ import (
 func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec,
 	configmap *corev1.ConfigMap,
 ) error {
-	if !feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if !OpenTelemetryLogsEnabled(ctx, spec) {
 		return nil
 	}
+
 	otelConfig := NewConfig(spec)
 
 	otelConfig.Extensions["file_storage/pgadmin_data_logs"] = map[string]any{
@@ -125,5 +125,6 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 	if err == nil {
 		configmap.Data["collector.yaml"] = otelYAML
 	}
+
 	return err
 }

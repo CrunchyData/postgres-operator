@@ -11,6 +11,7 @@ import (
 	"gotest.tools/v3/assert"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -23,8 +24,13 @@ func TestEnablePgBouncerLogging(t *testing.T) {
 		ctx := feature.NewContext(context.Background(), gate)
 
 		config := NewConfig(nil)
-
-		EnablePgBouncerLogging(ctx, new(v1beta1.PostgresCluster), config)
+		cluster := new(v1beta1.PostgresCluster)
+		require.UnmarshalInto(t, &cluster.Spec, `{
+			instrumentation: {
+				logs: { retentionPeriod: 5h },
+			},
+		}`)
+		EnablePgBouncerLogging(ctx, cluster, config)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)

@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -29,7 +28,7 @@ func NewConfigForPgBackrestRepoHostPod(
 ) *Config {
 	config := NewConfig(spec)
 
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if OpenTelemetryLogsEnabled(ctx, spec) {
 
 		var directory string
 		for _, repo := range repos {

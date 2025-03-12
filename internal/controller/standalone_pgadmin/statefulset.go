@@ -17,7 +17,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -122,7 +121,7 @@ func statefulset(
 
 	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
 
-	if pgadmin.Spec.Instrumentation != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if collector.OpenTelemetryLogsEnabled(ctx, pgadmin) {
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
 		// so the collector needs access to that that path.
 		dataVolumeMount := corev1.VolumeMount{

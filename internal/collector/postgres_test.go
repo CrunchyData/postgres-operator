@@ -12,6 +12,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -25,6 +26,11 @@ func TestEnablePostgresLogging(t *testing.T) {
 
 		cluster := new(v1beta1.PostgresCluster)
 		cluster.Spec.PostgresVersion = 99
+		require.UnmarshalInto(t, &cluster.Spec, `{
+			instrumentation: {
+				logs: { retentionPeriod: 5h },
+			},
+		}`)
 
 		config := NewConfig(nil)
 		params := postgres.NewParameterSet()

@@ -12,7 +12,6 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -40,7 +39,7 @@ func NewConfigForPgBouncerPod(
 	config := NewConfig(cluster.Spec.Instrumentation)
 
 	EnablePgBouncerLogging(ctx, cluster, config)
-	EnablePgBouncerMetrics(ctx, config, sqlQueryUsername)
+	EnablePgBouncerMetrics(ctx, cluster, config, sqlQueryUsername)
 
 	return config
 }
@@ -56,7 +55,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 		spec = inCluster.Spec.Instrumentation.Logs
 	}
 
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+	if OpenTelemetryLogsEnabled(ctx, inCluster) {
 		directory := naming.PGBouncerLogPath
 
 		// Keep track of what log records and files have been processed.
@@ -171,8 +170,10 @@ func EnablePgBouncerLogging(ctx context.Context,
 
 // EnablePgBouncerMetrics adds necessary configuration to the collector config to scrape
 // metrics from pgBouncer when the OpenTelemetryMetrics feature flag is enabled.
-func EnablePgBouncerMetrics(ctx context.Context, config *Config, sqlQueryUsername string) {
-	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+func EnablePgBouncerMetrics(ctx context.Context, inCluster *v1beta1.PostgresCluster,
+	config *Config, sqlQueryUsername string) {
+
+	if OpenTelemetryMetricsEnabled(ctx, inCluster) {
 		// Add Prometheus exporter
 		config.Exporters[Prometheus] = map[string]any{
 			"endpoint": "0.0.0.0:" + strconv.Itoa(PrometheusPort),

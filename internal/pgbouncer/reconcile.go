@@ -207,7 +207,7 @@ func Pod(
 
 	template.Spec.Volumes = []corev1.Volume{configVolume}
 
-	if feature.Enabled(ctx, feature.OpenTelemetryLogs) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, inCluster) {
 		collector.AddToPod(ctx, inCluster.Spec.Instrumentation, inCluster.Spec.ImagePullPolicy, inConfigMap,
 			template, []corev1.VolumeMount{configVolumeMount}, string(inSecret.Data["pgbouncer-password"]),
 			[]string{naming.PGBouncerLogPath}, true, true)
