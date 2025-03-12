@@ -14,6 +14,23 @@ import (
 	"strings"
 )
 
+// CleanFileName returns the suffix of path after its last slash U+002F.
+// This is similar to "basename" except this returns empty string when:
+//   - The final character of path is slash U+002F, or
+//   - The result would be "." or ".."
+//
+// See:
+//   - https://pubs.opengroup.org/onlinepubs/9799919799/utilities/basename.html
+func CleanFileName(path string) string {
+	if i := strings.LastIndexByte(path, '/'); i >= 0 {
+		path = path[i+1:]
+	}
+	if path != "." && path != ".." {
+		return path
+	}
+	return ""
+}
+
 // MakeDirectories returns a list of POSIX shell commands that ensure each path
 // exists. It creates every directory leading to path from (but not including)
 // base and sets their permissions to exactly perms, regardless of umask.

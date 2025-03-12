@@ -1320,7 +1320,7 @@ spec:
                     type: array
                   gunicorn:
                     description: |-
-                      Settings for the gunicorn server.
+                      Settings for the Gunicorn server.
                       More info: https://docs.gunicorn.org/en/latest/settings.html
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
@@ -1353,12 +1353,61 @@ spec:
                     - name
                     type: object
                     x-kubernetes-map-type: atomic
+                  oauthConfigurations:
+                    description: |-
+                      Secrets for the `OAUTH2_CONFIG` setting. If there are `OAUTH2_CONFIG` values
+                      in the settings field, they will be combined with the values loaded here.
+                      More info: https://www.pgadmin.org/docs/pgadmin4/latest/oauth2.html
+                    items:
+                      properties:
+                        name:
+                          description: The OAUTH2_NAME of this configuration.
+                          maxLength: 20
+                          minLength: 1
+                          pattern: ^[A-Za-z0-9]+$
+                          type: string
+                        secret:
+                          description: A Secret containing the settings of one OAuth2
+                            provider as a JSON object.
+                          properties:
+                            key:
+                              description: Name of the data field within the Secret.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[-._a-zA-Z0-9]+$
+                              type: string
+                              x-kubernetes-validations:
+                              - message: cannot be "." or start with ".."
+                                rule: self != "." && !self.startsWith("..")
+                            name:
+                              description: Name of the Secret.
+                              maxLength: 253
+                              minLength: 1
+                              pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                          x-kubernetes-map-type: atomic
+                      required:
+                      - name
+                      - secret
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    maxItems: 10
+                    minItems: 1
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   settings:
                     description: |-
                       Settings for the pgAdmin server process. Keys should be uppercase and
                       values must be constants.
                       More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html
                     type: object
+                    x-kubernetes-map-type: granular
                     x-kubernetes-preserve-unknown-fields: true
                 type: object
               dataVolumeClaimSpec:
