@@ -75,7 +75,7 @@ containers:
 
     exec {fd}<> <(:||:)
     while read -r -t 5 -u "${fd}" ||:; do
-        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -KILL $(head -1 ${PGADMIN4_PIDFILE?});
+        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -TERM $(head -1 ${PGADMIN4_PIDFILE?});
         then
             exec {fd}>&- && exec {fd}<> <(:||:)
             stat --format='Loaded shared servers dated %y' "${cluster_file}"
@@ -149,12 +149,31 @@ initContainers:
         _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+    if 'OAUTH2_CONFIG' in globals() and type(OAUTH2_CONFIG) is list:
+        OAUTH2_CONFIG = [_conf for _conf in OAUTH2_CONFIG if type(_conf) is dict and 'OAUTH2_NAME' in _conf]
+    for _f in reversed(glob.glob('/etc/pgadmin/conf.d/~postgres-operator/oauth-config/[0-9][0-9]-*.json')):
+        if 'OAUTH2_CONFIG' not in globals() or type(OAUTH2_CONFIG) is not list:
+            OAUTH2_CONFIG = []
+        try:
+            with open(_f) as _f:
+                _data, _name = json.load(_f), os.path.basename(_f.name)[3:-5]
+                _data, _next = { 'OAUTH2_NAME': _name } | _data, []
+                for _conf in OAUTH2_CONFIG:
+                    if _data['OAUTH2_NAME'] == _conf.get('OAUTH2_NAME'):
+                        _data = _conf | _data
+                    else:
+                        _next.append(_conf)
+                OAUTH2_CONFIG = [_data] + _next
+                del _next
+        except:
+            pass
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
             LDAP_BIND_PASSWORD = _f.read()
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri') as _f:
             CONFIG_DATABASE_URI = _f.read()
+    del _conf, _data, _f
   - |
     import json, re, gunicorn
     gunicorn.SERVER_SOFTWARE = 'Python'
@@ -257,7 +276,7 @@ containers:
 
     exec {fd}<> <(:||:)
     while read -r -t 5 -u "${fd}" ||:; do
-        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -KILL $(head -1 ${PGADMIN4_PIDFILE?});
+        if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -TERM $(head -1 ${PGADMIN4_PIDFILE?});
         then
             exec {fd}>&- && exec {fd}<> <(:||:)
             stat --format='Loaded shared servers dated %y' "${cluster_file}"
@@ -335,12 +354,31 @@ initContainers:
         _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
         if type(_data) is dict:
             globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+    if 'OAUTH2_CONFIG' in globals() and type(OAUTH2_CONFIG) is list:
+        OAUTH2_CONFIG = [_conf for _conf in OAUTH2_CONFIG if type(_conf) is dict and 'OAUTH2_NAME' in _conf]
+    for _f in reversed(glob.glob('/etc/pgadmin/conf.d/~postgres-operator/oauth-config/[0-9][0-9]-*.json')):
+        if 'OAUTH2_CONFIG' not in globals() or type(OAUTH2_CONFIG) is not list:
+            OAUTH2_CONFIG = []
+        try:
+            with open(_f) as _f:
+                _data, _name = json.load(_f), os.path.basename(_f.name)[3:-5]
+                _data, _next = { 'OAUTH2_NAME': _name } | _data, []
+                for _conf in OAUTH2_CONFIG:
+                    if _data['OAUTH2_NAME'] == _conf.get('OAUTH2_NAME'):
+                        _data = _conf | _data
+                    else:
+                        _next.append(_conf)
+                OAUTH2_CONFIG = [_data] + _next
+                del _next
+        except:
+            pass
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/ldap-bind-password') as _f:
             LDAP_BIND_PASSWORD = _f.read()
     if os.path.isfile('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri'):
         with open('/etc/pgadmin/conf.d/~postgres-operator/config-database-uri') as _f:
             CONFIG_DATABASE_URI = _f.read()
+    del _conf, _data, _f
   - |
     import json, re, gunicorn
     gunicorn.SERVER_SOFTWARE = 'Python'
