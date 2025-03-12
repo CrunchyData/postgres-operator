@@ -10,7 +10,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -24,7 +24,8 @@ const (
 // PostgreSQLHBAs provides the Postgres HBA rules for allowing the monitoring
 // exporter to be accessible
 func PostgreSQLHBAs(ctx context.Context, inCluster *v1beta1.PostgresCluster, outHBAs *postgres.HBAs) {
-	if ExporterEnabled(ctx, inCluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if ExporterEnabled(ctx, inCluster) ||
+		collector.OpenTelemetryMetricsEnabled(ctx, inCluster) {
 		// Limit the monitoring user to local connections using SCRAM.
 		outHBAs.Mandatory = append(outHBAs.Mandatory,
 			postgres.NewHBA().TCP().Users(MonitoringUser).Method("scram-sha-256").Network("127.0.0.0/8"),
@@ -34,9 +35,11 @@ func PostgreSQLHBAs(ctx context.Context, inCluster *v1beta1.PostgresCluster, out
 }
 
 // PostgreSQLParameters provides additional required configuration parameters
-// that Postgres needs to support monitoring
+// that Postgres needs to support monitoring for both pgMonitor and OTel
 func PostgreSQLParameters(ctx context.Context, inCluster *v1beta1.PostgresCluster, outParameters *postgres.Parameters) {
-	if ExporterEnabled(ctx, inCluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if ExporterEnabled(ctx, inCluster) ||
+		collector.OpenTelemetryMetricsEnabled(ctx, inCluster) {
+
 		// Exporter expects that shared_preload_libraries are installed
 		// pg_stat_statements: https://access.crunchydata.com/documentation/pgmonitor/latest/exporter/
 		// pgnodemx: https://github.com/CrunchyData/pgnodemx

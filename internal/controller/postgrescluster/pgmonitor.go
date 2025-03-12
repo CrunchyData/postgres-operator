@@ -16,6 +16,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -62,7 +63,7 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	// the `EnableExporterInPostgreSQL` funcs; that way we are always running
 	// that function against an updated and running pod.
 
-	if pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if pgmonitor.ExporterEnabled(ctx, cluster) || collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		sql, err := os.ReadFile(fmt.Sprintf("%s/pg%d/setup.sql", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
 		if err != nil {
 			return err
@@ -99,7 +100,7 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 		return pgmonitor.EnableExporterInPostgreSQL(ctx, exec, monitoringSecret, pgmonitor.ExporterDB, setup)
 	}
 
-	if !pgmonitor.ExporterEnabled(ctx, cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) && !collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		action = func(ctx context.Context, exec postgres.Executor) error {
 			return pgmonitor.DisableMonitoringUserInPostgres(ctx, exec)
 		}
@@ -161,7 +162,7 @@ func (r *Reconciler) reconcileMonitoringSecret(
 	// is enabled to determine when monitoring secret should be created,
 	// since our implementation of the SqlQuery receiver in the OTel Collector
 	// uses the monitoring user as well.
-	if !pgmonitor.ExporterEnabled(ctx, cluster) && !feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) && !collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
 		}
@@ -234,7 +235,7 @@ func addPGMonitorExporterToInstancePodSpec(
 	template *corev1.PodTemplateSpec,
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap) {
 
-	if !pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) || collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		return
 	}
 
@@ -374,7 +375,7 @@ func addPGMonitorExporterToInstancePodSpec(
 func (r *Reconciler) reconcileExporterWebConfig(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) (*corev1.ConfigMap, error) {
 
-	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		return nil, nil
 	}
 
@@ -384,7 +385,9 @@ func (r *Reconciler) reconcileExporterWebConfig(ctx context.Context,
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) || cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret == nil {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) ||
+		collector.OpenTelemetryMetricsEnabled(ctx, cluster) ||
+		cluster.Spec.Monitoring.PGMonitor.Exporter.CustomTLSSecret == nil {
 		// We could still have a NotFound error here so check the err.
 		// If no error that means the configmap is found and needs to be deleted
 		if err == nil {
@@ -441,7 +444,7 @@ func (r *Reconciler) reconcileExporterQueriesConfig(ctx context.Context,
 		return nil, err
 	}
 
-	if !pgmonitor.ExporterEnabled(ctx, cluster) || feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if !pgmonitor.ExporterEnabled(ctx, cluster) || collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		// We could still have a NotFound error here so check the err.
 		// If no error that means the configmap is found and needs to be deleted
 		if err == nil {

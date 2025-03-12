@@ -12,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
-	pgadmin "github.com/crunchydata/postgres-operator/internal/controller/standalone_pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -31,7 +30,11 @@ func TestEnablePgAdminLogging(t *testing.T) {
 
 		configmap := new(corev1.ConfigMap)
 		initialize.Map(&configmap.Data)
-		err := collector.EnablePgAdminLogging(ctx, nil, configmap)
+		var instrumentation *v1beta1.InstrumentationSpec
+		require.UnmarshalInto(t, &instrumentation, `{
+			logs: { retentionPeriod: 12h },
+		}`)
+		err := collector.EnablePgAdminLogging(ctx, instrumentation, configmap)
 		assert.NilError(t, err)
 
 		assert.Assert(t, cmp.MarshalMatches(configmap.Data, `
@@ -44,7 +47,7 @@ collector.yaml: |
   extensions:
     file_storage/pgadmin_data_logs:
       create_directory: false
-      directory: `+pgadmin.LogDirectoryAbsolutePath+`/receiver
+      directory: /var/lib/pgadmin/logs/receiver
       fsync: true
   processors:
     batch/1s:
@@ -90,11 +93,11 @@ collector.yaml: |
   receivers:
     filelog/gunicorn:
       include:
-      - `+pgadmin.GunicornLogFileAbsolutePath+`
+      - /var/lib/pgadmin/logs/gunicorn.log
       storage: file_storage/pgadmin_data_logs
     filelog/pgadmin:
       include:
-      - `+pgadmin.LogFileAbsolutePath+`
+      - /var/lib/pgadmin/logs/pgadmin.log
       storage: file_storage/pgadmin_data_logs
   service:
     extensions:
@@ -165,7 +168,7 @@ collector.yaml: |
   extensions:
     file_storage/pgadmin_data_logs:
       create_directory: false
-      directory: `+pgadmin.LogDirectoryAbsolutePath+`/receiver
+      directory: /var/lib/pgadmin/logs/receiver
       fsync: true
   processors:
     batch/1s:
@@ -211,11 +214,11 @@ collector.yaml: |
   receivers:
     filelog/gunicorn:
       include:
-      - `+pgadmin.GunicornLogFileAbsolutePath+`
+      - /var/lib/pgadmin/logs/gunicorn.log
       storage: file_storage/pgadmin_data_logs
     filelog/pgadmin:
       include:
-      - `+pgadmin.LogFileAbsolutePath+`
+      - /var/lib/pgadmin/logs/pgadmin.log
       storage: file_storage/pgadmin_data_logs
   service:
     extensions:

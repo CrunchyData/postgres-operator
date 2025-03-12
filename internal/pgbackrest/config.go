@@ -17,7 +17,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -131,8 +130,8 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 			).String()
 
 		if RepoHostVolumeDefined(postgresCluster) &&
-			(feature.Enabled(ctx, feature.OpenTelemetryLogs) ||
-				feature.Enabled(ctx, feature.OpenTelemetryMetrics)) {
+			collector.OpenTelemetryLogsOrMetricsEnabled(ctx, postgresCluster) {
+
 			err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
 				ctx,
 				postgresCluster.Spec.Instrumentation,
@@ -141,8 +140,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 
 			// If OTel logging is enabled, add logrotate config for the RepoHost
 			if err == nil &&
-				postgresCluster.Spec.Instrumentation != nil &&
-				feature.Enabled(ctx, feature.OpenTelemetryLogs) {
+				collector.OpenTelemetryLogsEnabled(ctx, postgresCluster) {
 				var pgBackRestLogPath string
 				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 					if repo.Volume != nil {

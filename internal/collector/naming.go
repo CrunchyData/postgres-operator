@@ -15,6 +15,7 @@ const PGBouncerMetrics = "metrics/pgbouncer"
 const PostgresMetrics = "metrics/postgres"
 const PatroniMetrics = "metrics/patroni"
 const ResourceDetectionProcessor = "resourcedetection"
+const MonitoringUser = "ccp_monitoring"
 
 const SqlQuery = "sqlquery"
 

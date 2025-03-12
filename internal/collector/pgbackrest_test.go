@@ -11,6 +11,7 @@ import (
 	"gotest.tools/v3/assert"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -27,8 +28,12 @@ func TestNewConfigForPgBackrestRepoHostPod(t *testing.T) {
 				Volume: new(v1beta1.RepoPVC),
 			},
 		}
+		var instrumentation *v1beta1.InstrumentationSpec
+		require.UnmarshalInto(t, &instrumentation, `{
+			logs: { retentionPeriod: 12h },
+		}`)
 
-		config := NewConfigForPgBackrestRepoHostPod(ctx, nil, repos)
+		config := NewConfigForPgBackrestRepoHostPod(ctx, instrumentation, repos)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)

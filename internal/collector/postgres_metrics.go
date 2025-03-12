@@ -12,9 +12,7 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -59,7 +57,7 @@ type metric struct {
 }
 
 func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresCluster, config *Config) {
-	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+	if OpenTelemetryMetricsEnabled(ctx, inCluster) {
 		log := logging.FromContext(ctx)
 		var err error
 
@@ -131,7 +129,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			"driver": "postgres",
 			"datasource": fmt.Sprintf(
 				`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`,
-				pgmonitor.MonitoringUser),
+				MonitoringUser),
 			"collection_interval": "5s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "10s",
@@ -142,7 +140,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			"driver": "postgres",
 			"datasource": fmt.Sprintf(
 				`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`,
-				pgmonitor.MonitoringUser),
+				MonitoringUser),
 			"collection_interval": "300s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "10s",
@@ -172,7 +170,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 					"driver": "postgres",
 					"datasource": fmt.Sprintf(
 						`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`,
-						pgmonitor.MonitoringUser),
+						MonitoringUser),
 					"collection_interval": querySet.CollectionInterval,
 					// Give Postgres time to finish setup.
 					"initial_delay": "10s",
