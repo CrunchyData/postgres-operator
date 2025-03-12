@@ -28,7 +28,8 @@ const (
 	configDatabaseURIPath  = "~postgres-operator/config-database-uri"
 	ldapFilePath           = "~postgres-operator/ldap-bind-password"
 	gunicornConfigFilePath = "~postgres-operator/" + gunicornConfigKey
-	oauthConfigDir         = "~postgres-operator/oauth-config/"
+	oauthConfigDir         = "~postgres-operator/oauth-config"
+	oauthAbsolutePath      = configMountPath + "/" + oauthConfigDir
 
 	// scriptMountPath is where to mount a temporary directory that is only
 	// writable during Pod initialization.
@@ -49,7 +50,6 @@ func pod(
 	inConfigMap *corev1.ConfigMap,
 	outPod *corev1.PodSpec,
 	pgAdminVolume *corev1.PersistentVolumeClaim,
-	oauthSecrets []corev1.Secret,
 ) {
 	// create the projected volume of config maps for use in
 	// 1. dynamic server discovery
@@ -57,7 +57,7 @@ func pod(
 	configVolume := corev1.Volume{Name: "pgadmin-config"}
 	configVolume.VolumeSource = corev1.VolumeSource{
 		Projected: &corev1.ProjectedVolumeSource{
-			Sources: podConfigFiles(inConfigMap, *inPGAdmin, oauthSecrets),
+			Sources: podConfigFiles(inConfigMap, *inPGAdmin),
 		},
 	}
 
@@ -187,8 +187,7 @@ func pod(
 
 // podConfigFiles returns projections of pgAdmin's configuration files to
 // include in the configuration volume.
-func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin,
-	oauthSecrets []corev1.Secret) []corev1.VolumeProjection {
+func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin) []corev1.VolumeProjection {
 
 	config := append(append([]corev1.VolumeProjection{}, pgadmin.Spec.Config.Files...),
 		[]corev1.VolumeProjection{
@@ -215,22 +214,15 @@ func podConfigFiles(configmap *corev1.ConfigMap, pgadmin v1beta1.PGAdmin,
 			},
 		}...)
 
-	if pgadmin.Spec.Config.OauthConfigurations != nil {
-		for _, secret := range oauthSecrets {
-			config = append(config, corev1.VolumeProjection{
-				Secret: &corev1.SecretProjection{
-					LocalObjectReference: corev1.LocalObjectReference{
-						Name: secret.Name,
-					},
-					Items: []corev1.KeyToPath{
-						{
-							Key:  "oauth-config",
-							Path: fmt.Sprintf("%s%s.json", oauthConfigDir, secret.Name),
-						},
-					},
-				},
-			})
-		}
+	for i, oauth := range pgadmin.Spec.Config.OAuthConfigurations {
+		// Safely encode the OAUTH2_NAME in the file name. Prepend the index so
+		// the files can be loaded in the order they are defined in the spec.
+		mountPath := fmt.Sprintf(
+			"%s/%02d-%s.json", oauthConfigDir, i, shell.CleanFileName(oauth.Name),
+		)
+		config = append(config, corev1.VolumeProjection{
+			Secret: initialize.Pointer(oauth.Secret.AsProjection(mountPath)),
+		})
 	}
 
 	if pgadmin.Spec.Config.ConfigDatabaseURI != nil {
@@ -332,15 +324,17 @@ loadServerCommand
 	// descriptor and uses the timeout of the builtin `read` to wait. That same
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check mtimes.
 	// - https://unix.stackexchange.com/a/407383
-	// In order to get gunicorn to reload the logging config
-	// we need to send a KILL rather than a HUP signal.
+	//
+	// Gunicorn needs a SIGTERM rather than SIGHUP to reload its logging config.
+	// This also causes pgAdmin to restart when its configuration changes.
 	// - https://github.com/benoitc/gunicorn/issues/3353
+	//
 	// Right now the config file is on the same configMap as the cluster file
 	// so if the mtime changes for any of those files, it will change for all.
 	var reloadScript = `
 exec {fd}<> <(:||:)
 while read -r -t 5 -u "${fd}" ||:; do
-    if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -KILL $(head -1 ${PGADMIN4_PIDFILE?});
+    if [[ "${cluster_file}" -nt "/proc/self/fd/${fd}" ]] && loadServerCommand && kill -TERM $(head -1 ${PGADMIN4_PIDFILE?});
     then
         exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded shared servers dated %y' "${cluster_file}"
@@ -394,28 +388,33 @@ import glob, json, re, os
 DEFAULT_BINARY_PATHS = {'pg': sorted([''] + glob.glob('/usr/pgsql-*/bin')).pop()}
 with open('` + configMountPath + `/` + configFilePath + `') as _f:
     _conf, _data = re.compile(r'[A-Z_0-9]+'), json.load(_f)
-    folder_path = '` + configMountPath + `/` + oauthConfigDir + `'
-    if os.path.isdir(folder_path):
-        for filename in os.listdir(folder_path):
-            with open(os.path.join(folder_path, filename), "r", encoding="utf-8") as f:
-                try:
-                    oath = json.load(f)
-                    if oath.get("OAUTH2_NAME") not in [
-                        o.get("OAUTH2_NAME") for o in _data.get("OAUTH2_CONFIG")]:
-                        _data.get("OAUTH2_CONFIG").append(oath)
-                    for o in _data.get("OAUTH2_CONFIG"):
-                        if o.get("OAUTH2_NAME") == oath.get("OAUTH2_NAME"):
-                            o.update(oath)
-                except Exception as e:
-                    print(f"An unexpected error occurred: {e}")
     if type(_data) is dict:
         globals().update({k: v for k, v in _data.items() if _conf.fullmatch(k)})
+if 'OAUTH2_CONFIG' in globals() and type(OAUTH2_CONFIG) is list:
+    OAUTH2_CONFIG = [_conf for _conf in OAUTH2_CONFIG if type(_conf) is dict and 'OAUTH2_NAME' in _conf]
+for _f in reversed(glob.glob('` + oauthAbsolutePath + `/[0-9][0-9]-*.json')):
+    if 'OAUTH2_CONFIG' not in globals() or type(OAUTH2_CONFIG) is not list:
+        OAUTH2_CONFIG = []
+    try:
+        with open(_f) as _f:
+            _data, _name = json.load(_f), os.path.basename(_f.name)[3:-5]
+            _data, _next = { 'OAUTH2_NAME': _name } | _data, []
+            for _conf in OAUTH2_CONFIG:
+                if _data['OAUTH2_NAME'] == _conf.get('OAUTH2_NAME'):
+                    _data = _conf | _data
+                else:
+                    _next.append(_conf)
+            OAUTH2_CONFIG = [_data] + _next
+            del _next
+    except:
+        pass
 if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
     with open('` + ldapPasswordAbsolutePath + `') as _f:
         LDAP_BIND_PASSWORD = _f.read()
 if os.path.isfile('` + configDatabaseURIPathAbsolutePath + `'):
     with open('` + configDatabaseURIPathAbsolutePath + `') as _f:
         CONFIG_DATABASE_URI = _f.read()
+del _conf, _data, _f
 `
 
 		// Gunicorn reads from the `/etc/pgadmin/gunicorn_config.py` file during startup

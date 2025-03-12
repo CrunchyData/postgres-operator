@@ -6,9 +6,6 @@ package standalone_pgadmin
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -30,9 +27,8 @@ import (
 func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap, dataVolume *corev1.PersistentVolumeClaim,
-	oauthSecrets []corev1.Secret,
 ) error {
-	sts := statefulset(ctx, pgadmin, configmap, dataVolume, oauthSecrets)
+	sts := statefulset(ctx, pgadmin, configmap, dataVolume)
 
 	// Previous versions of PGO used a StatefulSet Pod Management Policy that could leave the Pod
 	// in a failed state. When we see that it has the wrong policy, we will delete the StatefulSet
@@ -69,7 +65,6 @@ func statefulset(
 	pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap,
 	dataVolume *corev1.PersistentVolumeClaim,
-	oauthSecrets []corev1.Secret,
 ) *appsv1.StatefulSet {
 	sts := &appsv1.StatefulSet{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
 	sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
@@ -125,7 +120,7 @@ func statefulset(
 
 	sts.Spec.Template.Spec.SecurityContext = podSecurityContext(ctx)
 
-	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume, oauthSecrets)
+	pod(pgadmin, configmap, &sts.Spec.Template.Spec, dataVolume)
 
 	if pgadmin.Spec.Instrumentation != nil && feature.Enabled(ctx, feature.OpenTelemetryLogs) {
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
@@ -144,60 +139,5 @@ func statefulset(
 
 	postgrescluster.AddTMPEmptyDir(&sts.Spec.Template)
 
-	// Determine if a rollout is needed because Secrets and ConfigMaps have changed.
-	// If the OAuth Secrets are changed, or if the OAUTH2_CONFIG changes in the
-	// PGAdmin ConfigMap, then we need to restart the pgAdmin process and re-run
-	// the init container.
-	// We therefore store hashes of these configurations in annotations on the
-	// pgAdmin statefulset, which force a Pod restart when they change.
-	checkOauthSecretsChange(oauthSecrets, sts)
-	checkConfigMapChange(configmap, sts)
-
 	return sts
-}
-
-// Checks if the Oauth Secrets have changed by calculating and comparing a hash
-// of the data. We update the hash when changed to trigger a rollout.
-func checkOauthSecretsChange(oauthSecrets []corev1.Secret, sts *appsv1.StatefulSet) {
-	var secretHash, currentHash string
-	var sb strings.Builder
-
-	for _, secret := range oauthSecrets {
-		hash := sha256.New()
-		for key, value := range secret.Data {
-			hash.Write([]byte(key))
-			hash.Write(value)
-		}
-		encoding := hex.EncodeToString(hash.Sum(nil))
-		sb.WriteString(encoding)
-	}
-	secretHash = sb.String()
-	currentHash = sts.Spec.Template.Annotations["oauthSecretsHash"]
-
-	if currentHash != secretHash {
-		if sts.Spec.Template.Annotations == nil {
-			sts.Spec.Template.Annotations = map[string]string{}
-		}
-		sts.Spec.Template.Annotations["oauthSecretsHash"] = secretHash
-	}
-}
-
-// Checks if the OAUTH2_CONFIG ConfigMap has changed by calculating and comparing a hash
-// of the data. We update the hash when changed to trigger a rollout.
-func checkConfigMapChange(configmap *corev1.ConfigMap, sts *appsv1.StatefulSet) {
-	var secretHash, currentHash string
-	hash := sha256.New()
-	for key, value := range configmap.Data {
-		hash.Write([]byte(key))
-		hash.Write([]byte(value))
-	}
-	secretHash = hex.EncodeToString(hash.Sum(nil))
-	currentHash = sts.Spec.Template.Annotations["configMapHash"]
-
-	if currentHash != secretHash {
-		if sts.Spec.Template.Annotations == nil {
-			sts.Spec.Template.Annotations = map[string]string{}
-		}
-		sts.Spec.Template.Annotations["configMapHash"] = secretHash
-	}
 }

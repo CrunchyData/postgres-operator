@@ -15,7 +15,6 @@ import (
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/pkg/errors"
 
@@ -28,25 +27,6 @@ import (
 
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={get}
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={create,delete,patch}
-
-// reconcileOauthConfigSecrets reconciles the Oauth Configuration Secrets for pgAdmin.
-func (r *PGAdminReconciler) reconcileOauthConfigSecrets(
-	ctx context.Context, pgadmin *v1beta1.PGAdmin,
-) ([]corev1.Secret, error) {
-
-	var secrets []corev1.Secret
-	for _, secretRef := range pgadmin.Spec.Config.OauthConfigurations {
-		var secret corev1.Secret
-		secretKey := types.NamespacedName{Name: secretRef.Name, Namespace: pgadmin.Namespace}
-
-		if err := r.Get(ctx, secretKey, &secret); err != nil {
-			return nil, fmt.Errorf("failed to get Secret %s: %w", secretRef.Name, err)
-		}
-		secrets = append(secrets, secret)
-	}
-
-	return secrets, nil
-}
 
 // reconcilePGAdminConfigMap writes the ConfigMap for pgAdmin.
 func (r *PGAdminReconciler) reconcilePGAdminConfigMap(
