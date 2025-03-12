@@ -5,7 +5,6 @@
 package password
 
 import (
-
 	// #nosec G501
 	"crypto/md5"
 	"errors"
