@@ -17,6 +17,31 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
+func TestCleanFileName(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Empty", func(t *testing.T) {
+		assert.Equal(t, CleanFileName(""), "")
+	})
+
+	t.Run("Dots", func(t *testing.T) {
+		assert.Equal(t, CleanFileName("././/.././../.."), "")
+		assert.Equal(t, CleanFileName("././/.././../../x.j"), "x.j")
+	})
+
+	t.Run("Directories", func(t *testing.T) {
+		assert.Equal(t, CleanFileName("/"), "")
+		assert.Equal(t, CleanFileName("asdf/"), "")
+		assert.Equal(t, CleanFileName("asdf//12.3"), "12.3")
+		assert.Equal(t, CleanFileName("//////"), "")
+		assert.Equal(t, CleanFileName("//////gg"), "gg")
+	})
+
+	t.Run("NoSeparators", func(t *testing.T) {
+		assert.Equal(t, CleanFileName("asdf12.3.ssgg"), "asdf12.3.ssgg")
+	})
+}
+
 func TestMakeDirectories(t *testing.T) {
 	t.Parallel()
 

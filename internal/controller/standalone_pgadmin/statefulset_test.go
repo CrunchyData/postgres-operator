@@ -52,7 +52,7 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	pvc.Name = "test-pvc"
 
 	t.Run("verify StatefulSet", func(t *testing.T) {
-		err := reconciler.reconcilePGAdminStatefulSet(ctx, pgadmin, configmap, pvc, nil)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, pgadmin, configmap, pvc)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -80,7 +80,6 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 
 		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 annotations:
-  configMapHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   kubectl.kubernetes.io/default-container: pgadmin
 creationTimestamp: null
 labels:
@@ -157,7 +156,7 @@ terminationGracePeriodSeconds: 30
 		assert.NilError(t, cc.Create(ctx, custompgadmin))
 		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, custompgadmin)) })
 
-		err := reconciler.reconcilePGAdminStatefulSet(ctx, custompgadmin, configmap, pvc, nil)
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, custompgadmin, configmap, pvc)
 		assert.NilError(t, err)
 
 		selector, err := naming.AsSelector(metav1.LabelSelector{
@@ -185,7 +184,6 @@ terminationGracePeriodSeconds: 30
 		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 annotations:
   annotation1: annotationvalue
-  configMapHash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   kubectl.kubernetes.io/default-container: pgadmin
 creationTimestamp: null
 labels:

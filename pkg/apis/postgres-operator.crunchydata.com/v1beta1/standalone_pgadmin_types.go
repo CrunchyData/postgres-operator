@@ -21,7 +21,7 @@ type StandalonePGAdminConfiguration struct {
 	// +optional
 	ConfigDatabaseURI *OptionalSecretKeyRef `json:"configDatabaseURI,omitempty"`
 
-	// Settings for the gunicorn server.
+	// Settings for the Gunicorn server.
 	// More info: https://docs.gunicorn.org/en/latest/settings.html
 	// +optional
 	// +kubebuilder:pruning:PreserveUnknownFields
@@ -37,19 +37,46 @@ type StandalonePGAdminConfiguration struct {
 	// Settings for the pgAdmin server process. Keys should be uppercase and
 	// values must be constants.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/config_py.html
-	// +optional
+	// ---
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:validation:Type=object
+	//
+	// +mapType=granular
+	// +optional
 	Settings SchemalessObject `json:"settings,omitempty"`
 
-	// OauthConfigurations allows the user to reference one or more Secrets
-	// containing OAUTH2 configuration settings for pgAdmin.
-	// Each Secret shall contain a single data key called oauth-config
-	// whose value is a JSON object containing the OAUTH2 configuration settings.
+	// Secrets for the `OAUTH2_CONFIG` setting. If there are `OAUTH2_CONFIG` values
+	// in the settings field, they will be combined with the values loaded here.
 	// More info: https://www.pgadmin.org/docs/pgadmin4/latest/oauth2.html
+	// ---
+	// The controller expects this number to be no more than two digits.
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=10
+	//
+	// +listType=map
+	// +listMapKey=name
 	// +optional
-	OauthConfigurations []corev1.LocalObjectReference `json:"oauthConfigurations,omitempty"`
+	OAuthConfigurations []PGAdminOAuthConfig `json:"oauthConfigurations,omitempty"`
+}
+
+// +structType=atomic
+type PGAdminOAuthConfig struct {
+	// The OAUTH2_NAME of this configuration.
+	// ---
+	// This goes into a filename, so let's keep it short and simple.
+	// The Secret is allowed to contain OAUTH2_NAME and deviate from this.
+	// +kubebuilder:validation:Pattern=`^[A-Za-z0-9]+$`
+	//
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=20
+	// +required
+	Name string `json:"name"`
+
+	// A Secret containing the settings of one OAuth2 provider as a JSON object.
+	// ---
+	// +required
+	Secret SecretKeyRef `json:"secret"`
 }
 
 // PGAdminSpec defines the desired state of PGAdmin
