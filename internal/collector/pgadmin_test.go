@@ -30,14 +30,11 @@ func TestEnablePgAdminLogging(t *testing.T) {
 
 		configmap := new(corev1.ConfigMap)
 		initialize.Map(&configmap.Data)
-		retentionPeriod, err := v1beta1.NewDuration("12 hours")
-		assert.NilError(t, err)
-		instrumentation := v1beta1.InstrumentationSpec{
-			Logs: &v1beta1.InstrumentationLogsSpec{
-				RetentionPeriod: retentionPeriod,
-			},
-		}
-		err = collector.EnablePgAdminLogging(ctx, &instrumentation, configmap)
+		var instrumentation *v1beta1.InstrumentationSpec
+		require.UnmarshalInto(t, &instrumentation, `{
+			logs: { retentionPeriod: 12h },
+		}`)
+		err := collector.EnablePgAdminLogging(ctx, instrumentation, configmap)
 		assert.NilError(t, err)
 
 		assert.Assert(t, cmp.MarshalMatches(configmap.Data, `

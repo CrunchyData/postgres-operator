@@ -16,6 +16,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -211,13 +212,9 @@ volumes:
 		pgadmin.Spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
 		}
-		retentionPeriod, err := v1beta1.NewDuration("12 hours")
-		assert.NilError(t, err)
-		pgadmin.Spec.Instrumentation = &v1beta1.InstrumentationSpec{
-			Logs: &v1beta1.InstrumentationLogsSpec{
-				RetentionPeriod: retentionPeriod,
-			},
-		}
+		require.UnmarshalInto(t, &pgadmin.Spec.Instrumentation, `{
+			logs: { retentionPeriod: 12h },
+		}`)
 
 		call()
 
