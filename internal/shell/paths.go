@@ -22,9 +22,10 @@ import (
 // See:
 //   - https://pubs.opengroup.org/onlinepubs/9799919799/utilities/basename.html
 func CleanFileName(path string) string {
-	if i := strings.LastIndexByte(path, '/'); i < 0 {
-		return path
-	} else if path = path[i+1:]; path != "." && path != ".." {
+	if i := strings.LastIndexByte(path, '/'); i >= 0 {
+		path = path[i+1:]
+	}
+	if path != "." && path != ".." {
 		return path
 	}
 	return ""

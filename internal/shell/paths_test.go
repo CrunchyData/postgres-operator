@@ -25,12 +25,17 @@ func TestCleanFileName(t *testing.T) {
 	})
 
 	t.Run("Dots", func(t *testing.T) {
+		assert.Equal(t, CleanFileName("."), "")
+		assert.Equal(t, CleanFileName(".."), "")
+		assert.Equal(t, CleanFileName("..."), "...")
+		assert.Equal(t, CleanFileName("././/.././../."), "")
 		assert.Equal(t, CleanFileName("././/.././../.."), "")
 		assert.Equal(t, CleanFileName("././/.././../../x.j"), "x.j")
 	})
 
 	t.Run("Directories", func(t *testing.T) {
 		assert.Equal(t, CleanFileName("/"), "")
+		assert.Equal(t, CleanFileName("//"), "")
 		assert.Equal(t, CleanFileName("asdf/"), "")
 		assert.Equal(t, CleanFileName("asdf//12.3"), "12.3")
 		assert.Equal(t, CleanFileName("//////"), "")
