@@ -13,12 +13,10 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 

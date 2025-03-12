@@ -15,9 +15,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
 
-	// Google Kubernetes Engine / Google Cloud Platform authentication provider
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/naming"

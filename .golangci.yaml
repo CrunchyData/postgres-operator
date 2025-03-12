@@ -3,12 +3,9 @@
 linters:
   disable:
     - contextcheck
-    - gci
     - gofumpt
   enable:
-    - depguard
     - goheader
-    - gomodguard
     - gosimple
     - importas
     - misspell
@@ -16,6 +13,7 @@ linters:
   presets:
     - bugs
     - format
+    - import
     - unused
 
 linters-settings:
@@ -61,6 +59,12 @@ linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
 
+  gci:
+    sections:
+      - standard
+      - default
+      - localmodule
+
   goheader:
     template: |-
       Copyright {{ DATES }} Crunchy Data Solutions, Inc.
@@ -69,9 +73,6 @@ linters-settings:
     values:
       regexp:
         DATES: '((201[7-9]|202[0-4]) - 2025|2025)'
-
-  goimports:
-    local-prefixes: github.com/crunchydata/postgres-operator
 
   gomodguard:
     blocked:
