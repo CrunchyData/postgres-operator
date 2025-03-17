@@ -55,8 +55,13 @@ func NewConfigForPgBackrestRepoHostPod(
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/filelogreceiver#readme
 		config.Receivers["filelog/pgbackrest_log"] = map[string]any{
 			// Read the files and keep track of what has been processed.
+			// We use logrotate to rotate the pgbackrest logs which renames the
+			// old .log file to .log.1. We want the collector to ingest logs from
+			// both files as it is possible that pgbackrest will continue to write
+			// a log record or two to the old file while rotation is occurring.
+			// The collector knows not to create duplicate logs.
 			"include": []string{
-				directory + "/*.log",
+				directory + "/*.log", directory + "/*.log.1",
 			},
 			"storage": "file_storage/pgbackrest_logs",
 			// pgBackRest prints logs with a log prefix, which includes a timestamp
