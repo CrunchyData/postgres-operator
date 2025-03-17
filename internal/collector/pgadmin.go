@@ -29,6 +29,11 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 		"fsync":            true,
 	}
 
+	// PgAdmin/gunicorn logs are rotated by python -- python tries to emit a log
+	// and if the file needs to rotate, it rotates first and then emits the log.
+	// The collector therefore only needs to watch the single active log for
+	// each component.
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/filelogreceiver#readme
 	otelConfig.Receivers["filelog/pgadmin"] = map[string]any{
 		"include": []string{"/var/lib/pgadmin/logs/pgadmin.log"},
 		"storage": "file_storage/pgadmin_data_logs",

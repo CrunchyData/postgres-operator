@@ -88,6 +88,7 @@ receivers:
   filelog/patroni_jsonlog:
     include:
     - /pgdata/patroni/log/*.log
+    - /pgdata/patroni/log/*.log.1
     operators:
     - from: body
       to: body.original
@@ -183,6 +184,7 @@ receivers:
   filelog/patroni_jsonlog:
     include:
     - /pgdata/patroni/log/*.log
+    - /pgdata/patroni/log/*.log.1
     operators:
     - from: body
       to: body.original
