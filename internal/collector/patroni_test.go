@@ -74,16 +74,21 @@ processors:
     - context: log
       statements:
       - set(instrumentation_scope.name, "patroni")
-      - set(cache, ParseJSON(body["original"]))
-      - set(severity_text, cache["levelname"])
-      - set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "DEBUG"
-      - set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "INFO"
-      - set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"
-      - set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"
-      - set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "CRITICAL"
-      - set(time, Time(cache["asctime"], "%F %T,%L"))
-      - set(attributes["log.record.original"], body["original"])
-      - set(body, cache["message"])
+      - set(log.cache, ParseJSON(log.body["original"]))
+      - set(log.severity_text, log.cache["levelname"])
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG)  where log.severity_text ==
+        "DEBUG"
+      - set(log.severity_number, SEVERITY_NUMBER_INFO)   where log.severity_text ==
+        "INFO"
+      - set(log.severity_number, SEVERITY_NUMBER_WARN)   where log.severity_text ==
+        "WARNING"
+      - set(log.severity_number, SEVERITY_NUMBER_ERROR)  where log.severity_text ==
+        "ERROR"
+      - set(log.severity_number, SEVERITY_NUMBER_FATAL)  where log.severity_text ==
+        "CRITICAL"
+      - set(log.time, Time(log.cache["asctime"], "%F %T,%L")) where IsString(log.cache["asctime"])
+      - set(log.attributes["log.record.original"], log.body["original"])
+      - set(log.body, log.cache["message"])
 receivers:
   filelog/patroni_jsonlog:
     include:
@@ -169,16 +174,21 @@ processors:
     - context: log
       statements:
       - set(instrumentation_scope.name, "patroni")
-      - set(cache, ParseJSON(body["original"]))
-      - set(severity_text, cache["levelname"])
-      - set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "DEBUG"
-      - set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "INFO"
-      - set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"
-      - set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"
-      - set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "CRITICAL"
-      - set(time, Time(cache["asctime"], "%F %T,%L"))
-      - set(attributes["log.record.original"], body["original"])
-      - set(body, cache["message"])
+      - set(log.cache, ParseJSON(log.body["original"]))
+      - set(log.severity_text, log.cache["levelname"])
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG)  where log.severity_text ==
+        "DEBUG"
+      - set(log.severity_number, SEVERITY_NUMBER_INFO)   where log.severity_text ==
+        "INFO"
+      - set(log.severity_number, SEVERITY_NUMBER_WARN)   where log.severity_text ==
+        "WARNING"
+      - set(log.severity_number, SEVERITY_NUMBER_ERROR)  where log.severity_text ==
+        "ERROR"
+      - set(log.severity_number, SEVERITY_NUMBER_FATAL)  where log.severity_text ==
+        "CRITICAL"
+      - set(log.time, Time(log.cache["asctime"], "%F %T,%L")) where IsString(log.cache["asctime"])
+      - set(log.attributes["log.record.original"], log.body["original"])
+      - set(log.body, log.cache["message"])
 receivers:
   filelog/patroni_jsonlog:
     include:

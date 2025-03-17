@@ -73,20 +73,24 @@ processors:
     - context: log
       statements:
       - set(instrumentation_scope.name, "pgbouncer")
-      - merge_maps(cache, ExtractPatterns(body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
+      - merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
         \\d{2}:\\d{2}:\\d{2}\\.\\d{3} [A-Z]{3}) \\[(?<pid>\\d+)\\] (?<log_level>[A-Z]+)
         (?<msg>.*$)"), "insert")
-      - set(severity_text, cache["log_level"])
-      - set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "NOISE"
-        or severity_text == "DEBUG"
-      - set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "LOG"
-      - set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"
-      - set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"
-      - set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "FATAL"
-      - set(time, Time(cache["timestamp"], "%F %T.%L %Z"))
-      - set(attributes["log.record.original"], body)
-      - set(attributes["process.pid"], cache["pid"])
-      - set(body, cache["msg"])
+      - set(log.severity_text, log.cache["log_level"])
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG)  where log.severity_text ==
+        "NOISE" or log.severity_text == "DEBUG"
+      - set(log.severity_number, SEVERITY_NUMBER_INFO)   where log.severity_text ==
+        "LOG"
+      - set(log.severity_number, SEVERITY_NUMBER_WARN)   where log.severity_text ==
+        "WARNING"
+      - set(log.severity_number, SEVERITY_NUMBER_ERROR)  where log.severity_text ==
+        "ERROR"
+      - set(log.severity_number, SEVERITY_NUMBER_FATAL)  where log.severity_text ==
+        "FATAL"
+      - set(log.time, Time(log.cache["timestamp"], "%F %T.%L %Z")) where IsString(log.cache["timestamp"])
+      - set(log.attributes["log.record.original"], log.body)
+      - set(log.attributes["process.pid"], log.cache["pid"])
+      - set(log.body, log.cache["msg"])
 receivers:
   filelog/pgbouncer_log:
     include:
@@ -170,20 +174,24 @@ processors:
     - context: log
       statements:
       - set(instrumentation_scope.name, "pgbouncer")
-      - merge_maps(cache, ExtractPatterns(body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
+      - merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
         \\d{2}:\\d{2}:\\d{2}\\.\\d{3} [A-Z]{3}) \\[(?<pid>\\d+)\\] (?<log_level>[A-Z]+)
         (?<msg>.*$)"), "insert")
-      - set(severity_text, cache["log_level"])
-      - set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "NOISE"
-        or severity_text == "DEBUG"
-      - set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "LOG"
-      - set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"
-      - set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"
-      - set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "FATAL"
-      - set(time, Time(cache["timestamp"], "%F %T.%L %Z"))
-      - set(attributes["log.record.original"], body)
-      - set(attributes["process.pid"], cache["pid"])
-      - set(body, cache["msg"])
+      - set(log.severity_text, log.cache["log_level"])
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG)  where log.severity_text ==
+        "NOISE" or log.severity_text == "DEBUG"
+      - set(log.severity_number, SEVERITY_NUMBER_INFO)   where log.severity_text ==
+        "LOG"
+      - set(log.severity_number, SEVERITY_NUMBER_WARN)   where log.severity_text ==
+        "WARNING"
+      - set(log.severity_number, SEVERITY_NUMBER_ERROR)  where log.severity_text ==
+        "ERROR"
+      - set(log.severity_number, SEVERITY_NUMBER_FATAL)  where log.severity_text ==
+        "FATAL"
+      - set(log.time, Time(log.cache["timestamp"], "%F %T.%L %Z")) where IsString(log.cache["timestamp"])
+      - set(log.attributes["log.record.original"], log.body)
+      - set(log.attributes["process.pid"], log.cache["pid"])
+      - set(log.body, log.cache["msg"])
 receivers:
   filelog/pgbouncer_log:
     include:
