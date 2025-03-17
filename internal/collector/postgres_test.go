@@ -197,6 +197,7 @@ receivers:
   filelog/pgbackrest_log:
     include:
     - /pgdata/pgbackrest/log/*.log
+    - /pgdata/pgbackrest/log/*.log.1
     multiline:
       line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}|^-{19}
     storage: file_storage/pgbackrest_logs
@@ -438,6 +439,7 @@ receivers:
   filelog/pgbackrest_log:
     include:
     - /pgdata/pgbackrest/log/*.log
+    - /pgdata/pgbackrest/log/*.log.1
     multiline:
       line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}|^-{19}
     storage: file_storage/pgbackrest_logs

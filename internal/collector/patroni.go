@@ -39,7 +39,14 @@ func EnablePatroniLogging(ctx context.Context,
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/filelogreceiver#readme
 		outConfig.Receivers["filelog/patroni_jsonlog"] = map[string]any{
 			// Read the JSON files and keep track of what has been processed.
-			"include": []string{directory + "/*.log"},
+			// When patroni rotates its log files, it renames the old .log file
+			// to .log.1. We want the collector to ingest logs from both files
+			// as it is possible that patroni will continue to write a log
+			// record or two to the old file while rotation is occurring. The
+			// collector knows not to create duplicate logs.
+			"include": []string{
+				directory + "/*.log", directory + "/*.log.1",
+			},
 			"storage": "file_storage/patroni_logs",
 
 			"operators": []map[string]any{
