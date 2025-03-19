@@ -24,6 +24,8 @@ linters:
     - thelper
     - tparallel
     - wastedassign
+  presets:
+    - performance
 
 issues:
   exclude-rules:

@@ -644,11 +644,11 @@ func (r *Reconciler) reconcilePostgresUsersInPostgreSQL(
 		running, known := instance.IsRunning(container)
 		if running && known && len(instance.Pods) > 0 {
 			pod := instance.Pods[0]
-			ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
 
 			podExecutor = func(
 				ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 			) error {
+				ctx = logging.NewContext(ctx, logging.FromContext(ctx).WithValues("pod", pod.Name))
 				return r.PodExec(ctx, pod.Namespace, pod.Name, container, stdin, stdout, stderr, command...)
 			}
 			break
