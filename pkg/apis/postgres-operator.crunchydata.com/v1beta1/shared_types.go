@@ -139,12 +139,18 @@ func (spec *VolumeClaimSpec) AsPersistentVolumeClaimSpec() corev1.PersistentVolu
 	return out
 }
 
+// ---
 // SchemalessObject is a map compatible with JSON object.
 //
 // Use with the following markers:
-// - kubebuilder:pruning:PreserveUnknownFields
-// - kubebuilder:validation:Schemaless
-// - kubebuilder:validation:Type=object
+//   - kubebuilder:pruning:PreserveUnknownFields
+//   - kubebuilder:validation:Schemaless
+//   - kubebuilder:validation:Type=object
+//
+// NOTE: PreserveUnknownFields allows arbitrary values within fields of this
+// type but also prevents any validation rules from reaching inside; its CEL
+// type is "object" or "message" with zero fields:
+// https://kubernetes.io/docs/reference/using-api/cel/#type-system-integration
 type SchemalessObject map[string]any
 
 // DeepCopy creates a new SchemalessObject by copying the receiver.
