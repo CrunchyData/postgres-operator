@@ -16,6 +16,23 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+func TestDurationAsDuration(t *testing.T) {
+	t.Parallel()
+
+	v, err := NewDuration("2s")
+	assert.NilError(t, err)
+
+	// get the value
+	other := v.AsDuration()
+	assert.Equal(t, other.Duration, 2*time.Second,
+		"expected the same value as the original")
+
+	// change the copy
+	other.Duration = time.Hour
+	assert.Equal(t, v.AsDuration().Duration, 2*time.Second,
+		"expected no effect on the original value")
+}
+
 func TestDurationYAML(t *testing.T) {
 	t.Parallel()
 

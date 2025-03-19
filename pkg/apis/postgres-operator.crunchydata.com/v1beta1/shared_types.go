@@ -81,7 +81,7 @@ func NewDuration(s string) (*Duration, error) {
 	return &Duration{metav1.Duration(umd), s}, err
 }
 
-// AsDuration returns d as a [metav1.Duration].
+// AsDuration returns a copy of d as a [metav1.Duration].
 func (d *Duration) AsDuration() metav1.Duration {
 	return d.parsed
 }
