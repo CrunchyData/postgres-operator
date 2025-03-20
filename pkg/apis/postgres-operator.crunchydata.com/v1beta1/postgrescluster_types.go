@@ -21,6 +21,7 @@ type PostgresClusterSpec struct {
 	// +optional
 	DataSource *DataSource `json:"dataSource,omitempty"`
 
+	// Authentication settings for the PostgreSQL server
 	// +optional
 	Authentication *PostgresAuthenticationSpec `json:"authentication,omitempty"`
 
@@ -28,6 +29,7 @@ type PostgresClusterSpec struct {
 	// +optional
 	Backups Backups `json:"backups,omitempty"`
 
+	// General configuration of the PostgreSQL server
 	// +optional
 	Config *PostgresConfigSpec `json:"config,omitempty"`
 
