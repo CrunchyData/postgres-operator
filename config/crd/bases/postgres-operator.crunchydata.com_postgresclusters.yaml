@@ -40,9 +40,19 @@ spec:
             description: PostgresClusterSpec defines the desired state of PostgresCluster
             properties:
               authentication:
+                description: Authentication settings for the PostgreSQL server
                 properties:
                   rules:
-                    description: 'More info: https://www.postgresql.org/docs/current/auth-pg-hba-conf.html'
+                    description: |-
+                      Postgres compares every new connection to these rules in the order they are
+                      defined. The first rule that matches determines if and how the connection
+                      must then authenticate. Connections that match no rules are disconnected.
+
+                      When this is omitted or empty, Postgres accepts encrypted connections to any
+                      database from users that have a password. To refuse all network connections,
+                      set this to one rule that matches "host" connections to the "reject" method.
+
+                      More info: https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
                     items:
                       properties:
                         connection:
@@ -79,6 +89,7 @@ spec:
                           description: |-
                             The authentication method to use when a connection matches this rule.
                             The special value "reject" refuses connections that match this rule.
+
                             More info: https://www.postgresql.org/docs/current/auth-methods.html
                           maxLength: 20
                           minLength: 1
@@ -93,6 +104,8 @@ spec:
                             - type: integer
                             - type: string
                             x-kubernetes-int-or-string: true
+                          description: Additional settings for this rule or its authentication
+                            method.
                           maxProperties: 20
                           type: object
                           x-kubernetes-map-type: atomic
@@ -4447,6 +4460,7 @@ spec:
                     type: object
                 type: object
               config:
+                description: General configuration of the PostgreSQL server
                 properties:
                   files:
                     description: Files to mount under "/etc/postgres".
