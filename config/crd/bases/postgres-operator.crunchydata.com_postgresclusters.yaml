@@ -110,11 +110,25 @@ spec:
                       x-kubernetes-map-type: atomic
                       x-kubernetes-validations:
                       - message: '"hba" cannot be combined with other fields'
-                        rule: 'has(self.hba) ? !has(self.connection) && !has(self.databases)
-                          && !has(self.method) && !has(self.options) && !has(self.users)
-                          : true'
+                        rule: '[has(self.hba), has(self.connection) || has(self.databases)
+                          || has(self.method) || has(self.options) || has(self.users)].exists_one(b,b)'
                       - message: '"connection" and "method" are required'
-                        rule: 'has(self.hba) ? true : has(self.connection) && has(self.method)'
+                        rule: has(self.hba) || (has(self.connection) && has(self.method))
+                      - message: the "ldap" method requires an "ldapbasedn", "ldapprefix",
+                          or "ldapsuffix" option
+                        rule: has(self.hba) || self.method != "ldap" || (has(self.options)
+                          && ["ldapbasedn","ldapprefix","ldapsuffix"].exists(k, k
+                          in self.options))
+                      - message: cannot use "ldapbasedn", "ldapbinddn", "ldapbindpasswd",
+                          "ldapsearchattribute", or "ldapsearchfilter" options with
+                          "ldapprefix" or "ldapsuffix" options
+                        rule: has(self.hba) || self.method != "ldap" || !has(self.options)
+                          || [["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].exists_one(a,
+                          a.exists(k, k in self.options))
+                      - message: the "radius" method requires "radiusservers" and
+                          "radiussecrets" options
+                        rule: has(self.hba) || self.method != "radius" || (has(self.options)
+                          && ["radiusservers","radiussecrets"].all(k, k in self.options))
                     maxItems: 10
                     type: array
                     x-kubernetes-list-type: atomic

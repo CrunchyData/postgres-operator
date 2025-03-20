@@ -124,8 +124,19 @@ type PostgresHBARule struct {
 
 // ---
 // Emulate OpenAPI "anyOf" aka Kubernetes union.
-// +kubebuilder:validation:XValidation:rule=`has(self.hba) ? !has(self.connection) && !has(self.databases) && !has(self.method) && !has(self.options) && !has(self.users) : true`,message=`"hba" cannot be combined with other fields`
-// +kubebuilder:validation:XValidation:rule=`has(self.hba) ? true : has(self.connection) && has(self.method)`,message=`"connection" and "method" are required`
+// +kubebuilder:validation:XValidation:rule=`[has(self.hba), has(self.connection) || has(self.databases) || has(self.method) || has(self.options) || has(self.users)].exists_one(b,b)`,message=`"hba" cannot be combined with other fields`
+// +kubebuilder:validation:XValidation:rule=`has(self.hba) || (has(self.connection) && has(self.method))`,message=`"connection" and "method" are required`
+//
+// Some authentication methods *must* be further configured via options.
+//
+// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_10_0;f=src/backend/libpq/hba.c#l1501
+// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_17_0;f=src/backend/libpq/hba.c#l1886
+// +kubebuilder:validation:XValidation:rule=`has(self.hba) || self.method != "ldap" || (has(self.options) && ["ldapbasedn","ldapprefix","ldapsuffix"].exists(k, k in self.options))`,message=`the "ldap" method requires an "ldapbasedn", "ldapprefix", or "ldapsuffix" option`
+// +kubebuilder:validation:XValidation:rule=`has(self.hba) || self.method != "ldap" || !has(self.options) || [["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].exists_one(a, a.exists(k, k in self.options))`,message=`cannot use "ldapbasedn", "ldapbinddn", "ldapbindpasswd", "ldapsearchattribute", or "ldapsearchfilter" options with "ldapprefix" or "ldapsuffix" options`
+//
+// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_10_0;f=src/backend/libpq/hba.c#l1539
+// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_17_0;f=src/backend/libpq/hba.c#l1945
+// +kubebuilder:validation:XValidation:rule=`has(self.hba) || self.method != "radius" || (has(self.options) && ["radiusservers","radiussecrets"].all(k, k in self.options))`,message=`the "radius" method requires "radiusservers" and "radiussecrets" options`
 //
 // +structType=atomic
 type PostgresHBARuleSpec struct {
