@@ -96,18 +96,17 @@ func EnablePgBouncerLogging(ctx context.Context,
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/transformprocessor#readme
 		outConfig.Processors["transform/pgbouncer_logs"] = map[string]any{
 			"log_statements": []map[string]any{{
-				"context": "log",
 				"statements": []string{
 					// Set instrumentation scope
 					`set(instrumentation_scope.name, "pgbouncer")`,
 
 					// Extract timestamp, pid, log level, and message and store in cache.
-					`merge_maps(cache, ExtractPatterns(body, ` +
+					`merge_maps(log.cache, ExtractPatterns(log.body, ` +
 						`"^(?<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3} [A-Z]{3}) ` +
 						`\\[(?<pid>\\d+)\\] (?<log_level>[A-Z]+) (?<msg>.*$)"), "insert")`,
 
 					// https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitytext
-					`set(severity_text, cache["log_level"])`,
+					`set(log.severity_text, log.cache["log_level"])`,
 
 					// Map pgBouncer (libusual) "logging levels" to OpenTelemetry severity levels.
 					//
@@ -115,11 +114,11 @@ func EnablePgBouncerLogging(ctx context.Context,
 					// https://opentelemetry.io/docs/specs/otel/logs/data-model/#field-severitynumber
 					// https://opentelemetry.io/docs/specs/otel/logs/data-model-appendix/#appendix-b-severitynumber-example-mappings
 					// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#enums
-					`set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "NOISE" or severity_text == "DEBUG"`,
-					`set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "LOG"`,
-					`set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"`,
-					`set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"`,
-					`set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "FATAL"`,
+					`set(log.severity_number, SEVERITY_NUMBER_DEBUG)  where log.severity_text == "NOISE" or log.severity_text == "DEBUG"`,
+					`set(log.severity_number, SEVERITY_NUMBER_INFO)   where log.severity_text == "LOG"`,
+					`set(log.severity_number, SEVERITY_NUMBER_WARN)   where log.severity_text == "WARNING"`,
+					`set(log.severity_number, SEVERITY_NUMBER_ERROR)  where log.severity_text == "ERROR"`,
+					`set(log.severity_number, SEVERITY_NUMBER_FATAL)  where log.severity_text == "FATAL"`,
 
 					// Parse the timestamp.
 					// The format is neither RFC 3339 nor ISO 8601:
@@ -129,19 +128,19 @@ func EnablePgBouncerLogging(ctx context.Context,
 					// then a timezone abbreviation.
 					//
 					// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/stanza/docs/types/timestamp.md
-					`set(time, Time(cache["timestamp"], "%F %T.%L %Z"))`,
+					`set(log.time, Time(log.cache["timestamp"], "%F %T.%L %Z")) where IsString(log.cache["timestamp"])`,
 
 					// Keep the unparsed log record in a standard attribute, and replace
 					// the log record body with the message field.
 					//
 					// https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/general/logs.md
-					`set(attributes["log.record.original"], body)`,
+					`set(log.attributes["log.record.original"], log.body)`,
 
 					// Set pid as attribute
-					`set(attributes["process.pid"], cache["pid"])`,
+					`set(log.attributes["process.pid"], log.cache["pid"])`,
 
 					// Set the log message to body.
-					`set(body, cache["msg"])`,
+					`set(log.body, log.cache["msg"])`,
 				},
 			}},
 		}

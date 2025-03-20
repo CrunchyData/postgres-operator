@@ -75,21 +75,25 @@ collector.yaml: |
       timeout: 30s
     transform/pgadmin_log:
       log_statements:
-      - context: log
-        statements:
-        - set(attributes["log.record.original"], body)
-        - set(cache, ParseJSON(body))
-        - merge_maps(attributes, ExtractPatterns(cache["message"], "(?P<webrequest>[A-Z]{3}.*?[\\d]{3})"),
+      - statements:
+        - set(log.attributes["log.record.original"], log.body)
+        - set(log.cache, ParseJSON(log.body))
+        - merge_maps(log.attributes, ExtractPatterns(log.cache["message"], "(?P<webrequest>[A-Z]{3}.*?[\\d]{3})"),
           "insert")
-        - set(body, cache["message"])
-        - set(instrumentation_scope.name, cache["name"])
-        - set(severity_text, cache["level"])
-        - set(time_unix_nano, Int(cache["time"]*1000000000))
-        - set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "DEBUG"
-        - set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "INFO"
-        - set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"
-        - set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"
-        - set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "CRITICAL"
+        - set(log.body, log.cache["message"])
+        - set(instrumentation_scope.name, log.cache["name"])
+        - set(log.severity_text, log.cache["level"])
+        - set(log.time_unix_nano, Int(log.cache["time"]*1000000000))
+        - set(log.severity_number, SEVERITY_NUMBER_DEBUG)  where log.severity_text ==
+          "DEBUG"
+        - set(log.severity_number, SEVERITY_NUMBER_INFO)   where log.severity_text ==
+          "INFO"
+        - set(log.severity_number, SEVERITY_NUMBER_WARN)   where log.severity_text ==
+          "WARNING"
+        - set(log.severity_number, SEVERITY_NUMBER_ERROR)  where log.severity_text ==
+          "ERROR"
+        - set(log.severity_number, SEVERITY_NUMBER_FATAL)  where log.severity_text ==
+          "CRITICAL"
   receivers:
     filelog/gunicorn:
       include:
@@ -196,21 +200,25 @@ collector.yaml: |
       timeout: 30s
     transform/pgadmin_log:
       log_statements:
-      - context: log
-        statements:
-        - set(attributes["log.record.original"], body)
-        - set(cache, ParseJSON(body))
-        - merge_maps(attributes, ExtractPatterns(cache["message"], "(?P<webrequest>[A-Z]{3}.*?[\\d]{3})"),
+      - statements:
+        - set(log.attributes["log.record.original"], log.body)
+        - set(log.cache, ParseJSON(log.body))
+        - merge_maps(log.attributes, ExtractPatterns(log.cache["message"], "(?P<webrequest>[A-Z]{3}.*?[\\d]{3})"),
           "insert")
-        - set(body, cache["message"])
-        - set(instrumentation_scope.name, cache["name"])
-        - set(severity_text, cache["level"])
-        - set(time_unix_nano, Int(cache["time"]*1000000000))
-        - set(severity_number, SEVERITY_NUMBER_DEBUG)  where severity_text == "DEBUG"
-        - set(severity_number, SEVERITY_NUMBER_INFO)   where severity_text == "INFO"
-        - set(severity_number, SEVERITY_NUMBER_WARN)   where severity_text == "WARNING"
-        - set(severity_number, SEVERITY_NUMBER_ERROR)  where severity_text == "ERROR"
-        - set(severity_number, SEVERITY_NUMBER_FATAL)  where severity_text == "CRITICAL"
+        - set(log.body, log.cache["message"])
+        - set(instrumentation_scope.name, log.cache["name"])
+        - set(log.severity_text, log.cache["level"])
+        - set(log.time_unix_nano, Int(log.cache["time"]*1000000000))
+        - set(log.severity_number, SEVERITY_NUMBER_DEBUG)  where log.severity_text ==
+          "DEBUG"
+        - set(log.severity_number, SEVERITY_NUMBER_INFO)   where log.severity_text ==
+          "INFO"
+        - set(log.severity_number, SEVERITY_NUMBER_WARN)   where log.severity_text ==
+          "WARNING"
+        - set(log.severity_number, SEVERITY_NUMBER_ERROR)  where log.severity_text ==
+          "ERROR"
+        - set(log.severity_number, SEVERITY_NUMBER_FATAL)  where log.severity_text ==
+          "CRITICAL"
   receivers:
     filelog/gunicorn:
       include:

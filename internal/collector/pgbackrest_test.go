@@ -73,24 +73,30 @@ processors:
     timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbackrest")
       - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
-      - 'merge_maps(cache, ExtractPatterns(body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
+      - 'merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
         \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (?<process_id>P\\d{2,3})\\s*(?<error_severity>\\S*):
-        (?<message>(?s).*)$"), "insert") where Len(body) > 0'
-      - set(severity_text, cache["error_severity"]) where IsString(cache["error_severity"])
-      - set(severity_number, SEVERITY_NUMBER_TRACE) where severity_text == "TRACE"
-      - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "DEBUG"
-      - set(severity_number, SEVERITY_NUMBER_DEBUG2) where severity_text == "DETAIL"
-      - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "INFO"
-      - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text == "WARN"
-      - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "ERROR"
-      - set(time, Time(cache["timestamp"], "%Y-%m-%d %H:%M:%S.%L")) where IsString(cache["timestamp"])
-      - set(attributes["process.pid"], cache["process_id"])
-      - set(attributes["log.record.original"], body)
-      - set(body, cache["message"])
+        (?<message>(?s).*)$"), "insert") where Len(log.body) > 0'
+      - set(log.severity_text, log.cache["error_severity"]) where IsString(log.cache["error_severity"])
+      - set(log.severity_number, SEVERITY_NUMBER_TRACE) where log.severity_text ==
+        "TRACE"
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG) where log.severity_text ==
+        "DEBUG"
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG2) where log.severity_text ==
+        "DETAIL"
+      - set(log.severity_number, SEVERITY_NUMBER_INFO) where log.severity_text ==
+        "INFO"
+      - set(log.severity_number, SEVERITY_NUMBER_WARN) where log.severity_text ==
+        "WARN"
+      - set(log.severity_number, SEVERITY_NUMBER_ERROR) where log.severity_text ==
+        "ERROR"
+      - set(log.time, Time(log.cache["timestamp"], "%Y-%m-%d %H:%M:%S.%L")) where
+        IsString(log.cache["timestamp"])
+      - set(log.attributes["process.pid"], log.cache["process_id"])
+      - set(log.attributes["log.record.original"], log.body)
+      - set(log.body, log.cache["message"])
 receivers:
   filelog/pgbackrest_log:
     include:
@@ -174,24 +180,30 @@ processors:
     timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbackrest")
       - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
-      - 'merge_maps(cache, ExtractPatterns(body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
+      - 'merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
         \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (?<process_id>P\\d{2,3})\\s*(?<error_severity>\\S*):
-        (?<message>(?s).*)$"), "insert") where Len(body) > 0'
-      - set(severity_text, cache["error_severity"]) where IsString(cache["error_severity"])
-      - set(severity_number, SEVERITY_NUMBER_TRACE) where severity_text == "TRACE"
-      - set(severity_number, SEVERITY_NUMBER_DEBUG) where severity_text == "DEBUG"
-      - set(severity_number, SEVERITY_NUMBER_DEBUG2) where severity_text == "DETAIL"
-      - set(severity_number, SEVERITY_NUMBER_INFO) where severity_text == "INFO"
-      - set(severity_number, SEVERITY_NUMBER_WARN) where severity_text == "WARN"
-      - set(severity_number, SEVERITY_NUMBER_ERROR) where severity_text == "ERROR"
-      - set(time, Time(cache["timestamp"], "%Y-%m-%d %H:%M:%S.%L")) where IsString(cache["timestamp"])
-      - set(attributes["process.pid"], cache["process_id"])
-      - set(attributes["log.record.original"], body)
-      - set(body, cache["message"])
+        (?<message>(?s).*)$"), "insert") where Len(log.body) > 0'
+      - set(log.severity_text, log.cache["error_severity"]) where IsString(log.cache["error_severity"])
+      - set(log.severity_number, SEVERITY_NUMBER_TRACE) where log.severity_text ==
+        "TRACE"
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG) where log.severity_text ==
+        "DEBUG"
+      - set(log.severity_number, SEVERITY_NUMBER_DEBUG2) where log.severity_text ==
+        "DETAIL"
+      - set(log.severity_number, SEVERITY_NUMBER_INFO) where log.severity_text ==
+        "INFO"
+      - set(log.severity_number, SEVERITY_NUMBER_WARN) where log.severity_text ==
+        "WARN"
+      - set(log.severity_number, SEVERITY_NUMBER_ERROR) where log.severity_text ==
+        "ERROR"
+      - set(log.time, Time(log.cache["timestamp"], "%Y-%m-%d %H:%M:%S.%L")) where
+        IsString(log.cache["timestamp"])
+      - set(log.attributes["process.pid"], log.cache["process_id"])
+      - set(log.attributes["log.record.original"], log.body)
+      - set(log.body, log.cache["message"])
 receivers:
   filelog/pgbackrest_log:
     include:
