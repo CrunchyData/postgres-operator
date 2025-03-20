@@ -18,7 +18,7 @@ type PostgresAuthenticationSpec struct {
 	Rules []PostgresHBARuleSpec `json:"rules,omitempty"`
 }
 
-type PostgresConfig struct {
+type PostgresConfigSpec struct {
 	// Files to mount under "/etc/postgres".
 	// ---
 	// +optional
