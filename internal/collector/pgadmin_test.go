@@ -75,8 +75,7 @@ collector.yaml: |
       timeout: 30s
     transform/pgadmin_log:
       log_statements:
-      - context: log
-        statements:
+      - statements:
         - set(log.attributes["log.record.original"], log.body)
         - set(log.cache, ParseJSON(log.body))
         - merge_maps(log.attributes, ExtractPatterns(log.cache["message"], "(?P<webrequest>[A-Z]{3}.*?[\\d]{3})"),
@@ -201,8 +200,7 @@ collector.yaml: |
       timeout: 30s
     transform/pgadmin_log:
       log_statements:
-      - context: log
-        statements:
+      - statements:
         - set(log.attributes["log.record.original"], log.body)
         - set(log.cache, ParseJSON(log.body))
         - merge_maps(log.attributes, ExtractPatterns(log.cache["message"], "(?P<webrequest>[A-Z]{3}.*?[\\d]{3})"),

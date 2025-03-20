@@ -73,8 +73,7 @@ processors:
     timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbackrest")
       - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
       - 'merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
@@ -180,8 +179,7 @@ processors:
     timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbackrest")
       - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
       - 'merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}

@@ -3,8 +3,7 @@
 #
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/transformprocessor#readme
 
-- context: log
-  statements:
+- statements:
     - set(instrumentation_scope.name, "pgbackrest")
     - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
 

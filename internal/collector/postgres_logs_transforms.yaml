@@ -7,8 +7,7 @@
 
 # TODO(postgres-14): We can stop parsing CSV logs when 14 is EOL.
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#readme
-- context: log
-  conditions:
+- conditions:
     - body["format"] == "csv"
   statements:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/ottlfuncs#parsecsv
@@ -81,8 +80,7 @@
 
 
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#readme
-- context: log
-  statements:
+- statements:
     - set(instrumentation_scope.name, "postgres")
     - set(instrumentation_scope.version, resource.attributes["db.version"])
 
@@ -191,8 +189,7 @@
 #
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#readme
 # https://github.com/pgaudit/pgaudit#format
-- context: log
-  conditions:
+- conditions:
     # Messages from pgAudit have always been prefixed with "AUDIT:", but that
     # could change in the future.
     #

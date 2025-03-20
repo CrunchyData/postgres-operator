@@ -64,7 +64,6 @@ func EnablePatroniLogging(ctx context.Context,
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/transformprocessor#readme
 		outConfig.Processors["transform/patroni_logs"] = map[string]any{
 			"log_statements": []map[string]any{{
-				"context": "log",
 				"statements": []string{
 					`set(instrumentation_scope.name, "patroni")`,
 

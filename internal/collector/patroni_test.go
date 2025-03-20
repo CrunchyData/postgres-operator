@@ -71,8 +71,7 @@ processors:
     timeout: 30s
   transform/patroni_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "patroni")
       - set(log.cache, ParseJSON(log.body["original"]))
       - set(log.severity_text, log.cache["levelname"])
@@ -171,8 +170,7 @@ processors:
     timeout: 30s
   transform/patroni_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "patroni")
       - set(log.cache, ParseJSON(log.body["original"]))
       - set(log.severity_text, log.cache["levelname"])

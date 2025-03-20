@@ -96,8 +96,7 @@ processors:
     timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbackrest")
       - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
       - 'merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
@@ -125,7 +124,6 @@ processors:
     log_statements:
     - conditions:
       - body["format"] == "csv"
-      context: log
       statements:
       - set(log.cache, ParseCSV(log.body["original"], log.body["headers"], delimiter=",",
         mode="strict"))
@@ -156,8 +154,7 @@ processors:
       - set(log.cache["remote_port"], Double(log.cache["remote_port"])) where IsMatch(log.cache["remote_port"],
         "^[0-9.]+$")
       - set(log.body["parsed"], log.cache)
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "postgres")
       - set(instrumentation_scope.version, resource.attributes["db.version"])
       - set(log.cache, log.body["parsed"]) where log.body["format"] == "csv"
@@ -208,7 +205,6 @@ processors:
     - conditions:
       - 'Len(body["message"]) > 7 and Substring(body["message"], 0, 7) == "AUDIT:
         "'
-      context: log
       statements:
       - set(log.body["pgaudit"], ParseCSV(Substring(log.body["message"], 7, Len(log.body["message"])
         - 7), "audit_type,statement_id,substatement_id,class,command,object_type,object_name,statement,parameter",
@@ -359,8 +355,7 @@ processors:
     timeout: 30s
   transform/pgbackrest_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbackrest")
       - set(instrumentation_scope.schema_url, "https://opentelemetry.io/schemas/1.29.0")
       - 'merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
@@ -388,7 +383,6 @@ processors:
     log_statements:
     - conditions:
       - body["format"] == "csv"
-      context: log
       statements:
       - set(log.cache, ParseCSV(log.body["original"], log.body["headers"], delimiter=",",
         mode="strict"))
@@ -419,8 +413,7 @@ processors:
       - set(log.cache["remote_port"], Double(log.cache["remote_port"])) where IsMatch(log.cache["remote_port"],
         "^[0-9.]+$")
       - set(log.body["parsed"], log.cache)
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "postgres")
       - set(instrumentation_scope.version, resource.attributes["db.version"])
       - set(log.cache, log.body["parsed"]) where log.body["format"] == "csv"
@@ -471,7 +464,6 @@ processors:
     - conditions:
       - 'Len(body["message"]) > 7 and Substring(body["message"], 0, 7) == "AUDIT:
         "'
-      context: log
       statements:
       - set(log.body["pgaudit"], ParseCSV(Substring(log.body["message"], 7, Len(log.body["message"])
         - 7), "audit_type,statement_id,substatement_id,class,command,object_type,object_name,statement,parameter",

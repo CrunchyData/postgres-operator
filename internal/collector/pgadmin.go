@@ -55,7 +55,6 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 	otelConfig.Processors["transform/pgadmin_log"] = map[string]any{
 		"log_statements": []map[string]any{
 			{
-				"context": "log",
 				"statements": []string{
 					// Keep the unparsed log record in a standard attribute, and replace
 					// the log record body with the message field.

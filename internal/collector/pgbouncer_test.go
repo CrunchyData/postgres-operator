@@ -70,8 +70,7 @@ processors:
     timeout: 30s
   transform/pgbouncer_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbouncer")
       - merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
         \\d{2}:\\d{2}:\\d{2}\\.\\d{3} [A-Z]{3}) \\[(?<pid>\\d+)\\] (?<log_level>[A-Z]+)
@@ -171,8 +170,7 @@ processors:
     timeout: 30s
   transform/pgbouncer_logs:
     log_statements:
-    - context: log
-      statements:
+    - statements:
       - set(instrumentation_scope.name, "pgbouncer")
       - merge_maps(log.cache, ExtractPatterns(log.body, "^(?<timestamp>\\d{4}-\\d{2}-\\d{2}
         \\d{2}:\\d{2}:\\d{2}\\.\\d{3} [A-Z]{3}) \\[(?<pid>\\d+)\\] (?<log_level>[A-Z]+)

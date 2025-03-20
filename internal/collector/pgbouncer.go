@@ -96,7 +96,6 @@ func EnablePgBouncerLogging(ctx context.Context,
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/processor/transformprocessor#readme
 		outConfig.Processors["transform/pgbouncer_logs"] = map[string]any{
 			"log_statements": []map[string]any{{
-				"context": "log",
 				"statements": []string{
 					// Set instrumentation scope
 					`set(instrumentation_scope.name, "pgbouncer")`,
