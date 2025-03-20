@@ -10,6 +10,14 @@ import (
 )
 
 type PostgresAuthenticationSpec struct {
+	// Postgres compares every new connection to these rules in the order they are
+	// defined. The first rule that matches determines if and how the connection
+	// must then authenticate. Connections that match no rules are disconnected.
+	//
+	// When this is omitted or empty, Postgres accepts encrypted connections to any
+	// database from users that have a password. To refuse all network connections,
+	// set this to one rule that matches "host" connections to the "reject" method.
+	//
 	// More info: https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
 	// ---
 	// +kubebuilder:validation:MaxItems=10
@@ -99,6 +107,7 @@ type PostgresHBARule struct {
 
 	// The authentication method to use when a connection matches this rule.
 	// The special value "reject" refuses connections that match this rule.
+	//
 	// More info: https://www.postgresql.org/docs/current/auth-methods.html
 	// ---
 	// +kubebuilder:validation:MinLength=1
@@ -108,6 +117,7 @@ type PostgresHBARule struct {
 	// +optional
 	Method string `json:"method,omitempty"`
 
+	// Additional settings for this rule or its authentication method.
 	// ---
 	// +kubebuilder:validation:MaxProperties=20
 	// +mapType=atomic
