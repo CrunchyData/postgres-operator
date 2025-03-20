@@ -367,7 +367,7 @@ func TestPostgresConfigParameters(t *testing.T) {
 		t.Run("Valid", func(t *testing.T) {
 			cluster := base.DeepCopy()
 
-			cluster.Spec.Config = &v1beta1.PostgresConfig{
+			cluster.Spec.Config = &v1beta1.PostgresConfigSpec{
 				Parameters: map[string]intstr.IntOrString{
 					"wal_level": intstr.FromString("logical"),
 				},
@@ -378,7 +378,7 @@ func TestPostgresConfigParameters(t *testing.T) {
 		t.Run("Invalid", func(t *testing.T) {
 			cluster := base.DeepCopy()
 
-			cluster.Spec.Config = &v1beta1.PostgresConfig{
+			cluster.Spec.Config = &v1beta1.PostgresConfigSpec{
 				Parameters: map[string]intstr.IntOrString{
 					"wal_level": intstr.FromString("minimal"),
 				},
