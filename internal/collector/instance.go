@@ -152,6 +152,7 @@ func AddToPod(
 						Key:  "logrotate.conf",
 						Path: "logrotate.conf",
 					}},
+					Optional: initialize.Bool(true),
 				},
 			}},
 		}
