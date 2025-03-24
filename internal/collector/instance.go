@@ -54,6 +54,11 @@ func AddToPod(
 		return
 	}
 
+	// We only want to include log rotation if this type of pod requires it
+	// (indicate by the includeLogrotate boolean) AND if logging is enabled
+	// for this PostgresCluster/PGAdmin
+	includeLogrotate = includeLogrotate && OpenTelemetryLogsEnabled(ctx, spec)
+
 	// Create volume and volume mount for otel collector config
 	configVolumeMount := corev1.VolumeMount{
 		Name:      "collector-config",
@@ -152,7 +157,6 @@ func AddToPod(
 						Key:  "logrotate.conf",
 						Path: "logrotate.conf",
 					}},
-					Optional: initialize.Bool(true),
 				},
 			}},
 		}
