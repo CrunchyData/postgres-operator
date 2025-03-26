@@ -69,7 +69,7 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 			return err
 		}
 
-		if feature.Enabled(ctx, feature.OpenTelemetryMetrics) {
+		if collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 			setup = metricsSetupForOTelCollector
 		} else {
 			// TODO: Revisit how pgbackrest_info.sh is used with pgMonitor.
