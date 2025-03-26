@@ -1,0 +1,22 @@
+---
+# Create the cluster we will do an actual upgrade on
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: major-upgrade
+spec:
+  postgresVersion: ${KUTTL_PG_UPGRADE_FROM_VERSION}
+  patroni:
+    dynamicConfiguration:
+      postgresql:
+        parameters:
+          shared_preload_libraries: pgaudit, set_user, pg_stat_statements, pgnodemx, pg_cron
+  instances:
+    - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+      replicas: 3
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }

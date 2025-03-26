@@ -1,0 +1,28 @@
+---
+# Print the certificate presented by PgBouncer.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: read-cert-before
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: openssl
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            - name: PGHOST
+              valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-host } }
+            - name: PGPORT
+              valueFrom: { secretKeyRef: { name: proxied-pguser-proxied, key: pgbouncer-port } }
+          command:
+            - bash
+            - -ceu
+            - |
+              openssl s_client --connect '$(PGHOST):$(PGPORT)' --starttls postgres < /dev/null 2> /dev/null |
+              openssl x509 --noout --text
