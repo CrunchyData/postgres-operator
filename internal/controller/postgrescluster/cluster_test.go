@@ -137,8 +137,8 @@ func TestCustomLabels(t *testing.T) {
 
 	t.Run("Cluster", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "global-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "global-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "daisy-instance1",
 			Replicas:            initialize.Int32(1),
@@ -185,8 +185,8 @@ func TestCustomLabels(t *testing.T) {
 
 	t.Run("Instance", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "instance-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "instance-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "max-instance",
 			Replicas:            initialize.Int32(1),
@@ -236,8 +236,8 @@ func TestCustomLabels(t *testing.T) {
 
 	t.Run("PGBackRest", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "pgbackrest-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "pgbackrest-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.Backups.PGBackRest.Metadata = &v1beta1.Metadata{
 			Labels: map[string]string{"my.pgbackrest.label": "lucy"},
 		}
@@ -280,8 +280,8 @@ func TestCustomLabels(t *testing.T) {
 
 	t.Run("PGBouncer", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "pgbouncer-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "pgbouncer-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.Proxy.PGBouncer.Metadata = &v1beta1.Metadata{
 			Labels: map[string]string{"my.pgbouncer.label": "lucy"},
 		}
@@ -375,8 +375,8 @@ func TestCustomAnnotations(t *testing.T) {
 
 	t.Run("Cluster", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "global-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "global-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "daisy-instance1",
 			Replicas:            initialize.Int32(1),
@@ -424,8 +424,8 @@ func TestCustomAnnotations(t *testing.T) {
 
 	t.Run("Instance", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "instance-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "instance-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "max-instance",
 			Replicas:            initialize.Int32(1),
@@ -475,8 +475,8 @@ func TestCustomAnnotations(t *testing.T) {
 
 	t.Run("PGBackRest", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "pgbackrest-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "pgbackrest-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.Backups.PGBackRest.Metadata = &v1beta1.Metadata{
 			Annotations: map[string]string{"my.pgbackrest.annotation": "lucy"},
 		}
@@ -519,8 +519,8 @@ func TestCustomAnnotations(t *testing.T) {
 
 	t.Run("PGBouncer", func(t *testing.T) {
 		cluster := testCluster()
-		cluster.ObjectMeta.Name = "pgbouncer-cluster"
-		cluster.ObjectMeta.Namespace = ns.Name
+		cluster.Name = "pgbouncer-cluster"
+		cluster.Namespace = ns.Name
 		cluster.Spec.Proxy.PGBouncer.Metadata = &v1beta1.Metadata{
 			Annotations: map[string]string{"my.pgbouncer.annotation": "lucy"},
 		}
@@ -768,12 +768,12 @@ type: ClusterIP
 		assert.NilError(t, err)
 
 		// Annotations present in the metadata.
-		assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta.Annotations, `
+		assert.Assert(t, cmp.MarshalMatches(service.Annotations, `
 some: note
 		`))
 
 		// Labels present in the metadata.
-		assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta.Labels, `
+		assert.Assert(t, cmp.MarshalMatches(service.Labels, `
 happy: label
 postgres-operator.crunchydata.com/cluster: pg2
 postgres-operator.crunchydata.com/role: replica

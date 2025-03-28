@@ -150,7 +150,7 @@ func pod(
 	// Check the configmap to see  if we think TLS is enabled
 	// If so, update the readiness check scheme to HTTPS
 	if strings.Contains(gunicornData, "certfile") && strings.Contains(gunicornData, "keyfile") {
-		readinessProbe.ProbeHandler.HTTPGet.Scheme = corev1.URISchemeHTTPS
+		readinessProbe.HTTPGet.Scheme = corev1.URISchemeHTTPS
 	}
 	container.ReadinessProbe = readinessProbe
 

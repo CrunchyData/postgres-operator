@@ -280,7 +280,7 @@ func (c *Client) doWithBackoff(
 			request.Header = headers.Clone()
 
 			//nolint:bodyclose // This response is returned to the caller.
-			response, err = c.Client.Do(request)
+			response, err = c.Do(request)
 		}
 
 		// An error indicates there was no response from the server, and the

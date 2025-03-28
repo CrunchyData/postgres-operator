@@ -571,7 +571,7 @@ func (r *Reconciler) reconcilePostgresUserSecrets(
 
 		// If both secrets have "pguser" or neither have "pguser",
 		// sort by creation timestamp
-		return secrets.Items[i].CreationTimestamp.Time.After(secrets.Items[j].CreationTimestamp.Time)
+		return secrets.Items[i].CreationTimestamp.After(secrets.Items[j].CreationTimestamp.Time)
 	})
 
 	// Index secrets by PostgreSQL user name and delete any that are not in the

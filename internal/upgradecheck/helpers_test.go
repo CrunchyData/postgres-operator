@@ -43,8 +43,8 @@ func (f *fakeClientWithError) Get(ctx context.Context, key types.NamespacedName,
 // Once that gets fixed, we can test without envtest
 func (f *fakeClientWithError) Patch(ctx context.Context, obj crclient.Object,
 	patch crclient.Patch, opts ...crclient.PatchOption) error {
-	switch {
-	case f.errorType == "patch error":
+	switch f.errorType {
+	case "patch error":
 		return fmt.Errorf("patch error")
 	default:
 		return f.Client.Patch(ctx, obj, patch, opts...)

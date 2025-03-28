@@ -166,7 +166,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 func (r *PGAdminReconciler) setControllerReference(
 	owner *v1beta1.PGAdmin, controlled client.Object,
 ) error {
-	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
+	return controllerutil.SetControllerReference(owner, controlled, r.Scheme())
 }
 
 // deleteControlled safely deletes object when it is controlled by pgAdmin.
@@ -178,7 +178,7 @@ func (r *PGAdminReconciler) deleteControlled(
 		version := object.GetResourceVersion()
 		exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 
-		return r.Client.Delete(ctx, object, exactly)
+		return r.Delete(ctx, object, exactly)
 	}
 
 	return nil

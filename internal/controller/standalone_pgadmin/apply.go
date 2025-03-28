@@ -22,7 +22,7 @@ func (r *PGAdminReconciler) patch(
 	patch client.Patch, options ...client.PatchOption,
 ) error {
 	options = append([]client.PatchOption{r.Owner}, options...)
-	return r.Client.Patch(ctx, object, patch, options...)
+	return r.Patch(ctx, object, patch, options...)
 }
 
 // apply sends an apply patch to object's endpoint in the Kubernetes API and
