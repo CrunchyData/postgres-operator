@@ -1,0 +1,122 @@
+# https://golangci-lint.run/usage/configuration/
+
+linters:
+  disable:
+    - contextcheck
+    - gofumpt
+  enable:
+    - goheader
+    - gosimple
+    - importas
+    - misspell
+    - unconvert
+  presets:
+    - bugs
+    - format
+    - import
+    - unused
+
+linters-settings:
+  depguard:
+    rules:
+      everything:
+        list-mode: lax
+        allow:
+          - go.opentelemetry.io/otel/semconv/v1.27.0
+        deny:
+          - pkg: go.opentelemetry.io/otel/semconv
+            desc: Use "go.opentelemetry.io/otel/semconv/v1.27.0" instead.
+
+          - pkg: io/ioutil
+            desc: >
+              Use the "io" and "os" packages instead.
+              See https://go.dev/doc/go1.16#ioutil
+
+      not-tests:
+        files: ['!$test']
+        deny:
+          - pkg: net/http/httptest
+            desc: Should be used only in tests.
+
+          - pkg: testing/*
+            desc: The "testing" packages should be used only in tests.
+
+          - pkg: github.com/crunchydata/postgres-operator/internal/testing/*
+            desc: The "internal/testing" packages should be used only in tests.
+
+          - pkg: k8s.io/client-go/discovery
+            desc: Use the "internal/kubernetes" package instead.
+
+      tests:
+        files: ['$test']
+        deny:
+          - pkg: github.com/pkg/errors
+            desc: Use the "errors" package unless you are interacting with stack traces.
+
+  errchkjson:
+    check-error-free-encoding: true
+
+  exhaustive:
+    default-signifies-exhaustive: true
+
+  gci:
+    sections:
+      - standard
+      - default
+      - localmodule
+
+  goheader:
+    template: |-
+      Copyright {{ DATES }} Crunchy Data Solutions, Inc.
+
+      SPDX-License-Identifier: Apache-2.0
+    values:
+      regexp:
+        DATES: '((201[7-9]|202[0-4]) - 2025|2025)'
+
+  gomodguard:
+    blocked:
+      modules:
+        - gopkg.in/yaml.v2: { recommendations: [sigs.k8s.io/yaml] }
+        - gopkg.in/yaml.v3: { recommendations: [sigs.k8s.io/yaml] }
+        - gotest.tools: { recommendations: [gotest.tools/v3] }
+        - k8s.io/kubernetes:
+            reason: >
+              k8s.io/kubernetes is for managing dependencies of the Kubernetes
+              project, i.e. building kubelet and kubeadm.
+
+  gosec:
+    excludes:
+      # Flags for potentially-unsafe casting of ints, similar problem to globally-disabled G103
+      - G115
+
+  importas:
+    alias:
+      - pkg: k8s.io/api/(\w+)/(v[\w\w]+)
+        alias: $1$2
+      - pkg: k8s.io/apimachinery/pkg/apis/(\w+)/(v[\w\d]+)
+        alias: $1$2
+      - pkg: k8s.io/apimachinery/pkg/api/errors
+        alias: apierrors
+    no-unaliased: true
+
+  spancheck:
+    checks: [end, record-error]
+    extra-start-span-signatures:
+      - 'github.com/crunchydata/postgres-operator/internal/tracing.Start:opentelemetry'
+    ignore-check-signatures:
+      - 'tracing.Escape'
+
+issues:
+  exclude-generated: strict
+  exclude-rules:
+    # This internal package is the one place we want to do API discovery.
+    - linters: [depguard]
+      path: internal/kubernetes/discovery.go
+      text: k8s.io/client-go/discovery
+
+    # These value types have unmarshal methods.
+    # https://github.com/raeperd/recvcheck/issues/7
+    - linters: [recvcheck]
+      path: internal/pki/pki.go
+      text: 'methods of "(Certificate|PrivateKey)"'
