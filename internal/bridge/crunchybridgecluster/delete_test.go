@@ -65,7 +65,7 @@ func TestHandleDeleteCluster(t *testing.T) {
 
 		// Get cluster from kubernetes and assert that the deletion timestamp was added
 		assert.NilError(t, tClient.Get(ctx, client.ObjectKeyFromObject(cluster), cluster))
-		assert.Check(t, !cluster.ObjectMeta.DeletionTimestamp.IsZero())
+		assert.Check(t, !cluster.DeletionTimestamp.IsZero())
 
 		// Note: We must run handleDelete multiple times because we don't want to remove the
 		// finalizer until we're sure that the cluster has been deleted from Bridge, so we
@@ -107,7 +107,7 @@ func TestHandleDeleteCluster(t *testing.T) {
 
 		// Get cluster from kubernetes and assert that the deletion timestamp was added
 		assert.NilError(t, tClient.Get(ctx, client.ObjectKeyFromObject(cluster), cluster))
-		assert.Check(t, !cluster.ObjectMeta.DeletionTimestamp.IsZero())
+		assert.Check(t, !cluster.DeletionTimestamp.IsZero())
 
 		// Run handleDelete again to attempt to delete from Bridge, but provide bad api key
 		cluster.Status.ID = "2345"

@@ -149,3 +149,7 @@ formatters:
       - third_party$
       - builtin$
       - examples$
+issues:
+  # Disable max issues limit (default is 50)
+  max-issues-per-linter: 0
+  max-same-issues: 0

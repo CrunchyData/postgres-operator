@@ -89,7 +89,7 @@ func TestReconcileCerts(t *testing.T) {
 			err := tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
 			assert.NilError(t, err)
 
-			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 1, "first owner reference not set")
+			assert.Check(t, len(rootSecret.OwnerReferences) == 1, "first owner reference not set")
 
 			expectedOR := metav1.OwnerReference{
 				APIVersion: "postgres-operator.crunchydata.com/v1beta1",
@@ -98,8 +98,8 @@ func TestReconcileCerts(t *testing.T) {
 				UID:        cluster1.UID,
 			}
 
-			if len(rootSecret.ObjectMeta.OwnerReferences) > 0 {
-				assert.Equal(t, rootSecret.ObjectMeta.OwnerReferences[0], expectedOR)
+			if len(rootSecret.OwnerReferences) > 0 {
+				assert.Equal(t, rootSecret.OwnerReferences[0], expectedOR)
 			}
 		})
 
@@ -114,7 +114,7 @@ func TestReconcileCerts(t *testing.T) {
 			clist := &v1beta1.PostgresClusterList{}
 			assert.NilError(t, tClient.List(ctx, clist))
 
-			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 2, "second owner reference not set")
+			assert.Check(t, len(rootSecret.OwnerReferences) == 2, "second owner reference not set")
 
 			expectedOR := metav1.OwnerReference{
 				APIVersion: "postgres-operator.crunchydata.com/v1beta1",
@@ -123,8 +123,8 @@ func TestReconcileCerts(t *testing.T) {
 				UID:        cluster2.UID,
 			}
 
-			if len(rootSecret.ObjectMeta.OwnerReferences) > 1 {
-				assert.Equal(t, rootSecret.ObjectMeta.OwnerReferences[1], expectedOR)
+			if len(rootSecret.OwnerReferences) > 1 {
+				assert.Equal(t, rootSecret.OwnerReferences[1], expectedOR)
 			}
 		})
 
@@ -301,7 +301,7 @@ func TestReconcileCerts(t *testing.T) {
 			testSecret := &corev1.Secret{}
 			testSecret.Namespace, testSecret.Name = namespace, "newcustomsecret"
 			// simulate cluster spec update
-			cluster2.Spec.CustomTLSSecret.LocalObjectReference.Name = "newcustomsecret"
+			cluster2.Spec.CustomTLSSecret.Name = "newcustomsecret"
 
 			// get the expected secret projection
 			testSecretProjection := clusterCertSecretProjection(testSecret)

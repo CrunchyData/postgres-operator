@@ -92,7 +92,7 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 	// Make sure that this cluster's role secret names are not being used by any other
 	// secrets in the namespace
 	allSecretsInNamespace := &corev1.SecretList{}
-	err := errors.WithStack(r.Client.List(ctx, allSecretsInNamespace, client.InNamespace(cluster.Namespace)))
+	err := errors.WithStack(r.List(ctx, allSecretsInNamespace, client.InNamespace(cluster.Namespace)))
 	if err != nil {
 		return nil, nil, err
 	}
@@ -115,7 +115,7 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 	selector, err := naming.AsSelector(naming.CrunchyBridgeClusterPostgresRoles(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, secrets,
+			r.List(ctx, secrets,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
