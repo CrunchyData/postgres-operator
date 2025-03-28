@@ -330,7 +330,7 @@ func addPGMonitorExporterToInstancePodSpec(
 				},
 			},
 		}
-		configVolume.VolumeSource.Projected.Sources = append(configVolume.VolumeSource.Projected.Sources,
+		configVolume.Projected.Sources = append(configVolume.Projected.Sources,
 			defaultConfigVolumeProjection)
 	}
 

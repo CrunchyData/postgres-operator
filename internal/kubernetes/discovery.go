@@ -165,7 +165,7 @@ func (r *DiscoveryRunner) readAPIs(ctx context.Context) error {
 
 	r.have.RLock()
 	defer r.have.RUnlock()
-	logging.FromContext(ctx).V(1).Info("Found APIs", "index_size", r.have.APISet.Len())
+	logging.FromContext(ctx).V(1).Info("Found APIs", "index_size", r.have.Len())
 
 	return nil
 }
