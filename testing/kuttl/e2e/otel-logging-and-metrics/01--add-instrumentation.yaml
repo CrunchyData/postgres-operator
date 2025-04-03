@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/01--add-instrumentation.yaml
+assert:
+- files/01-instrumentation-added.yaml

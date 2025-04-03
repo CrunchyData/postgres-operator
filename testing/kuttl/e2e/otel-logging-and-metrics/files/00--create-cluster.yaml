@@ -1,0 +1,60 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      manual:
+        repoName: repo1
+        options:
+        - --type=diff
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+  config:
+    parameters:
+      log_min_messages: INFO
+  proxy:
+    pgBouncer: {}
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: otel-pgadmin
+spec:
+  users:
+    - username: otel@example.com
+      role: Administrator
+      passwordRef:
+        name: pgadmin-password-secret
+        key: otel-password
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+    - name: supply
+      # An empty selector selects all postgresclusters in the Namespace
+      postgresClusterSelector: {}
+  config:
+    settings:
+      AUTHENTICATION_SOURCES: ['internal']
