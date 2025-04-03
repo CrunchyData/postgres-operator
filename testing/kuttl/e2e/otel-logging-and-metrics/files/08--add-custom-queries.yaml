@@ -1,0 +1,75 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      manual:
+        repoName: repo1
+        options:
+        - --type=diff
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+  config:
+    parameters:
+      log_min_messages: INFO
+  proxy:
+    pgBouncer: {}
+  instrumentation:
+    metrics:
+      customQueries:
+        add:
+          - name: slow-custom-queries
+            queries:
+              name: my-custom-queries
+              key: my-slow-custom-queries.yaml
+            collectionInterval: 300s
+          - name: 2fast2furious
+            queries:
+              name: my-custom-queries
+              key: my-fast-custom-queries.yaml
+        remove:
+          - ccp_connection_stats_active
+          - ccp_database_size_bytes
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-custom-queries
+data:
+  my-fast-custom-queries.yaml: |
+      - sql: >
+          SELECT count(*) FROM information_schema.tables;
+        metrics:
+          - metric_name: custom_table_count
+            value_column: count
+            description: Number of tables in the database
+            static_attributes:
+              server: "localhost:5432"
+  my-slow-custom-queries.yaml: |
+      - sql: >
+          SELECT count(*) FROM pg_stat_statements;
+        metrics:
+          - metric_name: custom_pg_stat_statements_row_count
+            value_column: count
+            description: Number of rows in pg_stat_statements
+            static_attributes:
+              server: "localhost:5432"

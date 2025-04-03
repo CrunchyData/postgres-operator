@@ -111,6 +111,7 @@ jobs:
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-16.8-3.4-0
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-17.4-0
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-17.4-3.4-0
+            registry.developers.crunchydata.com/crunchydata/postgres-operator:latest
       - run: go mod download
       - name: Build executable
         run: PGO_VERSION='${{ github.sha }}' make build-postgres-operator
@@ -143,8 +144,8 @@ jobs:
             --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-17.4-0' \
             --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi8-17.4-3.4-0' \
             --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi8-8.14-2' \
-            --env 'RELATED_IMAGE_COLLECTOR=ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib:0.119.0' \
-            --env 'PGO_FEATURE_GATES=TablespaceVolumes=true' \
+            --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:latest' \
+            --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
             --name 'postgres-operator' ubuntu \
             postgres-operator
       - name: Install kuttl

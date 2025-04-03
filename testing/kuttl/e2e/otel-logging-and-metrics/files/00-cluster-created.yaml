@@ -1,0 +1,112 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+  proxy:
+    pgBouncer:
+      readyReplicas: 1
+      replicas: 1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/data: postgres
+    postgres-operator.crunchydata.com/role: master
+    postgres-operator.crunchydata.com/cluster: otel-cluster
+status:
+  containerStatuses:
+  - name: database
+    ready: true
+    started: true
+  - name: pgbackrest
+    ready: true
+    started: true
+  - name: pgbackrest-config
+    ready: true
+    started: true
+  - name: replication-cert-copy
+    ready: true
+    started: true
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/data: pgbackrest
+    postgres-operator.crunchydata.com/cluster: otel-cluster
+status:
+  containerStatuses:
+  - name: pgbackrest
+    ready: true
+    started: true
+  - name: pgbackrest-config
+    ready: true
+    started: true
+  phase: Running
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: otel-cluster
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+status:
+  succeeded: 1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/role: pgbouncer
+    postgres-operator.crunchydata.com/cluster: otel-cluster
+status:
+  containerStatuses:
+  - name: pgbouncer
+    ready: true
+    started: true
+  - name: pgbouncer-config
+    ready: true
+    started: true
+  phase: Running
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-cluster-primary
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/role: pgadmin
+    postgres-operator.crunchydata.com/pgadmin: otel-pgadmin
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/data: pgadmin
+    postgres-operator.crunchydata.com/role: pgadmin
+    postgres-operator.crunchydata.com/pgadmin: otel-pgadmin
+status:
+  containerStatuses:
+  - name: pgadmin
+    ready: true
+    started: true
+  phase: Running
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/role: pgadmin
+    postgres-operator.crunchydata.com/pgadmin: otel-pgadmin
+type: Opaque
