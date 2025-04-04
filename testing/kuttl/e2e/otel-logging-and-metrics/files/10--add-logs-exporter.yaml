@@ -1,0 +1,205 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi
+  backups:
+    pgbackrest:
+      manual:
+        repoName: repo1
+        options:
+        - --type=diff
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteOnce"
+            resources:
+              requests:
+                storage: 1Gi
+  config:
+    parameters:
+      log_min_messages: INFO
+  proxy:
+    pgBouncer: {}
+  instrumentation:
+    metrics:
+      customQueries:
+        add:
+          - name: slow-custom-queries
+            queries:
+              name: my-custom-queries
+              key: my-slow-custom-queries.yaml
+            collectionInterval: 300s
+          - name: 2fast2furious
+            queries:
+              name: my-custom-queries
+              key: my-fast-custom-queries.yaml
+        remove:
+          - ccp_connection_stats_active
+          - ccp_database_size_bytes
+    config:
+      exporters:
+        otlp:
+          endpoint: otel-collector:4317
+          tls:
+            insecure: true
+    logs:
+      exporters: ['otlp']
+      retentionPeriod: 1h
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGAdmin
+metadata:
+  name: otel-pgadmin
+spec:
+  users:
+    - username: otel@example.com
+      role: Administrator
+      passwordRef:
+        name: pgadmin-password-secret
+        key: otel-password
+  dataVolumeClaimSpec:
+    accessModes:
+    - "ReadWriteOnce"
+    resources:
+      requests:
+        storage: 1Gi
+  serverGroups:
+    - name: supply
+      # An empty selector selects all postgresclusters in the Namespace
+      postgresClusterSelector: {}
+  config:
+    settings:
+      AUTHENTICATION_SOURCES: ['internal']
+  instrumentation:
+    config:
+      exporters:
+        otlp:
+          endpoint: otel-collector:4317
+          tls:
+            insecure: true
+    logs:
+      exporters: ['otlp']
+      retentionPeriod: 1h
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+  labels:
+    app: opentelemetry
+    component: otel-collector-conf
+data:
+  otel-collector-config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+          http:
+            endpoint: ${env:MY_POD_IP}:4318
+    extensions:
+      zpages: {}
+    exporters:
+      debug:
+        verbosity: detailed
+    service:
+      extensions: [zpages]
+      pipelines:
+        logs/1:
+          receivers: [otlp]
+          exporters: [debug]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  ports:
+  - name: otlp-grpc # Default endpoint for OpenTelemetry gRPC receiver.
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+  - name: otlp-http # Default endpoint for OpenTelemetry HTTP receiver.
+    port: 4318
+    protocol: TCP
+    targetPort: 4318
+  - name: metrics # Default endpoint for querying metrics.
+    port: 8888
+  selector:
+    component: otel-collector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-collector
+  minReadySeconds: 5
+  progressDeadlineSeconds: 120
+  replicas: 1 #TODO - adjust this to your own requirements
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+        component: otel-collector
+    spec:
+      containers:
+      - command:
+          - "/otelcol"
+          - "--config=/conf/otel-collector-config.yaml"
+        image: otel/opentelemetry-collector:latest
+        name: otel-collector
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 400Mi
+        ports:
+        - containerPort: 55679 # Default endpoint for ZPages.
+        - containerPort: 4317 # Default endpoint for OpenTelemetry receiver.
+        - containerPort: 14250 # Default endpoint for Jaeger gRPC receiver.
+        - containerPort: 14268 # Default endpoint for Jaeger HTTP receiver.
+        - containerPort: 9411 # Default endpoint for Zipkin receiver.
+        - containerPort: 8888  # Default endpoint for querying metrics.
+        env:
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          - name: GOMEMLIMIT
+            value: 1600MiB
+        volumeMounts:
+        - name: otel-collector-config-vol
+          mountPath: /conf
+      volumes:
+        - configMap:
+            name: otel-collector-conf
+            items:
+              - key: otel-collector-config
+                path: otel-collector-config.yaml
+          name: otel-collector-config-vol

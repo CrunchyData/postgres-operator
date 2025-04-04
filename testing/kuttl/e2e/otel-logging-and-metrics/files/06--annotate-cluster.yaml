@@ -1,0 +1,8 @@
+---
+# Annotate the cluster to trigger a backup.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+  annotations:
+    postgres-operator.crunchydata.com/pgbackrest-backup: do-it

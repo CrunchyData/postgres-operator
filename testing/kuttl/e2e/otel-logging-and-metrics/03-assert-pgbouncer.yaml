@@ -1,0 +1,34 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, check that all containers in the pgbouncer pod are ready.
+# Then, scrape the collector metrics and check that pgbouncer metrics are present.
+# Then, check the collector logs for pgbouncer logs.
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=otel-cluster,postgres-operator.crunchydata.com/role=pgbouncer)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+
+    scrape_metrics=$(kubectl exec "${pod}" -c collector -n "${NAMESPACE}" -- \
+      curl --insecure --silent http://localhost:9187/metrics)
+    { contains "${scrape_metrics}" 'ccp_pgbouncer_clients_wait_seconds'; } || {
+      retry "pgbouncer metric not found"
+      exit 1
+    }
+
+    logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}" -c collector | grep InstrumentationScope)
+    { contains "${logs}" 'InstrumentationScope pgbouncer'; } || {
+      retry "pgbouncer logs not found"
+      exit 1
+    }

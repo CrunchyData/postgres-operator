@@ -1,0 +1,26 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, check that all containers in the repo host pod are ready.
+# Then, ensure that the repo-host collector logs have pgbackrest logs.
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=otel-cluster,postgres-operator.crunchydata.com/data=pgbackrest)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+
+    logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}" -c collector | grep InstrumentationScope)
+    { contains "${logs}" 'InstrumentationScope pgbackrest'; } || {
+      retry "pgbackrest logs were not found"
+      exit 1
+    }
