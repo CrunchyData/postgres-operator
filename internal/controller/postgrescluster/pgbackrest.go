@@ -2229,7 +2229,7 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 
 	if isCreate {
 		r.Recorder.Eventf(postgresCluster, corev1.EventTypeNormal, EventRepoHostCreated,
-			"created pgBackRest repository host %s/%s", repoHost.TypeMeta.Kind, repoHostName)
+			"created pgBackRest repository host %s/%s", repoHost.Kind, repoHostName)
 	}
 
 	return repoHost, nil
@@ -2413,7 +2413,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	backupJob := &batchv1.Job{}
 	backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
 	if currentBackupJob != nil {
-		backupJob.ObjectMeta.Name = currentBackupJob.ObjectMeta.Name
+		backupJob.Name = currentBackupJob.Name
 	}
 
 	var labels, annotations map[string]string
@@ -2426,8 +2426,8 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 		map[string]string{
 			naming.PGBackRestBackup: manualAnnotation,
 		})
-	backupJob.ObjectMeta.Labels = labels
-	backupJob.ObjectMeta.Annotations = annotations
+	backupJob.Labels = labels
+	backupJob.Annotations = annotations
 
 	spec := generateBackupJobSpecIntent(ctx, postgresCluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
@@ -2573,7 +2573,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	backupJob := &batchv1.Job{}
 	backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
 	if job != nil {
-		backupJob.ObjectMeta.Name = job.ObjectMeta.Name
+		backupJob.Name = job.Name
 	}
 
 	var labels, annotations map[string]string
@@ -2586,8 +2586,8 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		map[string]string{
 			naming.PGBackRestConfigHash: configHash,
 		})
-	backupJob.ObjectMeta.Labels = labels
-	backupJob.ObjectMeta.Annotations = annotations
+	backupJob.Labels = labels
+	backupJob.Annotations = annotations
 
 	spec := generateBackupJobSpecIntent(ctx, postgresCluster, replicaCreateRepo,
 		serviceAccount.GetName(), labels, annotations)

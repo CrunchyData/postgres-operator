@@ -235,12 +235,12 @@ namespace: some-ns
 
 		assert.NilError(t, err)
 		// Annotations present in the metadata.
-		assert.DeepEqual(t, configmap.ObjectMeta.Annotations, map[string]string{
+		assert.DeepEqual(t, configmap.Annotations, map[string]string{
 			"a": "v1", "b": "v2",
 		})
 
 		// Labels present in the metadata.
-		assert.DeepEqual(t, configmap.ObjectMeta.Labels, map[string]string{
+		assert.DeepEqual(t, configmap.Labels, map[string]string{
 			"c": "v3", "d": "v4",
 			"postgres-operator.crunchydata.com/pgadmin": "pg1",
 			"postgres-operator.crunchydata.com/role":    "pgadmin",

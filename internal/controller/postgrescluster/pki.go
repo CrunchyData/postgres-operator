@@ -63,7 +63,7 @@ func (r *Reconciler) reconcileRootCertificate(
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Namespace, intent.Name = cluster.Namespace, naming.RootCertSecret
 	intent.Data = make(map[string][]byte)
-	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
+	intent.OwnerReferences = existing.OwnerReferences
 
 	// A root secret is scoped to the namespace where postgrescluster(s)
 	// are deployed. For operator deployments with postgresclusters in more than
@@ -140,7 +140,7 @@ func (r *Reconciler) reconcileClusterCertificate(
 	intent := &corev1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
 	intent.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Data = make(map[string][]byte)
-	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
+	intent.OwnerReferences = existing.OwnerReferences
 
 	intent.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
 	intent.Labels = naming.Merge(

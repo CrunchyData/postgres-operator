@@ -194,7 +194,7 @@ func TestRootIsInvalid(t *testing.T) {
 		t.Cleanup(func() { currentTime = original })
 
 		currentTime = func() time.Time {
-			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.Local)
+			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.UTC)
 		}
 
 		root, err := NewRootCertificateAuthority()
@@ -395,7 +395,7 @@ func TestLeafIsInvalid(t *testing.T) {
 		t.Cleanup(func() { currentTime = original })
 
 		currentTime = func() time.Time {
-			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.Local)
+			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.UTC)
 		}
 
 		leaf, err := root.GenerateLeafCertificate("", nil)
