@@ -92,38 +92,6 @@ spec:
       readOnlyRootFilesystem: true
       runAsNonRoot: true
 ---
-# pgAdmin
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    postgres-operator.crunchydata.com/cluster: security-context
-    postgres-operator.crunchydata.com/data: pgadmin
-    postgres-operator.crunchydata.com/role: pgadmin
-    statefulset.kubernetes.io/pod-name: security-context-pgadmin-0
-  name: security-context-pgadmin-0
-spec:
-  containers:
-  - name: pgadmin
-    securityContext:
-      allowPrivilegeEscalation: false
-      privileged: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-  initContainers:
-  - name: pgadmin-startup
-    securityContext:
-      allowPrivilegeEscalation: false
-      privileged: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
-  - name: nss-wrapper-init
-    securityContext:
-      allowPrivilegeEscalation: false
-      privileged: false
-      readOnlyRootFilesystem: true
-      runAsNonRoot: true
----
 # pgBouncer
 apiVersion: v1
 kind: Pod
