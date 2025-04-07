@@ -104,7 +104,7 @@ jobs:
             registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2513
             registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2513
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.16.0-2513
-            registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.4-2513
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.4-2513
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.8-2513
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.3-2513
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.4-2513
@@ -138,7 +138,7 @@ jobs:
             --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.8-2513' \
             --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.3-2513' \
             --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.4-2513' \
-            --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.4-2513' \
+            --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.4-2513' \
             --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.4-3.4-2513' \
             --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.1-2513' \
             --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.0-0' \
