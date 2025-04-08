@@ -18,9 +18,6 @@ spec:
   proxy:
     pgBouncer:
       replicas: 1
-  userInterface:
-    pgAdmin:
-      dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
   monitoring:
     pgmonitor:
       exporter: {}

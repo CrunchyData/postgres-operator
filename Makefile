@@ -225,11 +225,11 @@ check-kuttl: ## example command: make check-kuttl KUTTL_TEST='
 		--config testing/kuttl/kuttl-test.yaml
 
 .PHONY: generate-kuttl
-generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 15
-generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 16
+generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 16
+generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 17
 generate-kuttl: export KUTTL_PG_VERSION ?= 16
 generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.4
-generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.8-0
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.4-2513
 generate-kuttl: export KUTTL_TEST_DELETE_NAMESPACE ?= kuttl-test-delete-namespace
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
