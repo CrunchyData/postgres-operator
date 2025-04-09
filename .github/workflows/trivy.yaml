@@ -3,10 +3,10 @@ name: Trivy
 on:
   pull_request:
     branches:
-      - master
+      - REL_5_7
   push:
     branches:
-      - master
+      - REL_5_7
 
 jobs:
   licenses:
