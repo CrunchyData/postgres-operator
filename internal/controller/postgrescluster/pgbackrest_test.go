@@ -1778,6 +1778,9 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 		configCount, jobCount, pvcCount                         int
 		invalidSourceRepo, invalidSourceCluster, invalidOptions bool
 		expectedClusterCondition                                *metav1.Condition
+		expectedEventMessage                                    string
+		expectedCommandPieces                                   []string
+		missingCommandPieces                                    []string
 	}
 
 	for _, dedicated := range []bool{true, false} {
@@ -1800,6 +1803,8 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				configCount: 1, jobCount: 1, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
 				expectedClusterCondition: nil,
+				expectedCommandPieces:    []string{"--stanza=", "--pg1-path=", "--repo=", "--delta"},
+				missingCommandPieces:     []string{"--target-action"},
 			},
 		}, {
 			desc: "invalid source cluster",
@@ -1813,6 +1818,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				configCount: 0, jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: false, invalidSourceCluster: true, invalidOptions: false,
 				expectedClusterCondition: nil,
+				expectedEventMessage:     "does not exist",
 			},
 		}, {
 			desc: "invalid source repo",
@@ -1826,6 +1832,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				configCount: 1, jobCount: 0, pvcCount: 0,
 				invalidSourceRepo: true, invalidSourceCluster: false, invalidOptions: false,
 				expectedClusterCondition: nil,
+				expectedEventMessage:     "does not have a repo named",
 			},
 		}, {
 			desc: "invalid option: --repo=",
@@ -1840,6 +1847,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				configCount: 1, jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
 				expectedClusterCondition: nil,
+				expectedEventMessage:     "Option '--repo' is not allowed: please use the 'repoName' field instead.",
 			},
 		}, {
 			desc: "invalid option: --repo ",
@@ -1854,6 +1862,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				configCount: 1, jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
 				expectedClusterCondition: nil,
+				expectedEventMessage:     "Option '--repo' is not allowed: please use the 'repoName' field instead.",
 			},
 		}, {
 			desc: "invalid option: stanza",
@@ -1868,6 +1877,7 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				configCount: 1, jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
 				expectedClusterCondition: nil,
+				expectedEventMessage:     "Option '--stanza' is not allowed: the operator will automatically set this option",
 			},
 		}, {
 			desc: "invalid option: pg1-path",
@@ -1882,6 +1892,68 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				configCount: 1, jobCount: 0, pvcCount: 1,
 				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
 				expectedClusterCondition: nil,
+				expectedEventMessage:     "Option '--pg1-path' is not allowed: the operator will automatically set this option",
+			},
+		}, {
+			desc: "invalid option: target-action",
+			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
+				ClusterName: "invalid-target-action-option", RepoName: "repo1",
+				Options: []string{"--target-action"},
+			}},
+			clusterBootstrapped: false,
+			sourceClusterName:   "invalid-target-action-option",
+			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
+			result: testResult{
+				configCount: 1, jobCount: 0, pvcCount: 1,
+				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
+				expectedClusterCondition: nil,
+				expectedEventMessage:     "Option '--target-action' is not allowed: the operator will automatically set this option",
+			},
+		}, {
+			desc: "invalid option: link-map",
+			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
+				ClusterName: "invalid-link-map-option", RepoName: "repo1",
+				Options: []string{"--link-map"},
+			}},
+			clusterBootstrapped: false,
+			sourceClusterName:   "invalid-link-map-option",
+			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
+			result: testResult{
+				configCount: 1, jobCount: 0, pvcCount: 1,
+				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: true,
+				expectedClusterCondition: nil,
+				expectedEventMessage:     "Option '--link-map' is not allowed: the operator will automatically set this option",
+			},
+		}, {
+			desc: "valid option: target-timeline",
+			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
+				ClusterName: "valid-target-timeline-option", RepoName: "repo1",
+				Options: []string{"--target-timeline=1"},
+			}},
+			clusterBootstrapped: false,
+			sourceClusterName:   "valid-target-timeline-option",
+			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
+			result: testResult{
+				configCount: 1, jobCount: 1, pvcCount: 1,
+				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
+				expectedClusterCondition: nil,
+				expectedCommandPieces:    []string{"--stanza=", "--pg1-path=", "--repo=", "--delta", "--target-timeline=1"},
+				missingCommandPieces:     []string{"--target=", "--target-action=promote"},
+			},
+		}, {
+			desc: "valid option: target",
+			dataSource: &v1beta1.DataSource{PostgresCluster: &v1beta1.PostgresClusterDataSource{
+				ClusterName: "valid-target-option", RepoName: "repo1",
+				Options: []string{"--target=some-date"},
+			}},
+			clusterBootstrapped: false,
+			sourceClusterName:   "valid-target-option",
+			sourceClusterRepos:  []v1beta1.PGBackRestRepo{{Name: "repo1"}},
+			result: testResult{
+				configCount: 1, jobCount: 1, pvcCount: 1,
+				invalidSourceRepo: false, invalidSourceCluster: false, invalidOptions: false,
+				expectedClusterCondition: nil,
+				expectedCommandPieces:    []string{"--stanza=", "--pg1-path=", "--repo=", "--delta", "--target=some-date", "--target-action=promote"},
 			},
 		}, {
 			desc: "cluster bootstrapped init condition missing",
@@ -2004,6 +2076,16 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 				if len(restoreJobs.Items) == 1 {
 					assert.Assert(t, restoreJobs.Items[0].Labels[naming.LabelStartupInstance] != "")
 					assert.Assert(t, restoreJobs.Items[0].Annotations[naming.PGBackRestConfigHash] != "")
+					for _, cmd := range tc.result.expectedCommandPieces {
+						assert.Assert(t, cmp.Contains(
+							strings.Join(restoreJobs.Items[0].Spec.Template.Spec.Containers[0].Command, " "),
+							cmd))
+					}
+					for _, cmd := range tc.result.missingCommandPieces {
+						assert.Assert(t, !strings.Contains(
+							strings.Join(restoreJobs.Items[0].Spec.Template.Spec.Containers[0].Command, " "),
+							cmd))
+					}
 				}
 
 				dataPVCs := &corev1.PersistentVolumeClaimList{}
@@ -2041,7 +2123,11 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 								"involvedObject.namespace": namespace,
 								"reason":                   "InvalidDataSource",
 							})
-							return len(events.Items) == 1, err
+							eventExists := len(events.Items) > 0
+							if eventExists {
+								assert.Assert(t, cmp.Contains(events.Items[0].Message, tc.result.expectedEventMessage))
+							}
+							return eventExists, err
 						}))
 				}
 			})
