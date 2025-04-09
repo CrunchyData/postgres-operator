@@ -1153,10 +1153,16 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		"--pg1-path=" + pgdata,
 		"--repo=" + regexRepoIndex.FindString(repoName)}...)
 
+	// Look specifically for the "--target" flag, NOT flags that contain
+	// "--target" (e.g. "--target-timeline")
+	targetRegex, err := regexp.Compile("--target[ =]")
+	if err != nil {
+		return err
+	}
 	var deltaOptFound, foundTarget bool
 	for _, opt := range opts {
 		switch {
-		case strings.Contains(opt, "--target"):
+		case targetRegex.Match([]byte(opt)):
 			foundTarget = true
 		case strings.Contains(opt, "--delta"):
 			deltaOptFound = true
