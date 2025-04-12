@@ -1,0 +1,22 @@
+# https://editorconfig.org
+#
+# https://neovim.io/doc/user/editorconfig.html
+# https://github.com/editorconfig/editorconfig-emacs
+# https://plugins.jetbrains.com/plugin/7294-editorconfig
+# https://marketplace.visualstudio.com/items/EditorConfig.EditorConfig
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{go,sh}]
+indent_size = tab
+indent_style = tab
+
+[*.{md,yml,yaml}]
+indent_size = 2
+indent_style = space
+
+[Makefile]
+indent_style = tab
