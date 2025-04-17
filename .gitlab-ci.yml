@@ -145,3 +145,45 @@ go-test:
     expire_in: '$[[ inputs.retention ]]'
     reports:
       junit: '*.junit.xml'
+
+# See: [.github/workflows/trivy.yaml]
+trivy:
+  stage: test
+  needs: []
+  rules:
+    # Run this job during scheduled pipelines and merge requests that change dependencies.
+    - changes: ['go.mod']
+
+  tags: ['image=container']
+  image: '${CI_REGISTRY}/containers/gitlab/go-toolset-ubi9'
+  script:
+    # Help Git understand the file permissions here.
+    # > fatal: detected dubious ownership in repository
+    - git config --global --add safe.directory "$(pwd)"
+
+    # Download Trivy and log its version.
+    - |-
+      VERSION=$(go list -m -f '{{.Version}}' github.com/aquasecurity/trivy@latest)
+      TOOL="github.com/aquasecurity/trivy/cmd/trivy@${VERSION}"
+      go run -exec true "${TOOL}"
+
+    # Download the JUnit template for this version.
+    - curl -sSL -o /tmp/trivy-junit.tpl "https://raw.githubusercontent.com/aquasecurity/trivy/refs/tags/${VERSION}/contrib/junit.tpl"
+
+    # Generate a report and fail when there are issues that can be fixed.
+    # Trivy needs a populated Go module cache to detect Go module licenses.
+    - go mod download
+    - >-
+      go run "${TOOL}" filesystem . --exit-code 1
+      --scanners license,secret,vuln
+      --ignore-unfixed
+      --no-progress
+      --format template
+      --template '@/tmp/trivy-junit.tpl'
+      --output 'trivy.junit.xml'
+
+  # Send the report to GitLab.
+  artifacts:
+    expire_in: '$[[ inputs.retention ]]'
+    reports:
+      junit: 'trivy.junit.xml'
