@@ -52,20 +52,20 @@ func TestMakeDirectories(t *testing.T) {
 
 	t.Run("NoPaths", func(t *testing.T) {
 		assert.Equal(t,
-			MakeDirectories(0o755, "/asdf/jklm"),
+			MakeDirectories("/asdf/jklm"),
 			`test -d '/asdf/jklm'`)
 	})
 
 	t.Run("Children", func(t *testing.T) {
 		assert.DeepEqual(t,
-			MakeDirectories(0o775, "/asdf", "/asdf/jklm", "/asdf/qwerty"),
-			`mkdir -p '/asdf/jklm' '/asdf/qwerty' && chmod 0775 '/asdf/jklm' '/asdf/qwerty'`)
+			MakeDirectories("/asdf", "/asdf/jklm", "/asdf/qwerty"),
+			`mkdir -p '/asdf/jklm' '/asdf/qwerty' && { chmod 0775 '/asdf/jklm' '/asdf/qwerty' || :; }`)
 	})
 
 	t.Run("Grandchild", func(t *testing.T) {
-		script := MakeDirectories(0o775, "/asdf", "/asdf/qwerty/boots")
+		script := MakeDirectories("/asdf", "/asdf/qwerty/boots")
 		assert.DeepEqual(t, script,
-			`mkdir -p '/asdf/qwerty/boots' && chmod 0775 '/asdf/qwerty/boots' '/asdf/qwerty'`)
+			`mkdir -p '/asdf/qwerty/boots' && { chmod 0775 '/asdf/qwerty/boots' '/asdf/qwerty' || :; }`)
 
 		t.Run("ShellCheckPOSIX", func(t *testing.T) {
 			shellcheck := require.ShellCheck(t)
@@ -83,7 +83,7 @@ func TestMakeDirectories(t *testing.T) {
 	})
 
 	t.Run("Long", func(t *testing.T) {
-		script := MakeDirectories(0o700, "/", strings.Repeat("/asdf", 20))
+		script := MakeDirectories("/", strings.Repeat("/asdf", 20))
 
 		t.Run("PrettyYAML", func(t *testing.T) {
 			b, err := yaml.Marshal(script)
