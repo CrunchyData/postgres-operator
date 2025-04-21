@@ -843,7 +843,7 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 		job1 := testBackupJob(cluster)
 		job1.Namespace = ns.Name
 
-		err := r.Client.Create(ctx, job1)
+		err := r.apply(ctx, job1)
 		assert.NilError(t, err)
 
 		job2 := testBackupJob(cluster)
@@ -873,7 +873,7 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 		job1 := testBackupJob(cluster)
 		job1.Namespace = ns.Name
 
-		err := r.Client.Create(ctx, job1)
+		err := r.apply(ctx, job1)
 		assert.NilError(t, err)
 
 		job2 := testBackupJob(cluster)
@@ -1057,7 +1057,7 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 		}
 		snapshot1.Spec.Source.PersistentVolumeClaimName = initialize.String("some-pvc-name")
 		snapshot1.Spec.VolumeSnapshotClassName = initialize.String("some-class-name")
-		err := r.Client.Create(ctx, snapshot1)
+		err := r.apply(ctx, snapshot1)
 		assert.NilError(t, err)
 
 		snapshot2 := &volumesnapshotv1.VolumeSnapshot{
@@ -1099,7 +1099,7 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 		}
 		snapshot1.Spec.Source.PersistentVolumeClaimName = initialize.String("some-pvc-name")
 		snapshot1.Spec.VolumeSnapshotClassName = initialize.String("some-class-name")
-		err := r.Client.Create(ctx, snapshot1)
+		err := r.apply(ctx, snapshot1)
 		assert.NilError(t, err)
 
 		snapshot2 := &volumesnapshotv1.VolumeSnapshot{
@@ -1299,7 +1299,7 @@ func TestDeleteSnapshots(t *testing.T) {
 			},
 		}
 		assert.NilError(t, r.setControllerReference(rhinoCluster, snapshot1))
-		assert.NilError(t, r.Client.Create(ctx, snapshot1))
+		assert.NilError(t, r.apply(ctx, snapshot1))
 
 		snapshot2 := &volumesnapshotv1.VolumeSnapshot{
 			TypeMeta: metav1.TypeMeta{
