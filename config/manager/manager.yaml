@@ -23,27 +23,27 @@ spec:
         - name: CRUNCHY_DEBUG
           value: "true"
         - name: RELATED_IMAGE_POSTGRES_16
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.8-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.8-2516"
         - name: RELATED_IMAGE_POSTGRES_16_GIS_3.3
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.3-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.3-2516"
         - name: RELATED_IMAGE_POSTGRES_16_GIS_3.4
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.4-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.8-3.4-2516"
         - name: RELATED_IMAGE_POSTGRES_17
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.4-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.4-2516"
         - name: RELATED_IMAGE_POSTGRES_17_GIS_3.4
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.4-3.5-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.4-3.5-2516"
         - name: RELATED_IMAGE_PGBACKREST
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2516"
         - name: RELATED_IMAGE_PGBOUNCER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2516"
         - name: RELATED_IMAGE_PGEXPORTER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.16.0-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.17.1-2516"
         - name: RELATED_IMAGE_PGUPGRADE
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.4-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.4-2516"
         - name: RELATED_IMAGE_STANDALONE_PGADMIN
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.1-2513"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.2-2516"
         - name: RELATED_IMAGE_COLLECTOR
-          value: "registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.0-0"
+          value: "registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.1-0"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities: { drop: [ALL] }
