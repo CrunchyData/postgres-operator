@@ -880,7 +880,7 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 		job2.Namespace = ns.Name
 		job2.Name = "backup-job-2"
 
-		assert.NilError(t, r.Client.Create(ctx, job2))
+		assert.NilError(t, r.apply(ctx, job2))
 
 		// Get job1 and update Status.
 		assert.NilError(t, r.Client.Get(ctx, client.ObjectKeyFromObject(job1), job1))
@@ -1117,7 +1117,7 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 		}
 		snapshot2.Spec.Source.PersistentVolumeClaimName = initialize.String("another-pvc-name")
 		snapshot2.Spec.VolumeSnapshotClassName = initialize.String("another-class-name")
-		assert.NilError(t, r.Client.Create(ctx, snapshot2))
+		assert.NilError(t, r.apply(ctx, snapshot2))
 
 		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
 		assert.NilError(t, err)
