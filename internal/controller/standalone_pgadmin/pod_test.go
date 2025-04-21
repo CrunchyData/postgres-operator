@@ -137,8 +137,8 @@ initContainers:
   - -ceu
   - --
   - |-
-    mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
-    mkdir -p '/var/lib/pgadmin/logs' && chmod 0775 '/var/lib/pgadmin/logs'
+    mkdir -p '/etc/pgadmin/conf.d' && { chmod 0775 '/etc/pgadmin/conf.d' || :; }
+    mkdir -p '/var/lib/pgadmin/logs' && { chmod 0775 '/var/lib/pgadmin/logs' || :; }
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup
@@ -342,8 +342,8 @@ initContainers:
   - -ceu
   - --
   - |-
-    mkdir -p '/etc/pgadmin/conf.d' && chmod 0775 '/etc/pgadmin/conf.d'
-    mkdir -p '/var/lib/pgadmin/logs' && chmod 0775 '/var/lib/pgadmin/logs'
+    mkdir -p '/etc/pgadmin/conf.d' && { chmod 0775 '/etc/pgadmin/conf.d' || :; }
+    mkdir -p '/var/lib/pgadmin/logs' && { chmod 0775 '/var/lib/pgadmin/logs' || :; }
     echo "$1" > /etc/pgadmin/config_system.py
     echo "$2" > /etc/pgadmin/gunicorn_config.py
   - startup

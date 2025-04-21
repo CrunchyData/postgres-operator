@@ -268,11 +268,11 @@ initContainers:
     recreate "${postgres_data_directory}" '0700'
     else (halt Permissions!); fi ||
     halt "$(permissions "${postgres_data_directory}" ||:)"
-    (mkdir -p '/pgdata/pgbackrest/log' && chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest') ||
+    (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
     halt "$(permissions /pgdata/pgbackrest/log ||:)"
-    (mkdir -p '/pgdata/patroni/log' && chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni') ||
+    (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
     halt "$(permissions /pgdata/patroni/log ||:)"
-    (mkdir -p '/pgdata/logs/postgres' && chmod 0775 '/pgdata/logs/postgres' '/pgdata/logs') ||
+    (mkdir -p '/pgdata/logs/postgres' && { chmod 0775 '/pgdata/logs/postgres' '/pgdata/logs' || :; }) ||
     halt "$(permissions /pgdata/logs/postgres ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
 

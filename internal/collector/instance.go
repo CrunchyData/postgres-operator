@@ -180,8 +180,7 @@ func startCommand(logDirectories []string, includeLogrotate bool) []string {
 	if len(logDirectories) != 0 {
 		for _, logDir := range logDirectories {
 			mkdirScript = mkdirScript + `
-` + shell.MakeDirectories(0o775, logDir,
-				path.Join(logDir, "receiver"))
+` + shell.MakeDirectories(logDir, path.Join(logDir, "receiver"))
 		}
 	}
 

@@ -177,7 +177,7 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 	container := corev1.Container{
 		// TODO(log-rotation): The second argument here should be the path
 		// of the volume mount. Find a way to calculate that consistently.
-		Command:         []string{"bash", "-c", shell.MakeDirectories(0o775, path.Dir(pgBackRestLogPath), pgBackRestLogPath)},
+		Command:         []string{"bash", "-c", shell.MakeDirectories(path.Dir(pgBackRestLogPath), pgBackRestLogPath)},
 		Image:           config.PGBackRestContainerImage(cluster),
 		ImagePullPolicy: cluster.Spec.ImagePullPolicy,
 		Name:            naming.ContainerPGBackRestLogDirInit,
