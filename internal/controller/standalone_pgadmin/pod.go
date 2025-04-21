@@ -442,10 +442,10 @@ with open('` + configMountPath + `/` + gunicornConfigFilePath + `') as _f:
 	script := strings.Join([]string{
 		// Create the config directory so Kubernetes can mount it later.
 		// - https://issue.k8s.io/121294
-		shell.MakeDirectories(0o775, scriptMountPath, configMountPath),
+		shell.MakeDirectories(scriptMountPath, configMountPath),
 
-		// Create the logs directory with g+rwx to ensure pgAdmin can write to it as well.
-		shell.MakeDirectories(0o775, dataMountPath, LogDirectoryAbsolutePath),
+		// Create the logs directory and ensure pgAdmin can write to it as well.
+		shell.MakeDirectories(dataMountPath, LogDirectoryAbsolutePath),
 
 		// Write the system and server configurations.
 		`echo "$1" > ` + scriptMountPath + `/config_system.py`,

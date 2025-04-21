@@ -375,11 +375,11 @@ chmod +x /tmp/pg_rewind_tde.sh
 		`halt "$(permissions "${postgres_data_directory}" ||:)"`,
 
 		// Create log directories.
-		`(` + shell.MakeDirectories(0o775, dataMountPath, naming.PGBackRestPGDataLogPath) + `) ||`,
+		`(` + shell.MakeDirectories(dataMountPath, naming.PGBackRestPGDataLogPath) + `) ||`,
 		`halt "$(permissions ` + naming.PGBackRestPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(0o775, dataMountPath, naming.PatroniPGDataLogPath) + `) ||`,
+		`(` + shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath) + `) ||`,
 		`halt "$(permissions ` + naming.PatroniPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(0o775, dataMountPath, LogDirectory()) + `) ||`,
+		`(` + shell.MakeDirectories(dataMountPath, LogDirectory()) + `) ||`,
 		`halt "$(permissions ` + LogDirectory() + ` ||:)"`,
 
 		// Copy replication client certificate files
