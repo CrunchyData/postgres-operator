@@ -149,6 +149,29 @@ go-test:
     reports:
       junit: '*.junit.xml'
 
+# https://go.dev/blog/govulncheck
+govulncheck:
+  stage: test
+  needs: []
+  rules:
+    # Run this job during scheduled pipelines and merge requests that change dependencies.
+    - changes: ['go.mod']
+
+  tags: ['image=container','cpu=${TARGET_ARCHITECTURE}']
+  image: '${CI_REGISTRY}/containers/gitlab/go-toolset-ubi8'
+  parallel:
+    matrix:
+      - TARGET_ARCHITECTURE: $[[ inputs.architectures ]]
+  script:
+    # Download govulncheck and log its version.
+    - |-
+      TOOL='golang.org/x/vuln/cmd/govulncheck@latest'
+      go run "${TOOL}" --version
+
+    # Print any detected vulnerabilities to the log.
+    # This fails the job when it detects a vulnerability in called code.
+    - go run "${TOOL}" --format text --show verbose ./...
+
 # See: [.github/workflows/trivy.yaml]
 trivy:
   stage: test
