@@ -23,6 +23,12 @@ This test assumes that the operator has both OpenTelemetryLogs and OpenTelemetry
 4. Add an `otlp` exporter to both PostgresCluster and PGAdmin `instrumentation` specs and create a standalone OTel collector to receive data from our sidecar collectors.
     1. Ensure that the ConfigMap, Service, and Deployment for the standalone OTel collector come up and that the collector container is running and ready.
     2. Assert that the standalone collector is receiving logs from all of our components (i.e. the standalone collector is getting logs for postgres, patroni, pgbackrest, pgbouncer, pgadmin, and gunicorn).
+5. Create a new cluster with `instrumentation` spec in place, but no `backups` spec to test the OTel features with optional backups.
+    1. Ensure that the cluster comes up and the database and collector containers are running and ready.
+    2. Add a backups spec to the new cluster and ensure that pgbackrest is added to the instance pod, a repo-host pod is created, and the collector runs on both pods.
+    3. Remove the backups spec from the new cluster.
+    4. Annotate the cluster to allow backups to be removed.
+    5. Ensure that the repo-host pod is destroyed, pgbackrest is removed from the instance pod, and the collector continues to run on the instance pod.
 
 ### NOTES
 
