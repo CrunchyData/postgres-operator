@@ -1,6 +1,0 @@
-apiVersion: kuttl.dev/v1beta1
-kind: TestStep
-apply:
-- files/06--annotate-cluster.yaml
-assert:
-- files/06-backup-completed.yaml
