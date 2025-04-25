@@ -46,6 +46,7 @@ metadata:
   labels:
     postgres-operator.crunchydata.com/data: pgbackrest
     postgres-operator.crunchydata.com/cluster: otel-cluster
+    postgres-operator.crunchydata.com/crunchy-otel-collector: "true"
 status:
   containerStatuses:
   - name: collector

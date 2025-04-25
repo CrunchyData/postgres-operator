@@ -2,7 +2,7 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: otel-cluster
+  name: otel-cluster-no-backups
 spec:
   postgresVersion: ${KUTTL_PG_VERSION}
   instances:
@@ -28,9 +28,4 @@ spec:
             resources:
               requests:
                 storage: 1Gi
-  config:
-    parameters:
-      log_min_messages: INFO
-  proxy:
-    pgBouncer: {}
   instrumentation: {}

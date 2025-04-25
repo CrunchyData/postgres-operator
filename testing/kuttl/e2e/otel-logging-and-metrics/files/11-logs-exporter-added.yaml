@@ -99,8 +99,12 @@ metadata:
     postgres-operator.crunchydata.com/data: pgadmin
     postgres-operator.crunchydata.com/role: pgadmin
     postgres-operator.crunchydata.com/pgadmin: otel-pgadmin
+    postgres-operator.crunchydata.com/crunchy-otel-collector: "true"
 status:
   containerStatuses:
+  - name: collector
+    ready: true
+    started: true
   - name: pgadmin
     ready: true
     started: true
@@ -114,3 +118,38 @@ metadata:
     postgres-operator.crunchydata.com/pgadmin: otel-pgadmin
 type: Opaque
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-custom-queries
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+status:
+  readyReplicas: 1
+  replicas: 1
+  updatedReplicas: 1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: opentelemetry
+status:
+  containerStatuses:
+  - name: otel-collector
+    ready: true
+    started: true
+  phase: Running

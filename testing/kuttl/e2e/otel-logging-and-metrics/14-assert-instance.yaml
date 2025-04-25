@@ -1,0 +1,55 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, check that all containers in the instance pod are ready.
+# Then, grab the collector metrics output and check that a postgres 
+# metric is present, as well as a patroni metric.
+# Then, check the collector logs for patroni, and postgres logs.
+# Finally, ensure the monitoring user exists and is configured.
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=otel-cluster-no-backups,postgres-operator.crunchydata.com/data=postgres)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+
+    scrape_metrics=$(kubectl exec "${pod}" -c collector -n "${NAMESPACE}" -- \
+      curl --insecure --silent http://localhost:9187/metrics)
+    { contains "${scrape_metrics}" 'ccp_connection_stats_active'; } || {
+      retry "5 second metric not found"
+      exit 1
+    }
+    { contains "${scrape_metrics}" 'patroni_postgres_running'; } || {
+      retry "patroni metric not found"
+      exit 1
+    }
+
+    logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}" -c collector | grep InstrumentationScope)
+    { contains "${logs}" 'InstrumentationScope patroni'; } || {
+      retry "patroni logs not found"
+      exit 1
+    }
+    { contains "${logs}" 'InstrumentationScope postgres'; } || {
+      retry "postgres logs not found"
+      exit 1
+    }
+
+    kubectl exec --stdin "${pod}" --namespace "${NAMESPACE}" -c database \
+      -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'
+      DO $$
+      DECLARE
+        result record;
+      BEGIN
+        SELECT * INTO result FROM pg_catalog.pg_roles WHERE rolname = 'ccp_monitoring';
+        ASSERT FOUND, 'user not found';
+      END $$
+    SQL

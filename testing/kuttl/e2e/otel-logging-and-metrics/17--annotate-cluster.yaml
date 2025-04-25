@@ -1,0 +1,7 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+commands:
+- command: kubectl annotate postgrescluster otel-cluster-no-backups postgres-operator.crunchydata.com/authorizeBackupRemoval="true"
+  namespaced: true
+assert:
+- files/17-backups-removed.yaml
