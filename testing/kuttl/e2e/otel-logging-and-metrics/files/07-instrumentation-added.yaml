@@ -99,8 +99,12 @@ metadata:
     postgres-operator.crunchydata.com/data: pgadmin
     postgres-operator.crunchydata.com/role: pgadmin
     postgres-operator.crunchydata.com/pgadmin: otel-pgadmin
+    postgres-operator.crunchydata.com/crunchy-otel-collector: "true"
 status:
   containerStatuses:
+  - name: collector
+    ready: true
+    started: true
   - name: pgadmin
     ready: true
     started: true
