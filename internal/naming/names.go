@@ -166,20 +166,6 @@ const (
 	// configmap will be named 'mycluster-pgbackrest-config'
 	cmNameSuffix = "%s-pgbackrest-config"
 
-	// suffix used with postgrescluster name for associated configmap.
-	// for instance, if the cluster is named 'mycluster', the
-	// configmap will be named 'mycluster-ssh-config'
-	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
-	// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
-	sshCMNameSuffix = "%s-ssh-config"
-
-	// suffix used with postgrescluster name for associated secret.
-	// for instance, if the cluster is named 'mycluster', the
-	// secret will be named 'mycluster-ssh'
-	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
-	// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
-	sshSecretNameSuffix = "%s-ssh"
-
 	// RestoreConfigCopySuffix is the suffix used for ConfigMap or Secret configuration
 	// resources needed when restoring from a PostgresCluster data source. If, for
 	// example, a Secret is named 'mysecret' and is the first item in the configuration
@@ -512,26 +498,6 @@ func PGBackRestRepoVolume(cluster *v1beta1.PostgresCluster,
 	repoName string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf("%s-%s", cluster.GetName(), repoName),
-		Namespace: cluster.GetNamespace(),
-	}
-}
-
-// PGBackRestSSHConfig returns the ObjectMeta for a pgBackRest SSHD ConfigMap
-// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
-// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
-func PGBackRestSSHConfig(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Name:      fmt.Sprintf(sshCMNameSuffix, cluster.GetName()),
-		Namespace: cluster.GetNamespace(),
-	}
-}
-
-// PGBackRestSSHSecret returns the ObjectMeta for a pgBackRest SSHD Secret
-// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
-// TODO(tjmoore4): Once we no longer need this for cleanup purposes, this should be removed.
-func PGBackRestSSHSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Name:      fmt.Sprintf(sshSecretNameSuffix, cluster.GetName()),
 		Namespace: cluster.GetNamespace(),
 	}
 }

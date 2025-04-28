@@ -425,15 +425,6 @@ chmod +x /tmp/pg_rewind_tde.sh
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_basebackup/pg_basebackup.c;hb=REL_13_0#l2621
 		`safelink "${pgwal_directory}" "${postgres_data_directory}/pg_wal"`,
 		`results 'wal directory' "$(realpath "${postgres_data_directory}/pg_wal" ||:)"`,
-
-		// Early versions of PGO create replicas with a recovery signal file.
-		// Patroni also creates a standby signal file before starting Postgres,
-		// causing Postgres to remove only one, the standby. Remove the extra
-		// signal file now, if it exists, and let Patroni manage the standby
-		// signal file instead.
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/access/transam/xlog.c;hb=REL_12_0#l5318
-		// TODO(cbandy): Remove this after 5.0 is EOL.
-		`rm -f "${postgres_data_directory}/recovery.signal"`,
 	}, "\n")
 
 	return append([]string{"bash", "-ceu", "--", script, "startup"}, args...)

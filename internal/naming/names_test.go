@@ -88,7 +88,6 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PatroniLeaderConfigMap", PatroniLeaderConfigMap(cluster)},
 			{"PatroniTrigger", PatroniTrigger(cluster)},
 			{"PGBackRestConfig", PGBackRestConfig(cluster)},
-			{"PGBackRestSSHConfig", PGBackRestSSHConfig(cluster)},
 		})
 	})
 
@@ -141,7 +140,6 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"DeprecatedPostgresUserSecret", DeprecatedPostgresUserSecret(cluster)},
 			{"PostgresTLSSecret", PostgresTLSSecret(cluster)},
 			{"ReplicationClientCertSecret", ReplicationClientCertSecret(cluster)},
-			{"PGBackRestSSHSecret", PGBackRestSSHSecret(cluster)},
 			{"MonitoringUserSecret", MonitoringUserSecret(cluster)},
 		})
 
