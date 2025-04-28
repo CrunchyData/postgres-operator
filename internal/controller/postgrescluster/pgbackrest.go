@@ -318,16 +318,10 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			if !backupsSpecFound {
 				break
 			}
-			// Any resources from before 5.1 that relate to the previously required
-			// SSH configuration should be deleted.
-			// TODO(tjmoore4): This can be removed once 5.0 is EOL.
-			if owned.GetName() != naming.PGBackRestSSHConfig(postgresCluster).Name &&
-				owned.GetName() != naming.PGBackRestSSHSecret(postgresCluster).Name {
-				// If a dedicated repo host resource and a dedicated repo host is enabled, then
-				// add to the slice and do not delete.
-				ownedNoDelete = append(ownedNoDelete, owned)
-				delete = false
-			}
+			// If a dedicated repo host resource and a dedicated repo host is enabled, then
+			// add to the slice and do not delete.
+			ownedNoDelete = append(ownedNoDelete, owned)
+			delete = false
 		case hasLabel(naming.LabelPGBackRestRepoVolume):
 			if !backupsSpecFound {
 				break
