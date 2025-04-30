@@ -70,7 +70,7 @@ func TestReconcileVolumeSnapshots(t *testing.T) {
 		volumeSnapshotClassName := "my-snapshotclass"
 		snapshot, err := r.generateVolumeSnapshot(cluster, *pvc, volumeSnapshotClassName)
 		assert.NilError(t, err)
-		assert.NilError(t, r.apply(ctx, snapshot))
+		assert.NilError(t, r.Client.Create(ctx, snapshot))
 
 		// Get all snapshots for this cluster and assert 1 exists
 		selectSnapshots, err := naming.AsSelector(naming.Cluster(cluster.Name))
@@ -235,7 +235,7 @@ func TestReconcileVolumeSnapshots(t *testing.T) {
 			},
 		}
 		assert.NilError(t, r.setControllerReference(cluster, snapshot1))
-		assert.NilError(t, r.apply(ctx, snapshot1))
+		assert.NilError(t, r.Client.Create(ctx, snapshot1))
 
 		// Update snapshot status
 		truePtr := initialize.Bool(true)
@@ -267,7 +267,7 @@ func TestReconcileVolumeSnapshots(t *testing.T) {
 			},
 		}
 		assert.NilError(t, r.setControllerReference(cluster, snapshot2))
-		assert.NilError(t, r.apply(ctx, snapshot2))
+		assert.NilError(t, r.Client.Create(ctx, snapshot2))
 
 		// Update second snapshot's status
 		snapshot2.Status = &volumesnapshotv1.VolumeSnapshotStatus{
@@ -391,7 +391,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		spec := testVolumeClaimSpec()
 		pvc.Spec = spec.AsPersistentVolumeClaimSpec()
 		assert.NilError(t, r.setControllerReference(cluster, pvc))
-		assert.NilError(t, r.apply(ctx, pvc))
+		assert.NilError(t, r.Client.Create(ctx, pvc))
 
 		// Assert that the pvc was created
 		selectPvcs, err := naming.AsSelector(naming.Cluster(cluster.Name))
@@ -468,7 +468,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		// Create successful backup job
 		backupJob := testBackupJob(cluster)
 		assert.NilError(t, r.setControllerReference(cluster, backupJob))
-		assert.NilError(t, r.apply(ctx, backupJob))
+		assert.NilError(t, r.Client.Create(ctx, backupJob))
 
 		currentTime := metav1.Now()
 		startTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
@@ -519,7 +519,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		// Create successful backup job
 		backupJob := testBackupJob(cluster)
 		assert.NilError(t, r.setControllerReference(cluster, backupJob))
-		assert.NilError(t, r.apply(ctx, backupJob))
+		assert.NilError(t, r.Client.Create(ctx, backupJob))
 
 		backupJob.Status = succeededJobStatus(earlierStartTime, earlierTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, backupJob))
@@ -530,7 +530,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 			naming.PGBackRestBackupJobCompletion: backupJob.Status.CompletionTime.Format(time.RFC3339),
 		}
 		assert.NilError(t, r.setControllerReference(cluster, restoreJob))
-		assert.NilError(t, r.apply(ctx, restoreJob))
+		assert.NilError(t, r.Client.Create(ctx, restoreJob))
 
 		restoreJob.Status = succeededJobStatus(currentStartTime, currentTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, restoreJob))
@@ -580,7 +580,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 		// Create successful backup job
 		backupJob := testBackupJob(cluster)
 		assert.NilError(t, r.setControllerReference(cluster, backupJob))
-		assert.NilError(t, r.apply(ctx, backupJob))
+		assert.NilError(t, r.Client.Create(ctx, backupJob))
 
 		backupJob.Status = succeededJobStatus(startTime, earlierTime)
 		assert.NilError(t, r.Client.Status().Update(ctx, backupJob))
@@ -591,7 +591,7 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 			naming.PGBackRestBackupJobCompletion: backupJob.Status.CompletionTime.Format(time.RFC3339),
 		}
 		assert.NilError(t, r.setControllerReference(cluster, restoreJob))
-		assert.NilError(t, r.apply(ctx, restoreJob))
+		assert.NilError(t, r.Client.Create(ctx, restoreJob))
 
 		restoreJob.Status = batchv1.JobStatus{
 			Succeeded: 0,
@@ -773,7 +773,7 @@ func TestGetDedicatedSnapshotVolumeRestoreJob(t *testing.T) {
 		job1 := testRestoreJob(cluster)
 		job1.Namespace = ns.Name
 
-		err := r.apply(ctx, job1)
+		err := r.Client.Create(ctx, job1)
 		assert.NilError(t, err)
 
 		dsvRestoreJob, err := r.getDedicatedSnapshotVolumeRestoreJob(ctx, cluster)
@@ -789,14 +789,14 @@ func TestGetDedicatedSnapshotVolumeRestoreJob(t *testing.T) {
 			naming.PGBackRestBackupJobCompletion: "backup-timestamp",
 		}
 
-		err := r.apply(ctx, job2)
+		err := r.Client.Create(ctx, job2)
 		assert.NilError(t, err)
 
 		job3 := testRestoreJob(cluster)
 		job3.Name = "restore-job-3"
 		job3.Namespace = ns.Name
 
-		assert.NilError(t, r.apply(ctx, job3))
+		assert.NilError(t, r.Client.Create(ctx, job3))
 
 		dsvRestoreJob, err := r.getDedicatedSnapshotVolumeRestoreJob(ctx, cluster)
 		assert.NilError(t, err)
@@ -828,7 +828,7 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 		job1 := testBackupJob(cluster)
 		job1.Namespace = ns.Name
 
-		err := r.apply(ctx, job1)
+		err := r.Client.Create(ctx, job1)
 		assert.NilError(t, err)
 
 		latestCompleteBackupJob, err := r.getLatestCompleteBackupJob(ctx, cluster)
@@ -850,7 +850,7 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 		job2.Namespace = ns.Name
 		job2.Name = "backup-job-2"
 
-		assert.NilError(t, r.apply(ctx, job2))
+		assert.NilError(t, r.Client.Create(ctx, job2))
 
 		// Get job1 and update Status.
 		assert.NilError(t, r.Client.Get(ctx, client.ObjectKeyFromObject(job1), job1))
@@ -1034,7 +1034,7 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 		}
 		snapshot.Spec.Source.PersistentVolumeClaimName = initialize.String("some-pvc-name")
 		snapshot.Spec.VolumeSnapshotClassName = initialize.String("some-class-name")
-		assert.NilError(t, r.apply(ctx, snapshot))
+		assert.NilError(t, r.Client.Create(ctx, snapshot))
 
 		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
 		assert.NilError(t, err)
@@ -1075,7 +1075,7 @@ func TestGetSnapshotsForCluster(t *testing.T) {
 		}
 		snapshot2.Spec.Source.PersistentVolumeClaimName = initialize.String("another-pvc-name")
 		snapshot2.Spec.VolumeSnapshotClassName = initialize.String("another-class-name")
-		assert.NilError(t, r.apply(ctx, snapshot2))
+		assert.NilError(t, r.Client.Create(ctx, snapshot2))
 
 		snapshots, err := r.getSnapshotsForCluster(ctx, cluster)
 		assert.NilError(t, err)
@@ -1267,7 +1267,7 @@ func TestDeleteSnapshots(t *testing.T) {
 			},
 		}
 		assert.NilError(t, r.setControllerReference(rhinoCluster, snapshot1))
-		assert.NilError(t, r.apply(ctx, snapshot1))
+		assert.NilError(t, r.Client.Create(ctx, snapshot1))
 
 		snapshots := []*volumesnapshotv1.VolumeSnapshot{
 			snapshot1,
@@ -1317,7 +1317,7 @@ func TestDeleteSnapshots(t *testing.T) {
 			},
 		}
 		assert.NilError(t, r.setControllerReference(cluster, snapshot2))
-		assert.NilError(t, r.apply(ctx, snapshot2))
+		assert.NilError(t, r.Client.Create(ctx, snapshot2))
 
 		snapshots := []*volumesnapshotv1.VolumeSnapshot{
 			snapshot1, snapshot2,
