@@ -1,0 +1,51 @@
+---
+# Confirm that all the data was restored.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: clone-two-data
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            # Connect to the cluster using the restored database and original credentials.
+            - name: PGHOST
+              valueFrom: { secretKeyRef: { name: clone-two-pguser-clone-two, key: host } }
+            - name: PGPORT
+              valueFrom: { secretKeyRef: { name: clone-two-pguser-clone-two, key: port } }
+            - name: PGDATABASE
+              valueFrom: { secretKeyRef: { name: original-pguser-original, key: dbname } }
+            - name: PGUSER
+              valueFrom: { secretKeyRef: { name: original-pguser-original, key: user } }
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: original-pguser-original, key: password } }
+
+            # Do not wait indefinitely.
+            - { name: PGCONNECT_TIMEOUT, value: '5' }
+
+          # Confirm that all the data was restored.
+          # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+          # - https://kubernetes.io/docs/tasks/inject-data-application/
+          command:
+            - psql
+            - -qa
+            - --set=ON_ERROR_STOP=1
+            - --command
+            - |
+              DO $$$$
+              DECLARE
+                restored jsonb;
+              BEGIN
+                SELECT jsonb_agg(important) INTO restored FROM important;
+                ASSERT restored = '[
+                  {"data":"treasure"}, {"data":"water"}, {"data":"socks"}
+                ]', format('got %L', restored);
+              END $$$$;

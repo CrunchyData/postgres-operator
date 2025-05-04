@@ -1,0 +1,59 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: resize-volume-up
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: resize-volume-up
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+status:
+  succeeded: 1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resize-volume-up-primary
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: resize-volume-up
+    postgres-operator.crunchydata.com/instance-set: instance1
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  phase: Bound
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: resize-volume-up
+    postgres-operator.crunchydata.com/data: pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+spec:
+  resources:
+    requests:
+      storage: 1Gi
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  phase: Bound

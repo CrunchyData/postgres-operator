@@ -1,0 +1,10 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: password-change
+spec:
+  # Adding a custom user to the spec
+  users:
+    - name: rhino
+      databases:
+        - rhino

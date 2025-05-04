@@ -1,0 +1,14 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wal-pvc-pgupgrade-before
+status:
+  succeeded: 1
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: wal-pvc-pgupgrade-before-replica
+status:
+  succeeded: 1

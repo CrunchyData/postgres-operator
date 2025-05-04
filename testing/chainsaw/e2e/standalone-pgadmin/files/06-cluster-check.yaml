@@ -1,0 +1,6 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: pgadmin3
+  labels:
+    hello: world2
