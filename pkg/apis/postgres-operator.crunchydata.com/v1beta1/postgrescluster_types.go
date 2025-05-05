@@ -204,8 +204,9 @@ type DataSource struct {
 	// PostgreSQL data directory for a new PostgreSQL cluster using a pgBackRest restore.
 	// The PGBackRest field is incompatible with the PostgresCluster field: only one
 	// data source can be used for pre-populating a new PostgreSQL cluster
+	// TODO(k8s-1.28): fieldPath=`.repo`
 	// +optional
-	// +kubebuilder:validation:XValidation:rule="!has(self.repo.volume)", message="Only S3, GCS or Azure repos can be used as a pgBackRest data source.", fieldPath=".repo"
+	// +kubebuilder:validation:XValidation:rule="!has(self.repo.volume)", message="Only S3, GCS or Azure repos can be used as a pgBackRest data source."
 	PGBackRest *PGBackRestDataSource `json:"pgbackrest,omitempty"`
 
 	// Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL data
