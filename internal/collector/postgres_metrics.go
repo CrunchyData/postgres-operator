@@ -30,6 +30,9 @@ var gtePG17 json.RawMessage
 //go:embed "generated/lt_pg17_metrics.json"
 var ltPG17 json.RawMessage
 
+//go:embed "generated/eq_pg16_metrics.json"
+var eqPG16 json.RawMessage
+
 //go:embed "generated/gte_pg16_metrics.json"
 var gtePG16 json.RawMessage
 
@@ -70,6 +73,13 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, gtePG17)
 		} else {
 			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, ltPG17)
+		}
+		if err != nil {
+			log.Error(err, "error compiling postgres metrics")
+		}
+
+		if inCluster.Spec.PostgresVersion == 16 {
+			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, eqPG16)
 		}
 		if err != nil {
 			log.Error(err, "error compiling postgres metrics")
