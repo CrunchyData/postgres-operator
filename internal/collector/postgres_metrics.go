@@ -24,20 +24,23 @@ var fiveSecondMetrics json.RawMessage
 //go:embed "generated/postgres_5m_metrics.json"
 var fiveMinuteMetrics json.RawMessage
 
-//go:embed "generated/gte_pg17_metrics.json"
-var gtePG17 json.RawMessage
+//go:embed "generated/gte_pg17_fast_metrics.json"
+var gtePG17Fast json.RawMessage
 
-//go:embed "generated/lt_pg17_metrics.json"
-var ltPG17 json.RawMessage
+//go:embed "generated/lt_pg17_fast_metrics.json"
+var ltPG17Fast json.RawMessage
 
-//go:embed "generated/eq_pg16_metrics.json"
-var eqPG16 json.RawMessage
+//go:embed "generated/eq_pg16_fast_metrics.json"
+var eqPG16Fast json.RawMessage
 
-//go:embed "generated/gte_pg16_metrics.json"
-var gtePG16 json.RawMessage
+//go:embed "generated/gte_pg16_slow_metrics.json"
+var gtePG16Slow json.RawMessage
 
-//go:embed "generated/lt_pg16_metrics.json"
-var ltPG16 json.RawMessage
+//go:embed "generated/lt_pg16_fast_metrics.json"
+var ltPG16Fast json.RawMessage
+
+//go:embed "generated/lt_pg16_slow_metrics.json"
+var ltPG16Slow json.RawMessage
 
 type queryMetrics struct {
 	Metrics []*metric `json:"metrics"`
@@ -70,28 +73,38 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 		fiveMinuteMetricsClone := slices.Clone(fiveMinuteMetrics)
 
 		if inCluster.Spec.PostgresVersion >= 17 {
-			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, gtePG17)
+			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, gtePG17Fast)
+			if err != nil {
+				log.Error(err, "error compiling metrics for postgres 17 and greater")
+			}
 		} else {
-			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, ltPG17)
-		}
-		if err != nil {
-			log.Error(err, "error compiling postgres metrics")
+			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, ltPG17Fast)
+			if err != nil {
+				log.Error(err, "error compiling metrics for postgres versions less than 17")
+			}
 		}
 
 		if inCluster.Spec.PostgresVersion == 16 {
-			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, eqPG16)
+			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, eqPG16Fast)
 		}
 		if err != nil {
-			log.Error(err, "error compiling postgres metrics")
+			log.Error(err, "error compiling metrics for postgres 16")
 		}
 
 		if inCluster.Spec.PostgresVersion >= 16 {
-			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, gtePG16)
+			fiveMinuteMetricsClone, err = appendToJSONArray(fiveMinuteMetricsClone, gtePG16Slow)
+			if err != nil {
+				log.Error(err, "error compiling metrics for postgres 16 and greater")
+			}
 		} else {
-			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, ltPG16)
-		}
-		if err != nil {
-			log.Error(err, "error compiling postgres metrics")
+			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, ltPG16Fast)
+			if err != nil {
+				log.Error(err, "error compiling fast metrics for postgres versions less than 16")
+			}
+			fiveMinuteMetricsClone, err = appendToJSONArray(fiveMinuteMetricsClone, ltPG16Slow)
+			if err != nil {
+				log.Error(err, "error compiling slow metrics for postgres versions less than 16")
+			}
 		}
 
 		// Remove any queries that user has specified in the spec

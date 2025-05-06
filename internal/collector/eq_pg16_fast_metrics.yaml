@@ -1,0 +1,51 @@
+# This list of queries configures an OTel SQL Query Receiver to read pgMonitor
+# metrics from Postgres.
+#
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/sqlqueryreceiver#metrics-queries
+# https://github.com/CrunchyData/pgmonitor/blob/development/sql_exporter/common/crunchy_global_collector.yml
+
+# NOTE: Some of the columns below can return NULL values, for which sqlqueryreceiver will warn.
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/sqlqueryreceiver#null-values
+# Those columns are retained_bytes, database, and conflicting and we avoid NULL by using COALESCE.
+  - sql: >
+      SELECT
+          s.slot_name
+          , s.active::int
+          , COALESCE(pg_wal_lsn_diff(CASE WHEN pg_is_in_recovery() THEN pg_last_wal_replay_lsn() ELSE pg_current_wal_insert_lsn() END, s.restart_lsn), 0) AS retained_bytes
+          , COALESCE(s.database, '')
+          , s.slot_type
+          , COALESCE(s.conflicting::int, 0)
+          , 0 AS failover
+          , 0 AS synced
+      FROM pg_catalog.pg_replication_slots s;
+    metrics:
+      - metric_name: ccp_replication_slots_active
+        value_column: active
+        description: Active state of slot. 1 = true. 0 = false.
+        attribute_columns: ["database", "slot_name", "slot_type"]
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_replication_slots_retained_bytes
+        value_column: retained_bytes
+        description: The amount of WAL (in bytes) being retained for this slot
+        attribute_columns: ["database", "slot_name", "slot_type"]
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_replication_slots_conflicting
+        value_column: conflicting
+        description: True if this logical slot conflicted with recovery (and so is now invalidated). When this column is true, check invalidation_reason column for the conflict reason. Always NULL for physical slots.
+        attribute_columns: ["database", "slot_name", "slot_type"]
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_replication_slots_failover
+        value_column: failover
+        description: True if this is a logical slot enabled to be synced to the standbys so that logical replication can be resumed from the new primary after failover. Always false for physical slots.
+        attribute_columns: ["database", "slot_name", "slot_type"]
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_replication_slots_synced
+        value_column: synced
+        description: True if this is a logical slot that was synced from a primary server. On a hot standby, the slots with the synced column marked as true can neither be used for logical decoding nor dropped manually. The value of this column has no meaning on the primary server; the column value on the primary is default false for all slots but may (if leftover from a promoted standby) also be true.
+        attribute_columns: ["database", "slot_name", "slot_type"]
+        static_attributes:
+          server: "localhost:5432"
