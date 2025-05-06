@@ -155,7 +155,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 				MonitoringUser),
 			"collection_interval": "5s",
 			// Give Postgres time to finish setup.
-			"initial_delay": "10s",
+			"initial_delay": "15s",
 			"queries":       slices.Clone(fiveSecondMetricsClone),
 		}
 
@@ -166,7 +166,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 				MonitoringUser),
 			"collection_interval": "300s",
 			// Give Postgres time to finish setup.
-			"initial_delay": "10s",
+			"initial_delay": "15s",
 			"queries":       slices.Clone(fiveMinuteMetricsClone),
 		}
 
@@ -196,7 +196,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 						MonitoringUser),
 					"collection_interval": querySet.CollectionInterval,
 					// Give Postgres time to finish setup.
-					"initial_delay": "10s",
+					"initial_delay": "15s",
 					"queries": "${file:/etc/otel-collector/" +
 						querySet.Name + "/" + querySet.Queries.Key + "}",
 				}
