@@ -17,9 +17,9 @@ func TestRemoveMetricsFromQueries(t *testing.T) {
 	err := json.Unmarshal(fiveMinuteMetrics, &fiveMinuteMetricsArr)
 	assert.NilError(t, err)
 
-	assert.Equal(t, len(fiveMinuteMetricsArr), 4)
+	assert.Equal(t, len(fiveMinuteMetricsArr), 3)
 	newArr := removeMetricsFromQueries([]string{"ccp_database_size_bytes"}, fiveMinuteMetricsArr)
-	assert.Equal(t, len(newArr), 3)
+	assert.Equal(t, len(newArr), 2)
 
 	t.Run("DeleteOneMetric", func(t *testing.T) {
 		sqlMetricsData := `[
