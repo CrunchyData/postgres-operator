@@ -6,7 +6,8 @@ commands:
 # and 5s queries are present, as well as patroni metrics.
 # Then, check the collector logs for patroni, pgbackrest, and postgres logs.
 # Finally, ensure the monitoring user exists and is configured.
-- script: |
+- timeout: 400
+  script: |
     retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
     check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
     contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
@@ -22,21 +23,6 @@ commands:
       exit 1
     }
 
-    scrape_metrics=$(kubectl exec "${pod}" -c collector -n "${NAMESPACE}" -- \
-      curl --insecure --silent http://localhost:9187/metrics)
-    { contains "${scrape_metrics}" 'ccp_connection_stats_active'; } || {
-      retry "5 second metric not found"
-      exit 1
-    }
-    { contains "${scrape_metrics}" 'ccp_database_size_bytes'; } || {
-      retry "5 minute metric not found"
-      exit 1
-    }
-    { contains "${scrape_metrics}" 'patroni_postgres_running'; } || {
-      retry "patroni metric not found"
-      exit 1
-    }
-
     logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}" -c collector | grep InstrumentationScope)
     { contains "${logs}" 'InstrumentationScope patroni'; } || {
       retry "patroni logs not found"
@@ -48,6 +34,21 @@ commands:
     }
     { contains "${logs}" 'InstrumentationScope postgres'; } || {
       retry "postgres logs not found"
+      exit 1
+    }
+
+    scrape_metrics=$(kubectl exec "${pod}" -c collector -n "${NAMESPACE}" -- \
+      curl --insecure --silent http://localhost:9187/metrics)
+    { contains "${scrape_metrics}" 'ccp_connection_stats_active'; } || {
+      retry "5 second metric not found"
+      exit 1
+    }
+    { contains "${scrape_metrics}" 'patroni_postgres_running'; } || {
+      retry "patroni metric not found"
+      exit 1
+    }
+    { contains "${scrape_metrics}" 'ccp_database_size_bytes'; } || {
+      retry "5 minute metric not found"
       exit 1
     }
 
