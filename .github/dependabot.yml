@@ -1,13 +1,17 @@
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/customizing-dependency-updates
+# Copyright 2024 - 2025 Crunchy Data Solutions, Inc.
 #
-# See: https://www.github.com/dependabot/dependabot-core/issues/4605
----
+# SPDX-License-Identifier: Apache-2.0
+#
+# documentation: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+# schema documentation: https://docs.github.com/code-security/dependabot/working-with-dependabot/dependabot-options-reference
 # yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
+---
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /
+    directories:
+      - '/'
+      - '.github/actions/*'
     schedule:
       interval: weekly
       day: tuesday
