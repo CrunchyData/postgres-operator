@@ -221,6 +221,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 /*
+-- TODO: WHAT IS REALLY HAPPENING HERE?
  * Tables and functions for monitoring changes to pg_hba_file_rules system catalogs.
  * Tables allow recording of existing settings so they can be referred back to to see what changed
  * If checksum function returns 0, then NO settings have changed
@@ -257,9 +258,7 @@ DECLARE
 
 v_hba_hash              text;
 v_hba_hash_old          text;
-v_hba_match             smallint := 0;
 v_hba_string            text;
-v_hba_string_old        text;
 v_is_in_recovery        boolean;
 v_valid                 smallint;
 
