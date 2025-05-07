@@ -302,8 +302,16 @@ IF p_known_hba_hash IS NOT NULL THEN
     v_valid := 0;
 END IF;
 
-IF (v_hba_hash_old IS NOT NULL) AND (v_hba_hash != v_hba_hash_old) THEN
-    v_valid := 1;
+/* If the table is not empty or a manual hash was given,
+ * then we want to compare the old hash (from the table)
+ * with the new hash: if those differ, then we set the validity to 1;
+ * if they are the same, then we honor what the validity was
+ * in the table (which would be 1).
+ */
+IF (v_hba_hash_old IS NOT NULL) THEN
+    IF (v_hba_hash != v_hba_hash_old) THEN
+        v_valid := 1;
+    END IF;
 ELSE
     v_valid := 0;
 END IF;
