@@ -20,8 +20,11 @@ GO_TEST ?= $(GO) test
 # by managing them together in the main module.
 CONTROLLER ?= $(GO) tool sigs.k8s.io/controller-tools/cmd/controller-gen
 
-KUTTL ?= kubectl-kuttl
+# Run tests using the latest tools.
+ENVTEST ?= $(GO) run sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/pkg/kuttlctl/cmd/kubectl-kuttl@latest
 KUTTL_TEST ?= $(KUTTL) test
+
 
 ##@ General
 
@@ -67,7 +70,6 @@ clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -rf licenses/*/
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
-	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
 	[ ! -d hack/tools/envtest ] || { chmod -R u+w hack/tools/envtest && rm -r hack/tools/envtest; }
 	[ ! -d hack/tools/pgmonitor ] || rm -rf hack/tools/pgmonitor
 	[ ! -d hack/tools/external-snapshotter ] || rm -rf hack/tools/external-snapshotter
@@ -97,6 +99,7 @@ clean-deprecated: ## Clean deprecated resources
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
 	@# Tools used to be downloaded directly
 	[ ! -f hack/tools/controller-gen ] || rm hack/tools/controller-gen
+	[ ! -f hack/tools/setup-envtest ] || rm hack/tools/setup-envtest
 
 
 ##@ Deployment
@@ -206,7 +209,7 @@ check: get-pgmonitor
 check-envtest: ## Run check using envtest and a mock kube api
 check-envtest: ENVTEST_USE = $(ENVTEST) --bin-dir=$(CURDIR)/hack/tools/envtest use $(ENVTEST_K8S_VERSION)
 check-envtest: SHELL = bash
-check-envtest: get-pgmonitor tools/setup-envtest
+check-envtest: get-pgmonitor
 	@$(ENVTEST_USE) --print=overview && echo
 	source <($(ENVTEST_USE) --print=env) && PGO_NAMESPACE="postgres-operator" QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" \
 		$(GO_TEST) -count=1 -cover ./...
@@ -299,20 +302,6 @@ generate-rbac: ## Generate RBAC
 		paths='./cmd/...' paths='./internal/...' \
 		output:dir='config/rbac' # {directory}/role.yaml
 
-##@ Tools
-
-.PHONY: tools
-tools: ## Download tools like controller-gen and kustomize if necessary.
-
-# go-get-tool will 'go install' any package $2 and install it to $1.
-define go-get-tool
-@[ -f '$(1)' ] || { echo Downloading '$(2)'; GOBIN='$(abspath $(dir $(1)))' $(GO) install '$(2)'; }
-endef
-
-ENVTEST ?= hack/tools/setup-envtest
-tools: tools/setup-envtest
-tools/setup-envtest:
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
 ##@ Release
 
