@@ -15,6 +15,11 @@ BUILDAH_BUILD ?= buildah bud
 GO ?= go
 GO_BUILD = $(GO) build
 GO_TEST ?= $(GO) test
+
+# Ensure modules imported by `postgres-operator` and `controller-gen` are compatible
+# by managing them together in the main module.
+CONTROLLER ?= $(GO) tool sigs.k8s.io/controller-tools/cmd/controller-gen
+
 KUTTL ?= kubectl-kuttl
 KUTTL_TEST ?= $(KUTTL) test
 
@@ -90,6 +95,8 @@ clean-deprecated: ## Clean deprecated resources
 	[ ! -d build/crd ] || rm -r build/crd
 	@# Old testing directories
 	[ ! -d testing/kuttl/e2e-generated-other ] || rm -r testing/kuttl/e2e-generated-other
+	@# Tools used to be downloaded directly
+	[ ! -f hack/tools/controller-gen ] || rm hack/tools/controller-gen
 
 
 ##@ Deployment
@@ -205,7 +212,7 @@ check-envtest: get-pgmonitor tools/setup-envtest
 		$(GO_TEST) -count=1 -cover ./...
 
 # The "PGO_TEST_TIMEOUT_SCALE" environment variable (default: 1) can be set to a
-# positive number that extends test timeouts. The following runs tests with 
+# positive number that extends test timeouts. The following runs tests with
 # timeouts that are 20% longer than normal:
 # make check-envtest-existing PGO_TEST_TIMEOUT_SCALE=1.2
 .PHONY: check-envtest-existing
@@ -270,7 +277,6 @@ generate: generate-rbac
 
 .PHONY: generate-crd
 generate-crd: ## Generate Custom Resource Definitions (CRDs)
-generate-crd: tools/controller-gen
 	$(CONTROLLER) \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
@@ -282,14 +288,12 @@ generate-collector: ## Generate OTel Collector files
 
 .PHONY: generate-deepcopy
 generate-deepcopy: ## Generate DeepCopy functions
-generate-deepcopy: tools/controller-gen
 	$(CONTROLLER) \
 		object:headerFile='hack/boilerplate.go.txt' \
 		paths='./pkg/apis/postgres-operator.crunchydata.com/...'
 
 .PHONY: generate-rbac
 generate-rbac: ## Generate RBAC
-generate-rbac: tools/controller-gen
 	$(CONTROLLER) \
 		rbac:roleName='postgres-operator' \
 		paths='./cmd/...' paths='./internal/...' \
@@ -304,11 +308,6 @@ tools: ## Download tools like controller-gen and kustomize if necessary.
 define go-get-tool
 @[ -f '$(1)' ] || { echo Downloading '$(2)'; GOBIN='$(abspath $(dir $(1)))' $(GO) install '$(2)'; }
 endef
-
-CONTROLLER ?= hack/tools/controller-gen
-tools: tools/controller-gen
-tools/controller-gen:
-	$(call go-get-tool,$(CONTROLLER),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.17.2)
 
 ENVTEST ?= hack/tools/setup-envtest
 tools: tools/setup-envtest
