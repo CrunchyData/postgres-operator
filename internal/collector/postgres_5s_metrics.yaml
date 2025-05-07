@@ -43,6 +43,29 @@
 
   - sql: >
       SELECT
+          (select setting::int from pg_catalog.pg_settings where name = 'checkpoint_timeout') as checkpoint_timeout,
+          (select setting::float from pg_catalog.pg_settings where name = 'checkpoint_completion_target') as checkpoint_completion_target,
+          (select 8192*setting::bigint as bytes from pg_catalog.pg_settings where name = 'shared_buffers') as shared_buffers
+    metrics:
+    - metric_name: ccp_settings_gauge_checkpoint_timeout
+      value_column: checkpoint_timeout
+      description: checkpoint timeout in seconds
+      static_attributes:
+        server: "localhost:5432"
+    - metric_name: ccp_settings_gauge_checkpoint_completion_target
+      value_column: checkpoint_completion_target
+      value_type: double
+      description: checkpoint completion target, ranging from 0 to 1
+      static_attributes:
+        server: "localhost:5432"
+    - metric_name: ccp_settings_gauge_shared_buffers
+      value_column: shared_buffers
+      description: size of shared_buffers in bytes
+      static_attributes:
+        server: "localhost:5432"
+    
+  - sql: >
+      SELECT
       COALESCE(EXTRACT(epoch from (CURRENT_TIMESTAMP - last_archived_time)), 0) AS seconds_since_last_archive
       FROM pg_catalog.pg_stat_archiver;
 
