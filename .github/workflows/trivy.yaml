@@ -29,6 +29,9 @@ jobs:
           TRIVY_DOWNLOAD_DB_ONLY: true
           TRIVY_NO_PROGRESS: true
           TRIVY_SCANNERS: license,secret,vuln
+        with:
+          cache: restore,success,use
+          database: update
 
   licenses:
     # Run this job after the cache job regardless of its success or failure.
