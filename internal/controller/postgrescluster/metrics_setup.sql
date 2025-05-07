@@ -269,10 +269,8 @@ SELECT pg_is_in_recovery() INTO v_is_in_recovery;
 
 IF current_setting('server_version_num')::int >= 100000 THEN
 
-    SELECT sha256_hash
-        , hba_string
-    INTO v_hba_hash
-        , v_hba_string
+    SELECT sha256_hash, hba_string
+    INTO v_hba_hash, v_hba_string
     FROM monitor.pg_hba_hash;
 
 ELSE
