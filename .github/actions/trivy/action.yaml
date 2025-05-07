@@ -54,7 +54,7 @@ runs:
 
     # Install Trivy as requested.
     - if: ${{ ! contains(fromJSON(steps.parsed.outputs.setup), 'none') }}
-      uses: aquasecurity/setup-trivy@v0.2.2
+      uses: aquasecurity/setup-trivy@v0.2.3
       with:
         cache: ${{ contains(fromJSON(steps.parsed.outputs.setup), 'cache') }}
         version: ${{ steps.parsed.outputs.version }}
