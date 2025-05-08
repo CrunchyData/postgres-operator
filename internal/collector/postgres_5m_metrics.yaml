@@ -150,3 +150,5 @@
           0 = valid config. 1 = settings changed. 
           Settings history is available for review in the table `monitor.pg_hba_checksum`.
           To reset current config to valid after alert, run monitor.pg_hba_checksum_set_valid(). Note this will clear the history table.
+        static_attributes:
+          server: "localhost:5432"
