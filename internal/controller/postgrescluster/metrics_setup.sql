@@ -220,3 +220,164 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+/*
+* The `pg_hba_checksum` table, functions, and view are taken from
+* https://github.com/CrunchyData/pgmonitor/blob/development/postgres_exporter/common
+* 
+* The goal of these table, functions, and view is to monitor changes 
+* to the pg_hba_file_rules system catalog.
+* 
+* This material is used in the metric `ccp_pg_hba_checksum`.
+*/
+
+/*
+* `monitor.pg_hba_checksum` table is used to store
+* - the pg_hba settings as string (for reference) 
+* - the pg_hba settings as hash (for quick comparison)
+* - the `hba_hash_known_provided` (for overide hash manually given to the `monitor.pg_hba_checksum` function)
+* - the `valid` field to signal whether the pg_hba settings have not changed since they were accepted as valid
+* 
+* We create an index on `created_at` in order to pull the most recent entry for 
+* comparison in the `monitor.pg_hba_checksum` function
+*/
+DROP TABLE IF EXISTS monitor.pg_hba_checksum;
+CREATE TABLE monitor.pg_hba_checksum (
+    hba_hash_generated text NOT NULL
+    , hba_hash_known_provided text
+    , hba_string text NOT NULL
+    , created_at timestamptz DEFAULT now() NOT NULL
+    , valid smallint NOT NULL );
+COMMENT ON COLUMN monitor.pg_hba_checksum.valid IS 'Set this column to zero if this group of settings is a valid change';
+CREATE INDEX ON monitor.pg_hba_checksum (created_at);
+
+/*
+ * `monitor.pg_hba_checksum(text)` is used to compare the previous pg_hba hash
+ * with a hash made of the current pg_hba hash, derived from the `monitor.pg_hba_hash` view below.
+ * 
+ * This function returns
+ * - 0, indicating NO settings have changed
+ * - 1, indicating something has changed since last known valid state
+ * 
+ * `monitor.pg_hba_checksum` can take a hash to be used as an override.
+ * This may be useful when you have a standby with different pg_hba rules;
+ * since it will have different rules (and therefore a different hash), you
+ * could alter the metric function to pass the actual hash, which would be
+ * used in lieu of this table's value (derived from the primary cluster's rules).
+ */
+DROP FUNCTION IF EXISTS monitor.pg_hba_checksum(text);
+CREATE FUNCTION monitor.pg_hba_checksum(p_known_hba_hash text DEFAULT NULL)
+    RETURNS smallint
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO pg_catalog, pg_temp
+AS $function$
+DECLARE
+
+v_hba_hash              text;
+v_hba_hash_old          text;
+v_hba_string            text;
+v_is_in_recovery        boolean;
+v_valid                 smallint;
+
+BEGIN
+
+-- Retrieve the current settings from the `monitor.pg_hba_hash` view below
+IF current_setting('server_version_num')::int >= 100000 THEN
+    SELECT sha256_hash, hba_string
+    INTO v_hba_hash, v_hba_string
+    FROM monitor.pg_hba_hash;
+ELSE
+    RAISE EXCEPTION 'pg_hba change monitoring unsupported in versions older than PostgreSQL 10';
+END IF;
+
+-- Retrieve the last previous hash from the table
+SELECT  hba_hash_generated, valid
+INTO v_hba_hash_old, v_valid
+FROM monitor.pg_hba_checksum
+ORDER BY created_at DESC LIMIT 1;
+
+-- If an manual/override hash has been given, we will use that:
+-- Do not base validity on the stored value if manual hash is given.
+IF p_known_hba_hash IS NOT NULL THEN
+    v_hba_hash_old := p_known_hba_hash;
+    v_valid := 0;
+END IF;
+
+/* If the table is not empty or a manual hash was given,
+ * then we want to compare the old hash (from the table)
+ * with the new hash: if those differ, then we set the validity to 1;
+ * if they are the same, then we honor what the validity was
+ * in the table (which would be 1).
+ */
+IF (v_hba_hash_old IS NOT NULL) THEN
+    IF (v_hba_hash != v_hba_hash_old) THEN
+        v_valid := 1;
+    END IF;
+ELSE
+    v_valid := 0;
+END IF;
+
+/*
+ * We only want to insert into the table if we're on a primary and
+ * - the table/manually entered hash is empty, e.g., we've just started the cluster; or
+ * - the hashes don't match
+ *
+ * There's no value added by inserting into the table when no change was detected.
+ */
+IF (v_hba_hash_old IS NULL) OR (v_hba_hash != v_hba_hash_old) THEN
+    SELECT pg_is_in_recovery() INTO v_is_in_recovery;
+    IF v_is_in_recovery = false THEN
+        INSERT INTO monitor.pg_hba_checksum (
+                hba_hash_generated
+                , hba_hash_known_provided
+                , hba_string
+                , valid)
+        VALUES (
+                v_hba_hash
+                , p_known_hba_hash
+                , v_hba_string
+                , v_valid);
+    END IF;
+END IF;
+
+RETURN v_valid;
+
+END
+$function$;
+
+/*
+ * The `monitor.pg_hba_hash` view return both a hash and a string aggregate of the
+ * pg_catalog.pg_hba_file_rules.
+ * Note: We use `sha256` to hash to allow this to run on FIPS environments.
+ */
+DROP VIEW IF EXISTS monitor.pg_hba_hash;
+CREATE VIEW monitor.pg_hba_hash AS
+    -- Order by line number so it's caught if no content is changed but the order of entries is changed
+    WITH hba_ordered_list AS (
+        SELECT COALESCE(type, '<<NULL>>') AS type
+            , array_to_string(COALESCE(database, ARRAY['<<NULL>>']), ',') AS database
+            , array_to_string(COALESCE(user_name, ARRAY['<<NULL>>']), ',') AS user_name
+            , COALESCE(address, '<<NULL>>') AS address
+            , COALESCE(netmask, '<<NULL>>') AS netmask
+            , COALESCE(auth_method, '<<NULL>>') AS auth_method
+            , array_to_string(COALESCE(options, ARRAY['<<NULL>>']), ',') AS options
+        FROM pg_catalog.pg_hba_file_rules
+        ORDER BY line_number)
+    SELECT sha256((string_agg(type||database||user_name||address||netmask||auth_method||options, ','))::bytea) AS sha256_hash
+        , string_agg(type||database||user_name||address||netmask||auth_method||options, ',') AS hba_string
+    FROM hba_ordered_list;
+
+/*
+ * The `monitor.pg_hba_checksum_set_valid` function provides an interface for resetting the 
+ * checksum monitor.
+ * Note: configuration history will be cleared.
+ */
+DROP FUNCTION IF EXISTS monitor.pg_hba_checksum_set_valid();
+CREATE FUNCTION monitor.pg_hba_checksum_set_valid() RETURNS smallint
+    LANGUAGE sql
+AS $function$
+
+TRUNCATE monitor.pg_hba_checksum;
+
+SELECT monitor.pg_hba_checksum();
+
+$function$;
