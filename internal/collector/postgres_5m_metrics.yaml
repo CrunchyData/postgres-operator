@@ -35,3 +35,15 @@
           Function monitor.sequence_status() can provide more details if run directly on system.
         static_attributes:
           server: "localhost:5432"
+
+  - sql: SELECT monitor.pg_hba_checksum() AS status;
+    metrics:
+      - metric_name: ccp_pg_hba_checksum
+        value_column: status
+        description: |
+          Value of checksum monitoring status for pg_catalog.pg_hba_file_rules (pg_hba.conf).
+          0 = valid config. 1 = settings changed.
+          Settings history is available for review in the table `monitor.pg_hba_checksum`.
+          To reset current config to valid after alert, run monitor.pg_hba_checksum_set_valid(). Note this will clear the history table.
+        static_attributes:
+          server: "localhost:5432"
