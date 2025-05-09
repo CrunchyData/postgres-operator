@@ -8,6 +8,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/go-logr/logr/funcr"
@@ -282,6 +284,9 @@ volumeMode: Filesystem
 	})
 
 	t.Run("DataVolumeSourceClusterWithGoodSnapshot", func(t *testing.T) {
+		if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+			t.Skip("requires mocking of Job conditions")
+		}
 		cluster := testCluster()
 		ns := setupNamespace(t, tClient)
 		cluster.Namespace = ns.Name
