@@ -123,7 +123,7 @@ processors:
   transform/postgres_logs:
     log_statements:
     - conditions:
-      - body["format"] == "csv"
+      - log.body["format"] == "csv"
       statements:
       - set(log.cache, ParseCSV(log.body["original"], log.body["headers"], delimiter=",",
         mode="strict"))
@@ -203,8 +203,8 @@ processors:
       - set(log.attributes["process.title"], log.body["ps"]) where IsString(log.body["ps"])
       - set(log.attributes["user.name"], log.body["user"]) where IsString(log.body["user"])
     - conditions:
-      - 'Len(body["message"]) > 7 and Substring(body["message"], 0, 7) == "AUDIT:
-        "'
+      - 'Len(log.body["message"]) > 7 and Substring(log.body["message"], 0, 7) ==
+        "AUDIT: "'
       statements:
       - set(log.body["pgaudit"], ParseCSV(Substring(log.body["message"], 7, Len(log.body["message"])
         - 7), "audit_type,statement_id,substatement_id,class,command,object_type,object_name,statement,parameter",
@@ -383,7 +383,7 @@ processors:
   transform/postgres_logs:
     log_statements:
     - conditions:
-      - body["format"] == "csv"
+      - log.body["format"] == "csv"
       statements:
       - set(log.cache, ParseCSV(log.body["original"], log.body["headers"], delimiter=",",
         mode="strict"))
@@ -463,8 +463,8 @@ processors:
       - set(log.attributes["process.title"], log.body["ps"]) where IsString(log.body["ps"])
       - set(log.attributes["user.name"], log.body["user"]) where IsString(log.body["user"])
     - conditions:
-      - 'Len(body["message"]) > 7 and Substring(body["message"], 0, 7) == "AUDIT:
-        "'
+      - 'Len(log.body["message"]) > 7 and Substring(log.body["message"], 0, 7) ==
+        "AUDIT: "'
       statements:
       - set(log.body["pgaudit"], ParseCSV(Substring(log.body["message"], 7, Len(log.body["message"])
         - 7), "audit_type,statement_id,substatement_id,class,command,object_type,object_name,statement,parameter",
