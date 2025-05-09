@@ -8,7 +8,7 @@
 # TODO(postgres-14): We can stop parsing CSV logs when 14 is EOL.
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/contexts/ottllog#readme
 - conditions:
-    - body["format"] == "csv"
+    - log.body["format"] == "csv"
   statements:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/ottlfuncs#parsecsv
     - set(log.cache, ParseCSV(log.body["original"], log.body["headers"], delimiter=",", mode="strict"))
@@ -196,7 +196,7 @@
     # https://github.com/pgaudit/pgaudit/blame/17.0/pgaudit.c#L876
     # TODO(postgres-18): Check this prefix and update the URL above.
     - >-
-      Len(body["message"]) > 7 and Substring(body["message"], 0, 7) == "AUDIT: "
+      Len(log.body["message"]) > 7 and Substring(log.body["message"], 0, 7) == "AUDIT: "
   statements:
     # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/pkg/ottl/ottlfuncs#parsecsv
     - >-
