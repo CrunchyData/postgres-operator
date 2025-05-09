@@ -6,6 +6,8 @@ package postgrescluster
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -190,6 +192,9 @@ func TestReconcileVolumeSnapshots(t *testing.T) {
 	})
 
 	t.Run("SnapshotsEnabledReadySnapshotsExist", func(t *testing.T) {
+		if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+			t.Skip("requires mocking of Job conditions")
+		}
 		// Create a volume snapshot class
 		volumeSnapshotClassName := "my-snapshotclass"
 		volumeSnapshotClass := &volumesnapshotv1.VolumeSnapshotClass{
@@ -481,6 +486,9 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 	})
 
 	t.Run("SnapshotsEnabledBackupExistsCreateRestore", func(t *testing.T) {
+		if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+			t.Skip("requires mocking of Job conditions")
+		}
 		// Create cluster with snapshots enabled
 		ns := setupNamespace(t, cc)
 		cluster := testCluster()
@@ -529,6 +537,9 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 	})
 
 	t.Run("SnapshotsEnabledSuccessfulRestoreExists", func(t *testing.T) {
+		if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+			t.Skip("requires mocking of Job conditions")
+		}
 		// Create cluster with snapshots enabled
 		ns := setupNamespace(t, cc)
 		cluster := testCluster()
@@ -596,6 +607,9 @@ func TestReconcileDedicatedSnapshotVolume(t *testing.T) {
 	})
 
 	t.Run("SnapshotsEnabledFailedRestoreExists", func(t *testing.T) {
+		if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+			t.Skip("requires mocking of Job conditions")
+		}
 		// Create cluster with snapshots enabled
 		ns := setupNamespace(t, cc)
 		cluster := testCluster()
@@ -881,6 +895,9 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 	})
 
 	t.Run("OneCompleteBackupJob", func(t *testing.T) {
+		if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+			t.Skip("requires mocking of Job conditions")
+		}
 		currentTime := metav1.Now()
 		currentStartTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
 
@@ -910,6 +927,9 @@ func TestGetLatestCompleteBackupJob(t *testing.T) {
 	})
 
 	t.Run("TwoCompleteBackupJobs", func(t *testing.T) {
+		if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+			t.Skip("requires mocking of Job conditions")
+		}
 		currentTime := metav1.Now()
 		currentStartTime := metav1.NewTime(currentTime.AddDate(0, 0, -1))
 		earlierTime := metav1.NewTime(currentTime.AddDate(-1, 0, 0))
