@@ -1,0 +1,6 @@
+# https://docs.gitlab.com/user/project/merge_requests/changes#collapse-generated-files
+# https://github.com/github-linguist/linguist/blob/-/docs/overrides.md#generated-code
+# https://git-scm.com/docs/gitattributes#_defining_macro_attributes
+[attr]generated gitlab-generated linguist-generated
+
+/internal/collector/generated/*.json generated
