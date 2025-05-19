@@ -13,13 +13,12 @@ spec:
       description: >
         The CPU architectures on which to run tests
 
-    # TODO(retention): We can increase the retention on scheduled pipelines after
-    # https://gitlab.com/groups/gitlab-org/-/epics/16321
+    # https://docs.gitlab.com/ci/yaml#artifactsexpire_in
     retention:
       type: string
       default: 2d  # Enough time to find and address MR failures the following day
       description: >
-        How long to keep reports; see https://docs.gitlab.com/ci/yaml#artifactsexpire_in
+        How long to keep reports
 ---
 
 # https://docs.gitlab.com/ci/yaml/workflow
@@ -35,7 +34,6 @@ variables:
   # Show the duration of individual script items in the job log.
   FF_SCRIPT_SECTIONS: 'true'
 
-# See: [.github/workflows/lint.yaml]
 # This uses a specific minor version of golangci-lint to ensure new code conforms
 # to the rules we set when this release branch was cut. We do not want new rules
 # suggesting sweeping changes to our release branches.
@@ -95,7 +93,6 @@ golang-lint:
     reports:
       junit: golangci-lint.junit.xml
 
-# See: [.github/workflows/test.yaml]
 must-commit-generated:
   stage: build
   needs: []
@@ -107,7 +104,6 @@ must-commit-generated:
     - git config --global --add safe.directory "$(pwd)"
     - make check-generate
 
-# See: [.github/workflows/test.yaml]
 # This uses the latest version of Go we have internally.
 go-test:
   stage: test
@@ -146,7 +142,7 @@ go-test:
     reports:
       junit: '*.junit.xml'
 
-# See: [.github/workflows/govulncheck.yaml]
+# https://go.dev/blog/govulncheck
 govulncheck:
   stage: test
   needs: []
@@ -169,7 +165,7 @@ govulncheck:
     # This fails the job when it detects a vulnerability in called code.
     - go run "${TOOL}" --format text --show verbose ./...
 
-# See: [.github/workflows/trivy.yaml]
+# https://trivy.dev/latest/ecosystem/cicd
 trivy:
   stage: test
   needs: []
@@ -187,22 +183,25 @@ trivy:
     # Download Trivy and log its version.
     - |-
       VERSION=$(go list -m -f '{{.Version}}' github.com/aquasecurity/trivy@latest)
-      TOOL="github.com/aquasecurity/trivy/cmd/trivy@${VERSION}"
-      go run -exec true "${TOOL}"
-
-    # Download the JUnit template for this version.
-    - curl -sSL -o /tmp/trivy-junit.tpl "https://raw.githubusercontent.com/aquasecurity/trivy/refs/tags/${VERSION}/contrib/junit.tpl"
+      git clone --config 'advice.detachedHead=no' --depth 1 --branch "${VERSION}" --sparse \
+        'https://github.com/aquasecurity/trivy.git' \
+        '.gitlab-remotes/aquasecurity-trivy'
+      (
+        cd '.gitlab-remotes/aquasecurity-trivy'
+        git sparse-checkout set 'contrib'
+        bash 'contrib/install.sh' -b "${HOME}/bin" "${VERSION}"
+      )
 
     # Generate a report and fail when there are issues that can be fixed.
     # Trivy needs a populated Go module cache to detect Go module licenses.
     - go mod download
     - >-
-      go run "${TOOL}" filesystem . --exit-code 1
+      trivy filesystem . --exit-code 1
       --scanners license,secret,vuln
       --ignore-unfixed
       --no-progress
       --format template
-      --template '@/tmp/trivy-junit.tpl'
+      --template '@.gitlab-remotes/aquasecurity-trivy/contrib/junit.tpl'
       --output 'trivy.junit.xml'
 
   # Send the report to GitLab.
