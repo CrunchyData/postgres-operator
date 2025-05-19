@@ -2120,6 +2120,11 @@ spec:
                                   type: string
                                   x-kubernetes-validations:
                                   - rule: duration("0") <= self && self <= duration("60m")
+                                database:
+                                  description: |-
+                                    The database to target with added custom queries.
+                                    Default behavior is to target `postgres`.
+                                  type: string
                                 name:
                                   description: |-
                                     The name of this batch of queries, which will be used in naming the OTel
@@ -2165,6 +2170,12 @@ spec:
                               type: string
                             type: array
                         type: object
+                      perDBMetricTargets:
+                        description: User defined databases to target for default
+                          per-db metrics
+                        items:
+                          type: string
+                        type: array
                     type: object
                   resources:
                     description: Resources holds the resource requirements for the
