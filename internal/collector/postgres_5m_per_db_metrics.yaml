@@ -1,0 +1,161 @@
+# This list of queries configures an OTel SQL Query Receiver to read pgMonitor
+# metrics from Postgres.
+#
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/sqlqueryreceiver#metrics-queries
+# https://github.com/CrunchyData/pgmonitor/blob/v5.2.1/sql_exporter/common/crunchy_per_db_collector.yml
+# 
+# Note: Several metrics in the `crunchy_per_db_collector` track the materialized views and
+# pgMonitor-extension version -- metrics that aren't meaningful in the CPK environment.
+# The list of metrics that fall into this category include
+# * ccp_metric_matview_refresh_last_run_fail_count
+# * ccp_metric_matview_refresh_longest_runtime_seconds
+# * ccp_metric_matview_refresh_longest_runtime
+# * ccp_metric_table_refresh_longest_runtime
+# * ccp_pgmonitor_extension_per_db
+
+  - sql: >
+      SELECT current_database() as dbname
+      , n.nspname as schemaname
+      , c.relname
+      , pg_catalog.pg_total_relation_size(c.oid) as bytes
+      FROM pg_catalog.pg_class c
+      JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+      WHERE NOT pg_is_other_temp_schema(n.oid)
+      AND relkind IN ('r', 'm', 'f');
+    metrics:
+      - metric_name: ccp_table_size_bytes
+        value_type: double
+        value_column: bytes
+        description: "Table size in bytes including indexes"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+        static_attributes:
+          server: "localhost:5432"
+
+  - sql: >
+      SELECT current_database() as dbname
+      , p.schemaname
+      , p.relname
+      , p.seq_scan
+      , p.seq_tup_read
+      , COALESCE(p.idx_scan, 0) AS idx_scan
+      , COALESCE(p.idx_tup_fetch, 0) as idx_tup_fetch
+      , p.n_tup_ins
+      , p.n_tup_upd
+      , p.n_tup_del
+      , p.n_tup_hot_upd
+      , CASE
+          WHEN current_setting('server_version_num')::int >= 160000 
+            THEN p.n_tup_newpage_upd
+                ELSE 0::bigint
+            END AS n_tup_newpage_upd
+      , p.n_live_tup
+      , p.n_dead_tup
+      , p.vacuum_count
+      , p.autovacuum_count
+      , p.analyze_count
+      , p.autoanalyze_count
+      FROM pg_catalog.pg_stat_user_tables p;
+    metrics:
+      - metric_name: ccp_stat_user_tables_seq_scan
+        data_type: sum
+        value_column: seq_scan
+        description: "Number of sequential scans initiated on this table"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_stat_user_tables_seq_tup_read
+        data_type: sum
+        value_column: seq_tup_read
+        description: "Number of live rows fetched by sequential scans"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+        static_attributes:
+          server: "localhost:5432"
+      - metric_name: ccp_stat_user_tables_idx_scan
+        data_type: sum
+        description: "Number of index scans initiated on this table"
+        value_column: idx_scan
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_idx_tup_fetch
+        data_type: sum
+        description: "Number of live rows fetched by index scans"
+        value_column: idx_tup_fetch
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_n_tup_ins
+        data_type: sum
+        description: "Number of rows inserted"
+        value_column: n_tup_ins
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_n_tup_upd
+        data_type: sum
+        description: "Number of rows updated"
+        value_column: n_tup_upd
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_n_tup_del
+        data_type: sum
+        description: "Number of rows deleted"
+        value_column: n_tup_del
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_n_tup_hot_upd
+        data_type: sum
+        description: "Number of rows HOT updated (i.e., with no separate index update required)"
+        value_column: n_tup_hot_upd
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_n_tup_newpage_upd
+        data_type: sum
+        description: "Number of rows updated where the successor version goes onto a new heap page, leaving behind an original version with a t_ctid field that points to a different heap page. These are always non-HOT updates."
+        value_column: n_tup_newpage_upd
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_n_live_tup
+        description: "Estimated number of live rows"
+        value_column: n_live_tup
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_n_dead_tup
+        description: "Estimated number of dead rows"
+        value_column: n_dead_tup
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_vacuum_count
+        data_type: sum
+        description: "Number of times this table has been manually vacuumed (not counting VACUUM FULL)"
+        value_column: vacuum_count
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_autovacuum_count
+        data_type: sum
+        description: "Number of times this table has been vacuumed by the autovacuum daemon"
+        value_column: autovacuum_count
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_analyze_count
+        data_type: sum
+        description: "Number of times this table has been manually analyzed"
+        value_column: analyze_count
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
+      - metric_name: ccp_stat_user_tables_autoanalyze_count
+        data_type: sum
+        description: "Number of times this table has been analyzed by the autovacuum daemon"
+        value_column: autoanalyze_count
+        static_attributes:
+          server: "localhost:5432"
+        attribute_columns: ["dbname", "schemaname", "relname"]
