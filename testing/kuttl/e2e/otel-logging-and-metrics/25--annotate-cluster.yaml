@@ -4,4 +4,4 @@ commands:
 - command: kubectl annotate postgrescluster otel-cluster-no-backups postgres-operator.crunchydata.com/authorizeBackupRemoval="true"
   namespaced: true
 assert:
-- files/17-backups-removed.yaml
+- files/25-backups-removed.yaml
