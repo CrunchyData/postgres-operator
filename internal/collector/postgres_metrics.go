@@ -36,14 +36,8 @@ var ltPG17Fast json.RawMessage
 //go:embed "generated/eq_pg16_fast_metrics.json"
 var eqPG16Fast json.RawMessage
 
-//go:embed "generated/gte_pg16_slow_metrics.json"
-var gtePG16Slow json.RawMessage
-
 //go:embed "generated/lt_pg16_fast_metrics.json"
 var ltPG16Fast json.RawMessage
-
-//go:embed "generated/lt_pg16_slow_metrics.json"
-var ltPG16Slow json.RawMessage
 
 type queryMetrics struct {
 	Metrics []*metric `json:"metrics"`
@@ -95,19 +89,10 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			log.Error(err, "error compiling metrics for postgres 16")
 		}
 
-		if inCluster.Spec.PostgresVersion >= 16 {
-			fiveMinuteMetricsClone, err = appendToJSONArray(fiveMinuteMetricsClone, gtePG16Slow)
-			if err != nil {
-				log.Error(err, "error compiling metrics for postgres 16 and greater")
-			}
-		} else {
+		if inCluster.Spec.PostgresVersion < 16 {
 			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, ltPG16Fast)
 			if err != nil {
 				log.Error(err, "error compiling fast metrics for postgres versions less than 16")
-			}
-			fiveMinuteMetricsClone, err = appendToJSONArray(fiveMinuteMetricsClone, ltPG16Slow)
-			if err != nil {
-				log.Error(err, "error compiling slow metrics for postgres versions less than 16")
 			}
 		}
 
