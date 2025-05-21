@@ -1,0 +1,15 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: original-pitr-primary-data
+status:
+  succeeded: 1
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: original-pitr-replica-data
+status:
+  succeeded: 1

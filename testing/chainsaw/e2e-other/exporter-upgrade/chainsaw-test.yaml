@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: exporter-upgrade
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: 00--cluster.yaml
+    - assert:
+        file: 00-assert.yaml
+  - name: step-01
+    try:
+    - script:
+        content: |
+          set -e
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=exporter,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          # Ensure that the metrics endpoint is available from inside the exporter container
+          for i in {1..5}; do
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -c exporter -- curl http://localhost:9187/metrics
+            sleep 2
+          done
+
+          # Ensure that the monitoring user exists and is configured.
+          kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qb --set ON_ERROR_STOP=1 --file=- <<'SQL'
+            DO $$
+            DECLARE
+              result record;
+            BEGIN
+              SELECT * INTO result FROM pg_catalog.pg_roles WHERE rolname = 'ccp_monitoring';
+              ASSERT FOUND, 'user not found';
+              ASSERT result.rolconfig @> '{jit=off}', format('got config: %L', result.rolconfig);
+            END $$
+          SQL
+  - name: step-02
+    try:
+    - apply:
+        file: 02--update-cluster.yaml
+    - assert:
+        file: 02-assert.yaml
+  - name: step-03
+    try:
+    - script:
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=exporter,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          # Get errors from the exporter
+          # See the README.md for a discussion of these errors
+          ERR=$(kubectl logs --namespace "${NAMESPACE}" "${PRIMARY}" -c exporter | grep -e "Error running query on database")
+          ERR_COUNT=$(echo "$ERR" | wc -l)
+
+          if [[ "$ERR_COUNT" -gt 2 ]]; then
+            echo "Errors in log from exporter: ${ERR}"
+            exit 1
+          fi
