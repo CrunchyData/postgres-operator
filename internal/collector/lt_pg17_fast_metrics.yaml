@@ -5,32 +5,21 @@
 # https://github.com/CrunchyData/pgmonitor/blob/development/sql_exporter/common/crunchy_global_collector.yml
 
   - sql: >
-      SELECT c.buffers_checkpoint AS buffers_written
-      FROM pg_catalog.pg_stat_bgwriter c;
-    metrics:
-      - metric_name: ccp_stat_bgwriter_buffers_checkpoint
-        value_column: buffers_written
-        data_type: sum
-        description: Number of buffers written during checkpoints and restartpoints
-        static_attributes:
-          server: "localhost:5432"
-
-  - sql: >
       SELECT
           s.buffers_backend AS writes
           , s.buffers_backend_fsync AS fsyncs
       FROM pg_catalog.pg_stat_bgwriter s;
     metrics:
-      - metric_name: ccp_stat_bgwriter_buffers_backend
+      - metric_name: ccp_stat_io_bgwriter_writes
         value_column: writes
         data_type: sum
-        description: Number of write operations, each of the size specified in op_bytes.
+        description: Number of write operations by background writers
         static_attributes:
           server: "localhost:5432"
-      - metric_name: ccp_stat_bgwriter_buffers_backend_fsync
+      - metric_name: ccp_stat_io_bgwriter_fsyncs
         value_column: fsyncs
         data_type: sum
-        description: Number of fsync calls. These are only tracked in context normal.
+        description: Number of fsync calls by background writers
         static_attributes:
           server: "localhost:5432"
 
@@ -43,23 +32,23 @@
           , c.buffers_checkpoint AS buffers_written
       FROM pg_catalog.pg_stat_bgwriter c;
     metrics:
-      - metric_name: ccp_stat_bgwriter_checkpoints_timed
+      - metric_name: ccp_stat_checkpointer_num_timed
         value_column: num_timed
         description: Number of scheduled checkpoints that have been performed
         static_attributes:
           server: "localhost:5432"
-      - metric_name: ccp_stat_bgwriter_checkpoints_req
+      - metric_name: ccp_stat_checkpointer_num_requested
         value_column: num_requested
         description: Number of requested checkpoints that have been performed
         static_attributes:
           server: "localhost:5432"
-      - metric_name: ccp_stat_bgwriter_checkpoint_write_time
+      - metric_name: ccp_stat_checkpointer_write_time
         value_column: write_time
         value_type: double
         description: Total amount of time that has been spent in the portion of checkpoint processing where files are written to disk, in milliseconds
         static_attributes:
           server: "localhost:5432"
-      - metric_name: ccp_stat_bgwriter_checkpoint_sync_time
+      - metric_name: ccp_stat_checkpointer_sync_time
         value_column: sync_time
         description: Total amount of time that has been spent in the portion of checkpoint processing where files are synchronized to disk, in milliseconds
         static_attributes:

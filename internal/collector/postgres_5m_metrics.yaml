@@ -5,7 +5,7 @@
 # https://github.com/CrunchyData/pgmonitor/blob/development/sql_exporter/common/crunchy_global_collector.yml
   - sql: >
       SELECT datname as dbname
-      , pg_database_size(datname) as bytes
+      , pg_catalog.pg_database_size(datname) as bytes
       FROM pg_catalog.pg_database
       WHERE datistemplate = false;
     metrics:
@@ -38,7 +38,7 @@
 
   - sql: SELECT monitor.pg_hba_checksum() AS status;
     metrics:
-      - metric_name: ccp_pg_hba_checksum 
+      - metric_name: ccp_pg_hba_checksum_status
         value_column: status
         description: |
           Value of checksum monitoring status for pg_catalog.pg_hba_file_rules (pg_hba.conf).

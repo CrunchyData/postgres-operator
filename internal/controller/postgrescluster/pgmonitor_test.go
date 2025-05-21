@@ -598,7 +598,7 @@ func TestReconcilePGMonitorExporterStatus(t *testing.T) {
 		podExecCalled:   false,
 		// Status was generated manually for this test case
 		// TODO (jmckulk): add code to generate status
-		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "5c5f955485"},
+		status:                      v1beta1.MonitoringStatus{ExporterConfiguration: "86cdc4f778"},
 		statusChangedAfterReconcile: false,
 	}} {
 		t.Run(test.name, func(t *testing.T) {
