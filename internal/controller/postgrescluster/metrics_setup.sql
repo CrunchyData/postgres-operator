@@ -71,23 +71,25 @@ $function$;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA monitor TO ccp_monitoring;
 GRANT ALL ON ALL TABLES IN SCHEMA monitor TO ccp_monitoring;
 
---- get_pgbackrest_info is used by the OTel collector.
+DROP FUNCTION IF EXISTS get_replication_lag();
+--- get_replication_lag is used by the OTel collector.
 --- get_replication_lag is created as function, so that we can query without warning on a replica.
-CREATE OR REPLACE FUNCTION get_replication_lag() RETURNS TABLE(bytes NUMERIC) AS $$
+CREATE FUNCTION get_replication_lag() RETURNS TABLE(replica text, bytes NUMERIC) AS $$
 BEGIN
     IF pg_is_in_recovery() THEN
-        RETURN QUERY SELECT 0::NUMERIC AS bytes;
+        RETURN QUERY SELECT ''::text as replica, 0::NUMERIC AS bytes;
     ELSE
-        RETURN QUERY SELECT pg_wal_lsn_diff(sent_lsn, replay_lsn) AS bytes
+        RETURN QUERY SELECT application_name AS replica, pg_wal_lsn_diff(sent_lsn, replay_lsn) AS bytes
                      FROM pg_catalog.pg_stat_replication;
     END IF;
 END;
 $$ LANGUAGE plpgsql;
 
+DROP FUNCTION IF EXISTS get_pgbackrest_info();
 --- get_pgbackrest_info is used by the OTel collector.
 --- get_pgbackrest_info is created as a function so that no ddl runs on a replica.
 --- In the query, the --stanza argument matches DefaultStanzaName, defined in internal/pgbackrest/config.go.
-CREATE OR REPLACE FUNCTION get_pgbackrest_info()
+CREATE FUNCTION get_pgbackrest_info()
 RETURNS TABLE (
     last_diff_backup BIGINT,
     last_full_backup BIGINT,
@@ -97,7 +99,6 @@ RETURNS TABLE (
     backup_type TEXT,
     backup_runtime_seconds BIGINT,
     repo_backup_size_bytes TEXT,
-    repo_total_size_bytes TEXT,
     oldest_full_backup BIGINT,
     repo TEXT
 ) AS $$
@@ -113,7 +114,6 @@ BEGIN
             'n/a'::text AS backup_type,
             0::bigint AS backup_runtime_seconds,
             '0'::text AS repo_backup_size_bytes,
-            '0'::text AS repo_total_size_bytes,
             0::bigint AS oldest_full_backup,
             'n/a' AS repo;
     ELSE
@@ -151,7 +151,6 @@ BEGIN
                 backup->'database'->>'repo-key' AS repo,
                 backup->>'type' AS backup_type,
                 backup->'info'->'repository'->>'delta' AS repo_backup_size_bytes,
-                backup->'info'->'repository'->>'size' AS repo_total_size_bytes,
                 (backup->'timestamp'->>'stop')::bigint - (backup->'timestamp'->>'start')::bigint AS backup_runtime_seconds,
                 CASE WHEN backup->>'error' = 'true' THEN 1 ELSE 0 END AS backup_error
             FROM ordered_backups
@@ -207,7 +206,6 @@ BEGIN
             ccp_backrest_last_info.backup_type,
             ccp_backrest_last_info.backup_runtime_seconds,
             ccp_backrest_last_info.repo_backup_size_bytes,
-            ccp_backrest_last_info.repo_total_size_bytes,
             ccp_backrest_oldest_full_backup.time_seconds,
             ccp_backrest_last_incr_backup.repo
         FROM

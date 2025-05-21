@@ -4,7 +4,7 @@
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/sqlqueryreceiver#metrics-queries
 # https://github.com/CrunchyData/pgmonitor/blob/development/sql_exporter/common/crunchy_global_collector.yml
 #
-  # TODO ccp_pg_stat_activity can be removed after metrics are fully aligned with the latest pgMonitor
+  # TODO ccp_pg_stat_activity can be removed/replaced once an equivalent metric is added to pgMonitor
   - sql: >
       SELECT
           pg_database.datname,
@@ -43,9 +43,15 @@
 
   - sql: >
       SELECT
-      COALESCE(EXTRACT(epoch from (CURRENT_TIMESTAMP - last_archived_time)), 0) AS seconds_since_last_archive
+        COALESCE(EXTRACT(epoch from (CURRENT_TIMESTAMP - last_archived_time)), 0) AS seconds_since_last_archive,
+        archived_count,
+        failed_count,
+        CASE
+          WHEN EXTRACT(epoch from (last_failed_time - last_archived_time)) IS NULL THEN 0
+          WHEN EXTRACT(epoch from (last_failed_time - last_archived_time)) < 0 THEN 0
+          ELSE EXTRACT(epoch from (last_failed_time - last_archived_time))
+        END AS seconds_since_last_fail
       FROM pg_catalog.pg_stat_archiver;
-
     metrics:
       - metric_name: ccp_archive_command_status_seconds_since_last_archive
         value_column: seconds_since_last_archive
@@ -53,36 +59,16 @@
         description: Seconds since the last successful archive operation
         static_attributes:
           server: "localhost:5432"
-
-  - sql: >
-      SELECT archived_count
-      FROM pg_catalog.pg_stat_archiver
-    metrics:
       - metric_name: ccp_archive_command_status_archived_count
         value_column: archived_count
         description: Number of WAL files that have been successfully archived
         static_attributes:
           server: "localhost:5432"
-
-  - sql: >
-      SELECT failed_count
-      FROM pg_catalog.pg_stat_archiver
-    metrics:
       - metric_name: ccp_archive_command_status_failed_count
         value_column: failed_count
         description: Number of failed attempts for archiving WAL files
         static_attributes:
           server: "localhost:5432"
-
-  - sql: >
-      SELECT CASE
-          WHEN EXTRACT(epoch from (last_failed_time - last_archived_time)) IS NULL THEN 0
-          WHEN EXTRACT(epoch from (last_failed_time - last_archived_time)) < 0 THEN 0
-          ELSE EXTRACT(epoch from (last_failed_time - last_archived_time))
-          END AS seconds_since_last_fail
-      FROM pg_catalog.pg_stat_archiver
-
-    metrics:
       - metric_name: ccp_archive_command_status_seconds_since_last_fail 
         value_column: seconds_since_last_fail
         description: Seconds since the last recorded failure of the archive_command
@@ -103,7 +89,6 @@
                           , COALESCE(SUM(CASE WHEN state = 'idle' THEN 1 ELSE 0 END),0) AS idle
                           , COALESCE(SUM(CASE WHEN state = 'idle in transaction' THEN 1 ELSE 0 END),0) AS idle_in_txn FROM pg_catalog.pg_stat_activity) x
           JOIN (SELECT setting::float AS max_connections FROM pg_settings WHERE name = 'max_connections') xx ON (true);
-
     metrics:
       - metric_name: ccp_connection_stats_active
         value_column: active
@@ -201,7 +186,7 @@
 
   - sql: >
       SELECT monitor.kdapi_scalar_bigint('cpu_request') AS request
-      , monitor.kdapi_scalar_bigint('cpu_limit') AS limit
+      , monitor.kdapi_scalar_bigint('cpu_limit') AS limit;
     metrics:
       - metric_name: ccp_nodemx_cpu_limit
         value_column: limit
@@ -300,7 +285,7 @@
                 FROM monitor.proc_mountinfo() m
                 JOIN monitor.fsinfo(m.mount_point) f USING (major_number, minor_number)
                 WHERE m.mount_point IN ('/pgdata', '/pgwal') OR
-                      m.mount_point like '/tablespaces/%'
+                      m.mount_point like '/tablespaces/%';
     metrics:
       - metric_name: ccp_nodemx_data_disk_available_bytes 
         value_column: available_bytes
@@ -472,7 +457,7 @@
         ,tx_bytes
         ,tx_packets
         ,rx_bytes
-        ,rx_packets from monitor.proc_network_stats()
+        ,rx_packets from monitor.proc_network_stats();
     metrics:
       - metric_name: ccp_nodemx_network_rx_bytes
         value_column: rx_bytes
@@ -634,7 +619,8 @@
       - metric_name: ccp_replication_lag_size_bytes
         value_column: bytes
         value_type: double
-        description: Time interval in seconds since PostgreSQL database was last restarted.
+        description: Replication lag in bytes.
+        attribute_columns: ['replica']
         static_attributes:
           server: "localhost:5432"
 
@@ -940,13 +926,6 @@
       - metric_name: ccp_backrest_last_info_repo_backup_size_bytes
         description: Actual size of only this individual backup in the pgbackrest repository
         value_column: repo_backup_size_bytes
-        attribute_columns: ["backup_type", "repo"]
-        static_attributes:
-          server: "localhost:5432"
-          stanza: "db"
-      - metric_name: ccp_backrest_last_info_repo_total_size_bytes
-        description: Total size of this backup in the pgbackrest repository, including all required previous backups and WAL
-        value_column: repo_total_size_bytes
         attribute_columns: ["backup_type", "repo"]
         static_attributes:
           server: "localhost:5432"

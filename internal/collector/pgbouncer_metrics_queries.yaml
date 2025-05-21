@@ -4,7 +4,7 @@
 # https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/receiver/sqlqueryreceiver#metrics-queries
 # https://github.com/CrunchyData/pgmonitor/blob/v5.1.1/sql_exporter/common/crunchy_pgbouncer_121_collector.yml
 
-  - sql: "SHOW CLIENTS"
+  - sql: "SHOW CLIENTS;"
     metrics:
       - metric_name: ccp_pgbouncer_clients_wait_seconds
         value_column: wait
@@ -15,7 +15,7 @@
   # can be NULL; the collector will warn against NULL even when not used. But it will emit
   # an error log if those columns are used.
   # The host column should always point either to pgBouncer's virtual database (the null case) or to the primary.
-  - sql: "SHOW DATABASES"
+  - sql: "SHOW DATABASES;"
     metrics:
       - metric_name: ccp_pgbouncer_databases_pool_size
         value_column: pool_size
@@ -27,7 +27,7 @@
         attribute_columns: ["name", "port", "database"]
         description: "Minimum number of server connections"
 
-      - metric_name: ccp_pgbouncer_databases_reserve_pool
+      - metric_name: ccp_pgbouncer_databases_reserve_pool_size
         value_column: reserve_pool_size
         attribute_columns: ["name", "port", "database"]
         description: "Maximum number of additional connections for this database"
@@ -54,14 +54,14 @@
         attribute_columns: ["name", "port", "database"]
         description: "1 if this database is currently disabled, else 0"
 
-  - sql: "SHOW LISTS"
+  - sql: "SHOW LISTS;"
     metrics:
       - metric_name: ccp_pgbouncer_lists_item_count
         value_column: items
         attribute_columns: ["list"]
         description: "Count of items registered with pgBouncer"
 
-  - sql: "SHOW POOLS"
+  - sql: "SHOW POOLS;"
     metrics:
       - metric_name: ccp_pgbouncer_pools_client_active
         value_column: cl_active
@@ -92,7 +92,7 @@
           Server connections that have been idle for more than server_check_delay,
           so they need server_check_query to run on them before they can be used again
 
-  - sql: "SHOW SERVERS"
+  - sql: "SHOW SERVERS;"
     metrics:
       - metric_name: ccp_pgbouncer_servers_close_needed
         value_column: close_needed
