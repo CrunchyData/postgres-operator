@@ -1,0 +1,12 @@
+# Copyright Crunchy Data Solutions, Inc. All rights reserved.
+#
+# https://trivy.dev/latest/docs/configuration/filtering/#trivyignoreyaml
+
+secrets:
+  - id: jwt-token
+    paths:
+      - internal/testing/token_*
+
+  - id: private-key
+    paths:
+      - internal/pki/*_test.go

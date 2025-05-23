@@ -29,6 +29,13 @@ workflow:
         ($CI_PIPELINE_SOURCE == "schedule") ||
         ($CI_PIPELINE_SOURCE == "web")
 
+include:
+  - component: ${CI_SERVER_FQDN}/containers/gitlab/check-directory-secrets@main
+    inputs:
+      job-name: must-not-commit-secrets
+      job-stage: build
+      trivy-ignore: .trivyignore.yaml
+
 variables:
   # https://docs.gitlab.com/runner/configuration/feature-flags
   # Show the duration of individual script items in the job log.
@@ -195,12 +202,12 @@ trivy:
         bash 'contrib/install.sh' -b "${HOME}/bin" "${VERSION}"
       )
 
-    # Generate a report and fail when there are issues that can be fixed.
+    # Generate a report and fail when there are issues with dependencies.
     # Trivy needs a populated Go module cache to detect Go module licenses.
     - go mod download
     - >-
       trivy filesystem . --exit-code 1
-      --scanners license,secret,vuln
+      --scanners license,vuln
       --ignore-unfixed
       --no-progress
       --format template
