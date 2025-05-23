@@ -1,0 +1,13 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+spec:
+  instrumentation:
+    metrics:
+      customQueries:
+        remove:
+            - ccp_connection_stats_active
+            - ccp_database_size_bytes
+            - ccp_table_size_bytes

@@ -1,0 +1,17 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+spec:
+  users:
+    - name: ash
+      databases:
+        - pikachu
+    - name: brock
+      databases:
+        - onix
+  instrumentation:
+    metrics:
+      perDBMetricTargets:
+        - pikachu

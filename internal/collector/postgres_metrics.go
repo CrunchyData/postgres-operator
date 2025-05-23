@@ -21,6 +21,9 @@ import (
 //go:embed "generated/postgres_5s_metrics.json"
 var fiveSecondMetrics json.RawMessage
 
+//go:embed "generated/postgres_5m_per_db_metrics.json"
+var fiveMinutePerDBMetrics json.RawMessage
+
 //go:embed "generated/postgres_5m_metrics.json"
 var fiveMinuteMetrics json.RawMessage
 
@@ -33,14 +36,8 @@ var ltPG17Fast json.RawMessage
 //go:embed "generated/eq_pg16_fast_metrics.json"
 var eqPG16Fast json.RawMessage
 
-//go:embed "generated/gte_pg16_slow_metrics.json"
-var gtePG16Slow json.RawMessage
-
 //go:embed "generated/lt_pg16_fast_metrics.json"
 var ltPG16Fast json.RawMessage
-
-//go:embed "generated/lt_pg16_slow_metrics.json"
-var ltPG16Slow json.RawMessage
 
 type queryMetrics struct {
 	Metrics []*metric `json:"metrics"`
@@ -71,6 +68,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 		// will continually append to it and blow up our ConfigMap
 		fiveSecondMetricsClone := slices.Clone(fiveSecondMetrics)
 		fiveMinuteMetricsClone := slices.Clone(fiveMinuteMetrics)
+		fiveMinutePerDBMetricsClone := slices.Clone(fiveMinutePerDBMetrics)
 
 		if inCluster.Spec.PostgresVersion >= 17 {
 			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, gtePG17Fast)
@@ -91,19 +89,10 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			log.Error(err, "error compiling metrics for postgres 16")
 		}
 
-		if inCluster.Spec.PostgresVersion >= 16 {
-			fiveMinuteMetricsClone, err = appendToJSONArray(fiveMinuteMetricsClone, gtePG16Slow)
-			if err != nil {
-				log.Error(err, "error compiling metrics for postgres 16 and greater")
-			}
-		} else {
+		if inCluster.Spec.PostgresVersion < 16 {
 			fiveSecondMetricsClone, err = appendToJSONArray(fiveSecondMetricsClone, ltPG16Fast)
 			if err != nil {
 				log.Error(err, "error compiling fast metrics for postgres versions less than 16")
-			}
-			fiveMinuteMetricsClone, err = appendToJSONArray(fiveMinuteMetricsClone, ltPG16Slow)
-			if err != nil {
-				log.Error(err, "error compiling slow metrics for postgres versions less than 16")
 			}
 		}
 
@@ -117,7 +106,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			var fiveSecondMetricsArr []queryMetrics
 			err := json.Unmarshal(fiveSecondMetricsClone, &fiveSecondMetricsArr)
 			if err != nil {
-				log.Error(err, "error compiling postgres metrics")
+				log.Error(err, "error compiling five second postgres metrics")
 			}
 
 			// Remove any specified metrics from the five second metrics
@@ -128,12 +117,23 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			var fiveMinuteMetricsArr []queryMetrics
 			err = json.Unmarshal(fiveMinuteMetricsClone, &fiveMinuteMetricsArr)
 			if err != nil {
-				log.Error(err, "error compiling postgres metrics")
+				log.Error(err, "error compiling five minute postgres metrics")
 			}
 
 			// Remove any specified metrics from the five minute metrics
 			fiveMinuteMetricsArr = removeMetricsFromQueries(
 				inCluster.Spec.Instrumentation.Metrics.CustomQueries.Remove, fiveMinuteMetricsArr)
+
+			// Convert json to array of queryMetrics objects
+			var fiveMinutePerDBMetricsArr []queryMetrics
+			err = json.Unmarshal(fiveMinutePerDBMetricsClone, &fiveMinutePerDBMetricsArr)
+			if err != nil {
+				log.Error(err, "error compiling per-db postgres metrics")
+			}
+
+			// Remove any specified metrics from the five minute per-db metrics
+			fiveMinutePerDBMetricsArr = removeMetricsFromQueries(
+				inCluster.Spec.Instrumentation.Metrics.CustomQueries.Remove, fiveMinutePerDBMetricsArr)
 
 			// Convert back to json data
 			// The error return value can be ignored as the errchkjson linter
@@ -141,6 +141,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			// https://github.com/breml/errchkjson
 			fiveSecondMetricsClone, _ = json.Marshal(fiveSecondMetricsArr)
 			fiveMinuteMetricsClone, _ = json.Marshal(fiveMinuteMetricsArr)
+			fiveMinutePerDBMetricsClone, _ = json.Marshal(fiveMinutePerDBMetricsArr)
 		}
 
 		// Add Prometheus exporter
@@ -182,29 +183,60 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 
 		// Add custom queries if they are defined in the spec
 		if inCluster.Spec.Instrumentation != nil &&
-			inCluster.Spec.Instrumentation.Metrics != nil &&
-			inCluster.Spec.Instrumentation.Metrics.CustomQueries != nil &&
-			inCluster.Spec.Instrumentation.Metrics.CustomQueries.Add != nil {
+			inCluster.Spec.Instrumentation.Metrics != nil {
 
-			for _, querySet := range inCluster.Spec.Instrumentation.Metrics.CustomQueries.Add {
-				// Create a receiver for the query set
-				receiverName := "sqlquery/" + querySet.Name
-				config.Receivers[receiverName] = map[string]any{
-					"driver": "postgres",
-					"datasource": fmt.Sprintf(
-						`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`,
-						MonitoringUser),
-					"collection_interval": querySet.CollectionInterval,
-					// Give Postgres time to finish setup.
-					"initial_delay": "15s",
-					"queries": "${file:/etc/otel-collector/" +
-						querySet.Name + "/" + querySet.Queries.Key + "}",
+			if inCluster.Spec.Instrumentation.Metrics.CustomQueries != nil &&
+				inCluster.Spec.Instrumentation.Metrics.CustomQueries.Add != nil {
+
+				for _, querySet := range inCluster.Spec.Instrumentation.Metrics.CustomQueries.Add {
+					// Create a receiver for the query set
+
+					db := "postgres"
+					if querySet.Database != "" {
+						db = querySet.Database
+					}
+					receiverName := "sqlquery/" + querySet.Name
+					config.Receivers[receiverName] = map[string]any{
+						"driver": "postgres",
+						"datasource": fmt.Sprintf(
+							`host=localhost dbname=%s port=5432 user=%s password=${env:PGPASSWORD}`,
+							db,
+							MonitoringUser),
+						"collection_interval": querySet.CollectionInterval,
+						// Give Postgres time to finish setup.
+						"initial_delay": "15s",
+						"queries": "${file:/etc/otel-collector/" +
+							querySet.Name + "/" + querySet.Queries.Key + "}",
+					}
+
+					// Add the receiver to the pipeline
+					pipeline := config.Pipelines[PostgresMetrics]
+					pipeline.Receivers = append(pipeline.Receivers, receiverName)
+					config.Pipelines[PostgresMetrics] = pipeline
 				}
+			}
+			if inCluster.Spec.Instrumentation.Metrics.PerDBMetricTargets != nil {
 
-				// Add the receiver to the pipeline
-				pipeline := config.Pipelines[PostgresMetrics]
-				pipeline.Receivers = append(pipeline.Receivers, receiverName)
-				config.Pipelines[PostgresMetrics] = pipeline
+				for _, db := range inCluster.Spec.Instrumentation.Metrics.PerDBMetricTargets {
+					// Create a receiver for the query set for the db
+					receiverName := "sqlquery/" + db
+					config.Receivers[receiverName] = map[string]any{
+						"driver": "postgres",
+						"datasource": fmt.Sprintf(
+							`host=localhost dbname=%s port=5432 user=%s password=${env:PGPASSWORD}`,
+							db,
+							MonitoringUser),
+						"collection_interval": "5m",
+						// Give Postgres time to finish setup.
+						"initial_delay": "15s",
+						"queries":       slices.Clone(fiveMinutePerDBMetricsClone),
+					}
+
+					// Add the receiver to the pipeline
+					pipeline := config.Pipelines[PostgresMetrics]
+					pipeline.Receivers = append(pipeline.Receivers, receiverName)
+					config.Pipelines[PostgresMetrics] = pipeline
+				}
 			}
 		}
 	}
