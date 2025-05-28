@@ -116,6 +116,11 @@ func AddToPod(
 		VolumeMounts:    append(volumeMounts, configVolumeMount),
 	}
 
+	// Add any user specified environment variables to the collector container
+	if spec.Config != nil && spec.Config.EnvironmentVariables != nil {
+		container.Env = append(container.Env, spec.Config.EnvironmentVariables...)
+	}
+
 	// If metrics feature is enabled and this Pod serves metrics, add the
 	// Prometheus port to this container
 	if feature.Enabled(ctx, feature.OpenTelemetryMetrics) && thisPodServesMetrics {
