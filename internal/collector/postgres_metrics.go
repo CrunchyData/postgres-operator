@@ -181,7 +181,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			Exporters: []ComponentID{Prometheus},
 		}
 
-		// Add custom queries if they are defined in the spec
+		// Add custom queries and per-db metrics if they are defined in the spec
 		if inCluster.Spec.Instrumentation != nil &&
 			inCluster.Spec.Instrumentation.Metrics != nil {
 
