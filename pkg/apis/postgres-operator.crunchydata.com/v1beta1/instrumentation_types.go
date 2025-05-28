@@ -65,6 +65,15 @@ type InstrumentationConfigSpec struct {
 	// +listType=atomic
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
+
+	// EnvironmentVariables allows the user to add environment variables to the
+	// collector container.
+	// ---
+	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:items:XValidation:rule=`self.name != 'K8S_POD_NAMESPACE' && self.name != 'K8S_POD_NAME' && self.name != 'PGPASSWORD'`,message="Cannot overwrite environment variables set by operator"
+	// +listType=atomic
+	// +optional
+	EnvironmentVariables []corev1.EnvVar `json:"environmentVariables,omitempty"`
 }
 
 // InstrumentationLogsSpec defines the configuration for collecting logs via
