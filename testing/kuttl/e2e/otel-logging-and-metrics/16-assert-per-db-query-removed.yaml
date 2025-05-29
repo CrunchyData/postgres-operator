@@ -1,0 +1,32 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, check that all containers in the instance pod are ready.
+# Then, grab the collector metrics output and check that the per-db metrics
+# are absent from the targets since they've been removed.
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=otel-cluster,postgres-operator.crunchydata.com/data=postgres)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+
+    scrape_metrics=$(kubectl exec "${pod}" -c collector -n "${NAMESPACE}" -- \
+      curl --insecure --silent http://localhost:9187/metrics)
+    { ! contains "${scrape_metrics}" 'ccp_table_size_bytes{dbname="pikachu"'; } || {
+      retry "ccp_table_size_bytes found for pikachu"
+      exit 1
+    }
+    { ! contains "${scrape_metrics}" 'ccp_table_size_bytes{dbname="onix"'; } || {
+      retry "ccp_table_size_bytes found for onix"
+      exit 1
+    }
