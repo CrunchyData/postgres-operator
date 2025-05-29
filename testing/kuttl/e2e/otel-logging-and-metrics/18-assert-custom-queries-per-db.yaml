@@ -28,7 +28,7 @@ commands:
       retry "custom metric not found for pikachu db"
       exit 1
     }
-    { ! contains "${scrape_metrics}" 'ccp_table_size_bytes_1{dbname="onix"'; } || {
+    { contains "${scrape_metrics}" 'ccp_table_size_bytes_1{dbname="onix"'; } || {
       retry "custom metric found for onix db"
       exit 1
     }

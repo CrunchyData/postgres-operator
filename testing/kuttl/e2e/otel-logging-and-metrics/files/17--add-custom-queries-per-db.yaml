@@ -9,12 +9,12 @@ spec:
       customQueries:
         add:
           - name: custom1
-            database: pikachu
+            databases: [pikachu, onix]
             queries:
               name: my-custom-queries2
               key: custom1.yaml
           - name: custom2
-            database: onix
+            databases: [onix]
             queries:
               name: my-custom-queries2
               key: custom2.yaml

@@ -191,28 +191,31 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 				for _, querySet := range inCluster.Spec.Instrumentation.Metrics.CustomQueries.Add {
 					// Create a receiver for the query set
 
-					db := "postgres"
-					if querySet.Database != "" {
-						db = querySet.Database
+					dbs := []string{"postgres"}
+					if len(querySet.Databases) != 0 {
+						dbs = querySet.Databases
 					}
-					receiverName := "sqlquery/" + querySet.Name
-					config.Receivers[receiverName] = map[string]any{
-						"driver": "postgres",
-						"datasource": fmt.Sprintf(
-							`host=localhost dbname=%s port=5432 user=%s password=${env:PGPASSWORD}`,
-							db,
-							MonitoringUser),
-						"collection_interval": querySet.CollectionInterval,
-						// Give Postgres time to finish setup.
-						"initial_delay": "15s",
-						"queries": "${file:/etc/otel-collector/" +
-							querySet.Name + "/" + querySet.Queries.Key + "}",
-					}
+					for _, db := range dbs {
+						receiverName := fmt.Sprintf(
+							"sqlquery/%s-%s", querySet.Name, db)
+						config.Receivers[receiverName] = map[string]any{
+							"driver": "postgres",
+							"datasource": fmt.Sprintf(
+								`host=localhost dbname=%s port=5432 user=%s password=${env:PGPASSWORD}`,
+								db,
+								MonitoringUser),
+							"collection_interval": querySet.CollectionInterval,
+							// Give Postgres time to finish setup.
+							"initial_delay": "15s",
+							"queries": "${file:/etc/otel-collector/" +
+								querySet.Name + "/" + querySet.Queries.Key + "}",
+						}
 
-					// Add the receiver to the pipeline
-					pipeline := config.Pipelines[PostgresMetrics]
-					pipeline.Receivers = append(pipeline.Receivers, receiverName)
-					config.Pipelines[PostgresMetrics] = pipeline
+						// Add the receiver to the pipeline
+						pipeline := config.Pipelines[PostgresMetrics]
+						pipeline.Receivers = append(pipeline.Receivers, receiverName)
+						config.Pipelines[PostgresMetrics] = pipeline
+					}
 				}
 			}
 			if inCluster.Spec.Instrumentation.Metrics.PerDBMetricTargets != nil {

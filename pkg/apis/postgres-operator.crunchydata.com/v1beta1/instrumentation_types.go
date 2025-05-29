@@ -165,11 +165,11 @@ type InstrumentationCustomQueries struct {
 	// +optional
 	CollectionInterval *Duration `json:"collectionInterval,omitempty"`
 
-	// The database to target with added custom queries.
+	// The databases to target with added custom queries.
 	// Default behavior is to target `postgres`.
 	// ---
 	// +optional
-	Database string `json:"database,omitempty"`
+	Databases []string `json:"databases,omitempty"`
 }
 
 // ---
