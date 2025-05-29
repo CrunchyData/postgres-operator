@@ -1,0 +1,62 @@
+---
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: otel-cluster
+spec:
+  instrumentation:
+    metrics:
+      customQueries:
+        add:
+          - name: custom1
+            databases: [pikachu, onix]
+            queries:
+              name: my-custom-queries2
+              key: custom1.yaml
+          - name: custom2
+            databases: [onix]
+            queries:
+              name: my-custom-queries2
+              key: custom2.yaml
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-custom-queries2
+data:
+  custom1.yaml: |
+      - sql: >
+          SELECT current_database() as dbname
+          , n.nspname as schemaname
+          , c.relname
+          , pg_catalog.pg_total_relation_size(c.oid) as bytes
+          FROM pg_catalog.pg_class c
+          JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+          WHERE NOT pg_is_other_temp_schema(n.oid)
+          AND relkind IN ('r', 'm', 'f');
+        metrics:
+          - metric_name: ccp_table_size_bytes_1
+            value_type: double
+            value_column: bytes
+            description: "Table size in bytes including indexes"
+            attribute_columns: ["dbname", "schemaname", "relname"]
+            static_attributes:
+              server: "localhost:5432"
+  custom2.yaml: |
+      - sql: >
+          SELECT current_database() as dbname
+          , n.nspname as schemaname
+          , c.relname
+          , pg_catalog.pg_total_relation_size(c.oid) as bytes
+          FROM pg_catalog.pg_class c
+          JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+          WHERE NOT pg_is_other_temp_schema(n.oid)
+          AND relkind IN ('r', 'm', 'f');
+        metrics:
+          - metric_name: ccp_table_size_bytes_2
+            value_type: double
+            value_column: bytes
+            description: "Table size in bytes including indexes"
+            attribute_columns: ["dbname", "schemaname", "relname"]
+            static_attributes:
+              server: "localhost:5432"

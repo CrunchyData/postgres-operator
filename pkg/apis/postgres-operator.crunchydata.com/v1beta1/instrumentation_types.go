@@ -107,6 +107,11 @@ type InstrumentationMetricsSpec struct {
 	// ---
 	// +optional
 	CustomQueries *InstrumentationCustomQueriesSpec `json:"customQueries,omitempty"`
+
+	// User defined databases to target for default per-db metrics
+	// ---
+	// +optional
+	PerDBMetricTargets []string `json:"perDBMetricTargets,omitempty"`
 }
 
 type InstrumentationCustomQueriesSpec struct {
@@ -159,6 +164,12 @@ type InstrumentationCustomQueries struct {
 	// +default="5s"
 	// +optional
 	CollectionInterval *Duration `json:"collectionInterval,omitempty"`
+
+	// The databases to target with added custom queries.
+	// Default behavior is to target `postgres`.
+	// ---
+	// +optional
+	Databases []string `json:"databases,omitempty"`
 }
 
 // ---
