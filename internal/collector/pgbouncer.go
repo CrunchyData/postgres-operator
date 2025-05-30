@@ -187,6 +187,14 @@ func EnablePgBouncerMetrics(ctx context.Context, inCluster *v1beta1.PostgresClus
 			"queries": slices.Clone(pgBouncerMetricsQueries),
 		}
 
+		// If there are exporters to be added to the metrics pipelines defined
+		// in the spec, add them to the pipeline.
+		exporters := []ComponentID{Prometheus}
+		if inCluster.Spec.Instrumentation.Metrics != nil &&
+			inCluster.Spec.Instrumentation.Metrics.Exporters != nil {
+			exporters = append(exporters, inCluster.Spec.Instrumentation.Metrics.Exporters...)
+		}
+
 		// Add Metrics Pipeline
 		config.Pipelines[PGBouncerMetrics] = Pipeline{
 			Receivers: []ComponentID{SqlQuery},
@@ -194,7 +202,7 @@ func EnablePgBouncerMetrics(ctx context.Context, inCluster *v1beta1.PostgresClus
 				SubSecondBatchProcessor,
 				CompactingProcessor,
 			},
-			Exporters: []ComponentID{Prometheus},
+			Exporters: exporters,
 		}
 	}
 }
