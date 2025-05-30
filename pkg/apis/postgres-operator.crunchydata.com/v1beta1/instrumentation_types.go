@@ -117,6 +117,13 @@ type InstrumentationMetricsSpec struct {
 	// +optional
 	CustomQueries *InstrumentationCustomQueriesSpec `json:"customQueries,omitempty"`
 
+	// The names of exporters that should send metrics.
+	// ---
+	// +kubebuilder:validation:MinItems=1
+	// +listType=set
+	// +optional
+	Exporters []string `json:"exporters,omitempty"`
+
 	// User defined databases to target for default per-db metrics
 	// ---
 	// +optional

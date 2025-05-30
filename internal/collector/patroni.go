@@ -168,6 +168,14 @@ func EnablePatroniMetrics(ctx context.Context,
 			},
 		}
 
+		// If there are exporters to be added to the metrics pipelines defined
+		// in the spec, add them to the pipeline.
+		exporters := []ComponentID{Prometheus}
+		if inCluster.Spec.Instrumentation.Metrics != nil &&
+			inCluster.Spec.Instrumentation.Metrics.Exporters != nil {
+			exporters = append(exporters, inCluster.Spec.Instrumentation.Metrics.Exporters...)
+		}
+
 		// Add Metrics Pipeline
 		outConfig.Pipelines[PatroniMetrics] = Pipeline{
 			Receivers: []ComponentID{Prometheus},
@@ -175,7 +183,7 @@ func EnablePatroniMetrics(ctx context.Context,
 				SubSecondBatchProcessor,
 				CompactingProcessor,
 			},
-			Exporters: []ComponentID{Prometheus},
+			Exporters: exporters,
 		}
 	}
 }
