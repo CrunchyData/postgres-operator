@@ -570,6 +570,11 @@ func (in *InstrumentationMetricsSpec) DeepCopyInto(out *InstrumentationMetricsSp
 		*out = new(InstrumentationCustomQueriesSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Exporters != nil {
+		in, out := &in.Exporters, &out.Exporters
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.PerDBMetricTargets != nil {
 		in, out := &in.PerDBMetricTargets, &out.PerDBMetricTargets
 		*out = make([]string, len(*in))

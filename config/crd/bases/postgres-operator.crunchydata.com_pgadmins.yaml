@@ -2301,6 +2301,13 @@ spec:
                               type: string
                             type: array
                         type: object
+                      exporters:
+                        description: The names of exporters that should send metrics.
+                        items:
+                          type: string
+                        minItems: 1
+                        type: array
+                        x-kubernetes-list-type: set
                       perDBMetricTargets:
                         description: User defined databases to target for default
                           per-db metrics
