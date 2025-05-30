@@ -1,0 +1,12 @@
+---
+# Wait for the replica backup to complete.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: original
+status:
+  pgbackrest:
+    repos:
+    - name: repo1
+      replicaCreateBackupComplete: true
+      stanzaCreated: true

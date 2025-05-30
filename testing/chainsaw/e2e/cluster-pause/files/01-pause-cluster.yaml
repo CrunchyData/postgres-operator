@@ -1,0 +1,17 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: cluster-pause
+spec:
+  # We change the service, but this won't result in a change until we resume
+  service:
+    type: LoadBalancer
+  paused: true
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec:
+        accessModes:
+        - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: 1Gi

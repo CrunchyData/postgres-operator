@@ -1,0 +1,26 @@
+---
+# Create a cluster with a single pgBackRest repository and some parameters that
+# require attention during PostgreSQL recovery.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: original
+  labels: { postgres-operator-test: kuttl }
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  patroni:
+    dynamicConfiguration:
+      postgresql:
+        parameters:
+          max_connections: 200
+  instances:
+    - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+      replicas: 2
+  backups:
+    pgbackrest:
+      manual:
+        repoName: repo1
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
