@@ -20,7 +20,7 @@ import (
 )
 
 func TestEnablePgAdminLogging(t *testing.T) {
-	t.Run("NilInstrumentationSpec", func(t *testing.T) {
+	t.Run("EmptyInstrumentationSpec", func(t *testing.T) {
 		gate := feature.NewGate()
 		assert.NilError(t, gate.SetFromMap(map[string]bool{
 			feature.OpenTelemetryLogs: true,
@@ -31,9 +31,7 @@ func TestEnablePgAdminLogging(t *testing.T) {
 		configmap := new(corev1.ConfigMap)
 		initialize.Map(&configmap.Data)
 		var instrumentation *v1beta1.InstrumentationSpec
-		require.UnmarshalInto(t, &instrumentation, `{
-			logs: { retentionPeriod: 12h },
-		}`)
+		require.UnmarshalInto(t, &instrumentation, `{}`)
 		err := collector.EnablePgAdminLogging(ctx, instrumentation, configmap)
 		assert.NilError(t, err)
 

@@ -44,3 +44,9 @@ commands:
       retry "gunicorn logs not found"
       exit 1
     }
+
+    metrics=$(kubectl logs "${pod}" --namespace "${NAMESPACE}" -c otel-collector | grep ccp)
+    { contains "${metrics}" 'ccp_stat'; } || {
+      retry "metrics not found"
+      exit 1
+    }
