@@ -23,6 +23,9 @@ func testInstrumentationSpec() *v1beta1.InstrumentationSpec {
 		Logs: &v1beta1.InstrumentationLogsSpec{
 			Exporters: []string{"googlecloud"},
 		},
+		Metrics: &v1beta1.InstrumentationMetricsSpec{
+			Exporters: []string{"googlecloud"},
+		},
 	}
 
 	return spec.DeepCopy()

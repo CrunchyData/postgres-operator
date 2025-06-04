@@ -1,0 +1,6 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestStep
+apply:
+- files/19--add-logs-metrics-exporter.yaml
+assert:
+- files/19-logs-metrics-exporter-added.yaml
