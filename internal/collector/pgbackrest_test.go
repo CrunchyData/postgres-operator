@@ -16,7 +16,7 @@ import (
 )
 
 func TestNewConfigForPgBackrestRepoHostPod(t *testing.T) {
-	t.Run("NilInstrumentationSpec", func(t *testing.T) {
+	t.Run("EmptyInstrumentationSpec", func(t *testing.T) {
 		gate := feature.NewGate()
 		assert.NilError(t, gate.SetFromMap(map[string]bool{
 			feature.OpenTelemetryLogs: true,
@@ -29,9 +29,7 @@ func TestNewConfigForPgBackrestRepoHostPod(t *testing.T) {
 			},
 		}
 		var instrumentation *v1beta1.InstrumentationSpec
-		require.UnmarshalInto(t, &instrumentation, `{
-			logs: { retentionPeriod: 12h },
-		}`)
+		require.UnmarshalInto(t, &instrumentation, `{}`)
 
 		config := NewConfigForPgBackrestRepoHostPod(ctx, instrumentation, repos)
 
