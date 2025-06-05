@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: cluster-pause
+spec:
+  steps:
+  - catch:
+    - script:
+        content: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=cluster-pause
+    - podLogs:
+        namespace: $NAMESPACE
+        selector: postgres-operator.crunchydata.com/cluster=cluster-pause
+    name: step-00
+    try:
+    - apply:
+        file: files/00-create-cluster.yaml
+    - assert:
+        file: files/00-cluster-created.yaml
+  - catch:
+    - script:
+        content: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=cluster-pause
+    - podLogs:
+        namespace: $NAMESPACE
+        selector: postgres-operator.crunchydata.com/cluster=cluster-pause
+    name: step-01
+    try:
+    - apply:
+        file: files/01-pause-cluster.yaml
+    - assert:
+        file: files/01-cluster-paused.yaml
+  - catch:
+    - script:
+        content: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=cluster-pause
+    - podLogs:
+        namespace: $NAMESPACE
+        selector: postgres-operator.crunchydata.com/cluster=cluster-pause
+    name: step-02
+    try:
+    - apply:
+        file: files/02-resume-cluster.yaml
+    - assert:
+        file: files/02-cluster-resumed.yaml

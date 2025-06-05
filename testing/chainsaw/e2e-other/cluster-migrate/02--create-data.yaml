@@ -1,0 +1,30 @@
+---
+# Create some data that will be preserved after migration.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: original-data
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            - { name: PGHOST, value: "non-crunchy-cluster" }
+            # Do not wait indefinitely.
+            - { name: PGCONNECT_TIMEOUT, value: '5' }
+            - { name: PGPASSWORD, valueFrom: { secretKeyRef: { name: non-crunchy-cluster, key: postgres-password } } }
+          command:
+            - psql
+            - --username=postgres
+            - --dbname=postgres
+            - --set=ON_ERROR_STOP=1
+            - --command
+            - |
+              CREATE TABLE IF NOT EXISTS important (data) AS VALUES ('treasure');

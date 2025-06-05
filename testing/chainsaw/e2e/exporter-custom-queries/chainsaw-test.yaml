@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: exporter-custom-queries
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: files/exporter-custom-queries-configmap.yaml
+    - apply:
+        file: files/exporter-custom-queries-cluster.yaml
+    - assert:
+        file: files/exporter-custom-queries-cluster-checks.yaml
+    - script:
+        content: |
+          retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+          check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+          pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+            -l postgres-operator.crunchydata.com/cluster=exporter-custom-queries \
+            -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+          [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+          condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+          [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+          { check_containers_ready "$condition_json"; } || {
+            retry "containers not ready"
+            exit 1
+          }
+
+          queries_files=$(
+            kubectl exec --namespace "${NAMESPACE}" "${pod}" -c exporter \
+              -- ls /conf
+          )
+
+          {
+            contains "${queries_files}" "queries.yml" &&
+            !(contains "${queries_files}" "defaultQueries.yml")
+          } || {
+            echo >&2 'The /conf directory should contain the queries.yml file. Instead it has:'
+            echo "${queries_files}"
+            exit 1
+          }
+
+          master_queries_contents=$(
+            kubectl exec --namespace "${NAMESPACE}" "${pod}" -c exporter \
+              -- cat /tmp/queries.yml
+          )
+
+          {
+            contains "${master_queries_contents}" "# This is a test." &&
+            !(contains "${master_queries_contents}" "ccp_postgresql_version")
+          } || {
+            echo >&2 'The master queries.yml file should only contain the contents of the custom queries.yml file. Instead it contains:'
+            echo "${master_queries_contents}"
+            exit 1
+          }
+
+          pid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
+          kubectl annotate --overwrite -n ${NAMESPACE} ${pod} oldpid=${pid}
+  - name: step-01
+    try:
+    - apply:
+        file: files/exporter-custom-queries-configmap-update.yaml
+    - assert:
+        file: files/exporter-custom-queries-configmap-update-checks.yaml
+    - script:
+        content: |
+          retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+          check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+          pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+            -l postgres-operator.crunchydata.com/cluster=exporter-custom-queries \
+            -l postgres-operator.crunchydata.com/crunchy-postgres-exporter=true)
+          [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+          oldPid=$(kubectl get ${pod} -n ${NAMESPACE} -o jsonpath="{.metadata.annotations.oldpid}")
+          newPid=$(kubectl exec ${pod} -n ${NAMESPACE} -c exporter -- cat /tmp/postgres_exporter.pid)
+          [ "${oldPid}" -eq "${newPid}" ] && retry "pid should have changed" && exit 1
+
+          master_queries_contents=$(
+            kubectl exec --namespace "${NAMESPACE}" "${pod}" -c exporter \
+              -- cat /tmp/queries.yml
+          )
+
+          {
+            contains "${master_queries_contents}" "# This is a different test." &&
+            !(contains "${master_queries_contents}" "ccp_postgresql_version")
+          } || {
+            echo >&2 'The master queries.yml file should only contain the contents of the custom queries.yml file. Instead it contains:'
+            echo "${master_queries_contents}"
+            exit 1
+          }

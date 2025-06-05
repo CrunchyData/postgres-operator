@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: password-change-pguser-rhino
+data:
+  # `08-secret.yaml` changes the password and removes the verifier field,
+  # so when PGO reconciles the secret, it should fill in the empty verifier field;
+  # if it does not fill in the verifier field by a certain time this step will error
+  # and KUTTL will mark the test as failed.
+  verifier: ""
