@@ -12,6 +12,10 @@ env:
   # https://github.com/actions/setup-go/issues/457
   GOTOOLCHAIN: local
 
+  # Use the committed Trivy configuration files.
+  TRIVY_IGNOREFILE: .trivyignore.yaml
+  TRIVY_SECRET_CONFIG: trivy-secret.yaml
+
 jobs:
   cache:
     # Run only one of these jobs at a time across the entire project.
@@ -54,7 +58,6 @@ jobs:
         env:
           TRIVY_DEBUG: true
           TRIVY_EXIT_CODE: 1
-          TRIVY_IGNOREFILE: .trivyignore.yaml
           TRIVY_SCANNERS: license
         with:
           cache: restore,use
@@ -75,9 +78,7 @@ jobs:
         uses: ./.github/actions/trivy
         env:
           TRIVY_EXIT_CODE: 1
-          TRIVY_IGNOREFILE: .trivyignore.yaml
           TRIVY_SCANNERS: secret
-          TRIVY_SECRET_CONFIG: trivy-secret.yaml
         with:
           cache: restore,use
           database: skip
