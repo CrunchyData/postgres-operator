@@ -12,6 +12,10 @@ env:
   # https://github.com/actions/setup-go/issues/457
   GOTOOLCHAIN: local
 
+  # Use the committed Trivy configuration files.
+  TRIVY_IGNOREFILE: .trivyignore.yaml
+  TRIVY_SECRET_CONFIG: trivy-secret.yaml
+
 jobs:
   cache:
     # Run only one of these jobs at a time across the entire project.
@@ -48,13 +52,33 @@ jobs:
         with: { go-version: stable }
       - run: go mod download
 
-      # Report success only when detected licenses are listed in [/trivy.yaml].
+      # Report success only when detected licenses are listed in [.trivyignore.yaml].
       - name: Scan licenses
         uses: ./.github/actions/trivy
         env:
           TRIVY_DEBUG: true
           TRIVY_EXIT_CODE: 1
           TRIVY_SCANNERS: license
+        with:
+          cache: restore,use
+          database: skip
+
+  secrets:
+    # Run this job after the cache job regardless of its success or failure.
+    needs: [cache]
+    if: >-
+      ${{ !cancelled() }}
+
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      # Report success only when detected secrets are listed in [.trivyignore.yaml].
+      - name: Scan secrets
+        uses: ./.github/actions/trivy
+        env:
+          TRIVY_EXIT_CODE: 1
+          TRIVY_SCANNERS: secret
         with:
           cache: restore,use
           database: skip
