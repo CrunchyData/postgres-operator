@@ -1,0 +1,29 @@
+# Copyright 2024 - 2025 Crunchy Data Solutions, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# https://trivy.dev/latest/docs/configuration/filtering#trivyignoreyaml
+
+# Specify an exact list of recognized and acceptable licenses.
+# [A GitHub workflow](.github/workflows/trivy.yaml) rejects pull requests that import licenses not in this list.
+#
+# https://trivy.dev/latest/docs/scanner/license
+licenses:
+  - id: Apache-2.0
+  - id: BSD-2-Clause
+  - id: BSD-3-Clause
+  - id: ISC
+  - id: MIT
+
+# These values are used for testing and are not secret.
+# [A GitHub workflow](.github/workflows/trivy.yaml) rejects pull requests that contain secrets not in this list.
+#
+# https://trivy.dev/latest/docs/scanner/secret
+secrets:
+  - id: jwt-token
+    paths:
+      - internal/testing/token_*
+
+  - id: private-key
+    paths:
+      - internal/pki/*_test.go
