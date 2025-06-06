@@ -54,6 +54,7 @@ jobs:
         env:
           TRIVY_DEBUG: true
           TRIVY_EXIT_CODE: 1
+          TRIVY_IGNOREFILE: .trivyignore.yaml
           TRIVY_SCANNERS: license
         with:
           cache: restore,use
@@ -70,10 +71,11 @@ jobs:
       - uses: actions/checkout@v4
 
       # Report success only when detected secrets are listed in [.trivyignore.yaml].
-      - name: Scan licenses
+      - name: Scan secrets
         uses: ./.github/actions/trivy
         env:
           TRIVY_EXIT_CODE: 1
+          TRIVY_IGNOREFILE: .trivyignore.yaml
           TRIVY_SCANNERS: secret
           TRIVY_SECRET_CONFIG: trivy-secret.yaml
         with:
