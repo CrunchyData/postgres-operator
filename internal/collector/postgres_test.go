@@ -73,6 +73,9 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+    - action: insert
+      key: process.executable.name
+      value: pgbackrest
   resource/postgres:
     attributes:
     - action: insert
@@ -84,6 +87,9 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+    - action: insert
+      key: process.executable.name
+      value: postgres
     - action: insert
       key: db.system
       value: postgresql
@@ -333,6 +339,9 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+    - action: insert
+      key: process.executable.name
+      value: pgbackrest
   resource/postgres:
     attributes:
     - action: insert
@@ -344,6 +353,9 @@ processors:
     - action: insert
       key: k8s.pod.name
       value: ${env:K8S_POD_NAME}
+    - action: insert
+      key: process.executable.name
+      value: postgres
     - action: insert
       key: db.system
       value: postgresql
