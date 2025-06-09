@@ -90,6 +90,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 				{"action": "insert", "key": "k8s.container.name", "value": naming.ContainerPGBouncer},
 				{"action": "insert", "key": "k8s.namespace.name", "value": "${env:K8S_POD_NAMESPACE}"},
 				{"action": "insert", "key": "k8s.pod.name", "value": "${env:K8S_POD_NAME}"},
+				{"action": "insert", "key": "process.executable.name", "value": "pgbouncer"},
 			},
 		}
 

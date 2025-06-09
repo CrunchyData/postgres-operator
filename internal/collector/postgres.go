@@ -197,6 +197,7 @@ func EnablePostgresLogging(
 				{"action": "insert", "key": "k8s.container.name", "value": naming.ContainerDatabase},
 				{"action": "insert", "key": "k8s.namespace.name", "value": "${env:K8S_POD_NAMESPACE}"},
 				{"action": "insert", "key": "k8s.pod.name", "value": "${env:K8S_POD_NAME}"},
+				{"action": "insert", "key": "process.executable.name", "value": "postgres"},
 
 				// https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/database#readme
 				{"action": "insert", "key": "db.system", "value": "postgresql"},
@@ -276,6 +277,7 @@ func EnablePostgresLogging(
 				{"action": "insert", "key": "k8s.container.name", "value": naming.ContainerDatabase},
 				{"action": "insert", "key": "k8s.namespace.name", "value": "${env:K8S_POD_NAMESPACE}"},
 				{"action": "insert", "key": "k8s.pod.name", "value": "${env:K8S_POD_NAME}"},
+				{"action": "insert", "key": "process.executable.name", "value": "pgbackrest"},
 			},
 		}
 
