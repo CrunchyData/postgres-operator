@@ -1,0 +1,68 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: init-pgbackrest
+status:
+  pgbackrest:
+    repoHost:
+      apiVersion: apps/v1
+      kind: StatefulSet
+      ready: true
+    repos:
+# Assert that the status has the two repos, with only the first having the `replicaCreateBackupComplete` field
+    - bound: true
+      name: repo1
+      replicaCreateBackupComplete: true
+      stanzaCreated: true
+    - bound: true
+      name: repo2
+      stanzaCreated: true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: init-pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+status:
+  succeeded: 1
+---
+# Assert the existence of two PVCs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: init-pgbackrest
+    postgres-operator.crunchydata.com/data: pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest: ""
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+    postgres-operator.crunchydata.com/pgbackrest-volume: ""
+  name: init-pgbackrest-repo1
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+status:
+  phase: Bound
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: init-pgbackrest
+    postgres-operator.crunchydata.com/data: pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest: ""
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo2
+    postgres-operator.crunchydata.com/pgbackrest-volume: ""
+  name: init-pgbackrest-repo2
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+status:
+  phase: Bound

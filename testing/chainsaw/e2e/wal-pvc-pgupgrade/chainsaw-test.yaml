@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: wal-pvc-pgupgrade
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: 00--create-resources.yaml
+    - assert:
+        file: 00-assert.yaml
+  - name: step-01
+    try:
+    - apply:
+        file: 01--create-data.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-02
+    try:
+    - apply:
+        file: 02--shutdown-cluster.yaml
+    - assert:
+        file: 02-assert.yaml
+  - name: step-03
+    try:
+    - apply:
+        file: 03--annotate-cluster.yaml
+    - assert:
+        file: 03-assert.yaml
+  - name: step-04
+    try:
+    - apply:
+        file: 04--restart-cluster.yaml
+    - assert:
+        file: 04-assert.yaml
+  - name: step-05
+    try:
+    - script:
+        content: |
+          kubectl -n "${NAMESPACE}" exec "statefulset.apps/wal-pvc-pgupgrade-repo-host" -c pgbackrest -- pgbackrest check --stanza=db
+    - script:
+        content: |
+          # Check that the old pg folders do not exist on the replica
+          REPLICA=$(kubectl get pod -l=postgres-operator.crunchydata.com/role=replica -n "${NAMESPACE}" -o=jsonpath='{ .items[0].metadata.name }')
+          kubectl -n "${NAMESPACE}" exec "${REPLICA}" -c database -- [ ! -d "pgdata/pg${KUTTL_PG_UPGRADE_FROM_VERSION}" ]
+  - name: step-06
+    try:
+    - apply:
+        file: 06--check-data-and-version.yaml
+    - assert:
+        file: 06-assert.yaml

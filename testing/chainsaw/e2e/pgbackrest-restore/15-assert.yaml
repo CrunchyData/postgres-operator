@@ -1,0 +1,16 @@
+---
+# Wait for the restore to complete and the cluster to come online.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: original
+status:
+  instances:
+    - name: '00'
+      replicas: 2
+      readyReplicas: 2
+      updatedReplicas: 2
+  pgbackrest:
+    restore:
+      id: one
+      finished: true

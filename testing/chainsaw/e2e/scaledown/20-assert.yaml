@@ -1,0 +1,14 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: scaledown2
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 2
+      replicas: 2
+      updatedReplicas: 2
+    - name: instance2
+      readyReplicas: 1
+      replicas: 1
+      updatedReplicas: 1
