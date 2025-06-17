@@ -1220,10 +1220,12 @@ func (r *Reconciler) reconcileInstance(
 
 		// For now, we are not using logrotate to rotate postgres or patroni logs,
 		// but we are using it for pgbackrest logs in the postgres pod, so we will
-		// set includeLogrotate to true, but only if backups are enabled.
+		// set includeLogrotate to true, but only if backups are enabled
+		// and local volumes are available.
+		includeLogrotate := backupsSpecFound && pgbackrest.RepoHostVolumeDefined(cluster)
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template,
 			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword,
-			[]string{naming.PGBackRestPGDataLogPath}, backupsSpecFound, true)
+			[]string{naming.PGBackRestPGDataLogPath}, includeLogrotate, true)
 	}
 
 	// Add postgres-exporter to the instance Pod spec
