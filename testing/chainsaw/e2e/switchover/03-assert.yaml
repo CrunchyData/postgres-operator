@@ -1,0 +1,36 @@
+---
+# After switchover, a former replica should now be the primary.
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: switchover
+    postgres-operator.crunchydata.com/data: postgres
+
+    postgres-operator.crunchydata.com/role: master
+    testing/role-before: replica
+
+---
+# The former primary should now be a replica.
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: switchover
+    postgres-operator.crunchydata.com/data: postgres
+
+    postgres-operator.crunchydata.com/role: replica
+    testing/role-before: master
+
+---
+# All instances should be healthy.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: switchover
+status:
+  instances:
+    - name: "00"
+      replicas: 2
+      readyReplicas: 2
+      updatedReplicas: 2
