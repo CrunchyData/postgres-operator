@@ -135,6 +135,8 @@ type PGUpgradeStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:storageversion
+//+versionName=v1beta1
 
 // PGUpgrade is the Schema for the pgupgrades API
 type PGUpgrade struct {

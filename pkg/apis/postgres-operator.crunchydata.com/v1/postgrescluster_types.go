@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package v1beta1
+package v1
 
 import (
 	"fmt"
@@ -10,12 +10,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
 type PostgresClusterSpec struct {
 	// +optional
-	Metadata *Metadata `json:"metadata,omitempty"`
+	Metadata *v1beta1.Metadata `json:"metadata,omitempty"`
 
 	// Specifies a data source for bootstrapping the PostgreSQL cluster.
 	// +optional
@@ -23,7 +25,7 @@ type PostgresClusterSpec struct {
 
 	// Authentication settings for the PostgreSQL server
 	// +optional
-	Authentication *PostgresAuthenticationSpec `json:"authentication,omitempty"`
+	Authentication *v1beta1.PostgresAuthenticationSpec `json:"authentication,omitempty"`
 
 	// PostgreSQL backup configuration
 	// +optional
@@ -31,7 +33,7 @@ type PostgresClusterSpec struct {
 
 	// General configuration of the PostgreSQL server
 	// +optional
-	Config *PostgresConfigSpec `json:"config,omitempty"`
+	Config *v1beta1.PostgresConfigSpec `json:"config,omitempty"`
 
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the
@@ -106,7 +108,7 @@ type PostgresClusterSpec struct {
 	// Configuration for the OpenTelemetry collector container used to collect
 	// logs and metrics.
 	// +optional
-	Instrumentation *InstrumentationSpec `json:"instrumentation,omitempty"`
+	Instrumentation *v1beta1.InstrumentationSpec `json:"instrumentation,omitempty"`
 
 	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift
 	// environment. If the field is unset, the operator will automatically
@@ -115,7 +117,7 @@ type PostgresClusterSpec struct {
 	OpenShift *bool `json:"openshift,omitempty"`
 
 	// +optional
-	Patroni *PatroniSpec `json:"patroni,omitempty"`
+	Patroni *v1beta1.PatroniSpec `json:"patroni,omitempty"`
 
 	// Suspends the rollout and reconciliation of changes made to the
 	// PostgresCluster spec.
@@ -144,8 +146,9 @@ type PostgresClusterSpec struct {
 	// +optional
 	Proxy *PostgresProxySpec `json:"proxy,omitempty"`
 
-	// The specification of a user interface that connects to PostgreSQL.
+	// The specification of a user interface that connects to PostgreSQL. -- DEPRECATED
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="type(self) == null_type", message="userInterface not available in v1"
 	UserInterface *UserInterfaceSpec `json:"userInterface,omitempty"`
 
 	// The specification of monitoring tools that connect to PostgreSQL
@@ -154,11 +157,11 @@ type PostgresClusterSpec struct {
 
 	// Specification of the service that exposes the PostgreSQL primary instance.
 	// +optional
-	Service *ServiceSpec `json:"service,omitempty"`
+	Service *v1beta1.ServiceSpec `json:"service,omitempty"`
 
 	// Specification of the service that exposes PostgreSQL replica instances
 	// +optional
-	ReplicaService *ServiceSpec `json:"replicaService,omitempty"`
+	ReplicaService *v1beta1.ServiceSpec `json:"replicaService,omitempty"`
 
 	// Whether or not the PostgreSQL cluster should be stopped.
 	// When this is true, workloads are scaled to zero and CronJobs
@@ -195,7 +198,7 @@ type PostgresClusterSpec struct {
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=64
 	// +optional
-	Users []PostgresUserSpec `json:"users,omitempty"`
+	Users []v1beta1.PostgresUserSpec `json:"users,omitempty"`
 }
 
 // DataSource defines data sources for a new PostgresCluster.
@@ -206,7 +209,7 @@ type DataSource struct {
 	// data source can be used for pre-populating a new PostgreSQL cluster
 	// +optional
 	// +kubebuilder:validation:XValidation:rule="!has(self.repo.volume)", message="Only S3, GCS or Azure repos can be used as a pgBackRest data source.", fieldPath=".repo"
-	PGBackRest *PGBackRestDataSource `json:"pgbackrest,omitempty"`
+	PGBackRest *v1beta1.PGBackRestDataSource `json:"pgbackrest,omitempty"`
 
 	// Defines a pgBackRest data source that can be used to pre-populate the PostgreSQL data
 	// directory for a new PostgreSQL cluster using a pgBackRest restore.
@@ -317,7 +320,7 @@ func (s *PostgresClusterSpec) Default() {
 	}
 
 	if s.Patroni == nil {
-		s.Patroni = new(PatroniSpec)
+		s.Patroni = new(v1beta1.PatroniSpec)
 	}
 	s.Patroni.Default()
 
@@ -340,7 +343,7 @@ type Backups struct {
 
 	// pgBackRest archive configuration
 	// +optional
-	PGBackRest PGBackRestArchive `json:"pgbackrest"`
+	PGBackRest v1beta1.PGBackRestArchive `json:"pgbackrest"`
 
 	// VolumeSnapshot configuration
 	// +optional
@@ -360,11 +363,11 @@ type PostgresClusterStatus struct {
 	InstanceSets []PostgresInstanceSetStatus `json:"instances,omitempty"`
 
 	// +optional
-	Patroni PatroniStatus `json:"patroni,omitempty"`
+	Patroni v1beta1.PatroniStatus `json:"patroni,omitempty"`
 
 	// Status information for pgBackRest
 	// +optional
-	PGBackRest *PGBackRestStatus `json:"pgbackrest,omitempty"`
+	PGBackRest *v1beta1.PGBackRestStatus `json:"pgbackrest,omitempty"`
 
 	// +optional
 	RegistrationRequired *RegistrationRequirementStatus `json:"registrationRequired,omitempty"`
@@ -431,7 +434,7 @@ const (
 
 type PostgresInstanceSetSpec struct {
 	// +optional
-	Metadata *Metadata `json:"metadata,omitempty"`
+	Metadata *v1beta1.Metadata `json:"metadata,omitempty"`
 
 	// This value goes into the name of an appsv1.StatefulSet, the hostname of
 	// a corev1.Pod, and label values. The pattern below is IsDNS1123Label
@@ -471,7 +474,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// ---
 	// +required
-	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	DataVolumeClaimSpec v1beta1.VolumeClaimSpec `json:"dataVolumeClaimSpec"`
 
 	// Priority class name for the PostgreSQL pod. Changing this value causes
 	// PostgreSQL to restart.
@@ -513,7 +516,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// ---
 	// +optional
-	WALVolumeClaimSpec *VolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
+	WALVolumeClaimSpec *v1beta1.VolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
 
 	// The list of tablespaces volumes to mount for this postgrescluster
 	// This field requires enabling TablespaceVolumes feature gate
@@ -530,7 +533,7 @@ type PostgresVolumesSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/ephemeral-volumes
 	// ---
 	// +optional
-	Temp *VolumeClaimSpec `json:"temp,omitempty"`
+	Temp *v1beta1.VolumeClaimSpec `json:"temp,omitempty"`
 }
 
 type TablespaceVolume struct {
@@ -553,14 +556,14 @@ type TablespaceVolume struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// ---
 	// +required
-	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	DataVolumeClaimSpec v1beta1.VolumeClaimSpec `json:"dataVolumeClaimSpec"`
 }
 
 // InstanceSidecars defines the configuration for instance sidecar containers
 type InstanceSidecars struct {
 	// Defines the configuration for the replica cert copy sidecar container
 	// +optional
-	ReplicaCertCopy *Sidecar `json:"replicaCertCopy,omitempty"`
+	ReplicaCertCopy *v1beta1.Sidecar `json:"replicaCertCopy,omitempty"`
 }
 
 // Default sets the default values for an instance set spec, including the name
@@ -599,7 +602,7 @@ type PostgresInstanceSetStatus struct {
 type PostgresProxySpec struct {
 
 	// Defines a PgBouncer proxy and connection pooler.
-	PGBouncer *PGBouncerPodSpec `json:"pgBouncer"`
+	PGBouncer *v1beta1.PGBouncerPodSpec `json:"pgBouncer"`
 }
 
 // Default sets the defaults for any proxies that are set.
@@ -614,7 +617,7 @@ type RegistrationRequirementStatus struct {
 }
 
 type PostgresProxyStatus struct {
-	PGBouncer PGBouncerPodStatus `json:"pgBouncer,omitempty"`
+	PGBouncer v1beta1.PGBouncerPodStatus `json:"pgBouncer,omitempty"`
 }
 
 // PostgresStandbySpec defines if/how the cluster should be a hot standby.
@@ -645,7 +648,7 @@ type PostgresStandbySpec struct {
 type UserInterfaceSpec struct {
 
 	// Defines a pgAdmin user interface.
-	PGAdmin *PGAdminPodSpec `json:"pgAdmin"`
+	PGAdmin *v1beta1.PGAdminPodSpec `json:"pgAdmin"`
 }
 
 // Default sets the defaults for any user interfaces that are set.
@@ -660,13 +663,11 @@ func (s *UserInterfaceSpec) Default() {
 type PostgresUserInterfaceStatus struct {
 
 	// The state of the pgAdmin user interface.
-	PGAdmin PGAdminPodStatus `json:"pgAdmin,omitempty"`
+	PGAdmin v1beta1.PGAdminPodStatus `json:"pgAdmin,omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:storageversion
-//+versionName=v1beta1
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Secret,v1},{Service,v1},{CronJob,v1beta1},{Deployment,v1},{Job,v1},{StatefulSet,v1},{PersistentVolumeClaim,v1}}
 
 // PostgresCluster is the Schema for the postgresclusters API
@@ -714,7 +715,7 @@ func init() {
 // MonitoringSpec is a union of the supported PostgreSQL Monitoring tools
 type MonitoringSpec struct {
 	// +optional
-	PGMonitor *PGMonitorSpec `json:"pgmonitor,omitempty"`
+	PGMonitor *v1beta1.PGMonitorSpec `json:"pgmonitor,omitempty"`
 }
 
 // MonitoringStatus is the current state of PostgreSQL cluster monitoring tool

@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	v1 "github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -32,6 +33,9 @@ func init() {
 		panic(err)
 	}
 	if err := v1beta1.AddToScheme(Scheme); err != nil {
+		panic(err)
+	}
+	if err := v1.AddToScheme(Scheme); err != nil {
 		panic(err)
 	}
 	if err := volumesnapshotv1.AddToScheme(Scheme); err != nil {
