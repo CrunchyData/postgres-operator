@@ -20,6 +20,7 @@ func TestAnnotationsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestBackup))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestBackupJobCompletion))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestConfigHash))
+	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestCurrentConfig))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestIPVersion))
 	assert.Assert(t, nil == validation.IsQualifiedName(PGBackRestRestore))
 	assert.Assert(t, nil == validation.IsQualifiedName(PostgresExporterCollectorsAnnotation))

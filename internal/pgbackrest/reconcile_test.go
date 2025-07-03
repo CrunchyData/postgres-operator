@@ -231,19 +231,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
           path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
-        - key: pgbackrest-server.conf
-          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
-    - secret:
-        items:
-        - key: pgbackrest.ca-roots
-          path: ~postgres-operator/tls-ca.crt
-        - key: pgbackrest-client.crt
-          path: ~postgres-operator/client-tls.crt
-        - key: pgbackrest-client.key
-          mode: 384
-          path: ~postgres-operator/client-tls.key
-        name: hippo-pgbackrest
 		`))
 	})
 
@@ -266,19 +254,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
           path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
-        - key: pgbackrest-server.conf
-          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
-    - secret:
-        items:
-        - key: pgbackrest.ca-roots
-          path: ~postgres-operator/tls-ca.crt
-        - key: pgbackrest-client.crt
-          path: ~postgres-operator/client-tls.crt
-        - key: pgbackrest-client.key
-          mode: 384
-          path: ~postgres-operator/client-tls.key
-        name: hippo-pgbackrest
 		`))
 	})
 
@@ -319,6 +295,7 @@ func TestAddConfigToInstancePod(t *testing.T) {
           mode: 384
           path: ~postgres-operator/client-tls.key
         name: hippo-pgbackrest
+        optional: true
 		`))
 	})
 }
