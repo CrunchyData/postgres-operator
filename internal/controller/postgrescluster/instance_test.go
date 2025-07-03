@@ -567,104 +567,14 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     readOnly: true
 - name: other
   resources: {}
-- command:
-  - pgbackrest
-  - server
-  livenessProbe:
-    exec:
-      command:
-      - pgbackrest
-      - server-ping
-  name: pgbackrest
-  resources: {}
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-      - ALL
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  volumeMounts:
-  - mountPath: /etc/pgbackrest/server
-    name: pgbackrest-server
-    readOnly: true
-  - mountPath: /pgdata
-    name: postgres-data
-  - mountPath: /pgwal
-    name: postgres-wal
-  - mountPath: /etc/pgbackrest/conf.d
-    name: pgbackrest-config
-    readOnly: true
-- command:
-  - bash
-  - -ceu
-  - --
-  - |-
-    monitor() {
-    exec {fd}<> <(:||:)
-    until read -r -t 5 -u "${fd}"; do
-      if
-        [[ "${filename}" -nt "/proc/self/fd/${fd}" ]] &&
-        pkill -HUP --exact --parent=0 pgbackrest
-      then
-        exec {fd}>&- && exec {fd}<> <(:||:)
-        stat --dereference --format='Loaded configuration dated %y' "${filename}"
-      elif
-        { [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] ||
-          [[ "${authority}" -nt "/proc/self/fd/${fd}" ]]
-        } &&
-        pkill -HUP --exact --parent=0 pgbackrest
-      then
-        exec {fd}>&- && exec {fd}<> <(:||:)
-        stat --format='Loaded certificates dated %y' "${directory}"
-      fi
-    done
-    }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
-  - pgbackrest-config
-  - /etc/pgbackrest/server
-  - /etc/pgbackrest/conf.d/~postgres-operator/tls-ca.crt
-  - /etc/pgbackrest/conf.d/~postgres-operator_server.conf
-  name: pgbackrest-config
-  resources: {}
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-      - ALL
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  volumeMounts:
-  - mountPath: /etc/pgbackrest/server
-    name: pgbackrest-server
-    readOnly: true
-  - mountPath: /etc/pgbackrest/conf.d
-    name: pgbackrest-config
-    readOnly: true
 		`))
 
-		// Instance configuration files with certificates.
+		// Instance configuration files but no certificates.
 		// Other volumes are ignored.
 		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
 - name: other
 - name: postgres-data
 - name: postgres-wal
-- name: pgbackrest-server
-  projected:
-    sources:
-    - secret:
-        items:
-        - key: pgbackrest-server.crt
-          path: server-tls.crt
-        - key: pgbackrest-server.key
-          mode: 384
-          path: server-tls.key
-        name: some-secret
 - name: pgbackrest-config
   projected:
     sources:
@@ -674,19 +584,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
           path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
-        - key: pgbackrest-server.conf
-          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
-    - secret:
-        items:
-        - key: pgbackrest.ca-roots
-          path: ~postgres-operator/tls-ca.crt
-        - key: pgbackrest-client.crt
-          path: ~postgres-operator/client-tls.crt
-        - key: pgbackrest-client.key
-          mode: 384
-          path: ~postgres-operator/client-tls.key
-        name: hippo-pgbackrest
 		`))
 	})
 
@@ -735,6 +633,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
           mode: 384
           path: ~postgres-operator/client-tls.key
         name: hippo-pgbackrest
+        optional: true
 			`))
 		}
 

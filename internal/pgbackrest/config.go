@@ -90,6 +90,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	// create an empty map for the config data
 	initialize.Map(&cm.Data)
 
+	addDedicatedHost := RepoHostVolumeDefined(postgresCluster)
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	// Port will always be populated, since the API will set a default of 5432 if not provided
 	pgPort := *postgresCluster.Spec.Port
@@ -102,14 +103,13 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
 		).String()
 
+	// As the cluster transitions from having a repository host to having none,
 	// PostgreSQL instances that have not rolled out expect to mount a server
 	// config file. Always populate that file so those volumes stay valid and
-	// Kubernetes propagates their contents to those pods. The repo host name
-	// given below should always be set, but this guards for cases when it might
-	// not be.
+	// Kubernetes propagates their contents to those pods.
 	cm.Data[serverConfigMapKey] = ""
 
-	if repoHostName != "" {
+	if addDedicatedHost && repoHostName != "" {
 		cm.Data[serverConfigMapKey] = iniGeneratedWarning +
 			serverConfig(postgresCluster).String()
 
