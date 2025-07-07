@@ -71,7 +71,7 @@ func checkForUpgrades(ctx context.Context, url, versionString string, backoff wa
 	var headerPayloadStruct *clientUpgradeData
 
 	// Prep request
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err == nil {
 		// generateHeader always returns some sort of struct, using defaults/nil values
 		// in case some of the checks return errors
