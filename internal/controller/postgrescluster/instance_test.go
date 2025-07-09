@@ -546,49 +546,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		},
 	}
 
-	t.Run("NoVolumeRepo", func(t *testing.T) {
-		cluster := cluster.DeepCopy()
-		cluster.Spec.Backups.PGBackRest.Repos = nil
-
-		out := pod.DeepCopy()
-		addPGBackRestToInstancePodSpec(ctx, cluster, &certificates, out)
-
-		// Only Containers and Volumes fields have changed.
-		assert.DeepEqual(t, pod, *out, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
-
-		// Only database container has mounts.
-		// Other containers are ignored.
-		assert.Assert(t, cmp.MarshalMatches(out.Containers, `
-- name: database
-  resources: {}
-  volumeMounts:
-  - mountPath: /etc/pgbackrest/conf.d
-    name: pgbackrest-config
-    readOnly: true
-- name: other
-  resources: {}
-		`))
-
-		// Instance configuration files but no certificates.
-		// Other volumes are ignored.
-		assert.Assert(t, cmp.MarshalMatches(out.Volumes, `
-- name: other
-- name: postgres-data
-- name: postgres-wal
-- name: pgbackrest-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: pgbackrest_instance.conf
-          path: pgbackrest_instance.conf
-        - key: config-hash
-          path: config-hash
-        name: hippo-pgbackrest-config
-		`))
-	})
-
-	t.Run("OneVolumeRepo", func(t *testing.T) {
+	t.Run("CloudOrVolumeSameBehavior", func(t *testing.T) {
 		alwaysExpect := func(t testing.TB, result *corev1.PodSpec) {
 			// Only Containers and Volumes fields have changed.
 			assert.DeepEqual(t, pod, *result, cmpopts.IgnoreFields(pod, "Containers", "Volumes"))
@@ -637,21 +595,31 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			`))
 		}
 
-		cluster := cluster.DeepCopy()
-		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+		clusterWithVolume := cluster.DeepCopy()
+		clusterWithVolume.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
 			{
 				Name:   "repo1",
 				Volume: new(v1beta1.RepoPVC),
 			},
 		}
 
-		out := pod.DeepCopy()
-		addPGBackRestToInstancePodSpec(ctx, cluster, &certificates, out)
-		alwaysExpect(t, out)
+		clusterWithCloudRepo := cluster.DeepCopy()
+		clusterWithCloudRepo.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name: "repo1",
+				GCS:  new(v1beta1.RepoGCS),
+			},
+		}
 
-		// The TLS server is added and configuration mounted.
-		// It has PostgreSQL volumes mounted while other volumes are ignored.
-		assert.Assert(t, cmp.MarshalMatches(out.Containers, `
+		outWithVolume := pod.DeepCopy()
+		addPGBackRestToInstancePodSpec(ctx, clusterWithVolume, &certificates, outWithVolume)
+		alwaysExpect(t, outWithVolume)
+
+		outWithCloudRepo := pod.DeepCopy()
+		addPGBackRestToInstancePodSpec(ctx, clusterWithCloudRepo, &certificates, outWithCloudRepo)
+		alwaysExpect(t, outWithCloudRepo)
+
+		outContainers := `
 - name: database
   resources: {}
   volumeMounts:
@@ -739,7 +707,12 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   - mountPath: /etc/pgbackrest/conf.d
     name: pgbackrest-config
     readOnly: true
-		`))
+		`
+
+		// The TLS server is added and configuration mounted.
+		// It has PostgreSQL volumes mounted while other volumes are ignored.
+		assert.Assert(t, cmp.MarshalMatches(outWithVolume.Containers, outContainers))
+		assert.Assert(t, cmp.MarshalMatches(outWithCloudRepo.Containers, outContainers))
 
 		t.Run("CustomResources", func(t *testing.T) {
 			cluster := cluster.DeepCopy()
@@ -756,7 +729,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 				},
 			}
 
-			before := out.DeepCopy()
+			before := outWithVolume.DeepCopy()
 			out := pod.DeepCopy()
 			addPGBackRestToInstancePodSpec(ctx, cluster, &certificates, out)
 			alwaysExpect(t, out)
