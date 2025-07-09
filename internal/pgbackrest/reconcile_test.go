@@ -231,7 +231,20 @@ func TestAddConfigToInstancePod(t *testing.T) {
           path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
+        - key: pgbackrest-server.conf
+          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-pgbackrest
+        optional: true
 		`))
 	})
 
@@ -254,7 +267,20 @@ func TestAddConfigToInstancePod(t *testing.T) {
           path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
+        - key: pgbackrest-server.conf
+          path: ~postgres-operator_server.conf
         name: hippo-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-pgbackrest
+        optional: true
 		`))
 	})
 
@@ -370,6 +396,84 @@ func TestAddConfigToRepoPod(t *testing.T) {
           path: ~postgres-operator/client-tls.key
         name: hippo-pgbackrest
 		`))
+	})
+}
+
+func TestAddConfigToCloudBackupJob(t *testing.T) {
+	cluster := v1beta1.PostgresCluster{}
+	cluster.Name = "hippo"
+	cluster.Default()
+
+	podTemplate := corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "other"},
+				{Name: "pgbackrest"},
+			},
+		},
+	}
+
+	alwaysExpect := func(t testing.TB, result *corev1.PodSpec) {
+		// Only Containers and Volumes fields have changed.
+		assert.DeepEqual(t, podTemplate.Spec, *result, cmpopts.IgnoreFields(podTemplate.Spec, "Containers", "Volumes"))
+
+		// Only pgBackRest container has config mount, but tmp dir is mounted to all containers
+		assert.Assert(t, cmp.MarshalMatches(result.Containers, `
+- name: other
+  resources: {}
+  volumeMounts:
+  - mountPath: /tmp
+    name: tmp
+- name: pgbackrest
+  resources: {}
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+		`))
+	}
+
+	t.Run("CustomProjections", func(t *testing.T) {
+		custom := corev1.ConfigMapProjection{}
+		custom.Name = "custom-configmap"
+
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Configuration = []corev1.VolumeProjection{
+			{ConfigMap: &custom},
+		}
+
+		out := podTemplate.DeepCopy()
+		AddConfigToCloudBackupJob(cluster, out)
+		alwaysExpect(t, &out.Spec)
+
+		// Cloud backup configuration files and client certificates
+		// after custom projections.
+		assert.Assert(t, cmp.MarshalMatches(out.Spec.Volumes, `
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        name: custom-configmap
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp`))
 	})
 }
 
@@ -1004,10 +1108,13 @@ func TestSecret(t *testing.T) {
 	assert.NilError(t, err)
 
 	t.Run("NoRepoHost", func(t *testing.T) {
-		// Nothing happens when there is no repository host.
-		constant := intent.DeepCopy()
+		// We always add the pgbackrest server certs
 		assert.NilError(t, Secret(ctx, cluster, nil, root, existing, intent))
-		assert.DeepEqual(t, constant, intent)
+		assert.Assert(t, len(intent.Data["pgbackrest-client.crt"]) > 0)
+		assert.Assert(t, len(intent.Data["pgbackrest-client.key"]) > 0)
+		assert.Assert(t, len(intent.Data["pgbackrest.ca-roots"]) > 0)
+		assert.Assert(t, len(intent.Data["pgbackrest-repo-host.crt"]) == 0)
+		assert.Assert(t, len(intent.Data["pgbackrest-repo-host.key"]) == 0)
 	})
 
 	host := new(appsv1.StatefulSet)

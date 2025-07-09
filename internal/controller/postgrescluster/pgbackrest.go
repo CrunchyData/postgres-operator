@@ -23,7 +23,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -780,12 +779,7 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 // generateBackupJobSpecIntent generates a JobSpec for a pgBackRest backup job
 func generateBackupJobSpecIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repo v1beta1.PGBackRestRepo, serviceAccountName string,
-	labels, annotations map[string]string, opts ...string) (*batchv1.JobSpec, error) {
-
-	selector, containerName, err := getPGBackRestExecSelector(postgresCluster, repo)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+	labels, annotations map[string]string, opts ...string) *batchv1.JobSpec {
 
 	repoIndex := regexRepoIndex.FindString(repo.Name)
 	cmdOpts := []string{
@@ -800,19 +794,29 @@ func generateBackupJobSpecIntent(ctx context.Context, postgresCluster *v1beta1.P
 	cmdOpts = append(cmdOpts, opts...)
 
 	container := corev1.Container{
-		Command: []string{"/opt/crunchy/bin/pgbackrest"},
-		Env: []corev1.EnvVar{
-			{Name: "COMMAND", Value: "backup"},
-			{Name: "COMMAND_OPTS", Value: strings.Join(cmdOpts, " ")},
-			{Name: "COMPARE_HASH", Value: "true"},
-			{Name: "CONTAINER", Value: containerName},
-			{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
-			{Name: "SELECTOR", Value: selector.String()},
-		},
 		Image:           config.PGBackRestContainerImage(postgresCluster),
 		ImagePullPolicy: postgresCluster.Spec.ImagePullPolicy,
 		Name:            naming.PGBackRestRepoContainerName,
 		SecurityContext: initialize.RestrictedSecurityContext(),
+	}
+
+	// If the repo that we are backing up to is a local volume, we will configure
+	// the job to use the pgbackrest go binary to exec into the repo host and run
+	// the backup. If the repo is a cloud-based repo, we will run the pgbackrest
+	// backup command directly in the job pod.
+	if repo.Volume != nil {
+		container.Command = []string{"/opt/crunchy/bin/pgbackrest"}
+		container.Env = []corev1.EnvVar{
+			{Name: "COMMAND", Value: "backup"},
+			{Name: "COMMAND_OPTS", Value: strings.Join(cmdOpts, " ")},
+			{Name: "COMPARE_HASH", Value: "true"},
+			{Name: "CONTAINER", Value: naming.PGBackRestRepoContainerName},
+			{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
+			{Name: "SELECTOR", Value: naming.PGBackRestDedicatedSelector(postgresCluster.GetName()).String()},
+		}
+	} else {
+		container.Command = []string{"/bin/pgbackrest", "backup"}
+		container.Command = append(container.Command, cmdOpts...)
 	}
 
 	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
@@ -868,13 +872,16 @@ func generateBackupJobSpecIntent(ctx context.Context, postgresCluster *v1beta1.P
 	jobSpec.Template.Spec.ImagePullSecrets = postgresCluster.Spec.ImagePullSecrets
 
 	// add pgBackRest configs to template
-	if containerName == naming.PGBackRestRepoContainerName {
+	if repo.Volume != nil {
 		pgbackrest.AddConfigToRepoPod(postgresCluster, &jobSpec.Template.Spec)
 	} else {
-		pgbackrest.AddConfigToInstancePod(postgresCluster, &jobSpec.Template.Spec)
+		// If we are doing a cloud repo backup, we need to give pgbackrest proper permissions
+		// to read certificate files
+		jobSpec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
+		pgbackrest.AddConfigToCloudBackupJob(postgresCluster, &jobSpec.Template)
 	}
 
-	return jobSpec, nil
+	return jobSpec
 }
 
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={delete,list}
@@ -2033,13 +2040,11 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 	return nil
 }
 
-// reconcilePGBackRestConfig is responsible for reconciling the pgBackRest ConfigMaps and Secrets.
+// reconcilePGBackRestConfig is responsible for reconciling the pgBackRest ConfigMaps.
 func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) error {
-
-	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoConfig")
 
 	backrestConfig, err := pgbackrest.CreatePGBackRestConfigMapIntent(ctx, postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, instanceNames)
@@ -2052,12 +2057,6 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	}
 	if err := r.apply(ctx, backrestConfig); err != nil {
 		return errors.WithStack(err)
-	}
-
-	repoHostConfigured := pgbackrest.RepoHostVolumeDefined(postgresCluster)
-	if !repoHostConfigured {
-		log.V(1).Info("skipping SSH reconciliation, no repo hosts configured")
-		return nil
 	}
 
 	return nil
@@ -2461,11 +2460,8 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
-	spec, err := generateBackupJobSpecIntent(ctx, postgresCluster, repo,
+	spec := generateBackupJobSpecIntent(ctx, postgresCluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
-	if err != nil {
-		return errors.WithStack(err)
-	}
 
 	backupJob.Spec = *spec
 
@@ -2553,11 +2549,15 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		replicaRepoReady = (condition.Status == metav1.ConditionTrue)
 	}
 
-	// get pod name and container name as needed to exec into the proper pod and create
-	// the pgBackRest backup
-	_, containerName, err := getPGBackRestExecSelector(postgresCluster, replicaCreateRepo)
-	if err != nil {
-		return errors.WithStack(err)
+	// TODO: Since we now only exec into the repo host when backing up to a local volume and
+	// run the backup in the job pod when backing up to a cloud-based repo, we should consider
+	// using a different value than the container name for the "pgbackrest-config" annotation
+	// that we attach to these backups
+	var containerName string
+	if replicaCreateRepo.Volume != nil {
+		containerName = naming.PGBackRestRepoContainerName
+	} else {
+		containerName = naming.ContainerDatabase
 	}
 
 	// determine if the dedicated repository host is ready using the repo host ready status
@@ -2609,10 +2609,10 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		}
 	}
 
-	dedicatedEnabled := pgbackrest.RepoHostVolumeDefined(postgresCluster)
 	// return if no job has been created and the replica repo or the dedicated
 	// repo host is not ready
-	if job == nil && ((dedicatedEnabled && !dedicatedRepoReady) || !replicaRepoReady) {
+	if job == nil && ((pgbackrest.RepoHostVolumeDefined(postgresCluster) && !dedicatedRepoReady) ||
+		!replicaRepoReady) {
 		return nil
 	}
 
@@ -2637,11 +2637,8 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
-	spec, err := generateBackupJobSpecIntent(ctx, postgresCluster, replicaCreateRepo,
+	spec := generateBackupJobSpecIntent(ctx, postgresCluster, replicaCreateRepo,
 		serviceAccount.GetName(), labels, annotations)
-	if err != nil {
-		return errors.WithStack(err)
-	}
 
 	backupJob.Spec = *spec
 
@@ -2821,27 +2818,6 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	}
 
 	return false, nil
-}
-
-// getPGBackRestExecSelector returns a selector and container name that allows the proper
-// Pod (along with a specific container within it) to be found within the Kubernetes
-// cluster as needed to exec into the container and run a pgBackRest command.
-func getPGBackRestExecSelector(postgresCluster *v1beta1.PostgresCluster,
-	repo v1beta1.PGBackRestRepo) (labels.Selector, string, error) {
-
-	var err error
-	var podSelector labels.Selector
-	var containerName string
-
-	if repo.Volume != nil {
-		podSelector = naming.PGBackRestDedicatedSelector(postgresCluster.GetName())
-		containerName = naming.PGBackRestRepoContainerName
-	} else {
-		podSelector, err = naming.AsSelector(naming.ClusterPrimary(postgresCluster.GetName()))
-		containerName = naming.ContainerDatabase
-	}
-
-	return podSelector, containerName, err
 }
 
 // getRepoHostStatus is responsible for returning the pgBackRest status for the
@@ -3088,11 +3064,8 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 	// set backup type (i.e. "full", "diff", "incr")
 	backupOpts := []string{"--type=" + backupType}
 
-	jobSpec, err := generateBackupJobSpecIntent(ctx, cluster, repo,
+	jobSpec := generateBackupJobSpecIntent(ctx, cluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
-	if err != nil {
-		return errors.WithStack(err)
-	}
 
 	// Suspend cronjobs when shutdown or read-only. Any jobs that have already
 	// started will continue.
@@ -3125,7 +3098,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 
 	// set metadata
 	pgBackRestCronJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("CronJob"))
-	err = errors.WithStack(r.setControllerReference(cluster, pgBackRestCronJob))
+	err := errors.WithStack(r.setControllerReference(cluster, pgBackRestCronJob))
 
 	if err == nil {
 		err = r.apply(ctx, pgBackRestCronJob)
