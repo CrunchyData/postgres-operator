@@ -1,45 +1,72 @@
+# https://golangci-lint.run/usage/configuration
 version: "2"
+
+# https://golangci-lint.run/usage/linters
 linters:
+  default: standard
   enable:
     - asasalint
     - asciicheck
     - bidichk
     - bodyclose
+    - copyloopvar
     - depguard
+    - dupword
     - durationcheck
     - errchkjson
+    - errname
     - errorlint
     - exhaustive
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - ginkgolinter
     - gocheckcompilerdirectives
     - gochecksumtype
     - goheader
+    - gomoddirectives
     - gomodguard
+    - goprintffuncname
     - gosec
     - gosmopolitan
+    - grouper
+    - iface
     - importas
+    - interfacebloat
+    - intrange
     - loggercheck
     - makezero
+    - mirror
     - misspell
     - musttag
     - nilerr
     - nilnesserr
     - noctx
+    - nolintlint
+    - nosprintfhostport
+    - prealloc
+    - promlinter
     - protogetter
     - reassign
     - recvcheck
     - rowserrcheck
+    - sloglint
     - spancheck
     - sqlclosecheck
+    - tagalign
     - testifylint
     - unconvert
     - unparam
+    - usestdlibvars
+    - usetesting
+    - wastedassign
     - zerologlint
-  disable:
-    - contextcheck
+
   settings:
     depguard:
       rules:
         everything:
+          files: ['$all']
           list-mode: lax
           allow:
             - go.opentelemetry.io/otel/semconv/v1.27.0
@@ -47,11 +74,10 @@ linters:
             - pkg: go.opentelemetry.io/otel/semconv
               desc: Use "go.opentelemetry.io/otel/semconv/v1.27.0" instead.
             - pkg: io/ioutil
-              desc: |
-                Use the "io" and "os" packages instead. See https://go.dev/doc/go1.16#ioutil
+              desc: Use the "io" and "os" packages instead. See https://go.dev/doc/go1.16#ioutil
         not-tests:
-          files:
-            - '!$test'
+          files: ['!$test','!**/internal/testing/**']
+          list-mode: lax
           deny:
             - pkg: net/http/httptest
               desc: Should be used only in tests.
@@ -62,42 +88,35 @@ linters:
             - pkg: k8s.io/client-go/discovery
               desc: Use the "internal/kubernetes" package instead.
         tests:
-          files:
-            - $test
+          files: ['$test']
+          list-mode: lax
           deny:
             - pkg: github.com/pkg/errors
               desc: Use the "errors" package unless you are interacting with stack traces.
+
     errchkjson:
       check-error-free-encoding: true
-    exhaustive:
-      default-signifies-exhaustive: true
+
     goheader:
-      values:
-        regexp:
-          DATES: ((201[7-9]|202[0-4]) - 2025|2025)
       template: |-
         Copyright {{ DATES }} Crunchy Data Solutions, Inc.
 
         SPDX-License-Identifier: Apache-2.0
+      values:
+        regexp:
+          DATES: ((201[7-9]|202[0-4]) - 2025|2025)
+
     gomodguard:
       blocked:
         modules:
-          - gopkg.in/yaml.v2:
-              recommendations:
-                - sigs.k8s.io/yaml
-          - gopkg.in/yaml.v3:
-              recommendations:
-                - sigs.k8s.io/yaml
-          - gotest.tools:
-              recommendations:
-                - gotest.tools/v3
+          - gopkg.in/yaml.v2: { recommendations: [sigs.k8s.io/yaml] }
+          - gopkg.in/yaml.v3: { recommendations: [sigs.k8s.io/yaml] }
+          - gotest.tools: { recommendations: [gotest.tools/v3] }
           - k8s.io/kubernetes:
-              reason: |
-                k8s.io/kubernetes is for managing dependencies of the Kubernetes project, i.e. building kubelet and kubeadm.
-    gosec:
-      excludes:
-        - G115
+              reason: k8s.io/kubernetes is for building kubelet, kubeadm, etc.
+
     importas:
+      no-unaliased: true
       alias:
         - pkg: k8s.io/api/(\w+)/(v[\w\w]+)
           alias: $1$2
@@ -105,51 +124,54 @@ linters:
           alias: $1$2
         - pkg: k8s.io/apimachinery/pkg/api/errors
           alias: apierrors
-      no-unaliased: true
+
     spancheck:
-      checks:
-        - end
-        - record-error
-      ignore-check-signatures:
-        - tracing.Escape
+      checks: [end, record-error]
       extra-start-span-signatures:
         - github.com/crunchydata/postgres-operator/internal/tracing.Start:opentelemetry
+      ignore-check-signatures:
+        - tracing.Escape
+
   exclusions:
+    warn-unused: true
     presets:
-      - comments
       - common-false-positives
       - legacy
       - std-error-handling
     rules:
-      - linters:
-          - depguard
+      # This internal package is the one place we want to do API discovery.
+      - linters: [depguard]
         path: internal/kubernetes/discovery.go
         text: k8s.io/client-go/discovery
-      - linters:
-          - recvcheck
+
+      # Postgres HBA rules often include "all all all"
+      - linters: [dupword]
+        path: /(hba|postgres)[^/]+$
+        text: words \(all\) found
+
+      # These value types have unmarshal methods.
+      # https://github.com/raeperd/recvcheck/issues/7
+      - linters: [recvcheck]
         path: internal/pki/pki.go
         text: methods of "(Certificate|PrivateKey)"
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+
+# https://golangci-lint.run/usage/formatters
 formatters:
   enable:
     - gci
     - gofmt
-    - goimports
   settings:
     gci:
       sections:
         - standard
         - default
         - localmodule
-  exclusions:
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+
 issues:
-  # Disable max issues limit (default is 50)
+  # Fix only when requested
+  fix: false
+
+  # Show all issues at once
   max-issues-per-linter: 0
   max-same-issues: 0
+  uniq-by-line: false

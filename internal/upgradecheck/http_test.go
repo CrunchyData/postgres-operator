@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -171,7 +170,7 @@ func TestCheckForUpgradesScheduler(t *testing.T) {
 
 		// A panicking call
 		funcFoo = func() (*http.Response, error) {
-			panic(fmt.Errorf("oh no!"))
+			panic("oh no!")
 		}
 
 		s := CheckForUpgradesScheduler{

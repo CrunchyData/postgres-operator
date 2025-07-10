@@ -465,7 +465,7 @@ func instanceYAML(
 			// created. That value should be injected using the downward API and the
 			// PATRONI_KUBERNETES_POD_IP environment variable.
 
-			// Missing here is "ports" which is is connascent with "postgresql.connect_address".
+			// Missing here is "ports" which is connascent with "postgresql.connect_address".
 			// See the PATRONI_KUBERNETES_PORTS env variable.
 		},
 

@@ -480,7 +480,7 @@ func TestReconcilePatroniStatus(t *testing.T) {
 		instance := &Instance{
 			Name: instanceName, Runner: runner,
 		}
-		for i := 0; i < readyReplicas; i++ {
+		for range readyReplicas {
 			instance.Pods = append(instance.Pods, &corev1.Pod{
 				Status: corev1.PodStatus{
 					Conditions: []corev1.PodCondition{{
