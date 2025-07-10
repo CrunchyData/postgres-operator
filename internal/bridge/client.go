@@ -327,7 +327,7 @@ func (c *Client) doWithRetry(
 	// Retry the request when the server responds with "Too many requests".
 	// - https://docs.crunchybridge.com/api-concepts/getting-started/#status-codes
 	// - https://docs.crunchybridge.com/api-concepts/getting-started/#rate-limiting
-	for err == nil && response.StatusCode == 429 {
+	for err == nil && response.StatusCode == http.StatusTooManyRequests {
 		seconds, _ := strconv.Atoi(response.Header.Get("Retry-After"))
 
 		// Only retry when the response indicates how long to wait.
@@ -378,11 +378,11 @@ func (c *Client) CreateAuthObject(ctx context.Context, authn AuthObject) (AuthOb
 			}
 
 		// 401, Unauthorized
-		case response.StatusCode == 401:
+		case response.StatusCode == http.StatusUnauthorized:
 			err = fmt.Errorf("%w: %s", errAuthentication, body)
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -409,7 +409,7 @@ func (c *Client) CreateInstallation(ctx context.Context) (Installation, error) {
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -445,7 +445,7 @@ func (c *Client) ListClusters(ctx context.Context, apiKey, teamId string) ([]*Cl
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -486,7 +486,7 @@ func (c *Client) CreateCluster(
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -524,14 +524,14 @@ func (c *Client) DeleteCluster(ctx context.Context, apiKey, id string) (*Cluster
 		// --https://docs.crunchybridge.com/api-concepts/idempotency#delete-semantics
 		// But also, if we can't find it...
 		// Maybe if no ID we return already deleted?
-		case response.StatusCode == 410:
+		case response.StatusCode == http.StatusGone:
 			fallthrough
-		case response.StatusCode == 404:
+		case response.StatusCode == http.StatusNotFound:
 			deletedAlready = true
 			err = nil
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -565,7 +565,7 @@ func (c *Client) GetCluster(ctx context.Context, apiKey, id string) (*ClusterApi
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -599,7 +599,7 @@ func (c *Client) GetClusterStatus(ctx context.Context, apiKey, id string) (*Clus
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -633,7 +633,7 @@ func (c *Client) GetClusterUpgrade(ctx context.Context, apiKey, id string) (*Clu
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -674,7 +674,7 @@ func (c *Client) UpgradeCluster(
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -709,7 +709,7 @@ func (c *Client) UpgradeClusterHA(ctx context.Context, apiKey, id, action string
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -747,7 +747,7 @@ func (c *Client) UpdateCluster(
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -777,7 +777,7 @@ func (c *Client) GetClusterRole(ctx context.Context, apiKey, clusterId, roleName
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}
@@ -807,7 +807,7 @@ func (c *Client) ListClusterRoles(ctx context.Context, apiKey, id string) ([]*Cl
 			}
 
 		default:
-			//nolint:goerr113 // This is intentionally dynamic.
+			//nolint:err113 // This is intentionally dynamic.
 			err = fmt.Errorf("%v: %s", response.Status, body)
 		}
 	}

@@ -181,7 +181,7 @@ REVOKE ALL PRIVILEGES
 			// - https://www.postgresql.org/docs/current/perm-functions.html
 			`ALTER ROLE :"username" SET search_path TO :'namespace';`,
 
-			// Allow the PgBouncer user to to login.
+			// Allow the PgBouncer user to login.
 			`ALTER ROLE :"username" LOGIN PASSWORD :'verifier';`,
 
 			// Commit (finish) the transaction.

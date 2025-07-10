@@ -1180,7 +1180,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	var deltaOptFound, foundTarget bool
 	for _, opt := range opts {
 		switch {
-		case targetRegex.Match([]byte(opt)):
+		case targetRegex.MatchString(opt):
 			foundTarget = true
 		case strings.Contains(opt, "--delta"):
 			deltaOptFound = true
@@ -2799,7 +2799,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	}
 	// Don't record event or return an error if configHashMismatch is true, since this just means
 	// configuration changes in ConfigMaps/Secrets have not yet propagated to the container.
-	// Therefore, just log an an info message and return an error to requeue and try again.
+	// Therefore, just log an info message and return an error to requeue and try again.
 	if configHashMismatch {
 
 		return true, nil

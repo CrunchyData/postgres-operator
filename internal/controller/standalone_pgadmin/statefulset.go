@@ -122,7 +122,7 @@ func statefulset(
 
 	if collector.OpenTelemetryLogsEnabled(ctx, pgadmin) {
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
-		// so the collector needs access to that that path.
+		// so the collector needs access to that path.
 		dataVolumeMount := corev1.VolumeMount{
 			Name:      "pgadmin-data",
 			MountPath: "/var/lib/pgadmin",
