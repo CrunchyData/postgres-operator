@@ -191,8 +191,10 @@ const (
 	ConditionDeleting  = "Deleting"
 )
 
-// +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:storageversion
+//+versionName=v1beta1
 // +operator-sdk:csv:customresourcedefinitions:resources={{ConfigMap,v1},{Secret,v1},{Service,v1},{CronJob,v1beta1},{Deployment,v1},{Job,v1},{StatefulSet,v1},{PersistentVolumeClaim,v1}}
 
 // CrunchyBridgeCluster is the Schema for the crunchybridgeclusters API

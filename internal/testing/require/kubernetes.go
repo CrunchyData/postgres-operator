@@ -15,6 +15,8 @@ import (
 	"golang.org/x/tools/go/packages"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/version"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -70,6 +72,34 @@ var kubernetes struct {
 func Kubernetes(t TestingT) client.Client {
 	t.Helper()
 	_, cc := kubernetes3(t)
+	return cc
+}
+
+// KubernetesAtLeast is the same as [Kubernetes] but also calls t.Skip when
+// the connected Kubernetes API is earlier than minVersion, like "1.28" or "1.27.7".
+func KubernetesAtLeast(t TestingT, minVersion string) client.Client {
+	t.Helper()
+
+	expectedVersion, err := version.ParseGeneric(minVersion)
+	assert.NilError(t, err)
+
+	// Start or connect to Kubernetes
+	env, cc := kubernetes3(t)
+
+	dc, err := discovery.NewDiscoveryClientForConfig(env.Config)
+	assert.NilError(t, err)
+
+	serverInfo, err := dc.ServerVersion()
+	assert.NilError(t, err)
+
+	serverVersion, err := version.ParseGeneric(serverInfo.GitVersion)
+	assert.NilError(t, err)
+
+	if serverVersion.LessThan(expectedVersion) {
+		t.Log("Kubernetes version", serverVersion, "is before", expectedVersion)
+		t.SkipNow()
+	}
+
 	return cc
 }
 

@@ -235,6 +235,8 @@ type PGAdminStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:storageversion
+//+versionName=v1beta1
 
 // PGAdmin is the Schema for the PGAdmin API
 type PGAdmin struct {
