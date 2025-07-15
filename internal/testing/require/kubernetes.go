@@ -58,6 +58,7 @@ var kubernetes struct {
 	// Count references to the started Environment.
 	count int
 	env   *envtest.Environment
+	err   error
 }
 
 // Kubernetes starts or connects to a Kubernetes API and returns a client that uses it.
@@ -118,44 +119,50 @@ func kubernetes3(t TestingT) (*envtest.Environment, client.Client) {
 		t.SkipNow()
 	}
 
-	frames := func() *goruntime.Frames {
-		var pcs [5]uintptr
-		n := goruntime.Callers(2, pcs[:])
-		return goruntime.CallersFrames(pcs[0:n])
-	}()
-
-	// Calculate the project directory as reported by [goruntime.CallersFrames].
-	frame, ok := frames.Next()
-	self := frame.File
-	root := strings.TrimSuffix(self,
-		filepath.Join("internal", "testing", "require", "kubernetes.go"))
-
-	// Find the first caller that is not in this file.
-	for ok && frame.File == self {
-		frame, ok = frames.Next()
-	}
-	caller := frame.File
-
-	// Calculate the project directory path relative to the caller.
-	base, err := filepath.Rel(filepath.Dir(caller), root)
-	assert.NilError(t, err)
-
-	// Calculate the snapshotter module directory path relative to the project directory.
-	var snapshotter string
-	if pkgs, err := packages.Load(
-		&packages.Config{Mode: packages.NeedModule},
-		"github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1",
-	); assert.Check(t,
-		err == nil && len(pkgs) > 0 && pkgs[0].Module != nil, "got %v\n%#v", err, pkgs,
-	) {
-		snapshotter, err = filepath.Rel(root, pkgs[0].Module.Dir)
-		assert.NilError(t, err)
-	}
-
 	kubernetes.Lock()
 	defer kubernetes.Unlock()
 
+	// Skip any remaining tests after the environment fails to start once.
+	// The test that tried to start the environment has reported the error.
+	if kubernetes.err != nil {
+		t.SkipNow()
+	}
+
 	if kubernetes.env == nil {
+		// Get the current call stack, minus the closure below.
+		frames := func() *goruntime.Frames {
+			var pcs [5]uintptr
+			n := goruntime.Callers(2, pcs[:])
+			return goruntime.CallersFrames(pcs[0:n])
+		}()
+
+		// Calculate the project directory as reported by [goruntime.CallersFrames].
+		frame, ok := frames.Next()
+		self := frame.File
+		root := strings.TrimSuffix(self,
+			filepath.Join("internal", "testing", "require", "kubernetes.go"))
+
+		// Find the first caller that is not in this file.
+		for ok && frame.File == self {
+			frame, ok = frames.Next()
+		}
+		caller := frame.File
+
+		// Calculate the project directory path relative to the caller.
+		base := Value(filepath.Rel(filepath.Dir(caller), root))
+
+		// Calculate the snapshotter module directory path relative to the project directory.
+		var snapshotter string
+		if pkgs, err := packages.Load(
+			&packages.Config{Mode: packages.NeedModule},
+			"github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1",
+		); assert.Check(t,
+			err == nil && len(pkgs) > 0 && pkgs[0].Module != nil, "got %v\n%#v", err, pkgs,
+		) {
+			snapshotter, err = filepath.Rel(root, pkgs[0].Module.Dir)
+			assert.NilError(t, err)
+		}
+
 		env := EnvTest(t, envtest.CRDInstallOptions{
 			ErrorIfPathMissing: true,
 			Paths: []string{
@@ -165,8 +172,13 @@ func kubernetes3(t TestingT) (*envtest.Environment, client.Client) {
 			Scheme: runtime.Scheme,
 		})
 
-		_, err := env.Start()
-		assert.NilError(t, err)
+		// There are multiple components in an environment; stop them all when any fail to start.
+		// Keep the error so other tests know not to try again.
+		_, kubernetes.err = env.Start()
+		if kubernetes.err != nil {
+			assert.Check(t, env.Stop())
+			assert.NilError(t, kubernetes.err)
+		}
 
 		kubernetes.env = env
 	}
@@ -182,6 +194,7 @@ func kubernetes3(t TestingT) (*envtest.Environment, client.Client) {
 		if kubernetes.count == 0 {
 			assert.Check(t, kubernetes.env.Stop())
 			kubernetes.env = nil
+			kubernetes.err = nil
 		}
 	})
 
