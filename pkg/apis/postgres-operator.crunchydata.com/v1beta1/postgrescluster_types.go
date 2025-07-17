@@ -531,6 +531,48 @@ type PostgresVolumesSpec struct {
 	// ---
 	// +optional
 	Temp *VolumeClaimSpec `json:"temp,omitempty"`
+
+	// These CRD xvalidation rules were over the complexity budget
+	// so I turned them off -- what's wrong here
+	// Additional volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	// // +kubebuilder:validation:items:XValidation:rule=`[has(self.claimName), has(self.claimTemplate)].filter(x, x == true).size() <= 1`,message=`can only have one of claimName, claimTemplate`
+	Additional []*AdditionalVolume `json:"additional,omitempty"`
+}
+
+type AdditionalVolume struct {
+	// The name of the volume used for mounting path.
+	// Must be unique.
+	// ---
+	// +kubebuilder:validation:Required
+	// // +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
+	Name string `json:"name,omitempty"`
+
+	// A reference to a preexisting PVC.
+	// ---
+	// +optional
+	// // +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
+	ClaimName string `json:"claimName,omitempty"`
+
+	// A PVC request.
+	// ---
+	// +optional
+	ClaimTemplate *VolumeClaimSpec `json:"claimTemplate,omitempty"`
+
+	// The containers to attach this volume to.
+	// ---
+	// +optional
+	// +listType=set
+	Containers []string `json:"containers,omitempty"`
+
+	// Sets the write/read mode of the volume
+	// ---
+	// +optional
+	ReadOnly bool `json:"readOnly,omitempty"`
 }
 
 type TablespaceVolume struct {

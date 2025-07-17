@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"slices"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var tmpDirSizeLimit = resource.MustParse("16Mi")
@@ -284,4 +286,64 @@ func safeHash32(content func(w io.Writer) error) (string, error) {
 		return "", err
 	}
 	return rand.SafeEncodeString(fmt.Sprint(hash.Sum32())), nil
+}
+
+// AdditionalVolumeMount returns the name and mount path of the additional volume.
+func AdditionalVolumeMount(cluster *v1beta1.PostgresCluster,
+	additionalVolume *v1beta1.AdditionalVolume) corev1.VolumeMount {
+
+	volumeName := naming.AdditionalVolume(cluster, additionalVolume).Name
+
+	return corev1.VolumeMount{
+		Name:      volumeName,
+		MountPath: "volumes" + "/" + additionalVolume.Name}
+}
+
+// addAdditionalVolumes adds additional volumes to the Postgres pod
+func addAdditionalVolumes(template *corev1.PodTemplateSpec,
+	inCluster *v1beta1.PostgresCluster,
+	additionalVolumes []*v1beta1.AdditionalVolume) {
+
+	for _, additionalVolume := range additionalVolumes {
+
+		additionalVolumeMount := AdditionalVolumeMount(
+			inCluster,
+			additionalVolume)
+
+		additionalVolumeSpec := corev1.Volume{
+			Name: additionalVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: additionalVolumeMount.Name,
+					ReadOnly:  additionalVolume.ReadOnly,
+				},
+			},
+		}
+
+		for i := range template.Spec.Containers {
+			if len(additionalVolume.Containers) == 0 ||
+				slices.Contains(
+					additionalVolume.Containers,
+					template.Spec.Containers[i].Name) {
+				template.Spec.Containers[i].VolumeMounts = append(
+					template.Spec.Containers[i].VolumeMounts,
+					additionalVolumeMount)
+			}
+		}
+
+		for i := range template.Spec.InitContainers {
+			if len(additionalVolume.Containers) == 0 ||
+				slices.Contains(
+					additionalVolume.Containers,
+					template.Spec.InitContainers[i].Name) {
+				template.Spec.InitContainers[i].VolumeMounts = append(
+					template.Spec.InitContainers[i].VolumeMounts,
+					additionalVolumeMount)
+			}
+		}
+
+		template.Spec.Volumes = append(
+			template.Spec.Volumes,
+			additionalVolumeSpec)
+	}
 }
