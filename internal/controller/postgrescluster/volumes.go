@@ -906,3 +906,64 @@ func getPVCName(volumes []*corev1.PersistentVolumeClaim, selector labels.Selecto
 	}
 	return ""
 }
+
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={get}
+// +kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={create,delete,patch}
+
+// reconcileAdditionalVolumes writes the PersistentVolumeClaim for additional volumes.
+func (r *Reconciler) reconcileAdditionalVolumes(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+	additionalVolumes []*v1beta1.AdditionalVolume,
+	// instance *appsv1.StatefulSet,
+	// observed *Instance,
+) (additionalVolumePVCs []*corev1.PersistentVolumeClaim, err error) {
+
+	if additionalVolumes == nil || len(additionalVolumes) == 0 {
+		return
+	}
+
+	for _, additionalVolume := range additionalVolumes {
+		// If the user provides a PVC, we leave it alone here
+		// and use it to mount the volume
+		if additionalVolume.ClaimName != "" {
+			continue
+		}
+
+		// TODO: What labels do we want to add
+		labelMap := map[string]string{
+			naming.LabelCluster: cluster.Name,
+		}
+
+		pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.AdditionalVolume(cluster, additionalVolume)}
+
+		pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
+
+		err = errors.WithStack(r.setControllerReference(cluster, pvc))
+
+		// TODO: Do we have other labels/annotation sources we want to merge?
+		pvc.Annotations = naming.Merge(
+			cluster.Spec.Metadata.GetAnnotationsOrNil())
+
+		pvc.Labels = naming.Merge(
+			cluster.Spec.Metadata.GetLabelsOrNil(),
+			labelMap,
+		)
+
+		pvc.Spec = additionalVolume.ClaimTemplate.AsPersistentVolumeClaimSpec()
+
+		if err == nil {
+			err = r.handlePersistentVolumeClaimError(cluster,
+				errors.WithStack(r.apply(ctx, pvc)))
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		additionalVolumePVCs = append(additionalVolumePVCs, pvc)
+	}
+
+	return
+
+}
