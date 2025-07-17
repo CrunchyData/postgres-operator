@@ -16,6 +16,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestSafeHash32(t *testing.T) {
@@ -375,6 +376,170 @@ func TestJobFailed(t *testing.T) {
 			// first ensure jobCompleted gives the expected result
 			isCompleted := jobFailed(tc.job)
 			assert.Assert(t, isCompleted == tc.expectFailed)
+		})
+	}
+}
+
+func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
+
+	podTemplate := &corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			InitContainers: []corev1.Container{
+				{Name: "startup"},
+				{Name: "config"},
+			},
+			Containers: []corev1.Container{
+				{Name: "database"},
+				{Name: "other"},
+			}}}
+
+	testCases := []struct {
+		tcName                 string
+		additionalVolumes      []v1beta1.AdditionalVolume
+		expectedContainers     string
+		expectedInitContainers string
+		expectedVolumes        string
+	}{{
+		tcName: "all",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
+			Containers: []string{},
+			ClaimName:  "required",
+			Name:       "required",
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+- name: other
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+- name: config
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required`,
+		expectedVolumes: `- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required`,
+	}, {
+		tcName: "multiple additional volumes",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
+			Containers: []string{},
+			ClaimName:  "required",
+			Name:       "required",
+		}, {
+			Containers: []string{},
+			ClaimName:  "also",
+			Name:       "other",
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other
+- name: other
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other
+- name: config
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other`,
+		expectedVolumes: `- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required
+- name: volumes-other
+  persistentVolumeClaim:
+    claimName: also`,
+	}, {
+		tcName: "database container only",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
+			Containers: []string{"database"},
+			ClaimName:  "required",
+			Name:       "required",
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+- name: other
+  resources: {}`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+- name: config
+  resources: {}`,
+		expectedVolumes: `- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required`,
+	}, {
+		tcName: "readonly",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
+			Containers: []string{"database"},
+			ClaimName:  "required",
+			Name:       "required",
+			ReadOnly:   true,
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+    readOnly: true
+- name: other
+  resources: {}`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+- name: config
+  resources: {}`,
+		expectedVolumes: `- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required
+    readOnly: true`,
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.tcName, func(t *testing.T) {
+
+			copyPodTemplate := podTemplate.DeepCopy()
+
+			addAdditionalVolumesToSpecifiedContainers(
+				copyPodTemplate,
+				tc.additionalVolumes,
+			)
+
+			assert.Assert(t, cmp.MarshalMatches(
+				copyPodTemplate.Spec.Containers,
+				tc.expectedContainers))
+			assert.Assert(t, cmp.MarshalMatches(
+				copyPodTemplate.Spec.InitContainers,
+				tc.expectedInitContainers))
+			assert.Assert(t, cmp.MarshalMatches(
+				copyPodTemplate.Spec.Volumes,
+				tc.expectedVolumes))
 		})
 	}
 }

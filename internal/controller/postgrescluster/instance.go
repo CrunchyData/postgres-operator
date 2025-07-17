@@ -1253,6 +1253,11 @@ func (r *Reconciler) reconcileInstance(
 		addDevSHM(&instance.Spec.Template)
 	}
 
+	// mount additional volumes to the Postgres instance containers
+	if err == nil && spec.Volumes != nil && len(spec.Volumes.Additional) > 0 {
+		addAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
+	}
+
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, instance))
 	}

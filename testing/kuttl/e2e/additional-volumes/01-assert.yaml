@@ -1,0 +1,65 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    check_containers_ready() { bash -ceu 'echo "$1" | jq -e ".[] | select(.type==\"ContainersReady\") | .status==\"True\""' - "$@"; }
+
+    pod=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=additional-vols)
+    [ "$pod" = "" ] && retry "Pod not found" && exit 1
+
+    condition_json=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.conditions}")
+    [ "$condition_json" = "" ] && retry "conditions not found" && exit 1
+    { check_containers_ready "$condition_json"; } || {
+      retry "containers not ready"
+      exit 1
+    }
+
+    extra_mounted_in_database=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.containerStatuses[?(@.name=='database')].volumeMounts[?(@.name=='volumes-extra')]}")
+
+    [ "$extra_mounted_in_database" = "" ] && (echo "extra not found in database" && exit 1)
+    
+    ubiq_mounted_in_database=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.containerStatuses[?(@.name=='database')].volumeMounts[?(@.name=='volumes-ubiq')]}")
+
+    [ "$ubiq_mounted_in_database" = "" ] && (echo "ubiq not found in database" && exit 1)
+    
+    extra_mounted_in_rcc=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.containerStatuses[?(@.name=='replication-cert-copy')].volumeMounts[?(@.name=='volumes-extra')]}")
+
+    [ "$extra_mounted_in_rcc" = "" ] || (echo "extra found in rcc" && exit 1)
+    
+    ubiq_mounted_in_rcc=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.containerStatuses[?(@.name=='replication-cert-copy')].volumeMounts[?(@.name=='volumes-ubiq')]}")
+
+    [ "$ubiq_mounted_in_rcc" = "" ] && (echo "ubiq not found in rcc" && exit 1)
+    
+    extra_mounted_in_nss=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.initContainerStatuses[?(@.name=='nss-wrapper-init')].volumeMounts[?(@.name=='volumes-extra')]}")
+
+    [ "$extra_mounted_in_nss" = "" ] && (echo "extra not found in nss" && exit 1)
+    
+    ubiq_mounted_in_nss=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.initContainerStatuses[?(@.name=='nss-wrapper-init')].volumeMounts[?(@.name=='volumes-ubiq')]}")
+
+    [ "$ubiq_mounted_in_nss" = "" ] && (echo "ubiq not found in nss" && exit 1)
+    
+    extra_mounted_in_startup=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.initContainerStatuses[?(@.name=='postgres-startup')].volumeMounts[?(@.name=='volumes-extra')]}")
+
+    [ "$extra_mounted_in_startup" = "" ] || (echo "extra found in startup" && exit 1)
+    
+    ubiq_mounted_in_startup=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.status.initContainerStatuses[?(@.name=='postgres-startup')].volumeMounts[?(@.name=='volumes-ubiq')]}")
+
+    [ "$ubiq_mounted_in_startup" = "" ] && (echo "ubiq not found in startup" && exit 1)
+
+    extra_isnt_readonly=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.spec.volumes[?(@.name=='volumes-extra')].persistentVolumeClaim.readOnly}")
+
+    [ "$extra_isnt_readonly" = "" ] || (echo "extra is readonly" && exit 1)
+    
+    ubiq_is_readonly=$(kubectl get "${pod}" -n "${NAMESPACE}" -o jsonpath="{.spec.volumes[?(@.name=='volumes-ubiq')].persistentVolumeClaim.readOnly}")
+
+    [ "$ubiq_is_readonly" = "" ] && (echo "ubiq is not readonly" && exit 1)
+
+    echo "clean bill of health"
+
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE describe pods --selector postgres-operator.crunchydata.com/cluster=additional-vols
+- namespace: $NAMESPACE
+  selector: postgres-operator.crunchydata.com/cluster=additional-vols
