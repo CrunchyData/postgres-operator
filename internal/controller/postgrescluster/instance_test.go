@@ -32,7 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
+	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -2017,5 +2019,288 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 			assert.Assert(t, foundPDB(expectedPDB))
 			assert.Assert(t, !foundPDB(leftoverPDB))
 		})
+	})
+}
+
+func TestReconcileInstanceConfigMap(t *testing.T) {
+	ctx := context.Background()
+	_, cc := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
+
+	r := &Reconciler{
+		Client: cc,
+		Owner:  client.FieldOwner(t.Name()),
+	}
+
+	t.Run("LocalVolumeOtelDisabled", func(t *testing.T) {
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-1"
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, true)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, true)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-1-instance-config")
+		assert.Equal(t, cm.Data["collector.yaml"], "")
+		assert.Equal(t, cm.Data["logrotate.conf"], "")
+	})
+
+	t.Run("CloudRepoOtelDisabled", func(t *testing.T) {
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-2"
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{{
+			Name: "repo1",
+			GCS: &v1beta1.RepoGCS{
+				Bucket: "test-bucket",
+			},
+		}}
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, true)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, true)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-2-instance-config")
+		assert.Equal(t, cm.Data["collector.yaml"], "")
+		assert.Equal(t, cm.Data["logrotate.conf"], "")
+	})
+
+	t.Run("LocalVolumeOtelMetricsEnabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryMetrics: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-3"
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, true)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, true)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-3-instance-config")
+		// We test the contents of the collector yaml elsewhere, I just want to
+		// make sure that it isn't empty here
+		assert.Assert(t, len(cm.Data["collector.yaml"]) > 0)
+		assert.Equal(t, cm.Data["logrotate.conf"], "")
+	})
+
+	t.Run("LocalVolumeOtelLogsEnabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-4"
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, true)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, true)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-4-instance-config")
+		// We test the contents of the collector and logrotate configs elsewhere,
+		// I just want to test that they aren't empty here
+		assert.Assert(t, len(cm.Data["collector.yaml"]) > 0)
+		assert.Assert(t, len(cm.Data["logrotate.conf"]) > 0)
+	})
+
+	t.Run("CloudRepoOtelMetricsEnabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryMetrics: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-5"
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, true)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, true)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-5-instance-config")
+		// We test the contents of the collector yaml elsewhere, I just want to
+		// make sure that it isn't empty here
+		assert.Assert(t, len(cm.Data["collector.yaml"]) > 0)
+		assert.Equal(t, cm.Data["logrotate.conf"], "")
+	})
+
+	t.Run("CloudRepoOtelLogsEnabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-6"
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, true)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, true)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-6-instance-config")
+		// We test the contents of the collector and logrotate configs elsewhere,
+		// I just want to test that they aren't empty here
+		assert.Assert(t, len(cm.Data["collector.yaml"]) > 0)
+		assert.Assert(t, len(cm.Data["logrotate.conf"]) > 0)
+	})
+
+	t.Run("BackupsDisabledOtelDisabled", func(t *testing.T) {
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-7"
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, false)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, false)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-7-instance-config")
+		assert.Equal(t, cm.Data["collector.yaml"], "")
+		assert.Equal(t, cm.Data["logrotate.conf"], "")
+	})
+
+	t.Run("BackupsDisabledOtelMetricsEnabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryMetrics: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-8"
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, false)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, false)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-8-instance-config")
+		assert.Assert(t, len(cm.Data["collector.yaml"]) > 0)
+		assert.Equal(t, cm.Data["logrotate.conf"], "")
+	})
+
+	t.Run("BackupsDisabledOtelLogsEnabled", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		ns := setupNamespace(t, cc)
+		cluster := testCluster()
+		cluster.Namespace = ns.Name
+		cluster.Name = "test-hippo-9"
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		assert.NilError(t, cc.Create(ctx, cluster))
+
+		spec := &v1beta1.PostgresInstanceSetSpec{}
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      cluster.Name + "-instance",
+				Namespace: ns.Name,
+			},
+		}
+		pgParameters := r.generatePostgresParameters(ctx, cluster, false)
+		otelConfig := collector.NewConfigForPostgresPod(ctx, cluster, pgParameters)
+
+		cm, err := r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, false)
+		assert.NilError(t, err)
+		assert.Equal(t, cm.Name, "test-hippo-9-instance-config")
+		assert.Assert(t, len(cm.Data["collector.yaml"]) > 0)
+		assert.Equal(t, cm.Data["logrotate.conf"], "")
 	})
 }
