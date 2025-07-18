@@ -38,6 +38,10 @@ const (
 	// repository host
 	CMRepoKey = "pgbackrest_repo.conf"
 
+	// CMCloudRepoKey is the name of the pgBackRest configuration file used by backup jobs
+	// for cloud repos
+	CMCloudRepoKey = "pgbackrest_cloud.conf"
+
 	// configDirectory is the pgBackRest configuration directory.
 	configDirectory = "/etc/pgbackrest/conf.d"
 
@@ -69,6 +73,7 @@ const (
 // pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
+// pgbackrest_cloud.conf is used by cloud repo backup jobs
 func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) (*corev1.ConfigMap, error) {
@@ -96,7 +101,6 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 	// create an empty map for the config data
 	initialize.Map(&cm.Data)
 
-	addDedicatedHost := RepoHostVolumeDefined(postgresCluster)
 	pgdataDir := postgres.DataDirectory(postgresCluster)
 	// Port will always be populated, since the API will set a default of 5432 if not provided
 	pgPort := *postgresCluster.Spec.Port
@@ -113,12 +117,10 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 	// PostgreSQL instances that have not rolled out expect to mount a server
 	// config file. Always populate that file so those volumes stay valid and
 	// Kubernetes propagates their contents to those pods.
-	cm.Data[serverConfigMapKey] = ""
+	cm.Data[serverConfigMapKey] = iniGeneratedWarning +
+		serverConfig(postgresCluster).String()
 
-	if addDedicatedHost && repoHostName != "" {
-		cm.Data[serverConfigMapKey] = iniGeneratedWarning +
-			serverConfig(postgresCluster).String()
-
+	if RepoHostVolumeDefined(postgresCluster) && repoHostName != "" {
 		cm.Data[CMRepoKey] = iniGeneratedWarning +
 			populateRepoHostConfigurationMap(
 				serviceName, serviceNamespace,
@@ -129,8 +131,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 				postgresCluster.Spec.Backups.PGBackRest.Global,
 			).String()
 
-		if RepoHostVolumeDefined(postgresCluster) &&
-			collector.OpenTelemetryLogsOrMetricsEnabled(ctx, postgresCluster) {
+		if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, postgresCluster) {
 
 			err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
 				ctx,
@@ -154,6 +155,18 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 				}})
 			}
 		}
+	}
+
+	if CloudRepoDefined(postgresCluster) {
+		cm.Data[CMCloudRepoKey] = iniGeneratedWarning +
+			populateCloudRepoConfigurationMap(
+				serviceName, serviceNamespace, pgdataDir,
+				config.FetchKeyCommand(&postgresCluster.Spec),
+				strconv.Itoa(postgresCluster.Spec.PostgresVersion),
+				pgPort, instanceNames,
+				postgresCluster.Spec.Backups.PGBackRest.Repos,
+				postgresCluster.Spec.Backups.PGBackRest.Global,
+			).String()
 	}
 
 	cm.Data[ConfigHashKey] = configHash
@@ -469,6 +482,64 @@ func populateRepoHostConfigurationMap(
 	if !pgBackRestLogPathSet {
 		global.Set("log-level-file", "off")
 	}
+
+	for option, val := range globalConfig {
+		global.Set(option, val)
+	}
+
+	// set the configs for all PG hosts
+	for i, pgHost := range pgHosts {
+		// TODO(cbandy): pass a FQDN in already.
+		pgHostFQDN := pgHost + "-0." +
+			serviceName + "." + serviceNamespace + ".svc." +
+			naming.KubernetesClusterDomain(context.Background())
+
+		stanza.Set(fmt.Sprintf("pg%d-host", i+1), pgHostFQDN)
+		stanza.Set(fmt.Sprintf("pg%d-host-type", i+1), "tls")
+		stanza.Set(fmt.Sprintf("pg%d-host-ca-file", i+1), certAuthorityAbsolutePath)
+		stanza.Set(fmt.Sprintf("pg%d-host-cert-file", i+1), certClientAbsolutePath)
+		stanza.Set(fmt.Sprintf("pg%d-host-key-file", i+1), certClientPrivateKeyAbsolutePath)
+
+		stanza.Set(fmt.Sprintf("pg%d-path", i+1), pgdataDir)
+		stanza.Set(fmt.Sprintf("pg%d-port", i+1), fmt.Sprint(pgPort))
+		stanza.Set(fmt.Sprintf("pg%d-socket-path", i+1), postgres.SocketDirectory)
+
+		if fetchKeyCommand != "" {
+			stanza.Set("archive-header-check", "n")
+			stanza.Set("page-header-check", "n")
+			stanza.Set("pg-version-force", postgresVersion)
+		}
+	}
+
+	return iniSectionSet{
+		"global":          global,
+		DefaultStanzaName: stanza,
+	}
+}
+
+func populateCloudRepoConfigurationMap(
+	serviceName, serviceNamespace, pgdataDir,
+	fetchKeyCommand, postgresVersion string,
+	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
+	globalConfig map[string]string,
+) iniSectionSet {
+
+	global := iniMultiSet{}
+	stanza := iniMultiSet{}
+
+	for _, repo := range repos {
+		if repo.Volume != nil {
+			continue
+		}
+
+		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
+
+		for option, val := range getExternalRepoConfigs(repo) {
+			global.Set(option, val)
+		}
+	}
+
+	global.Set("log-level-file", "off")
 
 	for option, val := range globalConfig {
 		global.Set(option, val)

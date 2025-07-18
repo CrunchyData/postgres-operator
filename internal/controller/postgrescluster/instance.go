@@ -1169,11 +1169,11 @@ func (r *Reconciler) reconcileInstance(
 	)
 
 	if err == nil {
-		instanceConfigMap, err = r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig)
+		instanceConfigMap, err = r.reconcileInstanceConfigMap(ctx, cluster, spec, instance, otelConfig, backupsSpecFound)
 	}
 	if err == nil {
 		instanceCertificates, err = r.reconcileInstanceCertificates(
-			ctx, cluster, spec, instance, rootCA)
+			ctx, cluster, spec, instance, rootCA, backupsSpecFound)
 	}
 	if err == nil {
 		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance, clusterVolumes, nil)
@@ -1398,10 +1398,8 @@ func addPGBackRestToInstancePodSpec(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instanceCertificates *corev1.Secret, instancePod *corev1.PodSpec,
 ) {
-	if pgbackrest.RepoHostVolumeDefined(cluster) {
-		pgbackrest.AddServerToInstancePod(ctx, cluster, instancePod,
-			instanceCertificates.Name)
-	}
+	pgbackrest.AddServerToInstancePod(ctx, cluster, instancePod,
+		instanceCertificates.Name)
 
 	pgbackrest.AddConfigToInstancePod(cluster, instancePod)
 }
@@ -1412,7 +1410,7 @@ func addPGBackRestToInstancePodSpec(
 // files (etc) that apply to instance of cluster.
 func (r *Reconciler) reconcileInstanceConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, spec *v1beta1.PostgresInstanceSetSpec,
-	instance *appsv1.StatefulSet, otelConfig *collector.Config,
+	instance *appsv1.StatefulSet, otelConfig *collector.Config, backupsSpecFound bool,
 ) (*corev1.ConfigMap, error) {
 	instanceConfigMap := &corev1.ConfigMap{ObjectMeta: naming.InstanceConfigMap(instance)}
 	instanceConfigMap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -1439,11 +1437,9 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 		err = collector.AddToConfigMap(ctx, otelConfig, instanceConfigMap)
 
 		// Add pgbackrest logrotate if OpenTelemetryLogs is enabled and
-		// local volumes are available
+		// backups are enabled
 		if err == nil &&
-			feature.Enabled(ctx, feature.OpenTelemetryLogs) &&
-			pgbackrest.RepoHostVolumeDefined(cluster) &&
-			cluster.Spec.Instrumentation != nil {
+			collector.OpenTelemetryLogsEnabled(ctx, cluster) && backupsSpecFound {
 
 			collector.AddLogrotateConfigs(ctx, cluster.Spec.Instrumentation,
 				instanceConfigMap,
@@ -1470,7 +1466,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 func (r *Reconciler) reconcileInstanceCertificates(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	spec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
-	root *pki.RootCertificateAuthority,
+	root *pki.RootCertificateAuthority, backupsSpecFound bool,
 ) (*corev1.Secret, error) {
 	existing := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	err := errors.WithStack(client.IgnoreNotFound(
@@ -1513,7 +1509,7 @@ func (r *Reconciler) reconcileInstanceCertificates(
 			root.Certificate, leafCert.Certificate,
 			leafCert.PrivateKey, instanceCerts)
 	}
-	if err == nil {
+	if err == nil && backupsSpecFound {
 		err = pgbackrest.InstanceCertificates(ctx, cluster,
 			root.Certificate, leafCert.Certificate, leafCert.PrivateKey,
 			instanceCerts)
