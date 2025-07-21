@@ -886,6 +886,52 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	}
 }
 
+func TestGetPGBackRestExecSelector(t *testing.T) {
+
+	testCases := []struct {
+		cluster           *v1beta1.PostgresCluster
+		repo              v1beta1.PGBackRestRepo
+		desc              string
+		expectedSelector  string
+		expectedContainer string
+	}{{
+		desc: "volume repo defined dedicated repo host enabled",
+		cluster: &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
+		},
+		repo: v1beta1.PGBackRestRepo{
+			Name:   "repo1",
+			Volume: &v1beta1.RepoPVC{},
+		},
+		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
+			"postgres-operator.crunchydata.com/pgbackrest=," +
+			"postgres-operator.crunchydata.com/pgbackrest-dedicated=",
+		expectedContainer: "pgbackrest",
+	}, {
+		desc: "cloud repo defined no repo host enabled",
+		cluster: &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{Name: "hippo"},
+		},
+		repo: v1beta1.PGBackRestRepo{
+			Name: "repo1",
+			S3:   &v1beta1.RepoS3{},
+		},
+		expectedSelector: "postgres-operator.crunchydata.com/cluster=hippo," +
+			"postgres-operator.crunchydata.com/instance," +
+			"postgres-operator.crunchydata.com/role=master",
+		expectedContainer: "database",
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			selector, container, err := getPGBackRestExecSelector(tc.cluster, tc.repo)
+			assert.NilError(t, err)
+			assert.Assert(t, selector.String() == tc.expectedSelector)
+			assert.Assert(t, container == tc.expectedContainer)
+		})
+	}
+}
+
 func TestReconcileReplicaCreateBackup(t *testing.T) {
 	// Garbage collector cleans up test resources before the test completes
 	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
@@ -970,13 +1016,17 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	}
 	assert.Assert(t, foundOwnershipRef)
 
-	var foundHashAnnotation bool
+	var foundConfigAnnotation, foundHashAnnotation bool
 	// verify annotations
 	for k, v := range backupJob.GetAnnotations() {
+		if k == naming.PGBackRestCurrentConfig && v == naming.PGBackRestRepoContainerName {
+			foundConfigAnnotation = true
+		}
 		if k == naming.PGBackRestConfigHash && v == configHash {
 			foundHashAnnotation = true
 		}
 	}
+	assert.Assert(t, foundConfigAnnotation)
 	assert.Assert(t, foundHashAnnotation)
 
 	// verify container & env vars
@@ -1697,11 +1747,11 @@ func TestGetPGBackRestResources(t *testing.T) {
 			jobCount: 0, pvcCount: 0, hostCount: 1,
 		},
 	}, {
-		desc: "no dedicated repo host defined, dedicated sts not deleted",
+		desc: "no dedicated repo host defined delete dedicated sts",
 		createResources: []client.Object{
 			&appsv1.StatefulSet{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "keep-dedicated-two",
+					Name:      "delete-dedicated",
 					Namespace: namespace,
 					Labels:    naming.PGBackRestDedicatedLabels(clusterName),
 				},
@@ -1730,8 +1780,43 @@ func TestGetPGBackRestResources(t *testing.T) {
 			},
 		},
 		result: testResult{
-			// Host count is 2 due to previous repo host sts not being deleted.
-			jobCount: 0, pvcCount: 0, hostCount: 2,
+			jobCount: 0, pvcCount: 0, hostCount: 0,
+		},
+	}, {
+		desc: "no repo host defined delete dedicated sts",
+		createResources: []client.Object{
+			&appsv1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "delete-dedicated-no-repo-host",
+					Namespace: namespace,
+					Labels:    naming.PGBackRestDedicatedLabels(clusterName),
+				},
+				Spec: appsv1.StatefulSetSpec{
+					Selector: metav1.SetAsLabelSelector(
+						naming.PGBackRestDedicatedLabels(clusterName)),
+					Template: corev1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: naming.PGBackRestDedicatedLabels(clusterName),
+						},
+						Spec: corev1.PodSpec{},
+					},
+				},
+			},
+		},
+		cluster: &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterName,
+				Namespace: namespace,
+				UID:       types.UID(clusterUID),
+			},
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{},
+				},
+			},
+		},
+		result: testResult{
+			jobCount: 0, pvcCount: 0, hostCount: 0,
 		},
 	}}
 
@@ -2563,11 +2648,12 @@ func TestCopyConfigurationResources(t *testing.T) {
 func TestGenerateBackupJobIntent(t *testing.T) {
 	ctx := context.Background()
 	t.Run("empty", func(t *testing.T) {
-		spec := generateBackupJobSpecIntent(ctx,
+		spec, err := generateBackupJobSpecIntent(ctx,
 			&v1beta1.PostgresCluster{}, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
 		)
+		assert.NilError(t, err)
 		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
 containers:
 - command:
@@ -2580,10 +2666,10 @@ containers:
   - name: COMPARE_HASH
     value: "true"
   - name: CONTAINER
-    value: pgbackrest
+    value: database
   - name: NAMESPACE
   - name: SELECTOR
-    value: postgres-operator.crunchydata.com/cluster=,postgres-operator.crunchydata.com/pgbackrest=,postgres-operator.crunchydata.com/pgbackrest-dedicated=
+    value: postgres-operator.crunchydata.com/cluster=,postgres-operator.crunchydata.com/instance,postgres-operator.crunchydata.com/role=master
   name: pgbackrest
   resources: {}
   securityContext:
@@ -2610,23 +2696,11 @@ volumes:
     sources:
     - configMap:
         items:
-        - key: pgbackrest_repo.conf
-          path: pgbackrest_repo.conf
+        - key: pgbackrest_instance.conf
+          path: pgbackrest_instance.conf
         - key: config-hash
           path: config-hash
-        - key: pgbackrest-server.conf
-          path: ~postgres-operator_server.conf
         name: -pgbackrest-config
-    - secret:
-        items:
-        - key: pgbackrest.ca-roots
-          path: ~postgres-operator/tls-ca.crt
-        - key: pgbackrest-client.crt
-          path: ~postgres-operator/client-tls.crt
-        - key: pgbackrest-client.key
-          mode: 384
-          path: ~postgres-operator/client-tls.key
-        name: -pgbackrest
 		`))
 	})
 
@@ -2636,11 +2710,12 @@ volumes:
 				ImagePullPolicy: corev1.PullAlways,
 			},
 		}
-		job := generateBackupJobSpecIntent(ctx,
+		job, err := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
 		)
+		assert.NilError(t, err)
 		assert.Equal(t, job.Template.Spec.Containers[0].ImagePullPolicy, corev1.PullAlways)
 	})
 
@@ -2651,11 +2726,12 @@ volumes:
 			cluster.Spec.Backups = v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{},
 			}
-			job := generateBackupJobSpecIntent(ctx,
+			job, err := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{},
 				"",
 				nil, nil,
 			)
+			assert.NilError(t, err)
 			assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources,
 				corev1.ResourceRequirements{})
 		})
@@ -2668,11 +2744,12 @@ volumes:
 					},
 				},
 			}
-			job := generateBackupJobSpecIntent(ctx,
+			job, err := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{},
 				"",
 				nil, nil,
 			)
+			assert.NilError(t, err)
 			assert.DeepEqual(t, job.Template.Spec.Containers[0].Resources,
 				corev1.ResourceRequirements{
 					Requests: corev1.ResourceList{
@@ -2707,11 +2784,12 @@ volumes:
 				},
 			},
 		}
-		job := generateBackupJobSpecIntent(ctx,
+		job, err := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
 		)
+		assert.NilError(t, err)
 		assert.Equal(t, job.Template.Spec.Affinity, affinity)
 	})
 
@@ -2720,11 +2798,12 @@ volumes:
 		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
 			PriorityClassName: initialize.String("some-priority-class"),
 		}
-		job := generateBackupJobSpecIntent(ctx,
+		job, err := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
 		)
+		assert.NilError(t, err)
 		assert.Equal(t, job.Template.Spec.PriorityClassName, "some-priority-class")
 	})
 
@@ -2738,11 +2817,12 @@ volumes:
 		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
 			Tolerations: tolerations,
 		}
-		job := generateBackupJobSpecIntent(ctx,
+		job, err := generateBackupJobSpecIntent(ctx,
 			cluster, v1beta1.PGBackRestRepo{},
 			"",
 			nil, nil,
 		)
+		assert.NilError(t, err)
 		assert.DeepEqual(t, job.Template.Spec.Tolerations, tolerations)
 	})
 
@@ -2752,16 +2832,18 @@ volumes:
 		t.Run("Undefined", func(t *testing.T) {
 			cluster.Spec.Backups.PGBackRest.Jobs = nil
 
-			spec := generateBackupJobSpecIntent(ctx,
+			spec, err := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
+			assert.NilError(t, err)
 			assert.Assert(t, spec.TTLSecondsAfterFinished == nil)
 
 			cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{}
 
-			spec = generateBackupJobSpecIntent(ctx,
+			spec, err = generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
+			assert.NilError(t, err)
 			assert.Assert(t, spec.TTLSecondsAfterFinished == nil)
 		})
 
@@ -2770,9 +2852,10 @@ volumes:
 				TTLSecondsAfterFinished: initialize.Int32(0),
 			}
 
-			spec := generateBackupJobSpecIntent(ctx,
+			spec, err := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
+			assert.NilError(t, err)
 			if assert.Check(t, spec.TTLSecondsAfterFinished != nil) {
 				assert.Equal(t, *spec.TTLSecondsAfterFinished, int32(0))
 			}
@@ -2783,9 +2866,10 @@ volumes:
 				TTLSecondsAfterFinished: initialize.Int32(100),
 			}
 
-			spec := generateBackupJobSpecIntent(ctx,
+			spec, err := generateBackupJobSpecIntent(ctx,
 				cluster, v1beta1.PGBackRestRepo{}, "", nil, nil,
 			)
+			assert.NilError(t, err)
 			if assert.Check(t, spec.TTLSecondsAfterFinished != nil) {
 				assert.Equal(t, *spec.TTLSecondsAfterFinished, int32(100))
 			}
