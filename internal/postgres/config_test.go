@@ -9,13 +9,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
@@ -35,6 +38,86 @@ func TestDataDirectory(t *testing.T) {
 	cluster.Spec.PostgresVersion = 12
 
 	assert.Equal(t, DataDirectory(cluster), "/pgdata/pg12")
+}
+
+func TestLogRotation(t *testing.T) {
+	t.Parallel()
+
+	const Day = 24 * time.Hour
+
+	random := func(low, high time.Duration) time.Duration {
+		return low + rand.N(high-low)
+	}
+
+	for _, tt := range []struct {
+		duration time.Duration
+		prefix   string
+		suffix   string
+		expected map[string]string
+	}{
+		// Small duration becomes one hour split into minutes
+		{duration: random(1, time.Hour),
+			expected: map[string]string{
+				"log_filename":             "%M",   // two-digit minute [00, 59]
+				"log_rotation_age":         "1min", // × 1 minute = 1 hour
+				"log_rotation_size":        "0",
+				"log_truncate_on_rotation": "on",
+			}},
+
+		// More than an hour becomes one day split into hours
+		{duration: random(90*time.Minute, 24*time.Hour),
+			expected: map[string]string{
+				"log_filename":             "%H", // two-digit hour [00,23]
+				"log_rotation_age":         "1h", // × 1 hour = 1 day
+				"log_rotation_size":        "0",
+				"log_truncate_on_rotation": "on",
+			}},
+
+		// More than one day becomes one week split into days
+		{duration: random(3*Day, 7*Day),
+			expected: map[string]string{
+				"log_filename":             "%a", // locale weekday name
+				"log_rotation_age":         "1d", // × 1 day = 1 week
+				"log_rotation_size":        "0",
+				"log_truncate_on_rotation": "on",
+			}},
+
+		// More than one week becomes one month split into days
+		{duration: random(11*Day, 25*Day),
+			expected: map[string]string{
+				"log_filename":             "%d", // two-digit day of the month [01, 31]
+				"log_rotation_age":         "1d", // × 1 day = 1 month
+				"log_rotation_size":        "0",
+				"log_truncate_on_rotation": "on",
+			}},
+
+		// More than one month becomes one year split into days
+		{duration: random(70*Day, 300*Day),
+			expected: map[string]string{
+				"log_filename":             "%j", // three-digit day of the year [001, 366]
+				"log_rotation_age":         "1d", // × 1 day = 1 year
+				"log_rotation_size":        "0",
+				"log_truncate_on_rotation": "on",
+			}},
+	} {
+		t.Run(tt.duration.String(), func(t *testing.T) {
+			actual := LogRotation(metav1.Duration{Duration: tt.duration}, tt.prefix, tt.suffix)
+			assert.DeepEqual(t, tt.expected, actual)
+		})
+	}
+
+	t.Run("Escaping", func(t *testing.T) {
+		// any duration
+		duration := metav1.Duration{Duration: random(1, 350*Day)}
+
+		// double-percent prefix
+		assert.Assert(t, cmp.Regexp(`^as%%ddf%[^%]qwerty$`,
+			LogRotation(duration, "as%ddf", "qwerty")["log_filename"]))
+
+		// double-percent suffix
+		assert.Assert(t, cmp.Regexp(`^postgres-%[^%]-x%%y%%zzz$`,
+			LogRotation(duration, "postgres-", "-x%y%zzz")["log_filename"]))
+	})
 }
 
 func TestWALDirectory(t *testing.T) {
