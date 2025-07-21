@@ -131,7 +131,7 @@ func (*Reconciler) generatePostgresParameters(
 ) *postgres.ParameterSet {
 	builtin := postgres.NewParameters()
 	pgaudit.PostgreSQLParameters(&builtin)
-	pgbackrest.PostgreSQL(cluster, &builtin, backupsSpecFound)
+	pgbackrest.PostgreSQLParameters(cluster, &builtin, backupsSpecFound)
 	pgmonitor.PostgreSQLParameters(ctx, cluster, &builtin)
 	postgres.SetHugePages(cluster, &builtin)
 
