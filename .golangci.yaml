@@ -162,6 +162,14 @@ linters:
         path: internal/pki/pki.go
         text: methods of "(Certificate|PrivateKey)"
 
+      - linters: [staticcheck]
+        text: corev1.(Endpoints|EndpointSubset) is deprecated
+
+      - linters: [staticcheck]
+        path: internal/controller/
+        text: >-
+          deprecated: Use `RequeueAfter` instead
+
 # https://golangci-lint.run/usage/formatters
 formatters:
   enable:
