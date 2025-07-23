@@ -81,7 +81,7 @@ func TestCertificateTextMarshaling(t *testing.T) {
 		assert.NilError(t, os.WriteFile(certFile, certBytes, 0o600))
 
 		// The "openssl x509" command parses X.509 certificates.
-		cmd := exec.Command(openssl, "x509",
+		cmd := exec.CommandContext(t.Context(), openssl, "x509",
 			"-in", certFile, "-inform", "PEM", "-noout", "-text")
 
 		output, err := cmd.CombinedOutput()
@@ -153,7 +153,7 @@ func TestPrivateKeyTextMarshaling(t *testing.T) {
 		assert.NilError(t, os.WriteFile(keyFile, keyBytes, 0o600))
 
 		// The "openssl pkey" command processes public and private keys.
-		cmd := exec.Command(openssl, "pkey",
+		cmd := exec.CommandContext(t.Context(), openssl, "pkey",
 			"-in", keyFile, "-inform", "PEM", "-noout", "-text")
 
 		output, err := cmd.CombinedOutput()
@@ -164,12 +164,12 @@ func TestPrivateKeyTextMarshaling(t *testing.T) {
 			"expected valid private key, got:\n%s", output)
 
 		t.Run("Check", func(t *testing.T) {
-			output, _ := exec.Command(openssl, "pkey", "-help").CombinedOutput()
+			output, _ := exec.CommandContext(t.Context(), openssl, "pkey", "-help").CombinedOutput()
 			if !strings.Contains(string(output), "-check") {
 				t.Skip(`requires "-check" flag`)
 			}
 
-			cmd := exec.Command(openssl, "pkey",
+			cmd := exec.CommandContext(t.Context(), openssl, "pkey",
 				"-check", "-in", keyFile, "-inform", "PEM", "-noout", "-text")
 
 			output, err := cmd.CombinedOutput()

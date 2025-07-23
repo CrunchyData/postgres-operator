@@ -76,7 +76,7 @@ func TestMakeDirectories(t *testing.T) {
 
 			// Expect ShellCheck for "sh" to be happy.
 			// - https://www.shellcheck.net/wiki/SC2148
-			cmd := exec.Command(shellcheck, "--enable=all", "--shell=sh", file)
+			cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", "--shell=sh", file)
 			output, err := cmd.CombinedOutput()
 			assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 		})
