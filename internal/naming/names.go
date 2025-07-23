@@ -350,6 +350,21 @@ func InstancePostgresWALVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
 	}
 }
 
+// AdditionalVolume returns the ObjectMeta for the additional
+// volume for instance.
+func AdditionalVolume(cluster *v1beta1.PostgresCluster,
+	volume *v1beta1.AdditionalVolume) metav1.ObjectMeta {
+	// TODO: What's the name for the PVC if not given?
+	volumeName := volume.ClaimName
+	if volumeName == "" {
+		volumeName = cluster.GetName() + "-additional-something"
+	}
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name:      volumeName,
+	}
+}
+
 // MonitoringUserSecret returns ObjectMeta necessary to lookup the Secret
 // containing authentication credentials for monitoring tools.
 func MonitoringUserSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
