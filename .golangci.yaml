@@ -75,6 +75,8 @@ linters:
               desc: Use "go.opentelemetry.io/otel/semconv/v1.27.0" instead.
             - pkg: io/ioutil
               desc: Use the "io" and "os" packages instead. See https://go.dev/doc/go1.16#ioutil
+            - pkg: math/rand$
+              desc: Use the "math/rand/v2" package instead. See https://go.dev/doc/go1.22#math_rand_v2
         not-tests:
           files: ['!$test','!**/internal/testing/**']
           list-mode: lax
@@ -139,6 +141,11 @@ linters:
       - legacy
       - std-error-handling
     rules:
+      # It is fine for tests to use "math/rand" packages.
+      - linters: [gosec]
+        path: '(.+)_test[.]go'
+        text: weak random number generator
+
       # This internal package is the one place we want to do API discovery.
       - linters: [depguard]
         path: internal/kubernetes/discovery.go
