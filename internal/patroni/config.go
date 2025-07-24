@@ -6,6 +6,7 @@ package patroni
 
 import (
 	"fmt"
+	"maps"
 	"path"
 	"strings"
 
@@ -237,9 +238,7 @@ func DynamicConfiguration(
 
 	// Copy the "postgresql" section over the above defaults.
 	if section, ok := root["postgresql"].(map[string]any); ok {
-		for k, v := range section {
-			postgresql[k] = v
-		}
+		maps.Copy(postgresql, section)
 	}
 	if m := parameters.AsMap(); m != nil {
 		postgresql["parameters"] = m

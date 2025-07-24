@@ -237,7 +237,7 @@ with create_app().app_context():`,
 		spec := users[i]
 
 		if err == nil {
-			err = encoder.Encode(map[string]interface{}{
+			err = encoder.Encode(map[string]any{
 				"username": spec.Name,
 				"password": passwords[spec.Name],
 			})

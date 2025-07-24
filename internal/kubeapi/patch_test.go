@@ -13,10 +13,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-func assertJSON(t testing.TB, expected interface{}, actual []byte) {
+func assertJSON(t testing.TB, expected any, actual []byte) {
 	t.Helper()
 
-	var e, a interface{}
+	var e, a any
 	var err error
 
 	if b, ok := expected.([]byte); ok {
@@ -248,7 +248,7 @@ func TestMerge7386Equivalence(t *testing.T) {
 
 		// one call using other types
 		NewMergePatch().
-			Add("metadata")(map[string]interface{}{
+			Add("metadata")(map[string]any{
 			"labels":      labels.Set{"lk": "lv"},
 			"annotations": map[string]string{"ak1": "av1", "ak2": "av2"},
 		}),

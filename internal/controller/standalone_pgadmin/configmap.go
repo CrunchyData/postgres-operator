@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strconv"
@@ -124,9 +125,7 @@ func generateConfig(pgadmin *v1beta1.PGAdmin,
 	}
 
 	// Copy any specified settings over the defaults.
-	for k, v := range pgadmin.Spec.Config.Settings {
-		settings[k] = v
-	}
+	maps.Copy(settings, pgadmin.Spec.Config.Settings)
 
 	// Write mandatory settings over any specified ones.
 	// SERVER_MODE must always be enabled when running on a webserver.
@@ -246,9 +245,7 @@ func generateGunicornConfig(pgadmin *v1beta1.PGAdmin,
 	}
 
 	// Copy any specified settings over the defaults.
-	for k, v := range pgadmin.Spec.Config.Gunicorn {
-		settings[k] = v
-	}
+	maps.Copy(settings, pgadmin.Spec.Config.Gunicorn)
 
 	// Write mandatory settings over any specified ones.
 	// - https://docs.gunicorn.org/en/latest/settings.html#workers

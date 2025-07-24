@@ -38,7 +38,7 @@ func Logrus(out io.Writer, version string, debug, verbosity int) logr.LogSink {
 	return &sink{
 		verbosity: verbosity,
 
-		fnError: func(err error, message string, kv ...interface{}) {
+		fnError: func(err error, message string, kv ...any) {
 			entry := root.WithField("version", version)
 			entry = logrusFields(entry, kv...)
 
@@ -57,7 +57,7 @@ func Logrus(out io.Writer, version string, debug, verbosity int) logr.LogSink {
 			entry.Log(logrus.ErrorLevel, message)
 		},
 
-		fnInfo: func(level int, message string, kv ...interface{}) {
+		fnInfo: func(level int, message string, kv ...any) {
 			entry := root.WithField("version", version)
 			entry = logrusFields(entry, kv...)
 
@@ -72,7 +72,7 @@ func Logrus(out io.Writer, version string, debug, verbosity int) logr.LogSink {
 
 // logrusFields structures and adds the key/value interface to the logrus.Entry;
 // for instance, if a key is not a string, this formats the key as a string.
-func logrusFields(entry *logrus.Entry, kv ...interface{}) *logrus.Entry {
+func logrusFields(entry *logrus.Entry, kv ...any) *logrus.Entry {
 	if len(kv) == 0 {
 		return entry
 	}
@@ -80,7 +80,7 @@ func logrusFields(entry *logrus.Entry, kv ...interface{}) *logrus.Entry {
 		kv = append(kv, nil)
 	}
 
-	m := make(map[string]interface{}, len(kv)/2)
+	m := make(map[string]any, len(kv)/2)
 
 	for i := 0; i < len(kv); i += 2 {
 		key, ok := kv[i].(string)

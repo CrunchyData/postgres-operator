@@ -8,6 +8,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"maps"
 	"math"
 	"strings"
 	"time"
@@ -168,9 +169,7 @@ func NewConfig(spec *v1beta1.InstrumentationSpec) *Config {
 
 	// If there are exporters defined in the spec, add them to the config.
 	if spec != nil && spec.Config != nil && spec.Config.Exporters != nil {
-		for k, v := range spec.Config.Exporters {
-			config.Exporters[k] = v
-		}
+		maps.Copy(config.Exporters, spec.Config.Exporters)
 	}
 
 	return config

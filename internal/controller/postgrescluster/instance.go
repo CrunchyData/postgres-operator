@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"sort"
 	"strings"
 	"time"
@@ -321,9 +322,7 @@ func (r *Reconciler) observeInstances(
 	if autogrow {
 		for _, statusIS := range cluster.Status.InstanceSets {
 			if statusIS.DesiredPGDataVolume != nil {
-				for k, v := range statusIS.DesiredPGDataVolume {
-					previousDesiredRequests[k] = v
-				}
+				maps.Copy(previousDesiredRequests, statusIS.DesiredPGDataVolume)
 			}
 		}
 	}
