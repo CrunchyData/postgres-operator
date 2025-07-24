@@ -31,12 +31,7 @@ func TestPostgresClusterDefault(t *testing.T) {
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
-metadata:
-  creationTimestamp: null
 spec:
-  backups:
-    pgbackrest:
-      repos: null
   instances: null
   patroni:
     leaderLeaseDurationSeconds: 30
@@ -44,13 +39,7 @@ spec:
     syncPeriodSeconds: 10
   port: 5432
   postgresVersion: 0
-status:
-  monitoring: {}
-  patroni: {}
-  postgresVersion: 0
-  proxy:
-    pgBouncer: {}
-								`)+"\n")
+		`)+"\n")
 	})
 
 	t.Run("one instance set", func(t *testing.T) {
@@ -63,31 +52,19 @@ status:
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
-metadata:
-  creationTimestamp: null
 spec:
-  backups:
-    pgbackrest:
-      repos: null
   instances:
   - dataVolumeClaimSpec:
       resources: {}
     name: "00"
     replicas: 1
-    resources: {}
   patroni:
     leaderLeaseDurationSeconds: 30
     port: 8008
     syncPeriodSeconds: 10
   port: 5432
   postgresVersion: 0
-status:
-  monitoring: {}
-  patroni: {}
-  postgresVersion: 0
-  proxy:
-    pgBouncer: {}
-								`)+"\n")
+		`)+"\n")
 	})
 
 	t.Run("empty proxy", func(t *testing.T) {
@@ -109,10 +86,8 @@ status:
 		assert.NilError(t, err)
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 pgBouncer:
-  config: {}
   port: 5432
   replicas: 1
-  resources: {}
 		`)+"\n")
 	})
 }
@@ -128,7 +103,6 @@ dataVolumeClaimSpec:
   resources: {}
 name: "05"
 replicas: 1
-resources: {}
 	`)+"\n")
 }
 

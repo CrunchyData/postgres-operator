@@ -35,5 +35,5 @@ type ExporterSpec struct {
 	// Changing this value causes PostgreSQL and the exporter to restart.
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 }

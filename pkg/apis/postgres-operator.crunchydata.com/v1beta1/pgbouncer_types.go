@@ -60,7 +60,7 @@ type PGBouncerPodSpec struct {
 	// you may put PgBouncer into an unusable state.
 	// More info: https://www.pgbouncer.org/usage.html#reload
 	// +optional
-	Config PGBouncerConfiguration `json:"config,omitempty"`
+	Config PGBouncerConfiguration `json:"config,omitzero"`
 
 	// Custom sidecars for a PgBouncer pod. Changing this value causes
 	// PgBouncer to restart.
@@ -110,7 +110,7 @@ type PGBouncerPodSpec struct {
 	// PgBouncer to restart.
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Specification of the service that exposes PgBouncer.
 	// +optional

@@ -18,7 +18,7 @@ type InstrumentationSpec struct {
 	// Resources holds the resource requirements for the collector container.
 	// ---
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Config is the place for users to configure exporters and provide files.
 	// ---

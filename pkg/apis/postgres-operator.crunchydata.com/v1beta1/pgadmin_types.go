@@ -44,7 +44,7 @@ type PGAdminPodSpec struct {
 	// values will be loaded without validation. Be careful, as
 	// you may put pgAdmin into an unusable state.
 	// +optional
-	Config PGAdminConfiguration `json:"config,omitempty"`
+	Config PGAdminConfiguration `json:"config,omitzero"`
 
 	// Defines a PersistentVolumeClaim for pgAdmin data.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
@@ -76,7 +76,7 @@ type PGAdminPodSpec struct {
 	// pgAdmin to restart.
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Specification of the service that exposes pgAdmin.
 	// +optional

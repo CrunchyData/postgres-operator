@@ -71,7 +71,7 @@ type ClusterApiResource struct {
 	Network                string                       `json:"network_id,omitempty"`
 	Parent                 string                       `json:"parent_id,omitempty"`
 	Plan                   string                       `json:"plan_id,omitempty"`
-	PostgresVersion        intstr.IntOrString           `json:"postgres_version_id,omitempty"`
+	PostgresVersion        intstr.IntOrString           `json:"postgres_version_id,omitzero"`
 	Provider               string                       `json:"provider_id,omitempty"`
 	Region                 string                       `json:"region_id,omitempty"`
 	Replicas               []*ClusterApiResource        `json:"replicas,omitempty"`
@@ -188,7 +188,7 @@ type PostClustersRequestPayload struct {
 	IsHA            bool               `json:"is_ha,omitempty"`
 	Keychain        string             `json:"keychain_id,omitempty"`
 	Network         string             `json:"network_id,omitempty"`
-	PostgresVersion intstr.IntOrString `json:"postgres_version_id,omitempty"`
+	PostgresVersion intstr.IntOrString `json:"postgres_version_id,omitzero"`
 	Provider        string             `json:"provider_id,omitempty"`
 	Region          string             `json:"region_id,omitempty"`
 	Storage         int64              `json:"storage,omitempty"`
@@ -198,7 +198,7 @@ type PostClustersRequestPayload struct {
 // changing its plan, upgrading its major version, or increasing its storage size.
 type PostClustersUpgradeRequestPayload struct {
 	Plan             string             `json:"plan_id,omitempty"`
-	PostgresVersion  intstr.IntOrString `json:"postgres_version_id,omitempty"`
+	PostgresVersion  intstr.IntOrString `json:"postgres_version_id,omitzero"`
 	UpgradeStartTime string             `json:"starting_from,omitempty"`
 	Storage          int64              `json:"storage,omitempty"`
 }
@@ -207,7 +207,7 @@ type PostClustersUpgradeRequestPayload struct {
 // TODO: Implement the ability to update an upgrade (this isn't currently being used)
 type PutClustersUpgradeRequestPayload struct {
 	Plan                 string             `json:"plan_id,omitempty"`
-	PostgresVersion      intstr.IntOrString `json:"postgres_version_id,omitempty"`
+	PostgresVersion      intstr.IntOrString `json:"postgres_version_id,omitzero"`
 	UpgradeStartTime     string             `json:"starting_from,omitempty"`
 	Storage              int64              `json:"storage,omitempty"`
 	UseMaintenanceWindow *bool              `json:"use_cluster_maintenance_window,omitempty"`

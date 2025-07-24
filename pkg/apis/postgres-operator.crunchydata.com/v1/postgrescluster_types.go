@@ -29,7 +29,7 @@ type PostgresClusterSpec struct {
 
 	// PostgreSQL backup configuration
 	// +optional
-	Backups Backups `json:"backups,omitempty"`
+	Backups Backups `json:"backups,omitzero"`
 
 	// General configuration of the PostgreSQL server
 	// +optional
@@ -294,7 +294,7 @@ type PostgresClusterDataSource struct {
 
 	// Resource requirements for the pgBackRest restore Job.
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Scheduling constraints of the pgBackRest restore Job.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
@@ -363,7 +363,7 @@ type PostgresClusterStatus struct {
 	InstanceSets []PostgresInstanceSetStatus `json:"instances,omitempty"`
 
 	// +optional
-	Patroni v1beta1.PatroniStatus `json:"patroni,omitempty"`
+	Patroni v1beta1.PatroniStatus `json:"patroni,omitzero"`
 
 	// Status information for pgBackRest
 	// +optional
@@ -382,7 +382,7 @@ type PostgresClusterStatus struct {
 
 	// Current state of the PostgreSQL proxy.
 	// +optional
-	Proxy PostgresProxyStatus `json:"proxy,omitempty"`
+	Proxy PostgresProxyStatus `json:"proxy,omitzero"`
 
 	// The instance that should be started first when bootstrapping and/or starting a
 	// PostgresCluster.
@@ -402,7 +402,7 @@ type PostgresClusterStatus struct {
 
 	// Current state of PostgreSQL cluster monitoring tool configuration
 	// +optional
-	Monitoring MonitoringStatus `json:"monitoring,omitempty"`
+	Monitoring MonitoringStatus `json:"monitoring,omitzero"`
 
 	// DatabaseInitSQL state of custom database initialization in the cluster
 	// +optional
@@ -495,7 +495,7 @@ type PostgresInstanceSetSpec struct {
 
 	// Compute resources of a PostgreSQL container.
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Configuration for instance sidecar containers
 	// +optional
@@ -617,7 +617,8 @@ type RegistrationRequirementStatus struct {
 }
 
 type PostgresProxyStatus struct {
-	PGBouncer v1beta1.PGBouncerPodStatus `json:"pgBouncer,omitempty"`
+	// +optional
+	PGBouncer v1beta1.PGBouncerPodStatus `json:"pgBouncer,omitzero"`
 }
 
 // PostgresStandbySpec defines if/how the cluster should be a hot standby.
@@ -663,7 +664,8 @@ func (s *UserInterfaceSpec) Default() {
 type PostgresUserInterfaceStatus struct {
 
 	// The state of the pgAdmin user interface.
-	PGAdmin v1beta1.PGAdminPodStatus `json:"pgAdmin,omitempty"`
+	// +optional
+	PGAdmin v1beta1.PGAdminPodStatus `json:"pgAdmin,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -676,14 +678,17 @@ type PostgresCluster struct {
 	// - https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
 	// - https://releases.k8s.io/v1.21.0/staging/src/k8s.io/apiextensions-apiserver/pkg/registry/customresource/validator.go#L60
 
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	// NOTE(cbandy): Every PostgresCluster needs a Spec, but it is optional here
 	// so ObjectMeta can be managed independently.
 
-	Spec   PostgresClusterSpec   `json:"spec,omitempty"`
-	Status PostgresClusterStatus `json:"status,omitempty"`
+	// +optional
+	Spec PostgresClusterSpec `json:"spec,omitzero"`
+	// +optional
+	Status PostgresClusterStatus `json:"status,omitzero"`
 }
 
 // Default implements "sigs.k8s.io/controller-runtime/pkg/webhook.Defaulter" so
@@ -704,7 +709,7 @@ func (c *PostgresCluster) Default() {
 // PostgresClusterList contains a list of PostgresCluster
 type PostgresClusterList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []PostgresCluster `json:"items"`
 }
 

@@ -49,7 +49,7 @@ type PGUpgradeSpec struct {
 
 	// Resource requirements for the PGUpgrade container.
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Scheduling constraints of the PGUpgrade pod.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
@@ -140,11 +140,14 @@ type PGUpgradeStatus struct {
 
 // PGUpgrade is the Schema for the pgupgrades API
 type PGUpgrade struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	Spec   PGUpgradeSpec   `json:"spec,omitempty"`
-	Status PGUpgradeStatus `json:"status,omitempty"`
+	// +optional
+	Spec PGUpgradeSpec `json:"spec,omitzero"`
+	// +optional
+	Status PGUpgradeStatus `json:"status,omitzero"`
 }
 
 //+kubebuilder:object:root=true
@@ -152,7 +155,7 @@ type PGUpgrade struct {
 // PGUpgradeList contains a list of PGUpgrade
 type PGUpgradeList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []PGUpgrade `json:"items"`
 }
 

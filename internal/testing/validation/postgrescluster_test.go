@@ -32,11 +32,6 @@ func TestPostgresAuthenticationRules(t *testing.T) {
 	// Start with a bunch of required fields.
 	require.UnmarshalInto(t, &base.Spec, `{
 		postgresVersion: 16,
-		backups: {
-			pgbackrest: {
-				repos: [{ name: repo1 }],
-			},
-		},
 		instances: [{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
@@ -246,11 +241,6 @@ func TestPostgresConfigParameters(t *testing.T) {
 	// Start with a bunch of required fields.
 	require.UnmarshalInto(t, &base.Spec, `{
 		postgresVersion: 16,
-		backups: {
-			pgbackrest: {
-				repos: [{ name: repo1 }],
-			},
-		},
 		instances: [{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
@@ -439,11 +429,6 @@ func TestPostgresUserOptions(t *testing.T) {
 	// Start with a bunch of required fields.
 	require.UnmarshalInto(t, &base.Spec, `{
 		postgresVersion: 16,
-		backups: {
-			pgbackrest: {
-				repos: [{ name: repo1 }],
-			},
-		},
 		instances: [{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
@@ -551,11 +536,6 @@ func TestPostgresUserInterfaceAcrossVersions(t *testing.T) {
 			},
 		},
 		postgresVersion: 16,
-		backups: {
-			pgbackrest: {
-				repos: [{ name: repo1 }],
-			},
-		},
 		instances: [{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
@@ -578,11 +558,6 @@ func TestPostgresUserInterfaceAcrossVersions(t *testing.T) {
 			},
 		},
 		postgresVersion: 16,
-		backups: {
-			pgbackrest: {
-				repos: [{ name: repo1 }],
-			},
-		},
 		instances: [{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
