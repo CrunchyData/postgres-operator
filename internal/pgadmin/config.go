@@ -153,10 +153,10 @@ if os.path.isfile('` + ldapPasswordAbsolutePath + `'):
 }
 
 // systemSettings returns pgAdmin settings as a value that can be marshaled to JSON.
-func systemSettings(spec *v1beta1.PGAdminPodSpec) map[string]interface{} {
+func systemSettings(spec *v1beta1.PGAdminPodSpec) map[string]any {
 	settings := spec.Config.Settings.DeepCopy()
 	if settings == nil {
-		settings = make(map[string]interface{})
+		settings = make(map[string]any)
 	}
 
 	// SERVER_MODE must always be enabled when running on a webserver.

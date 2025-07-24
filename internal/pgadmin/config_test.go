@@ -106,8 +106,8 @@ func TestSystemSettings(t *testing.T) {
 SERVER_MODE: true
 	`))
 
-	spec.Config.Settings = map[string]interface{}{
-		"ALLOWED_HOSTS": []interface{}{"225.0.0.0/8", "226.0.0.0/7", "228.0.0.0/6"},
+	spec.Config.Settings = map[string]any{
+		"ALLOWED_HOSTS": []any{"225.0.0.0/8", "226.0.0.0/7", "228.0.0.0/6"},
 	}
 	assert.Assert(t, cmp.MarshalMatches(systemSettings(spec), `
 ALLOWED_HOSTS:
