@@ -153,7 +153,7 @@ type BackupJobs struct {
 	// Resource limits for backup jobs. Includes manual, scheduled and replica
 	// create backups
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Priority class name for the pgBackRest backup Job pods.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
@@ -208,7 +208,7 @@ type PGBackRestRepoHost struct {
 
 	// Resource requirements for a pgBackRest repository host
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Tolerations of a PgBackRest repo host pod. Changing this value causes a restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
@@ -442,7 +442,7 @@ type PGBackRestDataSource struct {
 
 	// Resource requirements for the pgBackRest restore Job.
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Scheduling constraints of the pgBackRest restore Job.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node

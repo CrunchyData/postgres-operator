@@ -89,7 +89,7 @@ type PGAdminSpec struct {
 	// values will be loaded without validation. Be careful, as
 	// you may put pgAdmin into an unusable state.
 	// +optional
-	Config StandalonePGAdminConfiguration `json:"config,omitempty"`
+	Config StandalonePGAdminConfiguration `json:"config,omitzero"`
 
 	// Defines a PersistentVolumeClaim for pgAdmin data.
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
@@ -127,7 +127,7 @@ type PGAdminSpec struct {
 
 	// Resource requirements for the PGAdmin container.
 	// +optional
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
 	// Scheduling constraints of the PGAdmin pod.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
@@ -183,7 +183,7 @@ type ServerGroup struct {
 	// PostgresClusterSelector selects clusters to dynamically add to pgAdmin by matching labels.
 	// An empty selector like `{}` will select ALL clusters in the namespace.
 	// +kubebuilder:validation:Optional
-	PostgresClusterSelector metav1.LabelSelector `json:"postgresClusterSelector,omitempty"`
+	PostgresClusterSelector metav1.LabelSelector `json:"postgresClusterSelector,omitzero"`
 }
 
 type PGAdminUser struct {
@@ -240,11 +240,14 @@ type PGAdminStatus struct {
 
 // PGAdmin is the Schema for the PGAdmin API
 type PGAdmin struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	Spec   PGAdminSpec   `json:"spec,omitempty"`
-	Status PGAdminStatus `json:"status,omitempty"`
+	// +optional
+	Spec PGAdminSpec `json:"spec,omitzero"`
+	// +optional
+	Status PGAdminStatus `json:"status,omitzero"`
 }
 
 // Default implements "sigs.k8s.io/controller-runtime/pkg/webhook.Defaulter" so
@@ -270,7 +273,7 @@ func NewPGAdmin() *PGAdmin {
 // PGAdminList contains a list of PGAdmin
 type PGAdminList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []PGAdmin `json:"items"`
 }
 

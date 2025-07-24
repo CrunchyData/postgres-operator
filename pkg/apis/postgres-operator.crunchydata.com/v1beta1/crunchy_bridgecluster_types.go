@@ -204,14 +204,17 @@ type CrunchyBridgeCluster struct {
 	// - https://releases.k8s.io/v1.21.0/staging/src/k8s.io/apiextensions-apiserver/pkg/registry/customresource/validator.go#L60
 
 	// In Bridge json, meta.name is "name"
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
 	// NOTE(cbandy): Every CrunchyBridgeCluster needs a Spec, but it is optional here
 	// so ObjectMeta can be managed independently.
 
-	Spec   CrunchyBridgeClusterSpec   `json:"spec,omitempty"`
-	Status CrunchyBridgeClusterStatus `json:"status,omitempty"`
+	// +optional
+	Spec CrunchyBridgeClusterSpec `json:"spec,omitzero"`
+	// +optional
+	Status CrunchyBridgeClusterStatus `json:"status,omitzero"`
 }
 
 // Default implements "sigs.k8s.io/controller-runtime/pkg/webhook.Defaulter" so
@@ -231,7 +234,9 @@ func (c *CrunchyBridgeCluster) Default() {
 // CrunchyBridgeClusterList contains a list of CrunchyBridgeCluster
 type CrunchyBridgeClusterList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
+
+	// +optional
+	metav1.ListMeta `json:"metadata,omitzero"`
 	Items           []CrunchyBridgeCluster `json:"items"`
 }
 
