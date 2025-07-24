@@ -11,11 +11,10 @@ import (
 
 	"gotest.tools/v3/assert"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	v1 "github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1"
@@ -271,13 +270,15 @@ func TestPostgresConfigParameters(t *testing.T) {
 			key   string
 			value any
 		}{
-			{"archive_timeout", int64(100)},
+			{"archive_timeout", 100},
 			{"archive_timeout", "20s"},
 		} {
 			t.Run(tt.key, func(t *testing.T) {
-				cluster := require.Value(runtime.ToUnstructuredObject(base))
-				assert.NilError(t, unstructured.SetNestedField(cluster.Object,
-					tt.value, "spec", "config", "parameters", tt.key))
+				cluster := base.DeepCopy()
+				require.UnmarshalInto(t, &cluster.Spec.Config,
+					require.Value(yaml.Marshal(map[string]any{
+						"parameters": map[string]any{tt.key: tt.value},
+					})))
 
 				assert.NilError(t, cc.Create(ctx, cluster, client.DryRunAll))
 			})
@@ -299,13 +300,15 @@ func TestPostgresConfigParameters(t *testing.T) {
 			{key: "listen_addresses", value: ""},
 			{key: "log_file_mode", value: ""},
 			{key: "logging_collector", value: "off"},
-			{key: "port", value: int64(5)},
+			{key: "port", value: 5},
 			{key: "wal_log_hints", value: "off"},
 		} {
 			t.Run(tt.key, func(t *testing.T) {
-				cluster := require.Value(runtime.ToUnstructuredObject(base))
-				assert.NilError(t, unstructured.SetNestedField(cluster.Object,
-					tt.value, "spec", "config", "parameters", tt.key))
+				cluster := base.DeepCopy()
+				require.UnmarshalInto(t, &cluster.Spec.Config,
+					require.Value(yaml.Marshal(map[string]any{
+						"parameters": map[string]any{tt.key: tt.value},
+					})))
 
 				err := cc.Create(ctx, cluster, client.DryRunAll)
 				assert.Assert(t, apierrors.IsInvalid(err))
@@ -332,9 +335,11 @@ func TestPostgresConfigParameters(t *testing.T) {
 			{key: "unix_socket_group", value: "two"},
 		} {
 			t.Run(tt.key, func(t *testing.T) {
-				cluster := require.Value(runtime.ToUnstructuredObject(base))
-				assert.NilError(t, unstructured.SetNestedField(cluster.Object,
-					tt.value, "spec", "config", "parameters", tt.key))
+				cluster := base.DeepCopy()
+				require.UnmarshalInto(t, &cluster.Spec.Config,
+					require.Value(yaml.Marshal(map[string]any{
+						"parameters": map[string]any{tt.key: tt.value},
+					})))
 
 				err := cc.Create(ctx, cluster, client.DryRunAll)
 				assert.Assert(t, apierrors.IsInvalid(err))
@@ -354,9 +359,11 @@ func TestPostgresConfigParameters(t *testing.T) {
 			{key: "recovery_target_name", value: "doot"},
 		} {
 			t.Run(tt.key, func(t *testing.T) {
-				cluster := require.Value(runtime.ToUnstructuredObject(base))
-				assert.NilError(t, unstructured.SetNestedField(cluster.Object,
-					tt.value, "spec", "config", "parameters", tt.key))
+				cluster := base.DeepCopy()
+				require.UnmarshalInto(t, &cluster.Spec.Config,
+					require.Value(yaml.Marshal(map[string]any{
+						"parameters": map[string]any{tt.key: tt.value},
+					})))
 
 				err := cc.Create(ctx, cluster, client.DryRunAll)
 				assert.Assert(t, apierrors.IsInvalid(err))
@@ -408,9 +415,11 @@ func TestPostgresConfigParameters(t *testing.T) {
 			{key: "recovery_min_apply_delay", value: ""},
 		} {
 			t.Run(tt.key, func(t *testing.T) {
-				cluster := require.Value(runtime.ToUnstructuredObject(base))
-				assert.NilError(t, unstructured.SetNestedField(cluster.Object,
-					tt.value, "spec", "config", "parameters", tt.key))
+				cluster := base.DeepCopy()
+				require.UnmarshalInto(t, &cluster.Spec.Config,
+					require.Value(yaml.Marshal(map[string]any{
+						"parameters": map[string]any{tt.key: tt.value},
+					})))
 
 				err := cc.Create(ctx, cluster, client.DryRunAll)
 				assert.Assert(t, apierrors.IsInvalid(err))
