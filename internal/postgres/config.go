@@ -7,9 +7,11 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -94,6 +96,71 @@ func DataDirectory(cluster *v1beta1.PostgresCluster) string {
 // - https://www.postgresql.org/docs/current/runtime-config-logging.html
 func LogDirectory() string {
 	return fmt.Sprintf("%s/logs/postgres", dataMountPath)
+}
+
+// LogRotation returns parameters that rotate log files while keeping a minimum amount.
+// Postgres truncates and reuses log files after that minimum amount.
+// Log file names start with filePrefix and end with fileSuffix.
+//
+// NOTE: These parameters do *not* enable logging to files. Set "logging_collector" for that.
+func LogRotation(minimum metav1.Duration, filePrefix, fileSuffix string) map[string]string {
+	hours := math.Ceil(minimum.Hours())
+
+	// The "log_filename" parameter is interpreted similar to `strftime`;
+	// escape percent U+0025 by doubling it.
+	// - https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-FILENAME
+	prefix := strings.ReplaceAll(filePrefix, "%", "%%")
+	suffix := strings.ReplaceAll(fileSuffix, "%", "%%")
+
+	// Postgres can "rotate" its own log files by calculating log_filename as needed.
+	// However, the automated portions of log_filename are *entirely* based on time.
+	// An inappropriate pairing of log_filename with other logging parameters could lose log messages.
+	//
+	// TODO(logs): Limit the size/bytes of logs without losing messages;
+	// probably requires another process that deletes the oldest files. TODO(sidecar)
+	//
+	// The parameter combinations below have Postgres discard log messages and reuse log files
+	// only after the minimum time has elapsed.
+
+	result := map[string]string{
+		// Discard old messages when log_filename is reused due to rotation.
+		"log_truncate_on_rotation": "on",
+
+		// To not lose messages, log_rotation_size must be larger than the volume of messages emitted before log_filename changes.
+		// Rather than monitor and accommodate that, disable rotation by size completely.
+		"log_rotation_size": "0",
+	}
+
+	// These pairings have Postgres log to multiple files so a log consumer
+	// has the opportunity to read a prior file while Postgres truncates the next.
+	switch {
+	case hours <= 1:
+		// One hour of logs in minute-long files
+		result["log_filename"] = prefix + "%M" + suffix
+		result["log_rotation_age"] = "1min"
+
+	case hours <= 24:
+		// One day of logs in hour-long files
+		result["log_filename"] = prefix + "%H" + suffix
+		result["log_rotation_age"] = "1h"
+
+	case hours <= 24*7:
+		// One week of logs in day-long files
+		result["log_filename"] = prefix + "%a" + suffix
+		result["log_rotation_age"] = "1d"
+
+	case hours <= 24*28:
+		// One month of logs in day-long files
+		result["log_filename"] = prefix + "%d" + suffix
+		result["log_rotation_age"] = "1d"
+
+	default:
+		// One year of logs in day-long files
+		result["log_filename"] = prefix + "%j" + suffix
+		result["log_rotation_age"] = "1d"
+	}
+
+	return result
 }
 
 // WALDirectory returns the absolute path to the directory where an instance

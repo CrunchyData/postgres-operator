@@ -11,8 +11,8 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// PostgreSQL populates outParameters with any settings needed to run pgBackRest.
-func PostgreSQL(
+// PostgreSQLParameters populates outParameters with any settings needed to run pgBackRest.
+func PostgreSQLParameters(
 	inCluster *v1beta1.PostgresCluster,
 	outParameters *postgres.Parameters,
 	backupsEnabled bool,
