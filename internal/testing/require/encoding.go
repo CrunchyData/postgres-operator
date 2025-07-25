@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/json"
 	"sigs.k8s.io/yaml"
 )
@@ -36,4 +37,25 @@ func UnmarshalInto[Data ~string | ~[]byte, Destination *T, T any](
 	strict, err := json.UnmarshalStrict(data, output)
 	assert.NilError(t, err)
 	assert.NilError(t, errors.Join(strict...))
+}
+
+// UnmarshalIntoField parses input as YAML (or JSON) the same way as the Kubernetes API Server.
+// The result goes into a (nested) field of output. It calls t.Fatal when something fails.
+func UnmarshalIntoField[Data ~string | ~[]byte](
+	t testing.TB, output *unstructured.Unstructured, input Data, fields ...string,
+) {
+	t.Helper()
+
+	if len(fields) == 0 {
+		t.Fatal("BUG: called without a destination")
+	}
+
+	if output.Object == nil {
+		output.Object = map[string]any{}
+	}
+
+	var value any
+	UnmarshalInto(t, &value, []byte(input))
+
+	assert.NilError(t, unstructured.SetNestedField(output.Object, value, fields...))
 }

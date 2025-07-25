@@ -136,8 +136,8 @@ spec:
                           "ldapsearchattribute", or "ldapsearchfilter" options with
                           "ldapprefix" or "ldapsuffix" options
                         rule: has(self.hba) || self.method != "ldap" || !has(self.options)
-                          || [["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].exists_one(a,
-                          a.exists(k, k in self.options))
+                          || 2 > size([["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].filter(a,
+                          a.exists(k, k in self.options)))
                       - message: the "radius" method requires "radiusservers" and
                           "radiussecrets" options
                         rule: has(self.hba) || self.method != "radius" || (has(self.options)
@@ -18767,8 +18767,8 @@ spec:
                           "ldapsearchattribute", or "ldapsearchfilter" options with
                           "ldapprefix" or "ldapsuffix" options
                         rule: has(self.hba) || self.method != "ldap" || !has(self.options)
-                          || [["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].exists_one(a,
-                          a.exists(k, k in self.options))
+                          || 2 > size([["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].filter(a,
+                          a.exists(k, k in self.options)))
                       - message: the "radius" method requires "radiusservers" and
                           "radiussecrets" options
                         rule: has(self.hba) || self.method != "radius" || (has(self.options)

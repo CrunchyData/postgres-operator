@@ -8,10 +8,14 @@ import (
 	"reflect"
 	"testing"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestUnmarshalInto(t *testing.T) {
+	t.Parallel()
+
 	for _, tt := range []struct {
 		input    string
 		expected any
@@ -38,4 +42,42 @@ func TestUnmarshalInto(t *testing.T) {
 			t.Fatalf("expected %[1]T(%#[1]v), got %[2]T(%#[2]v)", tt.expected, sink)
 		}
 	}
+}
+
+func TestUnmarshalIntoField(t *testing.T) {
+	t.Parallel()
+
+	var u unstructured.Unstructured
+
+	t.Run("NestedString", func(t *testing.T) {
+		u.Object = nil
+		require.UnmarshalIntoField(t, &u, `asdf`, "spec", "nested", "field")
+
+		if !reflect.DeepEqual(u.Object, map[string]any{
+			"spec": map[string]any{
+				"nested": map[string]any{
+					"field": "asdf",
+				},
+			},
+		}) {
+			t.Fatalf("got %[1]T(%#[1]v)", u.Object)
+		}
+	})
+
+	t.Run("Numeric", func(t *testing.T) {
+		u.Object = nil
+		require.UnmarshalIntoField(t, &u, `99`, "one")
+		require.UnmarshalIntoField(t, &u, `5.7`, "two")
+
+		// Kubernetes distinguishes between integral and fractional numbers.
+		if !reflect.DeepEqual(u.Object, map[string]any{
+			"one": int64(99),
+			"two": float64(5.7),
+		}) {
+			t.Fatalf("got %[1]T(%#[1]v)", u.Object)
+		}
+	})
+
+	// Correctly fails with: BUG: called without a destination
+	// require.UnmarshalIntoField(t, &u, `true`)
 }
