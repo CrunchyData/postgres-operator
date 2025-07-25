@@ -141,12 +141,12 @@ type PostgresHBARule struct {
 //
 // https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_10_0;f=src/backend/libpq/hba.c#l1501
 // https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_17_0;f=src/backend/libpq/hba.c#l1886
-// +kubebuilder:validation:XValidation:rule=`has(self.hba) || self.method != "ldap" || (has(self.options) && ["ldapbasedn","ldapprefix","ldapsuffix"].exists(k, k in self.options))`,message=`the "ldap" method requires an "ldapbasedn", "ldapprefix", or "ldapsuffix" option`
-// +kubebuilder:validation:XValidation:rule=`has(self.hba) || self.method != "ldap" || !has(self.options) || [["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].exists_one(a, a.exists(k, k in self.options))`,message=`cannot use "ldapbasedn", "ldapbinddn", "ldapbindpasswd", "ldapsearchattribute", or "ldapsearchfilter" options with "ldapprefix" or "ldapsuffix" options`
+// +kubebuilder:validation:XValidation:message=`the "ldap" method requires an "ldapbasedn", "ldapprefix", or "ldapsuffix" option`,rule=`has(self.hba) || self.method != "ldap" || (has(self.options) && ["ldapbasedn","ldapprefix","ldapsuffix"].exists(k, k in self.options))`
+// +kubebuilder:validation:XValidation:message=`cannot use "ldapbasedn", "ldapbinddn", "ldapbindpasswd", "ldapsearchattribute", or "ldapsearchfilter" options with "ldapprefix" or "ldapsuffix" options`,rule=`has(self.hba) || self.method != "ldap" || !has(self.options) || 2 > size([["ldapprefix","ldapsuffix"], ["ldapbasedn","ldapbinddn","ldapbindpasswd","ldapsearchattribute","ldapsearchfilter"]].filter(a, a.exists(k, k in self.options)))`
 //
 // https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_10_0;f=src/backend/libpq/hba.c#l1539
 // https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_17_0;f=src/backend/libpq/hba.c#l1945
-// +kubebuilder:validation:XValidation:rule=`has(self.hba) || self.method != "radius" || (has(self.options) && ["radiusservers","radiussecrets"].all(k, k in self.options))`,message=`the "radius" method requires "radiusservers" and "radiussecrets" options`
+// +kubebuilder:validation:XValidation:message=`the "radius" method requires "radiusservers" and "radiussecrets" options`,rule=`has(self.hba) || self.method != "radius" || (has(self.options) && ["radiusservers","radiussecrets"].all(k, k in self.options))`
 //
 // +structType=atomic
 type PostgresHBARuleSpec struct {
