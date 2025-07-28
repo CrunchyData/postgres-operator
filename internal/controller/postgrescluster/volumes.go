@@ -919,7 +919,7 @@ func (r *Reconciler) reconcileAdditionalVolumes(
 	// observed *Instance,
 ) (additionalVolumePVCs []*corev1.PersistentVolumeClaim, err error) {
 
-	if additionalVolumes == nil || len(additionalVolumes) == 0 {
+	if len(additionalVolumes) == 0 {
 		return
 	}
 
