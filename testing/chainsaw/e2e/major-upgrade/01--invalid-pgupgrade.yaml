@@ -1,0 +1,10 @@
+---
+# This pgupgrade is invalid and should get that condition (even with no cluster)
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PGUpgrade
+metadata:
+  name: major-upgrade-do-it
+spec:
+  fromPostgresVersion: ${KUTTL_PG_VERSION}
+  toPostgresVersion: ${KUTTL_PG_VERSION}
+  postgresClusterName: major-upgrade

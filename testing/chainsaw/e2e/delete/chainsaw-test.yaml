@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: delete
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: 00--cluster.yaml
+    - assert:
+        file: 00-assert.yaml
+  - name: step-01
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: delete
+  - name: step-02
+    try:
+    - error:
+        file: 02-errors.yaml
+  - name: step-10
+    try:
+    - apply:
+        file: 10--cluster.yaml
+    - assert:
+        file: 10-assert.yaml
+  - name: step-11
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: delete-with-replica
+  - name: step-12
+    try:
+    - error:
+        file: 12-errors.yaml
+  - name: step-20
+    try:
+    - apply:
+        file: 20--cluster.yaml
+    - error:
+        file: 20-errors.yaml
+  - name: step-21
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: delete-not-running
+  - name: step-22
+    try:
+    - error:
+        file: 22-errors.yaml

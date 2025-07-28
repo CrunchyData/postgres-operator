@@ -1,0 +1,18 @@
+---
+# Wait for the job to start.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: psql-open-connection
+status:
+  active: 1
+
+---
+# Wait for the pod to start.
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    job-name: psql-open-connection
+status:
+  phase: Running

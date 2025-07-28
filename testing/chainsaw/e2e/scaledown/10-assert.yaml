@@ -1,0 +1,30 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: scaledown1
+status:
+  instances:
+    - name: instance1
+      readyReplicas: 2
+      replicas: 2
+      updatedReplicas: 2
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: scaledown1
+    postgres-operator.crunchydata.com/instance-set: instance1
+    postgres-operator.crunchydata.com/role: master
+status:
+  phase: Running
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: scaledown1
+    postgres-operator.crunchydata.com/instance-set: instance1
+    postgres-operator.crunchydata.com/role: replica
+status:
+  phase: Running

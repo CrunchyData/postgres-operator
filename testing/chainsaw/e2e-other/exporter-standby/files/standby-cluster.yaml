@@ -1,0 +1,25 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: standby-cluster
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  standby:
+    enabled: true
+    host: primary-cluster-primary
+  customTLSSecret:
+    name: cluster-cert
+  customReplicationTLSSecret:
+    name: replication-cert
+  instances:
+    - name: instance1
+      dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  monitoring:
+    pgmonitor:
+      exporter: {}

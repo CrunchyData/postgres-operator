@@ -1,0 +1,18 @@
+---
+# Wait for the instances to be ready with the target Postgres version.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: major-upgrade
+status:
+  postgresVersion: ${KUTTL_PG_UPGRADE_TO_VERSION}
+  instances:
+    - name: '00'
+      replicas: 3
+      readyReplicas: 3
+      updatedReplicas: 3
+  pgbackrest:
+    repos:
+    - name: repo1
+      replicaCreateBackupComplete: true
+      stanzaCreated: true

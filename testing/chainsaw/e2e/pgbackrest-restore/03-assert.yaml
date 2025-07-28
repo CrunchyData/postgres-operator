@@ -1,0 +1,13 @@
+---
+# Wait for the backup job to complete.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    postgres-operator.crunchydata.com/pgbackrest-backup: one
+  labels:
+    postgres-operator.crunchydata.com/cluster: original
+    postgres-operator.crunchydata.com/pgbackrest-backup: manual
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+status:
+  succeeded: 1

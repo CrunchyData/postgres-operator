@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: delete-with-replica-and-check-timestamps
+spec:
+  steps:
+  - name: step-10
+    try:
+    - apply:
+        file: 10--cluster.yaml
+    - assert:
+        file: 10-assert.yaml
+  - name: step-11
+    try:
+    - script:
+        content: |
+          kubectl label --namespace="${NAMESPACE}" pods \
+            --selector='postgres-operator.crunchydata.com/role=master' \
+            'testing/role-before=master'
+    - script:
+        content: |
+          kubectl label --namespace="${NAMESPACE}" pods \
+            --selector='postgres-operator.crunchydata.com/role=replica' \
+            'testing/role-before=replica'
+    - script:
+        content: |
+          kubectl annotate --namespace="${NAMESPACE}" postgrescluster/delete-switchover-with-timestamp \
+            "postgres-operator.crunchydata.com/trigger-switchover=$(date)"
+  - name: step-12
+    try:
+    - assert:
+        file: 12-assert.yaml
+  - name: step-13
+    try:
+    - script:
+        content: "PRIMARY=$(\n  kubectl get pods --namespace=\"${NAMESPACE}\" \\\n
+          \   --selector='postgres-operator.crunchydata.com/role=master' \\\n    --output=jsonpath={.items..metadata.name}\n)\n\nREPLICA=$(\n
+          \ kubectl get pods --namespace=\"${NAMESPACE}\" \\\n    --selector='postgres-operator.crunchydata.com/role=replica'
+          \\\n    --output=jsonpath={.items..metadata.name}\n)\n\necho \"DELETE: Found
+          primary ${PRIMARY} and replica ${REPLICA} pods\"\n\nif [ -z \"$PRIMARY\"
+          ]; then exit 1; fi      \nif [ -z \"$REPLICA\" ]; then exit 1; fi\n\nkubectl
+          delete postgrescluster -n \"${NAMESPACE}\" delete-switchover-with-timestamp\n\nkubectl
+          wait \"pod/${REPLICA}\" --namespace \"${NAMESPACE}\" --for=delete --timeout=180s\n\nKILLING_REPLICA_TIMESTAMP=$(\n
+          \ kubectl get events --namespace=\"${NAMESPACE}\" \\\n    --field-selector
+          reason=\"Killing\",involvedObject.fieldPath=\"spec.containers{database}\",involvedObject.name=\"${REPLICA}\"
+          \\\n    --output=jsonpath={.items..firstTimestamp}\n)\n\nkubectl wait \"pod/${PRIMARY}\"
+          --namespace \"${NAMESPACE}\" --for=delete --timeout=180s\n\nKILLING_PRIMARY_TIMESTAMP=$(\n
+          \ kubectl get events --namespace=\"${NAMESPACE}\" \\\n    --field-selector
+          reason=\"Killing\",involvedObject.fieldPath=\"spec.containers{database}\",involvedObject.name=\"${PRIMARY}\"
+          \\\n    --output=jsonpath={.items..firstTimestamp}\n)\n\necho \"DELETE:
+          Found primary ${KILLING_PRIMARY_TIMESTAMP} and replica ${KILLING_REPLICA_TIMESTAMP}
+          timestamps\"\n\nif [[ \"${KILLING_PRIMARY_TIMESTAMP}\" < \"${KILLING_REPLICA_TIMESTAMP}\"
+          ]]; then exit 1; fi\n"
+  - name: step-14
+    try:
+    - error:
+        file: 14-errors.yaml

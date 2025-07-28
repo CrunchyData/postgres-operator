@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: root-cert-ownership
+spec:
+  steps:
+  - name: step-00
+    try:
+    - apply:
+        file: 00--cluster.yaml
+    - assert:
+        file: 00-assert.yaml
+  - name: step-01
+    try:
+    - script:
+        content: |
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          while true; do
+              sleep 1 # this sleep allows time for the owner reference list to be updated
+              CURRENT_OWNERS=$(kubectl --namespace="${NAMESPACE}" get secret \
+                pgo-root-cacert -o jsonpath='{.metadata.ownerReferences[*].name}')
+              # If owner1 and owner2 are both listed, exit successfully
+              if contains "${CURRENT_OWNERS}" "owner1" && contains "${CURRENT_OWNERS}" "owner2"; then
+                  exit 0
+              fi
+          done
+  - name: step-02
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: owner1
+    - assert:
+        file: 02-assert.yaml
+    - error:
+        file: 02-errors.yaml
+  - name: step-03
+    try:
+    - script:
+        content: |
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+          while true; do
+              sleep 1 # this sleep allows time for the owner reference list to be updated
+              CURRENT_OWNERS=$(kubectl --namespace="${NAMESPACE}" get secret \
+                pgo-root-cacert -o jsonpath='{.metadata.ownerReferences[*].name}')
+              # If owner1 is removed and owner2 is still listed, exit successfully
+              if !(contains "${CURRENT_OWNERS}" "owner1") && contains "${CURRENT_OWNERS}" "owner2"; then
+                  exit 0
+              fi
+          done
+  - name: step-04
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: owner2
+    - error:
+        file: 04-errors.yaml
+  - name: step-05
+    try:
+    - script:
+        content: |
+          NUM_CLUSTERS=$(kubectl --namespace="${NAMESPACE}" get postgrescluster --output name | wc -l)
+          echo "Found ${NUM_CLUSTERS} clusters"
+          if [ "$NUM_CLUSTERS" != 0 ]; then
+              # Continue checking until Kuttl times out
+              # If at least one owner is never removed the test fails
+              while true; do
+                  sleep 5 # This sleep allows time for the owner reference list to be updated
+                  CURRENT_OWNERS=$(kubectl --namespace="${NAMESPACE}" get secret \
+                    pgo-root-cacert -o jsonpath='{.metadata.ownerReferences[*].name}')
+                  # If neither owner is listed, exit successfully
+                  contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+                  if ! contains "${CURRENT_OWNERS}" "owner1" && ! contains "${CURRENT_OWNERS}" "owner2"; then
+                      exit 0
+                  fi
+              done
+          else
+              # Continue checking until Kuttl times out
+              # If the secret is never removed, the test fails
+              while true; do
+                  sleep 5 # this sleep allows time for garbage collector to delete the secret
+                  ROOT_SECRET=$(kubectl --namespace="${NAMESPACE}" get --ignore-not-found \
+                    secret pgo-root-cacert --output name | wc -l)
+                  if [ "$ROOT_SECRET" = 0 ]; then
+                      exit 0
+                  fi
+              done
+          fi

@@ -1,0 +1,8 @@
+---
+# Wait for the job to complete.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: read-cert-after
+status:
+  succeeded: 1

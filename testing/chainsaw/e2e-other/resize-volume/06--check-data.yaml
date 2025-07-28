@@ -1,0 +1,40 @@
+---
+# Confirm that all the data still exists.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: check-data
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            - name: PGURI
+              valueFrom: { secretKeyRef: { name: resize-volume-up-pguser-resize-volume-up, key: uri } }
+
+            # Do not wait indefinitely.
+            - { name: PGCONNECT_TIMEOUT, value: '5' }
+
+          # Confirm that all the data still exists.
+          # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+          # - https://kubernetes.io/docs/tasks/inject-data-application/
+          command:
+            - psql
+            - $(PGURI)
+            - --set=ON_ERROR_STOP=1
+            - --command
+            - |
+              DO $$$$
+              DECLARE
+                keep_data jsonb;
+              BEGIN
+                SELECT jsonb_agg(important) INTO keep_data FROM important;
+                ASSERT keep_data = '[{"data":"treasure"}]', format('got %L', keep_data);
+              END $$$$;

@@ -1,0 +1,49 @@
+---
+# Confirm that all the data was replicated.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: check-standby-data
+  labels: { postgres-operator-test: kuttl }
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels: { postgres-operator-test: kuttl }
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: ${KUTTL_PSQL_IMAGE}
+          env:
+            # Connect to the cluster using the standby-cluster database and primary-cluster credentials.
+            - name: PGHOST
+              valueFrom: { secretKeyRef: { name: standby-cluster-pguser-standby-cluster, key: host } }
+            - name: PGPORT
+              valueFrom: { secretKeyRef: { name: standby-cluster-pguser-standby-cluster, key: port } }
+            - name: PGDATABASE
+              valueFrom: { secretKeyRef: { name: primary-cluster-pguser-primary-cluster, key: dbname } }
+            - name: PGUSER
+              valueFrom: { secretKeyRef: { name: primary-cluster-pguser-primary-cluster, key: user } }
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: primary-cluster-pguser-primary-cluster, key: password } }
+
+            # Do not wait indefinitely.
+            - { name: PGCONNECT_TIMEOUT, value: '5' }
+
+          # Confirm that all the data was replicated.
+          # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+          # - https://kubernetes.io/docs/tasks/inject-data-application/
+          command:
+            - psql
+            - -qa
+            - --set=ON_ERROR_STOP=1
+            - --command
+            - |
+              DO $$$$
+              DECLARE
+                replicated jsonb;
+              BEGIN
+                SELECT jsonb_agg(important) INTO replicated FROM important;
+                ASSERT replicated = '[{"data":"treasure"}]', format('got %L', replicated);
+              END $$$$;

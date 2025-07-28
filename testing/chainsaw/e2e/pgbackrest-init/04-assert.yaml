@@ -1,0 +1,34 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: init-pgbackrest
+status:
+  instances:
+  - name: instance1
+    readyReplicas: 2
+    replicas: 2
+    updatedReplicas: 2
+  pgbackrest:
+    repoHost:
+      apiVersion: apps/v1
+      kind: StatefulSet
+      ready: true
+    repos:
+# Assert that the status has the two repos, with only the first having the `replicaCreateBackupComplete` field
+    - bound: true
+      name: repo1
+      replicaCreateBackupComplete: true
+      stanzaCreated: true
+    - bound: true
+      name: repo2
+      stanzaCreated: true
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    postgres-operator.crunchydata.com/cluster: init-pgbackrest
+    postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+    postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+status:
+  succeeded: 1

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: krb5
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: krb5-keytab

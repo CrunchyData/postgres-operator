@@ -1,0 +1,18 @@
+---
+# Create a cluster where the version does not match the pgupgrade's `from`
+# TODO(benjaminjb): this isn't quite working out
+# apiVersion: postgres-operator.crunchydata.com/v1beta1
+# kind: PostgresCluster
+# metadata:
+#   name: major-upgrade
+# spec:
+#   shutdown: true
+#   postgresVersion: ${KUTTL_PG_UPGRADE_TOO_EARLY_FROM_VERSION}
+#   instances:
+#     - dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+#   backups:
+#     pgbackrest:
+#       repos:
+#         - name: repo1
+#           volume:
+#             volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }

@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-cm
+data:
+  configMap: config
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: test-secret
+type: Opaque
+stringData:
+  password: myPassword
+---
+# Create a cluster with a configured pgAdmin UI.
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: interfaced
+  labels: { postgres-operator-test: kuttl }
+spec:
+  postgresVersion: ${KUTTL_PG_VERSION}
+  instances:
+    - name: instance1
+      replicas: 1
+      dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  backups:
+    pgbackrest:
+      repos:
+      - name: repo1
+        volume:
+          volumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+  userInterface:
+    pgAdmin:
+      dataVolumeClaimSpec: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+      config:
+        files:
+          - secret:
+              name: test-secret
+          - configMap:
+              name: test-cm
+        settings:
+          SHOW_GRAVATAR_IMAGE: False
+          LOGIN_BANNER: |
+            Custom KUTTL Login Banner

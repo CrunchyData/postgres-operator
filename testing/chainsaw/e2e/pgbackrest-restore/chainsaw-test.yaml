@@ -1,0 +1,260 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  creationTimestamp: null
+  name: pgbackrest-restore
+spec:
+  steps:
+  - name: step-01
+    try:
+    - apply:
+        file: 01--create-cluster.yaml
+    - assert:
+        file: 01-assert.yaml
+  - name: step-02
+    try:
+    - apply:
+        file: 02--create-data.yaml
+    - assert:
+        file: 02-assert.yaml
+  - name: step-03
+    try:
+    - script:
+        content: |
+          kubectl annotate --namespace="${NAMESPACE}" postgrescluster/original \
+            'postgres-operator.crunchydata.com/pgbackrest-backup=one'
+    - assert:
+        file: 03-assert.yaml
+  - name: step-04
+    try:
+    - apply:
+        file: 04--clone-cluster.yaml
+    - assert:
+        file: 04-assert.yaml
+  - name: step-05
+    try:
+    - apply:
+        file: 05--check-data.yaml
+    - assert:
+        file: 05-assert.yaml
+  - name: step-06
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: clone-one
+  - name: step-07
+    try:
+    - script:
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+          START=$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+              -- psql -qAt --command 'SELECT pg_postmaster_start_time()'
+          )
+          kubectl annotate --namespace "${NAMESPACE}" postgrescluster/original \
+            "testing/start-before=${START}"
+    - apply:
+        file: 07--update-cluster.yaml
+  - name: step-08
+    try:
+    - script:
+        content: |
+          BEFORE=$(
+            kubectl get --namespace "${NAMESPACE}" postgrescluster/original \
+              --output 'go-template={{ index .metadata.annotations "testing/start-before" }}'
+          )
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          # Wait for PostgreSQL to restart.
+          while true; do
+            START=$(
+              kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+                -- psql -qAt --command 'SELECT pg_postmaster_start_time()'
+            )
+            if [ "${START}" ] && [ "${START}" != "${BEFORE}" ]; then break; else sleep 1; fi
+          done
+          echo "${START} != ${BEFORE}"
+
+          # Reset counters in the "pg_stat_archiver" view.
+          kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qb --command "SELECT pg_stat_reset_shared('archiver')"
+  - name: step-09
+    try:
+    - apply:
+        file: 09--add-data.yaml
+    - assert:
+        file: 09-assert.yaml
+  - name: step-10
+    try:
+    - script:
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          # Wait for the data to be sent to the WAL archive. A prior step reset the
+          # "pg_stat_archiver" counters, so anything more than zero should suffice.
+          kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -c 'SELECT pg_switch_wal()'
+          while [ 0 = "$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -qAt -c 'SELECT archived_count FROM pg_stat_archiver'
+          )" ]; do sleep 1; done
+  - name: step-11
+    try:
+    - apply:
+        file: 11--clone-cluster.yaml
+    - assert:
+        file: 11-assert.yaml
+  - name: step-12
+    try:
+    - apply:
+        file: 12--check-data.yaml
+    - assert:
+        file: 12-assert.yaml
+  - name: step-13
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: clone-two
+  - name: step-14
+    try:
+    - script:
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+          OBJECTIVE=$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+              -- psql -qAt --command 'SELECT clock_timestamp()'
+          )
+
+          # Store the recovery objective for later steps.
+          kubectl annotate --namespace "${NAMESPACE}" postgrescluster/original \
+            "testing/objective=${OBJECTIVE}"
+
+          # A reason to restore. Wait for the change to be sent to the WAL archive.
+          kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qb original --set ON_ERROR_STOP=1 \
+              --command 'DROP TABLE original.important' \
+              --command "SELECT pg_stat_reset_shared('archiver')" \
+              --command 'SELECT pg_switch_wal()'
+
+          while [ 0 = "$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -qAt -c 'SELECT archived_count FROM pg_stat_archiver'
+          )" ]; do sleep 1; done
+    - script:
+        content: |
+          REPLICA=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=replica'
+          )
+
+          kubectl exec --stdin --namespace "${NAMESPACE}" "${REPLICA}" \
+            -- psql -qb original --set ON_ERROR_STOP=1 \
+              --file=- <<'SQL'
+            DO $$
+            BEGIN
+              ASSERT to_regclass('important') IS NULL, 'expected no table';
+              PERFORM * FROM information_schema.tables WHERE table_name = 'important';
+              ASSERT NOT FOUND, 'expected no table';
+            END $$
+          SQL
+  - name: step-15
+    try:
+    - script:
+        content: |
+          TARGET_JSON=$(
+            kubectl get --namespace "${NAMESPACE}" postgrescluster/original \
+              --output 'go-template={{ index .metadata.annotations "testing/objective" | printf "--target=%q" | printf "%q" }}'
+          )
+
+          # Configure the cluster for an in-place point-in-time restore (PITR).
+          kubectl patch --namespace "${NAMESPACE}" postgrescluster/original \
+            --type 'merge' --patch '
+              {"spec":{"backups":{"pgbackrest":{"restore":{
+                "enabled": true,
+                "repoName": "repo1",
+                "options": ["--type=time", '"${TARGET_JSON}"']
+              }}}}}'
+
+          # Annotate the cluster to trigger the restore.
+          kubectl annotate --namespace="${NAMESPACE}" postgrescluster/original \
+            'postgres-operator.crunchydata.com/pgbackrest-restore=one'
+
+          # TODO(benjaminjb): remove this when PG10 is no longer being supported
+          # For PG10, we need to run a patronictl reinit for the replica when that is running
+          # Get the replica name--the replica will exist during the PITR process so we don't need to wait
+          if [[ ${KUTTL_PG_VERSION} == 10 ]]; then
+            # Find replica
+            REPLICA=$(kubectl get pods --namespace "${NAMESPACE}" \
+              --selector='
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/data=postgres,
+                postgres-operator.crunchydata.com/role!=master' \
+              --output=jsonpath={.items..metadata.name})
+
+            # Wait for replica to be deleted
+            kubectl wait pod/"${REPLICA}" --namespace "${NAMESPACE}" --for=delete --timeout=-1s
+
+             # Wait for the restarted replica to be started
+            NOT_RUNNING=""
+            while [[ "${NOT_RUNNING}" == "" ]]; do
+              kubectl get pods --namespace "${NAMESPACE}" "${REPLICA}" || (sleep 1 && continue)
+
+              NOT_RUNNING=$(kubectl get pods --namespace "${NAMESPACE}" "${REPLICA}" \
+                --output jsonpath="{.status.containerStatuses[?(@.name=='database')].state.running.startedAt}")
+              sleep 1
+            done
+
+            kubectl exec --namespace "${NAMESPACE}" "${REPLICA}" -- patronictl reinit original-ha "${REPLICA}" --force
+          fi
+    - assert:
+        file: 15-assert.yaml
+  - name: step-16
+    try:
+    - apply:
+        file: 16--check-data.yaml
+    - assert:
+        file: 16-assert.yaml
+  - name: step-17
+    try:
+    - script:
+        content: |
+          REPLICA=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=replica'
+          )
+
+          kubectl exec --stdin --namespace "${NAMESPACE}" "${REPLICA}" \
+            -- psql -qb original --set ON_ERROR_STOP=1 \
+              --file=- <<'SQL'
+            DO $$
+            BEGIN
+              PERFORM * FROM pg_stat_wal_receiver WHERE status = 'streaming';
+              ASSERT FOUND, 'expected streaming replication';
+            END $$
+          SQL
