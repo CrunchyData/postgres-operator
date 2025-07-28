@@ -203,7 +203,7 @@ trivy:
     # Trivy needs a populated Go module cache to detect Go module licenses.
     - go mod download
     - >-
-      trivy filesystem . --exit-code 1
+      trivy repository . --exit-code 1 --skip-dirs .gitlab-remotes
       --scanners license,vuln
       --ignore-unfixed
       --no-progress
