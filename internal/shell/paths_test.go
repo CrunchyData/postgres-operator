@@ -93,4 +93,11 @@ func TestMakeDirectories(t *testing.T) {
 				"expected plain unquoted scalar, got:\n%s", b)
 		})
 	})
+
+	t.Run("Unrelated", func(t *testing.T) {
+		assert.Equal(t,
+			MakeDirectories("/one", "/two/three/four"),
+			`mkdir -p '/two/three/four' && { chmod 0775 '/two/three/four' || :; }`,
+			"expected no chmod of parent directories")
+	})
 }

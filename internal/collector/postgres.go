@@ -117,7 +117,6 @@ func EnablePostgresLogging(
 		for k, v := range postgres.LogRotation(retentionPeriod, "postgresql-", ".log") {
 			outParameters.Add(k, v)
 		}
-		outParameters.Add("log_file_mode", "0660")
 
 		// Log in a timezone that the OpenTelemetry Collector will understand.
 		outParameters.Add("log_timezone", "UTC")

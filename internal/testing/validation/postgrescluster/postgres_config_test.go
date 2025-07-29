@@ -5,6 +5,7 @@
 package validation
 
 import (
+	"fmt"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -118,8 +119,6 @@ func testPostgresConfigParametersCommon(t *testing.T, cc client.Client, base uns
 			{key: "hot_standby", value: "off"},
 			{key: "ident_file", value: "two"},
 			{key: "listen_addresses", value: ""},
-			{key: "log_file_mode", value: ""},
-			{key: "logging_collector", value: "off"},
 			{key: "port", value: 5},
 			{key: "wal_log_hints", value: "off"},
 		} {
@@ -139,6 +138,57 @@ func testPostgresConfigParametersCommon(t *testing.T, cc client.Client, base uns
 				// TODO(k8s-1.30) TODO(validation): Move the parameter name from the message to the field path.
 				assert.Equal(t, status.Details.Causes[0].Field, "spec.config.parameters")
 				assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, tt.key))
+			})
+		}
+	})
+
+	t.Run("Logging", func(t *testing.T) {
+		for _, tt := range []struct {
+			valid   bool
+			key     string
+			value   any
+			message string
+		}{
+			{valid: false, key: "log_file_mode", value: "", message: "cannot be changed"},
+			{valid: false, key: "log_file_mode", value: "any", message: "cannot be changed"},
+			{valid: false, key: "logging_collector", value: "", message: "unsafe"},
+			{valid: false, key: "logging_collector", value: "off", message: "unsafe"},
+			{valid: false, key: "logging_collector", value: "on", message: "unsafe"},
+
+			{valid: true, key: "log_destination", value: "anything"},
+			{valid: true, key: "log_directory", value: "anything"},
+			{valid: true, key: "log_filename", value: "anything"},
+			{valid: true, key: "log_filename", value: "percent-%s-too"},
+			{valid: true, key: "log_rotation_age", value: "7d"},
+			{valid: true, key: "log_rotation_age", value: 5},
+			{valid: true, key: "log_rotation_size", value: "100MB"},
+			{valid: true, key: "log_rotation_size", value: 13},
+			{valid: true, key: "log_timezone", value: ""},
+			{valid: true, key: "log_timezone", value: "nonsense"},
+		} {
+			t.Run(fmt.Sprint(tt), func(t *testing.T) {
+				cluster := base.DeepCopy()
+				require.UnmarshalIntoField(t, cluster,
+					require.Value(yaml.Marshal(tt.value)),
+					"spec", "config", "parameters", tt.key)
+
+				err := cc.Create(ctx, cluster, client.DryRunAll)
+
+				if tt.valid {
+					assert.NilError(t, err)
+					assert.Equal(t, "", tt.message, "BUG IN TEST: no message expected when valid")
+				} else {
+					assert.Assert(t, apierrors.IsInvalid(err))
+
+					status := require.StatusError(t, err)
+					assert.Assert(t, status.Details != nil)
+					assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+
+					// TODO(k8s-1.30) TODO(validation): Move the parameter name from the message to the field path.
+					assert.Equal(t, status.Details.Causes[0].Field, "spec.config.parameters")
+					assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, tt.key))
+					assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, tt.message))
+				}
 			})
 		}
 	})

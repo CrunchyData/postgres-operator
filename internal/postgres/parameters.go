@@ -48,6 +48,16 @@ func NewParameters() Parameters {
 	// - https://www.postgresql.org/docs/current/auth-password.html
 	parameters.Default.Add("password_encryption", "scram-sha-256")
 
+	// Pod "securityContext.fsGroup" ensures processes and filesystems agree on a GID;
+	// use the same permissions for group and owner.
+	// This allows every process in the pod to read Postgres log files.
+	//
+	// S_IRUSR, S_IWUSR: (0600) enable owner read and write permissions
+	// S_IRGRP, S_IWGRP: (0060) enable group read and write permissions.
+	//
+	// PostgreSQL must be reloaded when changing this value.
+	parameters.Mandatory.Add("log_file_mode", "0660")
+
 	return parameters
 }
 
