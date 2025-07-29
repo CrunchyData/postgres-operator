@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -41,17 +42,15 @@ func CleanFileName(path string) string {
 //   - https://pubs.opengroup.org/onlinepubs/9799919799/utilities/test.html
 //   - https://pubs.opengroup.org/onlinepubs/9799919799/utilities/umask.html
 func MakeDirectories(base string, paths ...string) string {
-	// Without any paths, return a command that succeeds when the base path
-	// exists.
+	// Without any paths, return a command that succeeds when the base path exists.
 	if len(paths) == 0 {
 		return `test -d ` + QuoteWord(base)
 	}
 
-	allPaths := append([]string(nil), paths...)
+	allPaths := slices.Clone(paths)
 	for _, p := range paths {
 		if r, err := filepath.Rel(base, p); err == nil && filepath.IsLocal(r) {
-			// The result of [filepath.Rel] is a shorter representation
-			// of the full path; skip it.
+			// The result of [filepath.Rel] is a shorter representation of the full path; skip it.
 			r = filepath.Dir(r)
 
 			for r != "." {
@@ -61,6 +60,8 @@ func MakeDirectories(base string, paths ...string) string {
 		}
 	}
 
+	// Pod "securityContext.fsGroup" ensures processes and filesystems agree on a GID.
+	// Use the same permissions for group and owner.
 	const perms fs.FileMode = 0 |
 		// S_IRWXU: enable owner read, write, and execute permissions.
 		0o0700 |

@@ -14,6 +14,8 @@ func TestNewParameters(t *testing.T) {
 	parameters := NewParameters()
 
 	assert.DeepEqual(t, parameters.Mandatory.AsMap(), map[string]string{
+		"log_file_mode": "0660",
+
 		"ssl":           "on",
 		"ssl_ca_file":   "/pgconf/tls/ca.crt",
 		"ssl_cert_file": "/pgconf/tls/tls.crt",
