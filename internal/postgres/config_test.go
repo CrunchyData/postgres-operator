@@ -40,6 +40,13 @@ func TestDataDirectory(t *testing.T) {
 	assert.Equal(t, DataDirectory(cluster), "/pgdata/pg12")
 }
 
+func TestDataStorage(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Spec.PostgresVersion = rand.IntN(20)
+
+	assert.Equal(t, DataStorage(cluster), "/pgdata")
+}
+
 func TestLogRotation(t *testing.T) {
 	t.Parallel()
 
@@ -543,8 +550,10 @@ func TestStartupCommand(t *testing.T) {
 	cluster.Spec.PostgresVersion = 13
 	instance := new(v1beta1.PostgresInstanceSetSpec)
 
+	parameters := NewParameters().Default
+
 	ctx := context.Background()
-	command := startupCommand(ctx, cluster, instance)
+	command := startupCommand(ctx, cluster, instance, parameters)
 
 	// Expect a bash command with an inline script.
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
@@ -579,7 +588,7 @@ func TestStartupCommand(t *testing.T) {
 				},
 			},
 		}
-		command := startupCommand(ctx, cluster, instance)
+		command := startupCommand(ctx, cluster, instance, parameters)
 		assert.Assert(t, len(command) > 3)
 		assert.Assert(t, strings.Contains(command[3], `cat << "EOF" > /tmp/pg_rewind_tde.sh
 #!/bin/sh
