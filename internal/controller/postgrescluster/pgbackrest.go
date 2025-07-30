@@ -40,6 +40,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -772,7 +773,7 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 }
 
 // generateBackupJobSpecIntent generates a JobSpec for a pgBackRest backup job
-func generateBackupJobSpecIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
+func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repo v1beta1.PGBackRestRepo, serviceAccountName string,
 	labels, annotations map[string]string, opts ...string) *batchv1.JobSpec {
 
@@ -866,6 +867,27 @@ func generateBackupJobSpecIntent(ctx context.Context, postgresCluster *v1beta1.P
 		// to read certificate files
 		jobSpec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 		pgbackrest.AddConfigToCloudBackupJob(postgresCluster, &jobSpec.Template)
+
+		// If the user has specified a PVC to use as a log volume via the PGBackRestCloudLogVolume
+		// annotation, check for the PVC. If we find it, mount it to the backup job.
+		// Otherwise, create a warning event.
+		if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
+			logVolume := &corev1.PersistentVolumeClaim{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      logVolumeName,
+					Namespace: postgresCluster.GetNamespace(),
+				},
+			}
+			err := errors.WithStack(r.Client.Get(ctx,
+				client.ObjectKeyFromObject(logVolume), logVolume))
+			if err != nil {
+				// PVC not retrieved, create warning event
+				r.Recorder.Event(postgresCluster, corev1.EventTypeWarning, "PGBackRestCloudLogVolumeNotFound", err.Error())
+			} else {
+				// We successfully found the specified PVC, so we will add it to the backup job
+				util.AddVolumeAndMountsToPod(&jobSpec.Template.Spec, logVolume)
+			}
+		}
 	}
 
 	return jobSpec
@@ -2030,10 +2052,33 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) error {
 
+	// If the user has specified a PVC to use as a log volume for cloud backups via the
+	// PGBackRestCloudLogVolume annotation, check for the PVC. If we find it, set the cloud
+	// log path. If the user has specified a PVC, but we can't find it, create a warning event.
+	cloudLogPath := ""
+	if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
+		logVolume := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      logVolumeName,
+				Namespace: postgresCluster.GetNamespace(),
+			},
+		}
+		err := errors.WithStack(r.Client.Get(ctx,
+			client.ObjectKeyFromObject(logVolume), logVolume))
+		if err != nil {
+			// PVC not retrieved, create warning event
+			r.Recorder.Event(postgresCluster, corev1.EventTypeWarning,
+				"PGBackRestCloudLogVolumeNotFound", err.Error())
+		} else {
+			// We successfully found the specified PVC, so we will set the log path
+			cloudLogPath = "/volumes/" + logVolumeName
+		}
+	}
+
 	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
-		configHash, serviceName, serviceNamespace, instanceNames)
-	if err := controllerutil.SetControllerReference(postgresCluster, backrestConfig,
-		r.Client.Scheme()); err != nil {
+		configHash, serviceName, serviceNamespace, cloudLogPath, instanceNames)
+
+	if err := r.setControllerReference(postgresCluster, backrestConfig); err != nil {
 		return err
 	}
 	if err := r.apply(ctx, backrestConfig); err != nil {
@@ -2441,7 +2486,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
-	spec := generateBackupJobSpecIntent(ctx, postgresCluster, repo,
+	spec := r.generateBackupJobSpecIntent(ctx, postgresCluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
 
 	backupJob.Spec = *spec
@@ -2619,7 +2664,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	backupJob.ObjectMeta.Labels = labels
 	backupJob.ObjectMeta.Annotations = annotations
 
-	spec := generateBackupJobSpecIntent(ctx, postgresCluster, replicaCreateRepo,
+	spec := r.generateBackupJobSpecIntent(ctx, postgresCluster, replicaCreateRepo,
 		serviceAccount.GetName(), labels, annotations)
 
 	backupJob.Spec = *spec
@@ -3046,7 +3091,7 @@ func (r *Reconciler) reconcilePGBackRestCronJob(
 	// set backup type (i.e. "full", "diff", "incr")
 	backupOpts := []string{"--type=" + backupType}
 
-	jobSpec := generateBackupJobSpecIntent(ctx, cluster, repo,
+	jobSpec := r.generateBackupJobSpecIntent(ctx, cluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
 
 	// Suspend cronjobs when shutdown or read-only. Any jobs that have already

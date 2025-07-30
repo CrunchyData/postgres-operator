@@ -69,8 +69,9 @@ const (
 // pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
+// pgbackrest_cloud.conf is used by cloud repo backup jobs
 func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
-	repoHostName, configHash, serviceName, serviceNamespace string,
+	repoHostName, configHash, serviceName, serviceNamespace, cloudLogPath string,
 	instanceNames []string) *corev1.ConfigMap {
 
 	meta := naming.PGBackRestConfig(postgresCluster)
@@ -131,7 +132,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 				serviceName, serviceNamespace, pgdataDir,
 				config.FetchKeyCommand(&postgresCluster.Spec),
 				strconv.Itoa(postgresCluster.Spec.PostgresVersion),
-				pgPort, instanceNames,
+				cloudLogPath, pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
 			).String()
@@ -462,7 +463,7 @@ func populateRepoHostConfigurationMap(
 
 func populateCloudRepoConfigurationMap(
 	serviceName, serviceNamespace, pgdataDir,
-	fetchKeyCommand, postgresVersion string,
+	fetchKeyCommand, postgresVersion, logPath string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string,
 ) iniSectionSet {
@@ -482,7 +483,12 @@ func populateCloudRepoConfigurationMap(
 		}
 	}
 
-	global.Set("log-level-file", "off")
+	// If we are given a log path, set it in the config. Otherwise, turn off logging to file.
+	if logPath != "" {
+		global.Set("log-path", logPath)
+	} else {
+		global.Set("log-level-file", "off")
+	}
 
 	for option, val := range globalConfig {
 		global.Set(option, val)

@@ -54,6 +54,10 @@ const (
 	// bind all addresses does not work in certain IPv6 environments.
 	PGBackRestIPVersion = annotationPrefix + "pgbackrest-ip-version"
 
+	// PGBackRestCloudLogVolume is an annotation used to indicate which persistent volume claim
+	// should be mounted to cloud repo backup jobs so that the backup logs can be persisted.
+	PGBackRestCloudLogVolume = annotationPrefix + "pgbackrest-cloud-log-volume"
+
 	// PostgresExporterCollectorsAnnotation is an annotation used to allow users to control whether or
 	// not postgres_exporter default metrics, settings, and collectors are enabled. The value "None"
 	// disables all postgres_exporter defaults. Disabling the defaults may cause errors in dashboards.
