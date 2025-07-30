@@ -20,6 +20,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
@@ -67,6 +68,7 @@ func initManager(ctx context.Context) (runtime.Options, error) {
 	log := logging.FromContext(ctx)
 
 	options := runtime.Options{}
+	options.Cache.DefaultTransform = cache.TransformStripManagedFields()
 	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
 
 	// If we aren't using it, http/2 should be disabled
