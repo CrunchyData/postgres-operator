@@ -94,6 +94,38 @@ func TestMakeDirectories(t *testing.T) {
 		})
 	})
 
+	t.Run("Relative", func(t *testing.T) {
+		assert.Equal(t,
+			MakeDirectories("/x", "one", "two/three"),
+			`mkdir -p '/x/one' '/x/two/three' && { chmod 0775 '/x/one' '/x/two/three' '/x/two' || :; }`,
+			"expected paths relative to base")
+
+		assert.Equal(t,
+			MakeDirectories("/x/y/z", "../one", "./two", "../../../../three"),
+			`mkdir -p '/x/y/one' '/x/y/z/two' '/three' && { chmod 0775 '/x/y/one' '/x/y/z/two' '/three' || :; }`,
+			"expected paths relative to base")
+
+		script := MakeDirectories("x/y", "../one", "./two", "../../../../three")
+		assert.Equal(t, script,
+			`mkdir -p 'x/one' 'x/y/two' '../../three' && { chmod 0775 'x/one' 'x/y/two' '../../three' || :; }`,
+			"expected paths relative to base")
+
+		// Calling `mkdir -p '../..'` works, but run it by ShellCheck as a precaution.
+		t.Run("ShellCheckPOSIX", func(t *testing.T) {
+			shellcheck := require.ShellCheck(t)
+
+			dir := t.TempDir()
+			file := filepath.Join(dir, "script.sh")
+			assert.NilError(t, os.WriteFile(file, []byte(script), 0o600))
+
+			// Expect ShellCheck for "sh" to be happy.
+			// - https://www.shellcheck.net/wiki/SC2148
+			cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", "--shell=sh", file)
+			output, err := cmd.CombinedOutput()
+			assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+		})
+	})
+
 	t.Run("Unrelated", func(t *testing.T) {
 		assert.Equal(t,
 			MakeDirectories("/one", "/two/three/four"),
