@@ -542,7 +542,7 @@ type PostgresVolumesSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=10
-	// // +kubebuilder:validation:items:XValidation:rule=`[has(self.claimName), has(self.claimTemplate)].filter(x, x == true).size() <= 1`,message=`can only have one of claimName, claimTemplate`
+	// // +kubebuilder:validation:items:XValidation:rule=`[has(self.claimName), has(self.claimTemplate)].filter(x, x).size() <= 1`,message=`can only have one of claimName, claimTemplate`
 	Additional []*v1beta1.AdditionalVolume `json:"additional,omitempty"`
 }
 

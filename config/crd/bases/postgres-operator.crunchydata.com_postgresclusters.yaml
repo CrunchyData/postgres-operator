@@ -11033,6 +11033,7 @@ spec:
                             properties:
                               claimName:
                                 description: A reference to a preexisting PVC.
+                                maxLength: 10
                                 type: string
                               claimTemplate:
                                 description: A PVC request.
@@ -11248,12 +11249,20 @@ spec:
                                 items:
                                   type: string
                                 type: array
-                                x-kubernetes-list-type: set
+                                x-kubernetes-list-type: atomic
                               name:
+                                allOf:
+                                - maxLength: 253
+                                - maxLength: 10
                                 description: |-
                                   The name of the volume used for mounting path.
                                   Must be unique.
+                                minLength: 1
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                 type: string
+                                x-kubernetes-validations:
+                                - message: immutable
+                                  rule: self == oldSelf
                               readOnly:
                                 description: Sets the write/read mode of the volume
                                 type: boolean
@@ -29845,6 +29854,7 @@ spec:
                             properties:
                               claimName:
                                 description: A reference to a preexisting PVC.
+                                maxLength: 10
                                 type: string
                               claimTemplate:
                                 description: A PVC request.
@@ -30060,19 +30070,27 @@ spec:
                                 items:
                                   type: string
                                 type: array
-                                x-kubernetes-list-type: set
+                                x-kubernetes-list-type: atomic
                               name:
+                                allOf:
+                                - maxLength: 253
+                                - maxLength: 10
                                 description: |-
                                   The name of the volume used for mounting path.
                                   Must be unique.
+                                minLength: 1
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                 type: string
+                                x-kubernetes-validations:
+                                - message: immutable
+                                  rule: self == oldSelf
                               readOnly:
                                 description: Sets the write/read mode of the volume
                                 type: boolean
                             required:
                             - name
                             type: object
-                          maxItems: 10
+                          maxItems: 1
                           type: array
                           x-kubernetes-list-map-keys:
                           - name

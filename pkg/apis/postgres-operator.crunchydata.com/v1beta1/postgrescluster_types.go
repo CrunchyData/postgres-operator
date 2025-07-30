@@ -539,8 +539,9 @@ type PostgresVolumesSpec struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=name
-	// +kubebuilder:validation:MaxItems=10
-	// // +kubebuilder:validation:items:XValidation:rule=`[has(self.claimName), has(self.claimTemplate)].filter(x, x == true).size() <= 1`,message=`can only have one of claimName, claimTemplate`
+	// +kubebuilder:validation:MaxItems=1
+	// // +kubebuilder:validation:items:XValidation:rule=`[has(self.claimName), has(self.claimTemplate)].filter(x, x).size() <= 1`,message=`can only have one of claimName, claimTemplate`
+	// // +kubebuilder:validation:items:XValidation:rule=`has(oldSelf.claimTemplate) != has(self.claimTemplate)`,message=`testing`
 	Additional []*AdditionalVolume `json:"additional,omitempty"`
 }
 
@@ -549,12 +550,15 @@ type AdditionalVolume struct {
 	// Must be unique.
 	// ---
 	// +kubebuilder:validation:Required
-	// // +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
-	Name string `json:"name,omitempty"`
+	// TODO: CHANGE THE MAX LENGTH
+	// +kubebuilder:validation:MaxLength=10
+	Name DNS1123Subdomain `json:"name,omitempty"`
 
 	// A reference to a preexisting PVC.
 	// ---
 	// +optional
+	// TODO: CHANGE THE MAX LENGTH
+	// +kubebuilder:validation:MaxLength=10
 	// // +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
 	ClaimName string `json:"claimName,omitempty"`
 
@@ -567,6 +571,7 @@ type AdditionalVolume struct {
 	// ---
 	// +optional
 	// +listType=set
+	// +listType=atomic
 	Containers []string `json:"containers,omitempty"`
 
 	// Sets the write/read mode of the volume
