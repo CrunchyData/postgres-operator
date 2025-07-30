@@ -289,41 +289,39 @@ func safeHash32(content func(w io.Writer) error) (string, error) {
 }
 
 // AdditionalVolumeMount returns the name and mount path of the additional volume.
-func AdditionalVolumeMount(cluster *v1beta1.PostgresCluster,
-	additionalVolume *v1beta1.AdditionalVolume) corev1.VolumeMount {
-
-	volumeName := naming.AdditionalVolume(cluster, additionalVolume).Name
-
+func AdditionalVolumeMount(volumeName, claimName string) corev1.VolumeMount {
 	return corev1.VolumeMount{
-		Name:      volumeName,
-		MountPath: "volumes" + "/" + additionalVolume.Name}
+		Name:      claimName,
+		MountPath: "/volumes" + "/" + volumeName}
 }
 
-// addAdditionalVolumes adds additional volumes to the Postgres pod
-func addAdditionalVolumes(template *corev1.PodTemplateSpec,
-	inCluster *v1beta1.PostgresCluster,
+// addAdditionalVolumesToSpecifiedContainers adds additional volumes to the specified
+// containers in the specified pod
+func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 	additionalVolumes []*v1beta1.AdditionalVolume) {
 
-	for _, additionalVolume := range additionalVolumes {
+	for _, additionalVolumeRequest := range additionalVolumes {
 
 		additionalVolumeMount := AdditionalVolumeMount(
-			inCluster,
-			additionalVolume)
+			additionalVolumeRequest.Name,
+			additionalVolumeRequest.ClaimName)
 
-		additionalVolumeSpec := corev1.Volume{
+		additionalVolume := corev1.Volume{
 			Name: additionalVolumeMount.Name,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					// TODO: Using the claim name as the claim name here means this has to be unique
+					// We could add the index if we want someone to mount the same PVC in multiple dirs?
 					ClaimName: additionalVolumeMount.Name,
-					ReadOnly:  additionalVolume.ReadOnly,
+					ReadOnly:  additionalVolumeRequest.ReadOnly,
 				},
 			},
 		}
 
 		for i := range template.Spec.Containers {
-			if len(additionalVolume.Containers) == 0 ||
+			if len(additionalVolumeRequest.Containers) == 0 ||
 				slices.Contains(
-					additionalVolume.Containers,
+					additionalVolumeRequest.Containers,
 					template.Spec.Containers[i].Name) {
 				template.Spec.Containers[i].VolumeMounts = append(
 					template.Spec.Containers[i].VolumeMounts,
@@ -332,9 +330,9 @@ func addAdditionalVolumes(template *corev1.PodTemplateSpec,
 		}
 
 		for i := range template.Spec.InitContainers {
-			if len(additionalVolume.Containers) == 0 ||
+			if len(additionalVolumeRequest.Containers) == 0 ||
 				slices.Contains(
-					additionalVolume.Containers,
+					additionalVolumeRequest.Containers,
 					template.Spec.InitContainers[i].Name) {
 				template.Spec.InitContainers[i].VolumeMounts = append(
 					template.Spec.InitContainers[i].VolumeMounts,
@@ -344,6 +342,6 @@ func addAdditionalVolumes(template *corev1.PodTemplateSpec,
 
 		template.Spec.Volumes = append(
 			template.Spec.Volumes,
-			additionalVolumeSpec)
+			additionalVolume)
 	}
 }

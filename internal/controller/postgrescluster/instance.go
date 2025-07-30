@@ -1184,10 +1184,6 @@ func (r *Reconciler) reconcileInstance(
 		tablespaceVolumes, err = r.reconcileTablespaceVolumes(ctx, cluster, spec, instance, clusterVolumes)
 	}
 	if err == nil {
-		_, err = r.reconcileAdditionalVolumes(ctx,
-			cluster, spec.Volumes.Additional)
-	}
-	if err == nil {
 		postgres.InstancePod(
 			ctx, cluster, spec,
 			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret),
@@ -1259,7 +1255,7 @@ func (r *Reconciler) reconcileInstance(
 
 	// mount additional volumes to the Postgres instance containers
 	if err == nil && spec.Volumes != nil && spec.Volumes.Additional != nil {
-		addAdditionalVolumes(&instance.Spec.Template, cluster, spec.Volumes.Additional)
+		addAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
 	}
 
 	if err == nil {

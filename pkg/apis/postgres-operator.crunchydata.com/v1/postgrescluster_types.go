@@ -535,14 +535,12 @@ type PostgresVolumesSpec struct {
 	// +optional
 	Temp *v1beta1.VolumeClaimSpec `json:"temp,omitempty"`
 
-	// TODO: Update when v1beta1 is worked out
-	// Additional volumes to add to the pod.
+	// Additional pre-existing volumes to add to the pod.
 	// ---
 	// +optional
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=10
-	// // +kubebuilder:validation:items:XValidation:rule=`[has(self.claimName), has(self.claimTemplate)].filter(x, x).size() <= 1`,message=`can only have one of claimName, claimTemplate`
 	Additional []*v1beta1.AdditionalVolume `json:"additional,omitempty"`
 }
 

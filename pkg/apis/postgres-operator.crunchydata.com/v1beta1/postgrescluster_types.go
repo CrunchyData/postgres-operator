@@ -532,42 +532,33 @@ type PostgresVolumesSpec struct {
 	// +optional
 	Temp *VolumeClaimSpec `json:"temp,omitempty"`
 
-	// These CRD xvalidation rules were over the complexity budget
-	// so I turned them off -- what's wrong here
-	// Additional volumes to add to the pod.
+	// Additional pre-existing volumes to add to the pod.
 	// ---
 	// +optional
 	// +listType=map
 	// +listMapKey=name
-	// +kubebuilder:validation:MaxItems=1
-	// // +kubebuilder:validation:items:XValidation:rule=`[has(self.claimName), has(self.claimTemplate)].filter(x, x).size() <= 1`,message=`can only have one of claimName, claimTemplate`
-	// // +kubebuilder:validation:items:XValidation:rule=`has(oldSelf.claimTemplate) != has(self.claimTemplate)`,message=`testing`
+	// +kubebuilder:validation:MaxItems=10
 	Additional []*AdditionalVolume `json:"additional,omitempty"`
 }
 
 type AdditionalVolume struct {
 	// The name of the volume used for mounting path.
+	// Volumes are mounted in the pods at `volumes/<NAME>`
 	// Must be unique.
 	// ---
+	// The `Name` field is a `DNS1123Subdomain` type to enforce
+	// the max length and also allow us to more easily transition
+	// to CPK-provisioned volumes.
 	// +kubebuilder:validation:Required
-	// TODO: CHANGE THE MAX LENGTH
-	// +kubebuilder:validation:MaxLength=10
 	Name DNS1123Subdomain `json:"name,omitempty"`
 
 	// A reference to a preexisting PVC.
 	// ---
-	// +optional
-	// TODO: CHANGE THE MAX LENGTH
-	// +kubebuilder:validation:MaxLength=10
-	// // +kubebuilder:validation:XValidation:rule=`self == oldSelf`,message="immutable"
+	// +kubebuilder:validation:Required
 	ClaimName string `json:"claimName,omitempty"`
 
-	// A PVC request.
-	// ---
-	// +optional
-	ClaimTemplate *VolumeClaimSpec `json:"claimTemplate,omitempty"`
-
 	// The containers to attach this volume to.
+	// A blank/unset `Containers` field matches all containers.
 	// ---
 	// +optional
 	// +listType=set
