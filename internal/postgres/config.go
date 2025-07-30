@@ -89,13 +89,13 @@ func ConfigDirectory(cluster *v1beta1.PostgresCluster) string {
 // DataDirectory returns the absolute path to the "data_directory" of cluster.
 // - https://www.postgresql.org/docs/current/runtime-config-file-locations.html
 func DataDirectory(cluster *v1beta1.PostgresCluster) string {
-	return fmt.Sprintf("%s/pg%d", dataMountPath, cluster.Spec.PostgresVersion)
+	return fmt.Sprintf("%s/pg%d", DataStorage(cluster), cluster.Spec.PostgresVersion)
 }
 
-// LogDirectory returns the absolute path to the "log_directory" of cluster.
-// - https://www.postgresql.org/docs/current/runtime-config-logging.html
-func LogDirectory() string {
-	return fmt.Sprintf("%s/logs/postgres", dataMountPath)
+// DataStorage returns the absolute path to the disk where cluster stores its data.
+// Use [DataDirectory] for the exact directory that Postgres uses.
+func DataStorage(cluster *v1beta1.PostgresCluster) string {
+	return dataMountPath
 }
 
 // LogRotation returns parameters that rotate log files while keeping a minimum amount.
@@ -310,9 +310,12 @@ done
 // PostgreSQL.
 func startupCommand(
 	ctx context.Context,
-	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
+	cluster *v1beta1.PostgresCluster,
+	instance *v1beta1.PostgresInstanceSetSpec,
+	parameters *ParameterSet,
 ) []string {
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
+	logDir := parameters.Value("log_directory")
 	walDir := WALDirectory(cluster, instance)
 
 	// If the user requests tablespaces, we want to make sure the directories exist with the
@@ -447,8 +450,9 @@ chmod +x /tmp/pg_rewind_tde.sh
 		`halt "$(permissions ` + naming.PGBackRestPGDataLogPath + ` ||:)"`,
 		`(` + shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath) + `) ||`,
 		`halt "$(permissions ` + naming.PatroniPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(dataMountPath, LogDirectory()) + `) ||`,
-		`halt "$(permissions ` + LogDirectory() + ` ||:)"`,
+		`(` + shell.MakeDirectories(DataDirectory(cluster), logDir) + `) ||`,
+		// FIXME: This error prints the wrong directory when logDir is relative (the default).
+		`halt "$(permissions ` + logDir + ` ||:)"`,
 
 		// Copy replication client certificate files
 		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order

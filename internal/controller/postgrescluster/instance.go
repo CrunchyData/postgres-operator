@@ -593,6 +593,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 	otelConfig *collector.Config,
+	pgParameters *postgres.ParameterSet,
 ) error {
 
 	// Go through the observed instances and check if a primary has been determined.
@@ -630,7 +631,7 @@ func (r *Reconciler) reconcileInstanceSets(
 			patroniLeaderService, primaryCertificate,
 			findAvailableInstanceNames(*set, instances, clusterVolumes),
 			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound, otelConfig,
+			backupsSpecFound, otelConfig, pgParameters,
 		)
 
 		if err == nil {
@@ -1066,6 +1067,7 @@ func (r *Reconciler) scaleUpInstances(
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 	otelConfig *collector.Config,
+	pgParameters *postgres.ParameterSet,
 ) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
@@ -1112,7 +1114,7 @@ func (r *Reconciler) scaleUpInstances(
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate, instances[i],
 			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound, otelConfig,
+			backupsSpecFound, otelConfig, pgParameters,
 		)
 	}
 	if err == nil {
@@ -1144,6 +1146,7 @@ func (r *Reconciler) reconcileInstance(
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 	otelConfig *collector.Config,
+	pgParameters *postgres.ParameterSet,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
 	ctx = logging.NewContext(ctx, log)
@@ -1187,7 +1190,7 @@ func (r *Reconciler) reconcileInstance(
 		postgres.InstancePod(
 			ctx, cluster, spec,
 			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret),
-			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
+			postgresDataVolume, postgresWALVolume, tablespaceVolumes, pgParameters,
 			&instance.Spec.Template)
 
 		if backupsSpecFound {
