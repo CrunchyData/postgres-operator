@@ -356,7 +356,7 @@ func DedicatedSnapshotVolumeRestoreCommand(pgdata string, args ...string) []stri
 BACKUP_LABEL=$([[ ! -e "${pgdata}/backup_label" ]] || md5sum "${pgdata}/backup_label")
 echo "Starting pgBackRest delta restore"
 
-install --directory --mode=0700 "${pgdata}"
+install --directory --mode=0750 "${pgdata}"
 rm -f "${pgdata}/postmaster.pid"
 bash -xc "pgbackrest restore ${opts}"
 rm -f "${pgdata}/patroni.dynamic.json"

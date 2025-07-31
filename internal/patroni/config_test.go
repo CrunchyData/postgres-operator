@@ -720,8 +720,7 @@ postgresql:
   - pgbackrest
   - basebackup
   pgbackrest:
-    command: '''bash'' ''-ceu'' ''--'' ''install --directory --mode=0700 "${PGDATA?}"
-      && exec "$@"'' ''-'' ''some'' ''backrest'' ''cmd'''
+    command: '''some'' ''backrest'' ''cmd'''
     keep_data: true
     no_leader: true
     no_params: true
@@ -786,37 +785,14 @@ func TestPGBackRestCreateReplicaCommand(t *testing.T) {
 	}
 	assert.NilError(t, yaml.Unmarshal([]byte(data), &parsed))
 
-	dir := t.TempDir()
+	assert.Equal(t, parsed.PostgreSQL.PGBackRest.Command, `'some' 'backrest' 'cmd'`)
 
 	// The command should be compatible with any shell.
 	{
-		command := parsed.PostgreSQL.PGBackRest.Command
-		file := filepath.Join(dir, "command.sh")
-		assert.NilError(t, os.WriteFile(file, []byte(command), 0o600))
+		file := filepath.Join(t.TempDir(), "command.sh")
+		assert.NilError(t, os.WriteFile(file, []byte(parsed.PostgreSQL.PGBackRest.Command), 0o600))
 
 		cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", "--shell=sh", file)
-		output, err := cmd.CombinedOutput()
-		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
-	}
-
-	// Naive parsing of shell words...
-	command := strings.Split(strings.Trim(parsed.PostgreSQL.PGBackRest.Command, "'"), "' '")
-
-	// Expect a bash command with an inline script.
-	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
-	assert.Assert(t, len(command) > 3)
-	script := command[3]
-
-	// It should call the pgBackRest command.
-	assert.Assert(t, strings.HasSuffix(script, ` exec "$@"`))
-	assert.DeepEqual(t, command[len(command)-3:], []string{"some", "backrest", "cmd"})
-
-	// It should pass shellcheck.
-	{
-		file := filepath.Join(dir, "script.bash")
-		assert.NilError(t, os.WriteFile(file, []byte(script), 0o600))
-
-		cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", file)
 		output, err := cmd.CombinedOutput()
 		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 	}
