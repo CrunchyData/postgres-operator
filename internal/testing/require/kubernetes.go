@@ -139,14 +139,14 @@ func kubernetes3(t TestingT) (*envtest.Environment, client.Client) {
 		// Calculate the project directory as reported by [goruntime.CallersFrames].
 		frame, ok := frames.Next()
 		self := frame.File
-		root := strings.TrimSuffix(self,
-			filepath.Join("internal", "testing", "require", "kubernetes.go"))
+		root := Value(filepath.EvalSymlinks(strings.TrimSuffix(self,
+			filepath.Join("internal", "testing", "require", "kubernetes.go"))))
 
 		// Find the first caller that is not in this file.
 		for ok && frame.File == self {
 			frame, ok = frames.Next()
 		}
-		caller := frame.File
+		caller := Value(filepath.EvalSymlinks(frame.File))
 
 		// Calculate the project directory path relative to the caller.
 		base := Value(filepath.Rel(filepath.Dir(caller), root))
@@ -159,8 +159,7 @@ func kubernetes3(t TestingT) (*envtest.Environment, client.Client) {
 		); assert.Check(t,
 			err == nil && len(pkgs) > 0 && pkgs[0].Module != nil, "got %v\n%#v", err, pkgs,
 		) {
-			snapshotter, err = filepath.Rel(root, pkgs[0].Module.Dir)
-			assert.NilError(t, err)
+			snapshotter = Value(filepath.Rel(root, pkgs[0].Module.Dir))
 		}
 
 		env := EnvTest(t, envtest.CRDInstallOptions{
