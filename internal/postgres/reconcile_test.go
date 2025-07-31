@@ -263,9 +263,9 @@ initContainers:
     [[ -d "${bootstrap_dir}" ]] && results 'bootstrap directory' "${bootstrap_dir}"
     [[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}"
     if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then
-    install --directory --mode=0700 "${postgres_data_directory}"
+    install --directory --mode=0750 "${postgres_data_directory}"
     elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then
-    recreate "${postgres_data_directory}" '0700'
+    recreate "${postgres_data_directory}" '0750'
     else (halt Permissions!); fi ||
     halt "$(permissions "${postgres_data_directory}" ||:)"
     (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||

@@ -518,22 +518,7 @@ func instanceYAML(
 	if command := pgbackrestReplicaCreateCommand; len(command) > 0 {
 
 		// Regardless of the "keep_data" setting below, Patroni deletes the
-		// data directory when all methods fail. pgBackRest will not restore
-		// when the data directory is missing, so create it before running the
-		// command. PostgreSQL requires that the directory is writable by only
-		// itself.
-		// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L249
-		// - https://github.com/pgbackrest/pgbackrest/issues/1445
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_13_0#l319
-		//
-		// NOTE(cbandy): The "PATRONI_POSTGRESQL_DATA_DIR" environment variable
-		// is defined in this package, but it is removed by Patroni at runtime.
-		command = append([]string{
-			"bash", "-ceu", "--",
-			`install --directory --mode=0700 "${PGDATA?}" && exec "$@"`,
-			"-",
-		}, command...)
-
+		// data directory when all methods fail.
 		postgresql[pgBackRestCreateReplicaMethod] = map[string]any{
 			"command":   strings.Join(shell.QuoteWords(command...), " "),
 			"keep_data": true, // Use the data directory from a prior method.

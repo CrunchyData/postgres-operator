@@ -214,7 +214,7 @@ spec:
           echo -e "Step 2: Initializing new pgdata directory...\n"
           /usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"
           echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"
-          chmod 700 /pgdata/pg"${old_version}"
+          chmod 750 /pgdata/pg"${old_version}"
           echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"
           echo "shared_preload_libraries = '$(/usr/pgsql-"""${old_version}"""/bin/postgres -D \
           /pgdata/pg"""${old_version}""" -C shared_preload_libraries)'" >> /pgdata/pg"${new_version}"/postgresql.conf

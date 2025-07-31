@@ -98,7 +98,7 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		// proper permissions have to be set on the old pgdata directory and the
 		// preload library settings must be copied over.
 		`echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"`,
-		`chmod 700 /pgdata/pg"${old_version}"`,
+		`chmod 750 /pgdata/pg"${old_version}"`,
 		`echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"`,
 		`echo "shared_preload_libraries = '$(/usr/pgsql-"""${old_version}"""/bin/postgres -D \`,
 		`/pgdata/pg"""${old_version}""" -C shared_preload_libraries)'" >> /pgdata/pg"${new_version}"/postgresql.conf`,

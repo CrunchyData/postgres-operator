@@ -341,9 +341,9 @@ func startupCommand(
 		// and so we add the subdirectory `data` in order to set the permissions.
 		checkInstallRecreateCmd := strings.Join([]string{
 			`if [[ ! -e "${tablespace_dir}" || -O "${tablespace_dir}" ]]; then`,
-			`install --directory --mode=0700 "${tablespace_dir}"`,
+			`install --directory --mode=0750 "${tablespace_dir}"`,
 			`elif [[ -w "${tablespace_dir}" && -g "${tablespace_dir}" ]]; then`,
-			`recreate "${tablespace_dir}" '0700'`,
+			`recreate "${tablespace_dir}" '0750'`,
 			`else (halt Permissions!); fi ||`,
 			`halt "$(permissions "${tablespace_dir}" ||:)"`,
 		}, "\n")
@@ -419,23 +419,24 @@ chmod +x /tmp/pg_rewind_tde.sh
 		// PostgreSQL requires its directory to be writable by only itself.
 		// Pod "securityContext.fsGroup" sets g+w on directories for *some*
 		// storage providers. Ensure the current user owns the directory, and
-		// remove group permissions.
+		// remove group-write permission.
 		// - https://www.postgresql.org/docs/current/creating-cluster.html
 		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/postmaster/postmaster.c;hb=REL_10_0#l1522
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_14_0#l349
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_11_0#l142
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_17_0#l386
 		// - https://issue.k8s.io/93802#issuecomment-717646167
 		//
 		// When the directory does not exist, create it with the correct permissions.
 		// When the directory has the correct owner, set the correct permissions.
 		`if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then`,
-		`install --directory --mode=0700 "${postgres_data_directory}"`,
+		`install --directory --mode=0750 "${postgres_data_directory}"`,
 		//
 		// The directory exists but its owner is wrong. When it is writable,
 		// the set-group-ID bit indicates that "fsGroup" probably ran on its
 		// contents making them safe to use. In this case, we can make a new
 		// directory (owned by this user) and refill it.
 		`elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then`,
-		`recreate "${postgres_data_directory}" '0700'`,
+		`recreate "${postgres_data_directory}" '0750'`,
 		//
 		// The directory exists, its owner is wrong, and it is not writable.
 		`else (halt Permissions!); fi ||`,
