@@ -13,7 +13,7 @@ CONTROLLER ?= $(GO) tool sigs.k8s.io/controller-tools/cmd/controller-gen
 
 # Run tests using the latest tools.
 ENVTEST ?= $(GO) run sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/pkg/kuttlctl/cmd/kubectl-kuttl@latest
+KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/cmd/kubectl-kuttl@latest
 KUTTL_TEST ?= $(KUTTL) test
 
 ##@ General
@@ -171,6 +171,10 @@ check-envtest-existing: createnamespaces
 	kubectl delete -k ./config/dev
 
 # Expects operator to be running
+#
+# KUTTL runs with a single kubectl context named "cluster".
+# If you experience `cluster "minikube" does not exist`, try `MINIKUBE_PROFILE=cluster`.
+#
 .PHONY: check-kuttl
 check-kuttl: ## Run kuttl end-to-end tests
 check-kuttl: ## example command: make check-kuttl KUTTL_TEST='
