@@ -20,9 +20,9 @@ import (
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/testing/events"
 )
 
@@ -381,7 +381,7 @@ func TestRunnerRequiredEvents(t *testing.T) {
 
 					conditions := append([]metav1.Condition{}, tt.before...)
 					object := &corev1.ConfigMap{}
-					recorder := events.NewRecorder(t, scheme.Scheme)
+					recorder := events.NewRecorder(t, runtime.Scheme)
 
 					result := r.Required(recorder, object, &conditions)
 
@@ -413,7 +413,7 @@ func TestRunnerRequiredEvents(t *testing.T) {
 			} {
 				conditions := append([]metav1.Condition{}, tt.before...)
 				object := &corev1.ConfigMap{}
-				recorder := events.NewRecorder(t, scheme.Scheme)
+				recorder := events.NewRecorder(t, runtime.Scheme)
 
 				result := r.Required(recorder, object, &conditions)
 
@@ -441,7 +441,7 @@ func TestRunnerRequiredEvents(t *testing.T) {
 			} {
 				conditions := append([]metav1.Condition{}, tt.before...)
 				object := &corev1.ConfigMap{}
-				recorder := events.NewRecorder(t, scheme.Scheme)
+				recorder := events.NewRecorder(t, runtime.Scheme)
 
 				result := r.Required(recorder, object, &conditions)
 
@@ -475,7 +475,7 @@ func TestRunnerRequiredEvents(t *testing.T) {
 
 					conditions := append([]metav1.Condition{}, tt.before...)
 					object := &corev1.ConfigMap{}
-					recorder := events.NewRecorder(t, scheme.Scheme)
+					recorder := events.NewRecorder(t, runtime.Scheme)
 
 					result := r.Required(recorder, object, &conditions)
 
@@ -508,7 +508,7 @@ func TestRunnerRequiredEvents(t *testing.T) {
 			} {
 				conditions := append([]metav1.Condition{}, tt.before...)
 				object := &corev1.ConfigMap{}
-				recorder := events.NewRecorder(t, scheme.Scheme)
+				recorder := events.NewRecorder(t, runtime.Scheme)
 
 				result := r.Required(recorder, object, &conditions)
 
