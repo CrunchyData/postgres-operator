@@ -48,6 +48,17 @@ func NewParameters() Parameters {
 	// - https://www.postgresql.org/docs/current/auth-password.html
 	parameters.Default.Add("password_encryption", "scram-sha-256")
 
+	// Explicitly use Postgres' default log directory. This value is relative to the "data_directory" parameter.
+	//
+	// Controllers look at this parameter to grant group-write S_IWGRP on the directory.
+	// Postgres does not grant this permission on the directories it creates.
+	//
+	// TODO(logs): A better default would be *outside* the data directory.
+	// This parameter needs to be configurable and documented before the default can change.
+	//
+	// PostgreSQL must be reloaded when changing this parameter.
+	parameters.Default.Add("log_directory", "log")
+
 	// Pod "securityContext.fsGroup" ensures processes and filesystems agree on a GID;
 	// use the same permissions for group and owner.
 	// This allows every process in the pod to read Postgres log files.

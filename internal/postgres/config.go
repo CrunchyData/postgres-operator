@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"path"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -89,13 +90,13 @@ func ConfigDirectory(cluster *v1beta1.PostgresCluster) string {
 // DataDirectory returns the absolute path to the "data_directory" of cluster.
 // - https://www.postgresql.org/docs/current/runtime-config-file-locations.html
 func DataDirectory(cluster *v1beta1.PostgresCluster) string {
-	return fmt.Sprintf("%s/pg%d", dataMountPath, cluster.Spec.PostgresVersion)
+	return fmt.Sprintf("%s/pg%d", DataStorage(cluster), cluster.Spec.PostgresVersion)
 }
 
-// LogDirectory returns the absolute path to the "log_directory" of cluster.
-// - https://www.postgresql.org/docs/current/runtime-config-logging.html
-func LogDirectory() string {
-	return fmt.Sprintf("%s/logs/postgres", dataMountPath)
+// DataStorage returns the absolute path to the disk where cluster stores its data.
+// Use [DataDirectory] for the exact directory that Postgres uses.
+func DataStorage(cluster *v1beta1.PostgresCluster) string {
+	return dataMountPath
 }
 
 // LogRotation returns parameters that rotate log files while keeping a minimum amount.
@@ -310,10 +311,32 @@ done
 // PostgreSQL.
 func startupCommand(
 	ctx context.Context,
-	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
+	cluster *v1beta1.PostgresCluster,
+	instance *v1beta1.PostgresInstanceSetSpec,
+	parameters *ParameterSet,
 ) []string {
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
+	dataDir := DataDirectory(cluster)
 	walDir := WALDirectory(cluster, instance)
+
+	// TODO: describe this?
+	mkdirs := make([]string, 0, 6)
+	mkdir := func(b, p string) {
+		if path.IsAbs(p) {
+			p = path.Clean(p)
+		} else {
+			p = path.Join(dataDir, p)
+		}
+
+		// Create directories unless they are in the empty Postgres data directory.
+		mkdirs = append(mkdirs,
+			`[[ `+shell.QuoteWord(p)+` != "${postgres_data_directory}"* || -f "${postgres_data_directory}/PG_VERSION" ]] &&`,
+			`{ (`+shell.MakeDirectories(b, p)+`) || halt "$(permissions `+shell.QuoteWord(p)+` ||:)"; }`,
+		)
+	}
+	mkdir(dataMountPath, naming.PGBackRestPGDataLogPath)
+	mkdir(dataMountPath, naming.PatroniPGDataLogPath)
+	mkdir(dataDir, parameters.Value("log_directory"))
 
 	// If the user requests tablespaces, we want to make sure the directories exist with the
 	// correct owner and permissions.
@@ -442,13 +465,7 @@ chmod +x /tmp/pg_rewind_tde.sh
 		`else (halt Permissions!); fi ||`,
 		`halt "$(permissions "${postgres_data_directory}" ||:)"`,
 
-		// Create log directories.
-		`(` + shell.MakeDirectories(dataMountPath, naming.PGBackRestPGDataLogPath) + `) ||`,
-		`halt "$(permissions ` + naming.PGBackRestPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath) + `) ||`,
-		`halt "$(permissions ` + naming.PatroniPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(dataMountPath, LogDirectory()) + `) ||`,
-		`halt "$(permissions ` + LogDirectory() + ` ||:)"`,
+		strings.Join(mkdirs, "\n"),
 
 		// Copy replication client certificate files
 		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order
