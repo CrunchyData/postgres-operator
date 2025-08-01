@@ -410,23 +410,23 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
 - name: other
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required`,
+    name: volume-0-required`,
 		expectedInitContainers: `- name: startup
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
 - name: config
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required`,
-		expectedVolumes: `- name: required
+    name: volume-0-required`,
+		expectedVolumes: `- name: volume-0-required
   persistentVolumeClaim:
     claimName: required`,
 	}, {
@@ -444,34 +444,34 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
   - mountPath: /volumes/other
-    name: also
+    name: volume-1-other
 - name: other
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
   - mountPath: /volumes/other
-    name: also`,
+    name: volume-1-other`,
 		expectedInitContainers: `- name: startup
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
   - mountPath: /volumes/other
-    name: also
+    name: volume-1-other
 - name: config
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
   - mountPath: /volumes/other
-    name: also`,
-		expectedVolumes: `- name: required
+    name: volume-1-other`,
+		expectedVolumes: `- name: volume-0-required
   persistentVolumeClaim:
     claimName: required
-- name: also
+- name: volume-1-other
   persistentVolumeClaim:
     claimName: also`,
 	}, {
@@ -485,14 +485,14 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
 - name: other
   resources: {}`,
 		expectedInitContainers: `- name: startup
   resources: {}
 - name: config
   resources: {}`,
-		expectedVolumes: `- name: required
+		expectedVolumes: `- name: volume-0-required
   persistentVolumeClaim:
     claimName: required`,
 	}, {
@@ -507,14 +507,15 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
   resources: {}
   volumeMounts:
   - mountPath: /volumes/required
-    name: required
+    name: volume-0-required
+    readOnly: true
 - name: other
   resources: {}`,
 		expectedInitContainers: `- name: startup
   resources: {}
 - name: config
   resources: {}`,
-		expectedVolumes: `- name: required
+		expectedVolumes: `- name: volume-0-required
   persistentVolumeClaim:
     claimName: required
     readOnly: true`,

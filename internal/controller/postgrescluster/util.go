@@ -289,10 +289,12 @@ func safeHash32(content func(w io.Writer) error) (string, error) {
 }
 
 // AdditionalVolumeMount returns the name and mount path of the additional volume.
-func AdditionalVolumeMount(volumeName, claimName string) corev1.VolumeMount {
+func AdditionalVolumeMount(name string, index int, readOnly bool) corev1.VolumeMount {
 	return corev1.VolumeMount{
-		Name:      claimName,
-		MountPath: "/volumes" + "/" + volumeName}
+		Name:      fmt.Sprintf("volume-%d-%s", index, name),
+		MountPath: "/volumes/" + name,
+		ReadOnly:  readOnly,
+	}
 }
 
 // addAdditionalVolumesToSpecifiedContainers adds additional volumes to the specified
@@ -300,20 +302,19 @@ func AdditionalVolumeMount(volumeName, claimName string) corev1.VolumeMount {
 func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 	additionalVolumes []v1beta1.AdditionalVolume) {
 
-	for _, additionalVolumeRequest := range additionalVolumes {
+	for index, additionalVolumeRequest := range additionalVolumes {
 
 		additionalVolumeMount := AdditionalVolumeMount(
-			additionalVolumeRequest.Name,
-			additionalVolumeRequest.ClaimName)
+			additionalVolumeRequest.Name, index,
+			additionalVolumeRequest.ReadOnly,
+		)
 
 		additionalVolume := corev1.Volume{
 			Name: additionalVolumeMount.Name,
 			VolumeSource: corev1.VolumeSource{
 				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					// TODO: Using the claim name as the claim name here means this has to be unique
-					// We could add the index if we want someone to mount the same PVC in multiple dirs?
-					ClaimName: additionalVolumeMount.Name,
-					ReadOnly:  additionalVolumeRequest.ReadOnly,
+					ClaimName: additionalVolumeRequest.ClaimName,
+					ReadOnly:  additionalVolumeMount.ReadOnly,
 				},
 			},
 		}
