@@ -1,0 +1,5 @@
+versions:
+  postgres: '17'
+
+images:
+  psql: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.5-2520'

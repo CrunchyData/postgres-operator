@@ -1,7 +1,0 @@
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: original-data
-status:
-  succeeded: 1

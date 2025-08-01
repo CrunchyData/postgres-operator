@@ -1,0 +1,105 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pgbackrest-restore
+  labels:
+    pgbackrest: ''
+spec:
+  failFast: true
+  bindings:
+    - name: postgres
+      value:
+        version: (to_number(as_string($values.versions.postgres)))
+
+    - name: psql
+      value:
+        image: ($values.images.psql)
+        connect: { name: PGCONNECT_TIMEOUT, value: '5' }
+
+    - name: volume
+      value: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+
+  steps:
+    - name: 'Create Cluster'
+      use: { template: '01-create-cluster.yaml' }
+
+    - name: 'Create Data'
+      use: { template: '02-create-data.yaml' }
+
+    - name: 'Create Backup'
+      use: { template: '03-create-backup.yaml' }
+
+    - name: 'Clone Cluster #1'
+      skipDelete: true
+      use:
+        template: 'clone-cluster.yaml'
+        with:
+          bindings:
+            - { name: target, value: clone-one }
+
+    - name: 'Verify Data'
+      use:
+        template: 'verify-02-data.yaml'
+        with:
+          bindings:
+            - { name: target, value: clone-one }
+
+    - name: 'Delete Cluster #1'
+      description: >
+        Delete this clone in the background to free up resources
+      try:
+        - delete:
+            deletionPropagationPolicy: Background
+            expect: [{ check: { (`true`): true } }]
+            ref:
+              apiVersion: postgres-operator.crunchydata.com/v1beta1
+              kind: PostgresCluster
+              name: clone-one
+
+    - name: 'Update Cluster'
+      use: { template: '11-update-cluster.yaml' }
+
+    - name: 'Update Data'
+      use: { template: '12-update-data.yaml' }
+
+    - name: 'Clone Cluster #2'
+      skipDelete: true
+      use:
+        template: 'clone-cluster.yaml'
+        with:
+          bindings:
+            - { name: source, value: original }
+            - { name: target, value: clone-two }
+
+    - name: 'Verify Data'
+      use:
+        template: 'verify-12-data.yaml'
+        with:
+          bindings:
+            - { name: target, value: clone-two }
+
+    - name: 'Delete Cluster #2'
+      description: >
+        Delete this clone in the background to free up resources
+      try:
+        - delete:
+            deletionPropagationPolicy: Background
+            expect: [{ check: { (`true`): true } }]
+            ref:
+              apiVersion: postgres-operator.crunchydata.com/v1beta1
+              kind: PostgresCluster
+              name: clone-two
+
+    - name: 'Lose Data'
+      use: { template: '21-lose-data.yaml' }
+
+    - name: 'Point-In-Time Restore'
+      use: { template: '22-point-in-time-restore.yaml' }
+
+    - name: 'Verify Primary'
+      description: >
+        Confirm that data was restored to the point-in-time and the cluster is healthy
+      use: { template: '23-verify-primary.yaml' }
+
+    - name: 'Confirm Replica'
+      use: { template: '23-verify-replica.yaml' }
