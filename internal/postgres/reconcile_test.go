@@ -270,12 +270,12 @@ initContainers:
     recreate "${postgres_data_directory}" '0750'
     else (halt Permissions!); fi ||
     halt "$(permissions "${postgres_data_directory}" ||:)"
-    (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
-    halt "$(permissions /pgdata/pgbackrest/log ||:)"
-    (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
-    halt "$(permissions /pgdata/patroni/log ||:)"
-    (mkdir -p '/pgdata/pg11/log' && { chmod 0775 '/pgdata/pg11/log' || :; }) ||
-    halt "$(permissions log ||:)"
+    [[ '/pgdata/pgbackrest/log' != "${postgres_data_directory}"* || -f "${postgres_data_directory}/PG_VERSION" ]] &&
+    { (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) || halt "$(permissions '/pgdata/pgbackrest/log' ||:)"; }
+    [[ '/pgdata/patroni/log' != "${postgres_data_directory}"* || -f "${postgres_data_directory}/PG_VERSION" ]] &&
+    { (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) || halt "$(permissions '/pgdata/patroni/log' ||:)"; }
+    [[ '/pgdata/pg11/log' != "${postgres_data_directory}"* || -f "${postgres_data_directory}/PG_VERSION" ]] &&
+    { (mkdir -p '/pgdata/pg11/log' && { chmod 0775 '/pgdata/pg11/log' || :; }) || halt "$(permissions '/pgdata/pg11/log' ||:)"; }
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
 
 
