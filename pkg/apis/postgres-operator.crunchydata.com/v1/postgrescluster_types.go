@@ -541,7 +541,7 @@ type PostgresVolumesSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=10
-	Additional []*v1beta1.AdditionalVolume `json:"additional,omitempty"`
+	Additional []v1beta1.AdditionalVolume `json:"additional,omitempty"`
 }
 
 type TablespaceVolume struct {

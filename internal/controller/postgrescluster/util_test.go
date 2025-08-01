@@ -395,13 +395,13 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 
 	testCases := []struct {
 		tcName                 string
-		additionalVolumes      []*v1beta1.AdditionalVolume
+		additionalVolumes      []v1beta1.AdditionalVolume
 		expectedContainers     string
 		expectedInitContainers string
 		expectedVolumes        string
 	}{{
 		tcName: "all",
-		additionalVolumes: []*v1beta1.AdditionalVolume{{
+		additionalVolumes: []v1beta1.AdditionalVolume{{
 			Containers: []string{},
 			ClaimName:  "required",
 			Name:       "required",
@@ -431,7 +431,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
     claimName: required`,
 	}, {
 		tcName: "multiple additional volumes",
-		additionalVolumes: []*v1beta1.AdditionalVolume{{
+		additionalVolumes: []v1beta1.AdditionalVolume{{
 			Containers: []string{},
 			ClaimName:  "required",
 			Name:       "required",
@@ -476,7 +476,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
     claimName: also`,
 	}, {
 		tcName: "database container only",
-		additionalVolumes: []*v1beta1.AdditionalVolume{{
+		additionalVolumes: []v1beta1.AdditionalVolume{{
 			Containers: []string{"database"},
 			ClaimName:  "required",
 			Name:       "required",
@@ -497,7 +497,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
     claimName: required`,
 	}, {
 		tcName: "readonly",
-		additionalVolumes: []*v1beta1.AdditionalVolume{{
+		additionalVolumes: []v1beta1.AdditionalVolume{{
 			Containers: []string{"database"},
 			ClaimName:  "required",
 			Name:       "required",

@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
-	"slices"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -298,7 +298,7 @@ func AdditionalVolumeMount(volumeName, claimName string) corev1.VolumeMount {
 // addAdditionalVolumesToSpecifiedContainers adds additional volumes to the specified
 // containers in the specified pod
 func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
-	additionalVolumes []*v1beta1.AdditionalVolume) {
+	additionalVolumes []v1beta1.AdditionalVolume) {
 
 	for _, additionalVolumeRequest := range additionalVolumes {
 
@@ -318,11 +318,10 @@ func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 			},
 		}
 
+		names := sets.New(additionalVolumeRequest.Containers...)
+
 		for i := range template.Spec.Containers {
-			if len(additionalVolumeRequest.Containers) == 0 ||
-				slices.Contains(
-					additionalVolumeRequest.Containers,
-					template.Spec.Containers[i].Name) {
+			if names.Len() == 0 || names.Has(template.Spec.Containers[i].Name) {
 				template.Spec.Containers[i].VolumeMounts = append(
 					template.Spec.Containers[i].VolumeMounts,
 					additionalVolumeMount)
@@ -330,10 +329,7 @@ func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 		}
 
 		for i := range template.Spec.InitContainers {
-			if len(additionalVolumeRequest.Containers) == 0 ||
-				slices.Contains(
-					additionalVolumeRequest.Containers,
-					template.Spec.InitContainers[i].Name) {
+			if names.Len() == 0 || names.Has(template.Spec.InitContainers[i].Name) {
 				template.Spec.InitContainers[i].VolumeMounts = append(
 					template.Spec.InitContainers[i].VolumeMounts,
 					additionalVolumeMount)

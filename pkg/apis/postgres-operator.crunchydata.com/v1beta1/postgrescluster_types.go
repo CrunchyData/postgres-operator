@@ -554,15 +554,15 @@ type AdditionalVolume struct {
 
 	// A reference to a preexisting PVC.
 	// ---
-	// +kubebuilder:validation:Required
-	ClaimName string `json:"claimName,omitempty"`
+	// +required
+	ClaimName string `json:"claimName"`
 
 	// The containers to attach this volume to.
 	// A blank/unset `Containers` field matches all containers.
 	// ---
 	// +optional
-	// +listType=set
 	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
 	Containers []string `json:"containers,omitempty"`
 
 	// Sets the write/read mode of the volume

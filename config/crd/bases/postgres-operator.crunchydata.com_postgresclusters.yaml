@@ -11041,6 +11041,7 @@ spec:
                                   A blank/unset `Containers` field matches all containers.
                                 items:
                                   type: string
+                                maxItems: 10
                                 type: array
                                 x-kubernetes-list-type: atomic
                               name:
@@ -29649,6 +29650,7 @@ spec:
                                   A blank/unset `Containers` field matches all containers.
                                 items:
                                   type: string
+                                maxItems: 10
                                 type: array
                                 x-kubernetes-list-type: atomic
                               name:

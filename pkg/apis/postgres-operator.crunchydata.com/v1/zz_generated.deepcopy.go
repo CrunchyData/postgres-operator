@@ -658,13 +658,9 @@ func (in *PostgresVolumesSpec) DeepCopyInto(out *PostgresVolumesSpec) {
 	}
 	if in.Additional != nil {
 		in, out := &in.Additional, &out.Additional
-		*out = make([]*v1beta1.AdditionalVolume, len(*in))
+		*out = make([]v1beta1.AdditionalVolume, len(*in))
 		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1beta1.AdditionalVolume)
-				(*in).DeepCopyInto(*out)
-			}
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }
