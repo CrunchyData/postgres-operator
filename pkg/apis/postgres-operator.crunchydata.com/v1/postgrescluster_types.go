@@ -534,6 +534,14 @@ type PostgresVolumesSpec struct {
 	// ---
 	// +optional
 	Temp *v1beta1.VolumeClaimSpec `json:"temp,omitempty"`
+
+	// Additional pre-existing volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	Additional []v1beta1.AdditionalVolume `json:"additional,omitempty"`
 }
 
 type TablespaceVolume struct {
