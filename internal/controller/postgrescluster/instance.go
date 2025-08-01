@@ -1254,7 +1254,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	// mount additional volumes to the Postgres instance containers
-	if err == nil && spec.Volumes != nil && spec.Volumes.Additional != nil {
+	if err == nil && spec.Volumes != nil && len(spec.Volumes.Additional) > 0 {
 		addAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
 	}
 

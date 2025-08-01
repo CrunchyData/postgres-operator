@@ -538,7 +538,7 @@ type PostgresVolumesSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=10
-	Additional []*AdditionalVolume `json:"additional,omitempty"`
+	Additional []AdditionalVolume `json:"additional,omitempty"`
 }
 
 type AdditionalVolume struct {
@@ -549,8 +549,8 @@ type AdditionalVolume struct {
 	// The `Name` field is a `DNS1123Subdomain` type to enforce
 	// the max length and also allow us to more easily transition
 	// to CPK-provisioned volumes.
-	// +kubebuilder:validation:Required
-	Name DNS1123Subdomain `json:"name,omitempty"`
+	// +required
+	Name DNS1123Subdomain `json:"name"`
 
 	// A reference to a preexisting PVC.
 	// ---
