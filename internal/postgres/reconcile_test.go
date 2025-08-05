@@ -351,22 +351,22 @@ volumes:
     - path: cpu_limit
       resourceFieldRef:
         containerName: database
-        divisor: 1m
+        divisor: "0"
         resource: limits.cpu
     - path: cpu_request
       resourceFieldRef:
         containerName: database
-        divisor: 1m
+        divisor: "0"
         resource: requests.cpu
     - path: mem_limit
       resourceFieldRef:
         containerName: database
-        divisor: 1Mi
+        divisor: "0"
         resource: limits.memory
     - path: mem_request
       resourceFieldRef:
         containerName: database
-        divisor: 1Mi
+        divisor: "0"
         resource: requests.memory
     - fieldRef:
         apiVersion: v1
@@ -442,22 +442,22 @@ volumes:
     - path: cpu_limit
       resourceFieldRef:
         containerName: database
-        divisor: 1m
+        divisor: "0"
         resource: limits.cpu
     - path: cpu_request
       resourceFieldRef:
         containerName: database
-        divisor: 1m
+        divisor: "0"
         resource: requests.cpu
     - path: mem_limit
       resourceFieldRef:
         containerName: database
-        divisor: 1Mi
+        divisor: "0"
         resource: limits.memory
     - path: mem_request
       resourceFieldRef:
         containerName: database
-        divisor: 1Mi
+        divisor: "0"
         resource: requests.memory
     - fieldRef:
         apiVersion: v1
@@ -666,22 +666,22 @@ volumes:
     - path: cpu_limit
       resourceFieldRef:
         containerName: database
-        divisor: 1m
+        divisor: "0"
         resource: limits.cpu
     - path: cpu_request
       resourceFieldRef:
         containerName: database
-        divisor: 1m
+        divisor: "0"
         resource: requests.cpu
     - path: mem_limit
       resourceFieldRef:
         containerName: database
-        divisor: 1Mi
+        divisor: "0"
         resource: limits.memory
     - path: mem_request
       resourceFieldRef:
         containerName: database
-        divisor: 1Mi
+        divisor: "0"
         resource: requests.memory
     - fieldRef:
         apiVersion: v1
