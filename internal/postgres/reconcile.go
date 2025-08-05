@@ -8,18 +8,12 @@ import (
 	"context"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-)
-
-var (
-	oneMillicore = resource.MustParse("1m")
-	oneMebibyte  = resource.MustParse("1Mi")
 )
 
 // DataVolumeMount returns the name and mount path of the PostgreSQL data volume.
@@ -116,28 +110,24 @@ func InstancePod(ctx context.Context,
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "limits.cpu",
-						Divisor:       oneMillicore,
 					},
 				}, {
 					Path: "cpu_request",
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "requests.cpu",
-						Divisor:       oneMillicore,
 					},
 				}, {
 					Path: "mem_limit",
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "limits.memory",
-						Divisor:       oneMebibyte,
 					},
 				}, {
 					Path: "mem_request",
 					ResourceFieldRef: &corev1.ResourceFieldSelector{
 						ContainerName: naming.ContainerDatabase,
 						Resource:      "requests.memory",
-						Divisor:       oneMebibyte,
 					},
 				}, {
 					Path: "labels",
