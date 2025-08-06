@@ -9,3 +9,4 @@ spec:
         labels: { postgres-operator-test: chainsaw }
   timeouts:
     assert: 3m
+    cleanup: 3m

@@ -1,8 +1,11 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: StepTemplate
 metadata:
-  name: 03-create-backup
+  name: create-backup
 spec:
+  bindings:
+    - name: annotation
+      value: 'The annotation to kick off a backup'
   try:
     -
       description: >
@@ -14,7 +17,7 @@ spec:
           metadata:
             name: original
             annotations:
-              postgres-operator.crunchydata.com/pgbackrest-backup: one
+              postgres-operator.crunchydata.com/pgbackrest-backup: ($annotation)
 
     -
       description: >
@@ -25,7 +28,7 @@ spec:
           kind: Job
           metadata:
             annotations:
-              postgres-operator.crunchydata.com/pgbackrest-backup: one
+              postgres-operator.crunchydata.com/pgbackrest-backup: ($annotation)
             labels:
               postgres-operator.crunchydata.com/cluster: original
               postgres-operator.crunchydata.com/pgbackrest-backup: manual

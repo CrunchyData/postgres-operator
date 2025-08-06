@@ -1,0 +1,27 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: verify-backup
+spec:
+  try:
+    -
+      description: >
+        Wait for the data to be sent to the WAL archive
+      script:
+        skipCommandOutput: true
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql --command 'SELECT pg_switch_wal()' --pset footer=off
+
+          # A prior step reset the "pg_stat_archiver" counters, so anything more than zero should suffice.
+          while [ 0 = "$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+              -- psql -qAt --command 'SELECT archived_count FROM pg_stat_archiver'
+          )" ]; do sleep 1; done

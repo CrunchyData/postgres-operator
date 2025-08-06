@@ -1,11 +1,15 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: StepTemplate
 metadata:
-  name: verify-02-data
+  name: psql-data
 spec:
   bindings:
     - name: target
       value: 'The name of the PostgresCluster'
+    - name: job
+      value: 'The name of the job'
+    - name: command
+      value: 'The command to run on the psql pod'
 
   try:
     # Create bindings derived from the template input.
@@ -13,14 +17,12 @@ spec:
         entrypoint: 'true'
         skipCommandOutput: true
         outputs:
-          - name: job
-            value: (join('-', [$target, 'data']))
           - name: secret
             value: (join('-', [$target, 'pguser', $target]))
 
     -
       description: >
-        Confirm that all the data was restored
+        Create some data that will be restored
       apply:
         resource:
           apiVersion: batch/v1
@@ -37,36 +39,22 @@ spec:
                     image: ($psql.image)
                     env:
                       - ($psql.connect)
-                      # Connect to the cluster using the restored database and original credentials.
                       - name: PGHOST
                         valueFrom: { secretKeyRef: { name: ($secret), key: host } }
                       - name: PGPORT
                         valueFrom: { secretKeyRef: { name: ($secret), key: port } }
                       - name: PGDATABASE
-                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: dbname } }
+                        valueFrom: { secretKeyRef: { name: ($secret), key: dbname } }
                       - name: PGUSER
-                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: user } }
+                        valueFrom: { secretKeyRef: { name: ($secret), key: user } }
                       - name: PGPASSWORD
-                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: password } }
-
-                    # Confirm that all the data was restored.
-                    # NOTE: the `$$$$` is reduced to `$$` by Kubernetes.
+                        valueFrom: { secretKeyRef: { name: ($secret), key: password } }
                     command:
                       - psql
                       - -qa
                       - --set=ON_ERROR_STOP=1
                       - --command
-                      - |
-                        DO $$$$
-                        DECLARE
-                          restored jsonb;
-                        BEGIN
-                          SELECT jsonb_agg(important) INTO restored FROM important;
-                          ASSERT restored = '[{"data":"treasure"}]', format('got %L', restored);
-
-                          SELECT jsonb_agg(cows) INTO restored FROM cows;
-                          ASSERT restored = '[{"name":"nellie"}]', format('got %L', restored);
-                        END $$$$;
+                      - ($command)
 
     - assert:
         resource:

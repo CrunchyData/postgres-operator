@@ -22,7 +22,6 @@ spec:
               postgresCluster:
                 clusterName: original
                 repoName: repo1
-
             postgresVersion: ($postgres.version)
             instances:
               - dataVolumeClaimSpec: ($volume)

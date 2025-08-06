@@ -1,7 +1,7 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: StepTemplate
 metadata:
-  name: 01-create-cluster
+  name: create-cluster
 spec:
   try:
     -
@@ -50,6 +50,24 @@ spec:
               - name: repo1
                 replicaCreateBackupComplete: true
                 stanzaCreated: true
+
+    -
+      description: >
+        Create a tablespace and grant access to all Postgres users
+      script:
+        skipCommandOutput: true
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -q --file=- <<'SQL'
+            CREATE TABLESPACE barn LOCATION '/tablespaces/barn/data';
+            GRANT ALL ON TABLESPACE barn TO public;
+          SQL
 
   catch:
     - podLogs:
