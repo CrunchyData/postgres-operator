@@ -21,7 +21,7 @@ spec:
 
     -
       description: >
-        Wait for it to complete
+        Wait for the backup to complete
       assert:
         resource:
           apiVersion: batch/v1

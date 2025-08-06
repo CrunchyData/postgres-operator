@@ -1,7 +1,7 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: StepTemplate
 metadata:
-  name: 21-lose-data
+  name: lose-data
 spec:
   try:
     -
@@ -42,7 +42,7 @@ spec:
 
     -
       description: >
-        A reason to restore
+        Drop tables
       command:
         skipCommandOutput: true
         env:
@@ -100,7 +100,7 @@ spec:
 
     -
       description: >
-        Confirm that the replica also needs to be restored
+        Confirm that the replica also has lost the data that was dropped
       command:
         skipCommandOutput: true
         env:

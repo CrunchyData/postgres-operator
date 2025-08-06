@@ -113,8 +113,6 @@ spec:
 
   catch:
     -
-      description: >
-        Read all log lines from the job pods
       podLogs:
         selector: batch.kubernetes.io/job-name in (original-pitr-replica)
         tail: -1

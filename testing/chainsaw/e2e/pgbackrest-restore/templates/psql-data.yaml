@@ -22,7 +22,7 @@ spec:
 
     -
       description: >
-        Create some data that will be restored
+        Run a command through psql to create/verify data
       apply:
         resource:
           apiVersion: batch/v1
@@ -43,12 +43,13 @@ spec:
                         valueFrom: { secretKeyRef: { name: ($secret), key: host } }
                       - name: PGPORT
                         valueFrom: { secretKeyRef: { name: ($secret), key: port } }
+                      # Always connect to the database using the original dbname, user, password
                       - name: PGDATABASE
-                        valueFrom: { secretKeyRef: { name: ($secret), key: dbname } }
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: dbname } }
                       - name: PGUSER
-                        valueFrom: { secretKeyRef: { name: ($secret), key: user } }
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: user } }
                       - name: PGPASSWORD
-                        valueFrom: { secretKeyRef: { name: ($secret), key: password } }
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: password } }
                     command:
                       - psql
                       - -qa

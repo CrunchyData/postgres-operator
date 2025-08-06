@@ -4,7 +4,7 @@ metadata:
   name: clone-cluster
 spec:
   bindings:
-    - name: target
+    - name: name
       value: 'The name of the new PostgresCluster'
 
   try:
@@ -16,7 +16,7 @@ spec:
           apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           metadata:
-            name: ($target)
+            name: ($name)
           spec:
             dataSource:
               postgresCluster:
@@ -42,7 +42,7 @@ spec:
           apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           metadata:
-            name: ($target)
+            name: ($name)
           status:
             instances:
               - name: '00'

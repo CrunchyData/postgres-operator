@@ -20,7 +20,7 @@ spec:
       value: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
 
   steps:
-    - name: 'Create Cluster'
+    - name: 'Create Cluster with replica, tablespace'
       use: 
         template: 'templates/create-cluster.yaml'
 
@@ -36,8 +36,8 @@ spec:
             - name: command
               value: |
                      CREATE SCHEMA IF NOT EXISTS "original";
-                     CREATE TABLE IF NOT EXISTS important (data) AS VALUES ('treasure');
-                     CREATE TABLE IF NOT EXISTS cows (name) TABLESPACE barn AS VALUES ('nellie');
+                     CREATE TABLE important (data) AS VALUES ('treasure');
+                     CREATE TABLE cows (name) TABLESPACE barn AS VALUES ('nellie');
 
     - name: 'Create Backup #1'
       use: 
@@ -53,7 +53,7 @@ spec:
         template: 'templates/clone-cluster.yaml'
         with:
           bindings:
-            - name: target
+            - name: name
               value: clone-one
 
     - name: 'Verify Data on Clone #1'
@@ -90,8 +90,10 @@ spec:
               name: clone-one
 
     - name: 'Restart Cluster'
+      description: >
+        Sets a timestamp and restarts the cluster, using the timestamp for comparison
       use: 
-        template: 'templates/timestamp-and-restart-cluster.yaml'
+        template: 'templates/restart-cluster.yaml'
 
     - name: 'Update Data'
       use:
@@ -123,7 +125,7 @@ spec:
         template: 'templates/clone-cluster.yaml'
         with:
           bindings:
-            - name: target
+            - name: name
               value: clone-two
 
     - name: 'Verify Data on Clone #2'
@@ -160,6 +162,8 @@ spec:
               name: clone-two
 
     - name: 'Lose Data'
+      description: >
+        Drop data and ensure that the data is dropped from the replica as well
       use:
         template: 'templates/lose-data.yaml'
 
@@ -191,5 +195,7 @@ spec:
                       END $$$$;
 
     - name: 'Confirm Replica'
+      description: >
+        Verify that the data has streamed and is streaming to the replica
       use: 
         template: 'templates/verify-replica.yaml'
