@@ -13,3 +13,17 @@ apiVersion: v1
 kind: Service
 metadata:
   name: additional-vols-primary
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: additional-vol
+status:
+  phase: Bound
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: additional-vol-2
+status:
+  phase: Bound
