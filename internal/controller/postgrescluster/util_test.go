@@ -475,9 +475,9 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
   persistentVolumeClaim:
     claimName: also`,
 	}, {
-		tcName: "database container only",
+		tcName: "database and startup containers only",
 		additionalVolumes: []v1beta1.AdditionalVolume{{
-			Containers: []string{"database"},
+			Containers: []string{"database", "startup"},
 			ClaimName:  "required",
 			Name:       "required",
 		}},
@@ -490,6 +490,9 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
   resources: {}`,
 		expectedInitContainers: `- name: startup
   resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
 - name: config
   resources: {}`,
 		expectedVolumes: `- name: volumes-required
