@@ -11027,6 +11027,44 @@ spec:
                       type: array
                     volumes:
                       properties:
+                        additional:
+                          description: Additional pre-existing volumes to add to the
+                            pod.
+                          items:
+                            properties:
+                              claimName:
+                                description: A reference to a preexisting PVC.
+                                type: string
+                              containers:
+                                description: |-
+                                  The containers to attach this volume to.
+                                  A blank/unset `Containers` field matches all containers.
+                                items:
+                                  type: string
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-type: atomic
+                              name:
+                                description: |-
+                                  The name of the volume used for mounting path.
+                                  Volumes are mounted in the pods at `volumes/<NAME>`
+                                  Must be unique.
+                                maxLength: 253
+                                minLength: 1
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                type: string
+                              readOnly:
+                                description: Sets the write/read mode of the volume
+                                type: boolean
+                            required:
+                            - claimName
+                            - name
+                            type: object
+                          maxItems: 10
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - name
+                          x-kubernetes-list-type: map
                         temp:
                           description: |-
                             An ephemeral volume for temporary files.
@@ -29598,6 +29636,44 @@ spec:
                       type: array
                     volumes:
                       properties:
+                        additional:
+                          description: Additional pre-existing volumes to add to the
+                            pod.
+                          items:
+                            properties:
+                              claimName:
+                                description: A reference to a preexisting PVC.
+                                type: string
+                              containers:
+                                description: |-
+                                  The containers to attach this volume to.
+                                  A blank/unset `Containers` field matches all containers.
+                                items:
+                                  type: string
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-type: atomic
+                              name:
+                                description: |-
+                                  The name of the volume used for mounting path.
+                                  Volumes are mounted in the pods at `volumes/<NAME>`
+                                  Must be unique.
+                                maxLength: 253
+                                minLength: 1
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                type: string
+                              readOnly:
+                                description: Sets the write/read mode of the volume
+                                type: boolean
+                            required:
+                            - claimName
+                            - name
+                            type: object
+                          maxItems: 10
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - name
+                          x-kubernetes-list-type: map
                         temp:
                           description: |-
                             An ephemeral volume for temporary files.

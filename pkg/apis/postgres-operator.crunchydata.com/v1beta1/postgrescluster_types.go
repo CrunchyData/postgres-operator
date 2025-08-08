@@ -531,6 +531,44 @@ type PostgresVolumesSpec struct {
 	// ---
 	// +optional
 	Temp *VolumeClaimSpec `json:"temp,omitempty"`
+
+	// Additional pre-existing volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	Additional []AdditionalVolume `json:"additional,omitempty"`
+}
+
+type AdditionalVolume struct {
+	// The name of the volume used for mounting path.
+	// Volumes are mounted in the pods at `volumes/<NAME>`
+	// Must be unique.
+	// ---
+	// The `Name` field is a `DNS1123Subdomain` type to enforce
+	// the max length and also allow us to more easily transition
+	// to CPK-provisioned volumes.
+	// +required
+	Name DNS1123Subdomain `json:"name"`
+
+	// A reference to a preexisting PVC.
+	// ---
+	// +required
+	ClaimName string `json:"claimName"`
+
+	// The containers to attach this volume to.
+	// A blank/unset `Containers` field matches all containers.
+	// ---
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
+	Containers []string `json:"containers,omitempty"`
+
+	// Sets the write/read mode of the volume
+	// ---
+	// +optional
+	ReadOnly bool `json:"readOnly,omitempty"`
 }
 
 type TablespaceVolume struct {

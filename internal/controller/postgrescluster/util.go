@@ -13,9 +13,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var tmpDirSizeLimit = resource.MustParse("16Mi")
@@ -284,4 +286,62 @@ func safeHash32(content func(w io.Writer) error) (string, error) {
 		return "", err
 	}
 	return rand.SafeEncodeString(fmt.Sprint(hash.Sum32())), nil
+}
+
+// AdditionalVolumeMount returns the name and mount path of the additional volume.
+func AdditionalVolumeMount(name string, readOnly bool) corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      fmt.Sprintf("volumes-%s", name),
+		MountPath: "/volumes/" + name,
+		ReadOnly:  readOnly,
+	}
+}
+
+// addAdditionalVolumesToSpecifiedContainers adds additional volumes to the specified
+// containers in the specified pod
+// addAdditionalVolumesToSpecifiedContainers adds the volumes to the pod
+// as `volumes-<additionalVolumeRequest.Name>`
+// and adds the directory to the path `/volumes/<additionalVolumeRequest.Name>`
+func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
+	additionalVolumes []v1beta1.AdditionalVolume) {
+
+	for _, additionalVolumeRequest := range additionalVolumes {
+
+		additionalVolumeMount := AdditionalVolumeMount(
+			additionalVolumeRequest.Name,
+			additionalVolumeRequest.ReadOnly,
+		)
+
+		additionalVolume := corev1.Volume{
+			Name: additionalVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: additionalVolumeRequest.ClaimName,
+					ReadOnly:  additionalVolumeMount.ReadOnly,
+				},
+			},
+		}
+
+		names := sets.New(additionalVolumeRequest.Containers...)
+
+		for i := range template.Spec.Containers {
+			if names.Len() == 0 || names.Has(template.Spec.Containers[i].Name) {
+				template.Spec.Containers[i].VolumeMounts = append(
+					template.Spec.Containers[i].VolumeMounts,
+					additionalVolumeMount)
+			}
+		}
+
+		for i := range template.Spec.InitContainers {
+			if names.Len() == 0 || names.Has(template.Spec.InitContainers[i].Name) {
+				template.Spec.InitContainers[i].VolumeMounts = append(
+					template.Spec.InitContainers[i].VolumeMounts,
+					additionalVolumeMount)
+			}
+		}
+
+		template.Spec.Volumes = append(
+			template.Spec.Volumes,
+			additionalVolume)
+	}
 }
