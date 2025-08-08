@@ -69,6 +69,8 @@ func TestInstancePod(t *testing.T) {
 	cluster.Spec.ImagePullPolicy = corev1.PullAlways
 	cluster.Spec.PostgresVersion = 11
 
+	parameters := NewParameters().Default
+
 	dataVolume := new(corev1.PersistentVolumeClaim)
 	dataVolume.Name = "datavol"
 
@@ -117,7 +119,7 @@ func TestInstancePod(t *testing.T) {
 	// without WAL volume nor WAL volume spec
 	pod := new(corev1.PodTemplateSpec)
 	InstancePod(ctx, cluster, instance,
-		serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+		serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 	assert.Assert(t, cmp.MarshalMatches(pod.Spec, `
 containers:
@@ -268,12 +270,12 @@ initContainers:
     recreate "${postgres_data_directory}" '0750'
     else (halt Permissions!); fi ||
     halt "$(permissions "${postgres_data_directory}" ||:)"
-    (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
-    halt "$(permissions /pgdata/pgbackrest/log ||:)"
-    (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
-    halt "$(permissions /pgdata/patroni/log ||:)"
-    (mkdir -p '/pgdata/logs/postgres' && { chmod 0775 '/pgdata/logs/postgres' '/pgdata/logs' || :; }) ||
-    halt "$(permissions /pgdata/logs/postgres ||:)"
+    [[ '/pgdata/pgbackrest/log' != "${postgres_data_directory}"* || -f "${postgres_data_directory}/PG_VERSION" ]] &&
+    { (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) || halt "$(permissions '/pgdata/pgbackrest/log' ||:)"; }
+    [[ '/pgdata/patroni/log' != "${postgres_data_directory}"* || -f "${postgres_data_directory}/PG_VERSION" ]] &&
+    { (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) || halt "$(permissions '/pgdata/patroni/log' ||:)"; }
+    [[ '/pgdata/pg11/log' != "${postgres_data_directory}"* || -f "${postgres_data_directory}/PG_VERSION" ]] &&
+    { (mkdir -p '/pgdata/pg11/log' && { chmod 0775 '/pgdata/pg11/log' || :; }) || halt "$(permissions '/pgdata/pg11/log' ||:)"; }
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
 
 
@@ -385,7 +387,7 @@ volumes:
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
@@ -486,7 +488,7 @@ volumes:
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, clusterWithConfig, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
@@ -523,7 +525,7 @@ volumes:
 
 		t.Run("SidecarNotEnabled", func(t *testing.T) {
 			InstancePod(ctx, cluster, sidecarInstance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 			assert.Equal(t, len(pod.Spec.Containers), 2, "expected 2 containers in Pod")
 		})
@@ -536,7 +538,7 @@ volumes:
 			ctx := feature.NewContext(ctx, gate)
 
 			InstancePod(ctx, cluster, sidecarInstance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 			assert.Equal(t, len(pod.Spec.Containers), 3, "expected 3 containers in Pod")
 
@@ -573,7 +575,7 @@ volumes:
 		tablespaceVolumes := []*corev1.PersistentVolumeClaim{tablespaceVolume1, tablespaceVolume2}
 
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, nil, tablespaceVolumes, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, tablespaceVolumes, parameters, pod)
 
 		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
@@ -611,7 +613,7 @@ volumes:
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
@@ -713,7 +715,7 @@ volumes:
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, cmp.MarshalContains(pod.Spec.Containers[0].VolumeMounts, `
@@ -743,7 +745,7 @@ volumes:
 			annotated.Labels = map[string]string{"gg": "asdf"}
 
 			InstancePod(ctx, cluster, instance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, annotated)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, annotated)
 
 			assert.Assert(t, cmp.MarshalContains(annotated.Spec.Volumes, `
 - ephemeral:
