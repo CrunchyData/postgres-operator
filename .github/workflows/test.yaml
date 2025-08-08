@@ -86,7 +86,7 @@ jobs:
           path: envtest-existing.coverage.gz
           retention-days: 1
 
-  kuttl-k3d:
+  e2e-k3d:
     runs-on: ubuntu-24.04
     needs: [go-test]
     strategy:
