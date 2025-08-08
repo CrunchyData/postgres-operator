@@ -86,7 +86,7 @@ jobs:
           path: envtest-existing.coverage.gz
           retention-days: 1
 
-  kuttl-k3d:
+  e2e-k3d:
     runs-on: ubuntu-24.04
     needs: [go-test]
     strategy:
@@ -144,10 +144,12 @@ jobs:
             --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.2-0' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
             --name 'postgres-operator' localhost/postgres-operator
-      - name: Install kuttl
-        run: |
-          curl -Lo /usr/local/bin/kubectl-kuttl https://github.com/kudobuilder/kuttl/releases/download/v0.13.0/kubectl-kuttl_0.13.0_linux_x86_64
-          chmod +x /usr/local/bin/kubectl-kuttl
+
+      - run: |
+          make check-chainsaw && exit
+          failed=$?
+          echo '::group::PGO logs'; docker logs 'postgres-operator'; echo '::endgroup::'
+          exit $failed
 
       - run: make generate-kuttl
         env:
@@ -161,8 +163,6 @@ jobs:
           failed=$?
           echo '::group::PGO logs'; docker logs 'postgres-operator'; echo '::endgroup::'
           exit $failed
-        env:
-          KUTTL: kubectl-kuttl
 
       - name: Stop PGO
         run: docker stop 'postgres-operator' || true

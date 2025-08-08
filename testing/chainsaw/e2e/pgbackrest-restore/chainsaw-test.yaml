@@ -1,0 +1,201 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pgbackrest-restore
+  labels:
+    pgbackrest: ''
+spec:
+  failFast: true
+  bindings:
+    - name: postgres
+      value:
+        version: (to_number(as_string($values.versions.postgres)))
+
+    - name: psql
+      value:
+        image: ($values.images.psql)
+        connect: { name: PGCONNECT_TIMEOUT, value: '5' }
+
+    - name: volume
+      value: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+
+  steps:
+    - name: 'Create Cluster with replica, tablespace'
+      use: 
+        template: 'templates/create-cluster.yaml'
+
+    - name: 'Create Data'
+      use: 
+        template: 'templates/psql-data.yaml'
+        with:
+          bindings:
+            - name: target
+              value: original
+            - name: job
+              value: original-data            
+            - name: command
+              value: |
+                     CREATE SCHEMA IF NOT EXISTS "original";
+                     CREATE TABLE important (data) AS VALUES ('treasure');
+                     CREATE TABLE cows (name) TABLESPACE barn AS VALUES ('nellie');
+
+    - name: 'Create Backup #1'
+      use: 
+        template: 'templates/create-backup.yaml'
+        with:
+          bindings:
+            - name: annotation
+              value: one
+
+    - name: 'Clone Cluster #1'
+      skipDelete: true
+      use:
+        template: 'templates/clone-cluster.yaml'
+        with:
+          bindings:
+            - name: name
+              value: clone-one
+
+    - name: 'Verify Data on Clone #1'
+      use:
+        template: 'templates/psql-data.yaml'
+        with:
+          bindings:
+            - name: target
+              value: clone-one
+            - name: job
+              value: clone-one-data
+            - name: command
+              value: |
+                      DO $$$$
+                      DECLARE
+                        restored jsonb;
+                      BEGIN
+                        SELECT jsonb_agg(important) INTO restored FROM important;
+                        ASSERT restored = '[{"data":"treasure"}]', format('got %L', restored);
+                        SELECT jsonb_agg(cows) INTO restored FROM cows;
+                        ASSERT restored = '[{"name":"nellie"}]', format('got %L', restored);
+                      END $$$$;
+
+    - name: 'Delete Cluster #1'
+      description: >
+        Delete this clone in the background to free up resources
+      try:
+        - delete:
+            deletionPropagationPolicy: Background
+            expect: [{ check: { (`true`): true } }]
+            ref:
+              apiVersion: postgres-operator.crunchydata.com/v1beta1
+              kind: PostgresCluster
+              name: clone-one
+
+    - name: 'Restart Cluster'
+      description: >
+        Sets a timestamp and restarts the cluster, using the timestamp for comparison
+      use: 
+        template: 'templates/restart-cluster.yaml'
+
+    - name: 'Update Data'
+      use:
+        template: 'templates/psql-data.yaml'
+        with:
+          bindings:
+            - name: target
+              value: original
+            - name: job
+              value: original-more-data
+            - name: command
+              value: INSERT INTO important (data) VALUES ('water'), ('socks');
+
+    - name: 'Verify WAL backup'
+      use:
+        template: 'templates/verify-backup.yaml'
+    
+    - name: 'Create Backup #2'
+      use: 
+        template: 'templates/create-backup.yaml'
+        with:
+          bindings:
+            - name: annotation
+              value: two
+
+    - name: 'Clone Cluster #2'
+      skipDelete: true
+      use:
+        template: 'templates/clone-cluster.yaml'
+        with:
+          bindings:
+            - name: name
+              value: clone-two
+
+    - name: 'Verify Data on Clone #2'
+      use:
+        template: 'templates/psql-data.yaml'
+        with:
+          bindings:
+            - name: target
+              value: clone-two
+            - name: job
+              value: clone-two-data
+            - name: command
+              value: |
+                      DO $$$$
+                      DECLARE
+                        restored jsonb;
+                      BEGIN
+                        SELECT jsonb_agg(important) INTO restored FROM important;
+                        ASSERT restored = '[
+                          {"data":"treasure"}, {"data":"water"}, {"data":"socks"}
+                        ]', format('got %L', restored);
+                      END $$$$;
+
+    - name: 'Delete Cluster #2'
+      description: >
+        Delete this clone in the background to free up resources
+      try:
+        - delete:
+            deletionPropagationPolicy: Background
+            expect: [{ check: { (`true`): true } }]
+            ref:
+              apiVersion: postgres-operator.crunchydata.com/v1beta1
+              kind: PostgresCluster
+              name: clone-two
+
+    - name: 'Lose Data'
+      description: >
+        Drop data and ensure that the data is dropped from the replica as well
+      use:
+        template: 'templates/lose-data.yaml'
+
+    - name: 'Point-In-Time Restore'
+      use:
+        template: 'templates/point-in-time-restore.yaml'
+
+    - name: 'Verify Primary'
+      description: >
+        Confirm that data was restored to the point-in-time and the cluster is healthy
+      use:
+        template: 'templates/psql-data.yaml'
+        with:
+          bindings:
+            - name: target
+              value: original
+            - name: job
+              value: original-pitr-primary
+            - name: command
+              value: |
+                      DO $$$$
+                      DECLARE
+                        restored jsonb;
+                      BEGIN
+                        SELECT jsonb_agg(important) INTO restored FROM important;
+                        ASSERT restored = '[
+                          {"data":"treasure"}, {"data":"water"}, {"data":"socks"}
+                        ]', format('got %L', restored);
+                      END $$$$;
+
+    - name: 'Confirm Replica'
+      description: >
+        Verify that the data has streamed and is streaming to the replica
+      use: 
+        template: 'templates/verify-replica.yaml'

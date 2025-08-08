@@ -1,0 +1,118 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: 23-verify-replica
+spec:
+  try:
+    -
+      description: >
+        Confirm the replica is also restored and streaming from the primary
+      apply:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: original-pitr-replica
+          spec:
+            backoffLimit: 3
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: psql
+                    image: ($psql.image)
+                    env:
+                      - ($psql.connect)
+                      - name: PGPORT
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: port } }
+                      - name: PGDATABASE
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: dbname } }
+                      - name: PGUSER
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: user } }
+                      - name: PGPASSWORD
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: password } }
+
+                      # The user secret does not contain the replica service.
+                      - name: NAMESPACE
+                        valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
+                      - name: PGHOST
+                        value: "original-replicas.$(NAMESPACE).svc"
+
+                    # NOTE: the `$$$$` is reduced to `$$` by Kubernetes.
+                    command:
+                      - psql
+                      - -qa
+                      - --set=ON_ERROR_STOP=1
+                      - --command
+                      - |
+                        DO $$$$
+                        DECLARE
+                          restored jsonb;
+                        BEGIN
+                          ASSERT pg_is_in_recovery(), 'expected replica';
+
+                          SELECT jsonb_agg(important) INTO restored FROM important;
+                          ASSERT restored = '[
+                            {"data":"treasure"}, {"data":"water"}, {"data":"socks"}
+                          ]', format('got %L', restored);
+                        END $$$$;
+
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: original-pitr-replica
+          status:
+            succeeded: 1
+
+    -
+      description: >
+        Find the replica pod
+      command:
+        outputs:
+        - name: replica
+          value: (trim_space($stdout))
+        entrypoint: kubectl
+        args:
+        - get
+        - pod
+        - --namespace=${NAMESPACE}
+        - --output=name
+        - --selector
+        - >-
+          postgres-operator.crunchydata.com/cluster=original,
+          postgres-operator.crunchydata.com/role=replica
+
+    -
+      description: >
+        Confirm that the replica is streaming from the primary
+      command:
+        skipCommandOutput: true
+        env:
+        - name: REPLICA
+          value: ($replica)
+        entrypoint: kubectl
+        args:
+          - exec
+          - --namespace=${NAMESPACE}
+          - ${REPLICA}
+          - --
+          - psql
+          - -qb
+          - original
+          - --set=ON_ERROR_STOP=1
+          - --command
+          - |
+            DO $$$$
+            BEGIN
+              -- only users with "pg_read_all_stats" role may examine "pg_stat_wal_receiver"
+              PERFORM * FROM pg_stat_wal_receiver WHERE status = 'streaming';
+              ASSERT FOUND, 'expected streaming replication';
+            END $$$$
+
+  catch:
+    -
+      podLogs:
+        selector: batch.kubernetes.io/job-name in (original-pitr-replica)
+        tail: -1

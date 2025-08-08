@@ -1,0 +1,36 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: create-backup
+spec:
+  bindings:
+    - name: annotation
+      value: 'The annotation to kick off a backup'
+  try:
+    -
+      description: >
+        Annotate the cluster to trigger a backup
+      patch:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+            annotations:
+              postgres-operator.crunchydata.com/pgbackrest-backup: ($annotation)
+
+    -
+      description: >
+        Wait for the backup to complete
+      assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            annotations:
+              postgres-operator.crunchydata.com/pgbackrest-backup: ($annotation)
+            labels:
+              postgres-operator.crunchydata.com/cluster: original
+              postgres-operator.crunchydata.com/pgbackrest-backup: manual
+          status:
+            succeeded: 1

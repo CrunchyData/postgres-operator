@@ -1,0 +1,75 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: create-cluster
+spec:
+  try:
+    -
+      description: >
+        Create a cluster with a single pgBackRest repository
+        and some parameters that require attention during PostgreSQL recovery
+      apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+          spec:
+            postgresVersion: ($postgres.version)
+            config:
+              parameters:
+                archive_timeout: 15
+                checkpoint_timeout: 30
+                max_connections: 200
+            instances:
+              - dataVolumeClaimSpec: ($volume)
+                tablespaceVolumes:
+                  - { name: barn, dataVolumeClaimSpec: ($volume) }
+                replicas: 2
+            backups:
+              pgbackrest:
+                manual:
+                  repoName: repo1
+                repos:
+                  - name: repo1
+                    volume:
+                      volumeClaimSpec: ($volume)
+
+    -
+      description: >
+        Wait for the replica backup to complete
+      assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: original
+          status:
+            pgbackrest:
+              repos:
+              - name: repo1
+                replicaCreateBackupComplete: true
+                stanzaCreated: true
+
+    -
+      description: >
+        Create a tablespace and grant access to all Postgres users
+      script:
+        skipCommandOutput: true
+        content: |
+          PRIMARY=$(
+            kubectl get pod --namespace "${NAMESPACE}" \
+              --output name --selector '
+                postgres-operator.crunchydata.com/cluster=original,
+                postgres-operator.crunchydata.com/role=master'
+          )
+
+          kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -q --file=- <<'SQL'
+            CREATE TABLESPACE barn LOCATION '/tablespaces/barn/data';
+            GRANT ALL ON TABLESPACE barn TO public;
+          SQL
+
+  catch:
+    - podLogs:
+        selector: postgres-operator.crunchydata.com/cluster in (original)
+        tail: 50

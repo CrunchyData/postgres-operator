@@ -1,0 +1,125 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: lose-data
+spec:
+  try:
+    -
+      description: >
+        Find the primary pod
+      command:
+        outputs:
+          - name: primary
+            value: (trim_space($stdout))
+        entrypoint: kubectl
+        args:
+          - get
+          - pod
+          - --namespace=${NAMESPACE}
+          - --output=name
+          - --selector
+          - >-
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/role=master
+
+    -
+      description: >
+        Store the timestamp reported by PostgreSQL
+      script:
+        skipCommandOutput: true
+        env:
+          - name: PRIMARY
+            value: ($primary)
+        content: |
+          OBJECTIVE=$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+              -- psql -qAt --command 'SELECT clock_timestamp()'
+          )
+
+          # Store the recovery objective for later steps.
+          kubectl annotate --namespace "${NAMESPACE}" postgrescluster/original \
+            "testing/objective=${OBJECTIVE}"
+
+    -
+      description: >
+        Drop tables
+      command:
+        skipCommandOutput: true
+        env:
+          - name: PRIMARY
+            value: ($primary)
+        entrypoint: kubectl
+        args:
+          - exec
+          - --namespace=${NAMESPACE}
+          - ${PRIMARY}
+          - --
+          - psql
+          - -qb
+          - original
+          - --set=ON_ERROR_STOP=1
+          - --pset=footer=off
+          - --command
+          - DROP TABLE original.important
+          - --command
+          - SELECT pg_stat_reset_shared('archiver')
+          - --command
+          - SELECT pg_switch_wal()
+
+    -
+      description: >
+        Wait for the change to be sent to the WAL archive
+      script:
+        skipCommandOutput: true
+        env:
+          - name: PRIMARY
+            value: ($primary)
+        content: |
+          while [ 0 = "$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+              -- psql -qAt --command 'SELECT archived_count FROM pg_stat_archiver'
+          )" ]; do sleep 1; done
+
+    -
+      description: >
+        Find the replica pod
+      command:
+        outputs:
+          - name: replica
+            value: (trim_space($stdout))
+        entrypoint: kubectl
+        args:
+          - get
+          - pod
+          - --namespace=${NAMESPACE}
+          - --output=name
+          - --selector
+          - >-
+            postgres-operator.crunchydata.com/cluster=original,
+            postgres-operator.crunchydata.com/role=replica
+
+    -
+      description: >
+        Confirm that the replica also has lost the data that was dropped
+      command:
+        skipCommandOutput: true
+        env:
+          - name: REPLICA
+            value: ($replica)
+        entrypoint: kubectl
+        args:
+          - exec
+          - --namespace=${NAMESPACE}
+          - ${REPLICA}
+          - --
+          - psql
+          - -qb
+          - original
+          - --set=ON_ERROR_STOP=1
+          - --command
+          - |
+            DO $$$$
+            BEGIN
+              PERFORM * FROM information_schema.tables WHERE table_name = 'important';
+              ASSERT NOT FOUND, 'expected no table';
+            END $$$$

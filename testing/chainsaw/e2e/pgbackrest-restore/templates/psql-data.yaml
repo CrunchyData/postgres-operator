@@ -1,0 +1,75 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: StepTemplate
+metadata:
+  name: psql-data
+spec:
+  bindings:
+    - name: target
+      value: 'The name of the PostgresCluster'
+    - name: job
+      value: 'The name of the job'
+    - name: command
+      value: 'The command to run on the psql pod'
+
+  try:
+    # Create bindings derived from the template input.
+    - command:
+        entrypoint: 'true'
+        skipCommandOutput: true
+        outputs:
+          - name: secret
+            value: (join('-', [$target, 'pguser', $target]))
+
+    -
+      description: >
+        Run a command through psql to create/verify data
+      apply:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ($job)
+          spec:
+            backoffLimit: 3
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: psql
+                    image: ($psql.image)
+                    env:
+                      - ($psql.connect)
+                      - name: PGHOST
+                        valueFrom: { secretKeyRef: { name: ($secret), key: host } }
+                      - name: PGPORT
+                        valueFrom: { secretKeyRef: { name: ($secret), key: port } }
+                      # Always connect to the database using the original dbname, user, password
+                      - name: PGDATABASE
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: dbname } }
+                      - name: PGUSER
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: user } }
+                      - name: PGPASSWORD
+                        valueFrom: { secretKeyRef: { name: original-pguser-original, key: password } }
+                    command:
+                      - psql
+                      - -qa
+                      - --set=ON_ERROR_STOP=1
+                      - --command
+                      - ($command)
+
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: ($job)
+          status:
+            succeeded: 1
+
+  catch:
+    -
+      description: >
+        Read all log lines from the job pods
+      podLogs:
+        selector: (join('', ['batch.kubernetes.io/job-name in (', $job, ')']))
+        tail: -1

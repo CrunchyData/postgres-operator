@@ -1,0 +1,12 @@
+apiVersion: chainsaw.kyverno.io/v1alpha2
+kind: Configuration
+metadata:
+  name: end-to-end
+spec:
+  namespace:
+    template:
+      metadata:
+        labels: { postgres-operator-test: chainsaw }
+  timeouts:
+    assert: 3m
+    cleanup: 3m
