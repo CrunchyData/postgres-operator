@@ -1,8 +1,12 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: StepTemplate
 metadata:
-  name: restart-cluster
+  name: change-parameters
 spec:
+  bindings:
+    - name: parameters
+      value: 'The key/value map of Postgres parameters to change'
+
   try:
     -
       description: >
@@ -54,12 +58,11 @@ spec:
             name: original
           spec:
             config:
-              parameters:
-                max_connections: 1000
+              parameters: ($parameters)
 
     -
       description: >
-        Wait for Postgres to restart
+        Wait for Postgres to restart, signal the WAL archiver, then wait for WAL to archive
       script:
         skipCommandOutput: true
         timeout: 30s
@@ -78,6 +81,11 @@ spec:
           done
           echo "${START} != ${BEFORE}"
 
-          # Reset counters in the "pg_stat_archiver" view.
+          # Reset counters in the "pg_stat_archiver" view and signal the archiver.
           kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
-            -- psql -qb --command "SELECT pg_stat_reset_shared('archiver')" --output /dev/null
+            -- psql -qb --command "SELECT pg_stat_reset_shared('archiver'), pg_switch_wal()"
+
+          while [ 0 = "$(
+            kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+              -- psql -qAt --command 'SELECT archived_count FROM pg_stat_archiver'
+          )" ]; do sleep 1; done

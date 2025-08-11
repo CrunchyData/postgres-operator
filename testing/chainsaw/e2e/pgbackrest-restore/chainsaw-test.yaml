@@ -21,18 +21,18 @@ spec:
 
   steps:
     - name: 'Create Cluster with replica, tablespace'
-      use: 
+      use:
         template: 'templates/create-cluster.yaml'
 
     - name: 'Create Data'
-      use: 
+      use:
         template: 'templates/psql-data.yaml'
         with:
           bindings:
             - name: target
               value: original
             - name: job
-              value: original-data            
+              value: original-data
             - name: command
               value: |
                      CREATE SCHEMA IF NOT EXISTS "original";
@@ -40,7 +40,7 @@ spec:
                      CREATE TABLE cows (name) TABLESPACE barn AS VALUES ('nellie');
 
     - name: 'Create Backup #1'
-      use: 
+      use:
         template: 'templates/create-backup.yaml'
         with:
           bindings:
@@ -89,11 +89,16 @@ spec:
               kind: PostgresCluster
               name: clone-one
 
-    - name: 'Restart Cluster'
+    - name: 'Update Cluster'
       description: >
-        Sets a timestamp and restarts the cluster, using the timestamp for comparison
-      use: 
-        template: 'templates/restart-cluster.yaml'
+        Update the cluster with parameters that require attention during recovery
+      use:
+        template: 'templates/change-parameters.yaml'
+        with:
+          bindings:
+            - name: parameters
+              value:
+                max_connections: 1000
 
     - name: 'Update Data'
       use:
@@ -110,9 +115,9 @@ spec:
     - name: 'Verify WAL backup'
       use:
         template: 'templates/verify-backup.yaml'
-    
+
     - name: 'Create Backup #2'
-      use: 
+      use:
         template: 'templates/create-backup.yaml'
         with:
           bindings:
@@ -197,5 +202,5 @@ spec:
     - name: 'Confirm Replica'
       description: >
         Verify that the data has streamed and is streaming to the replica
-      use: 
+      use:
         template: 'templates/verify-replica.yaml'

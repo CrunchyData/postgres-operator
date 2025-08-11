@@ -62,9 +62,7 @@ spec:
           - --command
           - DROP TABLE original.important
           - --command
-          - SELECT pg_stat_reset_shared('archiver')
-          - --command
-          - SELECT pg_switch_wal()
+          - SELECT pg_stat_reset_shared('archiver'), pg_switch_wal()
 
     -
       description: >
