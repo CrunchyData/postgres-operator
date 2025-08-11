@@ -175,6 +175,25 @@ containers:
     TOKEN=$(cat ${SERVICEACCOUNT}/token)
     CACERT=${SERVICEACCOUNT}/ca.crt
 
+    # Manage autogrow annotation.
+    # Return size in Mebibytes.
+    manageAutogrowAnnotation() {
+      local volume=$1
+
+      size=$(df --human-readable --block-size=M /"${volume}" | awk 'FNR == 2 {print $2}')
+      use=$(df --human-readable /"${volume}" | awk 'FNR == 2 {print $5}')
+      sizeInt="${size//M/}"
+      # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+      useInt=$(echo $use | sed 's/[[:punct:]]//g')
+      triggerExpansion="$((useInt > 75))"
+      if [ $triggerExpansion -eq 1 ]; then
+        newSize="$(((sizeInt / 2)+sizeInt))"
+        newSizeMi="${newSize}Mi"
+        d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"$newSizeMi"'"}]'
+        curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
+      fi
+    }
+
     declare -r directory="/pgconf/tls"
     exec {fd}<> <(:||:)
     while read -r -t 5 -u "${fd}" ||:; do
@@ -187,20 +206,8 @@ containers:
         stat --format='Loaded certificates dated %y' "${directory}"
       fi
 
-      # Manage autogrow annotation.
-      # Return size in Mebibytes.
-      size=$(df --human-readable --block-size=M /pgdata | awk 'FNR == 2 {print $2}')
-      use=$(df --human-readable /pgdata | awk 'FNR == 2 {print $5}')
-      sizeInt="${size//M/}"
-      # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
-      useInt=$(echo $use | sed 's/[[:punct:]]//g')
-      triggerExpansion="$((useInt > 75))"
-      if [ $triggerExpansion -eq 1 ]; then
-        newSize="$(((sizeInt / 2)+sizeInt))"
-        newSizeMi="${newSize}Mi"
-        d='[{"op": "add", "path": "/metadata/annotations/suggested-pgdata-pvc-size", "value": "'"$newSizeMi"'"}]'
-        curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
-      fi
+      # manage autogrow annotation for the pgData volume
+      manageAutogrowAnnotation "pgdata"
     done
     }; export -f monitor; exec -a "$0" bash -ceu monitor
   - replication-cert-copy

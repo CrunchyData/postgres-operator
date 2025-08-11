@@ -264,6 +264,25 @@ NAMESPACE=$(cat ${SERVICEACCOUNT}/namespace)
 TOKEN=$(cat ${SERVICEACCOUNT}/token)
 CACERT=${SERVICEACCOUNT}/ca.crt
 
+# Manage autogrow annotation.
+# Return size in Mebibytes.
+manageAutogrowAnnotation() {
+  local volume=$1
+
+  size=$(df --human-readable --block-size=M /"${volume}" | awk 'FNR == 2 {print $2}')
+  use=$(df --human-readable /"${volume}" | awk 'FNR == 2 {print $5}')
+  sizeInt="${size//M/}"
+  # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+  useInt=$(echo $use | sed 's/[[:punct:]]//g')
+  triggerExpansion="$((useInt > 75))"
+  if [ $triggerExpansion -eq 1 ]; then
+    newSize="$(((sizeInt / 2)+sizeInt))"
+    newSizeMi="${newSize}Mi"
+    d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"$newSizeMi"'"}]'
+    curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
+  fi
+}
+
 declare -r directory=%q
 exec {fd}<> <(:||:)
 while read -r -t 5 -u "${fd}" ||:; do
@@ -276,20 +295,8 @@ while read -r -t 5 -u "${fd}" ||:; do
     stat --format='Loaded certificates dated %%y' "${directory}"
   fi
 
-  # Manage autogrow annotation.
-  # Return size in Mebibytes.
-  size=$(df --human-readable --block-size=M /pgdata | awk 'FNR == 2 {print $2}')
-  use=$(df --human-readable /pgdata | awk 'FNR == 2 {print $5}')
-  sizeInt="${size//M/}"
-  # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
-  useInt=$(echo $use | sed 's/[[:punct:]]//g')
-  triggerExpansion="$((useInt > 75))"
-  if [ $triggerExpansion -eq 1 ]; then
-    newSize="$(((sizeInt / 2)+sizeInt))"
-    newSizeMi="${newSize}Mi"
-    d='[{"op": "add", "path": "/metadata/annotations/suggested-pgdata-pvc-size", "value": "'"$newSizeMi"'"}]'
-    curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
-  fi
+  # manage autogrow annotation for the pgData volume
+  manageAutogrowAnnotation "pgdata"
 done
 `,
 		naming.CertMountPath,
@@ -298,6 +305,11 @@ done
 		naming.ReplicationPrivateKeyPath,
 		naming.ReplicationCACertPath,
 	)
+
+	// this is used to close out the while loop started above after adding the required
+	// auto grow annotation scripts
+	// finalDone := `done
+	// `
 
 	// Elide the above script from `ps` and `top` by wrapping it in a function
 	// and calling that.

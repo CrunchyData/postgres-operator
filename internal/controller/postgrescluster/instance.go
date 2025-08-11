@@ -17,7 +17,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -357,10 +356,13 @@ func (r *Reconciler) observeInstances(
 			}
 		}
 
-		// If autogrow is enabled, get the desired volume size for each instance.
+		// If autogrow is enabled, determine the desired volume size for each instance
+		// now that all the pod annotations have been collected. This final value will be
+		// checked to ensure that the value from the annotations can be parsed to a valid
+		// value. Otherwise the previous value, if available, will be used.
 		if autogrow {
 			for _, instance := range observed.bySet[name] {
-				status.DesiredPGDataVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster,
+				status.DesiredPGDataVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster, "pgData",
 					name, status.DesiredPGDataVolume[instance.Name], previousDesiredRequests[instance.Name])
 			}
 		}
@@ -369,67 +371,6 @@ func (r *Reconciler) observeInstances(
 	}
 
 	return observed, err
-}
-
-// storeDesiredRequest saves the appropriate request value to the PostgresCluster
-// status. If the value has grown, create an Event.
-func (r *Reconciler) storeDesiredRequest(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	instanceSetName, desiredRequest, desiredRequestBackup string,
-) string {
-	var current resource.Quantity
-	var previous resource.Quantity
-	var err error
-	log := logging.FromContext(ctx)
-
-	// Parse the desired request from the cluster's status.
-	if desiredRequest != "" {
-		current, err = resource.ParseQuantity(desiredRequest)
-		if err != nil {
-			log.Error(err, "Unable to parse pgData volume request from status ("+
-				desiredRequest+") for "+cluster.Name+"/"+instanceSetName)
-			// If there was an error parsing the value, treat as unset (equivalent to zero).
-			desiredRequest = ""
-			current, _ = resource.ParseQuantity("")
-
-		}
-	}
-
-	// Parse the desired request from the status backup.
-	if desiredRequestBackup != "" {
-		previous, err = resource.ParseQuantity(desiredRequestBackup)
-		if err != nil {
-			log.Error(err, "Unable to parse pgData volume request from status backup ("+
-				desiredRequestBackup+") for "+cluster.Name+"/"+instanceSetName)
-			// If there was an error parsing the value, treat as unset (equivalent to zero).
-			desiredRequestBackup = ""
-			previous, _ = resource.ParseQuantity("")
-
-		}
-	}
-
-	// Determine if the limit is set for this instance set.
-	var limitSet bool
-	for _, specInstance := range cluster.Spec.InstanceSets {
-		if specInstance.Name == instanceSetName {
-			limitSet = !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
-		}
-	}
-
-	if limitSet && current.Value() > previous.Value() {
-		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
-			"pgData volume expansion to %v requested for %s/%s.",
-			current.String(), cluster.Name, instanceSetName)
-	}
-
-	// If the desired size was not observed, update with previously stored value.
-	// This can happen in scenarios where the annotation on the Pod is missing
-	// such as when the cluster is shutdown or a Pod is in the middle of a restart.
-	if desiredRequest == "" {
-		desiredRequest = desiredRequestBackup
-	}
-
-	return desiredRequest
 }
 
 // +kubebuilder:rbac:groups="",resources="pods",verbs={list}

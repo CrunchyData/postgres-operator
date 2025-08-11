@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr/funcr"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -36,10 +35,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
-	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
-	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -257,121 +254,6 @@ func TestNewObservedInstances(t *testing.T) {
 		assert.Equal(t, observed.byName["the-name"], instance)
 		assert.DeepEqual(t, observed.bySet["00"], []*Instance{instance})
 		assert.DeepEqual(t, sets.List(observed.setNames), []string{"00"})
-	})
-}
-
-func TestStoreDesiredRequest(t *testing.T) {
-	ctx := context.Background()
-
-	setupLogCapture := func(ctx context.Context) (context.Context, *[]string) {
-		calls := []string{}
-		testlog := funcr.NewJSON(func(object string) {
-			calls = append(calls, object)
-		}, funcr.Options{
-			Verbosity: 1,
-		})
-		return logging.NewContext(ctx, testlog), &calls
-	}
-
-	cluster := v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhino",
-			Namespace: "test-namespace",
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				Name:     "red",
-				Replicas: initialize.Int32(1),
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.VolumeResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						}}},
-			}, {
-				Name:     "blue",
-				Replicas: initialize.Int32(1),
-			}}}}
-
-	t.Run("BadRequestNoBackup", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "woot", "")
-
-		assert.Equal(t, value, "")
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status"))
-	})
-
-	t.Run("BadRequestWithBackup", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "foo", "1Gi")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status (foo) for rhino/red"))
-	})
-
-	t.Run("NoLimitNoEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "blue", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 0)
-	})
-
-	t.Run("BadBackupRequest", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "2Gi", "bar")
-
-		assert.Equal(t, value, "2Gi")
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status backup (bar) for rhino/red"))
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
-		assert.Equal(t, recorder.Events[0].Note, "pgData volume expansion to 2Gi requested for rhino/red.")
-	})
-
-	t.Run("ValueUpdateWithEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
-		assert.Equal(t, recorder.Events[0].Note, "pgData volume expansion to 1Gi requested for rhino/red.")
-	})
-
-	t.Run("NoLimitNoEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "blue", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 0)
 	})
 }
 
