@@ -339,7 +339,7 @@ func (r *Reconciler) Reconcile(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret, rootCA,
 			clusterPodService, instanceServiceAccount, instances, patroniLeaderService,
 			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound, otelConfig,
+			backupsSpecFound, otelConfig, pgParameters,
 		)
 	}
 

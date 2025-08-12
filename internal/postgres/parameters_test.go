@@ -28,6 +28,8 @@ func TestNewParameters(t *testing.T) {
 	assert.DeepEqual(t, parameters.Default.AsMap(), map[string]string{
 		"jit": "off",
 
+		"log_directory": "log",
+
 		"password_encryption": "scram-sha-256",
 	})
 }
