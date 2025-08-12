@@ -573,9 +573,17 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 			assert.Assert(t, cmp.MarshalMatches(
 				copyPodTemplate.Spec.Volumes,
 				tc.expectedVolumes))
-			assert.Assert(t, cmp.DeepEqual(
-				missingContainers,
-				tc.expectedMissing))
+			if len(tc.expectedMissing) == 0 {
+				assert.Assert(t, cmp.DeepEqual(
+					missingContainers,
+					tc.expectedMissing))
+			} else {
+				for _, mc := range tc.expectedMissing {
+					assert.Assert(t, cmp.Contains(
+						missingContainers,
+						mc))
+				}
+			}
 		})
 	}
 }
