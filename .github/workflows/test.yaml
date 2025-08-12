@@ -15,7 +15,7 @@ jobs:
   go-test:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with: { go-version: stable }
 
@@ -33,7 +33,7 @@ jobs:
       matrix:
         kubernetes: ['default']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with: { go-version: stable }
 
@@ -60,7 +60,7 @@ jobs:
       matrix:
         kubernetes: [v1.33, v1.28]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with: { go-version: stable }
 
@@ -94,7 +94,7 @@ jobs:
       matrix:
         kubernetes: [v1.33, v1.28]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with: { go-version: stable }
 
@@ -174,10 +174,10 @@ jobs:
       - kubernetes-api
       - kubernetes-k3d
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/setup-go@v5
         with: { go-version: stable }
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with: { path: download }
 
       # Combine the coverage profiles by taking the mode line from any one file
