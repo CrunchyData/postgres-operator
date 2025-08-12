@@ -9,11 +9,15 @@ COPY hack/tools/queries /opt/crunchy/conf
 
 WORKDIR /usr/src/app
 COPY . .
-ENV GOCACHE=/var/cache/go
 
-# Build the operator and assemble the licenses
-RUN --mount=type=cache,target=/var/cache/go go build ./cmd/postgres-operator
-RUN go run ./hack/extract-licenses.go licenses postgres-operator 
+ENV GOCACHE=/var/cache/go
+ENV GOMODCACHE=/var/cache/gomod
+RUN --mount=type=cache,target=/var/cache \
+<<-SHELL
+set -e
+go build ./cmd/postgres-operator
+go run ./hack/extract-licenses.go licenses postgres-operator
+SHELL
 
 FROM docker.io/library/debian:bookworm
 
