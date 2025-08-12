@@ -303,8 +303,9 @@ func AdditionalVolumeMount(name string, readOnly bool) corev1.VolumeMount {
 // as `volumes-<additionalVolumeRequest.Name>`
 // and adds the directory to the path `/volumes/<additionalVolumeRequest.Name>`
 func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
-	additionalVolumes []v1beta1.AdditionalVolume) {
+	additionalVolumes []v1beta1.AdditionalVolume) []string {
 
+	missingContainers := []string{}
 	for _, additionalVolumeRequest := range additionalVolumes {
 
 		additionalVolumeMount := AdditionalVolumeMount(
@@ -323,25 +324,40 @@ func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 		}
 
 		names := sets.New(additionalVolumeRequest.Containers...)
+		allContainers := false
+		if names.Len() == 0 {
+			allContainers = true
+		}
 
 		for i := range template.Spec.Containers {
-			if names.Len() == 0 || names.Has(template.Spec.Containers[i].Name) {
+			if allContainers || names.Has(template.Spec.Containers[i].Name) {
 				template.Spec.Containers[i].VolumeMounts = append(
 					template.Spec.Containers[i].VolumeMounts,
 					additionalVolumeMount)
+
+				if names.Has(template.Spec.Containers[i].Name) {
+					names.Delete(template.Spec.Containers[i].Name)
+				}
 			}
 		}
 
 		for i := range template.Spec.InitContainers {
-			if names.Len() == 0 || names.Has(template.Spec.InitContainers[i].Name) {
+			if allContainers || names.Has(template.Spec.InitContainers[i].Name) {
 				template.Spec.InitContainers[i].VolumeMounts = append(
 					template.Spec.InitContainers[i].VolumeMounts,
 					additionalVolumeMount)
+
+				if names.Has(template.Spec.InitContainers[i].Name) {
+					names.Delete(template.Spec.InitContainers[i].Name)
+				}
 			}
 		}
+
+		missingContainers = append(missingContainers, names.UnsortedList()...)
 
 		template.Spec.Volumes = append(
 			template.Spec.Volumes,
 			additionalVolume)
 	}
+	return missingContainers
 }

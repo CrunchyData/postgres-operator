@@ -399,6 +399,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 		expectedContainers     string
 		expectedInitContainers string
 		expectedVolumes        string
+		expectedMissing        []string
 	}{{
 		tcName: "all",
 		additionalVolumes: []v1beta1.AdditionalVolume{{
@@ -429,6 +430,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 		expectedVolumes: `- name: volumes-required
   persistentVolumeClaim:
     claimName: required`,
+		expectedMissing: []string{},
 	}, {
 		tcName: "multiple additional volumes",
 		additionalVolumes: []v1beta1.AdditionalVolume{{
@@ -474,6 +476,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 - name: volumes-other
   persistentVolumeClaim:
     claimName: also`,
+		expectedMissing: []string{},
 	}, {
 		tcName: "database and startup containers only",
 		additionalVolumes: []v1beta1.AdditionalVolume{{
@@ -498,6 +501,32 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 		expectedVolumes: `- name: volumes-required
   persistentVolumeClaim:
     claimName: required`,
+		expectedMissing: []string{},
+	}, {
+		tcName: "container is missing",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
+			Containers: []string{"database", "startup", "missing", "container"},
+			ClaimName:  "required",
+			Name:       "required",
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+- name: other
+  resources: {}`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+- name: config
+  resources: {}`,
+		expectedVolumes: `- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required`,
+		expectedMissing: []string{"missing", "container"},
 	}, {
 		tcName: "readonly",
 		additionalVolumes: []v1beta1.AdditionalVolume{{
@@ -522,6 +551,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
   persistentVolumeClaim:
     claimName: required
     readOnly: true`,
+		expectedMissing: []string{},
 	}}
 
 	for _, tc := range testCases {
@@ -529,7 +559,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 
 			copyPodTemplate := podTemplate.DeepCopy()
 
-			addAdditionalVolumesToSpecifiedContainers(
+			missingContainers := addAdditionalVolumesToSpecifiedContainers(
 				copyPodTemplate,
 				tc.additionalVolumes,
 			)
@@ -543,6 +573,9 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 			assert.Assert(t, cmp.MarshalMatches(
 				copyPodTemplate.Spec.Volumes,
 				tc.expectedVolumes))
+			assert.Assert(t, cmp.DeepEqual(
+				missingContainers,
+				tc.expectedMissing))
 		})
 	}
 }
