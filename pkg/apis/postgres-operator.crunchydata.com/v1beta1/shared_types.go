@@ -33,6 +33,16 @@ type ConfigDataKey = string
 type DNS1123Subdomain = string
 
 // ---
+// https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsDNS1123Label
+// https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Format
+//
+// +kubebuilder:validation:MinLength=1
+// Max length is less than max 63 to allow prepending `volumes-` to name
+// +kubebuilder:validation:MaxLength=55
+// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?$`
+type DNS1123Label = string
+
+// ---
 // Duration represents a string accepted by the Kubernetes API in the "duration"
 // [format]. This format extends the "duration" [defined by OpenAPI] by allowing
 // some whitespace and more units:

@@ -546,11 +546,10 @@ type AdditionalVolume struct {
 	// Volumes are mounted in the pods at `volumes/<NAME>`
 	// Must be unique.
 	// ---
-	// The `Name` field is a `DNS1123Subdomain` type to enforce
-	// the max length and also allow us to more easily transition
-	// to CPK-provisioned volumes.
+	// The `Name` field is a `DNS1123Label` type to enforce
+	// the max length.
 	// +required
-	Name DNS1123Subdomain `json:"name"`
+	Name DNS1123Label `json:"name"`
 
 	// A reference to a preexisting PVC.
 	// ---

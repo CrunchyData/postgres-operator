@@ -11049,9 +11049,9 @@ spec:
                                   The name of the volume used for mounting path.
                                   Volumes are mounted in the pods at `volumes/<NAME>`
                                   Must be unique.
-                                maxLength: 253
+                                maxLength: 55
                                 minLength: 1
-                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                 type: string
                               readOnly:
                                 description: Sets the write/read mode of the volume
@@ -29658,9 +29658,9 @@ spec:
                                   The name of the volume used for mounting path.
                                   Volumes are mounted in the pods at `volumes/<NAME>`
                                   Must be unique.
-                                maxLength: 253
+                                maxLength: 55
                                 minLength: 1
-                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                 type: string
                               readOnly:
                                 description: Sets the write/read mode of the volume
