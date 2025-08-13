@@ -38,7 +38,7 @@ func (in *AdditionalVolume) DeepCopyInto(out *AdditionalVolume) {
 	*out = *in
 	if in.Containers != nil {
 		in, out := &in.Containers, &out.Containers
-		*out = make([]string, len(*in))
+		*out = make([]DNS1123Label, len(*in))
 		copy(*out, *in)
 	}
 }
