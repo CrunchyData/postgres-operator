@@ -525,23 +525,7 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
 
-	Volumes *PostgresVolumesSpec `json:"volumes,omitempty"`
-}
-
-type PostgresVolumesSpec struct {
-	// Additional pre-existing volumes to add to the pod.
-	// ---
-	// +optional
-	// +listType=map
-	// +listMapKey=name
-	// +kubebuilder:validation:MaxItems=10
-	Additional []v1beta1.AdditionalVolume `json:"additional,omitempty"`
-
-	// An ephemeral volume for temporary files.
-	// More info: https://kubernetes.io/docs/concepts/storage/ephemeral-volumes
-	// ---
-	// +optional
-	Temp *v1beta1.VolumeClaimSpec `json:"temp,omitempty"`
+	Volumes *v1beta1.PostgresVolumesSpec `json:"volumes,omitempty"`
 }
 
 type TablespaceVolume struct {

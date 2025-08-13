@@ -509,6 +509,36 @@ topologySpreadConstraints:
 			assert.Assert(t, deploy.Spec.Template.Spec.TopologySpreadConstraints == nil)
 		})
 	})
+
+	t.Run("PodSpecWithAdditionalVolumes", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Proxy.PGBouncer.Volumes = &v1beta1.PGBouncerVolumesSpec{
+			Additional: []v1beta1.AdditionalVolume{{
+				ClaimName: "required",
+				Name:      "required",
+			}},
+		}
+
+		deploy, specified, err := reconciler.generatePGBouncerDeployment(
+			ctx, cluster, primary, configmap, secret)
+
+		assert.NilError(t, err)
+		assert.Assert(t, specified)
+
+		for _, container := range deploy.Spec.Template.Spec.Containers {
+			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
+				`
+- mountPath: /volumes/required
+  name: volumes-required`))
+		}
+
+		assert.Assert(t, cmp.MarshalContains(
+			deploy.Spec.Template.Spec.Volumes,
+			`
+- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required`))
+	})
 }
 
 func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {

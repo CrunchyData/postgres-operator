@@ -475,6 +475,16 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	// Add tmp directory and volume for log files
 	AddTMPEmptyDir(&deploy.Spec.Template)
 
+	// mount additional volumes to the pgbouncer containers
+	if err == nil && cluster.Spec.Proxy.PGBouncer.Volumes != nil && len(cluster.Spec.Proxy.PGBouncer.Volumes.Additional) > 0 {
+		missingContainers := addAdditionalVolumesToSpecifiedContainers(&deploy.Spec.Template, cluster.Spec.Proxy.PGBouncer.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following PgBouncer pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+		}
+	}
+
 	return deploy, true, err
 }
 
