@@ -542,17 +542,6 @@ type PostgresVolumesSpec struct {
 }
 
 type AdditionalVolume struct {
-	// The name of the volume used for mounting path.
-	// Volumes are mounted in the pods at `volumes/<NAME>`
-	// Must be unique.
-	// ---
-	// The `Name` field is a `DNS1123Label` type to enforce
-	// the max length.
-	// +required
-	// Max length is less than max 63 to allow prepending `volumes-` to name
-	// +kubebuilder:validation:MaxLength=55
-	Name DNS1123Label `json:"name"`
-
 	// A reference to a preexisting PVC.
 	// ---
 	// +required
@@ -566,6 +555,17 @@ type AdditionalVolume struct {
 	// +listType=atomic
 	// +kubebuilder:validation:MaxItems=10
 	Containers []string `json:"containers,omitempty"`
+
+	// The name of the volume used for mounting path.
+	// Volumes are mounted in the pods at `volumes/<NAME>`
+	// Must be unique.
+	// ---
+	// The `Name` field is a `DNS1123Label` type to enforce
+	// the max length.
+	// +required
+	// Max length is less than max 63 to allow prepending `volumes-` to name
+	// +kubebuilder:validation:MaxLength=55
+	Name DNS1123Label `json:"name"`
 
 	// Sets the write/read mode of the volume
 	// ---
