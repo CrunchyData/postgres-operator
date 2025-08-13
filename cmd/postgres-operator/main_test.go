@@ -21,6 +21,7 @@ func TestInitManager(t *testing.T) {
 		options, err := initManager(ctx)
 		assert.NilError(t, err)
 
+		assert.Assert(t, options.Cache.DefaultTransform != nil)
 		if assert.Check(t, options.Cache.SyncPeriod != nil) {
 			assert.Equal(t, *options.Cache.SyncPeriod, time.Hour)
 		}
@@ -42,6 +43,7 @@ func TestInitManager(t *testing.T) {
 
 		{
 			options.Cache.SyncPeriod = nil
+			options.Cache.DefaultTransform = nil
 			options.Controller.GroupKindConcurrency = nil
 			options.HealthProbeBindAddress = ""
 			options.Metrics.TLSOpts = nil
