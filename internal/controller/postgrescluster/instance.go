@@ -1258,8 +1258,8 @@ func (r *Reconciler) reconcileInstance(
 		missingContainers := addAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
-			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "MissingContainers",
-				"The following containers were specified for additional volumes but are missing: %s.", missingContainers)
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following containers were specified for additional volumes but cannot be found: %s.", missingContainers)
 		}
 	}
 
