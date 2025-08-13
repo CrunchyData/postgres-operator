@@ -527,13 +527,15 @@ topologySpreadConstraints:
 
 		for _, container := range deploy.Spec.Template.Spec.Containers {
 			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
-				`- mountPath: /volumes/required
+				`
+- mountPath: /volumes/required
   name: volumes-required`))
 		}
 
 		assert.Assert(t, cmp.MarshalContains(
 			deploy.Spec.Template.Spec.Volumes,
-			`- name: volumes-required
+			`
+- name: volumes-required
   persistentVolumeClaim:
     claimName: required`))
 	})
