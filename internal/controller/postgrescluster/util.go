@@ -323,6 +323,12 @@ func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 			},
 		}
 
+		// Create a set of all the requested containers,
+		// then in the loops below when we attach the volume to a container,
+		// we can safely remove that container name from the set.
+		// This gives us a way to track the containers that are requested but not found.
+		// This relies on `containers` and `initContainers` together being unique.
+		// - https://github.com/kubernetes/api/blob/b40c1cacbb902b21a7e0c7bf0967321860c1a632/core/v1/types.go#L3895C27-L3896C33
 		names := sets.New(additionalVolumeRequest.Containers...)
 		allContainers := false
 		if names.Len() == 0 {
@@ -335,9 +341,7 @@ func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 					template.Spec.Containers[i].VolumeMounts,
 					additionalVolumeMount)
 
-				if names.Has(template.Spec.Containers[i].Name) {
-					names.Delete(template.Spec.Containers[i].Name)
-				}
+				names.Delete(template.Spec.Containers[i].Name)
 			}
 		}
 
@@ -347,9 +351,8 @@ func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 					template.Spec.InitContainers[i].VolumeMounts,
 					additionalVolumeMount)
 
-				if names.Has(template.Spec.InitContainers[i].Name) {
-					names.Delete(template.Spec.InitContainers[i].Name)
-				}
+				names.Delete(template.Spec.InitContainers[i].Name)
+
 			}
 		}
 

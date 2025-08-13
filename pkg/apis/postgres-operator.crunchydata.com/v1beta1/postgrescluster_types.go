@@ -526,12 +526,6 @@ type PostgresInstanceSetSpec struct {
 }
 
 type PostgresVolumesSpec struct {
-	// An ephemeral volume for temporary files.
-	// More info: https://kubernetes.io/docs/concepts/storage/ephemeral-volumes
-	// ---
-	// +optional
-	Temp *VolumeClaimSpec `json:"temp,omitempty"`
-
 	// Additional pre-existing volumes to add to the pod.
 	// ---
 	// +optional
@@ -539,6 +533,12 @@ type PostgresVolumesSpec struct {
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=10
 	Additional []AdditionalVolume `json:"additional,omitempty"`
+
+	// An ephemeral volume for temporary files.
+	// More info: https://kubernetes.io/docs/concepts/storage/ephemeral-volumes
+	// ---
+	// +optional
+	Temp *VolumeClaimSpec `json:"temp,omitempty"`
 }
 
 type AdditionalVolume struct {
@@ -549,12 +549,14 @@ type AdditionalVolume struct {
 	// The `Name` field is a `DNS1123Label` type to enforce
 	// the max length.
 	// +required
+	// Max length is less than max 63 to allow prepending `volumes-` to name
+	// +kubebuilder:validation:MaxLength=55
 	Name DNS1123Label `json:"name"`
 
 	// A reference to a preexisting PVC.
 	// ---
 	// +required
-	ClaimName string `json:"claimName"`
+	ClaimName DNS1123Subdomain `json:"claimName"`
 
 	// The containers to attach this volume to.
 	// A blank/unset `Containers` field matches all containers.

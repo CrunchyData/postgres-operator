@@ -11034,6 +11034,9 @@ spec:
                             properties:
                               claimName:
                                 description: A reference to a preexisting PVC.
+                                maxLength: 253
+                                minLength: 1
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                 type: string
                               containers:
                                 description: |-
@@ -11045,11 +11048,13 @@ spec:
                                 type: array
                                 x-kubernetes-list-type: atomic
                               name:
+                                allOf:
+                                - maxLength: 63
+                                - maxLength: 55
                                 description: |-
                                   The name of the volume used for mounting path.
                                   Volumes are mounted in the pods at `volumes/<NAME>`
                                   Must be unique.
-                                maxLength: 55
                                 minLength: 1
                                 pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                 type: string
@@ -29643,6 +29648,9 @@ spec:
                             properties:
                               claimName:
                                 description: A reference to a preexisting PVC.
+                                maxLength: 253
+                                minLength: 1
+                                pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
                                 type: string
                               containers:
                                 description: |-
@@ -29654,11 +29662,13 @@ spec:
                                 type: array
                                 x-kubernetes-list-type: atomic
                               name:
+                                allOf:
+                                - maxLength: 63
+                                - maxLength: 55
                                 description: |-
                                   The name of the volume used for mounting path.
                                   Volumes are mounted in the pods at `volumes/<NAME>`
                                   Must be unique.
-                                maxLength: 55
                                 minLength: 1
                                 pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                 type: string
