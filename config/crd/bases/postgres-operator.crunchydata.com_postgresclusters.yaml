@@ -11041,7 +11041,8 @@ spec:
                               containers:
                                 description: |-
                                   The containers to attach this volume to.
-                                  A blank/unset `Containers` field matches all containers.
+                                  An omitted `Containers` field matches all containers.
+                                  An empty `Containers` field matches no containers.
                                 items:
                                   type: string
                                 maxItems: 10
@@ -29655,7 +29656,8 @@ spec:
                               containers:
                                 description: |-
                                   The containers to attach this volume to.
-                                  A blank/unset `Containers` field matches all containers.
+                                  An omitted `Containers` field matches all containers.
+                                  An empty `Containers` field matches no containers.
                                 items:
                                   type: string
                                 maxItems: 10

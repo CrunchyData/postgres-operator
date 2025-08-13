@@ -331,7 +331,8 @@ func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 		// - https://github.com/kubernetes/api/blob/b40c1cacbb902b21a7e0c7bf0967321860c1a632/core/v1/types.go#L3895C27-L3896C33
 		names := sets.New(additionalVolumeRequest.Containers...)
 		allContainers := false
-		if names.Len() == 0 {
+		// If the containers list is omitted, we add the volume to all containers
+		if additionalVolumeRequest.Containers == nil {
 			allContainers = true
 		}
 

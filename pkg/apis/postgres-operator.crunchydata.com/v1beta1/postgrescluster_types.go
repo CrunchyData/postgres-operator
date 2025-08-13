@@ -559,7 +559,8 @@ type AdditionalVolume struct {
 	ClaimName DNS1123Subdomain `json:"claimName"`
 
 	// The containers to attach this volume to.
-	// A blank/unset `Containers` field matches all containers.
+	// An omitted `Containers` field matches all containers.
+	// An empty `Containers` field matches no containers.
 	// ---
 	// +optional
 	// +listType=atomic

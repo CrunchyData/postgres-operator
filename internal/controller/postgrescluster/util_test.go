@@ -403,9 +403,8 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 	}{{
 		tcName: "all",
 		additionalVolumes: []v1beta1.AdditionalVolume{{
-			Containers: []string{},
-			ClaimName:  "required",
-			Name:       "required",
+			ClaimName: "required",
+			Name:      "required",
 		}},
 		expectedContainers: `- name: database
   resources: {}
@@ -434,13 +433,74 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 	}, {
 		tcName: "multiple additional volumes",
 		additionalVolumes: []v1beta1.AdditionalVolume{{
+			ClaimName: "required",
+			Name:      "required",
+		}, {
+			ClaimName: "also",
+			Name:      "other",
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other
+- name: other
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other
+- name: config
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+  - mountPath: /volumes/other
+    name: volumes-other`,
+		expectedVolumes: `- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required
+- name: volumes-other
+  persistentVolumeClaim:
+    claimName: also`,
+		expectedMissing: []string{},
+	}, {
+		tcName: "none",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
 			Containers: []string{},
 			ClaimName:  "required",
 			Name:       "required",
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+- name: other
+  resources: {}`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+- name: config
+  resources: {}`,
+		expectedVolumes: `- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required`,
+		expectedMissing: []string{},
+	}, {
+		tcName: "multiple additional volumes",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
+			ClaimName: "required",
+			Name:      "required",
 		}, {
-			Containers: []string{},
-			ClaimName:  "also",
-			Name:       "other",
+			ClaimName: "also",
+			Name:      "other",
 		}},
 		expectedContainers: `- name: database
   resources: {}
