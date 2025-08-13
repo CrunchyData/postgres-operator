@@ -1259,7 +1259,7 @@ func (r *Reconciler) reconcileInstance(
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
-				"The following containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+				"The following Postgres pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
 		}
 	}
 

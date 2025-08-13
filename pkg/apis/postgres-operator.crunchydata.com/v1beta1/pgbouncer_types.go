@@ -131,6 +131,19 @@ type PGBouncerPodSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
 	// +optional
 	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+
+	Volumes *PGBouncerVolumesSpec `json:"volumes,omitempty"`
+}
+
+// PGBouncerVolumesSpec defines the configuration for pgBouncer additional volumes
+type PGBouncerVolumesSpec struct {
+	// Additional pre-existing volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	Additional []AdditionalVolume `json:"additional,omitempty"`
 }
 
 // PGBouncerSidecars defines the configuration for pgBouncer sidecar containers
