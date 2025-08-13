@@ -257,34 +257,50 @@ func (meta *Metadata) GetAnnotationsOrNil() map[string]string {
 	return meta.Annotations
 }
 
+// ---
+// Only one applier should be managing each volume definition.
+// https://docs.k8s.io/reference/using-api/server-side-apply#merge-strategy
+// +structType=atomic
 type AdditionalVolume struct {
-	// A reference to a preexisting PVC.
+	// Name of an existing PersistentVolumeClaim.
 	// ---
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePersistentVolumeClaim
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePersistentVolumeName
+	//
 	// +required
 	ClaimName DNS1123Subdomain `json:"claimName"`
 
-	// The containers to attach this volume to.
-	// An omitted `Containers` field matches all containers.
-	// An empty `Containers` field matches no containers.
+	// The names of containers in which to mount this volume.
+	// The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
 	// ---
-	// +optional
-	// +listType=atomic
+	// These are matched against [corev1.Container.Name] in a PodSpec, which is a [DNS1123Label].
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePodSpec
+	//
+	// Container names are unique within a Pod, so this list can be, too.
+	// +listType=set
+	//
 	// +kubebuilder:validation:MaxItems=10
-	Containers []string `json:"containers,omitempty"`
+	// +optional
+	Containers []DNS1123Label `json:"containers"`
 
-	// The name of the volume used for mounting path.
-	// Volumes are mounted in the pods at `volumes/<NAME>`
-	// Must be unique.
+	// The name of the directory in which to mount this volume.
+	// Volumes are mounted in containers at `/volumes/{name}`.
 	// ---
-	// The `Name` field is a `DNS1123Label` type to enforce
-	// the max length.
-	// +required
-	// Max length is less than max 63 to allow prepending `volumes-` to name
+	// This also goes into the [corev1.Volume.Name] field, which is a [DNS1123Label].
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePodSpec
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidateVolumes
+	//
+	// We prepend "volumes-" to avoid collisions with other [corev1.PodSpec.Volumes],
+	// so the maximum is 8 less than the inherited 63.
 	// +kubebuilder:validation:MaxLength=55
+	//
+	// +required
 	Name DNS1123Label `json:"name"`
 
-	// Sets the write/read mode of the volume
+	// When true, mount the volume read-only, otherwise read-write. Defaults to false.
 	// ---
+	// [corev1.VolumeMount.ReadOnly]
+	//
 	// +optional
 	ReadOnly bool `json:"readOnly,omitempty"`
 }

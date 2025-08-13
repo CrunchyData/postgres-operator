@@ -541,54 +541,6 @@ type PostgresVolumesSpec struct {
 	Temp *VolumeClaimSpec `json:"temp,omitempty"`
 }
 
-// ---
-// Only one applier should be managing each volume definition.
-// https://docs.k8s.io/reference/using-api/server-side-apply#merge-strategy
-// +structType=atomic
-type AdditionalVolume struct {
-	// Name of an existing PersistentVolumeClaim.
-	// ---
-	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePersistentVolumeClaim
-	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePersistentVolumeName
-	//
-	// +required
-	ClaimName DNS1123Subdomain `json:"claimName"`
-
-	// The names of containers in which to mount this volume.
-	// The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
-	// ---
-	// These are matched against [corev1.Container.Name] in a PodSpec, which is a [DNS1123Label].
-	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePodSpec
-	//
-	// Container names are unique within a Pod, so this list can be, too.
-	// +listType=set
-	//
-	// +kubebuilder:validation:MaxItems=10
-	// +optional
-	Containers []DNS1123Label `json:"containers"`
-
-	// The name of the directory in which to mount this volume.
-	// Volumes are mounted in containers at `/volumes/{name}`.
-	// ---
-	// This also goes into the [corev1.Volume.Name] field, which is a [DNS1123Label].
-	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePodSpec
-	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidateVolumes
-	//
-	// We prepend "volumes-" to avoid collisions with other [corev1.PodSpec.Volumes],
-	// so the maximum is 8 less than the inherited 63.
-	// +kubebuilder:validation:MaxLength=55
-	//
-	// +required
-	Name DNS1123Label `json:"name"`
-
-	// When true, mount the volume read-only, otherwise read-write. Defaults to false.
-	// ---
-	// [corev1.VolumeMount.ReadOnly]
-	//
-	// +optional
-	ReadOnly bool `json:"readOnly,omitempty"`
-}
-
 type TablespaceVolume struct {
 	// This value goes into
 	// a. the name of a corev1.PersistentVolumeClaim,
