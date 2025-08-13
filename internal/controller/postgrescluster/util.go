@@ -13,9 +13,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var tmpDirSizeLimit = resource.MustParse("16Mi")
@@ -284,4 +286,82 @@ func safeHash32(content func(w io.Writer) error) (string, error) {
 		return "", err
 	}
 	return rand.SafeEncodeString(fmt.Sprint(hash.Sum32())), nil
+}
+
+// AdditionalVolumeMount returns the name and mount path of the additional volume.
+func AdditionalVolumeMount(name string, readOnly bool) corev1.VolumeMount {
+	return corev1.VolumeMount{
+		Name:      fmt.Sprintf("volumes-%s", name),
+		MountPath: "/volumes/" + name,
+		ReadOnly:  readOnly,
+	}
+}
+
+// addAdditionalVolumesToSpecifiedContainers adds additional volumes to the specified
+// containers in the specified pod
+// addAdditionalVolumesToSpecifiedContainers adds the volumes to the pod
+// as `volumes-<additionalVolumeRequest.Name>`
+// and adds the directory to the path `/volumes/<additionalVolumeRequest.Name>`
+func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
+	additionalVolumes []v1beta1.AdditionalVolume) []string {
+
+	missingContainers := []string{}
+	for _, additionalVolumeRequest := range additionalVolumes {
+
+		additionalVolumeMount := AdditionalVolumeMount(
+			additionalVolumeRequest.Name,
+			additionalVolumeRequest.ReadOnly,
+		)
+
+		additionalVolume := corev1.Volume{
+			Name: additionalVolumeMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: additionalVolumeRequest.ClaimName,
+					ReadOnly:  additionalVolumeMount.ReadOnly,
+				},
+			},
+		}
+
+		// Create a set of all the requested containers,
+		// then in the loops below when we attach the volume to a container,
+		// we can safely remove that container name from the set.
+		// This gives us a way to track the containers that are requested but not found.
+		// This relies on `containers` and `initContainers` together being unique.
+		// - https://github.com/kubernetes/api/blob/b40c1cacbb902b21a7e0c7bf0967321860c1a632/core/v1/types.go#L3895C27-L3896C33
+		names := sets.New(additionalVolumeRequest.Containers...)
+		allContainers := false
+		// If the containers list is omitted, we add the volume to all containers
+		if additionalVolumeRequest.Containers == nil {
+			allContainers = true
+		}
+
+		for i := range template.Spec.Containers {
+			if allContainers || names.Has(template.Spec.Containers[i].Name) {
+				template.Spec.Containers[i].VolumeMounts = append(
+					template.Spec.Containers[i].VolumeMounts,
+					additionalVolumeMount)
+
+				names.Delete(template.Spec.Containers[i].Name)
+			}
+		}
+
+		for i := range template.Spec.InitContainers {
+			if allContainers || names.Has(template.Spec.InitContainers[i].Name) {
+				template.Spec.InitContainers[i].VolumeMounts = append(
+					template.Spec.InitContainers[i].VolumeMounts,
+					additionalVolumeMount)
+
+				names.Delete(template.Spec.InitContainers[i].Name)
+
+			}
+		}
+
+		missingContainers = append(missingContainers, names.UnsortedList()...)
+
+		template.Spec.Volumes = append(
+			template.Spec.Volumes,
+			additionalVolume)
+	}
+	return missingContainers
 }

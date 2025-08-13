@@ -1253,6 +1253,16 @@ func (r *Reconciler) reconcileInstance(
 		addDevSHM(&instance.Spec.Template)
 	}
 
+	// mount additional volumes to the Postgres instance containers
+	if err == nil && spec.Volumes != nil && len(spec.Volumes.Additional) > 0 {
+		missingContainers := addAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+		}
+	}
+
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, instance))
 	}
