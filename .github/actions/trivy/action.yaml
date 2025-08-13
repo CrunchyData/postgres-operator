@@ -39,7 +39,7 @@ inputs:
       The value "skip" fetches no Trivy data at all.
 
   setup:
-    default: v0.62.1,cache
+    default: v0.65.0,cache
     description: >-
       How to install Trivy; one or more of version, none, or cache.
       The value "none" does not install Trivy at all.
