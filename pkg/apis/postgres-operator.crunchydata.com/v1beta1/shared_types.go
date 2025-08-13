@@ -256,3 +256,35 @@ func (meta *Metadata) GetAnnotationsOrNil() map[string]string {
 	}
 	return meta.Annotations
 }
+
+type AdditionalVolume struct {
+	// A reference to a preexisting PVC.
+	// ---
+	// +required
+	ClaimName DNS1123Subdomain `json:"claimName"`
+
+	// The containers to attach this volume to.
+	// An omitted `Containers` field matches all containers.
+	// An empty `Containers` field matches no containers.
+	// ---
+	// +optional
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems=10
+	Containers []string `json:"containers,omitempty"`
+
+	// The name of the volume used for mounting path.
+	// Volumes are mounted in the pods at `volumes/<NAME>`
+	// Must be unique.
+	// ---
+	// The `Name` field is a `DNS1123Label` type to enforce
+	// the max length.
+	// +required
+	// Max length is less than max 63 to allow prepending `volumes-` to name
+	// +kubebuilder:validation:MaxLength=55
+	Name DNS1123Label `json:"name"`
+
+	// Sets the write/read mode of the volume
+	// ---
+	// +optional
+	ReadOnly bool `json:"readOnly,omitempty"`
+}
