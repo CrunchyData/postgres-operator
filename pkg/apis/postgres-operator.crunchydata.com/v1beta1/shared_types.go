@@ -23,7 +23,7 @@ import (
 type ConfigDataKey = string
 
 // ---
-// https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
+// https://docs.k8s.io/concepts/overview/working-with-objects/names#dns-subdomain-names
 // https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsDNS1123Subdomain
 // https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Format
 //
