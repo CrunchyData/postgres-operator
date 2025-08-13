@@ -481,7 +481,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
-				"The following pgBouncer pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+				"The following PgBouncer pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
 		}
 	}
 
