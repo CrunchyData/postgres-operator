@@ -308,6 +308,10 @@ type PostgresClusterDataSource struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Volumes to add to Restore Job Pods
+	// +optional
+	Volumes *PGBackRestVolumesSpec `json:"volumes,omitempty"`
 }
 
 // Default defines several key default values for a Postgres cluster.

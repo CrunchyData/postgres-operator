@@ -3070,6 +3070,46 @@ volumes:
 		// No events created
 		assert.Equal(t, len(recorder.Events), 0)
 	})
+
+	t.Run("AdditionalVolumes", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Name:      "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		for _, container := range spec.Template.Spec.Containers {
+			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
+				`
+- mountPath: /volumes/stuff
+  name: volumes-stuff`))
+		}
+
+		assert.Assert(t, cmp.MarshalContains(spec.Template.Spec.Volumes,
+			`
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// No events created
+		assert.Equal(t, len(recorder.Events), 0)
+	})
 }
 
 func TestGenerateRepoHostIntent(t *testing.T) {
@@ -3123,6 +3163,43 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, *sts.Spec.Replicas, int32(0))
 	})
+
+	t.Run("AdditionalVolumes", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						RepoHost: &v1beta1.PGBackRestRepoHost{
+							Volumes: &v1beta1.PGBackRestVolumesSpec{
+								Additional: []v1beta1.AdditionalVolume{
+									{
+										ClaimName: "additional-pvc",
+										Name:      "stuff",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		observed := &observedInstances{forCluster: []*Instance{{}}}
+		sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, observed, "")
+		assert.NilError(t, err)
+
+		for _, container := range sts.Spec.Template.Spec.Containers {
+			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
+				`
+- mountPath: /volumes/stuff
+  name: volumes-stuff`))
+		}
+
+		assert.Assert(t, cmp.MarshalContains(sts.Spec.Template.Spec.Volumes,
+			`
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+	})
 }
 
 func TestGenerateRestoreJobIntent(t *testing.T) {
@@ -3174,6 +3251,14 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 			Operator: "Exist",
 		}},
 		PriorityClassName: initialize.String("some-priority-class"),
+		Volumes: &v1beta1.PGBackRestVolumesSpec{
+			Additional: []v1beta1.AdditionalVolume{
+				{
+					ClaimName: "additional-pvc",
+					Name:      "stuff",
+				},
+			},
+		},
 	}
 	cluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -3266,6 +3351,9 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 								assert.DeepEqual(t, job.Spec.Template.Spec.Containers[0].VolumeMounts,
 									[]corev1.VolumeMount{{
 										Name: "mount",
+									}, {
+										Name:      "volumes-stuff",
+										MountPath: "/volumes/stuff",
 									}})
 							})
 							t.Run("Env", func(t *testing.T) {
@@ -3289,6 +3377,13 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 							assert.DeepEqual(t, job.Spec.Template.Spec.Volumes,
 								[]corev1.Volume{{
 									Name: "volume",
+								}, {
+									Name: "volumes-stuff",
+									VolumeSource: corev1.VolumeSource{
+										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+											ClaimName: "additional-pvc",
+										},
+									},
 								}})
 						})
 						t.Run("Affinity", func(t *testing.T) {

@@ -175,6 +175,21 @@ type BackupJobs struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=60
 	TTLSecondsAfterFinished *int32 `json:"ttlSecondsAfterFinished,omitempty"`
+
+	// Volumes to add to Backup Job Pods
+	// +optional
+	Volumes *PGBackRestVolumesSpec `json:"volumes,omitempty"`
+}
+
+// PGBackRestVolumesSpec defines the configuration for pgBackRest additional volumes
+type PGBackRestVolumesSpec struct {
+	// Additional pre-existing volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	Additional []AdditionalVolume `json:"additional,omitempty"`
 }
 
 // PGBackRestManualBackup contains information that is used for creating a
@@ -230,6 +245,10 @@ type PGBackRestRepoHost struct {
 	// Deprecated: Repository hosts use mTLS for encryption, authentication, and authorization.
 	// +optional
 	SSHSecret *corev1.SecretProjection `json:"sshSecret,omitempty"`
+
+	// Volumes to add to the Repo Host Pod
+	// +optional
+	Volumes *PGBackRestVolumesSpec `json:"volumes,omitempty"`
 }
 
 // PGBackRestRestore defines an in-place restore for the PostgresCluster.
@@ -459,4 +478,8 @@ type PGBackRestDataSource struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Volumes to add to Restore Job Pods
+	// +optional
+	Volumes *PGBackRestVolumesSpec `json:"volumes,omitempty"`
 }
