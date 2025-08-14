@@ -608,7 +608,8 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		},
 	}
 
-	if repoHost := postgresCluster.Spec.Backups.PGBackRest.RepoHost; repoHost != nil {
+	repoHost := postgresCluster.Spec.Backups.PGBackRest.RepoHost
+	if repoHost != nil {
 		repo.Spec.Template.Spec.Affinity = repoHost.Affinity
 		repo.Spec.Template.Spec.Tolerations = repoHost.Tolerations
 		repo.Spec.Template.Spec.TopologySpreadConstraints = repoHost.TopologySpreadConstraints
@@ -718,6 +719,16 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 
 	AddTMPEmptyDir(&repo.Spec.Template)
 
+	// mount additional volumes to the repo host containers
+	if repoHost != nil && repoHost.Volumes != nil && len(repoHost.Volumes.Additional) > 0 {
+		missingContainers := addAdditionalVolumesToSpecifiedContainers(&repo.Spec.Template, repoHost.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following Repo Host Pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+		}
+	}
+
 	// set ownership references
 	if err := r.setControllerReference(postgresCluster, repo); err != nil {
 		return nil, err
@@ -814,7 +825,8 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 		container.Command = append(container.Command, cmdOpts...)
 	}
 
-	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
+	jobs := postgresCluster.Spec.Backups.PGBackRest.Jobs
+	if jobs != nil {
 		container.Resources = postgresCluster.Spec.Backups.PGBackRest.Jobs.Resources
 	}
 
@@ -848,12 +860,9 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 		},
 	}
 
-	if jobs := postgresCluster.Spec.Backups.PGBackRest.Jobs; jobs != nil {
+	// set the job lifetime, priority class name, tolerations, and affinity, if they exist
+	if jobs != nil {
 		jobSpec.TTLSecondsAfterFinished = jobs.TTLSecondsAfterFinished
-	}
-
-	// set the priority class name, tolerations, and affinity, if they exist
-	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
 		jobSpec.Template.Spec.Tolerations = postgresCluster.Spec.Backups.PGBackRest.Jobs.Tolerations
 		jobSpec.Template.Spec.Affinity = postgresCluster.Spec.Backups.PGBackRest.Jobs.Affinity
 		jobSpec.Template.Spec.PriorityClassName =
@@ -894,6 +903,16 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 				// We successfully found the specified PVC, so we will add it to the backup job
 				util.AddVolumeAndMountsToPod(&jobSpec.Template.Spec, logVolume)
 			}
+		}
+	}
+
+	// mount additional volumes to the job containers
+	if jobs != nil && jobs.Volumes != nil && len(jobs.Volumes.Additional) > 0 {
+		missingContainers := addAdditionalVolumesToSpecifiedContainers(&jobSpec.Template, jobs.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following Backup Job Pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
 		}
 	}
 
@@ -1388,6 +1407,15 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	// set the priority class name, if it exists
 	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(dataSource.PriorityClassName)
 
+	if dataSource.Volumes != nil && len(dataSource.Volumes.Additional) > 0 {
+		missingContainers := addAdditionalVolumesToSpecifiedContainers(&job.Spec.Template, dataSource.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following Restore Pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+		}
+	}
+
 	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
 	if err := errors.WithStack(r.setControllerReference(cluster, job)); err != nil {
 		return err
@@ -1821,6 +1849,7 @@ func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 		Affinity:          dataSource.Affinity,
 		Tolerations:       dataSource.Tolerations,
 		PriorityClassName: dataSource.PriorityClassName,
+		Volumes:           dataSource.Volumes,
 	}
 
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory

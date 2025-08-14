@@ -1545,6 +1545,57 @@ spec:
                             format: int32
                             minimum: 60
                             type: integer
+                          volumes:
+                            description: Volumes to add to Backup Job Pods
+                            properties:
+                              additional:
+                                description: Additional pre-existing volumes to add
+                                  to the pod.
+                                items:
+                                  properties:
+                                    claimName:
+                                      description: Name of an existing PersistentVolumeClaim.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    containers:
+                                      description: |-
+                                        The names of containers in which to mount this volume.
+                                        The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                        type: string
+                                      maxItems: 10
+                                      type: array
+                                      x-kubernetes-list-type: set
+                                    name:
+                                      allOf:
+                                      - maxLength: 63
+                                      - maxLength: 55
+                                      description: |-
+                                        The name of the directory in which to mount this volume.
+                                        Volumes are mounted in containers at `/volumes/{name}`.
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    readOnly:
+                                      description: When true, mount the volume read-only,
+                                        otherwise read-write. Defaults to false.
+                                      type: boolean
+                                  required:
+                                  - claimName
+                                  - name
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                            type: object
                         type: object
                       manual:
                         description: Defines details for manual pgBackRest backup
@@ -2918,6 +2969,57 @@ spec:
                               - whenUnsatisfiable
                               type: object
                             type: array
+                          volumes:
+                            description: Volumes to add to the Repo Host Pod
+                            properties:
+                              additional:
+                                description: Additional pre-existing volumes to add
+                                  to the pod.
+                                items:
+                                  properties:
+                                    claimName:
+                                      description: Name of an existing PersistentVolumeClaim.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    containers:
+                                      description: |-
+                                        The names of containers in which to mount this volume.
+                                        The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                        type: string
+                                      maxItems: 10
+                                      type: array
+                                      x-kubernetes-list-type: set
+                                    name:
+                                      allOf:
+                                      - maxLength: 63
+                                      - maxLength: 55
+                                      description: |-
+                                        The name of the directory in which to mount this volume.
+                                        Volumes are mounted in containers at `/volumes/{name}`.
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    readOnly:
+                                      description: When true, mount the volume read-only,
+                                        otherwise read-write. Defaults to false.
+                                      type: boolean
+                                  required:
+                                  - claimName
+                                  - name
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                            type: object
                         type: object
                       repos:
                         description: Defines a pgBackRest repository
@@ -4294,6 +4396,57 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          volumes:
+                            description: Volumes to add to Restore Job Pods
+                            properties:
+                              additional:
+                                description: Additional pre-existing volumes to add
+                                  to the pod.
+                                items:
+                                  properties:
+                                    claimName:
+                                      description: Name of an existing PersistentVolumeClaim.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    containers:
+                                      description: |-
+                                        The names of containers in which to mount this volume.
+                                        The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                        type: string
+                                      maxItems: 10
+                                      type: array
+                                      x-kubernetes-list-type: set
+                                    name:
+                                      allOf:
+                                      - maxLength: 63
+                                      - maxLength: 55
+                                      description: |-
+                                        The name of the directory in which to mount this volume.
+                                        Volumes are mounted in containers at `/volumes/{name}`.
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    readOnly:
+                                      description: When true, mount the volume read-only,
+                                        otherwise read-write. Defaults to false.
+                                      type: boolean
+                                  required:
+                                  - claimName
+                                  - name
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                            type: object
                         required:
                         - enabled
                         - repoName
@@ -6636,6 +6789,57 @@ spec:
                               type: string
                           type: object
                         type: array
+                      volumes:
+                        description: Volumes to add to Restore Job Pods
+                        properties:
+                          additional:
+                            description: Additional pre-existing volumes to add to
+                              the pod.
+                            items:
+                              properties:
+                                claimName:
+                                  description: Name of an existing PersistentVolumeClaim.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                  type: string
+                                containers:
+                                  description: |-
+                                    The names of containers in which to mount this volume.
+                                    The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                  items:
+                                    maxLength: 63
+                                    minLength: 1
+                                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                    type: string
+                                  maxItems: 10
+                                  type: array
+                                  x-kubernetes-list-type: set
+                                name:
+                                  allOf:
+                                  - maxLength: 63
+                                  - maxLength: 55
+                                  description: |-
+                                    The name of the directory in which to mount this volume.
+                                    Volumes are mounted in containers at `/volumes/{name}`.
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                                readOnly:
+                                  description: When true, mount the volume read-only,
+                                    otherwise read-write. Defaults to false.
+                                  type: boolean
+                              required:
+                              - claimName
+                              - name
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            maxItems: 10
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                        type: object
                     required:
                     - repo
                     - stanza
@@ -7709,6 +7913,57 @@ spec:
                               type: string
                           type: object
                         type: array
+                      volumes:
+                        description: Volumes to add to Restore Job Pods
+                        properties:
+                          additional:
+                            description: Additional pre-existing volumes to add to
+                              the pod.
+                            items:
+                              properties:
+                                claimName:
+                                  description: Name of an existing PersistentVolumeClaim.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                  type: string
+                                containers:
+                                  description: |-
+                                    The names of containers in which to mount this volume.
+                                    The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                  items:
+                                    maxLength: 63
+                                    minLength: 1
+                                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                    type: string
+                                  maxItems: 10
+                                  type: array
+                                  x-kubernetes-list-type: set
+                                name:
+                                  allOf:
+                                  - maxLength: 63
+                                  - maxLength: 55
+                                  description: |-
+                                    The name of the directory in which to mount this volume.
+                                    Volumes are mounted in containers at `/volumes/{name}`.
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                                readOnly:
+                                  description: When true, mount the volume read-only,
+                                    otherwise read-write. Defaults to false.
+                                  type: boolean
+                              required:
+                              - claimName
+                              - name
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            maxItems: 10
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                        type: object
                     required:
                     - repoName
                     type: object
@@ -20215,6 +20470,57 @@ spec:
                             format: int32
                             minimum: 60
                             type: integer
+                          volumes:
+                            description: Volumes to add to Backup Job Pods
+                            properties:
+                              additional:
+                                description: Additional pre-existing volumes to add
+                                  to the pod.
+                                items:
+                                  properties:
+                                    claimName:
+                                      description: Name of an existing PersistentVolumeClaim.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    containers:
+                                      description: |-
+                                        The names of containers in which to mount this volume.
+                                        The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                        type: string
+                                      maxItems: 10
+                                      type: array
+                                      x-kubernetes-list-type: set
+                                    name:
+                                      allOf:
+                                      - maxLength: 63
+                                      - maxLength: 55
+                                      description: |-
+                                        The name of the directory in which to mount this volume.
+                                        Volumes are mounted in containers at `/volumes/{name}`.
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    readOnly:
+                                      description: When true, mount the volume read-only,
+                                        otherwise read-write. Defaults to false.
+                                      type: boolean
+                                  required:
+                                  - claimName
+                                  - name
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                            type: object
                         type: object
                       manual:
                         description: Defines details for manual pgBackRest backup
@@ -21588,6 +21894,57 @@ spec:
                               - whenUnsatisfiable
                               type: object
                             type: array
+                          volumes:
+                            description: Volumes to add to the Repo Host Pod
+                            properties:
+                              additional:
+                                description: Additional pre-existing volumes to add
+                                  to the pod.
+                                items:
+                                  properties:
+                                    claimName:
+                                      description: Name of an existing PersistentVolumeClaim.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    containers:
+                                      description: |-
+                                        The names of containers in which to mount this volume.
+                                        The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                        type: string
+                                      maxItems: 10
+                                      type: array
+                                      x-kubernetes-list-type: set
+                                    name:
+                                      allOf:
+                                      - maxLength: 63
+                                      - maxLength: 55
+                                      description: |-
+                                        The name of the directory in which to mount this volume.
+                                        Volumes are mounted in containers at `/volumes/{name}`.
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    readOnly:
+                                      description: When true, mount the volume read-only,
+                                        otherwise read-write. Defaults to false.
+                                      type: boolean
+                                  required:
+                                  - claimName
+                                  - name
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                            type: object
                         type: object
                       repos:
                         description: Defines a pgBackRest repository
@@ -22964,6 +23321,57 @@ spec:
                                   type: string
                               type: object
                             type: array
+                          volumes:
+                            description: Volumes to add to Restore Job Pods
+                            properties:
+                              additional:
+                                description: Additional pre-existing volumes to add
+                                  to the pod.
+                                items:
+                                  properties:
+                                    claimName:
+                                      description: Name of an existing PersistentVolumeClaim.
+                                      maxLength: 253
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                      type: string
+                                    containers:
+                                      description: |-
+                                        The names of containers in which to mount this volume.
+                                        The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                      items:
+                                        maxLength: 63
+                                        minLength: 1
+                                        pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                        type: string
+                                      maxItems: 10
+                                      type: array
+                                      x-kubernetes-list-type: set
+                                    name:
+                                      allOf:
+                                      - maxLength: 63
+                                      - maxLength: 55
+                                      description: |-
+                                        The name of the directory in which to mount this volume.
+                                        Volumes are mounted in containers at `/volumes/{name}`.
+                                      minLength: 1
+                                      pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                      type: string
+                                    readOnly:
+                                      description: When true, mount the volume read-only,
+                                        otherwise read-write. Defaults to false.
+                                      type: boolean
+                                  required:
+                                  - claimName
+                                  - name
+                                  type: object
+                                  x-kubernetes-map-type: atomic
+                                maxItems: 10
+                                type: array
+                                x-kubernetes-list-map-keys:
+                                - name
+                                x-kubernetes-list-type: map
+                            type: object
                         required:
                         - enabled
                         - repoName
@@ -25306,6 +25714,57 @@ spec:
                               type: string
                           type: object
                         type: array
+                      volumes:
+                        description: Volumes to add to Restore Job Pods
+                        properties:
+                          additional:
+                            description: Additional pre-existing volumes to add to
+                              the pod.
+                            items:
+                              properties:
+                                claimName:
+                                  description: Name of an existing PersistentVolumeClaim.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                  type: string
+                                containers:
+                                  description: |-
+                                    The names of containers in which to mount this volume.
+                                    The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                  items:
+                                    maxLength: 63
+                                    minLength: 1
+                                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                    type: string
+                                  maxItems: 10
+                                  type: array
+                                  x-kubernetes-list-type: set
+                                name:
+                                  allOf:
+                                  - maxLength: 63
+                                  - maxLength: 55
+                                  description: |-
+                                    The name of the directory in which to mount this volume.
+                                    Volumes are mounted in containers at `/volumes/{name}`.
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                                readOnly:
+                                  description: When true, mount the volume read-only,
+                                    otherwise read-write. Defaults to false.
+                                  type: boolean
+                              required:
+                              - claimName
+                              - name
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            maxItems: 10
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                        type: object
                     required:
                     - repo
                     - stanza
@@ -26379,6 +26838,57 @@ spec:
                               type: string
                           type: object
                         type: array
+                      volumes:
+                        description: Volumes to add to Restore Job Pods
+                        properties:
+                          additional:
+                            description: Additional pre-existing volumes to add to
+                              the pod.
+                            items:
+                              properties:
+                                claimName:
+                                  description: Name of an existing PersistentVolumeClaim.
+                                  maxLength: 253
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?([.][a-z0-9]([-a-z0-9]*[a-z0-9])?)*$
+                                  type: string
+                                containers:
+                                  description: |-
+                                    The names of containers in which to mount this volume.
+                                    The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+                                  items:
+                                    maxLength: 63
+                                    minLength: 1
+                                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                    type: string
+                                  maxItems: 10
+                                  type: array
+                                  x-kubernetes-list-type: set
+                                name:
+                                  allOf:
+                                  - maxLength: 63
+                                  - maxLength: 55
+                                  description: |-
+                                    The name of the directory in which to mount this volume.
+                                    Volumes are mounted in containers at `/volumes/{name}`.
+                                  minLength: 1
+                                  pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+                                  type: string
+                                readOnly:
+                                  description: When true, mount the volume read-only,
+                                    otherwise read-write. Defaults to false.
+                                  type: boolean
+                              required:
+                              - claimName
+                              - name
+                              type: object
+                              x-kubernetes-map-type: atomic
+                            maxItems: 10
+                            type: array
+                            x-kubernetes-list-map-keys:
+                            - name
+                            x-kubernetes-list-type: map
+                        type: object
                     required:
                     - repoName
                     type: object
