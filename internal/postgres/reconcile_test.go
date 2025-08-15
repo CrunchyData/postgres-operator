@@ -239,6 +239,7 @@ initContainers:
   - --
   - |-
     declare -r expected_major_version="$1" pgwal_directory="$2"
+    dataDirectory() { if [[ ! -e "$1" || -O "$1" ]]; then install --directory --mode=0750 "$1"; elif [[ -w "$1" && -g "$1" ]]; then recreate "$1" '0750'; else false; fi; }
     permissions() { while [[ -n "$1" ]]; do set "${1%/*}" "$@"; done; shift; stat -Lc '%A %4u %4g %n' "$@"; }
     halt() { local rc=$?; >&2 echo "$@"; exit "${rc/#0/1}"; }
     results() { printf '::postgres-operator: %s::%s\n' "$@"; }
@@ -267,22 +268,15 @@ initContainers:
     [[ "${postgres_data_directory}" == "${PGDATA}" ]] ||
     halt Expected matching config and data directories
     bootstrap_dir="${postgres_data_directory}_bootstrap"
-    [[ -d "${bootstrap_dir}" ]] && results 'bootstrap directory' "${bootstrap_dir}"
-    [[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}"
-    if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then
-    install --directory --mode=0750 "${postgres_data_directory}"
-    elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then
-    recreate "${postgres_data_directory}" '0750'
-    else (halt Permissions!); fi ||
-    halt "$(permissions "${postgres_data_directory}" ||:)"
-    (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
-    halt "$(permissions /pgdata/pgbackrest/log ||:)"
-    (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
-    halt "$(permissions /pgdata/patroni/log ||:)"
+    [[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}" && results 'bootstrap directory' "${bootstrap_dir}"
+    dataDirectory "${postgres_data_directory}" || halt "$(permissions "${postgres_data_directory}" ||:)"
     (mkdir -p '/pgdata/logs/postgres' && { chmod 0775 '/pgdata/logs/postgres' '/pgdata/logs' || :; }) ||
-    halt "$(permissions /pgdata/logs/postgres ||:)"
+    halt "$(permissions '/pgdata/logs/postgres' ||:)"
+    (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
+    halt "$(permissions '/pgdata/patroni/log' ||:)"
+    (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
+    halt "$(permissions '/pgdata/pgbackrest/log' ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
-
 
     [[ -f "${postgres_data_directory}/PG_VERSION" ]] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"

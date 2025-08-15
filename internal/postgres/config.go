@@ -21,6 +21,38 @@ import (
 )
 
 const (
+	// bashDataDirectory is a Bash function that ensures a directory has the correct permissions for PostgreSQL data.
+	//
+	// Postgres requires its data directories be writable by only itself.
+	// Pod "securityContext.fsGroup" sets g+w on directories for *some* storage providers.
+	// Ensure the current user owns the directory, and remove group-write permission.
+	//
+	// - https://www.postgresql.org/docs/current/creating-cluster.html
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/postmaster/postmaster.c;hb=REL_10_0#l1522
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_11_0#l142
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_17_0#l386
+	// - https://issue.k8s.io/93802#issuecomment-717646167
+	//
+	// During CREATE TABLESPACE, Postgres sets the permissions of a tablespace directory to match the data directory.
+	//
+	// - https://www.postgresql.org/docs/current/manage-ag-tablespaces.html
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/commands/tablespace.c;hb=REL_14_0#l600
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/common/file_perm.c;hb=REL_14_0#l27
+	//
+	bashDataDirectory = `dataDirectory() {` +
+		// When the directory does not exist, create it with the correct permissions.
+		// When the directory has the correct owner, set the correct permissions.
+		` if [[ ! -e "$1" || -O "$1" ]]; then install --directory --mode=0750 "$1";` +
+		//
+		// The directory exists but its owner is wrong.
+		// When it is writable, the set-group-ID bit indicates that "fsGroup" probably ran on its contents making them safe to use.
+		// In this case, we can make a new directory (owned by this user) and refill it.
+		` elif [[ -w "$1" && -g "$1" ]]; then recreate "$1" '0750';` +
+		//
+		// The directory exists, its owner is wrong, and it is not writable.
+		// This is probably fatal, but indicate failure to let the caller decide.
+		` else false; fi; }`
+
 	// bashHalt is a Bash function that prints its arguments to stderr then
 	// exits with a non-zero status. It uses the exit status of the prior
 	// command if that was not zero.
@@ -327,46 +359,30 @@ func startupCommand(
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
 	walDir := WALDirectory(cluster, instance)
 
-	// If the user requests tablespaces, we want to make sure the directories exist with the
-	// correct owner and permissions.
-	tablespaceCmd := ""
-	if feature.Enabled(ctx, feature.TablespaceVolumes) {
-		// This command checks if a dir exists and if not, creates it;
-		// if the dir does exist, then we `recreate` it to make sure the owner is correct;
-		// if the dir exists with the wrong owner and is not writeable, we error.
-		// This is the same behavior we use for the main PGDATA directory.
-		// Note: Postgres requires the tablespace directory to be "an existing, empty directory
-		// that is owned by the PostgreSQL operating system user."
-		// - https://www.postgresql.org/docs/current/manage-ag-tablespaces.html
-		// However, unlike the PGDATA directory, Postgres will _not_ error out
-		// if the permissions are wrong on the tablespace directory.
-		// Instead, when a tablespace is created in Postgres, Postgres will `chmod` the
-		// tablespace directory to match permissions on the PGDATA directory (either 700 or 750).
-		// Postgres setting the tablespace directory permissions:
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/commands/tablespace.c;hb=REL_14_0#l600
-		// Postgres choosing directory permissions:
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/common/file_perm.c;hb=REL_14_0#l27
-		// Note: This permission change seems to happen only when the tablespace is created in Postgres.
-		// If the user manually `chmod`'ed the directory after the creation of the tablespace, Postgres
-		// would not attempt to change the directory permissions.
-		// Note: as noted below, we mount the tablespace directory to the mountpoint `/tablespaces/NAME`,
-		// and so we add the subdirectory `data` in order to set the permissions.
-		checkInstallRecreateCmd := strings.Join([]string{
-			`if [[ ! -e "${tablespace_dir}" || -O "${tablespace_dir}" ]]; then`,
-			`install --directory --mode=0750 "${tablespace_dir}"`,
-			`elif [[ -w "${tablespace_dir}" && -g "${tablespace_dir}" ]]; then`,
-			`recreate "${tablespace_dir}" '0750'`,
-			`else (halt Permissions!); fi ||`,
-			`halt "$(permissions "${tablespace_dir}" ||:)"`,
-		}, "\n")
+	mkdirs := make([]string, 0, 7+len(instance.TablespaceVolumes))
+	mkdirs = append(mkdirs, `dataDirectory "${postgres_data_directory}" || halt "$(permissions "${postgres_data_directory}" ||:)"`)
 
+	// If the user requests tablespaces, we want to make sure the directories exist with the correct owner and permissions.
+	//
+	// The path for tablespaces volumes is /tablespaces/NAME/data -- the `data` directory is so we can arrange the permissions.
+	if feature.Enabled(ctx, feature.TablespaceVolumes) {
 		for _, tablespace := range instance.TablespaceVolumes {
-			// The path for tablespaces volumes is /tablespaces/NAME/data
-			// -- the `data` path is added so that we can arrange the permissions.
-			tablespaceCmd = tablespaceCmd + "\ntablespace_dir=/tablespaces/" + tablespace.Name + "/data" + "\n" +
-				checkInstallRecreateCmd
+			dir := shell.QuoteWord("/tablespaces/" + tablespace.Name + "/data")
+			mkdirs = append(mkdirs, `dataDirectory `+dir+` || halt "$(permissions `+dir+` ||:)"`)
 		}
 	}
+
+	// These directories are outside "data_directory" and can be created.
+	mkdirs = append(mkdirs,
+		`(`+shell.MakeDirectories(dataMountPath, LogDirectory())+`) ||`,
+		`halt "$(permissions `+shell.QuoteWord(LogDirectory())+` ||:)"`,
+
+		`(`+shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath)+`) ||`,
+		`halt "$(permissions `+shell.QuoteWord(naming.PatroniPGDataLogPath)+` ||:)"`,
+
+		`(`+shell.MakeDirectories(dataMountPath, naming.PGBackRestPGDataLogPath)+`) ||`,
+		`halt "$(permissions `+shell.QuoteWord(naming.PGBackRestPGDataLogPath)+` ||:)"`,
+	)
 
 	pg_rewind_override := ""
 	if config.FetchKeyCommand(&cluster.Spec) != "" {
@@ -383,6 +399,9 @@ chmod +x /tmp/pg_rewind_tde.sh
 	args := []string{version, walDir}
 	script := strings.Join([]string{
 		`declare -r expected_major_version="$1" pgwal_directory="$2"`,
+
+		// Function to create a Postgres data directory.
+		bashDataDirectory,
 
 		// Function to print the permissions of a file or directory and its parents.
 		bashPermissions,
@@ -425,42 +444,10 @@ chmod +x /tmp/pg_rewind_tde.sh
 
 		// Determine if the data directory has been prepared for bootstrapping the cluster
 		`bootstrap_dir="${postgres_data_directory}_bootstrap"`,
-		`[[ -d "${bootstrap_dir}" ]] && results 'bootstrap directory' "${bootstrap_dir}"`,
-		`[[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}"`,
+		`[[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}" && results 'bootstrap directory' "${bootstrap_dir}"`,
 
-		// PostgreSQL requires its directory to be writable by only itself.
-		// Pod "securityContext.fsGroup" sets g+w on directories for *some*
-		// storage providers. Ensure the current user owns the directory, and
-		// remove group-write permission.
-		// - https://www.postgresql.org/docs/current/creating-cluster.html
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/postmaster/postmaster.c;hb=REL_10_0#l1522
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_11_0#l142
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_17_0#l386
-		// - https://issue.k8s.io/93802#issuecomment-717646167
-		//
-		// When the directory does not exist, create it with the correct permissions.
-		// When the directory has the correct owner, set the correct permissions.
-		`if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then`,
-		`install --directory --mode=0750 "${postgres_data_directory}"`,
-		//
-		// The directory exists but its owner is wrong. When it is writable,
-		// the set-group-ID bit indicates that "fsGroup" probably ran on its
-		// contents making them safe to use. In this case, we can make a new
-		// directory (owned by this user) and refill it.
-		`elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then`,
-		`recreate "${postgres_data_directory}" '0750'`,
-		//
-		// The directory exists, its owner is wrong, and it is not writable.
-		`else (halt Permissions!); fi ||`,
-		`halt "$(permissions "${postgres_data_directory}" ||:)"`,
-
-		// Create log directories.
-		`(` + shell.MakeDirectories(dataMountPath, naming.PGBackRestPGDataLogPath) + `) ||`,
-		`halt "$(permissions ` + naming.PGBackRestPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath) + `) ||`,
-		`halt "$(permissions ` + naming.PatroniPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(dataMountPath, LogDirectory()) + `) ||`,
-		`halt "$(permissions ` + LogDirectory() + ` ||:)"`,
+		// Create directories for and related to the data directory.
+		strings.Join(mkdirs, "\n"),
 
 		// Copy replication client certificate files
 		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order
@@ -478,7 +465,6 @@ chmod +x /tmp/pg_rewind_tde.sh
 		// Add the pg_rewind wrapper script, if TDE is enabled.
 		pg_rewind_override,
 
-		tablespaceCmd,
 		// When the data directory is empty, there's nothing more to do.
 		`[[ -f "${postgres_data_directory}/PG_VERSION" ]] || exit 0`,
 
