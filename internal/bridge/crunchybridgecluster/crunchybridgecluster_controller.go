@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -50,8 +51,8 @@ type CrunchyBridgeClusterReconciler struct {
 	}
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={list,watch}
-//+kubebuilder:rbac:groups="",resources="secrets",verbs={list,watch}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={get,list,watch}
+//+kubebuilder:rbac:groups="",resources="secrets",verbs={get,list,watch}
 
 // ManagedReconciler creates a [CrunchyBridgeClusterReconciler] and adds it to m.
 func ManagedReconciler(m ctrl.Manager, newClient func() bridge.ClientInterface) error {
@@ -72,7 +73,7 @@ func ManagedReconciler(m ctrl.Manager, newClient func() bridge.ClientInterface) 
 		// Smarter: retry after a certain time for each cluster
 		WatchesRawSource(
 			runtime.NewTickerImmediate(5*time.Minute, event.GenericEvent{},
-				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []ctrl.Request {
+				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {
 					var list v1beta1.CrunchyBridgeClusterList
 					_ = reconciler.Reader.List(ctx, &list)
 					return runtime.Requests(initialize.Pointers(list.Items...)...)
@@ -82,11 +83,11 @@ func ManagedReconciler(m ctrl.Manager, newClient func() bridge.ClientInterface) 
 		// Watch secrets and filter for secrets mentioned by CrunchyBridgeClusters
 		Watches(
 			&corev1.Secret{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []ctrl.Request {
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []reconcile.Request {
 				return runtime.Requests(reconciler.findCrunchyBridgeClustersForSecret(ctx, client.ObjectKeyFromObject(secret))...)
 			}),
 		).
-		Complete(reconciler)
+		Complete(reconcile.AsReconciler(kubernetes, reconciler))
 }
 
 // The owner reference created by controllerutil.SetControllerReference blocks
@@ -105,47 +106,32 @@ func (r *CrunchyBridgeClusterReconciler) setControllerReference(
 	return controllerutil.SetControllerReference(owner, controlled, runtime.Scheme)
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={get,patch,update}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={patch,update}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters/status",verbs={patch,update}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters/finalizers",verbs={patch,update}
 //+kubebuilder:rbac:groups="",resources="secrets",verbs={get}
 
 // Reconcile does the work to move the current state of the world toward the
-// desired state described in a [v1beta1.CrunchyBridgeCluster] identified by req.
-func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// desired state described in crunchybridgecluster.
+func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, crunchybridgecluster *v1beta1.CrunchyBridgeCluster) (ctrl.Result, error) {
+	var err error
 	ctx, span := tracing.Start(ctx, "reconcile-crunchybridgecluster")
 	log := logging.FromContext(ctx)
 	defer span.End()
 
-	// Retrieve the crunchybridgecluster from the client cache, if it exists. A deferred
-	// function below will send any changes to its Status field.
-	//
-	// NOTE: No DeepCopy is necessary here because controller-runtime makes a
-	// copy before returning from its cache.
-	// - https://github.com/kubernetes-sigs/controller-runtime/issues/1235
-	crunchybridgecluster := &v1beta1.CrunchyBridgeCluster{}
-	err := r.Reader.Get(ctx, req.NamespacedName, crunchybridgecluster)
+	// Write any changes to the crunchybridgecluster status on the way out.
+	before := crunchybridgecluster.DeepCopy()
+	defer func() {
+		if !equality.Semantic.DeepEqual(before.Status, crunchybridgecluster.Status) {
+			status := r.StatusWriter.Patch(ctx, crunchybridgecluster, client.MergeFrom(before))
 
-	if err == nil {
-		// Write any changes to the crunchybridgecluster status on the way out.
-		before := crunchybridgecluster.DeepCopy()
-		defer func() {
-			if !equality.Semantic.DeepEqual(before.Status, crunchybridgecluster.Status) {
-				status := r.StatusWriter.Patch(ctx, crunchybridgecluster, client.MergeFrom(before))
-
-				if err == nil && status != nil {
-					err = status
-				} else if status != nil {
-					log.Error(status, "Patching CrunchyBridgeCluster status")
-				}
+			if err == nil && status != nil {
+				err = status
+			} else if status != nil {
+				log.Error(status, "Patching CrunchyBridgeCluster status")
 			}
-		}()
-	} else {
-		// NotFound cannot be fixed by requeuing so ignore it. During background
-		// deletion, we receive delete events from crunchybridgecluster's dependents after
-		// crunchybridgecluster is deleted.
-		return ctrl.Result{}, tracing.Escape(span, client.IgnoreNotFound(err))
-	}
+		}
+	}()
 
 	// Get and validate connection secret for requests
 	key, team, err := r.reconcileBridgeConnectionSecret(ctx, crunchybridgecluster)

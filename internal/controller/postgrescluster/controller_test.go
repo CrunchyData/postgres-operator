@@ -166,9 +166,7 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 	reconcile := func(cluster *v1beta1.PostgresCluster) reconcile.Result {
 		ctx := context.Background()
 
-		result, err := test.Reconciler.Reconcile(ctx,
-			reconcile.Request{NamespacedName: client.ObjectKeyFromObject(cluster)},
-		)
+		result, err := test.Reconciler.Reconcile(ctx, cluster)
 		Expect(err).ToNot(HaveOccurred(), func() string {
 			var t interface{ StackTrace() errors.StackTrace }
 			if errors.As(err, &t) {

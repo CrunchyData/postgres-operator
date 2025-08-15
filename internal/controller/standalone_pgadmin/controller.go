@@ -14,10 +14,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -48,7 +50,7 @@ type PGAdminReconciler struct {
 	Recorder record.EventRecorder
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={list,watch}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={get,list,watch}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
 //+kubebuilder:rbac:groups="",resources="persistentvolumeclaims",verbs={list,watch}
 //+kubebuilder:rbac:groups="",resources="secrets",verbs={list,watch}
@@ -56,7 +58,7 @@ type PGAdminReconciler struct {
 //+kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={list,watch}
 
 // ManagedReconciler creates a [PGAdminReconciler] and adds it to m.
-func ManagedReconciler(m ctrl.Manager) error {
+func ManagedReconciler(m manager.Manager) error {
 	exec, err := runtime.NewPodExecutor(m.GetConfig())
 	kubernetes := client.WithFieldOwner(m.GetClient(), naming.ControllerPGAdmin)
 	recorder := m.GetEventRecorderFor(naming.ControllerPGAdmin)
@@ -69,7 +71,7 @@ func ManagedReconciler(m ctrl.Manager) error {
 		Writer:       kubernetes,
 	}
 
-	return errors.Join(err, ctrl.NewControllerManagedBy(m).
+	return errors.Join(err, builder.ControllerManagedBy(m).
 		For(&v1beta1.PGAdmin{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
@@ -78,38 +80,28 @@ func ManagedReconciler(m ctrl.Manager) error {
 		Owns(&corev1.Service{}).
 		Watches(
 			v1beta1.NewPostgresCluster(),
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, cluster client.Object) []ctrl.Request {
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, cluster client.Object) []reconcile.Request {
 				return runtime.Requests(reconciler.findPGAdminsForPostgresCluster(ctx, cluster)...)
 			}),
 		).
 		Watches(
 			&corev1.Secret{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []ctrl.Request {
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []reconcile.Request {
 				return runtime.Requests(reconciler.findPGAdminsForSecret(ctx, client.ObjectKeyFromObject(secret))...)
 			}),
 		).
-		Complete(reconciler))
+		Complete(reconcile.AsReconciler(kubernetes, reconciler)))
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={get}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins/status",verbs={patch}
 
-// Reconcile which aims to move the current state of the pgAdmin closer to the
-// desired state described in a [v1beta1.PGAdmin] identified by request.
-func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+// Reconcile moves the current state of pgAdmin closer to the state described in its specification.
+func (r *PGAdminReconciler) Reconcile(ctx context.Context, pgAdmin *v1beta1.PGAdmin) (reconcile.Result, error) {
 
 	var err error
 	ctx, span := tracing.Start(ctx, "reconcile-pgadmin")
 	log := logging.FromContext(ctx)
 	defer span.End()
-
-	pgAdmin := &v1beta1.PGAdmin{}
-	if err := r.Reader.Get(ctx, req.NamespacedName, pgAdmin); err != nil {
-		// NotFound cannot be fixed by requeuing so ignore it. During background
-		// deletion, we receive delete events from pgadmin's dependents after
-		// pgadmin is deleted.
-		return ctrl.Result{}, tracing.Escape(span, client.IgnoreNotFound(err))
-	}
 
 	// Write any changes to the pgadmin status on the way out.
 	before := pgAdmin.DeepCopy()
@@ -163,7 +155,7 @@ func (r *PGAdminReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		log.V(1).Info("Reconciled pgAdmin")
 	}
 
-	return ctrl.Result{}, tracing.Escape(span, err)
+	return reconcile.Result{}, tracing.Escape(span, err)
 }
 
 // The owner reference created by controllerutil.SetControllerReference blocks

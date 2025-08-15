@@ -29,7 +29,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -1233,9 +1232,7 @@ func TestDeleteInstance(t *testing.T) {
 
 	// Reconcile the entire cluster so that we don't have to create all the
 	// resources needed to reconcile a single instance (cm,secrets,svc, etc.)
-	result, err := reconciler.Reconcile(ctx, reconcile.Request{
-		NamespacedName: client.ObjectKeyFromObject(cluster),
-	})
+	result, err := reconciler.Reconcile(ctx, cluster)
 	assert.NilError(t, err)
 	assert.Assert(t, result.Requeue == false)
 
