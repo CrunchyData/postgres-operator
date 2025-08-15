@@ -69,28 +69,14 @@ type Reconciler struct {
 }
 
 // +kubebuilder:rbac:groups="",resources="events",verbs={create,patch}
-// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list,watch}
 // +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters/status",verbs={patch}
 
-// Reconcile reconciles a ConfigMap in a namespace managed by the PostgreSQL Operator
 func (r *Reconciler) Reconcile(
-	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
+	ctx context.Context, cluster *v1beta1.PostgresCluster) (reconcile.Result, error,
 ) {
 	ctx, span := tracing.Start(ctx, "reconcile-postgrescluster")
 	log := logging.FromContext(ctx)
 	defer span.End()
-
-	// get the postgrescluster from the cache
-	cluster := &v1beta1.PostgresCluster{}
-	if err := r.Reader.Get(ctx, request.NamespacedName, cluster); err != nil {
-		// NotFound cannot be fixed by requeuing so ignore it. During background
-		// deletion, we receive delete events from cluster's dependents after
-		// cluster is deleted.
-		if err = client.IgnoreNotFound(err); err != nil {
-			log.Error(err, "unable to fetch PostgresCluster")
-		}
-		return runtime.ErrorWithBackoff(tracing.Escape(span, err))
-	}
 
 	// Set any defaults that may not have been stored in the API. No DeepCopy
 	// is necessary because controller-runtime makes a copy before returning
@@ -455,6 +441,7 @@ func (r *Reconciler) setOwnerReference(
 // +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="rolebindings",verbs={get,list,watch}
 // +kubebuilder:rbac:groups="batch",resources="cronjobs",verbs={get,list,watch}
 // +kubebuilder:rbac:groups="policy",resources="poddisruptionbudgets",verbs={get,list,watch}
+// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list,watch}
 
 // ManagedReconciler creates a [Reconciler] and adds it to m.
 func ManagedReconciler(m manager.Manager, r registration.Registration) error {
@@ -489,5 +476,5 @@ func ManagedReconciler(m manager.Manager, r registration.Registration) error {
 		Watches(&corev1.Pod{}, reconciler.watchPods()).
 		Watches(&appsv1.StatefulSet{},
 			reconciler.controllerRefHandlerFuncs()). // watch all StatefulSets
-		Complete(reconciler))
+		Complete(reconcile.AsReconciler(kubernetes, reconciler)))
 }

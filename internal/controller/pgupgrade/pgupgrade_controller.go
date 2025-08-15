@@ -17,6 +17,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -49,9 +50,9 @@ type PGUpgradeReconciler struct {
 	}
 }
 
-//+kubebuilder:rbac:groups="batch",resources="jobs",verbs={list,watch}
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades",verbs={list,watch}
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={list,watch}
+//+kubebuilder:rbac:groups="batch",resources="jobs",verbs={get,list,watch}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades",verbs={get,list,watch}
+//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list,watch}
 
 // ManagedReconciler creates a [PGUpgradeReconciler] and adds it to m.
 func ManagedReconciler(m ctrl.Manager, r registration.Registration) error {
@@ -71,11 +72,11 @@ func ManagedReconciler(m ctrl.Manager, r registration.Registration) error {
 		Owns(&batchv1.Job{}).
 		Watches(
 			v1beta1.NewPostgresCluster(),
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, cluster client.Object) []ctrl.Request {
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, cluster client.Object) []reconcile.Request {
 				return runtime.Requests(reconciler.findUpgradesForPostgresCluster(ctx, client.ObjectKeyFromObject(cluster))...)
 			}),
 		).
-		Complete(reconciler)
+		Complete(reconcile.AsReconciler(kubernetes, reconciler))
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades",verbs={list}
@@ -103,7 +104,6 @@ func (r *PGUpgradeReconciler) findUpgradesForPostgresCluster(
 	return matching
 }
 
-//+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades",verbs={get}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgupgrades/status",verbs={patch}
 //+kubebuilder:rbac:groups="batch",resources="jobs",verbs={delete}
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get}
@@ -114,42 +114,26 @@ func (r *PGUpgradeReconciler) findUpgradesForPostgresCluster(
 //+kubebuilder:rbac:groups="",resources="endpoints",verbs={delete}
 
 // Reconcile does the work to move the current state of the world toward the
-// desired state described in a [v1beta1.PGUpgrade] identified by req.
-func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+// desired state described in upgrade.
+func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, upgrade *v1beta1.PGUpgrade) (result ctrl.Result, err error) {
 	ctx, span := tracing.Start(ctx, "reconcile-pgupgrade")
 	log := logging.FromContext(ctx)
 	defer span.End()
 	defer func(s tracing.Span) { _ = tracing.Escape(s, err) }(span)
 
-	// Retrieve the upgrade from the client cache, if it exists. A deferred
-	// function below will send any changes to its Status field.
-	//
-	// NOTE: No DeepCopy is necessary here because controller-runtime makes a
-	// copy before returning from its cache.
-	// - https://github.com/kubernetes-sigs/controller-runtime/issues/1235
-	upgrade := &v1beta1.PGUpgrade{}
-	err = r.Reader.Get(ctx, req.NamespacedName, upgrade)
+	// Write any changes to the upgrade status on the way out.
+	before := upgrade.DeepCopy()
+	defer func() {
+		if !equality.Semantic.DeepEqual(before.Status, upgrade.Status) {
+			status := r.StatusWriter.Patch(ctx, upgrade, client.MergeFrom(before))
 
-	if err == nil {
-		// Write any changes to the upgrade status on the way out.
-		before := upgrade.DeepCopy()
-		defer func() {
-			if !equality.Semantic.DeepEqual(before.Status, upgrade.Status) {
-				status := r.StatusWriter.Patch(ctx, upgrade, client.MergeFrom(before))
-
-				if err == nil && status != nil {
-					err = status
-				} else if status != nil {
-					log.Error(status, "Patching PGUpgrade status")
-				}
+			if err == nil && status != nil {
+				err = status
+			} else if status != nil {
+				log.Error(status, "Patching PGUpgrade status")
 			}
-		}()
-	} else {
-		// NotFound cannot be fixed by requeuing so ignore it. During background
-		// deletion, we receive delete events from upgrade's dependents after
-		// upgrade is deleted.
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
+		}
+	}()
 
 	// Validate the remainder of the upgrade specification. These can likely
 	// move to CEL rules or a webhook when supported.

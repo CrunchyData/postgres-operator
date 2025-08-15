@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -100,9 +99,7 @@ func TestCustomLabels(t *testing.T) {
 		})
 
 		// Reconcile the cluster
-		result, err := reconciler.Reconcile(ctx, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(cluster),
-		})
+		result, err := reconciler.Reconcile(ctx, cluster)
 		assert.NilError(t, err)
 		assert.Assert(t, result.Requeue == false)
 	}
@@ -339,9 +336,7 @@ func TestCustomAnnotations(t *testing.T) {
 		})
 
 		// Reconcile the cluster
-		result, err := reconciler.Reconcile(ctx, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(cluster),
-		})
+		result, err := reconciler.Reconcile(ctx, cluster)
 		assert.NilError(t, err)
 		assert.Assert(t, result.Requeue == false)
 	}
