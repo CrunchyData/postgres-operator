@@ -671,9 +671,9 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 	// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
 	repo.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
-	// pgBackRest does not make any Kubernetes API calls. Use the default
-	// ServiceAccount and do not mount its credentials.
-	repo.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
+	// pgBackRest does not make any Kubernetes API calls but the script that
+	// manages the auto-grow annotation does, so we need to mount the SA token.
+	repo.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(true)
 
 	// Do not add environment variables describing services in this namespace.
 	repo.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
@@ -687,7 +687,7 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 	// add the init container to make the pgBackRest repo volume log directory
 	pgBackRestLogPath := pgbackrest.MakePGBackrestLogDir(&repo.Spec.Template, postgresCluster)
 
-	containersToAdd := []string{naming.PGBackRestRepoContainerName}
+	containersToAdd := []string{naming.PGBackRestRepoContainerName, naming.ContainerPGBackRestConfig}
 
 	// If OpenTelemetryLogs is enabled, we want to add the collector to the pod
 	// and also add the RepoVolumes to the container.
@@ -2252,7 +2252,19 @@ func (r *Reconciler) reconcileRepoHostRBAC(ctx context.Context,
 	sa := &corev1.ServiceAccount{ObjectMeta: naming.RepoHostRBAC(postgresCluster)}
 	sa.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ServiceAccount"))
 
+	role := &rbacv1.Role{ObjectMeta: naming.RepoHostRBAC(postgresCluster)}
+	role.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("Role"))
+
+	binding := &rbacv1.RoleBinding{ObjectMeta: naming.RepoHostRBAC(postgresCluster)}
+	binding.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("RoleBinding"))
+
 	if err := r.setControllerReference(postgresCluster, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.setControllerReference(postgresCluster, binding); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.setControllerReference(postgresCluster, role); err != nil {
 		return nil, errors.WithStack(err)
 	}
 
@@ -2261,8 +2273,35 @@ func (r *Reconciler) reconcileRepoHostRBAC(ctx context.Context,
 	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
+	binding.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	binding.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+	role.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	role.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+
+	binding.RoleRef = rbacv1.RoleRef{
+		APIGroup: rbacv1.SchemeGroupVersion.Group,
+		Kind:     role.Kind,
+		Name:     role.Name,
+	}
+	binding.Subjects = []rbacv1.Subject{{
+		Kind: sa.Kind,
+		Name: sa.Name,
+	}}
+	role.Rules = pgbackrest.RepoHostPermissions(postgresCluster)
 
 	if err := r.apply(ctx, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.apply(ctx, role); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.apply(ctx, binding); err != nil {
 		return nil, errors.WithStack(err)
 	}
 
@@ -2735,6 +2774,11 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	errMsg := "reconciling repository volume"
 	repoVols := []*corev1.PersistentVolumeClaim{}
 	var replicaCreateRepo v1beta1.PGBackRestRepo
+
+	// get the autogrow annotations so that the correct volume size values can be
+	// used and the cluster status can be updated
+	errors = append(errors, r.getRepoHostVolumeRequests(ctx, postgresCluster))
+
 	for i, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		// the repo at index 0 is the replica creation repo
 		if i == 0 {
@@ -2744,8 +2788,16 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 		if repo.Volume == nil {
 			continue
 		}
-		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster,
-			repo.Volume.VolumeClaimSpec.AsPersistentVolumeClaimSpec(),
+
+		// set the correct volume size on the PVC spec before applying
+		spec := repo.Volume.VolumeClaimSpec.AsPersistentVolumeClaimSpec()
+		r.setVolumeSize(ctx, postgresCluster, &spec, repo.Name, "repo-host")
+
+		// Clear any set limit before applying PVC. This is needed to allow the limit
+		// value to change later.
+		spec.Resources.Limits = nil
+
+		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, spec,
 			repo.Name, repoResources)
 		if err != nil {
 			log.Error(err, errMsg)
@@ -2758,10 +2810,43 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	}
 
 	postgresCluster.Status.PGBackRest.Repos =
-		getRepoVolumeStatus(postgresCluster.Status.PGBackRest.Repos, repoVols, extConfigHashes,
-			replicaCreateRepo.Name)
+		getRepoVolumeStatus(postgresCluster.Status.PGBackRest.Repos, repoVols,
+			extConfigHashes, replicaCreateRepo.Name)
 
 	return replicaCreateRepo, utilerrors.NewAggregate(errors)
+}
+
+// +kubebuilder:rbac:groups="",resources="pods",verbs={list}
+
+// getRepoHostVolumeRequests gets the pgBackRest repo host volume request annotations
+// from the repo host Pod and stores them in the Postgres Cluster object's status.
+// If there is no repo host or there are no annotations, this function returns
+// without updating the status.
+func (r *Reconciler) getRepoHostVolumeRequests(ctx context.Context,
+	cluster *v1beta1.PostgresCluster) error {
+
+	pods := &corev1.PodList{}
+	err := errors.WithStack(
+		r.Client.List(ctx, pods,
+			client.InNamespace(cluster.Namespace),
+			client.MatchingLabelsSelector{
+				Selector: naming.PGBackRestDedicatedLabels(cluster.Name).AsSelector()},
+		))
+
+	if len(pods.Items) > 0 {
+		// there should only ever be one repo host Pod
+		repoHost := pods.Items[0]
+
+		if cluster.Status.PGBackRest != nil {
+			for i := range cluster.Status.PGBackRest.Repos {
+				if repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"] != "" {
+					cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume =
+						repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"]
+				}
+			}
+		}
+	}
+	return err
 }
 
 // +kubebuilder:rbac:groups="",resources="pods",verbs={get,list}

@@ -61,16 +61,30 @@ func (*Reconciler) watchPods() handler.Funcs {
 				return
 			}
 
+			// auto-grow volume resize annotations
+			volumeAnnotations := []string{
+				"suggested-pgdata-pvc-size",
+				"suggested-repo1-pvc-size",
+				"suggested-repo2-pvc-size",
+				"suggested-repo3-pvc-size",
+				"suggested-repo4-pvc-size",
+			}
+
 			oldAnnotations := e.ObjectOld.GetAnnotations()
 			newAnnotations := e.ObjectNew.GetAnnotations()
-			// If the suggested-pgdata-pvc-size annotation is added or changes, reconcile.
-			if len(cluster) != 0 && oldAnnotations["suggested-pgdata-pvc-size"] != newAnnotations["suggested-pgdata-pvc-size"] {
-				q.Add(reconcile.Request{NamespacedName: client.ObjectKey{
-					Namespace: e.ObjectNew.GetNamespace(),
-					Name:      cluster,
-				}})
-				return
+
+			// cycle through each annotation and check for changes
+			for _, annotation := range volumeAnnotations {
+				// If the suggested-pgdata-pvc-size annotation is added or changes, reconcile.
+				if len(cluster) != 0 && oldAnnotations[annotation] != newAnnotations[annotation] {
+					q.Add(reconcile.Request{NamespacedName: client.ObjectKey{
+						Namespace: e.ObjectNew.GetNamespace(),
+						Name:      cluster,
+					}})
+					return
+				}
 			}
+
 		},
 	}
 }

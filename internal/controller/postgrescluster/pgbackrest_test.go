@@ -317,7 +317,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 			// set to true (as done in instance StatefulSet tests).
 			assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 affinity: {}
-automountServiceAccountToken: false
+automountServiceAccountToken: true
 containers: null
 dnsPolicy: ClusterFirst
 enableServiceLinks: false
@@ -3132,7 +3132,7 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 	t.Run("ServiceAccount", func(t *testing.T) {
 		assert.Equal(t, sts.Spec.Template.Spec.ServiceAccountName, "")
 		if assert.Check(t, sts.Spec.Template.Spec.AutomountServiceAccountToken != nil) {
-			assert.Equal(t, *sts.Spec.Template.Spec.AutomountServiceAccountToken, false)
+			assert.Equal(t, *sts.Spec.Template.Spec.AutomountServiceAccountToken, true)
 		}
 	})
 
@@ -4388,4 +4388,109 @@ func TestBackupsEnabled(t *testing.T) {
 		assert.Assert(t, !backupsSpecFound)
 		assert.Assert(t, backupsReconciliationAllowed)
 	})
+}
+
+func TestGetRepoHostVolumeRequests(t *testing.T) {
+
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
+
+	reconciler := &Reconciler{
+		Client: tClient,
+		Owner:  client.FieldOwner(t.Name()),
+	}
+
+	testCases := []struct {
+		tcName         string
+		repoHostExists bool
+		annotations    map[string]string
+		results        map[string]string
+	}{{
+		tcName:         "no repo host",
+		repoHostExists: false,
+	}, {
+		tcName:         "one repo volume",
+		repoHostExists: true,
+		annotations: map[string]string{
+			"suggested-repo1-pvc-size": "2Gi"},
+		results: map[string]string{
+			"repo1": "2Gi"},
+	}, {
+		tcName:         "multiple repo volumes",
+		repoHostExists: true,
+		annotations: map[string]string{
+			"suggested-repo2-pvc-size": "2Gi",
+			"suggested-repo3-pvc-size": "3Gi",
+			"suggested-repo4-pvc-size": "4Gi"},
+		results: map[string]string{
+			"repo2": "2Gi",
+			"repo3": "3Gi",
+			"repo4": "4Gi"},
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.tcName, func(t *testing.T) {
+
+			namespace := setupNamespace(t, tClient).Name
+
+			if tc.repoHostExists {
+				repoHost := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "orange-repo-host-0",
+						Namespace: namespace,
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/cluster":              "orange",
+							"postgres-operator.crunchydata.com/data":                 "pgbackrest",
+							"postgres-operator.crunchydata.com/pgbackrest":           "",
+							"postgres-operator.crunchydata.com/pgbackrest-dedicated": "",
+						},
+						Annotations: tc.annotations,
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Name:  "test-container",
+							Image: "some-image",
+						}},
+					},
+				}
+
+				assert.NilError(t, tClient.Create(ctx, repoHost))
+				t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, repoHost)) })
+			}
+
+			cluster := &v1beta1.PostgresCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "orange",
+					Namespace: namespace,
+				},
+				Status: v1beta1.PostgresClusterStatus{
+					PGBackRest: &v1beta1.PGBackRestStatus{
+						Repos: []v1beta1.RepoStatus{{
+							Name: "repo1",
+						}, {
+							Name: "repo2",
+						}, {
+							Name: "repo3",
+						}, {
+							Name: "repo4",
+						}},
+					},
+				},
+			}
+
+			err := reconciler.getRepoHostVolumeRequests(ctx, cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, cluster.Status.PGBackRest != nil)
+
+			var i int
+			for _, repo := range cluster.Status.PGBackRest.Repos {
+				assert.Assert(t, tc.results[repo.Name] == repo.DesiredRepoVolume)
+				if tc.results[repo.Name] == repo.DesiredRepoVolume && repo.DesiredRepoVolume != "" {
+					i++
+				}
+			}
+			assert.Assert(t, len(tc.annotations) == i)
+		})
+	}
 }

@@ -427,6 +427,10 @@ type RepoStatus struct {
 	// commands accordingly.
 	// +optional
 	RepoOptionsHash string `json:"repoOptionsHash,omitempty"`
+
+	// Desired Size of the repo volume
+	// +optional
+	DesiredRepoVolume string `json:"desiredRepoVolume,omitempty"`
 }
 
 // PGBackRestDataSource defines a pgBackRest configuration specifically for restoring from cloud-based data source

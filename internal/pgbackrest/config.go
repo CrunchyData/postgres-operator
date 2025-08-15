@@ -622,6 +622,32 @@ func reloadCommand(name string) []string {
 	// mtimes.
 	// - https://unix.stackexchange.com/a/407383
 	const script = `
+# Parameters for curl when managing autogrow annotation.
+APISERVER="https://kubernetes.default.svc"
+SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
+NAMESPACE=$(cat ${SERVICEACCOUNT}/namespace)
+TOKEN=$(cat ${SERVICEACCOUNT}/token)
+CACERT=${SERVICEACCOUNT}/ca.crt
+
+# Manage autogrow annotation.
+# Return size in Mebibytes.
+manageAutogrowAnnotation() {
+  local volume=$1
+
+  size=$(df --human-readable --block-size=M /pgbackrest/"${volume}" | awk 'FNR == 2 {print $2}')
+  use=$(df --human-readable /pgbackrest/"${volume}" | awk 'FNR == 2 {print $5}')
+  sizeInt="${size//M/}"
+  # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+  useInt=$(echo $use | sed 's/[[:punct:]]//g')
+  triggerExpansion="$((useInt > 75))"
+  if [ $triggerExpansion -eq 1 ]; then
+    newSize="$(((sizeInt / 2)+sizeInt))"
+    newSizeMi="${newSize}Mi"
+    d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"$newSizeMi"'"}]'
+    curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
+  fi
+}
+
 exec {fd}<> <(:||:)
 until read -r -t 5 -u "${fd}"; do
   if
@@ -639,6 +665,27 @@ until read -r -t 5 -u "${fd}"; do
     exec {fd}>&- && exec {fd}<> <(:||:)
     stat --format='Loaded certificates dated %y' "${directory}"
   fi
+
+  # manage autogrow annotation for the repo1 volume, if it exists
+  if [ -d /pgbackrest/repo1 ]; then
+    manageAutogrowAnnotation "repo1"
+  fi
+
+  # manage autogrow annotation for the repo2 volume, if it exists
+  if [ -d /pgbackrest/repo2 ]; then
+    manageAutogrowAnnotation "repo2"
+  fi
+
+  # manage autogrow annotation for the repo3 volume, if it exists
+  if [ -d /pgbackrest/repo3 ]; then
+    manageAutogrowAnnotation "repo3"
+  fi
+
+  # manage autogrow annotation for the repo4 volume, if it exists
+  if [ -d /pgbackrest/repo4 ]; then
+    manageAutogrowAnnotation "repo4"
+  fi
+
 done
 `
 

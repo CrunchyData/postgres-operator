@@ -6,7 +6,9 @@ package postgrescluster
 
 import (
 	"context"
+	"strings"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -77,34 +79,44 @@ func limitIsSet(cluster *v1beta1.PostgresCluster, volumeType, instanceSetName st
 
 	var limitSet bool
 
-	switch volumeType {
+	switch {
 
 	// Cycle through the instance sets to ensure the correct limit is identified.
-	case "pgData":
+	case volumeType == "pgData":
 		for _, specInstance := range cluster.Spec.InstanceSets {
 			if specInstance.Name == instanceSetName {
 				limitSet = !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
 			}
 		}
+
+	// VolumeType for the repository host volumes should be in the form 'repoN'
+	// where N is 1-4. As above, cycle through any defined repositories and ensure
+	// the correct limit is identified.
+	case strings.HasPrefix(volumeType, "repo"):
+		for _, specRepo := range cluster.Spec.Backups.PGBackRest.Repos {
+			if specRepo.Name == volumeType && specRepo.Volume != nil {
+				limitSet = !specRepo.Volume.VolumeClaimSpec.Resources.Limits.Storage().IsZero()
+			}
+		}
 	}
-	// TODO: Add cases for pgWAL and repo volumes
+	// TODO: Add case for pgWAL
 
 	return limitSet
 
 }
 
-// setVolumeSize compares the potential sizes from the instance spec, status
-// and limit and sets the appropriate current value.
+// setVolumeSize compares the potential sizes from the cluster status, volume request
+// and volume limit and sets the appropriate current value.
 func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.PostgresCluster,
-	pvc *corev1.PersistentVolumeClaim, volumeType, instanceSpecName string) {
+	spec *corev1.PersistentVolumeClaimSpec, volumeType, host string) {
 
 	log := logging.FromContext(ctx)
 
 	// Store the limit for this instance set. This value will not change below.
-	volumeLimitFromSpec := pvc.Spec.Resources.Limits.Storage()
+	volumeLimitFromSpec := spec.Resources.Limits.Storage()
 
 	// This value will capture our desired update.
-	volumeRequestSize := pvc.Spec.Resources.Requests.Storage()
+	volumeRequestSize := spec.Resources.Requests.Storage()
 
 	// A limit of 0 is ignorned, so the volume request is used.
 	if volumeLimitFromSpec.IsZero() {
@@ -116,9 +128,9 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 	if volumeRequestSize.Value() > volumeLimitFromSpec.Value() {
 		r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "VolumeRequestOverLimit",
 			"%s volume request (%v) for %s/%s is greater than set limit (%v). Limit value will be used.",
-			volumeType, volumeRequestSize, cluster.Name, instanceSpecName, volumeLimitFromSpec)
+			volumeType, volumeRequestSize, cluster.Name, host, volumeLimitFromSpec)
 
-		pvc.Spec.Resources.Requests = corev1.ResourceList{
+		spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceStorage: *resource.NewQuantity(volumeLimitFromSpec.Value(), resource.BinarySI),
 		}
 		// Otherwise, if the feature gate is not enabled, do not autogrow.
@@ -126,9 +138,9 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 
 		// determine the appropriate volume request based on what's set in the status
 		if dpv, err := getDesiredVolumeSize(
-			cluster, volumeType, instanceSpecName, volumeRequestSize,
+			cluster, volumeType, host, volumeRequestSize,
 		); err != nil {
-			log.Error(err, "For "+cluster.Name+"/"+instanceSpecName+
+			log.Error(err, "For "+cluster.Name+"/"+host+
 				": Unable to parse "+volumeType+" volume request: "+dpv)
 		}
 
@@ -140,19 +152,19 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 
 			r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeLimitReached",
 				"%s volume(s) for %s/%s are at size limit (%v).", volumeType,
-				cluster.Name, instanceSpecName, volumeLimitFromSpec)
+				cluster.Name, host, volumeLimitFromSpec)
 
 			// If the volume size request is greater than the limit, issue an
 			// additional event warning.
 			if volumeRequestSize.Value() > volumeLimitFromSpec.Value() {
 				r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "DesiredVolumeAboveLimit",
 					"The desired size (%v) for the %s/%s %s volume(s) is greater than the size limit (%v).",
-					volumeRequestSize, cluster.Name, instanceSpecName, volumeType, volumeLimitFromSpec)
+					volumeRequestSize, cluster.Name, host, volumeType, volumeLimitFromSpec)
 			}
 
 			volumeRequestSize = volumeLimitFromSpec
 		}
-		pvc.Spec.Resources.Requests = corev1.ResourceList{
+		spec.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceStorage: *resource.NewQuantity(volumeRequestSize.Value(), resource.BinarySI),
 		}
 	}
@@ -164,8 +176,8 @@ func getDesiredVolumeSize(cluster *v1beta1.PostgresCluster,
 	volumeType, instanceSpecName string,
 	volumeRequestSize *resource.Quantity) (string, error) {
 
-	switch volumeType {
-	case "pgData":
+	switch {
+	case volumeType == "pgData":
 		for i := range cluster.Status.InstanceSets {
 			if instanceSpecName == cluster.Status.InstanceSets[i].Name {
 				for _, dpv := range cluster.Status.InstanceSets[i].DesiredPGDataVolume {
@@ -182,7 +194,30 @@ func getDesiredVolumeSize(cluster *v1beta1.PostgresCluster,
 				}
 			}
 		}
-		// TODO: Add cases for pgWAL and repo volumes (requires relevant status sections)
+
+	// VolumeType for the repository host volumes should be in the form 'repoN'
+	// where N is 1-4. As above, cycle through any defined repositories and ensure
+	// the correct limit is identified.
+	case strings.HasPrefix(volumeType, "repo"):
+		if cluster.Status.PGBackRest == nil {
+			return "", errors.New("PostgresCluster.Status.PGBackRest is nil")
+		}
+		for i := range cluster.Status.PGBackRest.Repos {
+			if volumeType == cluster.Status.PGBackRest.Repos[i].Name {
+				dpv := cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume
+				if dpv != "" {
+					desiredRequest, err := resource.ParseQuantity(dpv)
+					if err == nil {
+						if desiredRequest.Value() > volumeRequestSize.Value() {
+							*volumeRequestSize = desiredRequest
+						}
+					} else {
+						return dpv, err
+					}
+				}
+			}
+		}
 	}
+	// TODO: Add case for pgWAL
 	return "", nil
 }
