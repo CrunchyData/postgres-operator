@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -129,6 +130,7 @@ func (*Reconciler) generatePostgresParameters(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, backupsSpecFound bool,
 ) *postgres.ParameterSet {
 	builtin := postgres.NewParameters()
+	collector.PostgreSQLParameters(ctx, cluster, &builtin)
 	pgaudit.PostgreSQLParameters(&builtin)
 	pgbackrest.PostgreSQLParameters(cluster, &builtin, backupsSpecFound)
 	pgmonitor.PostgreSQLParameters(ctx, cluster, &builtin)

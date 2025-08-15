@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"path"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -121,13 +122,13 @@ func ConfigDirectory(cluster *v1beta1.PostgresCluster) string {
 // DataDirectory returns the absolute path to the "data_directory" of cluster.
 // - https://www.postgresql.org/docs/current/runtime-config-file-locations.html
 func DataDirectory(cluster *v1beta1.PostgresCluster) string {
-	return fmt.Sprintf("%s/pg%d", dataMountPath, cluster.Spec.PostgresVersion)
+	return fmt.Sprintf("%s/pg%d", DataStorage(cluster), cluster.Spec.PostgresVersion)
 }
 
-// LogDirectory returns the absolute path to the "log_directory" of cluster.
-// - https://www.postgresql.org/docs/current/runtime-config-logging.html
-func LogDirectory() string {
-	return fmt.Sprintf("%s/logs/postgres", dataMountPath)
+// DataStorage returns the absolute path to the disk where cluster stores its data.
+// Use [DataDirectory] for the exact directory that Postgres uses.
+func DataStorage(cluster *v1beta1.PostgresCluster) string {
+	return dataMountPath
 }
 
 // LogRotation returns parameters that rotate log files while keeping a minimum amount.
@@ -354,12 +355,16 @@ done
 // PostgreSQL.
 func startupCommand(
 	ctx context.Context,
-	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
+	cluster *v1beta1.PostgresCluster,
+	instance *v1beta1.PostgresInstanceSetSpec,
+	parameters *ParameterSet,
 ) []string {
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
+	dataDir := DataDirectory(cluster)
+	logDir := parameters.Value("log_directory")
 	walDir := WALDirectory(cluster, instance)
 
-	mkdirs := make([]string, 0, 7+len(instance.TablespaceVolumes))
+	mkdirs := make([]string, 0, 9+len(instance.TablespaceVolumes))
 	mkdirs = append(mkdirs, `dataDirectory "${postgres_data_directory}" || halt "$(permissions "${postgres_data_directory}" ||:)"`)
 
 	// If the user requests tablespaces, we want to make sure the directories exist with the correct owner and permissions.
@@ -372,11 +377,24 @@ func startupCommand(
 		}
 	}
 
+	// Postgres creates "log_directory" but does *not* create any of its parent directories.
+	// Postgres omits the group-write S_IWGRP permission on the directory. Do both here while being
+	// careful to *not* touch "data_directory" contents until after `initdb` or Patroni bootstrap.
+	if path.IsAbs(logDir) && !strings.HasPrefix(logDir, dataDir) {
+		mkdirs = append(mkdirs,
+			`(`+shell.MakeDirectories(dataMountPath, logDir)+`) ||`,
+			`halt "$(permissions `+shell.QuoteWord(logDir)+` ||:)"`,
+		)
+	} else {
+		mkdirs = append(mkdirs,
+			`[[ ! -f `+shell.QuoteWord(path.Join(dataDir, "PG_VERSION"))+` ]] ||`,
+			`(`+shell.MakeDirectories(dataDir, logDir)+`) ||`,
+			`halt "$(permissions `+shell.QuoteWord(path.Join(dataDir, logDir))+` ||:)"`,
+		)
+	}
+
 	// These directories are outside "data_directory" and can be created.
 	mkdirs = append(mkdirs,
-		`(`+shell.MakeDirectories(dataMountPath, LogDirectory())+`) ||`,
-		`halt "$(permissions `+shell.QuoteWord(LogDirectory())+` ||:)"`,
-
 		`(`+shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath)+`) ||`,
 		`halt "$(permissions `+shell.QuoteWord(naming.PatroniPGDataLogPath)+` ||:)"`,
 

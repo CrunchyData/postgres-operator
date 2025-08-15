@@ -62,6 +62,7 @@ func InstancePod(ctx context.Context,
 	inClusterCertificates, inClientCertificates *corev1.SecretProjection,
 	inDataVolume, inWALVolume *corev1.PersistentVolumeClaim,
 	inTablespaceVolumes []*corev1.PersistentVolumeClaim,
+	inParameters *ParameterSet,
 	outInstancePod *corev1.PodTemplateSpec,
 ) {
 	certVolumeMount := corev1.VolumeMount{
@@ -191,7 +192,7 @@ func InstancePod(ctx context.Context,
 	startup := corev1.Container{
 		Name: naming.ContainerPostgresStartup,
 
-		Command: startupCommand(ctx, inCluster, inInstanceSpec),
+		Command: startupCommand(ctx, inCluster, inInstanceSpec, inParameters),
 		Env:     Environment(inCluster),
 
 		Image:           container.Image,
