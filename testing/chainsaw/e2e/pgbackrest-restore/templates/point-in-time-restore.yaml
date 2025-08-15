@@ -62,9 +62,16 @@ spec:
                 finished: true
 
   catch:
-    -
-      description: >
-        Read all log lines from the restore job pods
+    - description: Read all log lines from job pods
       podLogs:
-        selector: postgres-operator.crunchydata.com/pgbackrest-restore
+        selector: >
+          batch.kubernetes.io/job-name,
+          postgres-operator.crunchydata.com/cluster in (original)
+        tail: -1
+
+    - description: Read all log lines from postgres pods
+      podLogs:
+        selector: >
+          postgres-operator.crunchydata.com/instance,
+          postgres-operator.crunchydata.com/cluster in (original)
         tail: -1

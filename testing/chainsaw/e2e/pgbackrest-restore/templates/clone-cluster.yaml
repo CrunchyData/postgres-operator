@@ -49,3 +49,18 @@ spec:
                 replicas: 1
                 readyReplicas: 1
                 updatedReplicas: 1
+
+  catch:
+    - description: Read all log lines from job pods
+      podLogs:
+        selector: >
+          batch.kubernetes.io/job-name,
+          postgres-operator.crunchydata.com/cluster in (clone-one)
+        tail: -1
+
+    - description: Read all log lines from postgres pods
+      podLogs:
+        selector: >
+          postgres-operator.crunchydata.com/instance,
+          postgres-operator.crunchydata.com/cluster in (clone-one)
+        tail: -1
