@@ -26,7 +26,12 @@ type PGBouncerConfiguration struct {
 
 	// Settings that apply to the entire PgBouncer process.
 	// More info: https://www.pgbouncer.org/config.html
+	//
+	// # Logging
+	// +kubebuilder:validation:XValidation:rule=`!has(self.logfile) || self.logfile.endsWith('.log')`,message=`logfile config must end with '.log'`
+	//
 	// +optional
+	// +mapType=granular
 	Global map[string]string `json:"global,omitempty"`
 
 	// PgBouncer database definitions. The key is the database requested by a

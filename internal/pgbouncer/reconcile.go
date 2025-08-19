@@ -37,7 +37,8 @@ func ConfigMap(
 	initialize.Map(&outConfigMap.Data)
 
 	outConfigMap.Data[emptyConfigMapKey] = ""
-	outConfigMap.Data[iniFileConfigMapKey] = clusterINI(ctx, inCluster)
+	clusterINI := clusterINI(ctx, inCluster)
+	outConfigMap.Data[iniFileConfigMapKey] = clusterINI
 }
 
 // Secret populates the PgBouncer Secret.

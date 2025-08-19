@@ -11,6 +11,7 @@ import (
 	"gotest.tools/v3/assert"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -28,7 +29,7 @@ func TestEnablePgBouncerLogging(t *testing.T) {
 		require.UnmarshalInto(t, &cluster.Spec, `{
 			instrumentation: {}
 		}`)
-		EnablePgBouncerLogging(ctx, cluster, config)
+		EnablePgBouncerLogging(ctx, cluster, config, naming.PGBouncerFullLogPath)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)
@@ -127,7 +128,7 @@ service:
 		cluster := new(v1beta1.PostgresCluster)
 		cluster.Spec.Instrumentation = testInstrumentationSpec()
 
-		EnablePgBouncerLogging(ctx, cluster, config)
+		EnablePgBouncerLogging(ctx, cluster, config, naming.PGBouncerFullLogPath)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)

@@ -14375,7 +14375,13 @@ spec:
                             description: |-
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
+
+                              # Logging
                             type: object
+                            x-kubernetes-map-type: granular
+                            x-kubernetes-validations:
+                            - message: logfile config must end with '.log'
+                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
                           users:
                             additionalProperties:
                               type: string
@@ -33303,7 +33309,13 @@ spec:
                             description: |-
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
+
+                              # Logging
                             type: object
+                            x-kubernetes-map-type: granular
+                            x-kubernetes-validations:
+                            - message: logfile config must end with '.log'
+                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
                           users:
                             additionalProperties:
                               type: string

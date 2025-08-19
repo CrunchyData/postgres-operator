@@ -127,9 +127,13 @@ func clusterINI(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
 		"unix_socket_dir": "",
 	}
 
+	// Override the above with any specified settings.
+	maps.Copy(global, cluster.Spec.Proxy.PGBouncer.Config.Global)
+
 	// If OpenTelemetryLogs feature is enabled, enable logging to file
-	if collector.OpenTelemetryLogsEnabled(ctx, cluster) {
-		global["logfile"] = naming.PGBouncerLogPath + "/pgbouncer.log"
+	// if not otherwise set
+	if _, ok := global["logfile"]; !ok && collector.OpenTelemetryLogsEnabled(ctx, cluster) {
+		global["logfile"] = naming.PGBouncerFullLogPath
 	}
 
 	// When OTel metrics are enabled, allow pgBouncer's postgres user
@@ -137,9 +141,6 @@ func clusterINI(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
 	if collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
 		global["stats_users"] = PostgresqlUser
 	}
-
-	// Override the above with any specified settings.
-	maps.Copy(global, cluster.Spec.Proxy.PGBouncer.Config.Global)
 
 	// Prevent the user from bypassing the main configuration file.
 	global["conffile"] = iniFileAbsolutePath
