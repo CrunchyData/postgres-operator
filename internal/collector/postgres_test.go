@@ -33,9 +33,7 @@ func TestEnablePostgresLogging(t *testing.T) {
 		config := NewConfig(nil)
 		params := postgres.NewParameters()
 
-		// NOTE: This call is necessary only because the default "log_directory" is not absolute.
-		PostgreSQLParameters(ctx, cluster, &params)
-		EnablePostgresLogging(ctx, cluster, params.Mandatory, config)
+		EnablePostgresLogging(ctx, cluster, params.Default, config)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)
@@ -297,9 +295,7 @@ service:
 		config := NewConfig(cluster.Spec.Instrumentation)
 		params := postgres.NewParameters()
 
-		// NOTE: This call is necessary only because the default "log_directory" is not absolute.
-		PostgreSQLParameters(ctx, cluster, &params)
-		EnablePostgresLogging(ctx, cluster, params.Mandatory, config)
+		EnablePostgresLogging(ctx, cluster, params.Default, config)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)

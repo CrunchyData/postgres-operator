@@ -1194,6 +1194,10 @@ func (r *Reconciler) reconcileInstance(
 		// set includeLogrotate to true, but only if backups are enabled
 		// and local volumes are available.
 		includeLogrotate := backupsSpecFound && pgbackrest.RepoHostVolumeDefined(cluster)
+
+		// The log directories here do not include Postgres "log_directory" because it might be a subdirectory of "data_directory".
+		// In that case, the "log_directory" must be created *after* initdb runs, not during container startup here.
+		// TODO(sidecar): Create these directories sometime other than startup.
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template,
 			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword,
 			[]string{naming.PGBackRestPGDataLogPath}, includeLogrotate, true)
