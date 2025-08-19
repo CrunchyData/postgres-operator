@@ -152,14 +152,19 @@ func kubernetes3(t TestingT) (*envtest.Environment, client.Client) {
 		base := Value(filepath.Rel(filepath.Dir(caller), root))
 
 		// Calculate the snapshotter module directory path relative to the project directory.
+		// Ignore any "vendor" directory by explicitly passing "-mod=readonly" https://go.dev/ref/mod#build-commands
 		var snapshotter string
 		if pkgs, err := packages.Load(
-			&packages.Config{Mode: packages.NeedModule},
+			&packages.Config{BuildFlags: []string{"-mod=readonly"}, Mode: packages.NeedModule},
 			"github.com/kubernetes-csi/external-snapshotter/client/v8/apis/volumesnapshot/v1",
 		); assert.Check(t,
-			err == nil && len(pkgs) > 0 && pkgs[0].Module != nil, "got %v\n%#v", err, pkgs,
+			err == nil && len(pkgs) > 0 && pkgs[0].Module != nil, "unable to load package: %v\n%#v", err, pkgs,
 		) {
-			snapshotter = Value(filepath.Rel(root, pkgs[0].Module.Dir))
+			mod := pkgs[0].Module
+			assert.Assert(t, mod.Dir != "" && mod.Error == nil, "expected module in cache\n%#v", mod)
+
+			snapshotter, err = filepath.Rel(root, mod.Dir)
+			assert.NilError(t, err, "module directory: %q", mod.Dir)
 		}
 
 		env := EnvTest(t, envtest.CRDInstallOptions{
