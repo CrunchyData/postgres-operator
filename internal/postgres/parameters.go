@@ -7,6 +7,7 @@ package postgres
 import (
 	"fmt"
 	"maps"
+	"path"
 	"slices"
 	"strings"
 )
@@ -48,16 +49,13 @@ func NewParameters() Parameters {
 	// - https://www.postgresql.org/docs/current/auth-password.html
 	parameters.Default.Add("password_encryption", "scram-sha-256")
 
-	// Explicitly use Postgres' default log directory. This value is relative to the "data_directory" parameter.
+	// Log outside of the Postgres data directory by default.
 	//
-	// Controllers look at this parameter to grant group-write S_IWGRP on the directory.
-	// Postgres does not grant this permission on the directories it creates.
-	//
-	// TODO(logs): A better default would be *outside* the data directory.
-	// This parameter needs to be configurable and documented before the default can change.
+	// When log files are inside the data directory, they are destroyed along with the data directory
+	// during replica creation and major upgrades. Being outside also reduces the size of backups.
 	//
 	// PostgreSQL must be reloaded when changing this parameter.
-	parameters.Default.Add("log_directory", "log")
+	parameters.Default.Add("log_directory", path.Join(dataMountPath, "logs/postgres"))
 
 	// Pod "securityContext.fsGroup" ensures processes and filesystems agree on a GID;
 	// use the same permissions for group and owner.

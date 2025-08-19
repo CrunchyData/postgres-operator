@@ -64,9 +64,6 @@ func PostgreSQLParameters(ctx context.Context,
 
 		// Log in a timezone the OpenTelemetry Collector understands.
 		outParameters.Mandatory.Add("log_timezone", "UTC")
-
-		// TODO(logs): Remove this call and do it in [postgres.NewParameters] regardless of the gate.
-		outParameters.Mandatory.Add("log_directory", fmt.Sprintf("%s/logs/postgres", postgres.DataStorage(inCluster)))
 	}
 }
 
