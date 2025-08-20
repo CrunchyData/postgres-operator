@@ -7,6 +7,7 @@ package runtime
 import (
 	"context"
 
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -74,3 +75,15 @@ func (fn ClientPatch) Patch(ctx context.Context, obj client.Object, patch client
 func (fn ClientUpdate) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
 	return fn(ctx, obj, opts...)
 }
+
+type WarningHandler func(ctx context.Context, code int, agent string, text string)
+
+func (fn WarningHandler) HandleWarningHeader(code int, agent string, text string) {
+	fn(context.Background(), code, agent, text)
+}
+func (fn WarningHandler) HandleWarningHeaderWithContext(ctx context.Context, code int, agent string, text string) {
+	fn(ctx, code, agent, text)
+}
+
+var _ rest.WarningHandler = WarningHandler(nil)
+var _ rest.WarningHandlerWithContext = WarningHandler(nil)
