@@ -40,11 +40,13 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// assertNoError panics when err is not nil.
-func assertNoError(err error) {
+// must panics when err is not nil.
+func must(err error) { need(0, err) }
+func need[V any](v V, err error) V {
 	if err != nil {
 		panic(err)
 	}
+	return v
 }
 
 func initLogging() {
@@ -173,7 +175,7 @@ func main() {
 	}
 
 	features := feature.NewGate()
-	assertNoError(features.Set(os.Getenv("PGO_FEATURE_GATES")))
+	must(features.Set(os.Getenv("PGO_FEATURE_GATES")))
 
 	running = feature.NewContext(running, features)
 	log.Info("feature gates",
@@ -183,15 +185,12 @@ func main() {
 		"enabled", feature.ShowEnabled(running))
 
 	// Initialize OpenTelemetry and flush data when there is a panic.
-	otelFinish, err := initOpenTelemetry(running)
-	assertNoError(err)
+	otelFinish := need(initOpenTelemetry(running))
 	defer func(ctx context.Context) { _ = otelFinish(ctx) }(running)
 
 	tracing.SetDefaultTracer(tracing.New("github.com/CrunchyData/postgres-operator"))
 
-	cfg, err := runtime.GetConfig()
-	assertNoError(err)
-
+	cfg := need(runtime.GetConfig())
 	cfg.UserAgent = userAgent
 	cfg.Wrap(otelTransportWrapper())
 
@@ -201,14 +200,12 @@ func main() {
 	// deprecation warnings when using an older version of a resource for backwards compatibility).
 	rest.SetDefaultWarningHandler(rest.NoWarnings{})
 
-	k8s, err := kubernetes.NewDiscoveryRunner(cfg)
-	assertNoError(err)
-	assertNoError(k8s.Read(running))
+	k8s := need(kubernetes.NewDiscoveryRunner(cfg))
+	must(k8s.Read(running))
 
 	log.Info("connected to Kubernetes", "api", k8s.Version().String(), "openshift", k8s.IsOpenShift())
 
-	options, err := initManager(running)
-	assertNoError(err)
+	options := need(initManager(running))
 
 	// Add to the Context that Manager passes to Reconciler.Start, Runnable.Start,
 	// and eventually Reconciler.Reconcile.
@@ -219,51 +216,44 @@ func main() {
 		return ctx
 	}
 
-	mgr, err := runtime.NewManager(cfg, options)
-	assertNoError(err)
-	assertNoError(mgr.Add(k8s))
+	manager := need(runtime.NewManager(cfg, options))
+	must(manager.Add(k8s))
 
-	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning)
-	assertNoError(err)
-	assertNoError(mgr.Add(registrar))
+	registrar := need(registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning))
+	must(manager.Add(registrar))
 	token, _ := registrar.CheckToken()
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, log, registrar)
+	addControllersToManager(manager, log, registrar)
 
 	if features.Enabled(feature.BridgeIdentifiers) {
+		url := os.Getenv("PGO_BRIDGE_URL")
 		constructor := func() *bridge.Client {
-			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
+			client := bridge.NewClient(url, versionString)
 			client.Transport = otelTransportWrapper()(http.DefaultTransport)
 			return client
 		}
 
-		assertNoError(bridge.ManagedInstallationReconciler(mgr, constructor))
+		must(bridge.ManagedInstallationReconciler(manager, constructor))
 	}
 
 	// Enable upgrade checking
 	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
 	if !upgradeCheckingDisabled {
 		log.Info("upgrade checking enabled")
-		// get the URL for the check for upgrades endpoint if set in the env
-		assertNoError(
-			upgradecheck.ManagedScheduler(
-				mgr,
-				os.Getenv("CHECK_FOR_UPGRADES_URL"),
-				versionString,
-				token,
-			))
+		url := os.Getenv("CHECK_FOR_UPGRADES_URL")
+		must(upgradecheck.ManagedScheduler(manager, url, versionString, token))
 	} else {
 		log.Info("upgrade checking disabled")
 	}
 
 	// Enable health probes
-	assertNoError(mgr.AddHealthzCheck("health", healthz.Ping))
-	assertNoError(mgr.AddReadyzCheck("check", healthz.Ping))
+	must(manager.AddHealthzCheck("health", healthz.Ping))
+	must(manager.AddReadyzCheck("check", healthz.Ping))
 
 	// Start the manager and wait for its context to be canceled.
 	stopped := make(chan error, 1)
-	go func() { stopped <- mgr.Start(running) }()
+	go func() { stopped <- manager.Start(running) }()
 	<-running.Done()
 
 	// Set a deadline for graceful termination.
@@ -272,6 +262,7 @@ func main() {
 	defer cancel()
 
 	// Wait for the manager to return or the deadline to pass.
+	var err error
 	select {
 	case err = <-stopped:
 	case <-stopping.Done():
