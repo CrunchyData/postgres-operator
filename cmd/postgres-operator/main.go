@@ -20,6 +20,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
@@ -88,6 +89,10 @@ func initLogging() {
 
 	global := logging.FromContext(context.Background())
 	runtime.SetLogger(global)
+
+	// [k8s.io/client-go/tools/leaderelection] logs to the global [klog] instance.
+	// - https://github.com/kubernetes-sigs/controller-runtime/issues/2656
+	klog.SetLoggerWithOptions(global, klog.ContextualLogger(true))
 }
 
 //+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update,watch}
@@ -95,7 +100,7 @@ func initLogging() {
 //+kubebuilder:rbac:groups="authorization.k8s.io",resources="subjectaccessreviews",verbs={create}
 
 func initManager(ctx context.Context) (runtime.Options, error) {
-	log := logging.FromContext(ctx)
+	log := logging.FromContext(ctx).WithName("manager")
 
 	options := runtime.Options{}
 	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
