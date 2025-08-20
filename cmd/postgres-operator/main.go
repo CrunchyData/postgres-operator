@@ -49,12 +49,41 @@ func need[V any](v V, err error) V {
 	return v
 }
 
-func initLogging() {
-	// Configure a singleton that treats logging.Logger.V(1) as logrus.DebugLevel.
-	var verbosity int
-	if strings.EqualFold(os.Getenv("CRUNCHY_DEBUG"), "true") {
-		verbosity = 1
+func initClient() (*rest.Config, error) {
+	config, err := runtime.GetConfig()
+
+	if err == nil && userAgent == "" {
+		err = errors.New("call initVersion first")
 	}
+	if err == nil {
+		config.UserAgent = userAgent
+		config.Wrap(otelTransportWrapper())
+
+		// Log Kubernetes API warnings encountered by client-go at a high verbosity.
+		// See [rest.WarningLogger].
+		handler := runtime.WarningHandler(func(ctx context.Context, code int, _ string, message string) {
+			if code == 299 && len(message) != 0 {
+				logging.FromContext(ctx).V(2).WithName("client-go").Info(message)
+			}
+		})
+		config.WarningHandler = handler
+		config.WarningHandlerWithContext = handler
+	}
+
+	return config, err
+}
+
+func initLogging() {
+	debug := strings.TrimSpace(os.Getenv("CRUNCHY_DEBUG"))
+
+	var verbosity int
+	if strings.EqualFold(debug, "true") {
+		verbosity = 1
+	} else if i, err := strconv.Atoi(debug); err == nil && i > 0 {
+		verbosity = i
+	}
+
+	// Configure a singleton that treats logging.Logger.V(1) as logrus.DebugLevel.
 	logging.SetLogSink(logging.Logrus(os.Stdout, versionString, 1, verbosity))
 
 	global := logging.FromContext(context.Background())
@@ -190,19 +219,10 @@ func main() {
 
 	tracing.SetDefaultTracer(tracing.New("github.com/CrunchyData/postgres-operator"))
 
-	cfg := need(runtime.GetConfig())
-	cfg.UserAgent = userAgent
-	cfg.Wrap(otelTransportWrapper())
-
-	// TODO(controller-runtime): Set config.WarningHandler instead after v0.19.0.
-	// Configure client-go to suppress warnings when warning headers are encountered. This prevents
-	// warnings from being logged over and over again during reconciliation (e.g. this will suppress
-	// deprecation warnings when using an older version of a resource for backwards compatibility).
-	rest.SetDefaultWarningHandler(rest.NoWarnings{})
-
-	k8s := need(kubernetes.NewDiscoveryRunner(cfg))
+	// Load Kubernetes client configuration and ensure it works.
+	config := need(initClient())
+	k8s := need(kubernetes.NewDiscoveryRunner(config))
 	must(k8s.Read(running))
-
 	log.Info("connected to Kubernetes", "api", k8s.Version().String(), "openshift", k8s.IsOpenShift())
 
 	options := need(initManager(running))
@@ -216,7 +236,7 @@ func main() {
 		return ctx
 	}
 
-	manager := need(runtime.NewManager(cfg, options))
+	manager := need(runtime.NewManager(config, options))
 	must(manager.Add(k8s))
 
 	registrar := need(registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning))
