@@ -20,7 +20,7 @@ jobs:
         with: { go-version: stable }
 
       - name: Ensure go.mod is tidy
-        run: go mod tidy && git diff --exit-code -- go.mod
+        run: go mod tidy --diff
       - name: Ensure generated files are committed
         run: make check-generate
       - run: make check
