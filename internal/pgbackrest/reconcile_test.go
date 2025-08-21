@@ -746,9 +746,9 @@ func TestAddServerToInstancePod(t *testing.T) {
     manageAutogrowAnnotation() {
       local volume=$1
 
-      size=$(df --human-readable --block-size=M "/pgbackrest/${volume}")
+      size=$(df --block-size=M "/pgbackrest/${volume}")
       read -r _ size _ <<< "${size#*$'\n'}"
-      use=$(df --human-readable "/pgbackrest/${volume}")
+      use=$(df "/pgbackrest/${volume}")
       read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
       sizeInt="${size//M/}"
       # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
@@ -924,9 +924,9 @@ func TestAddServerToInstancePod(t *testing.T) {
     manageAutogrowAnnotation() {
       local volume=$1
 
-      size=$(df --human-readable --block-size=M "/pgbackrest/${volume}")
+      size=$(df --block-size=M "/pgbackrest/${volume}")
       read -r _ size _ <<< "${size#*$'\n'}"
-      use=$(df --human-readable "/pgbackrest/${volume}")
+      use=$(df "/pgbackrest/${volume}")
       read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
       sizeInt="${size//M/}"
       # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
@@ -1091,9 +1091,9 @@ func TestAddServerToRepoPod(t *testing.T) {
     manageAutogrowAnnotation() {
       local volume=$1
 
-      size=$(df --human-readable --block-size=M "/pgbackrest/${volume}")
+      size=$(df --block-size=M "/pgbackrest/${volume}")
       read -r _ size _ <<< "${size#*$'\n'}"
-      use=$(df --human-readable "/pgbackrest/${volume}")
+      use=$(df "/pgbackrest/${volume}")
       read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
       sizeInt="${size//M/}"
       # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.

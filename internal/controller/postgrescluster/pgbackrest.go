@@ -2775,9 +2775,12 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	repoVols := []*corev1.PersistentVolumeClaim{}
 	var replicaCreateRepo v1beta1.PGBackRestRepo
 
-	// get the autogrow annotations so that the correct volume size values can be
-	// used and the cluster status can be updated
-	errors = append(errors, r.getRepoHostVolumeRequests(ctx, postgresCluster))
+	autogrow := feature.Enabled(ctx, feature.AutoGrowVolumes)
+	if autogrow {
+		// get the autogrow annotations so that the correct volume size values can be
+		// used and the cluster status can be updated
+		errors = append(errors, r.getRepoHostVolumeRequests(ctx, postgresCluster))
+	}
 
 	for i, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		// the repo at index 0 is the replica creation repo
@@ -2833,15 +2836,22 @@ func (r *Reconciler) getRepoHostVolumeRequests(ctx context.Context,
 				Selector: naming.PGBackRestDedicatedLabels(cluster.Name).AsSelector()},
 		))
 
-	if len(pods.Items) > 0 {
+	if len(pods.Items) == 1 {
 		// there should only ever be one repo host Pod
 		repoHost := pods.Items[0]
 
 		if cluster.Status.PGBackRest != nil {
+			var backupRequest string
 			for i := range cluster.Status.PGBackRest.Repos {
 				if repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"] != "" {
-					cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume =
-						repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"]
+					// get the backup request from the status, if it is set
+					backupRequest = cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume
+
+					value := r.storeDesiredRequest(ctx, cluster, cluster.Status.PGBackRest.Repos[i].Name, "repo-host",
+						repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"], backupRequest)
+					if err == nil {
+						cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume = value
+					}
 				}
 			}
 		}

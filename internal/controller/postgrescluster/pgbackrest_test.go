@@ -4405,6 +4405,7 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 		tcName         string
 		repoHostExists bool
 		annotations    map[string]string
+		repoStatus     []v1beta1.RepoStatus
 		results        map[string]string
 	}{{
 		tcName:         "no repo host",
@@ -4414,6 +4415,8 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 		repoHostExists: true,
 		annotations: map[string]string{
 			"suggested-repo1-pvc-size": "2Gi"},
+		repoStatus: []v1beta1.RepoStatus{
+			{Name: "repo1", DesiredRepoVolume: "1Gi"}},
 		results: map[string]string{
 			"repo1": "2Gi"},
 	}, {
@@ -4421,12 +4424,22 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 		repoHostExists: true,
 		annotations: map[string]string{
 			"suggested-repo2-pvc-size": "2Gi",
-			"suggested-repo3-pvc-size": "3Gi",
-			"suggested-repo4-pvc-size": "4Gi"},
+			"suggested-repo3-pvc-size": "3Gi"},
+		repoStatus: []v1beta1.RepoStatus{
+			{Name: "repo2", DesiredRepoVolume: "1Gi"},
+			{Name: "repo3", DesiredRepoVolume: "1Gi"}},
 		results: map[string]string{
 			"repo2": "2Gi",
-			"repo3": "3Gi",
-			"repo4": "4Gi"},
+			"repo3": "3Gi"},
+	}, {
+		tcName:         "bad annotation use backup from status",
+		repoHostExists: true,
+		annotations: map[string]string{
+			"suggested-repo4-pvc-size": "seagull"},
+		repoStatus: []v1beta1.RepoStatus{
+			{Name: "repo4", DesiredRepoVolume: "8Gi"}},
+		results: map[string]string{
+			"repo4": "8Gi"},
 	}}
 
 	for _, tc := range testCases {
@@ -4465,18 +4478,13 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 					Namespace: namespace,
 				},
 				Status: v1beta1.PostgresClusterStatus{
-					PGBackRest: &v1beta1.PGBackRestStatus{
-						Repos: []v1beta1.RepoStatus{{
-							Name: "repo1",
-						}, {
-							Name: "repo2",
-						}, {
-							Name: "repo3",
-						}, {
-							Name: "repo4",
-						}},
-					},
+					PGBackRest: &v1beta1.PGBackRestStatus{},
 				},
+			}
+
+			// only add a status if the repo host exists
+			if tc.repoHostExists {
+				cluster.Status.PGBackRest.Repos = tc.repoStatus
 			}
 
 			err := reconciler.getRepoHostVolumeRequests(ctx, cluster)
@@ -4485,6 +4493,7 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 
 			var i int
 			for _, repo := range cluster.Status.PGBackRest.Repos {
+
 				assert.Assert(t, tc.results[repo.Name] == repo.DesiredRepoVolume)
 				if tc.results[repo.Name] == repo.DesiredRepoVolume && repo.DesiredRepoVolume != "" {
 					i++

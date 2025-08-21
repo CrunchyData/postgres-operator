@@ -621,6 +621,15 @@ func reloadCommand(name string) []string {
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check
 	// mtimes.
 	// - https://unix.stackexchange.com/a/407383
+
+	// In the manageAutogrowAnnotation function below, df is used to return the
+	// relevant volume size in Mebibytes. The 'read' variable gets the value from
+	// the '1M-blocks' output (second column) and the 'use' variable gets the value
+	// from the 'Use%' column (fifth column). This value is grabbed after stripping
+	// out the column headers (before the '\n') and then getting the respective
+	// value delimited by the white spaces. The percent value is stripped of the
+	// '%' and then used to determine if a expansion should be triggered by setting
+	// the calculated volume size using the 'size' variable.
 	const script = `
 # Parameters for curl when managing autogrow annotation.
 APISERVER="https://kubernetes.default.svc"
@@ -634,9 +643,9 @@ CACERT=${SERVICEACCOUNT}/ca.crt
 manageAutogrowAnnotation() {
   local volume=$1
 
-  size=$(df --human-readable --block-size=M "/pgbackrest/${volume}")
+  size=$(df --block-size=M "/pgbackrest/${volume}")
   read -r _ size _ <<< "${size#*$'\n'}"
-  use=$(df --human-readable "/pgbackrest/${volume}")
+  use=$(df "/pgbackrest/${volume}")
   read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
   sizeInt="${size//M/}"
   # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.

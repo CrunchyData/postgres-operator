@@ -21,7 +21,7 @@ import (
 // status. If the value has grown, create an Event.
 func (r *Reconciler) storeDesiredRequest(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	volumeType, instanceSetName, desiredRequest, desiredRequestBackup string,
+	volumeType, host, desiredRequest, desiredRequestBackup string,
 ) string {
 	var current resource.Quantity
 	var previous resource.Quantity
@@ -33,7 +33,7 @@ func (r *Reconciler) storeDesiredRequest(
 		current, err = resource.ParseQuantity(desiredRequest)
 		if err != nil {
 			log.Error(err, "Unable to parse "+volumeType+" volume request from status ("+
-				desiredRequest+") for "+cluster.Name+"/"+instanceSetName)
+				desiredRequest+") for "+cluster.Name+"/"+host)
 			// If there was an error parsing the value, treat as unset (equivalent to zero).
 			desiredRequest = ""
 			current, _ = resource.ParseQuantity("")
@@ -46,7 +46,7 @@ func (r *Reconciler) storeDesiredRequest(
 		previous, err = resource.ParseQuantity(desiredRequestBackup)
 		if err != nil {
 			log.Error(err, "Unable to parse "+volumeType+" volume request from status backup ("+
-				desiredRequestBackup+") for "+cluster.Name+"/"+instanceSetName)
+				desiredRequestBackup+") for "+cluster.Name+"/"+host)
 			// If there was an error parsing the value, treat as unset (equivalent to zero).
 			desiredRequestBackup = ""
 			previous, _ = resource.ParseQuantity("")
@@ -55,12 +55,12 @@ func (r *Reconciler) storeDesiredRequest(
 	}
 
 	// determine if the appropriate volume limit is set
-	limitSet := limitIsSet(cluster, volumeType, instanceSetName)
+	limitSet := limitIsSet(cluster, volumeType, host)
 
 	if limitSet && current.Value() > previous.Value() {
 		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
 			"%s volume expansion to %v requested for %s/%s.",
-			volumeType, current.String(), cluster.Name, instanceSetName)
+			volumeType, current.String(), cluster.Name, host)
 	}
 
 	// If the desired size was not observed, update with previously stored value.
