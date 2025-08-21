@@ -39,10 +39,6 @@ supplementalGroups:
 
 	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(ctx, 2, supplementalGroups), `
 fsGroupChangePolicy: OnRootMismatch
-	`))
-
-	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(ctx, 2, supplementalGroups), `
-fsGroupChangePolicy: OnRootMismatch
 supplementalGroups:
 - 3
 - 4
