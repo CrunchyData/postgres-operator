@@ -45,7 +45,7 @@ func (r *Reconciler) reconcilePGBouncer(
 		secret, err = r.reconcilePGBouncerSecret(ctx, cluster, root, service)
 	}
 	if err == nil {
-		logfile := setPGBouncerLogfile(ctx, cluster)
+		logfile := setPGBouncerLogfile(cluster)
 		config := collector.NewConfigForPgBouncerPod(ctx, cluster, pgbouncer.PostgresqlUser, logfile)
 		configmap, err = r.reconcilePGBouncerConfigMap(ctx, cluster, config, logfile)
 	}
@@ -65,7 +65,7 @@ func (r *Reconciler) reconcilePGBouncer(
 // If not present, set to the OTEL default.
 // If OTEL is not enabled, we do not use this value.
 // TODO: Check INI config files specified on the cluster
-func setPGBouncerLogfile(ctx context.Context, cluster *v1beta1.PostgresCluster) string {
+func setPGBouncerLogfile(cluster *v1beta1.PostgresCluster) string {
 	logfile := naming.PGBouncerFullLogPath
 
 	if dest, ok := cluster.Spec.Proxy.PGBouncer.Config.Global["logfile"]; ok {
