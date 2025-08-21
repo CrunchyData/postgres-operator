@@ -68,8 +68,14 @@ func (r *Reconciler) reconcilePGBouncer(
 func setPGBouncerLogfile(cluster *v1beta1.PostgresCluster) string {
 	logfile := naming.PGBouncerFullLogPath
 
-	if dest, ok := cluster.Spec.Proxy.PGBouncer.Config.Global["logfile"]; ok {
-		logfile = dest
+	if cluster.Spec.Proxy == nil || cluster.Spec.Proxy.PGBouncer == nil {
+		return ""
+	}
+
+	if cluster.Spec.Proxy.PGBouncer.Config.Global != nil {
+		if dest, ok := cluster.Spec.Proxy.PGBouncer.Config.Global["logfile"]; ok {
+			logfile = dest
+		}
 	}
 
 	return logfile
@@ -478,7 +484,9 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	// Do not add environment variables describing services in this namespace.
 	deploy.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
 
-	deploy.Spec.Template.Spec.SecurityContext = util.PodSecurityContext(ctx, 2, cluster.Spec.SupplementalGroups)
+	deploy.Spec.Template.Spec.SecurityContext = util.PodSecurityContext(2,
+		cluster.Spec.SupplementalGroups, initialize.FromPointer(cluster.Spec.OpenShift),
+	)
 
 	// set the image pull secrets, if any exist
 	deploy.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets

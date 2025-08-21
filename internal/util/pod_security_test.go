@@ -5,50 +5,48 @@
 package util
 
 import (
-	"context"
 	"testing"
 
 	"gotest.tools/v3/assert"
 
-	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 )
 
 func TestPodSecurityContext(t *testing.T) {
-	ctx := context.Background()
-	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(ctx, 2, []int64{}), `
+	t.Run("Non-Openshift", func(t *testing.T) {
+		assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(2, []int64{}, false), `
 fsGroup: 2
 fsGroupChangePolicy: OnRootMismatch
 	`))
 
-	supplementalGroups := []int64{3, 4}
-	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(ctx, 26, supplementalGroups), `
+		supplementalGroups := []int64{3, 4}
+		assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(26, supplementalGroups, false), `
 fsGroup: 26
 fsGroupChangePolicy: OnRootMismatch
 supplementalGroups:
 - 3
 - 4
 	`))
+	})
 
-	ctx = kubernetes.NewAPIContext(ctx, kubernetes.NewAPISet(kubernetes.API{
-		Group: "security.openshift.io", Version: "v1",
-		Kind: "SecurityContextConstraints",
-	}))
-	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(ctx, 2, []int64{}),
-		`fsGroupChangePolicy: OnRootMismatch`))
+	t.Run("OpenShift", func(t *testing.T) {
+		assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(2, []int64{}, true),
+			`fsGroupChangePolicy: OnRootMismatch`))
 
-	assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(ctx, 2, supplementalGroups), `
+		supplementalGroups := []int64{3, 4}
+		assert.Assert(t, cmp.MarshalMatches(PodSecurityContext(2, supplementalGroups, true), `
 fsGroupChangePolicy: OnRootMismatch
 supplementalGroups:
 - 3
 - 4
 	`))
+	})
 
 	t.Run("NoRootGID", func(t *testing.T) {
-		supplementalGroups = []int64{999, 0, 100, 0}
-		assert.DeepEqual(t, []int64{999, 100}, PodSecurityContext(ctx, 2, supplementalGroups).SupplementalGroups)
+		supplementalGroups := []int64{999, 0, 100, 0}
+		assert.DeepEqual(t, []int64{999, 100}, PodSecurityContext(2, supplementalGroups, false).SupplementalGroups)
 
 		supplementalGroups = []int64{0}
-		assert.Assert(t, PodSecurityContext(ctx, 2, supplementalGroups).SupplementalGroups == nil)
+		assert.Assert(t, PodSecurityContext(2, supplementalGroups, false).SupplementalGroups == nil)
 	})
 }
