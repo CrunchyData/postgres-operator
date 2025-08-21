@@ -59,6 +59,10 @@ func EnablePgBouncerLogging(ctx context.Context,
 
 	if OpenTelemetryLogsEnabled(ctx, inCluster) {
 		directory := filepath.Dir(logfile)
+		create_directory := false
+		if directory != "tmp" {
+			create_directory = true
+		}
 
 		// Keep track of what log records and files have been processed.
 		// Use a subdirectory of the logs directory to stay within the same failure domain.
@@ -66,7 +70,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/-/extension/storage/filestorage#readme
 		outConfig.Extensions["file_storage/pgbouncer_logs"] = map[string]any{
 			"directory":        directory + "/receiver",
-			"create_directory": false,
+			"create_directory": create_directory,
 			"fsync":            true,
 		}
 
