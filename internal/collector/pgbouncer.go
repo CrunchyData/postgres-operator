@@ -60,7 +60,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 	if OpenTelemetryLogsEnabled(ctx, inCluster) {
 		directory := filepath.Dir(logfile)
 		create_directory := false
-		if directory != "tmp" {
+		if directory != "/tmp" {
 			create_directory = true
 		}
 
