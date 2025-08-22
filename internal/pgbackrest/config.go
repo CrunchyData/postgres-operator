@@ -621,7 +621,46 @@ func reloadCommand(name string) []string {
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check
 	// mtimes.
 	// - https://unix.stackexchange.com/a/407383
+
+	// In the manageAutogrowAnnotation function below, df is used to return the
+	// relevant volume size in Mebibytes. The 'read' variable gets the value from
+	// the '1M-blocks' output (second column) and the 'use' variable gets the value
+	// from the 'Use%' column (fifth column). This value is grabbed after stripping
+	// out the column headers (before the '\n') and then getting the respective
+	// value delimited by the white spaces by using the 'read -r' command.
+	// The underscores (_) discard fields and the variables store them. This allows
+	// for selective parsing of the provided lines. The percent value is stripped of
+	// the '%' and then used to determine if a expansion should be triggered by
+	// setting the calculated volume size using the 'size' variable.
 	const script = `
+# Parameters for curl when managing autogrow annotation.
+APISERVER="https://kubernetes.default.svc"
+SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
+NAMESPACE=$(cat "${SERVICEACCOUNT}"/namespace)
+TOKEN=$(cat "${SERVICEACCOUNT}"/token)
+CACERT=${SERVICEACCOUNT}/ca.crt
+
+# Manage autogrow annotation.
+# Return size in Mebibytes.
+manageAutogrowAnnotation() {
+  local volume=$1
+
+  size=$(df --block-size=M "/pgbackrest/${volume}")
+  read -r _ size _ <<< "${size#*$'\n'}"
+  use=$(df "/pgbackrest/${volume}")
+  read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
+  sizeInt="${size//M/}"
+  # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+  useInt=${use//[[:punct:]]/}
+  triggerExpansion="$((useInt > 75))"
+  if [[ ${triggerExpansion} -eq 1 ]]; then
+    newSize="$(((sizeInt / 2)+sizeInt))"
+    newSizeMi="${newSize}Mi"
+    d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
+    curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
+  fi
+}
+
 exec {fd}<> <(:||:)
 until read -r -t 5 -u "${fd}"; do
   if
@@ -639,6 +678,27 @@ until read -r -t 5 -u "${fd}"; do
     exec {fd}>&- && exec {fd}<> <(:||:)
     stat --format='Loaded certificates dated %y' "${directory}"
   fi
+
+  # manage autogrow annotation for the repo1 volume, if it exists
+  if [[ -d /pgbackrest/repo1 ]]; then
+    manageAutogrowAnnotation "repo1"
+  fi
+
+  # manage autogrow annotation for the repo2 volume, if it exists
+  if [[ -d /pgbackrest/repo2 ]]; then
+    manageAutogrowAnnotation "repo2"
+  fi
+
+  # manage autogrow annotation for the repo3 volume, if it exists
+  if [[ -d /pgbackrest/repo3 ]]; then
+    manageAutogrowAnnotation "repo3"
+  fi
+
+  # manage autogrow annotation for the repo4 volume, if it exists
+  if [[ -d /pgbackrest/repo4 ]]; then
+    manageAutogrowAnnotation "repo4"
+  fi
+
 done
 `
 

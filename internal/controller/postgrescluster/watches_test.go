@@ -132,7 +132,6 @@ func TestWatchPodsUpdate(t *testing.T) {
 		queue.Done(item)
 	})
 
-	// Pod annotation with arbitrary key; no reconcile.
 	update(ctx, event.UpdateEvent{
 		ObjectOld: &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -157,28 +156,74 @@ func TestWatchPodsUpdate(t *testing.T) {
 	}, queue)
 	assert.Equal(t, queue.Len(), 0)
 
-	// Pod annotation with suggested-pgdata-pvc-size; reconcile.
-	update(ctx, event.UpdateEvent{
-		ObjectOld: &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					"suggested-pgdata-pvc-size": "5000Mi",
+	testCases := []struct {
+		annotation string
+		startVal   string
+		endval     string
+		queueVal   int
+	}{{
+		// Pod annotation with arbitrary key; no reconcile.
+		annotation: "clortho",
+		startVal:   "vince",
+		endval:     "vin",
+		queueVal:   0,
+	}, {
+		// Here and below, Pod annotation with all available suggested size annotations; reconcile.
+		annotation: "suggested-pgdata-pvc-size",
+		startVal:   "1000Mi",
+		endval:     "2000Mi",
+		queueVal:   1,
+	}, {
+		annotation: "suggested-repo1-pvc-size",
+		startVal:   "1000Mi",
+		endval:     "2000Mi",
+		queueVal:   1,
+	}, {
+		annotation: "suggested-repo2-pvc-size",
+		startVal:   "1000Mi",
+		endval:     "2000Mi",
+		queueVal:   1,
+	}, {
+		annotation: "suggested-repo3-pvc-size",
+		startVal:   "1000Mi",
+		endval:     "2000Mi",
+		queueVal:   1,
+	}, {
+		annotation: "suggested-repo4-pvc-size",
+		startVal:   "1000Mi",
+		endval:     "2000Mi",
+		queueVal:   1,
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.annotation, func(t *testing.T) {
+
+			update(ctx, event.UpdateEvent{
+				ObjectOld: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							tc.annotation: tc.startVal,
+						},
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/cluster": "starfish",
+						},
+					},
 				},
-				Labels: map[string]string{
-					"postgres-operator.crunchydata.com/cluster": "starfish",
+				ObjectNew: &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: map[string]string{
+							tc.startVal: tc.endval,
+						},
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/cluster": "starfish",
+						},
+					},
 				},
-			},
-		},
-		ObjectNew: &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					"suggested-pgdata-pvc-size": "8000Mi",
-				},
-				Labels: map[string]string{
-					"postgres-operator.crunchydata.com/cluster": "starfish",
-				},
-			},
-		},
-	}, queue)
-	assert.Equal(t, queue.Len(), 1)
+			}, queue)
+
+			// for each change of a watched annotation, should add 1 to queue
+			assert.Equal(t, queue.Len(), tc.queueVal)
+		})
+	}
+
 }

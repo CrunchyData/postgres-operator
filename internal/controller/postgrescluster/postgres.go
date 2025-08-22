@@ -774,7 +774,7 @@ func (r *Reconciler) reconcilePostgresDataVolume(
 		}
 	}
 
-	r.setVolumeSize(ctx, cluster, pvc, "pgData", instanceSpec.Name)
+	r.setVolumeSize(ctx, cluster, &pvc.Spec, "pgData", instanceSpec.Name)
 
 	// Clear any set limit before applying PVC. This is needed to allow the limit
 	// value to change later.

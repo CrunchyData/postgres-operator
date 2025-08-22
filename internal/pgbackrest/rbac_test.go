@@ -52,3 +52,24 @@ func TestPermissions(t *testing.T) {
   - create
 	`))
 }
+
+func TestRepoHostPermissions(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Default()
+
+	permissions := RepoHostPermissions(cluster)
+	for _, rule := range permissions {
+		assert.Assert(t, isUniqueAndSorted(rule.APIGroups), "got %q", rule.APIGroups)
+		assert.Assert(t, isUniqueAndSorted(rule.Resources), "got %q", rule.Resources)
+		assert.Assert(t, isUniqueAndSorted(rule.Verbs), "got %q", rule.Verbs)
+	}
+
+	assert.Assert(t, cmp.MarshalMatches(permissions, `
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - patch
+	`))
+}
