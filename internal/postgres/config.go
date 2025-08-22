@@ -378,14 +378,17 @@ func startupCommand(
 	}
 
 	// Postgres creates "log_directory" but does *not* create any of its parent directories.
-	// Postgres omits the group-write S_IWGRP permission on the directory. Do both here while being
-	// careful to *not* touch "data_directory" contents until after `initdb` or Patroni bootstrap.
+	// Postgres omits group-write S_IWGRP permission when creating the directory.
+	//
+	// Do both here while being careful to *not* touch "data_directory" contents until after
+	// `initdb` or Patroni bootstrap; those abort unless "data_directory" is entirely empty.
 	if path.IsAbs(logDir) && !strings.HasPrefix(logDir, dataDir) {
 		mkdirs = append(mkdirs,
 			`(`+shell.MakeDirectories(dataMountPath, logDir)+`) ||`,
 			`halt "$(permissions `+shell.QuoteWord(logDir)+` ||:)"`,
 		)
 	} else {
+		// Postgres interprets "log_directory" relative to "data_directory" so do the same here.
 		mkdirs = append(mkdirs,
 			`[[ ! -f `+shell.QuoteWord(path.Join(dataDir, "PG_VERSION"))+` ]] ||`,
 			`(`+shell.MakeDirectories(dataDir, logDir)+`) ||`,
