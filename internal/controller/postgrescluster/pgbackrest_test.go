@@ -4515,7 +4515,13 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 			}
 
 			err := reconciler.getRepoHostVolumeRequests(ctx, cluster)
-			assert.NilError(t, err)
+
+			if tc.repoHostExists {
+				assert.NilError(t, err)
+			} else {
+				assert.ErrorContains(t, err, "Found 0 pgBackRest repo host Pods. Expected 1.")
+			}
+
 			assert.Assert(t, cluster.Status.PGBackRest != nil)
 
 			var i int

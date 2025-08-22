@@ -2775,8 +2775,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	repoVols := []*corev1.PersistentVolumeClaim{}
 	var replicaCreateRepo v1beta1.PGBackRestRepo
 
-	autogrow := feature.Enabled(ctx, feature.AutoGrowVolumes)
-	if autogrow {
+	if feature.Enabled(ctx, feature.AutoGrowVolumes) {
 		// get the autogrow annotations so that the correct volume size values can be
 		// used and the cluster status can be updated
 		errors = append(errors, r.getRepoHostVolumeRequests(ctx, postgresCluster))
@@ -2829,34 +2828,37 @@ func (r *Reconciler) getRepoHostVolumeRequests(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) error {
 
 	pods := &corev1.PodList{}
-	err := errors.WithStack(
+	if err := errors.WithStack(
 		r.Client.List(ctx, pods,
 			client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{
 				Selector: naming.PGBackRestDedicatedLabels(cluster.Name).AsSelector()},
-		))
+		)); err != nil {
+		return err
+	}
 
-	if len(pods.Items) == 1 {
-		// there should only ever be one repo host Pod
-		repoHost := pods.Items[0]
+	// there should only ever be one repo host Pod
+	if len(pods.Items) != 1 {
+		return errors.Errorf("Found %d pgBackRest repo host Pods. Expected 1.", len(pods.Items))
+	}
+	repoHost := pods.Items[0]
 
-		if cluster.Status.PGBackRest != nil {
-			var backupRequest string
-			for i := range cluster.Status.PGBackRest.Repos {
-				if repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"] != "" {
-					// get the backup request from the status, if it is set
-					backupRequest = cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume
+	if cluster.Status.PGBackRest != nil {
+		var backupRequest string
+		for i := range cluster.Status.PGBackRest.Repos {
+			if repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"] != "" {
+				// get the backup request from the status, if it is set
+				backupRequest = cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume
 
-					value := r.storeDesiredRequest(ctx, cluster, cluster.Status.PGBackRest.Repos[i].Name, "repo-host",
-						repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"], backupRequest)
-					if err == nil {
-						cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume = value
-					}
-				}
+				value := r.storeDesiredRequest(ctx, cluster, cluster.Status.PGBackRest.Repos[i].Name, "repo-host",
+					repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"], backupRequest)
+
+				cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume = value
 			}
 		}
 	}
-	return err
+
+	return nil
 }
 
 // +kubebuilder:rbac:groups="",resources="pods",verbs={get,list}

@@ -627,9 +627,11 @@ func reloadCommand(name string) []string {
 	// the '1M-blocks' output (second column) and the 'use' variable gets the value
 	// from the 'Use%' column (fifth column). This value is grabbed after stripping
 	// out the column headers (before the '\n') and then getting the respective
-	// value delimited by the white spaces. The percent value is stripped of the
-	// '%' and then used to determine if a expansion should be triggered by setting
-	// the calculated volume size using the 'size' variable.
+	// value delimited by the white spaces by using the 'read -r' command.
+	// The underscores (_) discard fields and the variables store them. This allows
+	// for selective parsing of the provided lines. The percent value is stripped of
+	// the '%' and then used to determine if a expansion should be triggered by
+	// setting the calculated volume size using the 'size' variable.
 	const script = `
 # Parameters for curl when managing autogrow annotation.
 APISERVER="https://kubernetes.default.svc"
