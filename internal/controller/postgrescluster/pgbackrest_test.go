@@ -729,7 +729,10 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 }
 
 func TestReconcileRepoHostRBAC(t *testing.T) {
-
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
 	ctx := context.Background()
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
@@ -768,6 +771,30 @@ func TestReconcileRepoHostRBAC(t *testing.T) {
 	}, sa)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, sa.Annotations, annotations)
+
+	role := &rbacv1.Role{}
+	err = tClient.Get(ctx, types.NamespacedName{
+		Name:      naming.RepoHostRBAC(postgresCluster).Name,
+		Namespace: postgresCluster.GetNamespace(),
+	}, role)
+	assert.NilError(t, err)
+	assert.Assert(t, len(role.Rules) > 0)
+
+	roleBinding := &rbacv1.RoleBinding{}
+	err = tClient.Get(ctx, types.NamespacedName{
+		Name:      naming.RepoHostRBAC(postgresCluster).Name,
+		Namespace: postgresCluster.GetNamespace(),
+	}, roleBinding)
+	assert.NilError(t, err)
+	assert.Assert(t, roleBinding.RoleRef.Name == role.GetName())
+
+	var foundSubject bool
+	for _, subject := range roleBinding.Subjects {
+		if subject.Name == sa.GetName() {
+			foundSubject = true
+		}
+	}
+	assert.Assert(t, foundSubject)
 }
 
 func TestReconcileStanzaCreate(t *testing.T) {
