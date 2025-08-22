@@ -203,17 +203,10 @@ generate-kuttl: export KUTTL_TEST_DELETE_NAMESPACE ?= kuttl-test-delete-namespac
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	bash -ceu ' \
-	case $(KUTTL_PG_VERSION) in \
-	16 ) export KUTTL_BITNAMI_IMAGE_TAG=16.0.0-debian-11-r3 ;; \
-	15 ) export KUTTL_BITNAMI_IMAGE_TAG=15.0.0-debian-11-r4 ;; \
-	14 ) export KUTTL_BITNAMI_IMAGE_TAG=14.5.0-debian-11-r37 ;; \
-	13 ) export KUTTL_BITNAMI_IMAGE_TAG=13.8.0-debian-11-r39 ;; \
-	12 ) export KUTTL_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
-	esac; \
 	render() { envsubst '"'"' \
 		$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION \
 		$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE \
-		$$KUTTL_BITNAMI_IMAGE_TAG $$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \
+		$$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \
 	while [ $$# -gt 0 ]; do \
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
