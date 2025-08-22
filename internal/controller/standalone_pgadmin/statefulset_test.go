@@ -27,8 +27,8 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &PGAdminReconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)

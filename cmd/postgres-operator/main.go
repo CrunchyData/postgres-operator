@@ -248,18 +248,23 @@ func main() {
 	must(manager.Add(registrar))
 	token, _ := registrar.CheckToken()
 
+	bridgeURL := os.Getenv("PGO_BRIDGE_URL")
+	bridgeClient := func() *bridge.Client {
+		client := bridge.NewClient(bridgeURL, versionString)
+		client.Transport = otelTransportWrapper()(http.DefaultTransport)
+		return client
+	}
+
 	// add all PostgreSQL Operator controllers to the runtime manager
 	addControllersToManager(manager, log, registrar)
+	must(pgupgrade.ManagedReconciler(manager, registrar))
+	must(standalone_pgadmin.ManagedReconciler(manager))
+	must(crunchybridgecluster.ManagedReconciler(manager, func() bridge.ClientInterface {
+		return bridgeClient()
+	}))
 
 	if features.Enabled(feature.BridgeIdentifiers) {
-		url := os.Getenv("PGO_BRIDGE_URL")
-		constructor := func() *bridge.Client {
-			client := bridge.NewClient(url, versionString)
-			client.Transport = otelTransportWrapper()(http.DefaultTransport)
-			return client
-		}
-
-		must(bridge.ManagedInstallationReconciler(manager, constructor))
+		must(bridge.ManagedInstallationReconciler(manager, bridgeClient))
 	}
 
 	// Enable upgrade checking
@@ -307,55 +312,13 @@ func main() {
 func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg registration.Registration) {
 	pgReconciler := &postgrescluster.Reconciler{
 		Client:       mgr.GetClient(),
-		Owner:        postgrescluster.ControllerName,
-		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
+		Owner:        naming.ControllerPostgresCluster,
+		Recorder:     mgr.GetEventRecorderFor(naming.ControllerPostgresCluster),
 		Registration: reg,
 	}
 
 	if err := pgReconciler.SetupWithManager(mgr); err != nil {
 		log.Error(err, "unable to create PostgresCluster controller")
-		os.Exit(1)
-	}
-
-	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
-		Client:       mgr.GetClient(),
-		Owner:        "pgupgrade-controller",
-		Recorder:     mgr.GetEventRecorderFor("pgupgrade-controller"),
-		Registration: reg,
-	}
-
-	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PGUpgrade controller")
-		os.Exit(1)
-	}
-
-	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
-		Client:   mgr.GetClient(),
-		Owner:    "pgadmin-controller",
-		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-	}
-
-	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PGAdmin controller")
-		os.Exit(1)
-	}
-
-	constructor := func() bridge.ClientInterface {
-		client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
-		client.Transport = otelTransportWrapper()(http.DefaultTransport)
-		return client
-	}
-
-	crunchyBridgeClusterReconciler := &crunchybridgecluster.CrunchyBridgeClusterReconciler{
-		Client: mgr.GetClient(),
-		Owner:  "crunchybridgecluster-controller",
-		// TODO(crunchybridgecluster): recorder?
-		// Recorder: mgr.GetEventRecorderFor(naming...),
-		NewClient: constructor,
-	}
-
-	if err := crunchyBridgeClusterReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create CrunchyBridgeCluster controller")
 		os.Exit(1)
 	}
 }

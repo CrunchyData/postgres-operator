@@ -33,27 +33,38 @@ import (
 
 // CrunchyBridgeClusterReconciler reconciles a CrunchyBridgeCluster object
 type CrunchyBridgeClusterReconciler struct {
-	client.Client
-
-	Owner client.FieldOwner
-
-	// For this iteration, we will only be setting conditions rather than
-	// setting conditions and emitting events. That may change in the future,
-	// so we're leaving this EventRecorder here for now.
-	// record.EventRecorder
-
-	// NewClient is called each time a new Client is needed.
+	// NewClient is called each time a new bridge.Client is needed.
 	NewClient func() bridge.ClientInterface
+
+	Reader interface {
+		Get(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
+		List(context.Context, client.ObjectList, ...client.ListOption) error
+	}
+	Writer interface {
+		Delete(context.Context, client.Object, ...client.DeleteOption) error
+		Patch(context.Context, client.Object, client.Patch, ...client.PatchOption) error
+		Update(context.Context, client.Object, ...client.UpdateOption) error
+	}
+	StatusWriter interface {
+		Patch(context.Context, client.Object, client.Patch, ...client.SubResourcePatchOption) error
+	}
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={list,watch}
 //+kubebuilder:rbac:groups="",resources="secrets",verbs={list,watch}
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
-	mgr ctrl.Manager,
-) error {
-	return ctrl.NewControllerManagedBy(mgr).
+// ManagedReconciler creates a [CrunchyBridgeClusterReconciler] and adds it to m.
+func ManagedReconciler(m ctrl.Manager, newClient func() bridge.ClientInterface) error {
+	kubernetes := client.WithFieldOwner(m.GetClient(), naming.ControllerCrunchyBridgeCluster)
+
+	reconciler := &CrunchyBridgeClusterReconciler{
+		NewClient:    newClient,
+		Reader:       kubernetes,
+		StatusWriter: kubernetes.Status(),
+		Writer:       kubernetes,
+	}
+
+	return ctrl.NewControllerManagedBy(m).
 		For(&v1beta1.CrunchyBridgeCluster{}).
 		Owns(&corev1.Secret{}).
 		// Wake periodically to check Bridge API for all CrunchyBridgeClusters.
@@ -63,7 +74,7 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 			runtime.NewTickerImmediate(5*time.Minute, event.GenericEvent{},
 				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []ctrl.Request {
 					var list v1beta1.CrunchyBridgeClusterList
-					_ = r.List(ctx, &list)
+					_ = reconciler.Reader.List(ctx, &list)
 					return runtime.Requests(initialize.Pointers(list.Items...)...)
 				}),
 			),
@@ -72,10 +83,10 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, secret client.Object) []ctrl.Request {
-				return runtime.Requests(r.findCrunchyBridgeClustersForSecret(ctx, client.ObjectKeyFromObject(secret))...)
+				return runtime.Requests(reconciler.findCrunchyBridgeClustersForSecret(ctx, client.ObjectKeyFromObject(secret))...)
 			}),
 		).
-		Complete(r)
+		Complete(reconciler)
 }
 
 // The owner reference created by controllerutil.SetControllerReference blocks
@@ -91,7 +102,7 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 func (r *CrunchyBridgeClusterReconciler) setControllerReference(
 	owner *v1beta1.CrunchyBridgeCluster, controlled client.Object,
 ) error {
-	return controllerutil.SetControllerReference(owner, controlled, r.Scheme())
+	return controllerutil.SetControllerReference(owner, controlled, runtime.Scheme)
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={get,patch,update}
@@ -113,14 +124,14 @@ func (r *CrunchyBridgeClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	// copy before returning from its cache.
 	// - https://github.com/kubernetes-sigs/controller-runtime/issues/1235
 	crunchybridgecluster := &v1beta1.CrunchyBridgeCluster{}
-	err := r.Get(ctx, req.NamespacedName, crunchybridgecluster)
+	err := r.Reader.Get(ctx, req.NamespacedName, crunchybridgecluster)
 
 	if err == nil {
 		// Write any changes to the crunchybridgecluster status on the way out.
 		before := crunchybridgecluster.DeepCopy()
 		defer func() {
 			if !equality.Semantic.DeepEqual(before.Status, crunchybridgecluster.Status) {
-				status := r.Status().Patch(ctx, crunchybridgecluster, client.MergeFrom(before), r.Owner)
+				status := r.StatusWriter.Patch(ctx, crunchybridgecluster, client.MergeFrom(before))
 
 				if err == nil && status != nil {
 					err = status
@@ -684,7 +695,7 @@ func (r *CrunchyBridgeClusterReconciler) GetSecretKeys(
 	}}
 
 	err := errors.WithStack(
-		r.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 
 	if err == nil {
 		if existing.Data["key"] != nil && existing.Data["team"] != nil {
@@ -707,7 +718,7 @@ func (r *CrunchyBridgeClusterReconciler) deleteControlled(
 		version := object.GetResourceVersion()
 		exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 
-		return r.Delete(ctx, object, exactly)
+		return r.Writer.Delete(ctx, object, exactly)
 	}
 
 	return nil
