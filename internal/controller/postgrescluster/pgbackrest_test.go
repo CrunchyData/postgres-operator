@@ -4514,7 +4514,7 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 				cluster.Status.PGBackRest.Repos = tc.repoStatus
 			}
 
-			err := reconciler.getRepoHostVolumeRequests(ctx, cluster)
+			err := reconciler.writeRepoVolumeSizeRequestStatus(ctx, cluster)
 
 			if tc.repoHostExists {
 				assert.NilError(t, err)

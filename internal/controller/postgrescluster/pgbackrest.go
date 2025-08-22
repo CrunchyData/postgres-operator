@@ -2778,7 +2778,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	if feature.Enabled(ctx, feature.AutoGrowVolumes) {
 		// get the autogrow annotations so that the correct volume size values can be
 		// used and the cluster status can be updated
-		errors = append(errors, r.getRepoHostVolumeRequests(ctx, postgresCluster))
+		errors = append(errors, r.writeRepoVolumeSizeRequestStatus(ctx, postgresCluster))
 	}
 
 	for i, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
@@ -2820,11 +2820,11 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 
 // +kubebuilder:rbac:groups="",resources="pods",verbs={list}
 
-// getRepoHostVolumeRequests gets the pgBackRest repo host volume request annotations
+// writeRepoVolumeSizeRequestStatus gets the pgBackRest repo host volume request annotations
 // from the repo host Pod and stores them in the Postgres Cluster object's status.
 // If there is no repo host or there are no annotations, this function returns
 // without updating the status.
-func (r *Reconciler) getRepoHostVolumeRequests(ctx context.Context,
+func (r *Reconciler) writeRepoVolumeSizeRequestStatus(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) error {
 
 	pods := &corev1.PodList{}
