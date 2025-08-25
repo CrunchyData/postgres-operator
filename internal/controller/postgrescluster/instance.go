@@ -7,6 +7,7 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"io"
 	"maps"
 	"sort"
@@ -32,7 +33,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
-	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
+
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
