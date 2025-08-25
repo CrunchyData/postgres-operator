@@ -54,88 +54,125 @@ func TestStoreDesiredRequest(t *testing.T) {
 			}, {
 				Name:     "blue",
 				Replicas: initialize.Int32(1),
-			}}}}
+			}},
+			Backups: v1beta1.Backups{
+				PGBackRest: v1beta1.PGBackRestArchive{
+					Repos: []v1beta1.PGBackRestRepo{{
+						Name: "repo1",
+						Volume: &v1beta1.RepoPVC{
+							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+								Resources: corev1.VolumeResourceRequirements{
+									Limits: map[corev1.ResourceName]resource.Quantity{
+										corev1.ResourceStorage: resource.MustParse("1Gi"),
+									}}},
+						},
+					}, {
+						Name: "repo2",
+					}}},
+			},
+		},
+	}
 
-	t.Run("BadRequestNoBackup", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
+	testCases := []struct {
+		tcName               string
+		Voltype              string
+		host                 string
+		desiredRequest       string
+		desiredRequestBackup string
+		expectedValue        string
+		expectedNumLogs      int
+		expectedLog          string
+		expectedNumEvents    int
+		expectedEvent        string
+	}{{
+		tcName:  "PGData-BadRequestNoBackup",
+		Voltype: "pgData", host: "red",
+		desiredRequest: "woot", desiredRequestBackup: "", expectedValue: "",
+		expectedNumEvents: 0, expectedNumLogs: 1,
+		expectedLog: "Unable to parse pgData volume request from status (woot) for rhino/red",
+	}, {
+		tcName:  "PGData-BadRequestWithBackup",
+		Voltype: "pgData", host: "red",
+		desiredRequest: "foo", desiredRequestBackup: "1Gi", expectedValue: "1Gi",
+		expectedNumEvents: 0, expectedNumLogs: 1,
+		expectedLog: "Unable to parse pgData volume request from status (foo) for rhino/red",
+	}, {
+		tcName:  "PGData-NoLimitNoEvent",
+		Voltype: "pgData", host: "blue",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		expectedNumEvents: 0, expectedNumLogs: 0,
+	}, {
+		tcName:  "PGData-BadBackupRequest",
+		Voltype: "pgData", host: "red",
+		desiredRequest: "2Gi", desiredRequestBackup: "bar", expectedValue: "2Gi",
+		expectedNumEvents: 1, expectedEvent: "pgData volume expansion to 2Gi requested for rhino/red.",
+		expectedNumLogs: 1, expectedLog: "Unable to parse pgData volume request from status backup (bar) for rhino/red",
+	}, {
+		tcName:  "PGData-ValueUpdateWithEvent",
+		Voltype: "pgData", host: "red",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		expectedNumEvents: 1, expectedEvent: "pgData volume expansion to 1Gi requested for rhino/red.",
+		expectedNumLogs: 0,
+	}, {
+		tcName:  "Repo-BadRequestNoBackup",
+		Voltype: "repo1", host: "repo-host",
+		desiredRequest: "woot", desiredRequestBackup: "", expectedValue: "",
+		expectedNumEvents: 0, expectedNumLogs: 1,
+		expectedLog: "Unable to parse repo1 volume request from status (woot) for rhino/repo-host",
+	}, {
+		tcName:  "Repo-BadRequestWithBackup",
+		Voltype: "repo1", host: "repo-host",
+		desiredRequest: "foo", desiredRequestBackup: "1Gi", expectedValue: "1Gi",
+		expectedNumEvents: 0, expectedNumLogs: 1,
+		expectedLog: "Unable to parse repo1 volume request from status (foo) for rhino/repo-host",
+	}, {
+		tcName:  "Repo-NoLimitNoEvent",
+		Voltype: "repo2", host: "repo-host",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		expectedNumEvents: 0, expectedNumLogs: 0,
+	}, {
+		tcName:  "Repo-BadBackupRequest",
+		Voltype: "repo1", host: "repo-host",
+		desiredRequest: "2Gi", desiredRequestBackup: "bar", expectedValue: "2Gi",
+		expectedNumEvents: 1, expectedEvent: "repo1 volume expansion to 2Gi requested for rhino/repo-host.",
+		expectedNumLogs: 1, expectedLog: "Unable to parse repo1 volume request from status backup (bar) for rhino/repo-host",
+	}, {
+		tcName:  "Repo-ValueUpdateWithEvent",
+		Voltype: "repo1", host: "repo-host",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		expectedNumEvents: 1, expectedEvent: "repo1 volume expansion to 1Gi requested for rhino/repo-host.",
+		expectedNumLogs: 0,
+	}}
 
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "pgData", "red", "woot", "")
+	for _, tc := range testCases {
+		t.Run(tc.tcName, func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
 
-		assert.Equal(t, value, "")
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status"))
-	})
+			value := reconciler.storeDesiredRequest(
+				ctx,
+				&cluster,
+				tc.Voltype,
+				tc.host,
+				tc.desiredRequest,
+				tc.desiredRequestBackup,
+			)
+			assert.Equal(t, value, tc.expectedValue)
+			assert.Equal(t, len(recorder.Events), tc.expectedNumEvents)
+			if tc.expectedNumEvents == 1 {
+				assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+				assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
+				assert.Equal(t, recorder.Events[0].Note, tc.expectedEvent)
+			}
+			assert.Equal(t, len(*logs), tc.expectedNumLogs)
+			if tc.expectedNumLogs == 1 {
+				assert.Assert(t, cmp.Contains((*logs)[0], tc.expectedLog))
+			}
+		})
 
-	t.Run("BadRequestWithBackup", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "pgData", "red", "foo", "1Gi")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status (foo) for rhino/red"))
-	})
-
-	t.Run("NoLimitNoEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "pgData", "blue", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 0)
-	})
-
-	t.Run("BadBackupRequest", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "pgData", "red", "2Gi", "bar")
-
-		assert.Equal(t, value, "2Gi")
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status backup (bar) for rhino/red"))
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
-		assert.Equal(t, recorder.Events[0].Note, "pgData volume expansion to 2Gi requested for rhino/red.")
-	})
-
-	t.Run("ValueUpdateWithEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "pgData", "red", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
-		assert.Equal(t, recorder.Events[0].Note, "pgData volume expansion to 1Gi requested for rhino/red.")
-	})
-
-	t.Run("NoLimitNoEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "pgData", "blue", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 0)
-	})
+	}
 }
 
 func TestLimitIsSet(t *testing.T) {
