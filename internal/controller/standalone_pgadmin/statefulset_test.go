@@ -14,9 +14,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -218,5 +220,79 @@ tolerations:
 `
 
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, compare))
+	})
+
+	t.Run("verify additional volumes", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		reconciler.Recorder = recorder
+
+		custompgadmin := new(v1beta1.PGAdmin)
+
+		// add pod level customizations
+		custompgadmin.Name = "custom-volumes"
+		custompgadmin.Namespace = ns.Name
+
+		require.UnmarshalInto(t, &custompgadmin.Spec, `{
+			dataVolumeClaimSpec: {
+				accessModes: [ReadWriteOnce],
+				resources: { requests: { storage: 1Gi } },
+			},
+		}`)
+		require.UnmarshalInto(t, &custompgadmin.Spec, `{
+			volumes: {
+				additional: [
+					{
+						"name": "required",
+        				"claimName": "required-1"
+					}
+				],
+			},
+		}`)
+
+		assert.NilError(t, cc.Create(ctx, custompgadmin))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, custompgadmin)) })
+
+		err := reconciler.reconcilePGAdminStatefulSet(ctx, custompgadmin, configmap, pvc)
+		assert.NilError(t, err)
+
+		selector, err := naming.AsSelector(metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				naming.LabelStandalonePGAdmin: custompgadmin.Name,
+			},
+		})
+		assert.NilError(t, err)
+
+		list := appsv1.StatefulSetList{}
+		assert.NilError(t, cc.List(ctx, &list, client.InNamespace(custompgadmin.Namespace),
+			client.MatchingLabelsSelector{Selector: selector}))
+		assert.Equal(t, len(list.Items), 1)
+
+		template := list.Items[0].Spec.Template.DeepCopy()
+
+		for _, container := range template.Spec.Containers {
+			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
+				`- mountPath: /etc/pgadmin/conf.d
+  name: pgadmin-config
+  readOnly: true
+- mountPath: /var/lib/pgadmin
+  name: pgadmin-data
+- mountPath: /etc/pgadmin
+  name: pgadmin-config-system
+  readOnly: true
+- mountPath: /tmp
+  name: tmp
+- mountPath: /volumes/required
+  name: volumes-required`))
+		}
+
+		assert.Assert(t, cmp.MarshalContains(template.Spec.Volumes,
+			`
+- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required-1`))
+
+		// No events created
+		assert.Equal(t, len(recorder.Events), 0)
+
 	})
 }

@@ -167,6 +167,19 @@ type PGAdminSpec struct {
 	// https://kubernetes.io/docs/concepts/services-networking/service/
 	// +optional
 	ServiceName string `json:"serviceName,omitempty"`
+
+	Volumes *PGAdminVolumesSpec `json:"volumes,omitempty"`
+}
+
+// PGAdminVolumesSpec defines the configuration for pgAdmin additional volumes
+type PGAdminVolumesSpec struct {
+	// Additional pre-existing volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	Additional []AdditionalVolume `json:"additional,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule=`[has(self.postgresClusterName),has(self.postgresClusterSelector)].exists_one(x,x)`,message=`exactly one of "postgresClusterName" or "postgresClusterSelector" is required`
