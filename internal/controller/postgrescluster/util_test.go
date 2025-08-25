@@ -619,7 +619,7 @@ func TestAddAdditionalVolumesToSpecifiedContainers(t *testing.T) {
 
 			copyPodTemplate := podTemplate.DeepCopy()
 
-			missingContainers := addAdditionalVolumesToSpecifiedContainers(
+			missingContainers := AddAdditionalVolumesToSpecifiedContainers(
 				copyPodTemplate,
 				tc.additionalVolumes,
 			)

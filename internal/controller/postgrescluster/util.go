@@ -297,12 +297,12 @@ func AdditionalVolumeMount(name string, readOnly bool) corev1.VolumeMount {
 	}
 }
 
-// addAdditionalVolumesToSpecifiedContainers adds additional volumes to the specified
+// AddAdditionalVolumesToSpecifiedContainers adds additional volumes to the specified
 // containers in the specified pod
-// addAdditionalVolumesToSpecifiedContainers adds the volumes to the pod
+// AddAdditionalVolumesToSpecifiedContainers adds the volumes to the pod
 // as `volumes-<additionalVolumeRequest.Name>`
 // and adds the directory to the path `/volumes/<additionalVolumeRequest.Name>`
-func addAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
+func AddAdditionalVolumesToSpecifiedContainers(template *corev1.PodTemplateSpec,
 	additionalVolumes []v1beta1.AdditionalVolume) []string {
 
 	missingContainers := []string{}
