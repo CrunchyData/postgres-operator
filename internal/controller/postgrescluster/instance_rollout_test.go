@@ -57,9 +57,12 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 		}
 		observed := &observedInstances{forCluster: instances}
 
-		key := client.ObjectKey{Namespace: "ns1", Name: "one-pod-bruh"}
-		reconciler := &Reconciler{}
-		reconciler.Client = fake.NewClientBuilder().WithObjects(instances[0].Pods[0]).Build()
+		cc := fake.NewClientBuilder().WithObjects(instances[0].Pods[0]).Build()
+		key := client.ObjectKeyFromObject(instances[0].Pods[0])
+		reconciler := &Reconciler{
+			Reader: cc,
+			Writer: cc,
+		}
 
 		execCalls := 0
 		reconciler.PodExec = func(
@@ -82,13 +85,13 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 			return nil
 		}
 
-		assert.NilError(t, reconciler.Client.Get(ctx, key, &corev1.Pod{}),
+		assert.NilError(t, cc.Get(ctx, key, &corev1.Pod{}),
 			"bug in test: expected pod to exist")
 
 		assert.NilError(t, reconciler.rolloutInstance(ctx, cluster, observed, instances[0]))
 		assert.Equal(t, execCalls, 1, "expected PodExec to be called")
 
-		err := reconciler.Client.Get(ctx, key, &corev1.Pod{})
+		err := cc.Get(ctx, key, &corev1.Pod{})
 		assert.Assert(t, apierrors.IsNotFound(err),
 			"expected pod to be deleted, got: %#v", err)
 	})
