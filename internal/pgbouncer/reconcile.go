@@ -150,8 +150,13 @@ func Pod(
 	}
 
 	mkdirCommand := ""
-	if logfile != "" && filepath.Dir(logfile) != "/tmp" {
-		mkdirCommand = shell.MakeDirectories("/tmp", filepath.Dir(logfile)) + "; "
+	// filepath.Dir will return an "" when given an ""
+	logPath := filepath.Dir(logfile)
+	// If the logpath is `/tmp`, we don't need to worry about creating/chmoding it.
+	// Otherwise, use `MakeDirectories` to create/chmod that specific directory,
+	// without worrying about parent directories.
+	if logfile != "" && logPath != "/tmp" {
+		mkdirCommand = shell.MakeDirectories(logPath, logPath) + "; "
 	}
 
 	container := corev1.Container{
