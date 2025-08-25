@@ -1196,7 +1196,7 @@ func (r *Reconciler) reconcileInstance(
 
 	// mount additional volumes to the Postgres instance containers
 	if err == nil && spec.Volumes != nil && len(spec.Volumes.Additional) > 0 {
-		missingContainers := addAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
+		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
