@@ -7,7 +7,6 @@ package collector
 import (
 	"context"
 	"fmt"
-	"path"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -185,7 +184,7 @@ func startCommand(logDirectories []string, includeLogrotate bool) []string {
 	if len(logDirectories) != 0 {
 		for _, logDir := range logDirectories {
 			mkdirScript = mkdirScript + `
-` + shell.MakeDirectories(logDir, path.Join(logDir, "receiver"))
+` + shell.MakeDirectories(logDir, "receiver")
 		}
 	}
 

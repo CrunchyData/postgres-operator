@@ -19,9 +19,60 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
+func PostgreSQLParameters(ctx context.Context,
+	inCluster *v1beta1.PostgresCluster,
+	outParameters *postgres.Parameters,
+) {
+	version := inCluster.Spec.PostgresVersion
+
+	if OpenTelemetryLogsEnabled(ctx, inCluster) {
+		var spec *v1beta1.InstrumentationLogsSpec
+		if inCluster != nil && inCluster.Spec.Instrumentation != nil {
+			spec = inCluster.Spec.Instrumentation.Logs
+		}
+
+		// Retain logs for a short time unless specified.
+		retention := metav1.Duration{Duration: 24 * time.Hour}
+		if spec != nil && spec.RetentionPeriod != nil {
+			retention = spec.RetentionPeriod.AsDuration()
+		}
+
+		// Rotate log files according to retention and name them for the OpenTelemetry Collector.
+		//
+		// The ".log" suffix is replaced by ".csv" for CSV log files, and
+		// the ".log" suffix is replaced by ".json" for JSON log files.
+		//
+		// https://www.postgresql.org/docs/current/runtime-config-logging.html
+		for k, v := range postgres.LogRotation(retention, "postgresql-", ".log") {
+			outParameters.Mandatory.Add(k, v)
+		}
+
+		// Enable logging to file. Postgres uses a "logging collector" to safely write concurrent messages.
+		// NOTE: That collector is designed to not lose messages. When it is overloaded, other Postgres processes block.
+		//
+		// https://www.postgresql.org/docs/current/runtime-config-logging.html
+		outParameters.Mandatory.Add("logging_collector", "on")
+
+		// PostgreSQL v8.3 adds support for CSV logging, and
+		// PostgreSQL v15 adds support for JSON logging.
+		// The latter is preferred because newlines are escaped as "\n", U+005C + U+006E.
+		if version >= 15 {
+			outParameters.Mandatory.Add("log_destination", "jsonlog")
+		} else {
+			outParameters.Mandatory.Add("log_destination", "csvlog")
+		}
+
+		// Log in a timezone the OpenTelemetry Collector understands.
+		outParameters.Mandatory.Add("log_timezone", "UTC")
+
+		// TODO(logs): Remove this call and do it in [postgres.NewParameters] regardless of the gate.
+		outParameters.Mandatory.Add("log_directory", fmt.Sprintf("%s/logs/postgres", postgres.DataStorage(inCluster)))
+	}
+}
+
 func NewConfigForPostgresPod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
-	outParameters *postgres.ParameterSet,
+	inParameters *postgres.ParameterSet,
 ) *Config {
 	config := NewConfig(inCluster.Spec.Instrumentation)
 
@@ -30,7 +81,7 @@ func NewConfigForPostgresPod(ctx context.Context,
 	EnablePatroniMetrics(ctx, inCluster, config)
 
 	// Logging
-	EnablePostgresLogging(ctx, inCluster, config, outParameters)
+	EnablePostgresLogging(ctx, inCluster, inParameters, config)
 	EnablePatroniLogging(ctx, inCluster, config)
 
 	return config
@@ -76,8 +127,8 @@ func postgresCSVNames(version int) string {
 func EnablePostgresLogging(
 	ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
+	inParameters *postgres.ParameterSet,
 	outConfig *Config,
-	outParameters *postgres.ParameterSet,
 ) {
 	var spec *v1beta1.InstrumentationLogsSpec
 	if inCluster != nil && inCluster.Spec.Instrumentation != nil {
@@ -85,41 +136,8 @@ func EnablePostgresLogging(
 	}
 
 	if OpenTelemetryLogsEnabled(ctx, inCluster) {
-		directory := postgres.LogDirectory()
+		directory := inParameters.Value("log_directory")
 		version := inCluster.Spec.PostgresVersion
-
-		// https://www.postgresql.org/docs/current/runtime-config-logging.html
-		outParameters.Add("logging_collector", "on")
-		outParameters.Add("log_directory", directory)
-
-		// PostgreSQL v8.3 adds support for CSV logging, and
-		// PostgreSQL v15 adds support for JSON logging. The latter is preferred
-		// because newlines are escaped as "\n", U+005C + U+006E.
-		if version < 15 {
-			outParameters.Add("log_destination", "csvlog")
-		} else {
-			outParameters.Add("log_destination", "jsonlog")
-		}
-
-		// If retentionPeriod is set in the spec, use that value; otherwise, we want
-		// to use a reasonably short duration. Defaulting to 1 day.
-		retentionPeriod := metav1.Duration{Duration: 24 * time.Hour}
-		if spec != nil && spec.RetentionPeriod != nil {
-			retentionPeriod = spec.RetentionPeriod.AsDuration()
-		}
-
-		// Rotate log files according to retention.
-		//
-		// The ".log" suffix is replaced by ".csv" for CSV log files, and
-		// the ".log" suffix is replaced by ".json" for JSON log files.
-		//
-		// https://www.postgresql.org/docs/current/runtime-config-logging.html
-		for k, v := range postgres.LogRotation(retentionPeriod, "postgresql-", ".log") {
-			outParameters.Add(k, v)
-		}
-
-		// Log in a timezone that the OpenTelemetry Collector will understand.
-		outParameters.Add("log_timezone", "UTC")
 
 		// Keep track of what log records and files have been processed.
 		// Use a subdirectory of the logs directory to stay within the same failure domain.
@@ -145,8 +163,8 @@ func EnablePostgresLogging(
 			// The 2nd through 5th fields are optional, so match through to the 7th field.
 			// This should do a decent job of not matching the middle of some SQL statement.
 			//
-			// The number of fields has changed over the years, but the first few
-			// are always formatted the same way.
+			// The number of fields has changed over the years, but the first few are always formatted the same way.
+			// [PostgreSQLParameters] ensures the timezone is UTC.
 			//
 			// NOTE: This regexp is invoked in multi-line mode. https://go.dev/s/re2syntax
 			"multiline": map[string]string{
