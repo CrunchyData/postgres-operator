@@ -6,6 +6,7 @@ package pgbouncer
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +20,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	passwd "github.com/crunchydata/postgres-operator/internal/postgres/password"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -128,6 +130,7 @@ func Pod(
 	inPostgreSQLCertificate *corev1.SecretProjection,
 	inSecret *corev1.Secret,
 	template *corev1.PodTemplateSpec,
+	logfile string,
 ) {
 	if inCluster.Spec.Proxy == nil || inCluster.Spec.Proxy.PGBouncer == nil {
 		// PgBouncer is disabled; there is nothing to do.
@@ -146,10 +149,15 @@ func Pod(
 		),
 	}
 
+	mkdirCommand := ""
+	if logfile != "" && filepath.Dir(logfile) != "/tmp" {
+		mkdirCommand = shell.MakeDirectories("/tmp", filepath.Dir(logfile)) + "; "
+	}
+
 	container := corev1.Container{
 		Name: naming.ContainerPGBouncer,
 
-		Command:         []string{"pgbouncer", iniFileAbsolutePath},
+		Command:         []string{"sh", "-c", "--", mkdirCommand + `exec "$@"`, "--", "pgbouncer", iniFileAbsolutePath},
 		Image:           config.PGBouncerContainerImage(inCluster),
 		ImagePullPolicy: inCluster.Spec.ImagePullPolicy,
 		Resources:       inCluster.Spec.Proxy.PGBouncer.Resources,

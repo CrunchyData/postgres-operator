@@ -44,13 +44,13 @@ func (r *Reconciler) reconcilePGBouncer(
 	if err == nil {
 		secret, err = r.reconcilePGBouncerSecret(ctx, cluster, root, service)
 	}
+	logfile := setPGBouncerLogfile(cluster)
 	if err == nil {
-		logfile := setPGBouncerLogfile(cluster)
 		config := collector.NewConfigForPgBouncerPod(ctx, cluster, pgbouncer.PostgresqlUser, logfile)
 		configmap, err = r.reconcilePGBouncerConfigMap(ctx, cluster, config, logfile)
 	}
 	if err == nil {
-		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret)
+		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret, logfile)
 	}
 	if err == nil {
 		err = r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
@@ -392,6 +392,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	primaryCertificate *corev1.SecretProjection,
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
+	logfile string,
 ) (*appsv1.Deployment, bool, error) {
 	deploy := &appsv1.Deployment{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	deploy.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
@@ -494,7 +495,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	err := errors.WithStack(r.setControllerReference(cluster, deploy))
 
 	if err == nil {
-		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template)
+		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template, logfile)
 	}
 
 	// Add tmp directory and volume for log files
@@ -521,9 +522,10 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	primaryCertificate *corev1.SecretProjection,
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
+	logfile string,
 ) error {
 	deploy, specified, err := r.generatePGBouncerDeployment(
-		ctx, cluster, primaryCertificate, configmap, secret)
+		ctx, cluster, primaryCertificate, configmap, secret, logfile)
 
 	// Set observations whether the deployment exists or not.
 	defer func() {
