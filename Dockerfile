@@ -10,6 +10,7 @@ COPY hack/tools/queries /opt/crunchy/conf
 WORKDIR /usr/src/app
 COPY . .
 ENV GOCACHE=/var/cache/go
+ENV GOMODCACHE=/var/cache/go/mod
 RUN --mount=type=cache,target=/var/cache/go go build ./cmd/postgres-operator
 
 FROM docker.io/library/debian:bookworm
