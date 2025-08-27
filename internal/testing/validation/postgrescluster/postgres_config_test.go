@@ -131,13 +131,12 @@ func testPostgresConfigParametersCommon(t *testing.T, cc client.Client, base uns
 				err := cc.Create(ctx, cluster, client.DryRunAll)
 				assert.Assert(t, apierrors.IsInvalid(err))
 
-				status := require.StatusError(t, err)
-				assert.Assert(t, status.Details != nil)
-				assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+				details := require.StatusErrorDetails(t, err)
+				assert.Assert(t, cmp.Len(details.Causes, 1))
 
 				// TODO(k8s-1.30) TODO(validation): Move the parameter name from the message to the field path.
-				assert.Equal(t, status.Details.Causes[0].Field, "spec.config.parameters")
-				assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, tt.key))
+				assert.Equal(t, details.Causes[0].Field, "spec.config.parameters")
+				assert.Assert(t, cmp.Contains(details.Causes[0].Message, tt.key))
 			})
 		}
 	})
@@ -180,14 +179,13 @@ func testPostgresConfigParametersCommon(t *testing.T, cc client.Client, base uns
 				} else {
 					assert.Assert(t, apierrors.IsInvalid(err))
 
-					status := require.StatusError(t, err)
-					assert.Assert(t, status.Details != nil)
-					assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+					details := require.StatusErrorDetails(t, err)
+					assert.Assert(t, cmp.Len(details.Causes, 1))
 
 					// TODO(k8s-1.30) TODO(validation): Move the parameter name from the message to the field path.
-					assert.Equal(t, status.Details.Causes[0].Field, "spec.config.parameters")
-					assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, tt.key))
-					assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, tt.message))
+					assert.Equal(t, details.Causes[0].Field, "spec.config.parameters")
+					assert.Assert(t, cmp.Contains(details.Causes[0].Message, tt.key))
+					assert.Assert(t, cmp.Contains(details.Causes[0].Message, tt.message))
 				}
 			})
 		}
@@ -256,11 +254,10 @@ func testPostgresConfigParametersCommon(t *testing.T, cc client.Client, base uns
 			assert.Assert(t, apierrors.IsInvalid(err))
 			assert.ErrorContains(t, err, `"replica" or higher`)
 
-			status := require.StatusError(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, cmp.Len(status.Details.Causes, 1))
-			assert.Equal(t, status.Details.Causes[0].Field, "spec.config.parameters")
-			assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, "wal_level"))
+			details := require.StatusErrorDetails(t, err)
+			assert.Assert(t, cmp.Len(details.Causes, 1))
+			assert.Equal(t, details.Causes[0].Field, "spec.config.parameters")
+			assert.Assert(t, cmp.Contains(details.Causes[0].Message, "wal_level"))
 		})
 	})
 
