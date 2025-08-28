@@ -18632,6 +18632,11 @@ spec:
                         type: string
                       description: Desired Size of the pgData volume
                       type: object
+                    desiredPGWALVolume:
+                      additionalProperties:
+                        type: string
+                      description: Desired Size of the pgWAL volume
+                      type: object
                     name:
                       type: string
                     readyReplicas:
@@ -37556,6 +37561,11 @@ spec:
                       additionalProperties:
                         type: string
                       description: Desired Size of the pgData volume
+                      type: object
+                    desiredPGWALVolume:
+                      additionalProperties:
+                        type: string
+                      description: Desired Size of the pgWAL volume
                       type: object
                     name:
                       type: string

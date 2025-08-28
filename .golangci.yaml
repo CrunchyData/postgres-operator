@@ -170,10 +170,6 @@ linters:
         text: >-
           deprecated: Use `RequeueAfter` instead
 
-      - linters: [unparam]
-        path: internal/controller/postgrescluster/autogrow.go
-        text: volumeType always receives \"pgData\"
-
 # https://golangci-lint.run/usage/formatters
 formatters:
   enable:

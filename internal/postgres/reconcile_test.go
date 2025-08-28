@@ -210,6 +210,11 @@ containers:
 
       # manage autogrow annotation for the pgData volume
       manageAutogrowAnnotation "pgdata"
+
+      # manage autogrow annotation for the pgWAL volume, if it exists
+      if [[ -d /pgwal ]]; then
+        manageAutogrowAnnotation "pgwal"
+      fi
     done
     }; export -f monitor; exec -a "$0" bash -ceu monitor
   - replication-cert-copy

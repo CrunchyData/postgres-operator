@@ -51,8 +51,18 @@ func TestStoreDesiredRequest(t *testing.T) {
 						Limits: map[corev1.ResourceName]resource.Quantity{
 							corev1.ResourceStorage: resource.MustParse("1Gi"),
 						}}},
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.VolumeResourceRequirements{
+						Limits: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceStorage: resource.MustParse("1Gi"),
+						}}},
 			}, {
-				Name:     "blue",
+				Name:               "blue",
+				Replicas:           initialize.Int32(1),
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{},
+			}, {
+				Name:     "green",
 				Replicas: initialize.Int32(1),
 			}},
 			Backups: v1beta1.Backups{
@@ -68,7 +78,10 @@ func TestStoreDesiredRequest(t *testing.T) {
 									}}},
 						},
 					}, {
-						Name: "repo2",
+						Name:   "repo2",
+						Volume: &v1beta1.RepoPVC{},
+					}, {
+						Name: "repo3",
 					}}},
 			},
 		},
@@ -115,6 +128,40 @@ func TestStoreDesiredRequest(t *testing.T) {
 		expectedNumEvents: 1, expectedEvent: "pgData volume expansion to 1Gi requested for rhino/red.",
 		expectedNumLogs: 0,
 	}, {
+		tcName:  "PGWAL-BadRequestNoBackup",
+		Voltype: "pgWAL", host: "red",
+		desiredRequest: "woot", desiredRequestBackup: "", expectedValue: "",
+		expectedNumEvents: 0, expectedNumLogs: 1,
+		expectedLog: "Unable to parse pgWAL volume request from status (woot) for rhino/red",
+	}, {
+		tcName:  "PGWAL-BadRequestWithBackup",
+		Voltype: "pgWAL", host: "red",
+		desiredRequest: "foo", desiredRequestBackup: "1Gi", expectedValue: "1Gi",
+		expectedNumEvents: 0, expectedNumLogs: 1,
+		expectedLog: "Unable to parse pgWAL volume request from status (foo) for rhino/red",
+	}, {
+		tcName:  "PGWAL-NoLimitNoEvent",
+		Voltype: "pgWAL", host: "blue",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		expectedNumEvents: 0, expectedNumLogs: 0,
+	}, {
+		tcName:  "PGWAL-NoVolumeDefined",
+		Voltype: "pgWAL", host: "green",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "",
+		expectedNumEvents: 0, expectedNumLogs: 0,
+	}, {
+		tcName:  "PGWAL-BadBackupRequest",
+		Voltype: "pgWAL", host: "red",
+		desiredRequest: "2Gi", desiredRequestBackup: "bar", expectedValue: "2Gi",
+		expectedNumEvents: 1, expectedEvent: "pgWAL volume expansion to 2Gi requested for rhino/red.",
+		expectedNumLogs: 1, expectedLog: "Unable to parse pgWAL volume request from status backup (bar) for rhino/red",
+	}, {
+		tcName:  "PGWAL-ValueUpdateWithEvent",
+		Voltype: "pgWAL", host: "red",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		expectedNumEvents: 1, expectedEvent: "pgWAL volume expansion to 1Gi requested for rhino/red.",
+		expectedNumLogs: 0,
+	}, {
 		tcName:  "Repo-BadRequestNoBackup",
 		Voltype: "repo1", host: "repo-host",
 		desiredRequest: "woot", desiredRequestBackup: "", expectedValue: "",
@@ -130,6 +177,11 @@ func TestStoreDesiredRequest(t *testing.T) {
 		tcName:  "Repo-NoLimitNoEvent",
 		Voltype: "repo2", host: "repo-host",
 		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		expectedNumEvents: 0, expectedNumLogs: 0,
+	}, {
+		tcName:  "Repo-NoRepoDefined",
+		Voltype: "repo3", host: "repo-host",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "",
 		expectedNumEvents: 0, expectedNumLogs: 0,
 	}, {
 		tcName:  "Repo-BadBackupRequest",
@@ -192,9 +244,19 @@ func TestLimitIsSet(t *testing.T) {
 						Limits: map[corev1.ResourceName]resource.Quantity{
 							corev1.ResourceStorage: resource.MustParse("1Gi"),
 						}}},
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{
+					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+					Resources: corev1.VolumeResourceRequirements{
+						Limits: map[corev1.ResourceName]resource.Quantity{
+							corev1.ResourceStorage: resource.MustParse("2Gi"),
+						}}},
 			}, {
 				Name:     "blue",
 				Replicas: initialize.Int32(1),
+			}, {
+				Name:               "green",
+				Replicas:           initialize.Int32(1),
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{},
 			}},
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
@@ -210,52 +272,86 @@ func TestLimitIsSet(t *testing.T) {
 								},
 							}}},
 						{
-							Name: "repo2",
-						}}}},
+							Name:   "repo2",
+							Volume: &v1beta1.RepoPVC{},
+						}, {
+							Name: "repo3",
+						},
+					}}},
 		}}
 
 	testCases := []struct {
 		tcName       string
 		Voltype      string
 		instanceName string
-		expected     bool
+		expected     *bool
 	}{{
-		tcName:       "Limit is set for instance PGDATA volume",
+		tcName:       "PGDATA Limit is set for defined volume",
 		Voltype:      "pgData",
 		instanceName: "red",
-		expected:     true,
+		expected:     initialize.Pointer(true),
 	}, {
-		tcName:       "Limit is not set for instance PGDATA volume",
+		tcName:       "PGDATA Limit is not set for defined volume",
 		Voltype:      "pgData",
 		instanceName: "blue",
-		expected:     false,
+		expected:     initialize.Pointer(false),
 	}, {
-		tcName:       "Check PGDATA volume for non-existent instance",
+		tcName:       "PGDATA Check volume for non-existent instance",
 		Voltype:      "pgData",
 		instanceName: "orange",
-		expected:     false,
+		expected:     nil,
 	}, {
-		tcName:       "Limit is not set for repo1 volume",
+		tcName:       "PGWAL Limit is set for defined volume",
+		Voltype:      "pgWAL",
+		instanceName: "red",
+		expected:     initialize.Pointer(true),
+	}, {
+		tcName:       "PGWAL WAL volume defined but limit is not set",
+		Voltype:      "pgWAL",
+		instanceName: "green",
+		expected:     initialize.Pointer(false),
+	}, {
+		tcName:       "PGWAL Instance has no pg_wal volume defined",
+		Voltype:      "pgWAL",
+		instanceName: "blue",
+		expected:     nil,
+	}, {
+		tcName:       "PGWAL Check volume for non-existent instance",
+		Voltype:      "pgWAL",
+		instanceName: "orange",
+		expected:     nil,
+	}, {
+		tcName:       "REPO Limit set for defined volume",
 		Voltype:      "repo1",
 		instanceName: "",
-		expected:     true,
+		expected:     initialize.Pointer(true),
 	}, {
-		tcName:       "Limit is not set for repo2 volume",
+		tcName:       "REPO Limit is not set for defined volume",
 		Voltype:      "repo2",
 		instanceName: "",
-		expected:     false,
+		expected:     initialize.Pointer(false),
 	}, {
-		tcName:       "Check non-existent repo volume",
+		tcName:       "REPO volume not defined for repo",
 		Voltype:      "repo3",
 		instanceName: "",
-		expected:     false,
+		expected:     nil,
+	}, {
+		tcName:       "REPO Check volume for non-existent repo",
+		Voltype:      "repo4",
+		instanceName: "",
+		expected:     nil,
 	}}
 
 	for _, tc := range testCases {
 		t.Run(tc.tcName, func(t *testing.T) {
 
 			limitSet := limitIsSet(&cluster, tc.Voltype, tc.instanceName)
-			assert.Check(t, limitSet == tc.expected)
+			if tc.expected == nil {
+				assert.Assert(t, limitSet == nil)
+			} else {
+				assert.Assert(t, limitSet != nil)
+				assert.Check(t, *limitSet == *tc.expected)
+			}
 		})
 	}
 }
@@ -545,7 +641,8 @@ resources:
 
 		// NB: The code in 'setVolumeSize' is identical no matter the volume type.
 		// Since the different statuses are pulled out by the embedded 'getDesiredVolumeSize'
-		// function, we can just try a couple scenarios to validate the behavior.
+		// function, we can just try a couple scenarios to validate the behavior
+		// for the repo and pg_wal volumes.
 		t.Run("StatusWithLimitGrowToLimit-RepoHost", func(t *testing.T) {
 			recorder := events.NewRecorder(t, runtime.Scheme)
 			reconciler := &Reconciler{Recorder: recorder}
@@ -579,10 +676,42 @@ resources:
 			assert.Equal(t, recorder.Events[0].Note, "repo1 volume(s) for elephant/repo-host are at size limit (2Gi).")
 		})
 
+		t.Run("StatusWithLimitGrowToLimit-pgWAL", func(t *testing.T) {
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			reconciler := &Reconciler{Recorder: recorder}
+			ctx, logs := setupLogCapture(ctx)
+
+			spec := pvcSpec("2Gi", "3Gi")
+
+			cluster.Status = v1beta1.PostgresClusterStatus{
+				InstanceSets: []v1beta1.PostgresInstanceSetStatus{{
+					Name:               "another-instance",
+					DesiredPGWALVolume: map[string]string{"elephant-another-instance-abcd-0": "3Gi"},
+				}}}
+
+			reconciler.setVolumeSize(ctx, &cluster, spec, "pgWAL", "another-instance")
+
+			assert.Assert(t, cmp.MarshalMatches(spec, `
+accessModes:
+- ReadWriteOnce
+resources:
+  limits:
+    storage: 3Gi
+  requests:
+    storage: 3Gi
+`))
+
+			assert.Equal(t, len(*logs), 0)
+			assert.Equal(t, len(recorder.Events), 1)
+			assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+			assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
+			assert.Equal(t, recorder.Events[0].Note, "pgWAL volume(s) for elephant/another-instance are at size limit (3Gi).")
+		})
+
 	})
 }
 
-func TestDetermineDesiredVolumeRequest(t *testing.T) {
+func TestGetDesiredVolumeSize(t *testing.T) {
 	t.Parallel()
 
 	cluster := v1beta1.PostgresCluster{
@@ -604,6 +733,10 @@ func TestDetermineDesiredVolumeRequest(t *testing.T) {
 		return v1beta1.PostgresClusterStatus{
 			InstanceSets: []v1beta1.PostgresInstanceSetStatus{{
 				Name:                "some-instance",
+				DesiredPGDataVolume: desiredMap,
+				DesiredPGWALVolume:  desiredMap,
+			}, {
+				Name:                "another-instance",
 				DesiredPGDataVolume: desiredMap,
 			}},
 			PGBackRest: &v1beta1.PGBackRestStatus{
@@ -659,6 +792,50 @@ func TestDetermineDesiredVolumeRequest(t *testing.T) {
 		expected:       "1Gi",
 		expectedError:  "quantities must match the regular expression",
 		expectedDPV:    "batman",
+	}, {
+		tcName:         "pgwal-Larger size requested",
+		sizeFromStatus: "3Gi",
+		pvcRequestSize: "2Gi",
+		volType:        "pgWAL",
+		host:           "some-instance",
+		expected:       "3Gi",
+	}, {
+		tcName:         "pgwal-PVC is desired size",
+		sizeFromStatus: "2Gi",
+		pvcRequestSize: "2Gi",
+		volType:        "pgWAL",
+		host:           "some-instance",
+		expected:       "2Gi",
+	}, {
+		tcName:         "pgwal-Original larger than status request",
+		sizeFromStatus: "1Gi",
+		pvcRequestSize: "2Gi",
+		volType:        "pgWAL",
+		host:           "some-instance",
+		expected:       "2Gi",
+	}, {
+		tcName:         "pgwal-Instance doesn't exist",
+		sizeFromStatus: "2Gi",
+		pvcRequestSize: "1Gi",
+		volType:        "pgWAL",
+		host:           "not-an-instance",
+		expected:       "1Gi",
+	}, {
+		tcName:         "pgwal-Bad Value",
+		sizeFromStatus: "batman",
+		pvcRequestSize: "1Gi",
+		volType:        "pgWAL",
+		host:           "some-instance",
+		expected:       "1Gi",
+		expectedError:  "quantities must match the regular expression",
+		expectedDPV:    "batman",
+	}, {
+		tcName:         "pgwal-No value set for instance",
+		sizeFromStatus: "batman",
+		pvcRequestSize: "5Gi",
+		volType:        "pgWAL",
+		host:           "another-instance",
+		expected:       "5Gi",
 	}, {
 		tcName:         "repo1-Larger size requested",
 		sizeFromStatus: "3Gi",

@@ -64,6 +64,7 @@ func (*Reconciler) watchPods() handler.Funcs {
 			// auto-grow volume resize annotations
 			volumeAnnotations := []string{
 				"suggested-pgdata-pvc-size",
+				"suggested-pgwal-pvc-size",
 				"suggested-repo1-pvc-size",
 				"suggested-repo2-pvc-size",
 				"suggested-repo3-pvc-size",

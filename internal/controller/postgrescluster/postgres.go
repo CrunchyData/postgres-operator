@@ -951,6 +951,12 @@ func (r *Reconciler) reconcilePostgresWALVolume(
 
 	pvc.Spec = instanceSpec.WALVolumeClaimSpec.AsPersistentVolumeClaimSpec()
 
+	r.setVolumeSize(ctx, cluster, &pvc.Spec, "pgWAL", instanceSpec.Name)
+
+	// Clear any set limit before applying PVC. This is needed to allow the limit
+	// value to change later.
+	pvc.Spec.Resources.Limits = nil
+
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,
 			errors.WithStack(r.apply(ctx, pvc)))
