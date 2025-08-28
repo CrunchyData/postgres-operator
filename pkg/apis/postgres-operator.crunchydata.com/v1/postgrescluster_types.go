@@ -598,6 +598,7 @@ type PostgresInstanceSetStatus struct {
 type PostgresProxySpec struct {
 
 	// Defines a PgBouncer proxy and connection pooler.
+	// +kubebuilder:validation:XValidation:rule=`!has(self.config) || !has(self.config.global) || !has(self.config.global.logfile) || self.config.global.logfile.startsWith('/tmp/logs/pgbouncer/') || self.volumes.additional.exists(x, self.config.global.logfile.startsWith("/volumes/"+x.name))`,message=`logfile destination is restricted to '/tmp/logs/pgbouncer/' or an existing additional volume`
 	PGBouncer *v1beta1.PGBouncerPodSpec `json:"pgBouncer"`
 }
 
