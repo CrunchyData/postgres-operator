@@ -605,6 +605,10 @@ type PostgresInstanceSetStatus struct {
 	// Desired Size of the pgData volume
 	// +optional
 	DesiredPGDataVolume map[string]string `json:"desiredPGDataVolume,omitempty"`
+
+	// Desired Size of the pgWAL volume
+	// +optional
+	DesiredPGWALVolume map[string]string `json:"desiredPGWALVolume,omitempty"`
 }
 
 // PostgresProxySpec is a union of the supported PostgreSQL proxies.

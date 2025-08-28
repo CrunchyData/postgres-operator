@@ -179,8 +179,7 @@ func InstancePod(ctx context.Context,
 		Image:           container.Image,
 		ImagePullPolicy: container.ImagePullPolicy,
 		SecurityContext: initialize.RestrictedSecurityContext(),
-
-		VolumeMounts: []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
+		VolumeMounts:    []corev1.VolumeMount{certVolumeMount, dataVolumeMount},
 	}
 
 	if inInstanceSpec.Sidecars != nil &&
@@ -254,6 +253,7 @@ func InstancePod(ctx context.Context,
 
 		container.VolumeMounts = append(container.VolumeMounts, walVolumeMount)
 		startup.VolumeMounts = append(startup.VolumeMounts, walVolumeMount)
+		reloader.VolumeMounts = append(reloader.VolumeMounts, walVolumeMount)
 		outInstancePod.Spec.Volumes = append(outInstancePod.Spec.Volumes, walVolume)
 	}
 

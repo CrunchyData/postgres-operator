@@ -330,6 +330,11 @@ while read -r -t 5 -u "${fd}" ||:; do
 
   # manage autogrow annotation for the pgData volume
   manageAutogrowAnnotation "pgdata"
+
+  # manage autogrow annotation for the pgWAL volume, if it exists
+  if [[ -d /pgwal ]]; then
+    manageAutogrowAnnotation "pgwal"
+  fi
 done
 `,
 		naming.CertMountPath,

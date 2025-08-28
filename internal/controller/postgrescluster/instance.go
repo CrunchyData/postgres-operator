@@ -317,11 +317,17 @@ func (r *Reconciler) observeInstances(
 	// Save desired volume size values in case the status is removed.
 	// This may happen in cases where the Pod is restarted, the cluster
 	// is shutdown, etc. Only save values for instances defined in the spec.
-	previousDesiredRequests := make(map[string]string)
+	previousPGDataDesiredRequests := make(map[string]string)
+	previousPGWALDesiredRequests := make(map[string]string)
 	if autogrow {
 		for _, statusIS := range cluster.Status.InstanceSets {
 			if statusIS.DesiredPGDataVolume != nil {
-				maps.Copy(previousDesiredRequests, statusIS.DesiredPGDataVolume)
+				maps.Copy(previousPGDataDesiredRequests, statusIS.DesiredPGDataVolume)
+			}
+		}
+		for _, statusIS := range cluster.Status.InstanceSets {
+			if statusIS.DesiredPGWALVolume != nil {
+				maps.Copy(previousPGWALDesiredRequests, statusIS.DesiredPGWALVolume)
 			}
 		}
 	}
@@ -331,6 +337,7 @@ func (r *Reconciler) observeInstances(
 	for _, name := range sets.List(observed.setNames) {
 		status := v1beta1.PostgresInstanceSetStatus{Name: name}
 		status.DesiredPGDataVolume = make(map[string]string)
+		status.DesiredPGWALVolume = make(map[string]string)
 
 		for _, instance := range observed.bySet[name] {
 			//nolint:gosec // This slice is always small.
@@ -343,14 +350,18 @@ func (r *Reconciler) observeInstances(
 				status.UpdatedReplicas++
 			}
 			if autogrow {
-				// Store desired pgData volume size for each instance Pod.
-				// The 'suggested-pgdata-pvc-size' annotation value is stored in the PostgresCluster
-				// status so that 1) it is available to the function 'reconcilePostgresDataVolume'
-				// and 2) so that the value persists after Pod restart and cluster shutdown events.
+				// Store desired pgData and pgWAL volume sizes for each instance Pod.
+				// The 'suggested-pgdata-pvc-size' and 'suggested-pgwal-pvc-size' annotation
+				// values are stored in the PostgresCluster status so that 1) they are available
+				// to the 'reconcilePostgresDataVolume' and 'reconcilePostgresWALVolume' functions
+				// and 2) so that the values persist after Pod restart and cluster shutdown events.
 				for _, pod := range instance.Pods {
 					// don't set an empty status
 					if pod.Annotations["suggested-pgdata-pvc-size"] != "" {
 						status.DesiredPGDataVolume[instance.Name] = pod.Annotations["suggested-pgdata-pvc-size"]
+					}
+					if pod.Annotations["suggested-pgwal-pvc-size"] != "" {
+						status.DesiredPGWALVolume[instance.Name] = pod.Annotations["suggested-pgwal-pvc-size"]
 					}
 				}
 			}
@@ -363,7 +374,10 @@ func (r *Reconciler) observeInstances(
 		if autogrow {
 			for _, instance := range observed.bySet[name] {
 				status.DesiredPGDataVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster, "pgData",
-					name, status.DesiredPGDataVolume[instance.Name], previousDesiredRequests[instance.Name])
+					name, status.DesiredPGDataVolume[instance.Name], previousPGDataDesiredRequests[instance.Name])
+
+				status.DesiredPGWALVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster, "pgWAL",
+					name, status.DesiredPGWALVolume[instance.Name], previousPGWALDesiredRequests[instance.Name])
 			}
 		}
 
