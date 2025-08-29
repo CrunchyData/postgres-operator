@@ -1707,7 +1707,9 @@ func TestGetPGBackRestResources(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: corev1.PodSpec{},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{Name: "test", Image: "test"}},
+						},
 					},
 				},
 			},
@@ -1745,7 +1747,9 @@ func TestGetPGBackRestResources(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: corev1.PodSpec{},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{Name: "test", Image: "test"}},
+						},
 					},
 				},
 			},
@@ -1781,7 +1785,9 @@ func TestGetPGBackRestResources(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: corev1.PodSpec{},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{Name: "test", Image: "test"}},
+						},
 					},
 				},
 			},

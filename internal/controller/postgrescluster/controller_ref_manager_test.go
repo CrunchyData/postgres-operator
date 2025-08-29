@@ -46,6 +46,9 @@ func TestManageControllerRefs(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"label1": "val1"},
 				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{Name: "test", Image: "test"}},
+				},
 			},
 		},
 	}
