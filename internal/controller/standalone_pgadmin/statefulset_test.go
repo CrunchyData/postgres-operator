@@ -37,6 +37,7 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Name = "test-standalone-pgadmin"
 	pgadmin.Namespace = ns.Name
+	pgadmin.Spec.Image = initialize.String("test")
 	require.UnmarshalInto(t, &pgadmin.Spec, `{
 		dataVolumeClaimSpec: {
 			accessModes: [ReadWriteOnce],
@@ -113,6 +114,7 @@ terminationGracePeriodSeconds: 30
 		// add pod level customizations
 		custompgadmin.Name = "custom-pgadmin"
 		custompgadmin.Namespace = ns.Name
+		custompgadmin.Spec.Image = initialize.String("test")
 		require.UnmarshalInto(t, &custompgadmin.Spec, `{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
@@ -231,7 +233,7 @@ tolerations:
 		// add pod level customizations
 		custompgadmin.Name = "custom-volumes"
 		custompgadmin.Namespace = ns.Name
-
+		custompgadmin.Spec.Image = initialize.String("test")
 		require.UnmarshalInto(t, &custompgadmin.Spec, `{
 			dataVolumeClaimSpec: {
 				accessModes: [ReadWriteOnce],
