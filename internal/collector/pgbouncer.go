@@ -9,6 +9,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strconv"
 
@@ -29,7 +30,7 @@ const PGBouncerPostRotateScript = "pkill -HUP --exact pgbouncer"
 // NewConfigForPgBouncerPod creates a config for the OTel collector container
 // that runs as a sidecar in the pgBouncer Pod
 func NewConfigForPgBouncerPod(
-	ctx context.Context, cluster *v1beta1.PostgresCluster, sqlQueryUsername string,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, sqlQueryUsername, logfile string,
 ) *Config {
 	if cluster.Spec.Proxy == nil || cluster.Spec.Proxy.PGBouncer == nil {
 		// pgBouncer is disabled; return nil
@@ -38,7 +39,7 @@ func NewConfigForPgBouncerPod(
 
 	config := NewConfig(cluster.Spec.Instrumentation)
 
-	EnablePgBouncerLogging(ctx, cluster, config)
+	EnablePgBouncerLogging(ctx, cluster, config, logfile)
 	EnablePgBouncerMetrics(ctx, cluster, config, sqlQueryUsername)
 
 	return config
@@ -49,6 +50,7 @@ func NewConfigForPgBouncerPod(
 func EnablePgBouncerLogging(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	outConfig *Config,
+	logfile string,
 ) {
 	var spec *v1beta1.InstrumentationLogsSpec
 	if inCluster != nil && inCluster.Spec.Instrumentation != nil {
@@ -56,7 +58,7 @@ func EnablePgBouncerLogging(ctx context.Context,
 	}
 
 	if OpenTelemetryLogsEnabled(ctx, inCluster) {
-		directory := naming.PGBouncerLogPath
+		directory := filepath.Dir(logfile)
 
 		// Keep track of what log records and files have been processed.
 		// Use a subdirectory of the logs directory to stay within the same failure domain.
