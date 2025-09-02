@@ -84,7 +84,7 @@ runs:
     # Install Trivy as requested.
     # NOTE: `setup-trivy` can download a "latest" version but cannot cache it.
     - if: ${{ ! contains(fromJSON(steps.parsed.outputs.setup), 'none') }}
-      uses: aquasecurity/setup-trivy@v0.2.3
+      uses: aquasecurity/setup-trivy@v0.2.4
       with:
         cache: ${{ contains(fromJSON(steps.parsed.outputs.setup), 'cache') }}
         version: ${{ steps.parsed.outputs.version }}
