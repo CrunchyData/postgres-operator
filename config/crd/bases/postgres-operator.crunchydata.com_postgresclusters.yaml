@@ -14375,9 +14375,6 @@ spec:
                             description: |-
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
-
-                              # Logging
-                              See also XValidation rule on  v1 PostgresProxySpec
                             type: object
                             x-kubernetes-map-type: granular
                             x-kubernetes-validations:
@@ -33316,9 +33313,6 @@ spec:
                             description: |-
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
-
-                              # Logging
-                              See also XValidation rule on  v1 PostgresProxySpec
                             type: object
                             x-kubernetes-map-type: granular
                             x-kubernetes-validations:
