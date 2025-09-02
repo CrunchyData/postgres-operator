@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -4430,8 +4431,9 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{
-		Client: tClient,
-		Owner:  client.FieldOwner(t.Name()),
+		Client:   tClient,
+		Owner:    client.FieldOwner(t.Name()),
+		Recorder: new(record.FakeRecorder),
 	}
 
 	testCases := []struct {
@@ -4505,11 +4507,41 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 				t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, repoHost)) })
 			}
 
+			// A limit is expected otherwise an empty string ("") is returned
+			testRepoPVC := func() *v1beta1.RepoPVC {
+				return &v1beta1.RepoPVC{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Limits: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							},
+						}}}
+			}
+
 			cluster := &v1beta1.PostgresCluster{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "orange",
 					Namespace: namespace,
 				},
+				Spec: v1beta1.PostgresClusterSpec{
+					Backups: v1beta1.Backups{
+						PGBackRest: v1beta1.PGBackRestArchive{
+							Repos: []v1beta1.PGBackRestRepo{
+								{
+									Name:   "repo1",
+									Volume: testRepoPVC(),
+								}, {
+									Name:   "repo2",
+									Volume: testRepoPVC(),
+								}, {
+									Name:   "repo3",
+									Volume: testRepoPVC(),
+								}, {
+									Name:   "repo4",
+									Volume: testRepoPVC(),
+								},
+							}}}},
 				Status: v1beta1.PostgresClusterStatus{
 					PGBackRest: &v1beta1.PGBackRestStatus{},
 				},
