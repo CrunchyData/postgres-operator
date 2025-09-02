@@ -26,7 +26,7 @@ type PGBouncerConfiguration struct {
 
 	// Settings that apply to the entire PgBouncer process.
 	// More info: https://www.pgbouncer.org/config.html
-	//
+	// ---
 	// # Logging
 	// +kubebuilder:validation:XValidation:rule=`!has(self.logfile) || self.logfile.endsWith('.log')`,message=`logfile config must end with '.log'`
 	// See also XValidation rule on  v1 PostgresProxySpec
