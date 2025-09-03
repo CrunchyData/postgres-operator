@@ -59,6 +59,7 @@ type PostgresClusterSpec struct {
 	// namespace as the cluster.
 	// +optional
 	DatabaseInitSQL *DatabaseInitSQL `json:"databaseInitSQL,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should use the defined default
 	// scheduling constraints. If the field is unset or false, the default
 	// scheduling constraints will be used in addition to any custom constraints
@@ -526,6 +527,8 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
 
+	// Volumes to be added to the instance set.
+	// +optional
 	Volumes *PostgresVolumesSpec `json:"volumes,omitempty"`
 }
 

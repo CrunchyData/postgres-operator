@@ -423,8 +423,8 @@ func startupCommand(
 		`(`+shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath)+`) ||`,
 		`halt "$(permissions `+shell.QuoteWord(naming.PatroniPGDataLogPath)+` ||:)"`,
 
-		`(`+shell.MakeDirectories(dataMountPath, naming.PGBackRestPGDataLogPath)+`) ||`,
-		`halt "$(permissions `+shell.QuoteWord(naming.PGBackRestPGDataLogPath)+` ||:)"`,
+		`(`+shell.MakeDirectories(dataMountPath, util.GetPGBackRestLogPathForInstance(cluster))+`) ||`,
+		`halt "$(permissions `+shell.QuoteWord(util.GetPGBackRestLogPathForInstance(cluster))+` ||:)"`,
 	)
 
 	pg_rewind_override := ""

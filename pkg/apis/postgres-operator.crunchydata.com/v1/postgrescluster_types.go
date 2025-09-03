@@ -22,6 +22,10 @@ import (
 // +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "volumes.temp" to log in "/pgtmp"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgtmp/logs/postgres") || self.instances.all(i, i.?volumes.temp.hasValue())).orValue(true)`
 // +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "walVolumeClaimSpec" to log in "/pgwal"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgwal/logs/postgres") || self.instances.all(i, i.?walVolumeClaimSpec.hasValue())).orValue(true)`
 // +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need an additional volume to log in "/volumes"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue() && i.volumes.additional.exists(volume, v.startsWith("/volumes/" + volume.name)))).orValue(true)`
+//
+// # pgBackRest Logging
+//
+// +kubebuilder:validation:XValidation:fieldPath=`.backups.pgbackrest.log.path`,message=`all instances need an additional volume for pgbackrest sidecar to log in "/volumes"`,rule=`self.?backups.pgbackrest.log.path.optMap(v, !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue() && i.volumes.additional.exists(volume, v.startsWith("/volumes/" + volume.name)))).orValue(true)`
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *v1beta1.Metadata `json:"metadata,omitempty"`
@@ -68,6 +72,7 @@ type PostgresClusterSpec struct {
 	// namespace as the cluster.
 	// +optional
 	DatabaseInitSQL *DatabaseInitSQL `json:"databaseInitSQL,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should use the defined default
 	// scheduling constraints. If the field is unset or false, the default
 	// scheduling constraints will be used in addition to any custom constraints
@@ -356,7 +361,7 @@ type Backups struct {
 
 	// pgBackRest archive configuration
 	// +optional
-	PGBackRest v1beta1.PGBackRestArchive `json:"pgbackrest"`
+	PGBackRest PGBackRestArchive `json:"pgbackrest"`
 
 	// VolumeSnapshot configuration
 	// +optional
@@ -538,6 +543,8 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
 
+	// Volumes to be added to the instance set.
+	// +optional
 	Volumes *v1beta1.PostgresVolumesSpec `json:"volumes,omitempty"`
 }
 

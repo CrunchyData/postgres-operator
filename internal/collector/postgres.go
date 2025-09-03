@@ -16,6 +16,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -244,8 +245,9 @@ func EnablePostgresLogging(
 		}
 
 		// pgBackRest pipeline
+		pgBackRestLogPath := util.GetPGBackRestLogPathForInstance(inCluster)
 		outConfig.Extensions["file_storage/pgbackrest_logs"] = map[string]any{
-			"directory":        naming.PGBackRestPGDataLogPath + "/receiver",
+			"directory":        pgBackRestLogPath + "/receiver",
 			"create_directory": false,
 			"fsync":            true,
 		}
@@ -258,8 +260,8 @@ func EnablePostgresLogging(
 			// a log record or two to the old file while rotation is occurring.
 			// The collector knows not to create duplicate logs.
 			"include": []string{
-				naming.PGBackRestPGDataLogPath + "/*.log",
-				naming.PGBackRestPGDataLogPath + "/*.log.1",
+				pgBackRestLogPath + "/*.log",
+				pgBackRestLogPath + "/*.log.1",
 			},
 			"storage": "file_storage/pgbackrest_logs",
 

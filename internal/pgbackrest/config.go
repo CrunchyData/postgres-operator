@@ -71,8 +71,8 @@ const (
 
 // CreatePGBackRestConfigMapIntent creates a configmap struct with pgBackRest pgbackrest.conf settings in the data field.
 // The keys within the data field correspond to the use of that configuration.
-// pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
-// pgbackrest_primary.conf is used by the primary database pod
+// pgbackrest-server.conf is used by the pgBackRest TLS server
+// pgbackrest_instance.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
 // pgbackrest_cloud.conf is used by cloud repo backup jobs
 func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
@@ -112,6 +112,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 			strconv.Itoa(postgresCluster.Spec.PostgresVersion),
 			pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
+			util.GetPGBackRestLogPathForInstance(postgresCluster),
 		).String()
 
 	// As the cluster transitions from having a repository host to having none,
@@ -122,6 +123,9 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 		serverConfig(postgresCluster).String()
 
 	if RepoHostVolumeDefined(postgresCluster) && repoHostName != "" {
+		// Get pgbackrest log path for repo host pod
+		pgBackRestLogPath := generateRepoHostLogPath(postgresCluster)
+
 		cm.Data[CMRepoKey] = iniGeneratedWarning +
 			populateRepoHostConfigurationMap(
 				serviceName, serviceNamespace,
@@ -130,26 +134,20 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 				pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
+				pgBackRestLogPath,
 			).String()
 
 		if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, postgresCluster) {
-
 			err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
 				ctx,
 				postgresCluster.Spec.Instrumentation,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
+				pgBackRestLogPath,
 			), cm)
 
 			// If OTel logging is enabled, add logrotate config for the RepoHost
 			if err == nil &&
 				collector.OpenTelemetryLogsEnabled(ctx, postgresCluster) {
-				var pgBackRestLogPath string
-				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-					if repo.Volume != nil {
-						pgBackRestLogPath = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
-						break
-					}
-				}
 
 				collector.AddLogrotateConfigs(ctx, postgresCluster.Spec.Instrumentation, cm, []collector.LogrotateConfig{{
 					LogFiles: []string{pgBackRestLogPath + "/*.log"},
@@ -180,13 +178,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 	cluster *v1beta1.PostgresCluster) string {
 
-	var pgBackRestLogPath string
-	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
-		if repo.Volume != nil {
-			pgBackRestLogPath = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
-			break
-		}
-	}
+	pgBackRestLogPath := generateRepoHostLogPath(cluster)
 
 	container := corev1.Container{
 		// TODO(log-rotation): The second argument here should be the path
@@ -380,7 +372,7 @@ func populatePGInstanceConfigurationMap(
 	serviceName, serviceNamespace, repoHostName, pgdataDir,
 	fetchKeyCommand, postgresVersion string,
 	pgPort int32, repos []v1beta1.PGBackRestRepo,
-	globalConfig map[string]string,
+	globalConfig map[string]string, pgBackRestLogPath string,
 ) iniSectionSet {
 
 	// TODO(cbandy): pass a FQDN in already.
@@ -396,7 +388,7 @@ func populatePGInstanceConfigurationMap(
 	// pgBackRest spool-path should always be co-located with the Postgres WAL path.
 	global.Set("spool-path", "/pgdata/pgbackrest-spool")
 	// pgBackRest will log to the pgData volume for commands run on the PostgreSQL instance
-	global.Set("log-path", naming.PGBackRestPGDataLogPath)
+	global.Set("log-path", pgBackRestLogPath)
 
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
@@ -450,13 +442,12 @@ func populateRepoHostConfigurationMap(
 	serviceName, serviceNamespace, pgdataDir,
 	fetchKeyCommand, postgresVersion string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
-	globalConfig map[string]string,
+	globalConfig map[string]string, logPath string,
 ) iniSectionSet {
 
 	global := iniMultiSet{}
 	stanza := iniMultiSet{}
 
-	var pgBackRestLogPathSet bool
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
 
@@ -468,20 +459,14 @@ func populateRepoHostConfigurationMap(
 				global.Set(option, val)
 			}
 		}
-
-		if !pgBackRestLogPathSet && repo.Volume != nil {
-			// pgBackRest will log to the first configured repo volume when commands
-			// are run on the pgBackRest repo host. With our previous check in
-			// RepoHostVolumeDefined(), we've already validated that at least one
-			// defined repo has a volume.
-			global.Set("log-path", fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name))
-			pgBackRestLogPathSet = true
-		}
 	}
 
-	// If no log path was set, don't log because the default path is not writable.
-	if !pgBackRestLogPathSet {
+	// If no log path was provided, don't log because the default path is not writable.
+	// Otherwise, set the log-path.
+	if logPath == "" {
 		global.Set("log-level-file", "off")
+	} else {
+		global.Set("log-path", logPath)
 	}
 
 	for option, val := range globalConfig {
@@ -817,4 +802,25 @@ func serverConfig(cluster *v1beta1.PostgresCluster) iniSectionSet {
 		"global":        global,
 		"global:server": server,
 	}
+}
+
+// generateRepoHostLogPath takes a postgrescluster and returns the log path that
+// should be used by pgbackrest in the Repo Host Pod based on the repos specified
+// and whether the user has specified a log path.
+//
+// This function assumes that the backups/pgbackrest spec is present in cluster.
+func generateRepoHostLogPath(cluster *v1beta1.PostgresCluster) string {
+	for _, repo := range cluster.Spec.Backups.PGBackRest.Repos {
+		if repo.Volume != nil {
+			// If the user has set a log path in the spec, use it.
+			// Otherwise, default to /pgbackrest/repo#/log
+			if cluster.Spec.Backups.PGBackRest.RepoHost != nil &&
+				cluster.Spec.Backups.PGBackRest.RepoHost.Log != nil &&
+				cluster.Spec.Backups.PGBackRest.RepoHost.Log.Path != "" {
+				return cluster.Spec.Backups.PGBackRest.RepoHost.Log.Path
+			}
+			return fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
+		}
+	}
+	return ""
 }
