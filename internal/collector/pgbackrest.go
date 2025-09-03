@@ -23,17 +23,25 @@ var pgBackRestLogsTransforms json.RawMessage
 
 func NewConfigForPgBackrestRepoHostPod(
 	ctx context.Context,
-	spec *v1beta1.InstrumentationSpec,
+	cluster *v1beta1.PostgresCluster,
 	repos []v1beta1.PGBackRestRepo,
 ) *Config {
-	config := NewConfig(spec)
+	config := NewConfig(cluster.Spec.Instrumentation)
 
-	if OpenTelemetryLogsEnabled(ctx, spec) {
+	if OpenTelemetryLogsEnabled(ctx, cluster) {
 
 		var directory string
 		for _, repo := range repos {
 			if repo.Volume != nil {
-				directory = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
+				// If the user has set a log path in the spec, use it.
+				// Otherwise, default to /pgbackrest/repo#/log
+				if cluster.Spec.Backups.PGBackRest.RepoHost != nil &&
+					cluster.Spec.Backups.PGBackRest.RepoHost.Log != nil &&
+					cluster.Spec.Backups.PGBackRest.RepoHost.Log.Path != "" {
+					directory = cluster.Spec.Backups.PGBackRest.RepoHost.Log.Path
+				} else {
+					directory = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
+				}
 				break
 			}
 		}
@@ -99,8 +107,9 @@ func NewConfigForPgBackrestRepoHostPod(
 		// If there are exporters to be added to the logs pipelines defined in
 		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
 		exporters := []ComponentID{DebugExporter}
-		if spec != nil && spec.Logs != nil && spec.Logs.Exporters != nil {
-			exporters = slices.Clone(spec.Logs.Exporters)
+		if cluster.Spec.Instrumentation != nil && cluster.Spec.Instrumentation.Logs != nil &&
+			cluster.Spec.Instrumentation.Logs.Exporters != nil {
+			exporters = slices.Clone(cluster.Spec.Instrumentation.Logs.Exporters)
 		}
 
 		config.Pipelines["logs/pgbackrest"] = Pipeline{

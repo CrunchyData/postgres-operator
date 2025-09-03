@@ -320,3 +320,9 @@ func (in *AdditionalVolume) AsVolume(name string) corev1.Volume {
 
 	return out
 }
+
+// LoggingConfiguration provides logging configuration for various components
+type LoggingConfiguration struct {
+	// +optional
+	Path string `json:"path,omitempty"`
+}
