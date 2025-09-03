@@ -840,3 +840,89 @@ log-level-stderr = error
 log-timestamp = n
 `)
 }
+
+func TestGenerateRepoHostLogPath(t *testing.T) {
+	cluster := v1beta1.PostgresCluster{}
+	cluster.Namespace = "ns1"
+	cluster.Name = "hippo-dance"
+
+	cluster.Spec.Port = initialize.Int32(2345)
+	cluster.Spec.PostgresVersion = 12
+
+	cluster.Spec.Backups = v1beta1.Backups{
+		PGBackRest: v1beta1.PGBackRestArchive{},
+	}
+
+	t.Run("NoReposNoRepoHost", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		assert.Equal(t, generateRepoHostLogPath(cluster), "")
+	})
+
+	t.Run("NoVolumeRepo", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name: "repo1",
+				GCS:  &v1beta1.RepoGCS{},
+			},
+		}
+		assert.Equal(t, generateRepoHostLogPath(cluster), "")
+	})
+
+	t.Run("OneVolumeRepo", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name:   "repo1",
+				Volume: &v1beta1.RepoPVC{},
+			},
+		}
+		assert.Equal(t, generateRepoHostLogPath(cluster), "/pgbackrest/repo1/log")
+	})
+
+	t.Run("TwoVolumeRepos", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name:   "repo1",
+				Volume: &v1beta1.RepoPVC{},
+			},
+			{
+				Name:   "repo2",
+				Volume: &v1beta1.RepoPVC{},
+			},
+		}
+		assert.Equal(t, generateRepoHostLogPath(cluster), "/pgbackrest/repo1/log")
+	})
+
+	t.Run("VolumeRepoNotFirst", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name: "repo1",
+				GCS:  &v1beta1.RepoGCS{},
+			},
+			{
+				Name:   "repo2",
+				Volume: &v1beta1.RepoPVC{},
+			},
+		}
+		assert.Equal(t, generateRepoHostLogPath(cluster), "/pgbackrest/repo2/log")
+	})
+
+	t.Run("LogPathSpecified", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
+			{
+				Name:   "repo1",
+				Volume: &v1beta1.RepoPVC{},
+			},
+		}
+		cluster.Spec.Backups.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
+			Log: &v1beta1.LoggingConfiguration{
+				Path: "/some/directory",
+			},
+		}
+		assert.Equal(t, generateRepoHostLogPath(cluster), "/some/directory")
+	})
+}
