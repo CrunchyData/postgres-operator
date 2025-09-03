@@ -2663,6 +2663,11 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
   - /bin/pgbackrest
   - backup
   - --stanza=db
@@ -2965,6 +2970,12 @@ volumes:
 		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/another-pvc' && { chmod 0775 '/volumes/another-pvc' || :; };
+    exec "$@"
+  - --
   - /bin/pgbackrest
   - backup
   - --stanza=db
@@ -3031,7 +3042,11 @@ volumes:
 
 		cluster := cluster.DeepCopy()
 		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
 		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Log: &v1beta1.LoggingConfiguration{
+				Path: "/volumes/stuff/log",
+			},
 			Volumes: &v1beta1.PGBackRestVolumesSpec{
 				Additional: []v1beta1.AdditionalVolume{
 					{
@@ -3048,15 +3063,66 @@ volumes:
 			nil, nil,
 		)
 
-		for _, container := range spec.Template.Spec.Containers {
-			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
-				`
-- mountPath: /volumes/stuff
-  name: volumes-stuff`))
-		}
-
-		assert.Assert(t, cmp.MarshalContains(spec.Template.Spec.Volumes,
-			`
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff/log' && { chmod 0775 '/volumes/stuff/log' || :; }; exec
+    "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
 - name: volumes-stuff
   persistentVolumeClaim:
     claimName: additional-pvc`))
@@ -4496,4 +4562,52 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 			assert.Assert(t, len(tc.annotations) == i)
 		})
 	}
+}
+
+func TestGetCloudLogPath(t *testing.T) {
+	t.Run("NoAnnotationNoSpecPath", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{}
+		assert.Equal(t, getCloudLogPath(postgrescluster), "")
+	})
+
+	t.Run("AnnotationSetNoSpecPath", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{}
+		postgrescluster.Annotations = map[string]string{}
+		postgrescluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/another-pvc")
+	})
+
+	t.Run("NoAnnotationSpecPathSet", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Jobs: &v1beta1.BackupJobs{
+							Log: &v1beta1.LoggingConfiguration{
+								Path: "/volumes/test/log/",
+							},
+						},
+					},
+				},
+			},
+		}
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/test/log")
+	})
+
+	t.Run("BothAnnotationAndSpecPathSet", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Log: &v1beta1.LoggingConfiguration{
+							Path: "/volumes/test/log",
+						},
+					},
+				},
+			},
+		}
+		postgrescluster.Annotations = map[string]string{}
+		postgrescluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/another-pvc")
+	})
 }
