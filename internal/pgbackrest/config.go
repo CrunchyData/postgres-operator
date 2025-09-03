@@ -133,31 +133,33 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 			).String()
 
 		if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, postgresCluster) {
+			// Get pgbackrest log path for repo host pod
+			var pgBackRestLogPath string
+			for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
+				if repo.Volume != nil {
+					// If the user has set a log path in the spec, use it.
+					// Otherwise, default to /pgbackrest/repo#/log
+					if postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil &&
+						postgresCluster.Spec.Backups.PGBackRest.RepoHost.Log != nil &&
+						postgresCluster.Spec.Backups.PGBackRest.RepoHost.Log.Path != "" {
+						pgBackRestLogPath = postgresCluster.Spec.Backups.PGBackRest.RepoHost.Log.Path
+					} else {
+						pgBackRestLogPath = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
+					}
+					break
+				}
+			}
 
 			err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
 				ctx,
-				postgresCluster,
+				postgresCluster.Spec.Instrumentation,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
+				pgBackRestLogPath,
 			), cm)
 
 			// If OTel logging is enabled, add logrotate config for the RepoHost
 			if err == nil &&
 				collector.OpenTelemetryLogsEnabled(ctx, postgresCluster) {
-				var pgBackRestLogPath string
-				for _, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
-					if repo.Volume != nil {
-						// If the user has set a log path in the spec, use it.
-						// Otherwise, default to /pgbackrest/repo#/log
-						if postgresCluster.Spec.Backups.PGBackRest.RepoHost != nil &&
-							postgresCluster.Spec.Backups.PGBackRest.RepoHost.Log != nil &&
-							postgresCluster.Spec.Backups.PGBackRest.RepoHost.Log.Path != "" {
-							pgBackRestLogPath = postgresCluster.Spec.Backups.PGBackRest.RepoHost.Log.Path
-						} else {
-							pgBackRestLogPath = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
-						}
-						break
-					}
-				}
 
 				collector.AddLogrotateConfigs(ctx, postgresCluster.Spec.Instrumentation, cm, []collector.LogrotateConfig{{
 					LogFiles: []string{pgBackRestLogPath + "/*.log"},

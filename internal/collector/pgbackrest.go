@@ -8,7 +8,6 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"slices"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -23,28 +22,13 @@ var pgBackRestLogsTransforms json.RawMessage
 
 func NewConfigForPgBackrestRepoHostPod(
 	ctx context.Context,
-	cluster *v1beta1.PostgresCluster,
+	spec *v1beta1.InstrumentationSpec,
 	repos []v1beta1.PGBackRestRepo,
+	directory string,
 ) *Config {
-	config := NewConfig(cluster.Spec.Instrumentation)
+	config := NewConfig(spec)
 
-	if OpenTelemetryLogsEnabled(ctx, cluster) {
-
-		var directory string
-		for _, repo := range repos {
-			if repo.Volume != nil {
-				// If the user has set a log path in the spec, use it.
-				// Otherwise, default to /pgbackrest/repo#/log
-				if cluster.Spec.Backups.PGBackRest.RepoHost != nil &&
-					cluster.Spec.Backups.PGBackRest.RepoHost.Log != nil &&
-					cluster.Spec.Backups.PGBackRest.RepoHost.Log.Path != "" {
-					directory = cluster.Spec.Backups.PGBackRest.RepoHost.Log.Path
-				} else {
-					directory = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
-				}
-				break
-			}
-		}
+	if OpenTelemetryLogsEnabled(ctx, spec) {
 
 		// We should only enter this function if a PVC is assigned for a dedicated repohost
 		// but if we don't have one, exit early.
@@ -107,9 +91,8 @@ func NewConfigForPgBackrestRepoHostPod(
 		// If there are exporters to be added to the logs pipelines defined in
 		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
 		exporters := []ComponentID{DebugExporter}
-		if cluster.Spec.Instrumentation != nil && cluster.Spec.Instrumentation.Logs != nil &&
-			cluster.Spec.Instrumentation.Logs.Exporters != nil {
-			exporters = slices.Clone(cluster.Spec.Instrumentation.Logs.Exporters)
+		if spec != nil && spec.Logs != nil && spec.Logs.Exporters != nil {
+			exporters = slices.Clone(spec.Logs.Exporters)
 		}
 
 		config.Pipelines["logs/pgbackrest"] = Pipeline{
