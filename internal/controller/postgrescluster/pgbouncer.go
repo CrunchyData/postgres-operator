@@ -478,7 +478,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 
 	// mount additional volumes to the pgbouncer containers
 	if volumes := cluster.Spec.Proxy.PGBouncer.Volumes; err == nil && volumes != nil && len(volumes.Additional) > 0 {
-		missingContainers := util.AddAdditionalVolumesAndMounts(&deploy.Spec.Template, volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&deploy.Spec.Template.Spec, volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",

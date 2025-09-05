@@ -5,6 +5,7 @@
 package util
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -19,16 +20,16 @@ import (
 func TestAddAdditionalVolumesAndMounts(t *testing.T) {
 	t.Parallel()
 
-	podTemplate := &corev1.PodTemplateSpec{
-		Spec: corev1.PodSpec{
-			InitContainers: []corev1.Container{
-				{Name: "startup"},
-				{Name: "config"},
-			},
-			Containers: []corev1.Container{
-				{Name: "database"},
-				{Name: "other"},
-			}}}
+	podSpec := corev1.PodSpec{
+		InitContainers: []corev1.Container{
+			{Name: "startup"},
+			{Name: "config"},
+		},
+		Containers: []corev1.Container{
+			{Name: "database"},
+			{Name: "other"},
+		},
+	}
 
 	testCases := []struct {
 		tcName                 string
@@ -209,33 +210,16 @@ func TestAddAdditionalVolumesAndMounts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.tcName, func(t *testing.T) {
-			copyPodTemplate := podTemplate.DeepCopy()
+			sink := podSpec.DeepCopy()
+			missingContainers := AddAdditionalVolumesAndMounts(sink, tc.additionalVolumes)
 
-			missingContainers := AddAdditionalVolumesAndMounts(
-				copyPodTemplate,
-				tc.additionalVolumes,
-			)
+			assert.Assert(t, cmp.MarshalMatches(sink.Containers, tc.expectedContainers))
+			assert.Assert(t, cmp.MarshalMatches(sink.InitContainers, tc.expectedInitContainers))
+			assert.Assert(t, cmp.MarshalMatches(sink.Volumes, tc.expectedVolumes))
 
-			assert.Assert(t, cmp.MarshalMatches(
-				copyPodTemplate.Spec.Containers,
-				tc.expectedContainers))
-			assert.Assert(t, cmp.MarshalMatches(
-				copyPodTemplate.Spec.InitContainers,
-				tc.expectedInitContainers))
-			assert.Assert(t, cmp.MarshalMatches(
-				copyPodTemplate.Spec.Volumes,
-				tc.expectedVolumes))
-			if len(tc.expectedMissing) == 0 {
-				assert.Assert(t, cmp.DeepEqual(
-					missingContainers,
-					tc.expectedMissing))
-			} else {
-				for _, mc := range tc.expectedMissing {
-					assert.Assert(t, cmp.Contains(
-						missingContainers,
-						mc))
-				}
-			}
+			slices.Sort(missingContainers)
+			slices.Sort(tc.expectedMissing)
+			assert.DeepEqual(t, missingContainers, tc.expectedMissing)
 		})
 	}
 }
