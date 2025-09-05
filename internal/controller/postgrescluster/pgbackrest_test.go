@@ -4559,3 +4559,51 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCloudLogPath(t *testing.T) {
+	t.Run("NoAnnotationNoSpecPath", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{}
+		assert.Equal(t, getCloudLogPath(postgrescluster), "")
+	})
+
+	t.Run("AnnotationSetNoSpecPath", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{}
+		postgrescluster.Annotations = map[string]string{}
+		postgrescluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/another-pvc")
+	})
+
+	t.Run("NoAnnotationSpecPathSet", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Jobs: &v1beta1.BackupJobs{
+							Log: &v1beta1.LoggingConfiguration{
+								Path: "/volumes/test/log/",
+							},
+						},
+					},
+				},
+			},
+		}
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/test/log")
+	})
+
+	t.Run("BothAnnotationAndSpecPathSet", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Log: &v1beta1.LoggingConfiguration{
+							Path: "/volumes/test/log",
+						},
+					},
+				},
+			},
+		}
+		postgrescluster.Annotations = map[string]string{}
+		postgrescluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/another-pvc")
+	})
+}
