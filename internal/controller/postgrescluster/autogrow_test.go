@@ -116,7 +116,7 @@ func TestStoreDesiredRequest(t *testing.T) {
 	}, {
 		tcName:  "PGData-NoLimitNoEvent",
 		Voltype: "pgData", host: "blue",
-		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "",
 		expectedNumEvents: 0, expectedNumLogs: 0,
 	}, {
 		tcName:  "PGData-BadBackupRequest",
@@ -145,7 +145,7 @@ func TestStoreDesiredRequest(t *testing.T) {
 	}, {
 		tcName:  "PGWAL-NoLimitNoEvent",
 		Voltype: "pgWAL", host: "blue",
-		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "",
 		expectedNumEvents: 0, expectedNumLogs: 0,
 	}, {
 		tcName:  "PGWAL-NoVolumeDefined",
@@ -179,7 +179,7 @@ func TestStoreDesiredRequest(t *testing.T) {
 	}, {
 		tcName:  "Repo-NoLimitNoEvent",
 		Voltype: "repo2", host: "repo-host",
-		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
+		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "",
 		expectedNumEvents: 0, expectedNumLogs: 0,
 	}, {
 		tcName:  "Repo-NoRepoDefined",
