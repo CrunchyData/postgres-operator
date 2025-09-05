@@ -36,6 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -1213,7 +1214,7 @@ func (r *Reconciler) reconcileInstance(
 
 	// mount additional volumes to the Postgres instance containers
 	if err == nil && spec.Volumes != nil && len(spec.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&instance.Spec.Template, spec.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",

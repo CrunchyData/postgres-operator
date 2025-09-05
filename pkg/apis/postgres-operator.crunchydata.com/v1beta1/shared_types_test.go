@@ -16,6 +16,35 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+func TestAdditionalVolumeAsVolume(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ClaimName", func(t *testing.T) {
+		in := AdditionalVolume{ClaimName: "doot"}
+		out := in.AsVolume("asdf")
+
+		var expected corev1.Volume
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			name: asdf,
+			persistentVolumeClaim: {
+				claimName: doot,
+			},
+		}`), &expected))
+
+		assert.DeepEqual(t, out, expected)
+
+		t.Run("ReadOnly", func(t *testing.T) {
+			in.ReadOnly = true
+			out = in.AsVolume("qwerty")
+
+			expected.Name = "qwerty"
+			expected.PersistentVolumeClaim.ReadOnly = true
+
+			assert.DeepEqual(t, out, expected)
+		})
+	})
+}
+
 func TestDurationAsDuration(t *testing.T) {
 	t.Parallel()
 
