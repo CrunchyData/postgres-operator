@@ -11,7 +11,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -277,4 +279,88 @@ func TestAddVolumeAndMountsToPod(t *testing.T) {
 	out := pod.DeepCopy()
 	AddCloudLogVolumeToPod(out, "volume-name")
 	alwaysExpect(t, out)
+}
+
+// TestGetAutoGrowFromRepo verifies that GetAutoGrowFromSpec returns the correct
+// trigger and max grow values for various AutoGrowSpec inputs. It uses a
+// table-driven approach to cover:
+//   - nil AutoGrowSpec: default trigger "75" with no max grow
+//   - Trigger only: provided trigger with no max grow
+//   - MaxGrow only: default trigger "75" with MaxGrow converted to MiB (e.g., 2Gi -> "2048")
+//   - Both set: provided trigger and MaxGrow converted to MiB (e.g., 512Mi -> "512")
+//
+// The test asserts that the returned strings match the expected trigger and max values.
+func TestGetAutoGrowFromRepo(t *testing.T) {
+	tc := []struct {
+		name            string
+		autoGrow        *v1beta1.VolumeClaimSpecWithAutoGrow
+		expectedTrigger string
+		expectedMaxGrow string
+	}{{
+		name:            "autogrow-not-set",
+		autoGrow:        nil,
+		expectedTrigger: "75",
+		expectedMaxGrow: "",
+	}, {
+		name: "autogrow-set-trigger-only",
+		autoGrow: &v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				Trigger: initialize.Int32(10),
+			},
+		},
+		expectedTrigger: "10",
+		expectedMaxGrow: "",
+	}, {
+		name: "autogrow-set-maxgrow-only",
+		autoGrow: &v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				MaxGrow: initialize.Pointer(resource.MustParse("2Gi")),
+			},
+		},
+		expectedTrigger: "75",
+		expectedMaxGrow: "2048",
+	}, {
+		name: "autogrow-set-both",
+		autoGrow: &v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				Trigger: initialize.Int32(90),
+				MaxGrow: initialize.Pointer(resource.MustParse("512Mi")),
+			},
+		},
+		expectedTrigger: "90",
+		expectedMaxGrow: "512",
+	}, {
+		name: "autogrow-set-maxgrow-only-small",
+		autoGrow: &v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				MaxGrow: initialize.Pointer(resource.MustParse("512Ki")),
+			},
+		},
+		expectedTrigger: "75",
+		expectedMaxGrow: "0",
+	}, {
+		name: "autogrow-set-maxgrow-only-exact-mib",
+		autoGrow: &v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				MaxGrow: initialize.Pointer(resource.MustParse("1Mi")),
+			},
+		},
+		expectedTrigger: "75",
+		expectedMaxGrow: "1",
+	}, {
+		name: "autogrow-set-maxgrow-only-large",
+		autoGrow: &v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				MaxGrow: initialize.Pointer(resource.MustParse("5Ti")),
+			},
+		},
+		expectedTrigger: "75",
+		expectedMaxGrow: "5242880",
+	}}
+
+	for _, test := range tc {
+		trigger, max := GetAutoGrowFromSpec(test.autoGrow)
+		assert.Equal(t, trigger, test.expectedTrigger)
+		assert.Equal(t, max, test.expectedMaxGrow)
+	}
 }

@@ -475,7 +475,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// ---
 	// +required
-	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	DataVolumeClaimSpec VolumeClaimSpecWithAutoGrow `json:"dataVolumeClaimSpec"`
 
 	// Priority class name for the PostgreSQL pod. Changing this value causes
 	// PostgreSQL to restart.
@@ -517,7 +517,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// ---
 	// +optional
-	WALVolumeClaimSpec *VolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
+	WALVolumeClaimSpec *VolumeClaimSpecWithAutoGrow `json:"walVolumeClaimSpec,omitempty"`
 
 	// The list of tablespaces volumes to mount for this postgrescluster
 	// This field requires enabling TablespaceVolumes feature gate

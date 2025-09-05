@@ -3117,6 +3117,31 @@ spec:
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
+                                    autoGrow:
+                                      description: |-
+                                        AutoGrowSpec provides options to tune volume auto-growing behavior.
+                                        Auto grow requires that a limit be set on the PVC.
+                                      properties:
+                                        maxGrow:
+                                          anyOf:
+                                          - type: integer
+                                          - type: string
+                                          description: |-
+                                            MaxGrow is the maximum size to which the volume can be automatically
+                                            expanded. If not set, the volume will grow by 50% of the original size each
+                                            time the Trigger threshold is exceeded.
+                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                          x-kubernetes-int-or-string: true
+                                        trigger:
+                                          default: 75
+                                          description: |-
+                                            Trigger is the percentage of used space at which to trigger a volume
+                                            expansion.
+                                          format: int32
+                                          maximum: 90
+                                          minimum: 50
+                                          type: integer
+                                      type: object
                                     dataSource:
                                       description: |-
                                         dataSource field can be used to specify either:
@@ -6479,6 +6504,31 @@ spec:
                                       type: string
                                     type: array
                                     x-kubernetes-list-type: atomic
+                                  autoGrow:
+                                    description: |-
+                                      AutoGrowSpec provides options to tune volume auto-growing behavior.
+                                      Auto grow requires that a limit be set on the PVC.
+                                    properties:
+                                      maxGrow:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: |-
+                                          MaxGrow is the maximum size to which the volume can be automatically
+                                          expanded. If not set, the volume will grow by 50% of the original size each
+                                          time the Trigger threshold is exceeded.
+                                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                        x-kubernetes-int-or-string: true
+                                      trigger:
+                                        default: 75
+                                        description: |-
+                                          Trigger is the percentage of used space at which to trigger a volume
+                                          expansion.
+                                        format: int32
+                                        maximum: 90
+                                        minimum: 50
+                                        type: integer
+                                    type: object
                                   dataSource:
                                     description: |-
                                       dataSource field can be used to specify either:
@@ -10470,6 +10520,31 @@ spec:
                             type: string
                           type: array
                           x-kubernetes-list-type: atomic
+                        autoGrow:
+                          description: |-
+                            AutoGrowSpec provides options to tune volume auto-growing behavior.
+                            Auto grow requires that a limit be set on the PVC.
+                          properties:
+                            maxGrow:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxGrow is the maximum size to which the volume can be automatically
+                                expanded. If not set, the volume will grow by 50% of the original size each
+                                time the Trigger threshold is exceeded.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            trigger:
+                              default: 75
+                              description: |-
+                                Trigger is the percentage of used space at which to trigger a volume
+                                expansion.
+                              format: int32
+                              maximum: 90
+                              minimum: 50
+                              type: integer
+                          type: object
                         dataSource:
                           description: |-
                             dataSource field can be used to specify either:
@@ -11552,6 +11627,31 @@ spec:
                             type: string
                           type: array
                           x-kubernetes-list-type: atomic
+                        autoGrow:
+                          description: |-
+                            AutoGrowSpec provides options to tune volume auto-growing behavior.
+                            Auto grow requires that a limit be set on the PVC.
+                          properties:
+                            maxGrow:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxGrow is the maximum size to which the volume can be automatically
+                                expanded. If not set, the volume will grow by 50% of the original size each
+                                time the Trigger threshold is exceeded.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            trigger:
+                              default: 75
+                              description: |-
+                                Trigger is the percentage of used space at which to trigger a volume
+                                expansion.
+                              format: int32
+                              maximum: 90
+                              minimum: 50
+                              type: integer
+                          type: object
                         dataSource:
                           description: |-
                             dataSource field can be used to specify either:
@@ -22050,6 +22150,31 @@ spec:
                                         type: string
                                       type: array
                                       x-kubernetes-list-type: atomic
+                                    autoGrow:
+                                      description: |-
+                                        AutoGrowSpec provides options to tune volume auto-growing behavior.
+                                        Auto grow requires that a limit be set on the PVC.
+                                      properties:
+                                        maxGrow:
+                                          anyOf:
+                                          - type: integer
+                                          - type: string
+                                          description: |-
+                                            MaxGrow is the maximum size to which the volume can be automatically
+                                            expanded. If not set, the volume will grow by 50% of the original size each
+                                            time the Trigger threshold is exceeded.
+                                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                          x-kubernetes-int-or-string: true
+                                        trigger:
+                                          default: 75
+                                          description: |-
+                                            Trigger is the percentage of used space at which to trigger a volume
+                                            expansion.
+                                          format: int32
+                                          maximum: 90
+                                          minimum: 50
+                                          type: integer
+                                      type: object
                                     dataSource:
                                       description: |-
                                         dataSource field can be used to specify either:
@@ -25412,6 +25537,31 @@ spec:
                                       type: string
                                     type: array
                                     x-kubernetes-list-type: atomic
+                                  autoGrow:
+                                    description: |-
+                                      AutoGrowSpec provides options to tune volume auto-growing behavior.
+                                      Auto grow requires that a limit be set on the PVC.
+                                    properties:
+                                      maxGrow:
+                                        anyOf:
+                                        - type: integer
+                                        - type: string
+                                        description: |-
+                                          MaxGrow is the maximum size to which the volume can be automatically
+                                          expanded. If not set, the volume will grow by 50% of the original size each
+                                          time the Trigger threshold is exceeded.
+                                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                                        x-kubernetes-int-or-string: true
+                                      trigger:
+                                        default: 75
+                                        description: |-
+                                          Trigger is the percentage of used space at which to trigger a volume
+                                          expansion.
+                                        format: int32
+                                        maximum: 90
+                                        minimum: 50
+                                        type: integer
+                                    type: object
                                   dataSource:
                                     description: |-
                                       dataSource field can be used to specify either:
@@ -29403,6 +29553,31 @@ spec:
                             type: string
                           type: array
                           x-kubernetes-list-type: atomic
+                        autoGrow:
+                          description: |-
+                            AutoGrowSpec provides options to tune volume auto-growing behavior.
+                            Auto grow requires that a limit be set on the PVC.
+                          properties:
+                            maxGrow:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxGrow is the maximum size to which the volume can be automatically
+                                expanded. If not set, the volume will grow by 50% of the original size each
+                                time the Trigger threshold is exceeded.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            trigger:
+                              default: 75
+                              description: |-
+                                Trigger is the percentage of used space at which to trigger a volume
+                                expansion.
+                              format: int32
+                              maximum: 90
+                              minimum: 50
+                              type: integer
+                          type: object
                         dataSource:
                           description: |-
                             dataSource field can be used to specify either:
@@ -30485,6 +30660,31 @@ spec:
                             type: string
                           type: array
                           x-kubernetes-list-type: atomic
+                        autoGrow:
+                          description: |-
+                            AutoGrowSpec provides options to tune volume auto-growing behavior.
+                            Auto grow requires that a limit be set on the PVC.
+                          properties:
+                            maxGrow:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                MaxGrow is the maximum size to which the volume can be automatically
+                                expanded. If not set, the volume will grow by 50% of the original size each
+                                time the Trigger threshold is exceeded.
+                              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                              x-kubernetes-int-or-string: true
+                            trigger:
+                              default: 75
+                              description: |-
+                                Trigger is the percentage of used space at which to trigger a volume
+                                expansion.
+                              format: int32
+                              maximum: 90
+                              minimum: 50
+                              type: integer
+                          type: object
                         dataSource:
                           description: |-
                             dataSource field can be used to specify either:

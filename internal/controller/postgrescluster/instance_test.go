@@ -558,6 +558,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     # Return size in Mebibytes.
     manageAutogrowAnnotation() {
       local volume=$1
+      local trigger=$2
+      local maxGrow=$3
 
       size=$(df --block-size=M "/pgbackrest/${volume}")
       read -r _ size _ <<< "${size#*$'\n'}"
@@ -566,9 +568,19 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
       sizeInt="${size//M/}"
       # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
       useInt=${use//[[:punct:]]/}
-      triggerExpansion="$((useInt > 75))"
+      triggerExpansion="$((useInt > trigger))"
       if [[ ${triggerExpansion} -eq 1 ]]; then
         newSize="$(((sizeInt / 2)+sizeInt))"
+        # Only compare with maxGrow if it is set (not empty)
+        if [[ -n "${maxGrow}" ]]; then
+            # check to see how much we would normally grow
+            sizeDiff=$((newSize - sizeInt))
+
+            # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+            if [[ ${sizeDiff} -gt ${maxGrow} ]]; then
+                newSize=$((sizeInt + maxGrow))
+            fi
+        fi
         newSizeMi="${newSize}Mi"
         d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
         curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
@@ -595,22 +607,22 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
       # manage autogrow annotation for the repo1 volume, if it exists
       if [[ -d /pgbackrest/repo1 ]]; then
-        manageAutogrowAnnotation "repo1"
+        manageAutogrowAnnotation "repo1" "75" ""
       fi
 
       # manage autogrow annotation for the repo2 volume, if it exists
       if [[ -d /pgbackrest/repo2 ]]; then
-        manageAutogrowAnnotation "repo2"
+        manageAutogrowAnnotation "repo2" "75" ""
       fi
 
       # manage autogrow annotation for the repo3 volume, if it exists
       if [[ -d /pgbackrest/repo3 ]]; then
-        manageAutogrowAnnotation "repo3"
+        manageAutogrowAnnotation "repo3" "75" ""
       fi
 
       # manage autogrow annotation for the repo4 volume, if it exists
       if [[ -d /pgbackrest/repo4 ]]; then
-        manageAutogrowAnnotation "repo4"
+        manageAutogrowAnnotation "repo4" "75" ""
       fi
 
     done
@@ -724,6 +736,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
     # Return size in Mebibytes.
     manageAutogrowAnnotation() {
       local volume=$1
+      local trigger=$2
+      local maxGrow=$3
 
       size=$(df --block-size=M "/pgbackrest/${volume}")
       read -r _ size _ <<< "${size#*$'\n'}"
@@ -732,9 +746,19 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
       sizeInt="${size//M/}"
       # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
       useInt=${use//[[:punct:]]/}
-      triggerExpansion="$((useInt > 75))"
+      triggerExpansion="$((useInt > trigger))"
       if [[ ${triggerExpansion} -eq 1 ]]; then
         newSize="$(((sizeInt / 2)+sizeInt))"
+        # Only compare with maxGrow if it is set (not empty)
+        if [[ -n "${maxGrow}" ]]; then
+            # check to see how much we would normally grow
+            sizeDiff=$((newSize - sizeInt))
+
+            # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+            if [[ ${sizeDiff} -gt ${maxGrow} ]]; then
+                newSize=$((sizeInt + maxGrow))
+            fi
+        fi
         newSizeMi="${newSize}Mi"
         d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
         curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
@@ -761,22 +785,22 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 
       # manage autogrow annotation for the repo1 volume, if it exists
       if [[ -d /pgbackrest/repo1 ]]; then
-        manageAutogrowAnnotation "repo1"
+        manageAutogrowAnnotation "repo1" "75" ""
       fi
 
       # manage autogrow annotation for the repo2 volume, if it exists
       if [[ -d /pgbackrest/repo2 ]]; then
-        manageAutogrowAnnotation "repo2"
+        manageAutogrowAnnotation "repo2" "75" ""
       fi
 
       # manage autogrow annotation for the repo3 volume, if it exists
       if [[ -d /pgbackrest/repo3 ]]; then
-        manageAutogrowAnnotation "repo3"
+        manageAutogrowAnnotation "repo3" "75" ""
       fi
 
       # manage autogrow annotation for the repo4 volume, if it exists
       if [[ -d /pgbackrest/repo4 ]]; then
-        manageAutogrowAnnotation "repo4"
+        manageAutogrowAnnotation "repo4" "75" ""
       fi
 
     done
@@ -1514,7 +1538,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 					InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 						Name:                "instance1",
 						Replicas:            initialize.Int32(1),
-						DataVolumeClaimSpec: testVolumeClaimSpec(),
+						DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 						TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
 							MaxSkew:           int32(1),
 							TopologyKey:       "kubernetes.io/hostname",
@@ -1703,7 +1727,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1730,7 +1754,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1754,7 +1778,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},

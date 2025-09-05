@@ -355,10 +355,11 @@ func addServerContainerAndVolume(
 			container.VolumeMounts = append(container.VolumeMounts, mount)
 		}
 	}
-
 	reloader := corev1.Container{
-		Name:            naming.ContainerPGBackRestConfig,
-		Command:         reloadCommand(naming.ContainerPGBackRestConfig),
+		Name: naming.ContainerPGBackRestConfig,
+		Command: reloadCommand(
+			naming.ContainerPGBackRestConfig,
+			cluster.Spec.Backups.PGBackRest.Repos),
 		Image:           container.Image,
 		ImagePullPolicy: container.ImagePullPolicy,
 		SecurityContext: initialize.RestrictedSecurityContext(),

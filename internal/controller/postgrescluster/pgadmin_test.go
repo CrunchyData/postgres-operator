@@ -846,18 +846,20 @@ func pgAdminTestCluster(ns corev1.Namespace) *v1beta1.PostgresCluster {
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 13,
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				DataVolumeClaimSpec: testVolumeClaimSpec(),
+				DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 			}},
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-								Resources: corev1.VolumeResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceStorage: resource.MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: corev1.ResourceList{
+											corev1.ResourceStorage: resource.MustParse("1Gi"),
+										},
 									},
 								},
 							},
