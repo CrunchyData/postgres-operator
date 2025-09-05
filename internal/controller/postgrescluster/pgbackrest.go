@@ -176,12 +176,8 @@ func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
 		return nil, errors.WithStack(err)
 	}
 
-	if err := r.apply(ctx, repo); err != nil {
-		return nil, r.handlePersistentVolumeClaimError(postgresCluster,
-			errors.WithStack(err))
-	}
-
-	return repo, nil
+	return repo, r.handlePersistentVolumeClaimError(
+		postgresCluster, errors.WithStack(r.apply(ctx, repo)))
 }
 
 // +kubebuilder:rbac:groups="apps",resources="statefulsets",verbs={list}
