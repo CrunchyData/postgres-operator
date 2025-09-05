@@ -304,3 +304,19 @@ type AdditionalVolume struct {
 	// +optional
 	ReadOnly bool `json:"readOnly,omitempty"`
 }
+
+// AsVolume returns a copy of this as a [corev1.Volume].
+func (in *AdditionalVolume) AsVolume(name string) corev1.Volume {
+	var out corev1.Volume
+	out.Name = name
+
+	switch {
+	case len(in.ClaimName) > 0:
+		out.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{
+			ClaimName: in.ClaimName,
+			ReadOnly:  in.ReadOnly,
+		}
+	}
+
+	return out
+}

@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -476,8 +477,8 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	AddTMPEmptyDir(&deploy.Spec.Template)
 
 	// mount additional volumes to the pgbouncer containers
-	if err == nil && cluster.Spec.Proxy.PGBouncer.Volumes != nil && len(cluster.Spec.Proxy.PGBouncer.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&deploy.Spec.Template, cluster.Spec.Proxy.PGBouncer.Volumes.Additional)
+	if volumes := cluster.Spec.Proxy.PGBouncer.Volumes; err == nil && volumes != nil && len(volumes.Additional) > 0 {
+		missingContainers := util.AddAdditionalVolumesAndMounts(&deploy.Spec.Template, volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",

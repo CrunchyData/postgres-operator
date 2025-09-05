@@ -18,6 +18,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -140,7 +141,7 @@ func (r *PGAdminReconciler) statefulset(
 
 	// mount additional volumes to the Postgres instance containers
 	if pgadmin.Spec.Volumes != nil && len(pgadmin.Spec.Volumes.Additional) > 0 {
-		missingContainers := postgrescluster.AddAdditionalVolumesToSpecifiedContainers(&sts.Spec.Template, pgadmin.Spec.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&sts.Spec.Template, pgadmin.Spec.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(pgadmin, corev1.EventTypeWarning, "SpecifiedContainerNotFound",

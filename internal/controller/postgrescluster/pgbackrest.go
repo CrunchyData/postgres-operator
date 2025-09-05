@@ -721,7 +721,7 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 
 	// mount additional volumes to the repo host containers
 	if repoHost != nil && repoHost.Volumes != nil && len(repoHost.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&repo.Spec.Template, repoHost.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&repo.Spec.Template, repoHost.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
@@ -908,7 +908,7 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 
 	// mount additional volumes to the job containers
 	if jobs != nil && jobs.Volumes != nil && len(jobs.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&jobSpec.Template, jobs.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&jobSpec.Template, jobs.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
@@ -1408,7 +1408,7 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(dataSource.PriorityClassName)
 
 	if dataSource.Volumes != nil && len(dataSource.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&job.Spec.Template, dataSource.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&job.Spec.Template, dataSource.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
