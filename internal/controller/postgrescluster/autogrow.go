@@ -62,6 +62,11 @@ func (r *Reconciler) storeDesiredRequest(
 		return ""
 	}
 
+	// if the volume exists but the limit is not set, do not return the new value
+	if !*limitSet {
+		return desiredRequestBackup
+	}
+
 	if *limitSet && current.Value() > previous.Value() {
 		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
 			"%s volume expansion to %v requested for %s/%s.",
