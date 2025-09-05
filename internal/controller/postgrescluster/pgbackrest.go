@@ -884,25 +884,9 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 		jobSpec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 		pgbackrest.AddConfigToCloudBackupJob(postgresCluster, &jobSpec.Template)
 
-		// If the user has specified a PVC to use as a log volume via the PGBackRestCloudLogVolume
-		// annotation, check for the PVC. If we find it, mount it to the backup job.
-		// Otherwise, create a warning event.
+		// Mount the PVC named in the "pgbackrest-cloud-log-volume" annotation, if any.
 		if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
-			logVolume := &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      logVolumeName,
-					Namespace: postgresCluster.GetNamespace(),
-				},
-			}
-			err := errors.WithStack(r.Client.Get(ctx,
-				client.ObjectKeyFromObject(logVolume), logVolume))
-			if err != nil {
-				// PVC not retrieved, create warning event
-				r.Recorder.Event(postgresCluster, corev1.EventTypeWarning, "PGBackRestCloudLogVolumeNotFound", err.Error())
-			} else {
-				// We successfully found the specified PVC, so we will add it to the backup job
-				util.AddVolumeAndMountsToPod(&jobSpec.Template.Spec, logVolume)
-			}
+			util.AddCloudLogVolumeToPod(&jobSpec.Template.Spec, logVolumeName)
 		}
 	}
 

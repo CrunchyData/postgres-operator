@@ -28,21 +28,21 @@ func AddAdditionalVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.Additi
 	return addVolumesAndMounts(pod, volumes, AdditionalVolumeMount)
 }
 
-// AddVolumeAndMountsToPod takes a Pod spec and a PVC and adds a Volume to the Pod spec with
+// AddCloudLogVolumeToPod takes a Pod spec and a PVC and adds a Volume to the Pod spec with
 // the PVC as the VolumeSource and mounts the volume to all containers and init containers
 // in the Pod spec.
-func AddVolumeAndMountsToPod(podSpec *corev1.PodSpec, volume *corev1.PersistentVolumeClaim) {
+func AddCloudLogVolumeToPod(podSpec *corev1.PodSpec, pvcName string) {
 	additional := []v1beta1.AdditionalVolume{{
-		ClaimName: volume.Name,
-		Name:      volume.Name,
+		ClaimName: pvcName,
+		Name:      pvcName,
 		ReadOnly:  false,
 	}}
 
 	addVolumesAndMounts(podSpec, additional, func(string, bool) corev1.VolumeMount {
 		return corev1.VolumeMount{
 			// This name has no prefix and differs from [AdditionalVolumeMount].
-			Name:      volume.Name,
-			MountPath: fmt.Sprintf("/volumes/%s", volume.Name),
+			Name:      pvcName,
+			MountPath: fmt.Sprintf("/volumes/%s", pvcName),
 			ReadOnly:  false,
 		}
 	})
