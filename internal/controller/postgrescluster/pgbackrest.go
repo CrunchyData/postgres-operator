@@ -1506,7 +1506,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// reconcile all pgbackrest repository repos
 	replicaCreateRepo, err := r.reconcileRepos(ctx, postgresCluster, configHashes, repoResources)
 	if err != nil {
-		log.Error(err, "unable to reconcile pgBackRest repo host")
+		log.Error(err, "unable to reconcile pgBackRest repos")
 		result.Requeue = true
 		return result, nil
 	}
@@ -2775,7 +2775,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	repoVols := []*corev1.PersistentVolumeClaim{}
 	var replicaCreateRepo v1beta1.PGBackRestRepo
 
-	if feature.Enabled(ctx, feature.AutoGrowVolumes) {
+	if feature.Enabled(ctx, feature.AutoGrowVolumes) && pgbackrest.RepoHostVolumeDefined(postgresCluster) {
 		// get the autogrow annotations so that the correct volume size values can be
 		// used and the cluster status can be updated
 		errors = append(errors, r.writeRepoVolumeSizeRequestStatus(ctx, postgresCluster))
