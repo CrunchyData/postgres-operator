@@ -22,14 +22,14 @@ func AdditionalVolumeMount(name string, readOnly bool) corev1.VolumeMount {
 	}
 }
 
-// AddAdditionalVolumesAndMounts adds volumes as [corev1.Volume]s and [corev1.VolumeMount]s in template.
+// AddAdditionalVolumesAndMounts adds volumes as [corev1.Volume]s and [corev1.VolumeMount]s in pod.
 // Volume names are chosen in [AdditionalVolumeMount].
-func AddAdditionalVolumesAndMounts(template *corev1.PodTemplateSpec, volumes []v1beta1.AdditionalVolume) []string {
+func AddAdditionalVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.AdditionalVolume) []string {
 	missingContainers := []string{}
 
 	for _, spec := range volumes {
 		mount := AdditionalVolumeMount(spec.Name, spec.ReadOnly)
-		template.Spec.Volumes = append(template.Spec.Volumes, spec.AsVolume(mount.Name))
+		pod.Volumes = append(pod.Volumes, spec.AsVolume(mount.Name))
 
 		// Create a set of all the requested containers,
 		// then in the loops below when we attach the volume to a container,
@@ -39,18 +39,18 @@ func AddAdditionalVolumesAndMounts(template *corev1.PodTemplateSpec, volumes []v
 		// - https://github.com/kubernetes/api/blob/b40c1cacbb902b21a7e0c7bf0967321860c1a632/core/v1/types.go#L3895C27-L3896C33
 		names := sets.New(spec.Containers...)
 
-		for i, c := range template.Spec.Containers {
+		for i, c := range pod.Containers {
 			if spec.Containers == nil || names.Has(c.Name) {
 				c.VolumeMounts = append(c.VolumeMounts, mount)
-				template.Spec.Containers[i] = c
+				pod.Containers[i] = c
 			}
 			names.Delete(c.Name)
 		}
 
-		for i, c := range template.Spec.InitContainers {
+		for i, c := range pod.InitContainers {
 			if spec.Containers == nil || names.Has(c.Name) {
 				c.VolumeMounts = append(c.VolumeMounts, mount)
-				template.Spec.InitContainers[i] = c
+				pod.InitContainers[i] = c
 			}
 			names.Delete(c.Name)
 		}
