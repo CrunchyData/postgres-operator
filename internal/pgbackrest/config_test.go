@@ -609,7 +609,58 @@ func TestMakePGBackrestLogDir(t *testing.T) {
 func TestReloadCommand(t *testing.T) {
 	shellcheck := require.ShellCheck(t)
 
-	command := reloadCommand("some-name")
+	repo1Size := resource.MustParse("1Gi")
+	repo2Size := resource.MustParse("2Gi")
+	repo3Size := resource.MustParse("3Gi")
+	repo4Size := resource.MustParse("4Gi")
+
+	// Create a command with all four repos having auto-grow enabled.
+	// Check that the generated script has the correct values for each repo
+	// when calling manageAutogrowAnnotation.
+	//
+	// Note that the actual values for trigger and max-grow are not important
+	// here, just that they are correctly passed through to the script.
+	command := reloadCommand("some-name", []v1beta1.PGBackRestRepo{{
+		Name: "repo1",
+		Volume: &v1beta1.RepoPVC{
+			VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+				AutoGrow: &v1beta1.AutoGrowSpec{
+					Trigger: initialize.Int32(10),
+					MaxGrow: &repo1Size,
+				},
+			},
+		},
+	}, {
+		Name: "repo2",
+		Volume: &v1beta1.RepoPVC{
+			VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+				AutoGrow: &v1beta1.AutoGrowSpec{
+					Trigger: initialize.Int32(20),
+					MaxGrow: &repo2Size,
+				},
+			},
+		},
+	}, {
+		Name: "repo3",
+		Volume: &v1beta1.RepoPVC{
+			VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+				AutoGrow: &v1beta1.AutoGrowSpec{
+					Trigger: initialize.Int32(30),
+					MaxGrow: &repo3Size,
+				},
+			},
+		},
+	}, {
+		Name: "repo4",
+		Volume: &v1beta1.RepoPVC{
+			VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+				AutoGrow: &v1beta1.AutoGrowSpec{
+					Trigger: initialize.Int32(40),
+					MaxGrow: &repo4Size,
+				},
+			},
+		},
+	}})
 
 	// Expect a bash command with an inline script.
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
@@ -624,10 +675,16 @@ func TestReloadCommand(t *testing.T) {
 	cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", file)
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"repo1\" \"10\" \"1024\""))
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"repo2\" \"20\" \"2048\""))
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"repo3\" \"30\" \"3072\""))
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"repo4\" \"40\" \"4096\""))
+
 }
 
 func TestReloadCommandPrettyYAML(t *testing.T) {
-	assert.Assert(t, cmp.MarshalContains(reloadCommand("any"), "\n- |"),
+	assert.Assert(t, cmp.MarshalContains(reloadCommand("any", nil), "\n- |"),
 		"expected literal block scalar")
 }
 

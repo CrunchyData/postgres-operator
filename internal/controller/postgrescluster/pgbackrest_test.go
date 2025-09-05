@@ -66,13 +66,13 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Image: "example.com/crunchy-postgres-ha:test",
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}},
 				},
 			}},
 			Backups: v1beta1.Backups{
@@ -117,11 +117,13 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 		postgresCluster.Spec.Backups.PGBackRest.Repos[0] = v1beta1.PGBackRestRepo{
 			Name: "repo1",
 			Volume: &v1beta1.RepoPVC{
-				VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
+				VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							},
 						},
 					},
 				},
@@ -2429,13 +2431,13 @@ func TestCopyConfigurationResources(t *testing.T) {
 				Image:           "example.com/crunchy-postgres-ha:test",
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
-							},
-						},
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							Resources: corev1.VolumeResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								}}},
 					},
 				}},
 				Backups: v1beta1.Backups{
@@ -2481,13 +2483,13 @@ func TestCopyConfigurationResources(t *testing.T) {
 				},
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
-							},
-						},
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							Resources: corev1.VolumeResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								}}},
 					},
 				}},
 				Backups: v1beta1.Backups{
@@ -2717,7 +2719,7 @@ volumes:
 		spec := r.generateBackupJobSpecIntent(ctx,
 			&cluster, v1beta1.PGBackRestRepo{
 				Volume: &v1beta1.RepoPVC{
-					VolumeClaimSpec: v1beta1.VolumeClaimSpec{},
+					VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{},
 				},
 			},
 			"",
@@ -4428,13 +4430,16 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 			// A limit is expected otherwise an empty string ("") is returned
 			testRepoPVC := func() *v1beta1.RepoPVC {
 				return &v1beta1.RepoPVC{
-					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-						Resources: corev1.VolumeResourceRequirements{
-							Limits: map[corev1.ResourceName]resource.Quantity{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
+					VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+							Resources: corev1.VolumeResourceRequirements{
+								Limits: map[corev1.ResourceName]resource.Quantity{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								},
 							},
-						}}}
+						},
+					}}
 			}
 
 			cluster := &v1beta1.PostgresCluster{

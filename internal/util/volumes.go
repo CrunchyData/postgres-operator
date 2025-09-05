@@ -10,7 +10,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+)
+
+const (
+	// Default auto-grow trigger percentage
+	AutoGrowTriggerDefault = "75"
 )
 
 // AdditionalVolumeMount creates a [corev1.VolumeMount] at `/volumes/{name}` of volume `volumes-{name}`.
@@ -83,4 +89,39 @@ func addVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.AdditionalVolume
 	}
 
 	return missingContainers
+}
+
+// GetAutoGrowFromSpec extracts AutoGrow settings from the provided AutoGrowSpec.
+// It returns two strings: (trigger, maxGrow).
+//
+//   - trigger: the auto-grow threshold as a decimal percentage string (e.g., "75").
+//     Defaults to "75" when no trigger is configured.
+//   - maxGrow: the maximum growth size as a whole number of mebibytes (MiB).
+//     When no MaxGrow is configured, this is an empty string.
+//
+// If AutoGrow is nil, the function uses the default trigger ("75") and leaves
+// maxGrow empty. When set, Trigger is formatted as a base-10 string and MaxGrow is
+// converted from a resource quantity (bytes) to mebibytes by dividing bytes by 1024*1024.
+func GetAutoGrowFromSpec(spec *v1beta1.VolumeClaimSpecWithAutoGrow) (string, string) {
+	// MaxGrow is optional; an empty string means "no limit" on growth and the volume
+	// will grow by 50% each time it is triggered.
+	maxGrow := ""
+
+	// We always want to set default trigger; We will override it if
+	// the user has set a different value.
+	trigger := AutoGrowTriggerDefault
+
+	// If AutoGrow is configured on the VolumeClaimSpecWithAutoGrow, extract
+	// the Trigger and MaxGrow values
+	if spec != nil && spec.AutoGrow != nil {
+		if t := spec.AutoGrow.Trigger; t != nil {
+			trigger = fmt.Sprintf("%d", initialize.FromPointer(t))
+		}
+		if mg := spec.AutoGrow.MaxGrow; mg != nil {
+			// Value() returns bytes, convert to mebibytes
+			mebibytes := mg.Value() / (1024 * 1024)
+			maxGrow = fmt.Sprintf("%d", mebibytes)
+		}
+	}
+	return trigger, maxGrow
 }

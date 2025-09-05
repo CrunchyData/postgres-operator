@@ -14,6 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"sigs.k8s.io/yaml"
+
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 )
 
 func TestAdditionalVolumeAsVolume(t *testing.T) {
@@ -275,4 +277,48 @@ func TestVolumeClaimSpecYAML(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestVolumeClaimSpecWithAutoGrowYAML(t *testing.T) {
+	t.Parallel()
+
+	var zero VolumeClaimSpecWithAutoGrow
+	out, err := yaml.Marshal(zero)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, string(out), "resources: {}\n")
+
+	var parsed VolumeClaimSpecWithAutoGrow
+	assert.NilError(t, yaml.Unmarshal([]byte(`{
+		accessModes: [ReadWriteMany],
+		resources: { requests: { storage: 1Gi } },
+		storageClassName: zork,
+		autoGrow: { trigger: 50, maxGrow: 100Mi },
+	}`), &parsed))
+
+	zork := "zork"
+	maxGrow := resource.MustParse("100Mi")
+	assert.DeepEqual(t, parsed, VolumeClaimSpecWithAutoGrow{
+		AutoGrow: &AutoGrowSpec{
+			Trigger: initialize.Int32(50),
+			MaxGrow: &maxGrow,
+		},
+		VolumeClaimSpec: VolumeClaimSpec{
+			StorageClassName: &zork,
+			AccessModes: []corev1.PersistentVolumeAccessMode{
+				corev1.ReadWriteMany,
+			},
+			Resources: corev1.VolumeResourceRequirements{
+				Requests: corev1.ResourceList{
+					corev1.ResourceStorage: resource.MustParse("1Gi"),
+				},
+			},
+		},
+	})
+}
+
+func TestAutoGrowDefault(t *testing.T) {
+	var autoGrow AutoGrowSpec
+	autoGrow.Default()
+
+	assert.Equal(t, *autoGrow.Trigger, int32(75))
 }

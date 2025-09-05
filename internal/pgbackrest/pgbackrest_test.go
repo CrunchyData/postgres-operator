@@ -59,11 +59,13 @@ fi
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-								Resources: corev1.VolumeResourceRequirements{
-									Requests: map[corev1.ResourceName]resource.Quantity{
-										corev1.ResourceStorage: resource.MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: map[corev1.ResourceName]resource.Quantity{
+											corev1.ResourceStorage: resource.MustParse("1Gi"),
+										},
 									},
 								},
 							},

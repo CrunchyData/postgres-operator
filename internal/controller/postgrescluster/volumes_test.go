@@ -391,14 +391,14 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{
+							corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}},
 				},
 			}},
 			Backups: v1beta1.Backups{
@@ -407,14 +407,16 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{
-									corev1.ReadWriteMany},
-								Resources: corev1.VolumeResourceRequirements{
-									Requests: map[corev1.ResourceName]resource.
-										Quantity{
-										corev1.ResourceStorage: resource.
-											MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{
+										corev1.ReadWriteMany},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: map[corev1.ResourceName]resource.
+											Quantity{
+											corev1.ResourceStorage: resource.
+												MustParse("1Gi"),
+										},
 									},
 								},
 							},
@@ -674,14 +676,14 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					},
 				},
 				PriorityClassName: initialize.String("some-priority-class"),
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{
+							corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}},
 				},
 			}},
 			Backups: v1beta1.Backups{
@@ -698,14 +700,16 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{
-									corev1.ReadWriteMany},
-								Resources: corev1.VolumeResourceRequirements{
-									Requests: map[corev1.ResourceName]resource.
-										Quantity{
-										corev1.ResourceStorage: resource.
-											MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{
+										corev1.ReadWriteMany},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: map[corev1.ResourceName]resource.
+											Quantity{
+											corev1.ResourceStorage: resource.
+												MustParse("1Gi"),
+										},
 									},
 								},
 							},

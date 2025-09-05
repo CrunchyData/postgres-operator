@@ -45,22 +45,24 @@ func TestStoreDesiredRequest(t *testing.T) {
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name:     "red",
 				Replicas: initialize.Int32(1),
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.VolumeResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						}}},
-				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.VolumeResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						}}},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Limits: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}}},
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Limits: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}}},
 			}, {
 				Name:               "blue",
 				Replicas:           initialize.Int32(1),
-				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{},
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{},
 			}, {
 				Name:     "green",
 				Replicas: initialize.Int32(1),
@@ -70,12 +72,13 @@ func TestStoreDesiredRequest(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-								Resources: corev1.VolumeResourceRequirements{
-									Limits: map[corev1.ResourceName]resource.Quantity{
-										corev1.ResourceStorage: resource.MustParse("1Gi"),
-									}}},
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+									Resources: corev1.VolumeResourceRequirements{
+										Limits: map[corev1.ResourceName]resource.Quantity{
+											corev1.ResourceStorage: resource.MustParse("1Gi"),
+										}}}},
 						},
 					}, {
 						Name:   "repo2",
@@ -238,36 +241,40 @@ func TestLimitIsSet(t *testing.T) {
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name:     "red",
 				Replicas: initialize.Int32(1),
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.VolumeResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						}}},
-				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.VolumeResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("2Gi"),
-						}}},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Limits: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}}},
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+						Resources: corev1.VolumeResourceRequirements{
+							Limits: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("2Gi"),
+							}}}},
 			}, {
 				Name:     "blue",
 				Replicas: initialize.Int32(1),
 			}, {
 				Name:               "green",
 				Replicas:           initialize.Int32(1),
-				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{},
+				WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{},
 			}},
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-								Resources: corev1.VolumeResourceRequirements{
-									Limits: map[corev1.ResourceName]resource.Quantity{
-										corev1.ResourceStorage: resource.MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+									Resources: corev1.VolumeResourceRequirements{
+										Limits: map[corev1.ResourceName]resource.Quantity{
+											corev1.ResourceStorage: resource.MustParse("1Gi"),
+										},
 									},
 								},
 							}}},

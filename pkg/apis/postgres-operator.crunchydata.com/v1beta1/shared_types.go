@@ -8,9 +8,12 @@ import (
 	"encoding/json"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
+
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 )
 
 // ---
@@ -147,6 +150,66 @@ func (spec *VolumeClaimSpec) AsPersistentVolumeClaimSpec() corev1.PersistentVolu
 	var out corev1.PersistentVolumeClaimSpec
 	spec.DeepCopyInto((*VolumeClaimSpec)(&out))
 	return out
+}
+
+// VolumeClaimSpecWithAutoGrow extends VolumeClaimSpec with options for
+// automatic volume growth.
+// +structType=atomic
+type VolumeClaimSpecWithAutoGrow struct {
+	VolumeClaimSpec `json:",inline"`
+
+	// +optional
+	AutoGrow *AutoGrowSpec `json:"autoGrow,omitempty"`
+}
+
+// AutoGrowSpec provides options to tune volume auto-growing behavior.
+// Auto grow requires that a limit be set on the PVC.
+type AutoGrowSpec struct {
+	// Trigger is the percentage of used space at which to trigger a volume
+	// expansion.
+	// +optional
+	// +kubebuilder:default=75
+	// +kubebuilder:validation:Minimum=50
+	// +kubebuilder:validation:Maximum=90
+	Trigger *int32 `json:"trigger,omitempty"`
+
+	// MaxGrow is the maximum size to which the volume can be automatically
+	// expanded. If not set, the volume will grow by 50% of the original size each
+	// time the Trigger threshold is exceeded.
+	// +optional
+	MaxGrow *resource.Quantity `json:"maxGrow,omitempty"`
+}
+
+func (spec *AutoGrowSpec) Default() {
+	if spec.Trigger == nil {
+		spec.Trigger = initialize.Int32(75)
+	}
+}
+
+func (spec *VolumeClaimSpecWithAutoGrow) DeepCopyInto(out *VolumeClaimSpecWithAutoGrow) {
+	spec.VolumeClaimSpec.DeepCopyInto(&out.VolumeClaimSpec)
+	if spec.AutoGrow != nil {
+		out.AutoGrow = new(AutoGrowSpec)
+		spec.AutoGrow.DeepCopyInto(out.AutoGrow)
+	} else {
+		out.AutoGrow = nil
+	}
+}
+
+// DeepCopyInto copies the receiver into out. Both must be non-nil.
+func (spec *AutoGrowSpec) DeepCopyInto(out *AutoGrowSpec) {
+	*out = *spec
+	if spec.MaxGrow != nil {
+		q := spec.MaxGrow.DeepCopy()
+		out.MaxGrow = &q
+	} else {
+		out.MaxGrow = nil
+	}
+}
+
+// AsPersistentVolumeClaimSpec returns a copy of the embedded VolumeClaimSpec as a [corev1.PersistentVolumeClaimSpec].
+func (spec *VolumeClaimSpecWithAutoGrow) AsPersistentVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {
+	return spec.VolumeClaimSpec.AsPersistentVolumeClaimSpec()
 }
 
 // ---

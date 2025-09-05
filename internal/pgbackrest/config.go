@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/shell"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -605,7 +606,36 @@ func getExternalRepoConfigs(repo v1beta1.PGBackRestRepo) map[string]string {
 // reloadCommand returns an entrypoint that convinces the pgBackRest TLS server
 // to reload its options and certificate files when they change. The process
 // will appear as name in `ps` and `top`.
-func reloadCommand(name string) []string {
+func reloadCommand(name string, repos []v1beta1.PGBackRestRepo) []string {
+	var repo1MaxGrow string
+	var repo2MaxGrow string
+	var repo3MaxGrow string
+	var repo4MaxGrow string
+	repo1Trigger := util.AutoGrowTriggerDefault
+	repo2Trigger := util.AutoGrowTriggerDefault
+	repo3Trigger := util.AutoGrowTriggerDefault
+	repo4Trigger := util.AutoGrowTriggerDefault
+
+	// Loop through any repos and see if we have autogrow configured
+	// If we do, set the variables corresponding to each of the 4 repos
+	for _, repo := range repos {
+		// Only check repos that have a volume with autogrow configured
+		if repo.Volume == nil || repo.Volume.VolumeClaimSpec.AutoGrow == nil {
+			continue
+		}
+		spec := repo.Volume.VolumeClaimSpec
+		switch repo.Name {
+		case "repo1":
+			repo1Trigger, repo1MaxGrow = util.GetAutoGrowFromSpec(&spec)
+		case "repo2":
+			repo2Trigger, repo2MaxGrow = util.GetAutoGrowFromSpec(&spec)
+		case "repo3":
+			repo3Trigger, repo3MaxGrow = util.GetAutoGrowFromSpec(&spec)
+		case "repo4":
+			repo4Trigger, repo4MaxGrow = util.GetAutoGrowFromSpec(&spec)
+		}
+	}
+
 	// Use a Bash loop to periodically check the mtime of the mounted server
 	// volume and configuration file. When either changes, signal pgBackRest
 	// and print the observed timestamp.
@@ -632,7 +662,7 @@ func reloadCommand(name string) []string {
 	// for selective parsing of the provided lines. The percent value is stripped of
 	// the '%' and then used to determine if a expansion should be triggered by
 	// setting the calculated volume size using the 'size' variable.
-	const script = `
+	script := fmt.Sprintf(`
 # Parameters for curl when managing autogrow annotation.
 APISERVER="https://kubernetes.default.svc"
 SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
@@ -644,6 +674,8 @@ CACERT=${SERVICEACCOUNT}/ca.crt
 # Return size in Mebibytes.
 manageAutogrowAnnotation() {
   local volume=$1
+  local trigger=$2
+  local maxGrow=$3
 
   size=$(df --block-size=M "/pgbackrest/${volume}")
   read -r _ size _ <<< "${size#*$'\n'}"
@@ -652,9 +684,19 @@ manageAutogrowAnnotation() {
   sizeInt="${size//M/}"
   # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
   useInt=${use//[[:punct:]]/}
-  triggerExpansion="$((useInt > 75))"
+  triggerExpansion="$((useInt > trigger))"
   if [[ ${triggerExpansion} -eq 1 ]]; then
     newSize="$(((sizeInt / 2)+sizeInt))"
+    # Only compare with maxGrow if it is set (not empty)
+    if [[ -n "${maxGrow}" ]]; then
+        # check to see how much we would normally grow
+        sizeDiff=$((newSize - sizeInt))
+
+        # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+        if [[ ${sizeDiff} -gt ${maxGrow} ]]; then
+            newSize=$((sizeInt + maxGrow))
+        fi
+    fi
     newSizeMi="${newSize}Mi"
     d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
     curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
@@ -668,7 +710,7 @@ until read -r -t 5 -u "${fd}"; do
     pkill -HUP --exact --parent=0 pgbackrest
   then
     exec {fd}>&- && exec {fd}<> <(:||:)
-    stat --dereference --format='Loaded configuration dated %y' "${filename}"
+    stat --dereference --format='Loaded configuration dated %%y' "${filename}"
   elif
     { [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] ||
       [[ "${authority}" -nt "/proc/self/fd/${fd}" ]]
@@ -676,31 +718,36 @@ until read -r -t 5 -u "${fd}"; do
     pkill -HUP --exact --parent=0 pgbackrest
   then
     exec {fd}>&- && exec {fd}<> <(:||:)
-    stat --format='Loaded certificates dated %y' "${directory}"
+    stat --format='Loaded certificates dated %%y' "${directory}"
   fi
 
   # manage autogrow annotation for the repo1 volume, if it exists
   if [[ -d /pgbackrest/repo1 ]]; then
-    manageAutogrowAnnotation "repo1"
+    manageAutogrowAnnotation "repo1" "%s" "%s"
   fi
 
   # manage autogrow annotation for the repo2 volume, if it exists
   if [[ -d /pgbackrest/repo2 ]]; then
-    manageAutogrowAnnotation "repo2"
+    manageAutogrowAnnotation "repo2" "%s" "%s"
   fi
 
   # manage autogrow annotation for the repo3 volume, if it exists
   if [[ -d /pgbackrest/repo3 ]]; then
-    manageAutogrowAnnotation "repo3"
+    manageAutogrowAnnotation "repo3" "%s" "%s"
   fi
 
   # manage autogrow annotation for the repo4 volume, if it exists
   if [[ -d /pgbackrest/repo4 ]]; then
-    manageAutogrowAnnotation "repo4"
+    manageAutogrowAnnotation "repo4" "%s" "%s"
   fi
 
 done
-`
+`,
+		repo1Trigger, repo1MaxGrow,
+		repo2Trigger, repo2MaxGrow,
+		repo3Trigger, repo3MaxGrow,
+		repo4Trigger, repo4MaxGrow,
+	)
 
 	// Elide the above script from `ps` and `top` by wrapping it in a function
 	// and calling that.
