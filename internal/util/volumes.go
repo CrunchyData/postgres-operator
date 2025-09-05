@@ -25,10 +25,34 @@ func AdditionalVolumeMount(name string, readOnly bool) corev1.VolumeMount {
 // AddAdditionalVolumesAndMounts adds volumes as [corev1.Volume]s and [corev1.VolumeMount]s in pod.
 // Volume names are chosen in [AdditionalVolumeMount].
 func AddAdditionalVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.AdditionalVolume) []string {
+	return addVolumesAndMounts(pod, volumes, AdditionalVolumeMount)
+}
+
+// AddVolumeAndMountsToPod takes a Pod spec and a PVC and adds a Volume to the Pod spec with
+// the PVC as the VolumeSource and mounts the volume to all containers and init containers
+// in the Pod spec.
+func AddVolumeAndMountsToPod(podSpec *corev1.PodSpec, volume *corev1.PersistentVolumeClaim) {
+	additional := []v1beta1.AdditionalVolume{{
+		ClaimName: volume.Name,
+		Name:      volume.Name,
+		ReadOnly:  false,
+	}}
+
+	addVolumesAndMounts(podSpec, additional, func(string, bool) corev1.VolumeMount {
+		return corev1.VolumeMount{
+			// This name has no prefix and differs from [AdditionalVolumeMount].
+			Name:      volume.Name,
+			MountPath: fmt.Sprintf("/volumes/%s", volume.Name),
+			ReadOnly:  false,
+		}
+	})
+}
+
+func addVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.AdditionalVolume, namer func(string, bool) corev1.VolumeMount) []string {
 	missingContainers := []string{}
 
 	for _, spec := range volumes {
-		mount := AdditionalVolumeMount(spec.Name, spec.ReadOnly)
+		mount := namer(spec.Name, spec.ReadOnly)
 		pod.Volumes = append(pod.Volumes, spec.AsVolume(mount.Name))
 
 		// Create a set of all the requested containers,
@@ -59,35 +83,4 @@ func AddAdditionalVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.Additi
 	}
 
 	return missingContainers
-}
-
-// AddVolumeAndMountsToPod takes a Pod spec and a PVC and adds a Volume to the Pod spec with
-// the PVC as the VolumeSource and mounts the volume to all containers and init containers
-// in the Pod spec.
-func AddVolumeAndMountsToPod(podSpec *corev1.PodSpec, volume *corev1.PersistentVolumeClaim) {
-
-	podSpec.Volumes = append(podSpec.Volumes, corev1.Volume{
-		Name: volume.Name,
-		VolumeSource: corev1.VolumeSource{
-			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-				ClaimName: volume.Name,
-			},
-		},
-	})
-
-	for i := range podSpec.Containers {
-		podSpec.Containers[i].VolumeMounts = append(podSpec.Containers[i].VolumeMounts,
-			corev1.VolumeMount{
-				Name:      volume.Name,
-				MountPath: fmt.Sprintf("/volumes/%s", volume.Name),
-			})
-	}
-
-	for i := range podSpec.InitContainers {
-		podSpec.InitContainers[i].VolumeMounts = append(podSpec.InitContainers[i].VolumeMounts,
-			corev1.VolumeMount{
-				Name:      volume.Name,
-				MountPath: fmt.Sprintf("/volumes/%s", volume.Name),
-			})
-	}
 }
