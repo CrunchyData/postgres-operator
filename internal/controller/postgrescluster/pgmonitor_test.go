@@ -702,7 +702,10 @@ func TestReconcileMonitoringSecret(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
+	}
 
 	cluster := testCluster()
 	cluster.Default()
@@ -776,7 +779,10 @@ func TestReconcileExporterQueriesConfig(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
+	}
 
 	cluster := testCluster()
 	cluster.Default()

@@ -153,7 +153,7 @@ func (r *Reconciler) reconcileMonitoringSecret(
 
 	existing := &corev1.Secret{ObjectMeta: naming.MonitoringUserSecret(cluster)}
 	err := errors.WithStack(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 	if client.IgnoreNotFound(err) != nil {
 		return nil, err
 	}
@@ -380,7 +380,7 @@ func (r *Reconciler) reconcileExporterWebConfig(ctx context.Context,
 	}
 
 	existing := &corev1.ConfigMap{ObjectMeta: naming.ExporterWebConfigMap(cluster)}
-	err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+	err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 	if client.IgnoreNotFound(err) != nil {
 		return nil, err
 	}
@@ -439,7 +439,7 @@ func (r *Reconciler) reconcileExporterQueriesConfig(ctx context.Context,
 	cluster *v1beta1.PostgresCluster) (*corev1.ConfigMap, error) {
 
 	existing := &corev1.ConfigMap{ObjectMeta: naming.ExporterQueriesConfigMap(cluster)}
-	err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+	err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 	if client.IgnoreNotFound(err) != nil {
 		return nil, err
 	}

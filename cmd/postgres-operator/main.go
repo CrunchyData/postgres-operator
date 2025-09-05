@@ -34,7 +34,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
@@ -256,8 +255,8 @@ func main() {
 	}
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(manager, log, registrar)
 	must(pgupgrade.ManagedReconciler(manager, registrar))
+	must(postgrescluster.ManagedReconciler(manager, registrar))
 	must(standalone_pgadmin.ManagedReconciler(manager))
 	must(crunchybridgecluster.ManagedReconciler(manager, func() bridge.ClientInterface {
 		return bridgeClient()
@@ -304,21 +303,5 @@ func main() {
 		log.Error(err, "shutdown failed")
 	} else {
 		log.Info("shutdown complete")
-	}
-}
-
-// addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
-// runtime manager.
-func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg registration.Registration) {
-	pgReconciler := &postgrescluster.Reconciler{
-		Client:       mgr.GetClient(),
-		Owner:        naming.ControllerPostgresCluster,
-		Recorder:     mgr.GetEventRecorderFor(naming.ControllerPostgresCluster),
-		Registration: reg,
-	}
-
-	if err := pgReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PostgresCluster controller")
-		os.Exit(1)
 	}
 }
