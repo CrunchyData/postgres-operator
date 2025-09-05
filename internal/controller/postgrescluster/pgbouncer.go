@@ -44,12 +44,13 @@ func (r *Reconciler) reconcilePGBouncer(
 	if err == nil {
 		secret, err = r.reconcilePGBouncerSecret(ctx, cluster, root, service)
 	}
+	logfile := setPGBouncerLogfile(cluster)
 	if err == nil {
-		config := collector.NewConfigForPgBouncerPod(ctx, cluster, pgbouncer.PostgresqlUser)
-		configmap, err = r.reconcilePGBouncerConfigMap(ctx, cluster, config)
+		config := collector.NewConfigForPgBouncerPod(ctx, cluster, pgbouncer.PostgresqlUser, logfile)
+		configmap, err = r.reconcilePGBouncerConfigMap(ctx, cluster, config, logfile)
 	}
 	if err == nil {
-		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret)
+		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret, logfile)
 	}
 	if err == nil {
 		err = r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster)
@@ -60,6 +61,26 @@ func (r *Reconciler) reconcilePGBouncer(
 	return err
 }
 
+// setPGBouncerLogfile retrieves the logfile config if present in the user config.
+// If not present, set to the OTEL default.
+// If OTEL is not enabled, we do not use this value.
+// TODO: Check INI config files specified on the cluster
+func setPGBouncerLogfile(cluster *v1beta1.PostgresCluster) string {
+	logfile := naming.PGBouncerFullLogPath
+
+	if cluster.Spec.Proxy == nil || cluster.Spec.Proxy.PGBouncer == nil {
+		return ""
+	}
+
+	if cluster.Spec.Proxy.PGBouncer.Config.Global != nil {
+		if dest, ok := cluster.Spec.Proxy.PGBouncer.Config.Global["logfile"]; ok {
+			logfile = dest
+		}
+	}
+
+	return logfile
+}
+
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={get}
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={create,delete,patch}
 
@@ -67,6 +88,7 @@ func (r *Reconciler) reconcilePGBouncer(
 func (r *Reconciler) reconcilePGBouncerConfigMap(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	otelConfig *collector.Config,
+	logfile string,
 ) (*corev1.ConfigMap, error) {
 	configmap := &corev1.ConfigMap{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	configmap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -105,7 +127,7 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 	// If OTel logging is enabled, add logrotate config
 	if err == nil && collector.OpenTelemetryLogsEnabled(ctx, cluster) {
 		logrotateConfig := collector.LogrotateConfig{
-			LogFiles:         []string{naming.PGBouncerFullLogPath},
+			LogFiles:         []string{logfile},
 			PostrotateScript: collector.PGBouncerPostRotateScript,
 		}
 		collector.AddLogrotateConfigs(ctx, cluster.Spec.Instrumentation, configmap,
@@ -370,6 +392,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	primaryCertificate *corev1.SecretProjection,
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
+	logfile string,
 ) (*appsv1.Deployment, bool, error) {
 	deploy := &appsv1.Deployment{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	deploy.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
@@ -462,7 +485,13 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	// Do not add environment variables describing services in this namespace.
 	deploy.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
 
-	deploy.Spec.Template.Spec.SecurityContext = initialize.PodSecurityContext()
+	fsGroup := 2
+	if initialize.FromPointer(cluster.Spec.OpenShift) {
+		fsGroup = 0
+	}
+	deploy.Spec.Template.Spec.SecurityContext = util.PodSecurityContext(int64(fsGroup),
+		cluster.Spec.SupplementalGroups,
+	)
 
 	// set the image pull secrets, if any exist
 	deploy.Spec.Template.Spec.ImagePullSecrets = cluster.Spec.ImagePullSecrets
@@ -470,7 +499,7 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	err := errors.WithStack(r.setControllerReference(cluster, deploy))
 
 	if err == nil {
-		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template)
+		pgbouncer.Pod(ctx, cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template, logfile)
 	}
 
 	// Add tmp directory and volume for log files
@@ -497,9 +526,10 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	primaryCertificate *corev1.SecretProjection,
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
+	logfile string,
 ) error {
 	deploy, specified, err := r.generatePGBouncerDeployment(
-		ctx, cluster, primaryCertificate, configmap, secret)
+		ctx, cluster, primaryCertificate, configmap, secret, logfile)
 
 	// Set observations whether the deployment exists or not.
 	defer func() {

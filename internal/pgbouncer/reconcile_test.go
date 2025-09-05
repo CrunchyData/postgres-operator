@@ -149,8 +149,9 @@ func TestPod(t *testing.T) {
 	primaryCertificate := new(corev1.SecretProjection)
 	secret := new(corev1.Secret)
 	template := new(corev1.PodTemplateSpec)
+	logfile := ""
 
-	call := func() { Pod(ctx, cluster, configMap, primaryCertificate, secret, template) }
+	call := func() { Pod(ctx, cluster, configMap, primaryCertificate, secret, template, logfile) }
 
 	t.Run("Disabled", func(t *testing.T) {
 		before := template.DeepCopy()
@@ -170,6 +171,11 @@ func TestPod(t *testing.T) {
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   name: pgbouncer
@@ -280,6 +286,230 @@ volumes:
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
+  - pgbouncer
+  - /etc/pgbouncer/~postgres-operator.ini
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer
+  ports:
+  - containerPort: 5432
+    name: pgbouncer
+    protocol: TCP
+  resources:
+    requests:
+      cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:||:)
+    while read -r -t 5 -u "${fd}" ||:; do
+      if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && pkill -HUP --exact pgbouncer
+      then
+        exec {fd}>&- && exec {fd}<> <(:||:)
+        stat --format='Loaded configuration dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbouncer-config
+  - /etc/pgbouncer
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer-config
+  resources:
+    limits:
+      cpu: 5m
+      memory: 16Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+volumes:
+- name: pgbouncer-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbouncer-empty
+          path: pgbouncer.ini
+    - configMap:
+        items:
+        - key: pgbouncer.ini
+          path: ~postgres-operator.ini
+    - secret:
+        items:
+        - key: pgbouncer-users.txt
+          path: ~postgres-operator/users.txt
+    - secret:
+        items:
+        - key: k1
+          path: ~postgres-operator/frontend-tls.crt
+        - key: k2
+          path: ~postgres-operator/frontend-tls.key
+        name: tls-name
+    - secret:
+        items:
+        - key: ca.crt
+          path: ~postgres-operator/backend-ca.crt
+			`))
+	})
+
+	t.Run("WithOtelNoLogSet", func(t *testing.T) {
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		logfile = "/tmp/pgbouncer.log"
+
+		call()
+
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
+  - pgbouncer
+  - /etc/pgbouncer/~postgres-operator.ini
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer
+  ports:
+  - containerPort: 5432
+    name: pgbouncer
+    protocol: TCP
+  resources:
+    requests:
+      cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:||:)
+    while read -r -t 5 -u "${fd}" ||:; do
+      if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && pkill -HUP --exact pgbouncer
+      then
+        exec {fd}>&- && exec {fd}<> <(:||:)
+        stat --format='Loaded configuration dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbouncer-config
+  - /etc/pgbouncer
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer-config
+  resources:
+    limits:
+      cpu: 5m
+      memory: 16Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+volumes:
+- name: pgbouncer-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbouncer-empty
+          path: pgbouncer.ini
+    - configMap:
+        items:
+        - key: pgbouncer.ini
+          path: ~postgres-operator.ini
+    - secret:
+        items:
+        - key: pgbouncer-users.txt
+          path: ~postgres-operator/users.txt
+    - secret:
+        items:
+        - key: k1
+          path: ~postgres-operator/frontend-tls.crt
+        - key: k2
+          path: ~postgres-operator/frontend-tls.key
+        name: tls-name
+    - secret:
+        items:
+        - key: ca.crt
+          path: ~postgres-operator/backend-ca.crt
+			`))
+	})
+
+	t.Run("CustomizationWithLogSet", func(t *testing.T) {
+		cluster.Spec.Proxy.PGBouncer.Config.Global = map[string]string{
+			"logfile": "/volumes/required/mylog.log",
+		}
+		logfile = "/volumes/required/mylog.log"
+
+		call()
+
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/required' && { chmod 0775 '/volumes/required' || :; }; exec
+    "$@"
+  - --
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   image: image-town
@@ -385,11 +615,19 @@ volumes:
 			},
 		}
 
+		// reset logfile from previous test
+		logfile = ""
+
 		call()
 
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   image: image-town

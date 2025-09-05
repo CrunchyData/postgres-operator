@@ -14476,6 +14476,10 @@ spec:
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
                             type: object
+                            x-kubernetes-map-type: granular
+                            x-kubernetes-validations:
+                            - message: logfile config must end with '.log'
+                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
                           users:
                             additionalProperties:
                               type: string
@@ -16505,6 +16509,12 @@ spec:
                             x-kubernetes-list-type: map
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: logfile destination is restricted to '/tmp/logs/pgbouncer/'
+                        or an existing additional volume
+                      rule: '!has(self.config) || !has(self.config.global) || !has(self.config.global.logfile)
+                        || self.config.global.logfile.startsWith(''/tmp/logs/pgbouncer/'')
+                        || self.volumes.additional.exists(x, self.config.global.logfile.startsWith("/volumes/"+x.name))'
                 required:
                 - pgBouncer
                 type: object
@@ -33509,6 +33519,10 @@ spec:
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
                             type: object
+                            x-kubernetes-map-type: granular
+                            x-kubernetes-validations:
+                            - message: logfile config must end with '.log'
+                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
                           users:
                             additionalProperties:
                               type: string
