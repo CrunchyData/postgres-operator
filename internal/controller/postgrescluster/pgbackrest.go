@@ -38,6 +38,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -821,7 +822,13 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 			{Name: "SELECTOR", Value: naming.PGBackRestDedicatedSelector(postgresCluster.GetName()).String()},
 		}
 	} else {
-		container.Command = []string{"/bin/pgbackrest", "backup"}
+		mkdirCommand := ""
+		cloudLogPath := r.reconcileCloudLogPath(ctx, postgresCluster)
+		if cloudLogPath != "" {
+			mkdirCommand += shell.MakeDirectories(cloudLogPath, cloudLogPath) + "; "
+		}
+
+		container.Command = []string{"sh", "-c", "--", mkdirCommand + `exec "$@"`, "--", "/bin/pgbackrest", "backup"}
 		container.Command = append(container.Command, cmdOpts...)
 	}
 
@@ -2075,28 +2082,7 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) error {
 
-	// If the user has specified a PVC to use as a log volume for cloud backups via the
-	// PGBackRestCloudLogVolume annotation, check for the PVC. If we find it, set the cloud
-	// log path. If the user has specified a PVC, but we can't find it, create a warning event.
-	cloudLogPath := ""
-	if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
-		logVolume := &corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      logVolumeName,
-				Namespace: postgresCluster.GetNamespace(),
-			},
-		}
-		err := errors.WithStack(r.Client.Get(ctx,
-			client.ObjectKeyFromObject(logVolume), logVolume))
-		if err != nil {
-			// PVC not retrieved, create warning event
-			r.Recorder.Event(postgresCluster, corev1.EventTypeWarning,
-				"PGBackRestCloudLogVolumeNotFound", err.Error())
-		} else {
-			// We successfully found the specified PVC, so we will set the log path
-			cloudLogPath = "/volumes/" + logVolumeName
-		}
-	}
+	cloudLogPath := r.reconcileCloudLogPath(ctx, postgresCluster)
 
 	backrestConfig, err := pgbackrest.CreatePGBackRestConfigMapIntent(ctx, postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, cloudLogPath, instanceNames)
@@ -3350,4 +3336,41 @@ func authorizeBackupRemovalAnnotationPresent(postgresCluster *v1beta1.PostgresCl
 		}
 	}
 	return false
+}
+
+// reconcileCloudLogPath is responsible for determining the appropriate log path
+// for pgbackrest in cloud backup jobs.
+func (r *Reconciler) reconcileCloudLogPath(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster) string {
+	// If the user has specified a PVC to use as a log volume for cloud backups via the
+	// PGBackRestCloudLogVolume annotation, check for the PVC. If we find it, set the cloud
+	// log path. If the user has specified a PVC, but we can't find it, create a warning event.
+	// If the user has not set the PGBackRestCloudLogVolume annotation, but has set a log
+	// path via the spec, use that.
+	// TODO: Make sure this is what we want (i.e. annotation to take precedence over spec)
+	cloudLogPath := ""
+	if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
+		logVolume := &corev1.PersistentVolumeClaim{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      logVolumeName,
+				Namespace: postgresCluster.GetNamespace(),
+			},
+		}
+		err := errors.WithStack(r.Client.Get(ctx,
+			client.ObjectKeyFromObject(logVolume), logVolume))
+		if err != nil {
+			// PVC not retrieved, create warning event
+			r.Recorder.Event(postgresCluster, corev1.EventTypeWarning,
+				"PGBackRestCloudLogVolumeNotFound", err.Error())
+		} else {
+			// We successfully found the specified PVC, so we will set the log path
+			cloudLogPath = "/volumes/" + logVolumeName
+		}
+		// TODO: Can we safely assume that backups are enabled?
+	} else if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil &&
+		postgresCluster.Spec.Backups.PGBackRest.Jobs.Log != nil &&
+		postgresCluster.Spec.Backups.PGBackRest.Jobs.Log.Path != "" {
+		cloudLogPath = postgresCluster.Spec.Backups.PGBackRest.Jobs.Log.Path
+	}
+	return cloudLogPath
 }

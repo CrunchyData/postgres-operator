@@ -57,6 +57,11 @@ func (in *AdditionalVolume) DeepCopy() *AdditionalVolume {
 func (in *BackupJobs) DeepCopyInto(out *BackupJobs) {
 	*out = *in
 	in.Resources.DeepCopyInto(&out.Resources)
+	if in.Log != nil {
+		in, out := &in.Log, &out.Log
+		*out = new(LoggingConfiguration)
+		**out = **in
+	}
 	if in.PriorityClassName != nil {
 		in, out := &in.PriorityClassName, &out.PriorityClassName
 		*out = new(string)

@@ -159,6 +159,10 @@ type BackupJobs struct {
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitzero"`
 
+	// Logging configuration for pgbackrest processes running in Backup Job Pods.
+	// +optional
+	Log *LoggingConfiguration `json:"log,omitempty"`
+
 	// Priority class name for the pgBackRest backup Job pods.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
 	// +optional
