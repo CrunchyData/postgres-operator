@@ -370,14 +370,26 @@ func (r *Reconciler) observeInstances(
 		// If autogrow is enabled, determine the desired volume size for each instance
 		// now that all the pod annotations have been collected. This final value will be
 		// checked to ensure that the value from the annotations can be parsed to a valid
-		// value. Otherwise the previous value, if available, will be used.
+		// value. Otherwise the previous value, if available, will be used. If a limit is
+		// not defined for the given volume and an empty string has been returned, nothing
+		// will be stored in the status.
 		if autogrow {
 			for _, instance := range observed.bySet[name] {
-				status.DesiredPGDataVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster, "pgData",
-					name, status.DesiredPGDataVolume[instance.Name], previousPGDataDesiredRequests[instance.Name])
+				if pgDataRequest := r.storeDesiredRequest(
+					ctx, cluster, "pgData", name,
+					status.DesiredPGDataVolume[instance.Name],
+					previousPGDataDesiredRequests[instance.Name],
+				); pgDataRequest != "" {
+					status.DesiredPGDataVolume[instance.Name] = pgDataRequest
+				}
 
-				status.DesiredPGWALVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster, "pgWAL",
-					name, status.DesiredPGWALVolume[instance.Name], previousPGWALDesiredRequests[instance.Name])
+				if pgWALRequest := r.storeDesiredRequest(
+					ctx, cluster, "pgWAL", name,
+					status.DesiredPGWALVolume[instance.Name],
+					previousPGWALDesiredRequests[instance.Name],
+				); pgWALRequest != "" {
+					status.DesiredPGWALVolume[instance.Name] = pgWALRequest
+				}
 			}
 		}
 
