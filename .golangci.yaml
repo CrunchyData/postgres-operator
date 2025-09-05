@@ -63,6 +63,11 @@ linters:
     - zerologlint
 
   settings:
+    dupword:
+      ignore:
+        # We might see duplicate instances of 'fi' if we end two bash 'if' statements
+        - fi
+
     depguard:
       rules:
         everything:
