@@ -8,7 +8,6 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"slices"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -25,18 +24,11 @@ func NewConfigForPgBackrestRepoHostPod(
 	ctx context.Context,
 	spec *v1beta1.InstrumentationSpec,
 	repos []v1beta1.PGBackRestRepo,
+	directory string,
 ) *Config {
 	config := NewConfig(spec)
 
 	if OpenTelemetryLogsEnabled(ctx, spec) {
-
-		var directory string
-		for _, repo := range repos {
-			if repo.Volume != nil {
-				directory = fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name)
-				break
-			}
-		}
 
 		// We should only enter this function if a PVC is assigned for a dedicated repohost
 		// but if we don't have one, exit early.
