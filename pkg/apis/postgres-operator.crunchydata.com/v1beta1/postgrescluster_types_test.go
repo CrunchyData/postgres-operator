@@ -2,33 +2,32 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package v1beta1
+package v1beta1_test
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
 	"sigs.k8s.io/yaml"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestPostgresClusterDefault(t *testing.T) {
 	t.Run("TypeMeta", func(t *testing.T) {
-		var cluster PostgresCluster
+		var cluster v1beta1.PostgresCluster
 		cluster.Default()
 
-		assert.Equal(t, cluster.APIVersion, GroupVersion.String())
+		assert.Equal(t, cluster.APIVersion, v1beta1.GroupVersion.String())
 		assert.Equal(t, cluster.Kind, reflect.TypeOf(cluster).Name())
 	})
 
 	t.Run("no instance sets", func(t *testing.T) {
-		var cluster PostgresCluster
+		var cluster v1beta1.PostgresCluster
 		cluster.Default()
 
-		b, err := yaml.Marshal(cluster)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(cluster, `
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 spec:
@@ -39,17 +38,15 @@ spec:
     syncPeriodSeconds: 10
   port: 5432
   postgresVersion: 0
-		`)+"\n")
+		`))
 	})
 
 	t.Run("one instance set", func(t *testing.T) {
-		var cluster PostgresCluster
-		cluster.Spec.InstanceSets = []PostgresInstanceSetSpec{{}}
+		var cluster v1beta1.PostgresCluster
+		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{}}
 		cluster.Default()
 
-		b, err := yaml.Marshal(cluster)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(cluster, `
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 spec:
@@ -64,12 +61,12 @@ spec:
     syncPeriodSeconds: 10
   port: 5432
   postgresVersion: 0
-		`)+"\n")
+		`))
 	})
 
 	t.Run("empty proxy", func(t *testing.T) {
-		var cluster PostgresCluster
-		cluster.Spec.Proxy = new(PostgresProxySpec)
+		var cluster v1beta1.PostgresCluster
+		cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
 		cluster.Default()
 
 		b, err := yaml.Marshal(cluster.Spec.Proxy)
@@ -78,58 +75,54 @@ spec:
 	})
 
 	t.Run("PgBouncer proxy", func(t *testing.T) {
-		var cluster PostgresCluster
-		cluster.Spec.Proxy = &PostgresProxySpec{PGBouncer: &PGBouncerPodSpec{}}
+		var cluster v1beta1.PostgresCluster
+		cluster.Spec.Proxy = &v1beta1.PostgresProxySpec{PGBouncer: &v1beta1.PGBouncerPodSpec{}}
 		cluster.Default()
 
-		b, err := yaml.Marshal(cluster.Spec.Proxy)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(cluster.Spec.Proxy, `
 pgBouncer:
   port: 5432
   replicas: 1
-		`)+"\n")
+		`))
 	})
 }
 
 func TestPostgresInstanceSetSpecDefault(t *testing.T) {
-	var spec PostgresInstanceSetSpec
+	var spec v1beta1.PostgresInstanceSetSpec
 	spec.Default(5)
 
-	b, err := yaml.Marshal(spec)
-	assert.NilError(t, err)
-	assert.DeepEqual(t, string(b), strings.TrimSpace(`
+	assert.Assert(t, MarshalsTo(spec, `
 dataVolumeClaimSpec:
   resources: {}
 name: "05"
 replicas: 1
-	`)+"\n")
+	`))
 }
 
 func TestMetadataGetLabels(t *testing.T) {
 	for _, test := range []struct {
-		m           Metadata
-		mp          *Metadata
+		m           v1beta1.Metadata
+		mp          *v1beta1.Metadata
 		expect      map[string]string
 		description string
 	}{{
 		expect:      map[string]string(nil),
 		description: "meta is defined but unset",
 	}, {
-		m:           Metadata{},
-		mp:          &Metadata{},
+		m:           v1beta1.Metadata{},
+		mp:          &v1beta1.Metadata{},
 		expect:      map[string]string(nil),
 		description: "metadata is empty",
 	}, {
-		m:           Metadata{Labels: map[string]string{}},
-		mp:          &Metadata{Labels: map[string]string{}},
+		m:           v1beta1.Metadata{Labels: map[string]string{}},
+		mp:          &v1beta1.Metadata{Labels: map[string]string{}},
 		expect:      map[string]string{},
 		description: "metadata contains empty label set",
 	}, {
-		m: Metadata{Labels: map[string]string{
+		m: v1beta1.Metadata{Labels: map[string]string{
 			"test": "label",
 		}},
-		mp: &Metadata{Labels: map[string]string{
+		mp: &v1beta1.Metadata{Labels: map[string]string{
 			"test": "label",
 		}},
 		expect: map[string]string{
@@ -137,11 +130,11 @@ func TestMetadataGetLabels(t *testing.T) {
 		},
 		description: "metadata contains labels",
 	}, {
-		m: Metadata{Labels: map[string]string{
+		m: v1beta1.Metadata{Labels: map[string]string{
 			"test":  "label",
 			"test2": "label2",
 		}},
-		mp: &Metadata{Labels: map[string]string{
+		mp: &v1beta1.Metadata{Labels: map[string]string{
 			"test":  "label",
 			"test2": "label2",
 		}},
@@ -160,28 +153,28 @@ func TestMetadataGetLabels(t *testing.T) {
 
 func TestMetadataGetAnnotations(t *testing.T) {
 	for _, test := range []struct {
-		m           Metadata
-		mp          *Metadata
+		m           v1beta1.Metadata
+		mp          *v1beta1.Metadata
 		expect      map[string]string
 		description string
 	}{{
 		expect:      map[string]string(nil),
 		description: "meta is defined but unset",
 	}, {
-		m:           Metadata{},
-		mp:          &Metadata{},
+		m:           v1beta1.Metadata{},
+		mp:          &v1beta1.Metadata{},
 		expect:      map[string]string(nil),
 		description: "metadata is empty",
 	}, {
-		m:           Metadata{Annotations: map[string]string{}},
-		mp:          &Metadata{Annotations: map[string]string{}},
+		m:           v1beta1.Metadata{Annotations: map[string]string{}},
+		mp:          &v1beta1.Metadata{Annotations: map[string]string{}},
 		expect:      map[string]string{},
 		description: "metadata contains empty annotation set",
 	}, {
-		m: Metadata{Annotations: map[string]string{
+		m: v1beta1.Metadata{Annotations: map[string]string{
 			"test": "annotation",
 		}},
-		mp: &Metadata{Annotations: map[string]string{
+		mp: &v1beta1.Metadata{Annotations: map[string]string{
 			"test": "annotation",
 		}},
 		expect: map[string]string{
@@ -189,11 +182,11 @@ func TestMetadataGetAnnotations(t *testing.T) {
 		},
 		description: "metadata contains annotations",
 	}, {
-		m: Metadata{Annotations: map[string]string{
+		m: v1beta1.Metadata{Annotations: map[string]string{
 			"test":  "annotation",
 			"test2": "annotation2",
 		}},
-		mp: &Metadata{Annotations: map[string]string{
+		mp: &v1beta1.Metadata{Annotations: map[string]string{
 			"test":  "annotation",
 			"test2": "annotation2",
 		}},

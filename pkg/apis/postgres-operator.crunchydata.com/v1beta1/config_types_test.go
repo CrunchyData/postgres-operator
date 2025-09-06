@@ -5,11 +5,9 @@
 package v1beta1_test
 
 import (
-	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -20,14 +18,12 @@ func TestOptionalConfigMapKeyRefAsProjection(t *testing.T) {
 		in.Name, in.Key = "one", "two"
 
 		out := in.AsProjection("three")
-		b, err := yaml.Marshal(out)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(out, `
 items:
 - key: two
   path: three
 name: one
-		`)+"\n")
+		`))
 	})
 
 	t.Run("True", func(t *testing.T) {
@@ -36,15 +32,13 @@ name: one
 		in.Name, in.Key = "one", "two"
 
 		out := in.AsProjection("three")
-		b, err := yaml.Marshal(out)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(out, `
 items:
 - key: two
   path: three
 name: one
 optional: true
-		`)+"\n")
+		`))
 	})
 
 	t.Run("False", func(t *testing.T) {
@@ -53,15 +47,13 @@ optional: true
 		in.Name, in.Key = "one", "two"
 
 		out := in.AsProjection("three")
-		b, err := yaml.Marshal(out)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(out, `
 items:
 - key: two
   path: three
 name: one
 optional: false
-		`)+"\n")
+		`))
 	})
 }
 
@@ -69,14 +61,12 @@ func TestConfigMapKeyRefAsProjection(t *testing.T) {
 	in := v1beta1.ConfigMapKeyRef{Name: "asdf", Key: "foobar"}
 	out := in.AsProjection("some-path")
 
-	b, err := yaml.Marshal(out)
-	assert.NilError(t, err)
-	assert.DeepEqual(t, string(b), strings.TrimSpace(`
+	assert.Assert(t, MarshalsTo(out, `
 items:
 - key: foobar
   path: some-path
 name: asdf
-	`)+"\n")
+	`))
 }
 
 func TestOptionalSecretKeyRefAsProjection(t *testing.T) {
@@ -85,14 +75,12 @@ func TestOptionalSecretKeyRefAsProjection(t *testing.T) {
 		in.Name, in.Key = "one", "two"
 
 		out := in.AsProjection("three")
-		b, err := yaml.Marshal(out)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(out, `
 items:
 - key: two
   path: three
 name: one
-		`)+"\n")
+		`))
 	})
 
 	t.Run("True", func(t *testing.T) {
@@ -101,15 +89,13 @@ name: one
 		in.Name, in.Key = "one", "two"
 
 		out := in.AsProjection("three")
-		b, err := yaml.Marshal(out)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(out, `
 items:
 - key: two
   path: three
 name: one
 optional: true
-		`)+"\n")
+		`))
 	})
 
 	t.Run("False", func(t *testing.T) {
@@ -118,15 +104,13 @@ optional: true
 		in.Name, in.Key = "one", "two"
 
 		out := in.AsProjection("three")
-		b, err := yaml.Marshal(out)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		assert.Assert(t, MarshalsTo(out, `
 items:
 - key: two
   path: three
 name: one
 optional: false
-		`)+"\n")
+		`))
 	})
 }
 
@@ -134,12 +118,10 @@ func TestSecretKeyRefAsProjection(t *testing.T) {
 	in := v1beta1.SecretKeyRef{Name: "asdf", Key: "foobar"}
 	out := in.AsProjection("some-path")
 
-	b, err := yaml.Marshal(out)
-	assert.NilError(t, err)
-	assert.DeepEqual(t, string(b), strings.TrimSpace(`
+	assert.Assert(t, MarshalsTo(out, `
 items:
 - key: foobar
   path: some-path
 name: asdf
-	`)+"\n")
+	`))
 }
