@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package v1beta1
+package v1beta1_test
 
 import (
 	"reflect"
@@ -15,14 +15,14 @@ import (
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"sigs.k8s.io/yaml"
 
-	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestAdditionalVolumeAsVolume(t *testing.T) {
 	t.Parallel()
 
 	t.Run("ClaimName", func(t *testing.T) {
-		in := AdditionalVolume{ClaimName: "doot"}
+		in := v1beta1.AdditionalVolume{ClaimName: "doot"}
 		out := in.AsVolume("asdf")
 
 		var expected corev1.Volume
@@ -50,7 +50,7 @@ func TestAdditionalVolumeAsVolume(t *testing.T) {
 func TestDurationAsDuration(t *testing.T) {
 	t.Parallel()
 
-	v, err := NewDuration("2s")
+	v, err := v1beta1.NewDuration("2s")
 	assert.NilError(t, err)
 
 	// get the value
@@ -68,12 +68,10 @@ func TestDurationYAML(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Zero", func(t *testing.T) {
-		zero, err := yaml.Marshal(Duration{})
-		assert.NilError(t, err)
-		assert.DeepEqual(t, zero, []byte(`"0"`+"\n"))
+		assert.Assert(t, MarshalsTo(v1beta1.Duration{}, `"0"`))
 
-		var parsed Duration
-		assert.NilError(t, yaml.UnmarshalStrict(zero, &parsed))
+		var parsed v1beta1.Duration
+		assert.NilError(t, yaml.UnmarshalStrict([]byte(`"0"`), &parsed))
 		assert.Equal(t, parsed.AsDuration().Duration, 0*time.Second)
 
 		// This is what Kubernetes calls when validating the "duration" format.
@@ -82,23 +80,17 @@ func TestDurationYAML(t *testing.T) {
 	})
 
 	t.Run("Small", func(t *testing.T) {
-		var parsed Duration
+		var parsed v1beta1.Duration
 		assert.NilError(t, yaml.UnmarshalStrict([]byte(`3ns`), &parsed))
 		assert.Equal(t, parsed.AsDuration().Duration, 3*time.Nanosecond)
-
-		b, err := yaml.Marshal(parsed)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, b, []byte(`3ns`+"\n"))
+		assert.Assert(t, MarshalsTo(parsed, `3ns`))
 	})
 
 	t.Run("Large", func(t *testing.T) {
-		var parsed Duration
+		var parsed v1beta1.Duration
 		assert.NilError(t, yaml.UnmarshalStrict([]byte(`52 weeks`), &parsed))
 		assert.Equal(t, parsed.AsDuration().Duration, 364*24*time.Hour)
-
-		b, err := yaml.Marshal(parsed)
-		assert.NilError(t, err)
-		assert.DeepEqual(t, b, []byte(`52 weeks`+"\n"))
+		assert.Assert(t, MarshalsTo(parsed, `52 weeks`))
 	})
 
 	t.Run("UnitsIn", func(t *testing.T) {
@@ -162,7 +154,7 @@ func TestDurationYAML(t *testing.T) {
 			// ISO 8601 / RFC 33339
 			{"PT2D9H", (2 * Day) + 9*time.Hour},
 		} {
-			var parsed Duration
+			var parsed v1beta1.Duration
 			assert.NilError(t, yaml.UnmarshalStrict([]byte(tt.input), &parsed))
 			assert.Equal(t, parsed.AsDuration().Duration, tt.result)
 
@@ -186,7 +178,7 @@ func TestDurationYAML(t *testing.T) {
 			"11 wks",
 		} {
 			assert.ErrorContains(t,
-				yaml.UnmarshalStrict([]byte(tt), new(Duration)), "unable to parse")
+				yaml.UnmarshalStrict([]byte(tt), new(v1beta1.Duration)), "unable to parse")
 
 			// This is what Kubernetes calls when validating the "duration" format.
 			// - https://releases.k8s.io/v1.32.0/staging/src/k8s.io/apiextensions-apiserver/pkg/apiserver/validation/validation.go#L116
@@ -195,7 +187,7 @@ func TestDurationYAML(t *testing.T) {
 	})
 
 	t.Run("DoNotUsePartialAmounts", func(t *testing.T) {
-		var parsed Duration
+		var parsed v1beta1.Duration
 		assert.NilError(t, yaml.UnmarshalStrict([]byte(`1.5 hours`), &parsed))
 
 		expected, err := time.ParseDuration(`1.5h`)
@@ -210,10 +202,10 @@ func TestDurationYAML(t *testing.T) {
 func TestSchemalessObjectDeepCopy(t *testing.T) {
 	t.Parallel()
 
-	var z SchemalessObject
+	var z v1beta1.SchemalessObject
 	assert.DeepEqual(t, z, z.DeepCopy())
 
-	var one SchemalessObject
+	var one v1beta1.SchemalessObject
 	assert.NilError(t, yaml.UnmarshalStrict(
 		[]byte(`{ str: value, num: 1, arr: [a, 2, true] }`), &one,
 	))
@@ -253,12 +245,12 @@ func TestSchemalessObjectDeepCopy(t *testing.T) {
 func TestVolumeClaimSpecYAML(t *testing.T) {
 	t.Parallel()
 
-	var zero VolumeClaimSpec
+	var zero v1beta1.VolumeClaimSpec
 	out, err := yaml.Marshal(zero)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, string(out), "resources: {}\n")
 
-	var parsed VolumeClaimSpec
+	var parsed v1beta1.VolumeClaimSpec
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		accessModes: [ReadWriteMany],
 		resources: { requests: { storage: 1Gi } },
@@ -266,7 +258,7 @@ func TestVolumeClaimSpecYAML(t *testing.T) {
 	}`), &parsed))
 
 	zork := "zork"
-	assert.DeepEqual(t, parsed, VolumeClaimSpec{
+	assert.DeepEqual(t, parsed, v1beta1.VolumeClaimSpec{
 		StorageClassName: &zork,
 		AccessModes: []corev1.PersistentVolumeAccessMode{
 			corev1.ReadWriteMany,
@@ -282,12 +274,12 @@ func TestVolumeClaimSpecYAML(t *testing.T) {
 func TestVolumeClaimSpecWithAutoGrowYAML(t *testing.T) {
 	t.Parallel()
 
-	var zero VolumeClaimSpecWithAutoGrow
+	var zero v1beta1.VolumeClaimSpecWithAutoGrow
 	out, err := yaml.Marshal(zero)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, string(out), "resources: {}\n")
 
-	var parsed VolumeClaimSpecWithAutoGrow
+	var parsed v1beta1.VolumeClaimSpecWithAutoGrow
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		accessModes: [ReadWriteMany],
 		resources: { requests: { storage: 1Gi } },
@@ -296,13 +288,14 @@ func TestVolumeClaimSpecWithAutoGrowYAML(t *testing.T) {
 	}`), &parsed))
 
 	zork := "zork"
-	maxGrow := resource.MustParse("100Mi")
-	assert.DeepEqual(t, parsed, VolumeClaimSpecWithAutoGrow{
-		AutoGrow: &AutoGrowSpec{
-			Trigger: initialize.Int32(50),
-			MaxGrow: &maxGrow,
+	resource100Mi := resource.MustParse("100Mi")
+	int50 := int32(50)
+	assert.DeepEqual(t, parsed, v1beta1.VolumeClaimSpecWithAutoGrow{
+		AutoGrow: &v1beta1.AutoGrowSpec{
+			Trigger: &int50,
+			MaxGrow: &resource100Mi,
 		},
-		VolumeClaimSpec: VolumeClaimSpec{
+		VolumeClaimSpec: v1beta1.VolumeClaimSpec{
 			StorageClassName: &zork,
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteMany,
@@ -317,7 +310,7 @@ func TestVolumeClaimSpecWithAutoGrowYAML(t *testing.T) {
 }
 
 func TestAutoGrowDefault(t *testing.T) {
-	var autoGrow AutoGrowSpec
+	var autoGrow v1beta1.AutoGrowSpec
 	autoGrow.Default()
 
 	assert.Equal(t, *autoGrow.Trigger, int32(75))
