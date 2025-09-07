@@ -19,10 +19,10 @@ func TestOptionalConfigMapKeyRefAsProjection(t *testing.T) {
 
 		out := in.AsProjection("three")
 		assert.Assert(t, MarshalsTo(out, `
-items:
-- key: two
-  path: three
-name: one
+			items:
+			- key: two
+				path: three
+			name: one
 		`))
 	})
 
@@ -33,11 +33,11 @@ name: one
 
 		out := in.AsProjection("three")
 		assert.Assert(t, MarshalsTo(out, `
-items:
-- key: two
-  path: three
-name: one
-optional: true
+			items:
+			- key: two
+				path: three
+			name: one
+			optional: true
 		`))
 	})
 
@@ -48,11 +48,11 @@ optional: true
 
 		out := in.AsProjection("three")
 		assert.Assert(t, MarshalsTo(out, `
-items:
-- key: two
-  path: three
-name: one
-optional: false
+			items:
+			- key: two
+				path: three
+			name: one
+			optional: false
 		`))
 	})
 }
@@ -62,10 +62,10 @@ func TestConfigMapKeyRefAsProjection(t *testing.T) {
 	out := in.AsProjection("some-path")
 
 	assert.Assert(t, MarshalsTo(out, `
-items:
-- key: foobar
-  path: some-path
-name: asdf
+		items:
+		- key: foobar
+			path: some-path
+		name: asdf
 	`))
 }
 
@@ -76,10 +76,10 @@ func TestOptionalSecretKeyRefAsProjection(t *testing.T) {
 
 		out := in.AsProjection("three")
 		assert.Assert(t, MarshalsTo(out, `
-items:
-- key: two
-  path: three
-name: one
+			items:
+			- key: two
+				path: three
+			name: one
 		`))
 	})
 
@@ -90,11 +90,11 @@ name: one
 
 		out := in.AsProjection("three")
 		assert.Assert(t, MarshalsTo(out, `
-items:
-- key: two
-  path: three
-name: one
-optional: true
+			items:
+			- key: two
+				path: three
+			name: one
+			optional: true
 		`))
 	})
 
@@ -105,11 +105,11 @@ optional: true
 
 		out := in.AsProjection("three")
 		assert.Assert(t, MarshalsTo(out, `
-items:
-- key: two
-  path: three
-name: one
-optional: false
+			items:
+			- key: two
+				path: three
+			name: one
+			optional: false
 		`))
 	})
 }
@@ -119,9 +119,9 @@ func TestSecretKeyRefAsProjection(t *testing.T) {
 	out := in.AsProjection("some-path")
 
 	assert.Assert(t, MarshalsTo(out, `
-items:
-- key: foobar
-  path: some-path
-name: asdf
+		items:
+		- key: foobar
+			path: some-path
+		name: asdf
 	`))
 }

@@ -80,7 +80,9 @@ func MarshalMatches(actual any, expected string) Comparison {
 	if err != nil {
 		return func() gotest.Result { return gotest.ResultFromError(err) }
 	}
-	return gotest.DeepEqual(string(b), strings.Trim(expected, "\t\n")+"\n")
+	return gotest.DeepEqual(string(b), dedentLines(
+		strings.TrimLeft(strings.TrimRight(expected, "\t\n"), "\n"), 2,
+	))
 }
 
 // Regexp succeeds if value contains any match of the regular expression.
@@ -88,4 +90,59 @@ func MarshalMatches(actual any, expected string) Comparison {
 // regexp pattern.
 func Regexp[RE *regexp.Regexp | ~string](regex RE, value string) Comparison {
 	return gotest.Regexp(regex, value)
+}
+
+var leadingTabs = regexp.MustCompile(`^\t+`)
+
+// dedentLines finds the shortest leading whitespace of every line in data and then removes it from every line.
+// When tabWidth is positive, leading tabs are converted to spaces first.
+func dedentLines(data string, tabWidth int) string {
+	if len(data) < 1 {
+		return ""
+	}
+
+	var lines = make([]string, 0, 20)
+	var lowest, highest string
+
+	for line := range strings.Lines(data) {
+		tabs := leadingTabs.FindString(line)
+
+		// Replace any leading tabs with spaces when tabWidth is positive.
+		// NOTE: [strings.Repeat] has a fast-path for spaces.
+		if need := tabWidth * len(tabs); need > 0 {
+			line = strings.Repeat(" ", need) + line[len(tabs):]
+		}
+
+		switch {
+		case lowest == "", highest == "":
+			lowest, highest = line, line
+
+		case len(strings.TrimSpace(line)) > 0:
+			lowest = min(lowest, line)
+			highest = max(highest, line)
+		}
+
+		lines = append(lines, line)
+	}
+
+	// This treats one tab the same as one space.
+	// That is, it expects all lines to be indented using spaces or using tabs; not both.
+	if width := func() int {
+		for i := range lowest {
+			if (lowest[i] != ' ' && lowest[i] != '\t') || lowest[i] != highest[i] {
+				return i
+			}
+		}
+		return len(lowest)
+	}(); width > 0 {
+		for i := range lines {
+			if len(lines[i]) > width {
+				lines[i] = lines[i][width:]
+			} else {
+				lines[i] = "\n"
+			}
+		}
+	}
+
+	return strings.TrimSuffix(strings.Join(lines, ""), "\n") + "\n"
 }
