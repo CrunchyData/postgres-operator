@@ -685,6 +685,7 @@ func TestInstanceYAML(t *testing.T) {
 # Your changes will not be saved.
 bootstrap:
   initdb:
+  - allow-group-access
   - data-checksums
   - encoding=UTF8
   - waldir=/pgdata/pg12_wal
@@ -708,6 +709,7 @@ tags: {}
 # Your changes will not be saved.
 bootstrap:
   initdb:
+  - allow-group-access
   - data-checksums
   - encoding=UTF8
   - waldir=/pgdata/pg12_wal
@@ -747,6 +749,7 @@ tags: {}
 # Your changes will not be saved.
 bootstrap:
   initdb:
+  - allow-group-access
   - data-checksums
   - encoding=UTF8
   - waldir=/pgdata/pg12_wal
