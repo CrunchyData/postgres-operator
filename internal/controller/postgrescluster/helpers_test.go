@@ -102,6 +102,12 @@ func testVolumeClaimSpec() v1beta1.VolumeClaimSpec {
 	}
 }
 
+func testVolumeClaimSpecWithAutoGrow() v1beta1.VolumeClaimSpecWithAutoGrow {
+	return v1beta1.VolumeClaimSpecWithAutoGrow{
+		VolumeClaimSpec: testVolumeClaimSpec(),
+	}
+}
+
 func testCluster() *v1beta1.PostgresCluster {
 	// Defines a base cluster spec that can be used by tests to generate a
 	// cluster with an expected number of instances
@@ -118,7 +124,7 @@ func testCluster() *v1beta1.PostgresCluster {
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name:                "instance1",
 				Replicas:            initialize.Int32(1),
-				DataVolumeClaimSpec: testVolumeClaimSpec(),
+				DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 			}},
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
@@ -126,7 +132,7 @@ func testCluster() *v1beta1.PostgresCluster {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: testVolumeClaimSpec(),
+							VolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 						},
 					}},
 				},

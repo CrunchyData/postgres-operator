@@ -721,7 +721,7 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 
 	// mount additional volumes to the repo host containers
 	if repoHost != nil && repoHost.Volumes != nil && len(repoHost.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&repo.Spec.Template, repoHost.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&repo.Spec.Template.Spec, repoHost.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
@@ -884,31 +884,15 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 		jobSpec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 		pgbackrest.AddConfigToCloudBackupJob(postgresCluster, &jobSpec.Template)
 
-		// If the user has specified a PVC to use as a log volume via the PGBackRestCloudLogVolume
-		// annotation, check for the PVC. If we find it, mount it to the backup job.
-		// Otherwise, create a warning event.
+		// Mount the PVC named in the "pgbackrest-cloud-log-volume" annotation, if any.
 		if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
-			logVolume := &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      logVolumeName,
-					Namespace: postgresCluster.GetNamespace(),
-				},
-			}
-			err := errors.WithStack(r.Reader.Get(ctx,
-				client.ObjectKeyFromObject(logVolume), logVolume))
-			if err != nil {
-				// PVC not retrieved, create warning event
-				r.Recorder.Event(postgresCluster, corev1.EventTypeWarning, "PGBackRestCloudLogVolumeNotFound", err.Error())
-			} else {
-				// We successfully found the specified PVC, so we will add it to the backup job
-				util.AddVolumeAndMountsToPod(&jobSpec.Template.Spec, logVolume)
-			}
+			util.AddCloudLogVolumeToPod(&jobSpec.Template.Spec, logVolumeName)
 		}
 	}
 
 	// mount additional volumes to the job containers
 	if jobs != nil && jobs.Volumes != nil && len(jobs.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&jobSpec.Template, jobs.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&jobSpec.Template.Spec, jobs.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
@@ -1408,7 +1392,7 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(dataSource.PriorityClassName)
 
 	if dataSource.Volumes != nil && len(dataSource.Volumes.Additional) > 0 {
-		missingContainers := AddAdditionalVolumesToSpecifiedContainers(&job.Spec.Template, dataSource.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&job.Spec.Template.Spec, dataSource.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
@@ -1506,7 +1490,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// reconcile all pgbackrest repository repos
 	replicaCreateRepo, err := r.reconcileRepos(ctx, postgresCluster, configHashes, repoResources)
 	if err != nil {
-		log.Error(err, "unable to reconcile pgBackRest repo host")
+		log.Error(err, "unable to reconcile pgBackRest repos")
 		result.Requeue = true
 		return result, nil
 	}
@@ -2775,7 +2759,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 	repoVols := []*corev1.PersistentVolumeClaim{}
 	var replicaCreateRepo v1beta1.PGBackRestRepo
 
-	if feature.Enabled(ctx, feature.AutoGrowVolumes) {
+	if feature.Enabled(ctx, feature.AutoGrowVolumes) && pgbackrest.RepoHostVolumeDefined(postgresCluster) {
 		// get the autogrow annotations so that the correct volume size values can be
 		// used and the cluster status can be updated
 		errors = append(errors, r.writeRepoVolumeSizeRequestStatus(ctx, postgresCluster))

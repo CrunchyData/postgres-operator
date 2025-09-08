@@ -18,6 +18,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/shell"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -266,7 +267,15 @@ func Environment(cluster *v1beta1.PostgresCluster) []corev1.EnvVar {
 // reloadCommand returns an entrypoint that convinces PostgreSQL to reload
 // certificate files when they change. The process will appear as name in `ps`
 // and `top`.
-func reloadCommand(name string) []string {
+func reloadCommand(
+	name string,
+	pgdataAutoGrowVolumeSpec *v1beta1.VolumeClaimSpecWithAutoGrow,
+	pgwalAutoGrowVolumeSpec *v1beta1.VolumeClaimSpecWithAutoGrow,
+) []string {
+
+	pgdataTrigger, pgdataMaxGrow := util.GetAutoGrowFromSpec(pgdataAutoGrowVolumeSpec)
+	pgwalTrigger, pgwalMaxGrow := util.GetAutoGrowFromSpec(pgwalAutoGrowVolumeSpec)
+
 	// Use a Bash loop to periodically check the mtime of the mounted
 	// certificate volume. When it changes, copy the replication certificate,
 	// signal PostgreSQL, and print the observed timestamp.
@@ -301,15 +310,27 @@ CACERT=${SERVICEACCOUNT}/ca.crt
 # Return size in Mebibytes.
 manageAutogrowAnnotation() {
   local volume=$1
+  local trigger=$2
+  local maxGrow=$3
 
-  size=$(df --human-readable --block-size=M /"${volume}" | awk 'FNR == 2 {print $2}')
-  use=$(df --human-readable /"${volume}" | awk 'FNR == 2 {print $5}')
+  size=$(df --block-size=M /"${volume}" | awk 'FNR == 2 {print $2}')
+  use=$(df /"${volume}" | awk 'FNR == 2 {print $5}')
   sizeInt="${size//M/}"
   # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
   useInt=$(echo $use | sed 's/[[:punct:]]//g')
-  triggerExpansion="$((useInt > 75))"
-  if [ $triggerExpansion -eq 1 ]; then
+  triggerExpansion="$((useInt > trigger))"
+  if [[ $triggerExpansion -eq 1 ]]; then
     newSize="$(((sizeInt / 2)+sizeInt))"
+    # Only compare with maxGrow if it is set (not empty)
+    if [[ -n "$maxGrow" ]]; then
+        # check to see how much we would normally grow
+        sizeDiff=$((newSize - sizeInt))
+
+        # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+        if [[ $sizeDiff -gt $maxGrow ]]; then
+            newSize=$((sizeInt + maxGrow))
+        fi
+    fi
     newSizeMi="${newSize}Mi"
     d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"$newSizeMi"'"}]'
     curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
@@ -329,11 +350,10 @@ while read -r -t 5 -u "${fd}" ||:; do
   fi
 
   # manage autogrow annotation for the pgData volume
-  manageAutogrowAnnotation "pgdata"
-
+  manageAutogrowAnnotation "pgdata" "%s" "%s"
   # manage autogrow annotation for the pgWAL volume, if it exists
   if [[ -d /pgwal ]]; then
-    manageAutogrowAnnotation "pgwal"
+    manageAutogrowAnnotation "pgwal" "%s" "%s"
   fi
 done
 `,
@@ -342,12 +362,9 @@ done
 		naming.ReplicationCertPath,
 		naming.ReplicationPrivateKeyPath,
 		naming.ReplicationCACertPath,
+		pgdataTrigger, pgdataMaxGrow,
+		pgwalTrigger, pgwalMaxGrow,
 	)
-
-	// this is used to close out the while loop started above after adding the required
-	// auto grow annotation scripts
-	// finalDone := `done
-	// `
 
 	// Elide the above script from `ps` and `top` by wrapping it in a function
 	// and calling that.

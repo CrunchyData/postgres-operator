@@ -181,15 +181,27 @@ containers:
     # Return size in Mebibytes.
     manageAutogrowAnnotation() {
       local volume=$1
+      local trigger=$2
+      local maxGrow=$3
 
-      size=$(df --human-readable --block-size=M /"${volume}" | awk 'FNR == 2 {print $2}')
-      use=$(df --human-readable /"${volume}" | awk 'FNR == 2 {print $5}')
+      size=$(df --block-size=M /"${volume}" | awk 'FNR == 2 {print $2}')
+      use=$(df /"${volume}" | awk 'FNR == 2 {print $5}')
       sizeInt="${size//M/}"
       # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
       useInt=$(echo $use | sed 's/[[:punct:]]//g')
-      triggerExpansion="$((useInt > 75))"
-      if [ $triggerExpansion -eq 1 ]; then
+      triggerExpansion="$((useInt > trigger))"
+      if [[ $triggerExpansion -eq 1 ]]; then
         newSize="$(((sizeInt / 2)+sizeInt))"
+        # Only compare with maxGrow if it is set (not empty)
+        if [[ -n "$maxGrow" ]]; then
+            # check to see how much we would normally grow
+            sizeDiff=$((newSize - sizeInt))
+
+            # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+            if [[ $sizeDiff -gt $maxGrow ]]; then
+                newSize=$((sizeInt + maxGrow))
+            fi
+        fi
         newSizeMi="${newSize}Mi"
         d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"$newSizeMi"'"}]'
         curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
@@ -209,11 +221,10 @@ containers:
       fi
 
       # manage autogrow annotation for the pgData volume
-      manageAutogrowAnnotation "pgdata"
-
+      manageAutogrowAnnotation "pgdata" "75" ""
       # manage autogrow annotation for the pgWAL volume, if it exists
       if [[ -d /pgwal ]]; then
-        manageAutogrowAnnotation "pgwal"
+        manageAutogrowAnnotation "pgwal" "75" ""
       fi
     done
     }; export -f monitor; exec -a "$0" bash -ceu monitor
@@ -616,7 +627,7 @@ volumes:
 		walVolume.Name = "walvol"
 
 		instance := new(v1beta1.PostgresInstanceSetSpec)
-		instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpec)
+		instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpecWithAutoGrow)
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,

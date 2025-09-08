@@ -363,7 +363,7 @@ type RepoPVC struct {
 	// Defines a PersistentVolumeClaim spec used to create and/or bind a volume
 	// ---
 	// +required
-	VolumeClaimSpec VolumeClaimSpec `json:"volumeClaimSpec"`
+	VolumeClaimSpec VolumeClaimSpecWithAutoGrow `json:"volumeClaimSpec"`
 }
 
 // RepoAzure represents a pgBackRest repository that is created using Azure storage

@@ -66,13 +66,13 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Image: "example.com/crunchy-postgres-ha:test",
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}},
 				},
 			}},
 			Backups: v1beta1.Backups{
@@ -117,11 +117,13 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 		postgresCluster.Spec.Backups.PGBackRest.Repos[0] = v1beta1.PGBackRestRepo{
 			Name: "repo1",
 			Volume: &v1beta1.RepoPVC{
-				VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
+				VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							},
 						},
 					},
 				},
@@ -2432,13 +2434,13 @@ func TestCopyConfigurationResources(t *testing.T) {
 				Image:           "example.com/crunchy-postgres-ha:test",
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
-							},
-						},
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							Resources: corev1.VolumeResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								}}},
 					},
 				}},
 				Backups: v1beta1.Backups{
@@ -2484,13 +2486,13 @@ func TestCopyConfigurationResources(t *testing.T) {
 				},
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
-							},
-						},
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							Resources: corev1.VolumeResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								}}},
 					},
 				}},
 				Backups: v1beta1.Backups{
@@ -2719,7 +2721,7 @@ volumes:
 		spec := r.generateBackupJobSpecIntent(ctx,
 			&cluster, v1beta1.PGBackRestRepo{
 				Volume: &v1beta1.RepoPVC{
-					VolumeClaimSpec: v1beta1.VolumeClaimSpec{},
+					VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{},
 				},
 			},
 			"",
@@ -2949,95 +2951,13 @@ volumes:
 		})
 	})
 
-	t.Run("CloudLogVolumeAnnotationNoPvc", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		r.Recorder = recorder
-
-		cluster.Namespace = ns.Name
-		cluster.Annotations = map[string]string{}
-		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "some-pvc"
-		spec := r.generateBackupJobSpecIntent(ctx,
-			&cluster, v1beta1.PGBackRestRepo{},
-			"",
-			nil, nil,
-		)
-		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
-containers:
-- command:
-  - /bin/pgbackrest
-  - backup
-  - --stanza=db
-  - --repo=
-  name: pgbackrest
-  resources: {}
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-      - ALL
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  volumeMounts:
-  - mountPath: /etc/pgbackrest/conf.d
-    name: pgbackrest-config
-    readOnly: true
-  - mountPath: /tmp
-    name: tmp
-enableServiceLinks: false
-restartPolicy: Never
-securityContext:
-  fsGroup: 26
-  fsGroupChangePolicy: OnRootMismatch
-volumes:
-- name: pgbackrest-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: pgbackrest_cloud.conf
-          path: pgbackrest_cloud.conf
-        name: hippo-test-pgbackrest-config
-    - secret:
-        items:
-        - key: pgbackrest.ca-roots
-          path: ~postgres-operator/tls-ca.crt
-        - key: pgbackrest-client.crt
-          path: ~postgres-operator/client-tls.crt
-        - key: pgbackrest-client.key
-          mode: 384
-          path: ~postgres-operator/client-tls.key
-        name: hippo-test-pgbackrest
-- emptyDir:
-    sizeLimit: 16Mi
-  name: tmp
-		`))
-
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "PGBackRestCloudLogVolumeNotFound")
-		assert.Equal(t, recorder.Events[0].Note, "persistentvolumeclaims \"some-pvc\" not found")
-	})
-
-	t.Run("CloudLogVolumeAnnotationPvcInPlace", func(t *testing.T) {
+	t.Run("CloudLogVolumeAnnotation", func(t *testing.T) {
 		recorder := events.NewRecorder(t, runtime.Scheme)
 		r.Recorder = recorder
 
 		cluster.Namespace = ns.Name
 		cluster.Annotations = map[string]string{}
 		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
-
-		pvc := &corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "another-pvc",
-				Namespace: ns.Name,
-			},
-			Spec: corev1.PersistentVolumeClaimSpec(testVolumeClaimSpec()),
-		}
-		err := cc.Create(ctx, pvc)
-		assert.NilError(t, err)
 
 		spec := r.generateBackupJobSpecIntent(ctx,
 			&cluster, v1beta1.PGBackRestRepo{},
@@ -4505,13 +4425,16 @@ func TestGetRepoHostVolumeRequests(t *testing.T) {
 			// A limit is expected otherwise an empty string ("") is returned
 			testRepoPVC := func() *v1beta1.RepoPVC {
 				return &v1beta1.RepoPVC{
-					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-						Resources: corev1.VolumeResourceRequirements{
-							Limits: map[corev1.ResourceName]resource.Quantity{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
+					VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+							Resources: corev1.VolumeResourceRequirements{
+								Limits: map[corev1.ResourceName]resource.Quantity{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								},
 							},
-						}}}
+						},
+					}}
 			}
 
 			cluster := &v1beta1.PostgresCluster{

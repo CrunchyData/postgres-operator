@@ -136,7 +136,7 @@ func TestWALDirectory(t *testing.T) {
 	assert.Equal(t, WALDirectory(cluster, instance), "/pgdata/pg13_wal")
 
 	// with WAL volume
-	instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpec)
+	instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpecWithAutoGrow)
 	assert.Equal(t, WALDirectory(cluster, instance), "/pgwal/pg13_wal")
 }
 

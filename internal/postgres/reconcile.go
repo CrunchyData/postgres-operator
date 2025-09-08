@@ -174,7 +174,11 @@ func InstancePod(ctx context.Context,
 	reloader := corev1.Container{
 		Name: naming.ContainerClientCertCopy,
 
-		Command: reloadCommand(naming.ContainerClientCertCopy),
+		Command: reloadCommand(
+			naming.ContainerClientCertCopy,
+			&inInstanceSpec.DataVolumeClaimSpec,
+			inInstanceSpec.WALVolumeClaimSpec,
+		),
 
 		Image:           container.Image,
 		ImagePullPolicy: container.ImagePullPolicy,

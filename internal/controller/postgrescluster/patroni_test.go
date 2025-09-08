@@ -656,7 +656,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 				cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 					Name:                "target",
 					Replicas:            initialize.Int32(2),
-					DataVolumeClaimSpec: testVolumeClaimSpec(),
+					DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 				}}
 				if test.enabled {
 					cluster.Spec.Patroni = &v1beta1.PatroniSpec{
@@ -770,7 +770,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		timelineCall, timelineCallNoLeader = false, false
 		called, failover, callError, callFails = false, false, true, false
@@ -793,7 +793,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		timelineCall, timelineCallNoLeader = false, true
 		called, failover, callError, callFails = false, false, false, false
@@ -816,7 +816,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		timelineCall, timelineCallNoLeader = true, false
 		called, failover, callError, callFails = false, false, false, false
@@ -839,7 +839,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Status.Patroni.SwitchoverTimeline = initialize.Int64(11)
 		timelineCall, timelineCallNoLeader = true, false
@@ -863,7 +863,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Status.Patroni.SwitchoverTimeline = initialize.Int64(11)
 		timelineCall, timelineCallNoLeader = true, false
@@ -887,7 +887,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Status.Patroni.SwitchoverTimeline = initialize.Int64(4)
 		timelineCall, timelineCallNoLeader = true, false
@@ -912,7 +912,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Status.Patroni.SwitchoverTimeline = initialize.Int64(4)
 		timelineCall, timelineCallNoLeader = true, false
@@ -936,7 +936,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Status.Patroni.SwitchoverTimeline = initialize.Int64(4)
 		timelineCall, timelineCallNoLeader = true, false
@@ -961,7 +961,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Status.Patroni.SwitchoverTimeline = initialize.Int64(4)
 		timelineCall, timelineCallNoLeader = true, false
@@ -987,7 +987,7 @@ func TestReconcilePatroniSwitchover(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "target",
 			Replicas:            initialize.Int32(2),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Status.Patroni.SwitchoverTimeline = initialize.Int64(4)
 		timelineCall, timelineCallNoLeader = true, false
