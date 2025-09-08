@@ -552,6 +552,11 @@ func instanceYAML(
 		} else {
 
 			initdb := []string{
+				// Pod "securityContext.fsGroup" ensures processes and filesystems agree on a GID.
+				// Group access ensures processes can access data regardless of their UID.
+				// NOTE: The "--allow-group-access" option was introduced in PostgreSQL v11.
+				"allow-group-access",
+
 				// Enable checksums on data pages to help detect corruption of
 				// storage that would otherwise be silent. This also enables
 				// "wal_log_hints" which is a prerequisite for using `pg_rewind`.
@@ -568,7 +573,7 @@ func instanceYAML(
 				"data-checksums",
 				"encoding=UTF8",
 
-				// NOTE(cbandy): The "--waldir" option was introduced in PostgreSQL v10.
+				// NOTE: The "--waldir" option was introduced in PostgreSQL v10.
 				"waldir=" + postgres.WALDirectory(cluster, instance),
 			}
 
