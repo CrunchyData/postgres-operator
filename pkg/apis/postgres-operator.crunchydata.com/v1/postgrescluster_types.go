@@ -15,6 +15,17 @@ import (
 )
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
+// ---
+//
+// # Postgres Logging
+//
+// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "volumes.temp" to log in "/pgtmp"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgtmp/logs/postgres") || self.instances.all(i, i.?volumes.temp.hasValue())).orValue(true)`
+// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "walVolumeClaimSpec" to log in "/pgwal"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgwal/logs/postgres") || self.instances.all(i, i.?walVolumeClaimSpec.hasValue())).orValue(true)`
+//
+// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need an additional volume to log in "/volumes"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue())).orValue(true)`
+//
+// TODO: Also check the above path against volume names: `i.?volumes.additional.hasValue() && i.volumes.additional.exists(directory.startsWith("/volumes/" + volume.name))`
+// https://github.com/kubernetes-sigs/controller-tools/pull/1270#issuecomment-3272211184
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *v1beta1.Metadata `json:"metadata,omitempty"`
@@ -33,7 +44,7 @@ type PostgresClusterSpec struct {
 
 	// General configuration of the PostgreSQL server
 	// +optional
-	Config *v1beta1.PostgresConfigSpec `json:"config,omitempty"`
+	Config *PostgresConfigSpec `json:"config,omitempty"`
 
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the

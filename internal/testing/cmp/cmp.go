@@ -5,6 +5,7 @@
 package cmp
 
 import (
+	stdcmp "cmp"
 	"regexp"
 	"strings"
 
@@ -51,6 +52,12 @@ func DeepEqual[T any](x, y T, opts ...gocmp.Option) Comparison {
 	return gotest.DeepEqual(x, y, opts...)
 }
 
+// Equal succeeds if x == y, the same as [gotest.tools/v3/assert.Equal].
+// The type constraint makes it easier to compare against numeric literals and typed constants.
+func Equal[T any](x, y T) Comparison {
+	return gotest.Equal(x, y)
+}
+
 // Len succeeds if actual has the expected length.
 func Len[Slice ~[]E, E any](actual Slice, expected int) Comparison {
 	return gotest.Len(actual, expected)
@@ -83,6 +90,15 @@ func MarshalMatches(actual any, expected string) Comparison {
 	return gotest.DeepEqual(string(b), dedentLines(
 		strings.TrimLeft(strings.TrimRight(expected, "\t\n"), "\n"), 2,
 	))
+}
+
+// Or is an alias to [stdcmp.Or] in the standard library:
+//   - It returns the leftmost argument that is not zero.
+//   - It returns zero when all its arguments are zero.
+//
+// This is here so test authors can import fewer "cmp" packages.
+func Or[T comparable](values ...T) T {
+	return stdcmp.Or(values...)
 }
 
 // Regexp succeeds if value contains any match of the regular expression.
