@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - name: Ensure go.mod is tidy
@@ -34,7 +34,7 @@ jobs:
         kubernetes: ['default']
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - run: go mod download
@@ -61,7 +61,7 @@ jobs:
         kubernetes: [v1.33, v1.28]
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - name: Start k3s
@@ -95,7 +95,7 @@ jobs:
         kubernetes: [v1.33, v1.28]
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - name: Start k3s
@@ -175,7 +175,7 @@ jobs:
       - kubernetes-k3d
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
       - uses: actions/download-artifact@v5
         with: { path: download }
