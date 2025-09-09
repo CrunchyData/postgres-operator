@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v5
 
       # Trivy needs a populated Go module cache to detect Go module licenses.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
       - run: go mod download
 
