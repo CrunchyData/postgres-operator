@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/shell"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -70,8 +71,8 @@ const (
 
 // CreatePGBackRestConfigMapIntent creates a configmap struct with pgBackRest pgbackrest.conf settings in the data field.
 // The keys within the data field correspond to the use of that configuration.
-// pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
-// pgbackrest_primary.conf is used by the primary database pod
+// pgbackrest-server.conf is used by the pgBackRest TLS server
+// pgbackrest_instance.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
 // pgbackrest_cloud.conf is used by cloud repo backup jobs
 func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
@@ -111,6 +112,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 			strconv.Itoa(postgresCluster.Spec.PostgresVersion),
 			pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
+			util.GetPGBackRestLogPathForInstance(postgresCluster),
 		).String()
 
 	// As the cluster transitions from having a repository host to having none,
@@ -370,7 +372,7 @@ func populatePGInstanceConfigurationMap(
 	serviceName, serviceNamespace, repoHostName, pgdataDir,
 	fetchKeyCommand, postgresVersion string,
 	pgPort int32, repos []v1beta1.PGBackRestRepo,
-	globalConfig map[string]string,
+	globalConfig map[string]string, pgbackrestLogPath string,
 ) iniSectionSet {
 
 	// TODO(cbandy): pass a FQDN in already.
@@ -386,7 +388,7 @@ func populatePGInstanceConfigurationMap(
 	// pgBackRest spool-path should always be co-located with the Postgres WAL path.
 	global.Set("spool-path", "/pgdata/pgbackrest-spool")
 	// pgBackRest will log to the pgData volume for commands run on the PostgreSQL instance
-	global.Set("log-path", naming.PGBackRestPGDataLogPath)
+	global.Set("log-path", pgbackrestLogPath)
 
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)

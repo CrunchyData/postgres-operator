@@ -1435,6 +1435,7 @@ spec:
                               running in Backup Job Pods.
                             properties:
                               path:
+                                maxLength: 4096
                                 type: string
                             type: object
                           priorityClassName:
@@ -1609,6 +1610,7 @@ spec:
                           running in postgres instance pods.
                         properties:
                           path:
+                            maxLength: 4096
                             type: string
                         type: object
                       manual:
@@ -2584,6 +2586,7 @@ spec:
                               running in the repo host pod.
                             properties:
                               path:
+                                maxLength: 4096
                                 type: string
                             type: object
                           priorityClassName:
@@ -4610,10 +4613,15 @@ spec:
                     - repos
                     type: object
                     x-kubernetes-validations:
-                    - message: log path is restricted to an existing additional volume
+                    - message: pgbackrest sidecar log path is restricted to an existing
+                        additional volume
+                      rule: '!has(self.log) || !has(self.log.path) || self.log.path.startsWith("/volumes/")'
+                    - message: repo host log path is restricted to an existing additional
+                        volume
                       rule: '!has(self.repoHost) || !has(self.repoHost.log) || !has(self.repoHost.log.path)
                         || self.repoHost.volumes.additional.exists(x, self.repoHost.log.path.startsWith("/volumes/"+x.name))'
-                    - message: log path is restricted to an existing additional volume
+                    - message: backup jobs log path is restricted to an existing additional
+                        volume
                       rule: '!has(self.jobs) || !has(self.jobs.log) || !has(self.jobs.log.path)
                         || self.jobs.volumes.additional.exists(x, self.jobs.log.path.startsWith("/volumes/"+x.name))'
                   snapshots:
@@ -11309,6 +11317,7 @@ spec:
                         type: object
                       type: array
                     volumes:
+                      description: Volumes to be added to the instance set.
                       properties:
                         additional:
                           description: Additional pre-existing volumes to add to the
@@ -20396,6 +20405,7 @@ spec:
                               running in Backup Job Pods.
                             properties:
                               path:
+                                maxLength: 4096
                                 type: string
                             type: object
                           priorityClassName:
@@ -20570,6 +20580,7 @@ spec:
                           running in postgres instance pods.
                         properties:
                           path:
+                            maxLength: 4096
                             type: string
                         type: object
                       manual:
@@ -21545,6 +21556,7 @@ spec:
                               running in the repo host pod.
                             properties:
                               path:
+                                maxLength: 4096
                                 type: string
                             type: object
                           priorityClassName:
@@ -30263,6 +30275,7 @@ spec:
                         type: object
                       type: array
                     volumes:
+                      description: Volumes to be added to the instance set.
                       properties:
                         additional:
                           description: Additional pre-existing volumes to add to the

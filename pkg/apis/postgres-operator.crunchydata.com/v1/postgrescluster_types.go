@@ -530,6 +530,8 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
 
+	// Volumes to be added to the instance set.
+	// +optional
 	Volumes *v1beta1.PostgresVolumesSpec `json:"volumes,omitempty"`
 }
 

@@ -1184,7 +1184,7 @@ func (r *Reconciler) reconcileInstance(
 		includeLogrotate := backupsSpecFound && pgbackrest.RepoHostVolumeDefined(cluster)
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template,
 			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword,
-			[]string{naming.PGBackRestPGDataLogPath}, includeLogrotate, true)
+			[]string{util.GetPGBackRestLogPathForInstance(cluster)}, includeLogrotate, true)
 	}
 
 	// Add postgres-exporter to the instance Pod spec
@@ -1412,7 +1412,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 			collector.AddLogrotateConfigs(ctx, cluster.Spec.Instrumentation,
 				instanceConfigMap,
 				[]collector.LogrotateConfig{{
-					LogFiles: []string{naming.PGBackRestPGDataLogPath + "/*.log"},
+					LogFiles: []string{util.GetPGBackRestLogPathForInstance(cluster) + "/*.log"},
 				}})
 		}
 	}

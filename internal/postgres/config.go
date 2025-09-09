@@ -18,6 +18,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/shell"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -406,8 +407,8 @@ func startupCommand(
 		`(`+shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath)+`) ||`,
 		`halt "$(permissions `+shell.QuoteWord(naming.PatroniPGDataLogPath)+` ||:)"`,
 
-		`(`+shell.MakeDirectories(dataMountPath, naming.PGBackRestPGDataLogPath)+`) ||`,
-		`halt "$(permissions `+shell.QuoteWord(naming.PGBackRestPGDataLogPath)+` ||:)"`,
+		`(`+shell.MakeDirectories(dataMountPath, util.GetPGBackRestLogPathForInstance(cluster))+`) ||`,
+		`halt "$(permissions `+shell.QuoteWord(util.GetPGBackRestLogPathForInstance(cluster))+` ||:)"`,
 	)
 
 	pg_rewind_override := ""

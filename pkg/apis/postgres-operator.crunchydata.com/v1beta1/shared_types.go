@@ -323,6 +323,7 @@ func (in *AdditionalVolume) AsVolume(name string) corev1.Volume {
 
 // LoggingConfiguration provides logging configuration for various components
 type LoggingConfiguration struct {
+	// +kubebuilder:validation:MaxLength=4096
 	// +optional
 	Path string `json:"path,omitempty"`
 }
