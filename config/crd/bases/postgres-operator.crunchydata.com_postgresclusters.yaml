@@ -4939,6 +4939,13 @@ spec:
                       rule: '!has(self.logging_collector)'
                     - message: log_file_mode cannot be changed
                       rule: '!has(self.log_file_mode)'
+                    - fieldPath: .log_directory
+                      message: must start with "/pgdata/logs/postgres", "/pgtmp/logs/postgres",
+                        "/pgwal/logs/postgres", "/volumes", or be "log" to keep logs
+                        inside PGDATA
+                      rule: self.?log_directory.optMap(v, type(v) == string && (v
+                        == "log" || v.startsWith("/volumes") || ["/pgdata","/pgtmp","/pgwal","/volumes"].exists(p,
+                        v == (p + "/logs/postgres") || v.startsWith(p + "/logs/postgres/")))).orValue(true)
                 type: object
               customReplicationTLSSecret:
                 description: |-
@@ -18380,6 +18387,21 @@ spec:
             - instances
             - postgresVersion
             type: object
+            x-kubernetes-validations:
+            - fieldPath: .config.parameters.log_directory
+              message: all instances need "volumes.temp" to log in "/pgtmp"
+              rule: self.?config.parameters.log_directory.optMap(v, type(v) != string
+                || !v.startsWith("/pgtmp/logs/postgres") || self.instances.all(i,
+                i.?volumes.temp.hasValue())).orValue(true)
+            - fieldPath: .config.parameters.log_directory
+              message: all instances need "walVolumeClaimSpec" to log in "/pgwal"
+              rule: self.?config.parameters.log_directory.optMap(v, type(v) != string
+                || !v.startsWith("/pgwal/logs/postgres") || self.instances.all(i,
+                i.?walVolumeClaimSpec.hasValue())).orValue(true)
+            - fieldPath: .config.parameters.log_directory
+              message: all instances need an additional volume to log in "/volumes"
+              rule: self.?config.parameters.log_directory.optMap(v, type(v) != string
+                || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue())).orValue(true)
           status:
             description: PostgresClusterStatus defines the observed state of PostgresCluster
             properties:
