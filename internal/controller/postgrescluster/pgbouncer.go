@@ -506,8 +506,8 @@ func (r *Reconciler) generatePGBouncerDeployment(
 	AddTMPEmptyDir(&deploy.Spec.Template)
 
 	// mount additional volumes to the pgbouncer containers
-	if err == nil && cluster.Spec.Proxy.PGBouncer.Volumes != nil && len(cluster.Spec.Proxy.PGBouncer.Volumes.Additional) > 0 {
-		missingContainers := util.AddAdditionalVolumesAndMounts(&deploy.Spec.Template.Spec, cluster.Spec.Proxy.PGBouncer.Volumes.Additional)
+	if volumes := cluster.Spec.Proxy.PGBouncer.Volumes; err == nil && volumes != nil && len(volumes.Additional) > 0 {
+		missingContainers := util.AddAdditionalVolumesAndMounts(&deploy.Spec.Template.Spec, volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
