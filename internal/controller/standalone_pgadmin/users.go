@@ -173,7 +173,8 @@ cd $PGADMIN_DIR
 	intentUsers := []pgAdminUserForJson{}
 	for _, user := range pgadmin.Spec.Users {
 		var stdin, stdout, stderr bytes.Buffer
-		typeFlag := "--nonadmin"
+		// typeFlag := "--nonadmin"
+		typeFlag := "--role User"
 		isAdmin := false
 		if user.Role == "Administrator" {
 			typeFlag = "--admin"
