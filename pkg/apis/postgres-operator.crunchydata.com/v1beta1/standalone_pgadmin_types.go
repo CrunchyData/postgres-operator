@@ -175,6 +175,10 @@ type PGAdminStatus struct {
 	// +optional
 	MajorVersion int `json:"majorVersion,omitempty"`
 
+	// MinorVersion represents the minor version of the running pgAdmin.
+	// +optional
+	MinorVersion string `json:"minorVersion,omitempty"`
+
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
