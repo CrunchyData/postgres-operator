@@ -179,6 +179,9 @@ func (*Reconciler) generatePostgresParameters(
 		result.Add("shared_preload_libraries", preload)
 	}
 
+	// Finally, remove or replace harmful values.
+	postgres.SanitizeParameters(cluster, result)
+
 	return result
 }
 
