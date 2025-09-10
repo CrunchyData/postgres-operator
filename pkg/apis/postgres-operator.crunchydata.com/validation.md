@@ -92,6 +92,66 @@ The `additionalProperties` property indicates that the keys are unknown; these f
 # CEL Rules
 
 > [!IMPORTANT]
-> When possible, use [OpenAPI properties](#FIXME) rather than CEL rules.
+> When possible, use [OpenAPI properties](#openapi-properties) rather than CEL rules.
 > The former do not affect the CRD [validation budget](#FIXME). <!-- https://imgur.com/CzpJn3j -->
 
+
+## CEL Availability
+
+```asciidoc
+:controller-tools: https://github.com/kubernetes-sigs/controller-tools/releases
+
+[cols=",,", options="header"]
+|===
+| Kubernetes | OpenShift | `controller-gen`
+
+| 1.25 Beta, `CustomResourceValidationExpressions` gate
+| OCP 4.12
+| link:{controller-tools}/v0.9.0[v0.9.0] has `rule` and `message` fields on the `XValidation` marker
+
+| 1.27 adds `messageExpression`
+| OCP 4.14
+| link:{controller-tools}/v0.15.0[v0.15.0] adds `messageExpression` field to the `XValidation` marker
+
+| 1.28 adds `reason` and `fieldPath`
+| OCP 4.15
+| link:{controller-tools}/v0.16.0[v0.16.0] adds `reason` and `fieldPath` to the `XValidation` marker
+
+| 1.29 GA | OCP 4.16 |
+
+| 1.30 link:https://pr.k8s.io/123475[fixed fieldPath]…
+| OCP 4.17
+| n/a
+
+| 1.34 link:https://pr.k8s.io/132837[fixed IntOrString cost]
+| ?
+| link:{controller-tools}/v0.18.0[v0.18.0] allows validation on IntOrString
+
+| 1.35 link:https://pr.k8s.io/132798[shows values when validation fails]
+| ?
+| n/a
+
+|===
+```
+
+<!-- TODO: long-form; describe each library -->
+
+https://pr.k8s.io/130660
+
+| CEL [libraries](https://code.k8s.io/staging/src/k8s.io/apiserver/pkg/cel/library), extensions, etc. | Kubernetes | OpenShift |
+| --- | --- | --- |
+| kubernetes.authz | 1.28 |
+| kubernetes.authzSelectors | 1.32 |
+| kubernetes.format | 1.32 | [4.18](https://github.com/openshift/kubernetes/pull/2140) |
+| kubernetes.lists | 1.24 | 4.12 |
+| kubernetes.net.cidr | 1.31 | [4.16](https://github.com/openshift/kubernetes/pull/1828) |
+| kubernetes.net.ip | 1.31 | [4.16](https://github.com/openshift/kubernetes/pull/1828) |
+| kubernetes.quantity | 1.29 | 4.16 |
+| kubernetes.regex | 1.24 | 4.12 |
+| kubernetes.urls | 1.24 | 4.12 |
+| [cross-type numeric comparison](https://pkg.go.dev/github.com/google/cel-go/cel#CrossTypeNumericComparisons) | 1.29 | 4.16 |
+| [optional types](https://pkg.go.dev/github.com/google/cel-go/cel#OptionalTypes) | 1.29 | 4.16 |
+| [strings](https://pkg.go.dev/github.com/google/cel-go/ext#Strings) v0 | 1.24 | 4.12 |
+| [strings](https://pkg.go.dev/github.com/google/cel-go/ext#Strings) v2 | 1.30 | 4.17 |
+| [sets](https://pkg.go.dev/github.com/google/cel-go/ext#Sets) | 1.30 | 4.17 |
+| [two-variable comprehension](https://pkg.go.dev/github.com/google/cel-go/ext#TwoVarComprehensions) | 1.33 |
