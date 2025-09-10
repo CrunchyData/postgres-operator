@@ -2743,7 +2743,7 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 
 	errors := []error{}
 	errMsg := "reconciling repository volume"
-	repoVols := []*corev1.PersistentVolumeClaim{}
+	repoVols := make(map[string]*corev1.PersistentVolumeClaim)
 	var replicaCreateRepo v1beta1.PGBackRestRepo
 
 	if feature.Enabled(ctx, feature.AutoGrowVolumes) && pgbackrest.RepoHostVolumeDefined(postgresCluster) {
@@ -2770,16 +2770,15 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 		// value to change later.
 		spec.Resources.Limits = nil
 
-		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster, spec,
+		repoPVC, err := r.applyRepoVolumeIntent(ctx, postgresCluster, spec,
 			repo.Name, repoResources)
 		if err != nil {
 			log.Error(err, errMsg)
 			errors = append(errors, err)
-			continue
 		}
-		if repo != nil {
-			repoVols = append(repoVols, repo)
-		}
+		// Store the repo volume after apply. If nil, that indicates a problem
+		// and the existing status should be preserved.
+		repoVols[repo.Name] = repoPVC
 	}
 
 	postgresCluster.Status.PGBackRest.Repos =
@@ -2977,7 +2976,7 @@ func getRepoHostStatus(repoHost *appsv1.StatefulSet) *v1beta1.RepoHostStatus {
 // existing/current status for any repos in the cluster, the repository volumes
 // (i.e. PVCs) reconciled  for the cluster, and the hashes calculated for the configuration for any
 // external repositories defined for the cluster.
-func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.PersistentVolumeClaim,
+func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes map[string]*corev1.PersistentVolumeClaim,
 	configHashes map[string]string, replicaCreateRepoName string) []v1beta1.RepoStatus {
 
 	// the new repository status that will be generated and returned
@@ -2985,11 +2984,18 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.
 
 	// Update the repo status based on the repo volumes (PVCs) that were reconciled.  This includes
 	// updating the status for any existing repository volumes, and adding status for any new
-	// repository volumes.
-	for _, rv := range repoVolumes {
+	// repository volumes. If there was a problem with the volume when an apply was attempted,
+	// the existing status is preserved.
+	for repoName, rv := range repoVolumes {
 		newRepoVolStatus := true
-		repoName := rv.Labels[naming.LabelPGBackRestRepo]
 		for _, rs := range repoStatus {
+			// Preserve the previous status if it exists and the apply failed.
+			if rs.Name == repoName && rv == nil {
+				updatedRepoStatus = append(updatedRepoStatus, rs)
+				newRepoVolStatus = false
+				break
+			}
+
 			// treat as new status if contains properties of a cloud (s3, gcr or azure) repo
 			if rs.Name == repoName && rs.RepoOptionsHash == "" {
 				newRepoVolStatus = false
