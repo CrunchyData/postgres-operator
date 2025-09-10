@@ -79,28 +79,43 @@ func (r *PGAdminReconciler) reconcilePGAdminUsers(ctx context.Context, pgadmin *
 		return nil
 	}
 
-	// If the pgAdmin version is not in the status or the image SHA has changed, get
-	// the pgAdmin version and store it in the status.
-	var pgadminVersion int
-	if pgadmin.Status.MajorVersion == 0 || pgadmin.Status.ImageSHA != pgAdminImageSha {
-		pgadminVersion, err = r.reconcilePGAdminMajorVersion(ctx, podExecutor)
+	// If the pgAdmin major or minor version is not in the status or the image
+	// SHA has changed, get the pgAdmin version and store it in the status.
+	var pgadminMajorVersion int
+	if pgadmin.Status.MajorVersion == 0 || pgadmin.Status.MinorVersion == "" ||
+		pgadmin.Status.ImageSHA != pgAdminImageSha {
+
+		pgadminMinorVersion, err := r.reconcilePGAdminVersion(ctx, podExecutor)
 		if err != nil {
 			return err
 		}
-		pgadmin.Status.MajorVersion = pgadminVersion
+
+		// ensure minor version is valid before storing in status
+		parsedMinorVersion, err := strconv.ParseFloat(pgadminMinorVersion, 64)
+		if err != nil {
+			return err
+		}
+
+		// Note: "When converting a floating-point number to an integer, the
+		// fraction is discarded (truncation towards zero)."
+		// - https://go.dev/ref/spec#Conversions
+		pgadminMajorVersion = int(parsedMinorVersion)
+
+		pgadmin.Status.MinorVersion = pgadminMinorVersion
+		pgadmin.Status.MajorVersion = pgadminMajorVersion
 		pgadmin.Status.ImageSHA = pgAdminImageSha
 	} else {
-		pgadminVersion = pgadmin.Status.MajorVersion
+		pgadminMajorVersion = pgadmin.Status.MajorVersion
 	}
 
 	// If the pgAdmin version is not v8 or higher, return early as user management is
 	// only supported for pgAdmin v8 and higher.
-	if pgadminVersion < 8 {
+	if pgadminMajorVersion < 8 {
 		// If pgAdmin version is less than v8 and user management is being attempted,
 		// log a message clarifying that it is only supported for pgAdmin v8 and higher.
 		if len(pgadmin.Spec.Users) > 0 {
 			log.Info("User management is only supported for pgAdmin v8 and higher.",
-				"pgadminVersion", pgadminVersion)
+				"pgadminVersion", pgadminMajorVersion)
 		}
 		return err
 	}
@@ -108,11 +123,11 @@ func (r *PGAdminReconciler) reconcilePGAdminUsers(ctx context.Context, pgadmin *
 	return r.writePGAdminUsers(ctx, pgadmin, podExecutor)
 }
 
-// reconcilePGAdminMajorVersion execs into the pgAdmin pod and retrieves the pgAdmin major version
-func (r *PGAdminReconciler) reconcilePGAdminMajorVersion(ctx context.Context, exec Executor) (int, error) {
+// reconcilePGAdminVersion execs into the pgAdmin pod and retrieves the pgAdmin minor version
+func (r *PGAdminReconciler) reconcilePGAdminVersion(ctx context.Context, exec Executor) (string, error) {
 	script := fmt.Sprintf(`
 PGADMIN_DIR=%s
-cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)"
+cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_VERSION)"
 `, pgAdminDir)
 
 	var stdin, stdout, stderr bytes.Buffer
@@ -121,10 +136,10 @@ cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)"
 		[]string{"bash", "-ceu", "--", script}...)
 
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return strconv.Atoi(strings.TrimSpace(stdout.String()))
+	return strings.TrimSpace(stdout.String()), nil
 }
 
 // writePGAdminUsers takes the users in the pgAdmin spec and writes (adds or updates) their data
@@ -170,10 +185,23 @@ cd $PGADMIN_DIR
 	for _, user := range existingUsersArr {
 		existingUsersMap[user.Username] = user
 	}
+
+	var olderThan9_3 bool
+	versionFloat, err := strconv.ParseFloat(pgadmin.Status.MinorVersion, 32)
+	if err != nil {
+		return err
+	}
+	if versionFloat < 9.3 {
+		olderThan9_3 = true
+	}
+
 	intentUsers := []pgAdminUserForJson{}
 	for _, user := range pgadmin.Spec.Users {
 		var stdin, stdout, stderr bytes.Buffer
-		typeFlag := "--nonadmin"
+		typeFlag := "--role User"
+		if olderThan9_3 {
+			typeFlag = "--nonadmin"
+		}
 		isAdmin := false
 		if user.Role == "Administrator" {
 			typeFlag = "--admin"
