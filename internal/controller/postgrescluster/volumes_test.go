@@ -375,7 +375,10 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{
@@ -637,7 +640,10 @@ func TestReconcileMoveDirectories(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{
@@ -732,7 +738,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 	assert.Assert(t, returnEarly)
 
 	moveJobs := &batchv1.JobList{}
-	err = r.Client.List(ctx, moveJobs, &client.ListOptions{
+	err = tClient.List(ctx, moveJobs, &client.ListOptions{
 		Namespace:     cluster.Namespace,
 		LabelSelector: naming.DirectoryMoveJobLabels(cluster.Name).AsSelector(),
 	})

@@ -27,11 +27,7 @@ import (
 )
 
 func TestGeneratePGBouncerService(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
 	reconciler := &Reconciler{
-		Client:   cc,
 		Recorder: new(record.FakeRecorder),
 	}
 
@@ -263,7 +259,10 @@ func TestReconcilePGBouncerService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
+	}
 
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
@@ -365,11 +364,8 @@ func TestReconcilePGBouncerService(t *testing.T) {
 }
 
 func TestGeneratePGBouncerDeployment(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
 	ctx := context.Background()
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns3"
@@ -548,15 +544,15 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	foundPDB := func(
 		cluster *v1beta1.PostgresCluster,
 	) bool {
 		got := &policyv1.PodDisruptionBudget{}
-		err := r.Client.Get(ctx,
+		err := cc.Get(ctx,
 			naming.AsObjectKey(naming.ClusterPGBouncer(cluster)),
 			got)
 		return !apierrors.IsNotFound(err)
@@ -595,8 +591,8 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
 		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
 		assert.Assert(t, foundPDB(cluster))
@@ -622,8 +618,8 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
 		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
 		assert.Assert(t, foundPDB(cluster))

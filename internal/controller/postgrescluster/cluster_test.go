@@ -82,19 +82,20 @@ func TestCustomLabels(t *testing.T) {
 	require.ParallelCapacity(t, 2)
 
 	reconciler := &Reconciler{
-		Client:   cc,
-		Owner:    client.FieldOwner(t.Name()),
-		Recorder: new(record.FakeRecorder),
+		Reader:       cc,
+		Recorder:     new(record.FakeRecorder),
+		StatusWriter: client.WithFieldOwner(cc, t.Name()).Status(),
+		Writer:       client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
-		assert.NilError(t, reconciler.Client.Create(ctx, cluster))
+		assert.NilError(t, cc.Create(ctx, cluster))
 		t.Cleanup(func() {
 			// Remove finalizers, if any, so the namespace can terminate.
 			assert.Check(t, client.IgnoreNotFound(
-				reconciler.Client.Patch(ctx, cluster, client.RawPatch(
+				cc.Patch(ctx, cluster, client.RawPatch(
 					client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
 		})
 
@@ -168,7 +169,7 @@ func TestCustomLabels(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -216,7 +217,7 @@ func TestCustomLabels(t *testing.T) {
 				for _, gvk := range gvks {
 					uList := &unstructured.UnstructuredList{}
 					uList.SetGroupVersionKind(gvk)
-					assert.NilError(t, reconciler.Client.List(ctx, uList,
+					assert.NilError(t, cc.List(ctx, uList,
 						client.InNamespace(cluster.Namespace),
 						client.MatchingLabelsSelector{Selector: selector}))
 
@@ -263,7 +264,7 @@ func TestCustomLabels(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -298,7 +299,7 @@ func TestCustomLabels(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -320,19 +321,20 @@ func TestCustomAnnotations(t *testing.T) {
 	require.ParallelCapacity(t, 2)
 
 	reconciler := &Reconciler{
-		Client:   cc,
-		Owner:    client.FieldOwner(t.Name()),
-		Recorder: new(record.FakeRecorder),
+		Reader:       cc,
+		Recorder:     new(record.FakeRecorder),
+		StatusWriter: client.WithFieldOwner(cc, t.Name()).Status(),
+		Writer:       client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
-		assert.NilError(t, reconciler.Client.Create(ctx, cluster))
+		assert.NilError(t, cc.Create(ctx, cluster))
 		t.Cleanup(func() {
 			// Remove finalizers, if any, so the namespace can terminate.
 			assert.Check(t, client.IgnoreNotFound(
-				reconciler.Client.Patch(ctx, cluster, client.RawPatch(
+				cc.Patch(ctx, cluster, client.RawPatch(
 					client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
 		})
 
@@ -407,7 +409,7 @@ func TestCustomAnnotations(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -455,7 +457,7 @@ func TestCustomAnnotations(t *testing.T) {
 				for _, gvk := range gvks {
 					uList := &unstructured.UnstructuredList{}
 					uList.SetGroupVersionKind(gvk)
-					assert.NilError(t, reconciler.Client.List(ctx, uList,
+					assert.NilError(t, cc.List(ctx, uList,
 						client.InNamespace(cluster.Namespace),
 						client.MatchingLabelsSelector{Selector: selector}))
 
@@ -502,7 +504,7 @@ func TestCustomAnnotations(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -537,7 +539,7 @@ func TestCustomAnnotations(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -554,10 +556,7 @@ func TestCustomAnnotations(t *testing.T) {
 }
 
 func TestGenerateClusterPrimaryService(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns2"
@@ -658,7 +657,7 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{Writer: client.WithFieldOwner(cc, t.Name())}
 
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
@@ -676,10 +675,7 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 }
 
 func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns1"
