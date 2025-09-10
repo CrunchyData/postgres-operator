@@ -6,11 +6,6 @@ on:
     branches:
       - main
 
-env:
-  # Use the Go toolchain installed by setup-go
-  # https://github.com/actions/setup-go/issues/457
-  GOTOOLCHAIN: local
-
 jobs:
   go-test:
     runs-on: ubuntu-24.04

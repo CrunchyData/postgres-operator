@@ -8,10 +8,6 @@ on:
       - main
 
 env:
-  # Use the Go toolchain installed by setup-go
-  # https://github.com/actions/setup-go/issues/457
-  GOTOOLCHAIN: local
-
   # Use the committed Trivy configuration files.
   TRIVY_IGNOREFILE: .trivyignore.yaml
   TRIVY_SECRET_CONFIG: trivy-secret.yaml
