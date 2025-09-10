@@ -2720,6 +2720,10 @@ spec:
                 description: MajorVersion represents the major version of the running
                   pgAdmin.
                 type: integer
+              minorVersion:
+                description: MinorVersion represents the minor version of the running
+                  pgAdmin.
+                type: string
               observedGeneration:
                 description: observedGeneration represents the .metadata.generation
                   on which the status was based.

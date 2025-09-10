@@ -110,15 +110,16 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 			assert.Equal(t, namespace, pgadmin.Namespace)
 			assert.Equal(t, container, naming.ContainerPGAdmin)
 
-			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
-			// podexec call in reconcilePGAdminMajorVersion
-			_, _ = stdout.Write([]byte("7"))
+			// Simulate a v7.1 version of pgAdmin by setting stdout to "7.1"
+			// for podexec call in reconcilePGAdminVersion
+			_, _ = stdout.Write([]byte("7.1"))
 			return nil
 		}
 
 		assert.NilError(t, r.reconcilePGAdminUsers(ctx, pgadmin))
 		assert.Equal(t, calls, 1, "PodExec should be called once")
 		assert.Equal(t, pgadmin.Status.MajorVersion, 7)
+		assert.Equal(t, pgadmin.Status.MinorVersion, "7.1")
 		assert.Equal(t, pgadmin.Status.ImageSHA, "fakeSHA")
 	})
 
@@ -145,20 +146,58 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 		) error {
 			calls++
 
-			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
-			// podexec call in reconcilePGAdminMajorVersion
-			_, _ = stdout.Write([]byte("7"))
+			// Simulate a v7.1 version of pgAdmin by setting stdout to "7.1"
+			// for podexec call in reconcilePGAdminVersion
+			_, _ = stdout.Write([]byte("7.1"))
 			return nil
 		}
 
 		assert.NilError(t, r.reconcilePGAdminUsers(ctx, pgadmin))
 		assert.Equal(t, calls, 1, "PodExec should be called once")
 		assert.Equal(t, pgadmin.Status.MajorVersion, 7)
+		assert.Equal(t, pgadmin.Status.MinorVersion, "7.1")
 		assert.Equal(t, pgadmin.Status.ImageSHA, "newFakeSHA")
+	})
+
+	t.Run("PodHealthyBadVersion", func(t *testing.T) {
+		pgadmin := pgadmin.DeepCopy()
+		pod := pod.DeepCopy()
+
+		pod.DeletionTimestamp = nil
+		pod.Status.ContainerStatuses =
+			[]corev1.ContainerStatus{{Name: naming.ContainerPGAdmin}}
+		pod.Status.ContainerStatuses[0].State.Running =
+			new(corev1.ContainerStateRunning)
+		pod.Status.ContainerStatuses[0].ImageID = "fakeSHA"
+
+		r := new(PGAdminReconciler)
+		r.Reader = fake.NewClientBuilder().WithObjects(pod).Build()
+
+		calls := 0
+		r.PodExec = func(
+			ctx context.Context, namespace, pod, container string,
+			stdin io.Reader, stdout, stderr io.Writer, command ...string,
+		) error {
+			calls++
+
+			assert.Equal(t, pod, "pgadmin-123-0")
+			assert.Equal(t, namespace, pgadmin.Namespace)
+			assert.Equal(t, container, naming.ContainerPGAdmin)
+
+			// set expected version to something completely wrong
+			_, _ = stdout.Write([]byte("woot"))
+			return nil
+		}
+
+		assert.ErrorContains(t, r.reconcilePGAdminUsers(ctx, pgadmin), "strconv.ParseFloat: parsing \"woot\": invalid syntax")
+		assert.Equal(t, calls, 1, "PodExec should be called once")
+		assert.Equal(t, pgadmin.Status.MajorVersion, 0)
+		assert.Equal(t, pgadmin.Status.MinorVersion, "")
+		assert.Equal(t, pgadmin.Status.ImageSHA, "")
 	})
 }
 
-func TestReconcilePGAdminMajorVersion(t *testing.T) {
+func TestReconcilePGAdminVersion(t *testing.T) {
 	ctx := context.Background()
 	pod := corev1.Pod{}
 	pod.Namespace = "test-namespace"
@@ -180,30 +219,15 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 			assert.Equal(t, namespace, "test-namespace")
 			assert.Equal(t, container, naming.ContainerPGAdmin)
 
-			// Simulate a v7 version of pgAdmin by setting stdout to "7" for
-			// podexec call in reconcilePGAdminMajorVersion
-			_, _ = stdout.Write([]byte("7"))
+			// Simulate a v9.3 version of pgAdmin by setting stdout to "9.3"
+			// for podexec call in reconcilePGAdminVersion
+			_, _ = stdout.Write([]byte("9.3"))
 			return nil
 		}
 
-		version, err := reconciler.reconcilePGAdminMajorVersion(ctx, podExecutor)
+		version, err := reconciler.reconcilePGAdminVersion(ctx, podExecutor)
 		assert.NilError(t, err)
-		assert.Equal(t, version, 7)
-	})
-
-	t.Run("FailedRetrieval", func(t *testing.T) {
-		reconciler.PodExec = func(
-			ctx context.Context, namespace, pod, container string,
-			stdin io.Reader, stdout, stderr io.Writer, command ...string,
-		) error {
-			// Simulate the python call giving bad data (not a version int)
-			_, _ = stdout.Write([]byte("asdfjkl;"))
-			return nil
-		}
-
-		version, err := reconciler.reconcilePGAdminMajorVersion(ctx, podExecutor)
-		assert.Check(t, err != nil)
-		assert.Equal(t, version, 0)
+		assert.Equal(t, version, "9.3")
 	})
 
 	t.Run("PodExecError", func(t *testing.T) {
@@ -214,9 +238,9 @@ func TestReconcilePGAdminMajorVersion(t *testing.T) {
 			return errors.New("PodExecError")
 		}
 
-		version, err := reconciler.reconcilePGAdminMajorVersion(ctx, podExecutor)
+		version, err := reconciler.reconcilePGAdminVersion(ctx, podExecutor)
 		assert.Check(t, err != nil)
-		assert.Equal(t, version, 0)
+		assert.Equal(t, version, "")
 	})
 }
 
@@ -243,6 +267,14 @@ func TestWritePGAdminUsers(t *testing.T) {
 		},
 	}`)
 	assert.NilError(t, cc.Create(ctx, pgadmin))
+
+	// fake the status so that the correct commands will be used when creating
+	// users.
+	pgadmin.Status = v1beta1.PGAdminStatus{
+		ImageSHA:     "fakesha",
+		MajorVersion: 9,
+		MinorVersion: "9.3",
+	}
 
 	userPasswordSecret1 := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
