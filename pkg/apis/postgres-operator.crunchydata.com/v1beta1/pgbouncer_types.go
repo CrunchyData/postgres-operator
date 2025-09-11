@@ -31,7 +31,7 @@ type PGBouncerConfiguration struct {
 	// +kubebuilder:validation:XValidation:rule=`!has(self.logfile) || self.logfile.endsWith('.log')`,message=`logfile config must end with '.log'`
 	// +kubebuilder:validation:MaxProperties=50
 	// See also XValidation rule on v1 PostgresProxySpec
-
+	//
 	// +optional
 	// +mapType=granular
 	Global map[string]string `json:"global,omitempty"`

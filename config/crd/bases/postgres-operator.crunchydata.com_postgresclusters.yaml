@@ -14472,6 +14472,9 @@ spec:
                           global:
                             additionalProperties:
                               type: string
+                            description: |-
+                              Settings that apply to the entire PgBouncer process.
+                              More info: https://www.pgbouncer.org/config.html
                             maxProperties: 50
                             type: object
                             x-kubernetes-map-type: granular
@@ -33513,6 +33516,9 @@ spec:
                           global:
                             additionalProperties:
                               type: string
+                            description: |-
+                              Settings that apply to the entire PgBouncer process.
+                              More info: https://www.pgbouncer.org/config.html
                             maxProperties: 50
                             type: object
                             x-kubernetes-map-type: granular
