@@ -50,6 +50,26 @@ func TestPostgresConfigParametersV1beta1(t *testing.T) {
 	assert.Equal(t, u.GetAPIVersion(), "postgres-operator.crunchydata.com/v1beta1")
 
 	testPostgresConfigParametersCommon(t, cc, u)
+
+	t.Run("Logging", func(t *testing.T) {
+		t.Run("Allowed", func(t *testing.T) {
+			for _, tt := range []struct {
+				key   string
+				value any
+			}{
+				{key: "log_directory", value: "anything"},
+			} {
+				t.Run(tt.key, func(t *testing.T) {
+					cluster := u.DeepCopy()
+					require.UnmarshalIntoField(t, cluster,
+						require.Value(yaml.Marshal(tt.value)),
+						"spec", "config", "parameters", tt.key)
+
+					assert.NilError(t, cc.Create(ctx, cluster, client.DryRunAll))
+				})
+			}
+		})
+	})
 }
 
 func TestPostgresConfigParametersV1(t *testing.T) {
@@ -82,6 +102,194 @@ func TestPostgresConfigParametersV1(t *testing.T) {
 	assert.Equal(t, u.GetAPIVersion(), "postgres-operator.crunchydata.com/v1")
 
 	testPostgresConfigParametersCommon(t, cc, u)
+
+	t.Run("Logging", func(t *testing.T) {
+		t.Run("log_directory", func(t *testing.T) {
+			volume := `{ accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Mi } } }`
+
+			for _, tt := range []struct {
+				name      string
+				value     any
+				valid     bool
+				message   string
+				instances string
+			}{
+				// Only a few prefixes are allowed.
+				{valid: false, value: 99, message: `must start with "/`},
+				{valid: false, value: "relative", message: `must start with "/`},
+				{valid: false, value: "/absolute", message: `must start with "/pg`},
+
+				// These are the two acceptable directories inside /pgdata.
+				{valid: true, value: "log"},
+				{valid: true, value: "/pgdata/logs/postgres"},
+				{valid: false, value: "/pgdata", message: `"/pgdata/logs/postgres"`},
+				{valid: false, value: "/pgdata/elsewhere", message: `"/pgdata/logs/postgres"`},
+				{valid: false, value: "/pgdata/sub/dir", message: `"/pgdata/logs/postgres"`},
+
+				// There is one acceptable directory inside /pgtmp, but every instance set needs a temp volume.
+				{
+					name:  "two instance sets and two temp volumes",
+					value: "/pgtmp/logs/postgres",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { temp: ` + volume + ` } },
+						{ name: two, dataVolumeClaimSpec: ` + volume + `, volumes: { temp: ` + volume + ` } },
+					]`,
+					valid: true,
+				},
+				{
+					name:  "two instance sets and one temp volume",
+					value: "/pgtmp/logs/postgres",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { temp: ` + volume + ` } },
+						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid:   false,
+					message: `all instances need "volumes.temp"`,
+				},
+				{
+					name:  "two instance sets and no temp volumes",
+					value: "/pgtmp/logs/postgres",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + ` },
+						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid:   false,
+					message: `all instances need "volumes.temp"`,
+				},
+
+				// These directories inside /pgtmp are unacceptable, regardless of volumes.
+				{
+					name:      "no temp volumes",
+					value:     "/pgtmp/elsewhere",
+					instances: `[{ name: any, dataVolumeClaimSpec: ` + volume + ` }]`,
+					valid:     false,
+					message:   `"/pgtmp/logs/postgres"`,
+				},
+				{
+					name:  "two temp volumes",
+					value: "/pgtmp",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { temp: ` + volume + ` } },
+						{ name: two, dataVolumeClaimSpec: ` + volume + `, volumes: { temp: ` + volume + ` } },
+					]`,
+					valid:   false,
+					message: `"/pgtmp/logs/postgres"`,
+				},
+
+				// There is one acceptable directory inside /pgwal, but every instance set needs a WAL volume.
+				{
+					name:  "two instance sets and two WAL volumes",
+					value: "/pgwal/logs/postgres",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, walVolumeClaimSpec: ` + volume + ` },
+						{ name: two, dataVolumeClaimSpec: ` + volume + `, walVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid: true,
+				},
+				{
+					name:  "two instance sets and one WAL volume",
+					value: "/pgwal/logs/postgres",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, walVolumeClaimSpec: ` + volume + ` },
+						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid:   false,
+					message: `all instances need "walVolumeClaimSpec"`,
+				},
+				{
+					name:  "two instance sets and no WAL volumes",
+					value: "/pgwal/logs/postgres",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + ` },
+						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid:   false,
+					message: `all instances need "walVolumeClaimSpec"`,
+				},
+
+				// These directories inside /pgwal are unacceptable, regardless of volumes.
+				{
+					name:      "no WAL volumes",
+					value:     "/pgwal/elsewhere",
+					instances: `[{ name: any, dataVolumeClaimSpec: ` + volume + ` }]`,
+					valid:     false,
+					message:   `"/pgwal/logs/postgres"`,
+				},
+				{
+					name:  "two WAL volumes",
+					value: "/pgwal",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, walVolumeClaimSpec: ` + volume + ` },
+						{ name: two, dataVolumeClaimSpec: ` + volume + `, walVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid:   false,
+					message: `"/pgwal/logs/postgres"`,
+				},
+
+				// Directories inside /volumes are acceptable, but every instance set needs additional volumes.
+				//
+				// TODO(validation): This could be more precise and check the directory name of each additional
+				// volume, but Kubernetes 1.33 incorrectly estimates the cost of volume.name:
+				// https://github.com/kubernetes-sigs/controller-tools/pull/1270#issuecomment-3272211184
+				{
+					name:  "two instance sets and two additional volumes",
+					value: "/volumes/anything",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: dir, claimName: a }] } },
+						{ name: two, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: dir, claimName: b }] } },
+					]`,
+					valid: true,
+				},
+				{
+					name:  "two instance sets and one additional volume",
+					value: "/volumes/anything",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: dir, claimName: a }] } },
+						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid:   false,
+					message: `all instances need an additional volume`,
+				},
+				{
+					name:  "two instance sets and no additional volumes",
+					value: "/volumes/anything",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + ` },
+						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
+					]`,
+					valid:   false,
+					message: `all instances need an additional volume`,
+				},
+			} {
+				t.Run(cmp.Or(tt.name, fmt.Sprint(tt.valid, tt.value)), func(t *testing.T) {
+					cluster := u.DeepCopy()
+					if tt.instances != "" {
+						require.UnmarshalIntoField(t, cluster, tt.instances, "spec", "instances")
+					}
+					require.UnmarshalIntoField(t, cluster, require.Value(yaml.Marshal(tt.value)),
+						"spec", "config", "parameters", "log_directory")
+
+					err := cc.Create(ctx, cluster, client.DryRunAll)
+
+					if tt.valid {
+						assert.NilError(t, err)
+						assert.Equal(t, "", tt.message, "BUG IN TEST: no message expected when valid")
+					} else {
+						assert.Assert(t, apierrors.IsInvalid(err))
+
+						details := require.StatusErrorDetails(t, err)
+						assert.Assert(t, cmp.Len(details.Causes, 1))
+
+						// https://issue.k8s.io/133761
+						if details.Causes[0].Field != "spec.config.parameters.[log_directory]" {
+							assert.Check(t, cmp.Equal(details.Causes[0].Field, "spec.config.parameters[log_directory]"))
+						}
+						assert.Assert(t, cmp.Contains(details.Causes[0].Message, tt.message))
+					}
+				})
+			}
+		})
+	})
 }
 
 func testPostgresConfigParametersCommon(t *testing.T, cc client.Client, base unstructured.Unstructured) {
@@ -155,7 +363,6 @@ func testPostgresConfigParametersCommon(t *testing.T, cc client.Client, base uns
 			{valid: false, key: "logging_collector", value: "on", message: "unsafe"},
 
 			{valid: true, key: "log_destination", value: "anything"},
-			{valid: true, key: "log_directory", value: "anything"},
 			{valid: true, key: "log_filename", value: "anything"},
 			{valid: true, key: "log_filename", value: "percent-%s-too"},
 			{valid: true, key: "log_rotation_age", value: "7d"},

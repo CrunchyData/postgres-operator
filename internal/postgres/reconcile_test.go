@@ -288,9 +288,8 @@ initContainers:
     bootstrap_dir="${postgres_data_directory}_bootstrap"
     [[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}" && results 'bootstrap directory' "${bootstrap_dir}"
     dataDirectory "${postgres_data_directory}" || halt "$(permissions "${postgres_data_directory}" ||:)"
-    [[ ! -f '/pgdata/pg11/PG_VERSION' ]] ||
-    (mkdir -p '/pgdata/pg11/log' && { chmod 0775 '/pgdata/pg11/log' || :; }) ||
-    halt "$(permissions '/pgdata/pg11/log' ||:)"
+    (mkdir -p '/pgdata/logs/postgres' && { chmod 0775 '/pgdata/logs/postgres' '/pgdata/logs' || :; }) ||
+    halt "$(permissions '/pgdata/logs/postgres' ||:)"
     (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
     halt "$(permissions '/pgdata/patroni/log' ||:)"
     (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
