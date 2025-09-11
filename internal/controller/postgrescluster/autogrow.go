@@ -57,17 +57,12 @@ func (r *Reconciler) storeDesiredRequest(
 	// determine if the appropriate volume limit is set
 	limitSet := limitIsSet(cluster, volumeType, host)
 
-	// if nil, volume does not exist
-	if limitSet == nil {
+	// if the limit is not set or the volume does not exist do not return the new value
+	if !limitSet {
 		return ""
 	}
 
-	// if the volume exists but the limit is not set, do not return the new value
-	if !*limitSet {
-		return desiredRequestBackup
-	}
-
-	if *limitSet && current.Value() > previous.Value() {
+	if limitSet && current.Value() > previous.Value() {
 		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
 			"%s volume expansion to %v requested for %s/%s.",
 			volumeType, current.String(), cluster.Name, host)
@@ -85,7 +80,7 @@ func (r *Reconciler) storeDesiredRequest(
 
 // limitIsSet determines if the limit is set for a given volume type and returns
 // either a corresponding boolean value or nil if the volume is not defined.
-func limitIsSet(cluster *v1beta1.PostgresCluster, volumeType, instanceSetName string) *bool {
+func limitIsSet(cluster *v1beta1.PostgresCluster, volumeType, instanceSetName string) bool {
 
 	switch {
 
@@ -94,19 +89,17 @@ func limitIsSet(cluster *v1beta1.PostgresCluster, volumeType, instanceSetName st
 	case volumeType == "pgData":
 		for _, specInstance := range cluster.Spec.InstanceSets {
 			if specInstance.Name == instanceSetName {
-				limitSet := !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
-				return &limitSet
+				return !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
 			}
 		}
 	case volumeType == "pgWAL":
 		for _, specInstance := range cluster.Spec.InstanceSets {
 			// return nil if volume is not defined
 			if specInstance.Name == instanceSetName && specInstance.WALVolumeClaimSpec == nil {
-				return nil
+				return false
 			}
 			if specInstance.Name == instanceSetName && specInstance.WALVolumeClaimSpec != nil {
-				limitSet := !specInstance.WALVolumeClaimSpec.Resources.Limits.Storage().IsZero()
-				return &limitSet
+				return !specInstance.WALVolumeClaimSpec.Resources.Limits.Storage().IsZero()
 			}
 		}
 	// VolumeType for the repository host volumes should be in the form 'repoN'
@@ -116,16 +109,15 @@ func limitIsSet(cluster *v1beta1.PostgresCluster, volumeType, instanceSetName st
 		for _, specRepo := range cluster.Spec.Backups.PGBackRest.Repos {
 			// return nil if volume is not defined
 			if specRepo.Name == volumeType && specRepo.Volume == nil {
-				return nil
+				return false
 			}
 			if specRepo.Name == volumeType && specRepo.Volume != nil {
-				limitSet := !specRepo.Volume.VolumeClaimSpec.Resources.Limits.Storage().IsZero()
-				return &limitSet
+				return !specRepo.Volume.VolumeClaimSpec.Resources.Limits.Storage().IsZero()
 			}
 		}
 	}
 
-	return nil
+	return false
 
 }
 

@@ -291,74 +291,69 @@ func TestLimitIsSet(t *testing.T) {
 		tcName       string
 		Voltype      string
 		instanceName string
-		expected     *bool
+		expected     bool
 	}{{
 		tcName:       "PGDATA Limit is set for defined volume",
 		Voltype:      "pgData",
 		instanceName: "red",
-		expected:     initialize.Pointer(true),
+		expected:     true,
 	}, {
 		tcName:       "PGDATA Limit is not set for defined volume",
 		Voltype:      "pgData",
 		instanceName: "blue",
-		expected:     initialize.Pointer(false),
+		expected:     false,
 	}, {
 		tcName:       "PGDATA Check volume for non-existent instance",
 		Voltype:      "pgData",
 		instanceName: "orange",
-		expected:     nil,
+		expected:     false,
 	}, {
 		tcName:       "PGWAL Limit is set for defined volume",
 		Voltype:      "pgWAL",
 		instanceName: "red",
-		expected:     initialize.Pointer(true),
+		expected:     true,
 	}, {
 		tcName:       "PGWAL WAL volume defined but limit is not set",
 		Voltype:      "pgWAL",
 		instanceName: "green",
-		expected:     initialize.Pointer(false),
+		expected:     false,
 	}, {
 		tcName:       "PGWAL Instance has no pg_wal volume defined",
 		Voltype:      "pgWAL",
 		instanceName: "blue",
-		expected:     nil,
+		expected:     false,
 	}, {
 		tcName:       "PGWAL Check volume for non-existent instance",
 		Voltype:      "pgWAL",
 		instanceName: "orange",
-		expected:     nil,
+		expected:     false,
 	}, {
 		tcName:       "REPO Limit set for defined volume",
 		Voltype:      "repo1",
 		instanceName: "",
-		expected:     initialize.Pointer(true),
+		expected:     true,
 	}, {
 		tcName:       "REPO Limit is not set for defined volume",
 		Voltype:      "repo2",
 		instanceName: "",
-		expected:     initialize.Pointer(false),
+		expected:     false,
 	}, {
 		tcName:       "REPO volume not defined for repo",
 		Voltype:      "repo3",
 		instanceName: "",
-		expected:     nil,
+		expected:     false,
 	}, {
 		tcName:       "REPO Check volume for non-existent repo",
 		Voltype:      "repo4",
 		instanceName: "",
-		expected:     nil,
+		expected:     false,
 	}}
 
 	for _, tc := range testCases {
 		t.Run(tc.tcName, func(t *testing.T) {
 
 			limitSet := limitIsSet(&cluster, tc.Voltype, tc.instanceName)
-			if tc.expected == nil {
-				assert.Assert(t, limitSet == nil)
-			} else {
-				assert.Assert(t, limitSet != nil)
-				assert.Check(t, *limitSet == *tc.expected)
-			}
+			assert.Check(t, limitSet == tc.expected)
 		})
 	}
 }
