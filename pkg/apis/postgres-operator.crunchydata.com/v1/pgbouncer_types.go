@@ -9,7 +9,10 @@ import (
 )
 
 // PGBouncerPodSpec defines the desired state of a PgBouncer connection pooler.
-// +kubebuilder:validation:XValidation:rule=`self.?config.global.logfile.optMap(f, f.startsWith("/tmp/logs/pgbouncer/") || (self.?volumes.additional.hasValue() && self.volumes.additional.exists(v, f.startsWith("/volumes/" + v.name)))).orValue(true)`,message=`config.global.logfile destination is restricted to '/tmp/logs/pgbouncer/' or an existing additional volume`
+// +kubebuilder:validation:XValidation:rule=`!has(self.config) || !has(self.config.global) || !has(self.config.global.logfile) || self.config.global.logfile.startsWith('/tmp/logs/pgbouncer/') || (has(self.volumes) && has(self.volumes.additional) && self.volumes.additional.exists(x, self.config.global.logfile.startsWith("/volumes/"+x.name)))`,message=`logfile destination is restricted to '/tmp/logs/pgbouncer/' or an existing additional volume`
+// ---
+// TODO: the `.?` CEL syntax is unsupported in k8s 1.28, so we cannot use the optional field syntax
+// of `self.?config.global.logfile` and `self.?volumes.additional`
 type PGBouncerPodSpec struct {
 	v1beta1.PGBouncerPodSpec `json:",inline"`
 }
