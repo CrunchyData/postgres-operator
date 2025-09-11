@@ -156,12 +156,13 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 		// Otherwise, if the feature gate is not enabled, do not autogrow.
 	} else if feature.Enabled(ctx, feature.AutoGrowVolumes) {
 
-		// determine the appropriate volume request based on what's set in the status
-		if dpv, err := getDesiredVolumeSize(
+		// Determine the appropriate volume request based on what's set in the status.
+		// Note: request size set by reference.
+		if badDesiredVolumeRequest, err := getDesiredVolumeSize(
 			cluster, volumeType, host, volumeRequestSize,
 		); err != nil {
 			log.Error(err, "For "+cluster.Name+"/"+host+
-				": Unable to parse "+volumeType+" volume request: "+dpv)
+				": Unable to parse "+volumeType+" volume request: "+badDesiredVolumeRequest)
 		}
 
 		// If the volume request size is greater than or equal to the limit and the
@@ -203,15 +204,15 @@ func getDesiredVolumeSize(cluster *v1beta1.PostgresCluster,
 	case volumeType == "pgData":
 		for i := range cluster.Status.InstanceSets {
 			if instanceSpecName == cluster.Status.InstanceSets[i].Name {
-				for _, dpv := range cluster.Status.InstanceSets[i].DesiredPGDataVolume {
-					if dpv != "" {
-						desiredRequest, err := resource.ParseQuantity(dpv)
+				for _, desiredRequestString := range cluster.Status.InstanceSets[i].DesiredPGDataVolume {
+					if desiredRequestString != "" {
+						desiredRequest, err := resource.ParseQuantity(desiredRequestString)
 						if err == nil {
 							if desiredRequest.Value() > volumeRequestSize.Value() {
 								*volumeRequestSize = desiredRequest
 							}
 						} else {
-							return dpv, err
+							return desiredRequestString, err
 						}
 					}
 				}
@@ -221,15 +222,15 @@ func getDesiredVolumeSize(cluster *v1beta1.PostgresCluster,
 	case volumeType == "pgWAL":
 		for i := range cluster.Status.InstanceSets {
 			if instanceSpecName == cluster.Status.InstanceSets[i].Name {
-				for _, dpv := range cluster.Status.InstanceSets[i].DesiredPGWALVolume {
-					if dpv != "" {
-						desiredRequest, err := resource.ParseQuantity(dpv)
+				for _, desiredRequestString := range cluster.Status.InstanceSets[i].DesiredPGWALVolume {
+					if desiredRequestString != "" {
+						desiredRequest, err := resource.ParseQuantity(desiredRequestString)
 						if err == nil {
 							if desiredRequest.Value() > volumeRequestSize.Value() {
 								*volumeRequestSize = desiredRequest
 							}
 						} else {
-							return dpv, err
+							return desiredRequestString, err
 						}
 					}
 				}
@@ -245,15 +246,15 @@ func getDesiredVolumeSize(cluster *v1beta1.PostgresCluster,
 		}
 		for i := range cluster.Status.PGBackRest.Repos {
 			if volumeType == cluster.Status.PGBackRest.Repos[i].Name {
-				dpv := cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume
-				if dpv != "" {
-					desiredRequest, err := resource.ParseQuantity(dpv)
+				desiredRequestString := cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume
+				if desiredRequestString != "" {
+					desiredRequest, err := resource.ParseQuantity(desiredRequestString)
 					if err == nil {
 						if desiredRequest.Value() > volumeRequestSize.Value() {
 							*volumeRequestSize = desiredRequest
 						}
 					} else {
-						return dpv, err
+						return desiredRequestString, err
 					}
 				}
 			}
