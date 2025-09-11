@@ -373,7 +373,8 @@ func (r *Reconciler) observeInstances(
 		// checked to ensure that the value from the annotations can be parsed to a valid
 		// value. Otherwise the previous value, if available, will be used. If a limit is
 		// not defined for the given volume and an empty string has been returned, nothing
-		// will be stored in the status.
+		// will be stored in the status. In the event that the value is empty, any existing
+		// request value will be removed.
 		if autogrow {
 			for _, instance := range observed.bySet[name] {
 				if pgDataRequest := r.storeDesiredRequest(
@@ -382,6 +383,8 @@ func (r *Reconciler) observeInstances(
 					previousPGDataDesiredRequests[instance.Name],
 				); pgDataRequest != "" {
 					status.DesiredPGDataVolume[instance.Name] = pgDataRequest
+				} else {
+					delete(status.DesiredPGDataVolume, instance.Name)
 				}
 
 				if pgWALRequest := r.storeDesiredRequest(
@@ -390,6 +393,8 @@ func (r *Reconciler) observeInstances(
 					previousPGWALDesiredRequests[instance.Name],
 				); pgWALRequest != "" {
 					status.DesiredPGWALVolume[instance.Name] = pgWALRequest
+				} else {
+					delete(status.DesiredPGWALVolume, instance.Name)
 				}
 			}
 		}
