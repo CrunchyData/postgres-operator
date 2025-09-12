@@ -123,6 +123,8 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 		serverConfig(postgresCluster).String()
 
 	if RepoHostVolumeDefined(postgresCluster) && repoHostName != "" {
+		pgBackRestLogPath := generateRepoHostLogPath(postgresCluster)
+
 		cm.Data[CMRepoKey] = iniGeneratedWarning +
 			populateRepoHostConfigurationMap(
 				serviceName, serviceNamespace,
@@ -132,11 +134,11 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
 				postgresCluster.Spec.Backups.PGBackRest.RepoHost,
+				pgBackRestLogPath,
 			).String()
 
 		if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, postgresCluster) {
 			// Get pgbackrest log path for repo host pod
-			pgBackRestLogPath := generateRepoHostLogPath(postgresCluster)
 
 			err = collector.AddToConfigMap(ctx, collector.NewConfigForPgBackrestRepoHostPod(
 				ctx,
@@ -443,12 +445,12 @@ func populateRepoHostConfigurationMap(
 	fetchKeyCommand, postgresVersion string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string, repoHost *v1beta1.PGBackRestRepoHost,
+	logPath string,
 ) iniSectionSet {
 
 	global := iniMultiSet{}
 	stanza := iniMultiSet{}
 
-	var pgBackRestLogPathSet bool
 	for _, repo := range repos {
 		global.Set(repo.Name+"-path", defaultRepo1Path+repo.Name)
 
@@ -460,25 +462,14 @@ func populateRepoHostConfigurationMap(
 				global.Set(option, val)
 			}
 		}
-
-		if !pgBackRestLogPathSet && repo.Volume != nil {
-			// If the user has set a log path in the spec, use it. Otherwise,
-			// default to /pgbackrest/repo#/log where pgBackRest will log to the
-			// first configured repo volume when commands are run on the pgBackRest
-			// repo host. With our previous check in RepoHostVolumeDefined(),
-			// we've already validated that at least one defined repo has a volume.
-			if repoHost != nil && repoHost.Log != nil && repoHost.Log.Path != "" {
-				global.Set("log-path", repoHost.Log.Path)
-			} else {
-				global.Set("log-path", fmt.Sprintf(naming.PGBackRestRepoLogPath, repo.Name))
-			}
-			pgBackRestLogPathSet = true
-		}
 	}
 
-	// If no log path was set, don't log because the default path is not writable.
-	if !pgBackRestLogPathSet {
+	// If no log path was provided, don't log because the default path is not writable.
+	// Otherwise, set the log-path.
+	if logPath == "" {
 		global.Set("log-level-file", "off")
+	} else {
+		global.Set("log-path", logPath)
 	}
 
 	for option, val := range globalConfig {
