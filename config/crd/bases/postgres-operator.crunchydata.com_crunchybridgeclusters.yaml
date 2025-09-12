@@ -133,9 +133,6 @@ spec:
                   id
                 type: string
               storage:
-                anyOf:
-                - type: integer
-                - type: string
                 description: |-
                   The amount of storage available to the cluster in gigabytes.
                   The amount must be an integer, followed by Gi (gibibytes) or G (gigabytes) to match Kubernetes conventions.
@@ -277,9 +274,6 @@ spec:
                 description: State of cluster in Bridge.
                 type: string
               storage:
-                anyOf:
-                - type: integer
-                - type: string
                 description: The amount of storage available to the cluster.
                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                 x-kubernetes-int-or-string: true
