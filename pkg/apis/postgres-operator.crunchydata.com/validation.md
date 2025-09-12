@@ -95,3 +95,17 @@ The `additionalProperties` property indicates that the keys are unknown; these f
 > When possible, use [OpenAPI properties](#FIXME) rather than CEL rules.
 > The former do not affect the CRD [validation budget](#FIXME). <!-- https://imgur.com/CzpJn3j -->
 
+## Optional field syntax
+
+CEL offers a safe traversal/retrieval through the use of `?` as an [optional field marker].
+
+As an example, when attempting to retrieve `self.config.global.logfile`, in older (but still supported)
+versions of k8s, we may need to incrementally check the path: `has(self.config) && has(self.config.global)...`
+
+With the optional field marker, we can use that field safely without checking the entire path:
+`self.?config.global.logfile` will return a value or no value; and anything using that value will
+likewise be considered optional.
+
+The optional field syntax is only available in K8s 1.29+.
+
+[optional field marker]: https://pkg.go.dev/github.com/google/cel-go/cel#hdr-Syntax_Changes-OptionalTypes.

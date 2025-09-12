@@ -223,7 +223,7 @@ func Pod(
 	if collector.OpenTelemetryLogsOrMetricsEnabled(ctx, inCluster) {
 		collector.AddToPod(ctx, inCluster.Spec.Instrumentation, inCluster.Spec.ImagePullPolicy, inConfigMap,
 			template, []corev1.VolumeMount{configVolumeMount}, string(inSecret.Data["pgbouncer-password"]),
-			[]string{naming.PGBouncerLogPath}, true, true)
+			[]string{logPath}, true, true)
 	}
 }
 
