@@ -14480,7 +14480,7 @@ spec:
                             x-kubernetes-map-type: granular
                             x-kubernetes-validations:
                             - message: logfile config must end with '.log'
-                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
+                              rule: self.?logfile.orValue("").endsWith('.log')
                           users:
                             additionalProperties:
                               type: string
@@ -33524,7 +33524,7 @@ spec:
                             x-kubernetes-map-type: granular
                             x-kubernetes-validations:
                             - message: logfile config must end with '.log'
-                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
+                              rule: self.?logfile.orValue("").endsWith('.log')
                           users:
                             additionalProperties:
                               type: string
