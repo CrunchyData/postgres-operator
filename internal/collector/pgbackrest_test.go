@@ -30,8 +30,7 @@ func TestNewConfigForPgBackrestRepoHostPod(t *testing.T) {
 		}
 		var instrumentation *v1beta1.InstrumentationSpec
 		require.UnmarshalInto(t, &instrumentation, `{}`)
-
-		config := NewConfigForPgBackrestRepoHostPod(ctx, instrumentation, repos)
+		config := NewConfigForPgBackrestRepoHostPod(ctx, instrumentation, repos, "/test/directory")
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)
@@ -43,7 +42,7 @@ exporters:
 extensions:
   file_storage/pgbackrest_logs:
     create_directory: false
-    directory: /pgbackrest/repo1/log/receiver
+    directory: /test/directory/receiver
     fsync: true
 processors:
   batch/1s:
@@ -101,8 +100,8 @@ processors:
 receivers:
   filelog/pgbackrest_log:
     include:
-    - /pgbackrest/repo1/log/*.log
-    - /pgbackrest/repo1/log/*.log.1
+    - /test/directory/*.log
+    - /test/directory/*.log.1
     multiline:
       line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}|^-{19}
     storage: file_storage/pgbackrest_logs
@@ -136,8 +135,7 @@ service:
 				Volume: new(v1beta1.RepoPVC),
 			},
 		}
-
-		config := NewConfigForPgBackrestRepoHostPod(ctx, testInstrumentationSpec(), repos)
+		config := NewConfigForPgBackrestRepoHostPod(ctx, testInstrumentationSpec(), repos, "/another/directory")
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)
@@ -153,7 +151,7 @@ exporters:
 extensions:
   file_storage/pgbackrest_logs:
     create_directory: false
-    directory: /pgbackrest/repo1/log/receiver
+    directory: /another/directory/receiver
     fsync: true
 processors:
   batch/1s:
@@ -211,8 +209,8 @@ processors:
 receivers:
   filelog/pgbackrest_log:
     include:
-    - /pgbackrest/repo1/log/*.log
-    - /pgbackrest/repo1/log/*.log.1
+    - /another/directory/*.log
+    - /another/directory/*.log.1
     multiline:
       line_start_pattern: ^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}|^-{19}
     storage: file_storage/pgbackrest_logs

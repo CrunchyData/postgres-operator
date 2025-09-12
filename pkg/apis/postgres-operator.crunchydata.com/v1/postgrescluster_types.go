@@ -61,6 +61,7 @@ type PostgresClusterSpec struct {
 	// namespace as the cluster.
 	// +optional
 	DatabaseInitSQL *DatabaseInitSQL `json:"databaseInitSQL,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should use the defined default
 	// scheduling constraints. If the field is unset or false, the default
 	// scheduling constraints will be used in addition to any custom constraints
@@ -347,7 +348,7 @@ type Backups struct {
 
 	// pgBackRest archive configuration
 	// +optional
-	PGBackRest v1beta1.PGBackRestArchive `json:"pgbackrest"`
+	PGBackRest PGBackRestArchive `json:"pgbackrest"`
 
 	// VolumeSnapshot configuration
 	// +optional
@@ -529,6 +530,8 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
 
+	// Volumes to be added to the instance set.
+	// +optional
 	Volumes *v1beta1.PostgresVolumesSpec `json:"volumes,omitempty"`
 }
 
