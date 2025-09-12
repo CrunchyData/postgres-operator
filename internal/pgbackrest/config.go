@@ -133,7 +133,6 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 				pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
-				postgresCluster.Spec.Backups.PGBackRest.RepoHost,
 				pgBackRestLogPath,
 			).String()
 
@@ -444,8 +443,7 @@ func populateRepoHostConfigurationMap(
 	serviceName, serviceNamespace, pgdataDir,
 	fetchKeyCommand, postgresVersion string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
-	globalConfig map[string]string, repoHost *v1beta1.PGBackRestRepoHost,
-	logPath string,
+	globalConfig map[string]string, logPath string,
 ) iniSectionSet {
 
 	global := iniMultiSet{}
