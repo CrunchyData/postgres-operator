@@ -126,7 +126,7 @@ func (r *Reconciler) generatePostgresHBAs(
 //  2. parameters in cluster.spec.config.parameters
 //  3. parameters in cluster.spec.patroni.dynamicConfiguration
 //  4. default values determined by contollers
-func (*Reconciler) generatePostgresParameters(
+func (r *Reconciler) generatePostgresParameters(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, backupsSpecFound bool,
 ) *postgres.ParameterSet {
 	builtin := postgres.NewParameters()
@@ -178,6 +178,9 @@ func (*Reconciler) generatePostgresParameters(
 
 		result.Add("shared_preload_libraries", preload)
 	}
+
+	// Finally, remove or replace harmful values.
+	postgres.SanitizeParameters(cluster, result, r.Recorder)
 
 	return result
 }

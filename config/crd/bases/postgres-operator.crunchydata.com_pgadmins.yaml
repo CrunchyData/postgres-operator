@@ -1201,9 +1201,6 @@ spec:
                                           volumes, optional for env vars'
                                         type: string
                                       divisor:
-                                        anyOf:
-                                        - type: integer
-                                        - type: string
                                         description: Specifies the output format of
                                           the exposed resources, defaults to "1"
                                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
@@ -1501,9 +1498,6 @@ spec:
                     properties:
                       limits:
                         additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
                         description: |-
@@ -1512,9 +1506,6 @@ spec:
                         type: object
                       requests:
                         additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
                         description: |-
@@ -1762,9 +1753,6 @@ spec:
                                         optional for env vars'
                                       type: string
                                     divisor:
-                                      anyOf:
-                                      - type: integer
-                                      - type: string
                                       description: Specifies the output format of
                                         the exposed resources, defaults to "1"
                                       pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
@@ -2036,9 +2024,6 @@ spec:
                                               for volumes, optional for env vars'
                                             type: string
                                           divisor:
-                                            anyOf:
-                                            - type: integer
-                                            - type: string
                                             description: Specifies the output format
                                               of the exposed resources, defaults to
                                               "1"
@@ -2344,9 +2329,6 @@ spec:
                         x-kubernetes-list-type: map
                       limits:
                         additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
                         description: |-
@@ -2355,9 +2337,6 @@ spec:
                         type: object
                       requests:
                         additionalProperties:
-                          anyOf:
-                          - type: integer
-                          - type: string
                           pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                           x-kubernetes-int-or-string: true
                         description: |-
@@ -2422,9 +2401,6 @@ spec:
                     x-kubernetes-list-type: map
                   limits:
                     additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
                       pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                       x-kubernetes-int-or-string: true
                     description: |-
@@ -2433,9 +2409,6 @@ spec:
                     type: object
                   requests:
                     additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
                       pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                       x-kubernetes-int-or-string: true
                     description: |-
@@ -2648,12 +2621,10 @@ spec:
                           type: array
                           x-kubernetes-list-type: set
                         name:
-                          allOf:
-                          - maxLength: 63
-                          - maxLength: 55
                           description: |-
                             The name of the directory in which to mount this volume.
                             Volumes are mounted in containers at `/volumes/{name}`.
+                          maxLength: 55
                           minLength: 1
                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                           type: string

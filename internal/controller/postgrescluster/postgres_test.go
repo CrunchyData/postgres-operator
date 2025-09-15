@@ -181,15 +181,19 @@ func TestGeneratePostgresParameters(t *testing.T) {
 			parameters: {
 				something: str,
 				another: 5,
+				log_directory: pg_wal,
 			},
 		}`)
 
 		result := reconciler.generatePostgresParameters(ctx, cluster, false)
 		assert.Assert(t, cmp.LenMap(result.AsMap(), len(builtin.AsMap())+2),
-			"expected two parameters from the Config section")
+			"expected two new parameters from the Config section")
 
 		assert.Equal(t, result.Value("another"), "5")
 		assert.Equal(t, result.Value("something"), "str")
+
+		assert.Equal(t, result.Value("log_directory"), "/pgdata/logs/postgres",
+			"expected sanitization")
 	})
 
 	t.Run("Patroni", func(t *testing.T) {
