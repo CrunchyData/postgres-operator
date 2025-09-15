@@ -475,6 +475,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -4897,6 +4898,7 @@ spec:
                           type: object
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                   parameters:
                     additionalProperties:
                       x-kubernetes-int-or-string: true
@@ -6340,6 +6342,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -12758,6 +12761,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           customTLSSecret:
                             description: |-
                               Projected secret containing custom TLS certificates to encrypt output from the exporter
@@ -14284,6 +14288,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           global:
                             additionalProperties:
                               type: string
@@ -17720,6 +17725,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ldapBindPassword:
                             description: |-
                               A Secret containing the value for the LDAP_BIND_PASSWORD setting.
@@ -19280,6 +19286,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -23702,6 +23709,7 @@ spec:
                           type: object
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                   parameters:
                     additionalProperties:
                       x-kubernetes-int-or-string: true
@@ -25138,6 +25146,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -31556,6 +31565,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           customTLSSecret:
                             description: |-
                               Projected secret containing custom TLS certificates to encrypt output from the exporter
@@ -33082,6 +33092,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           global:
                             additionalProperties:
                               type: string
@@ -36512,6 +36523,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ldapBindPassword:
                             description: |-
                               A Secret containing the value for the LDAP_BIND_PASSWORD setting.

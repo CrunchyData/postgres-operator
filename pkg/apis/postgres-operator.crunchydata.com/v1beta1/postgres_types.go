@@ -29,6 +29,9 @@ type PostgresAuthenticationSpec struct {
 type PostgresConfigSpec struct {
 	// Files to mount under "/etc/postgres".
 	// ---
+	// [corev1.ProjectedVolumeSource.Sources]
+	// +listType=atomic
+	//
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 

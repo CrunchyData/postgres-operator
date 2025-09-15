@@ -1307,6 +1307,7 @@ spec:
                           type: object
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                   gunicorn:
                     description: |-
                       Settings for the Gunicorn server.

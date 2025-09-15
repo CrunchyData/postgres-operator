@@ -18,6 +18,10 @@ type PGBouncerConfiguration struct {
 	// PgBouncer to restart, but changes to the file contents are automatically
 	// reloaded.
 	// More info: https://www.pgbouncer.org/config.html#include-directive
+	// ---
+	// [corev1.ProjectedVolumeSource.Sources]
+	// +listType=atomic
+	//
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 

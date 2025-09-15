@@ -61,8 +61,10 @@ type InstrumentationConfigSpec struct {
 	// Files allows the user to mount projected volumes into the collector
 	// Pod so that files can be referenced by the collector as needed.
 	// ---
-	// +kubebuilder:validation:MinItems=1
+	// [corev1.ProjectedVolumeSource.Sources]
 	// +listType=atomic
+	//
+	// +kubebuilder:validation:MinItems=1
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 

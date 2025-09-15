@@ -13,6 +13,10 @@ import (
 type StandalonePGAdminConfiguration struct {
 	// Files allows the user to mount projected volumes into the pgAdmin
 	// container so that files can be referenced by pgAdmin as needed.
+	// ---
+	// [corev1.ProjectedVolumeSource.Sources]
+	// +listType=atomic
+	//
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 
