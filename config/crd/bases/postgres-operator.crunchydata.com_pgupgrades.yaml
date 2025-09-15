@@ -1124,6 +1124,7 @@ spec:
                       type: string
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               transferMethod:
                 description: |-
                   The method pg_upgrade should use to transfer files to the new cluster.

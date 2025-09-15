@@ -142,6 +142,10 @@ type PGAdminSpec struct {
 
 	// Tolerations of the PGAdmin pod.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 

@@ -306,6 +306,10 @@ type PostgresClusterDataSource struct {
 
 	// Tolerations of the pgBackRest restore Job.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
@@ -504,6 +508,10 @@ type PostgresInstanceSetSpec struct {
 
 	// Tolerations of a PostgreSQL pod. Changing this value causes PostgreSQL to restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 

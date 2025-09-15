@@ -130,6 +130,10 @@ type PGBouncerPodSpec struct {
 	// Tolerations of a PgBouncer pod. Changing this value causes PgBouncer to
 	// restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 

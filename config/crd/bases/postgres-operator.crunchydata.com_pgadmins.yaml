@@ -2541,6 +2541,7 @@ spec:
                       type: string
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               users:
                 description: |-
                   pgAdmin users that are managed via the PGAdmin spec. Users can still

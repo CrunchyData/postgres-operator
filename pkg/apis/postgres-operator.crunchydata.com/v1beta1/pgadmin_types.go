@@ -84,6 +84,10 @@ type PGAdminPodSpec struct {
 
 	// Tolerations of a pgAdmin pod. Changing this value causes pgAdmin to restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 

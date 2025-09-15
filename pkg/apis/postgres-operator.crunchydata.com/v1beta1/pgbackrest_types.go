@@ -167,6 +167,10 @@ type BackupJobs struct {
 
 	// Tolerations of pgBackRest backup Job pods.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
@@ -227,6 +231,10 @@ type PGBackRestRepoHost struct {
 
 	// Tolerations of a PgBackRest repo host pod. Changing this value causes a restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
@@ -480,6 +488,10 @@ type PGBackRestDataSource struct {
 
 	// Tolerations of the pgBackRest restore Job.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 

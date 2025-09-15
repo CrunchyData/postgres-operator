@@ -1526,6 +1526,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ttlSecondsAfterFinished:
                             description: |-
                               Limit the lifetime of a Job that has finished.
@@ -2771,6 +2772,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           topologySpreadConstraints:
                             description: |-
                               Topology spread constraints of a Dedicated repo host pod. Changing this
@@ -4384,6 +4386,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           volumes:
                             description: Volumes to add to Restore Job Pods
                             properties:
@@ -6771,6 +6774,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -7887,6 +7891,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -11031,6 +11036,7 @@ spec:
                             type: string
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     topologySpreadConstraints:
                       description: |-
                         Topology spread constraints of a PostgreSQL pod. Changing this value causes
@@ -16035,6 +16041,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a PgBouncer pod. Changing this value causes
@@ -18142,6 +18149,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a pgAdmin pod. Changing this value causes
@@ -20323,6 +20331,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ttlSecondsAfterFinished:
                             description: |-
                               Limit the lifetime of a Job that has finished.
@@ -21568,6 +21577,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           topologySpreadConstraints:
                             description: |-
                               Topology spread constraints of a Dedicated repo host pod. Changing this
@@ -23181,6 +23191,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           volumes:
                             description: Volumes to add to Restore Job Pods
                             properties:
@@ -25561,6 +25572,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -26677,6 +26689,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -29821,6 +29834,7 @@ spec:
                             type: string
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     topologySpreadConstraints:
                       description: |-
                         Topology spread constraints of a PostgreSQL pod. Changing this value causes
@@ -34825,6 +34839,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a PgBouncer pod. Changing this value causes
@@ -36926,6 +36941,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a pgAdmin pod. Changing this value causes
