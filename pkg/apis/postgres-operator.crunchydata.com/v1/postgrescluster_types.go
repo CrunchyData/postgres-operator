@@ -613,7 +613,7 @@ type PostgresInstanceSetStatus struct {
 type PostgresProxySpec struct {
 
 	// Defines a PgBouncer proxy and connection pooler.
-	PGBouncer *v1beta1.PGBouncerPodSpec `json:"pgBouncer"`
+	PGBouncer *PGBouncerPodSpec `json:"pgBouncer"`
 }
 
 // Default sets the defaults for any proxies that are set.

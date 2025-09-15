@@ -14284,7 +14284,12 @@ spec:
                             description: |-
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
+                            maxProperties: 50
                             type: object
+                            x-kubernetes-map-type: granular
+                            x-kubernetes-validations:
+                            - message: logfile config must end with '.log'
+                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
                           users:
                             additionalProperties:
                               type: string
@@ -16258,6 +16263,12 @@ spec:
                             x-kubernetes-list-type: map
                         type: object
                     type: object
+                    x-kubernetes-validations:
+                    - message: config.global.logfile destination is restricted to
+                        '/tmp/logs/pgbouncer/' or an existing additional volume
+                      rule: self.?config.global.logfile.optMap(f, f.startsWith("/tmp/logs/pgbouncer/")
+                        || (self.?volumes.additional.hasValue() && self.volumes.additional.exists(v,
+                        f.startsWith("/volumes/" + v.name)))).orValue(true)
                 required:
                 - pgBouncer
                 type: object
@@ -33063,7 +33074,12 @@ spec:
                             description: |-
                               Settings that apply to the entire PgBouncer process.
                               More info: https://www.pgbouncer.org/config.html
+                            maxProperties: 50
                             type: object
+                            x-kubernetes-map-type: granular
+                            x-kubernetes-validations:
+                            - message: logfile config must end with '.log'
+                              rule: '!has(self.logfile) || self.logfile.endsWith(''.log'')'
                           users:
                             additionalProperties:
                               type: string
