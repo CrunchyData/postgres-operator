@@ -43,7 +43,7 @@ spec:
         - name: RELATED_IMAGE_STANDALONE_PGADMIN
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.2-2534"
         - name: RELATED_IMAGE_COLLECTOR
-          value: "registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.2-0"
+          value: "registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.3-0"
         securityContext:
           allowPrivilegeEscalation: false
           capabilities: { drop: [ALL] }
