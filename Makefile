@@ -14,6 +14,7 @@ CONTROLLER ?= $(GO) tool sigs.k8s.io/controller-tools/cmd/controller-gen
 # Run tests using the latest tools.
 CHAINSAW ?= $(GO) run github.com/kyverno/chainsaw@latest
 CHAINSAW_TEST ?= $(CHAINSAW) test
+CRD_CHECKER ?= $(GO) run github.com/openshift/crd-schema-checker/cmd/crd-schema-checker@latest
 ENVTEST ?= $(GO) run sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/cmd/kubectl-kuttl@latest
 KUTTL_TEST ?= $(KUTTL) test
@@ -148,6 +149,12 @@ check: ## Run basic go tests with coverage output
 check: get-pgmonitor
 	QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" $(GO_TEST) -cover ./...
 
+# Informational only; no criteria to enforce at this time.
+.PHONY: check-crd
+check-crd:
+	$(foreach CRD, $(wildcard config/crd/bases/*.yaml), \
+		$(CRD_CHECKER) check-manifests --new-crd-filename '$(CRD)' 2>&1 | awk -f hack/check-manifests.awk $(newline))
+
 # Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
 .PHONY: check-envtest
@@ -254,3 +261,9 @@ generate-rbac: ## Generate RBAC
 		) rbac:roleName='postgres-operator' $(\
 		) paths='./cmd/...' paths='./internal/...' $(\
 		) output:dir='config/rbac' # {directory}/role.yaml
+
+# https://www.gnu.org/software/make/manual/make.html#Multi_002dLine
+define newline
+
+
+endef
