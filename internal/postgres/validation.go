@@ -9,13 +9,17 @@ import (
 	"regexp"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/tools/record"
+
+	"github.com/crunchydata/postgres-operator/internal/text"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // SanitizeParameters transforms parameters so they are safe for Postgres in cluster.
-func SanitizeParameters(cluster *v1beta1.PostgresCluster, parameters *ParameterSet) {
+func SanitizeParameters(cluster *v1beta1.PostgresCluster, parameters *ParameterSet, recorder record.EventRecorder) {
 	if v, ok := parameters.Get("log_directory"); ok {
-		parameters.Add("log_directory", sanitizeLogDirectory(cluster, v))
+		parameters.Add("log_directory", sanitizeLogDirectory(cluster, v, recorder))
 	}
 }
 
@@ -52,7 +56,7 @@ var sensitiveRelativePath = regexp.MustCompile(
 // Otherwise, it returns the absolute path to a good "log_directory" value.
 //
 // https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-DIRECTORY
-func sanitizeLogDirectory(cluster *v1beta1.PostgresCluster, input string) string {
+func sanitizeLogDirectory(cluster *v1beta1.PostgresCluster, input string, recorder record.EventRecorder) string {
 	directory := path.Clean(input)
 
 	// [path.Clean] leaves leading parent directories. Eliminate these as a security measure.
@@ -69,6 +73,11 @@ func sanitizeLogDirectory(cluster *v1beta1.PostgresCluster, input string) string
 	case directory == "", directory == ".", directory == "/",
 		sensitiveAbsolutePath.MatchString(directory),
 		sensitiveRelativePath.MatchString(directory):
+		if recorder != nil {
+			recorder.Eventf(cluster, corev1.EventTypeWarning, "InvalidParameter",
+				"Ignoring unsafe Postgres parameter value %q = %q", "log_directory", text.TruncateAt(input, 128))
+		}
+
 		// When the value is empty after cleaning or disallowed, choose one instead.
 		// Keep it on the same volume, if possible.
 		if strings.HasPrefix(directory, tmpMountPath) {
@@ -82,6 +91,11 @@ func sanitizeLogDirectory(cluster *v1beta1.PostgresCluster, input string) string
 		return path.Join(dataMountPath, "logs/postgres")
 
 	case !path.IsAbs(directory):
+		if recorder != nil {
+			recorder.Eventf(cluster, corev1.EventTypeWarning, "InvalidParameter",
+				"Postgres parameter %q should be %q or an absolute path", "log_directory", "log")
+		}
+
 		// Directory is relative. This is disallowed since v1 of PostgresCluster.
 		// Expand it relative to the data directory like Postgres does.
 		return path.Join(DataDirectory(cluster), directory)
