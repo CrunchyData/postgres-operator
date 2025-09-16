@@ -226,25 +226,31 @@ func TestPostgresConfigParametersV1(t *testing.T) {
 					message: `"/pgwal/logs/postgres"`,
 				},
 
-				// Directories inside /volumes are acceptable, but every instance set needs additional volumes.
-				//
-				// TODO(validation): This could be more precise and check the directory name of each additional
-				// volume, but Kubernetes 1.33 incorrectly estimates the cost of volume.name:
-				// https://github.com/kubernetes-sigs/controller-tools/pull/1270#issuecomment-3272211184
+				// Directories inside /volumes are acceptable, but every instance set needs the correct additional volume.
 				{
-					name:  "two instance sets and two additional volumes",
-					value: "/volumes/anything",
+					name:  "two instance sets and two correct additional volumes",
+					value: "/volumes/yep",
 					instances: `[
-						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: dir, claimName: a }] } },
-						{ name: two, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: dir, claimName: b }] } },
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: yep, claimName: a }] } },
+						{ name: two, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: yep, claimName: b }] } },
 					]`,
 					valid: true,
 				},
 				{
-					name:  "two instance sets and one additional volume",
-					value: "/volumes/anything",
+					name:  "two instance sets and one correct additional volume",
+					value: "/volumes/yep",
 					instances: `[
-						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: dir, claimName: a }] } },
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: yep, claimName: a }] } },
+						{ name: two, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: diff, claimName: b }] } },
+					]`,
+					valid:   false,
+					message: `all instances need an additional volume`,
+				},
+				{
+					name:  "two instance sets and one additional volume",
+					value: "/volumes/yep",
+					instances: `[
+						{ name: one, dataVolumeClaimSpec: ` + volume + `, volumes: { additional: [{ name: yep, claimName: a }] } },
 						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
 					]`,
 					valid:   false,
@@ -252,7 +258,7 @@ func TestPostgresConfigParametersV1(t *testing.T) {
 				},
 				{
 					name:  "two instance sets and no additional volumes",
-					value: "/volumes/anything",
+					value: "/volumes/yep",
 					instances: `[
 						{ name: one, dataVolumeClaimSpec: ` + volume + ` },
 						{ name: two, dataVolumeClaimSpec: ` + volume + ` },
