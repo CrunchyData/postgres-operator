@@ -101,6 +101,7 @@ func TestStoreDesiredRequest(t *testing.T) {
 		expectedLog          string
 		expectedNumEvents    int
 		expectedEvent        string
+		expectedEventType    string
 	}{{
 		tcName:  "PGData-BadRequestNoBackup",
 		Voltype: "pgData", host: "red",
@@ -122,13 +123,13 @@ func TestStoreDesiredRequest(t *testing.T) {
 		tcName:  "PGData-BadBackupRequest",
 		Voltype: "pgData", host: "red",
 		desiredRequest: "2Gi", desiredRequestBackup: "bar", expectedValue: "2Gi",
-		expectedNumEvents: 1, expectedEvent: "pgData volume expansion to 2Gi requested for rhino/red.",
+		expectedNumEvents: 1, expectedEvent: "pgData volume expansion to 2Gi requested for rhino/red.", expectedEventType: corev1.EventTypeNormal,
 		expectedNumLogs: 1, expectedLog: "Unable to parse pgData volume request from status backup (bar) for rhino/red",
 	}, {
 		tcName:  "PGData-ValueUpdateWithEvent",
 		Voltype: "pgData", host: "red",
 		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
-		expectedNumEvents: 1, expectedEvent: "pgData volume expansion to 1Gi requested for rhino/red.",
+		expectedNumEvents: 1, expectedEvent: "pgData volume expansion to 1Gi requested for rhino/red.", expectedEventType: corev1.EventTypeNormal,
 		expectedNumLogs: 0,
 	}, {
 		tcName:  "PGWAL-BadRequestNoBackup",
@@ -156,13 +157,13 @@ func TestStoreDesiredRequest(t *testing.T) {
 		tcName:  "PGWAL-BadBackupRequest",
 		Voltype: "pgWAL", host: "red",
 		desiredRequest: "2Gi", desiredRequestBackup: "bar", expectedValue: "2Gi",
-		expectedNumEvents: 1, expectedEvent: "pgWAL volume expansion to 2Gi requested for rhino/red.",
+		expectedNumEvents: 1, expectedEvent: "pgWAL volume expansion to 2Gi requested for rhino/red.", expectedEventType: corev1.EventTypeWarning,
 		expectedNumLogs: 1, expectedLog: "Unable to parse pgWAL volume request from status backup (bar) for rhino/red",
 	}, {
 		tcName:  "PGWAL-ValueUpdateWithEvent",
 		Voltype: "pgWAL", host: "red",
 		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
-		expectedNumEvents: 1, expectedEvent: "pgWAL volume expansion to 1Gi requested for rhino/red.",
+		expectedNumEvents: 1, expectedEvent: "pgWAL volume expansion to 1Gi requested for rhino/red.", expectedEventType: corev1.EventTypeWarning,
 		expectedNumLogs: 0,
 	}, {
 		tcName:  "Repo-BadRequestNoBackup",
@@ -190,13 +191,13 @@ func TestStoreDesiredRequest(t *testing.T) {
 		tcName:  "Repo-BadBackupRequest",
 		Voltype: "repo1", host: "repo-host",
 		desiredRequest: "2Gi", desiredRequestBackup: "bar", expectedValue: "2Gi",
-		expectedNumEvents: 1, expectedEvent: "repo1 volume expansion to 2Gi requested for rhino/repo-host.",
+		expectedNumEvents: 1, expectedEvent: "repo1 volume expansion to 2Gi requested for rhino/repo-host.", expectedEventType: corev1.EventTypeNormal,
 		expectedNumLogs: 1, expectedLog: "Unable to parse repo1 volume request from status backup (bar) for rhino/repo-host",
 	}, {
 		tcName:  "Repo-ValueUpdateWithEvent",
 		Voltype: "repo1", host: "repo-host",
 		desiredRequest: "1Gi", desiredRequestBackup: "", expectedValue: "1Gi",
-		expectedNumEvents: 1, expectedEvent: "repo1 volume expansion to 1Gi requested for rhino/repo-host.",
+		expectedNumEvents: 1, expectedEvent: "repo1 volume expansion to 1Gi requested for rhino/repo-host.", expectedEventType: corev1.EventTypeNormal,
 		expectedNumLogs: 0,
 	}}
 
@@ -220,6 +221,7 @@ func TestStoreDesiredRequest(t *testing.T) {
 				assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
 				assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
 				assert.Equal(t, recorder.Events[0].Note, tc.expectedEvent)
+				assert.Equal(t, recorder.Events[0].Type, tc.expectedEventType)
 			}
 			assert.Equal(t, len(*logs), tc.expectedNumLogs)
 			if tc.expectedNumLogs == 1 {
@@ -430,6 +432,7 @@ resources:
 		assert.Equal(t, len(recorder.Events), 1)
 		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
 		assert.Equal(t, recorder.Events[0].Reason, "VolumeRequestOverLimit")
+		assert.Equal(t, recorder.Events[0].Type, corev1.EventTypeWarning)
 		assert.Equal(t, recorder.Events[0].Note, "pgData volume request (4Gi) for elephant/some-instance is greater than set limit (3Gi). Limit value will be used.")
 	})
 
@@ -599,6 +602,7 @@ resources:
 			assert.Equal(t, len(recorder.Events), 1)
 			assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
 			assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
+			assert.Equal(t, recorder.Events[0].Type, corev1.EventTypeNormal)
 			assert.Equal(t, recorder.Events[0].Note, "pgData volume(s) for elephant/some-instance are at size limit (2Gi).")
 		})
 
@@ -629,11 +633,13 @@ resources:
 				if event.Reason == "VolumeLimitReached" {
 					found1 = true
 					assert.Equal(t, event.Regarding.Name, cluster.Name)
+					assert.Equal(t, event.Type, corev1.EventTypeNormal)
 					assert.Equal(t, event.Note, "pgData volume(s) for elephant/some-instance are at size limit (5Gi).")
 				}
 				if event.Reason == "DesiredVolumeAboveLimit" {
 					found2 = true
 					assert.Equal(t, event.Regarding.Name, cluster.Name)
+					assert.Equal(t, event.Type, corev1.EventTypeWarning)
 					assert.Equal(t, event.Note,
 						"The desired size (10Gi) for the elephant/some-instance pgData volume(s) is greater than the size limit (5Gi).")
 				}
@@ -675,6 +681,7 @@ resources:
 			assert.Equal(t, len(recorder.Events), 1)
 			assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
 			assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
+			assert.Equal(t, recorder.Events[0].Type, corev1.EventTypeNormal)
 			assert.Equal(t, recorder.Events[0].Note, "repo1 volume(s) for elephant/repo-host are at size limit (2Gi).")
 		})
 
@@ -707,6 +714,7 @@ resources:
 			assert.Equal(t, len(recorder.Events), 1)
 			assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
 			assert.Equal(t, recorder.Events[0].Reason, "VolumeLimitReached")
+			assert.Equal(t, recorder.Events[0].Type, corev1.EventTypeWarning)
 			assert.Equal(t, recorder.Events[0].Note, "pgWAL volume(s) for elephant/another-instance are at size limit (3Gi).")
 		})
 

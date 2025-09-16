@@ -63,7 +63,11 @@ func (r *Reconciler) storeDesiredRequest(
 	}
 
 	if limitSet && current.Value() > previous.Value() {
-		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
+		eventType := corev1.EventTypeNormal
+		if volumeType == "pgWAL" {
+			eventType = corev1.EventTypeWarning
+		}
+		r.Recorder.Eventf(cluster, eventType, "VolumeAutoGrow",
 			"%s volume expansion to %v requested for %s/%s.",
 			volumeType, current.String(), cluster.Name, host)
 	}
@@ -165,8 +169,11 @@ func (r *Reconciler) setVolumeSize(ctx context.Context, cluster *v1beta1.Postgre
 		// If the user manually requests a lower limit that is smaller than the current
 		// or requested volume size, it will be ignored in favor of the limit value.
 		if volumeRequestSize.Value() >= volumeLimitFromSpec.Value() {
-
-			r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeLimitReached",
+			eventType := corev1.EventTypeNormal
+			if volumeType == "pgWAL" {
+				eventType = corev1.EventTypeWarning
+			}
+			r.Recorder.Eventf(cluster, eventType, "VolumeLimitReached",
 				"%s volume(s) for %s/%s are at size limit (%v).", volumeType,
 				cluster.Name, host, volumeLimitFromSpec)
 
