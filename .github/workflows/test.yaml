@@ -107,6 +107,7 @@ jobs:
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.10-3.4-2534
             registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.6-2534
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.4-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.5-2534
 
       - name: Get pgMonitor files.
         run: make get-pgmonitor
@@ -135,6 +136,7 @@ jobs:
             --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.10-3.4-2534' \
             --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2534' \
             --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.4-2534' \
+            --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.5=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.5-2534' \
             --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.2-2534' \
             --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.3-0' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
