@@ -256,7 +256,10 @@ func TestBashRecreateDirectory(t *testing.T) {
 		filepath.Join(dir, "d"), "0740")
 	// The assertion below expects alphabetically sorted filenames.
 	// Set an empty environment to always use the default/standard locale.
-	cmd.Env = []string{}
+	cmd.Env = []string{
+		// Preserve the path to find bash tools (i.e., mktemp)
+		"PATH=" + os.Getenv("PATH"),
+	}
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, string(output))
 	assert.Assert(t, cmp.Regexp(`^`+
