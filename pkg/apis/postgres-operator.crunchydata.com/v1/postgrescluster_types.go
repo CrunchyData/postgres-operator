@@ -21,11 +21,7 @@ import (
 //
 // +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "volumes.temp" to log in "/pgtmp"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgtmp/logs/postgres") || self.instances.all(i, i.?volumes.temp.hasValue())).orValue(true)`
 // +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "walVolumeClaimSpec" to log in "/pgwal"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgwal/logs/postgres") || self.instances.all(i, i.?walVolumeClaimSpec.hasValue())).orValue(true)`
-//
-// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need an additional volume to log in "/volumes"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue())).orValue(true)`
-//
-// TODO: Also check the above path against volume names: `i.?volumes.additional.hasValue() && i.volumes.additional.exists(directory.startsWith("/volumes/" + volume.name))`
-// https://github.com/kubernetes-sigs/controller-tools/pull/1270#issuecomment-3272211184
+// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need an additional volume to log in "/volumes"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue() && i.volumes.additional.exists(volume, v.startsWith("/volumes/" + volume.name)))).orValue(true)`
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *v1beta1.Metadata `json:"metadata,omitempty"`
@@ -110,9 +106,11 @@ type PostgresClusterSpec struct {
 
 	// Specifies one or more sets of PostgreSQL pods that replicate data for
 	// this cluster.
+	// ---
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=2
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 

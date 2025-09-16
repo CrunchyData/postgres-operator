@@ -11683,6 +11683,7 @@ spec:
                   required:
                   - dataVolumeClaimSpec
                   type: object
+                maxItems: 16
                 minItems: 1
                 type: array
                 x-kubernetes-list-map-keys:
@@ -18412,7 +18413,9 @@ spec:
             - fieldPath: .config.parameters.log_directory
               message: all instances need an additional volume to log in "/volumes"
               rule: self.?config.parameters.log_directory.optMap(v, type(v) != string
-                || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue())).orValue(true)
+                || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue()
+                && i.volumes.additional.exists(volume, v.startsWith("/volumes/" +
+                volume.name)))).orValue(true)
           status:
             description: PostgresClusterStatus defines the observed state of PostgresCluster
             properties:
