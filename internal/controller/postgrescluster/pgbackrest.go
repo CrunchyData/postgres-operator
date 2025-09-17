@@ -892,9 +892,29 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 		jobSpec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 		pgbackrest.AddConfigToCloudBackupJob(postgresCluster, &jobSpec.Template)
 
-		// Mount the PVC named in the "pgbackrest-cloud-log-volume" annotation, if any.
+		// If the "pgbackrest-cloud-log-volume" annotation has a value, check if it is the
+		// same as any of the additional volume names. If there is a collision of names,
+		// create a warning event. If there is no name collision, mount the volume referenced
+		// by the annotation.
 		if logVolume := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolume != "" {
-			util.AddCloudLogVolumeToPod(&jobSpec.Template.Spec, logVolume)
+			var collisionFound bool
+			if jobs != nil && jobs.Volumes != nil {
+				for _, volume := range jobs.Volumes.Additional {
+					if volume.Name == logVolume {
+						collisionFound = true
+						r.Recorder.Event(postgresCluster, corev1.EventTypeWarning,
+							"DuplicateCloudBackupVolume", "The volume name specified in the "+
+								"pgbackrest-cloud-log-volume annotation is the same as one "+
+								"specified in spec.backups.pgbackrest.jobs.volumes.additional. "+
+								"Cannot mount duplicate volume names. Defaulting to the "+
+								"additional volume.")
+						break
+					}
+				}
+			}
+			if !collisionFound {
+				util.AddCloudLogVolumeToPod(&jobSpec.Template.Spec, logVolume)
+			}
 		}
 	}
 
@@ -3340,21 +3360,22 @@ func authorizeBackupRemovalAnnotationPresent(postgresCluster *v1beta1.PostgresCl
 }
 
 // getCloudLogPath is responsible for determining the appropriate log path for pgbackrest
-// in cloud backup jobs. If the user has specified a PVC to use as a log volume for cloud
-// backups via the PGBackRestCloudLogVolume annotation, set the cloud log path accordingly.
-// If the user has not set the PGBackRestCloudLogVolume annotation, but has set a log path
-// via the spec, use that.
-// TODO: Make sure this is what we want (i.e. annotation to take precedence over spec)
+// in cloud backup jobs. If the user specified a log path via the spec, use it. Otherwise,
+// if the user specified a log volume for cloud backups via the PGBackRestCloudLogVolume
+// annotation, we will use that. If neither scenario is true, return an empty string.
 //
 // This function assumes that the backups/pgbackrest spec is present in postgresCluster.
 func getCloudLogPath(postgresCluster *v1beta1.PostgresCluster) string {
 	cloudLogPath := ""
-	if logVolume := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolume != "" {
-		cloudLogPath = "/volumes/" + logVolume
-	} else if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil &&
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil &&
 		postgresCluster.Spec.Backups.PGBackRest.Jobs.Log != nil &&
 		postgresCluster.Spec.Backups.PGBackRest.Jobs.Log.Path != "" {
+		// TODO: I know it should be caught by CEL validation, but is it worthwhile to also
+		// check that Log.Path ~= "/volumes/" + existingAdditionalVolume.name here??
+
 		cloudLogPath = filepath.Clean(postgresCluster.Spec.Backups.PGBackRest.Jobs.Log.Path)
+	} else if logVolume := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolume != "" {
+		cloudLogPath = "/volumes/" + logVolume
 	}
 	return cloudLogPath
 }
