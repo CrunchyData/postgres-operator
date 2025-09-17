@@ -3130,6 +3130,312 @@ volumes:
 		// No events created
 		assert.Equal(t, len(recorder.Events), 0)
 	})
+
+	t.Run("AdditionalVolumesMissingContainers", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Log: &v1beta1.LoggingConfiguration{
+				Path: "/volumes/stuff/log",
+			},
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Containers: []v1beta1.DNS1123Label{
+							"pgbackrest",
+							"non-existent-container",
+						},
+						Name: "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff/log' && { chmod 0775 '/volumes/stuff/log' || :; }; exec
+    "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// Missing containers warning event created
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "SpecifiedContainerNotFound")
+		assert.Equal(t, recorder.Events[0].Note, "The following Backup Job Pod "+
+			"containers were specified for additional volumes but cannot be "+
+			"found: [non-existent-container].")
+	})
+
+	t.Run("AnnotationAndAdditionalVolumeWithPath", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
+		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "stuff"
+
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Log: &v1beta1.LoggingConfiguration{
+				Path: "/volumes/stuff/log",
+			},
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Name:      "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff/log' && { chmod 0775 '/volumes/stuff/log' || :; }; exec
+    "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// Annotation/additional volume collision warning event created
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "DuplicateCloudBackupVolume")
+		assert.Equal(t, recorder.Events[0].Note, "The volume name specified in "+
+			"the pgbackrest-cloud-log-volume annotation is the same as one "+
+			"specified in spec.backups.pgbackrest.jobs.volumes.additional. Cannot "+
+			"mount duplicate volume names. Defaulting to the additional volume.")
+	})
+
+	t.Run("AnnotationAndAdditionalVolumeNoPath", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
+		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "stuff"
+
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Name:      "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff' && { chmod 0775 '/volumes/stuff' || :; }; exec "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// Annotation/additional volume collision warning event created
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "DuplicateCloudBackupVolume")
+		assert.Equal(t, recorder.Events[0].Note, "The volume name specified in "+
+			"the pgbackrest-cloud-log-volume annotation is the same as one "+
+			"specified in spec.backups.pgbackrest.jobs.volumes.additional. Cannot "+
+			"mount duplicate volume names. Defaulting to the additional volume.")
+	})
 }
 
 func TestGenerateRepoHostIntent(t *testing.T) {
@@ -4599,8 +4905,10 @@ func TestGetCloudLogPath(t *testing.T) {
 			Spec: v1beta1.PostgresClusterSpec{
 				Backups: v1beta1.Backups{
 					PGBackRest: v1beta1.PGBackRestArchive{
-						Log: &v1beta1.LoggingConfiguration{
-							Path: "/volumes/test/log",
+						Jobs: &v1beta1.BackupJobs{
+							Log: &v1beta1.LoggingConfiguration{
+								Path: "/volumes/test/log/",
+							},
 						},
 					},
 				},
@@ -4608,6 +4916,6 @@ func TestGetCloudLogPath(t *testing.T) {
 		}
 		postgrescluster.Annotations = map[string]string{}
 		postgrescluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
-		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/another-pvc")
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/test/log")
 	})
 }
