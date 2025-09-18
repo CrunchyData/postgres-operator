@@ -8074,7 +8074,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
-                maxLength: 15
+                maxLength: 12
                 type: string
               imagePullSecrets:
                 description: |-
@@ -12956,7 +12956,7 @@ spec:
                         - INFO
                         - DEBUG
                         - NOTSET
-                        maxLength: 10
+                        maxLength: 8
                         type: string
                       storageLimit:
                         description: |-
@@ -13001,7 +13001,7 @@ spec:
                         enum:
                         - Switchover
                         - Failover
-                        maxLength: 15
+                        maxLength: 10
                         type: string
                     required:
                     - enabled
@@ -15915,14 +15915,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           ipFamilies:
                             items:
@@ -15932,6 +15932,7 @@ spec:
                               enum:
                               - IPv4
                               - IPv6
+                              maxLength: 4
                               type: string
                             type: array
                           ipFamilyPolicy:
@@ -15940,6 +15941,7 @@ spec:
                             - SingleStack
                             - PreferDualStack
                             - RequireDualStack
+                            maxLength: 16
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -15968,7 +15970,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
-                            maxLength: 15
+                            maxLength: 12
                             type: string
                         type: object
                       sidecars:
@@ -16322,14 +16324,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   ipFamilies:
                     items:
@@ -16339,6 +16341,7 @@ spec:
                       enum:
                       - IPv4
                       - IPv6
+                      maxLength: 4
                       type: string
                     type: array
                   ipFamilyPolicy:
@@ -16347,6 +16350,7 @@ spec:
                     - SingleStack
                     - PreferDualStack
                     - RequireDualStack
+                    maxLength: 16
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -16375,7 +16379,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
-                    maxLength: 15
+                    maxLength: 12
                     type: string
                 type: object
               service:
@@ -16387,14 +16391,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   ipFamilies:
                     items:
@@ -16404,6 +16408,7 @@ spec:
                       enum:
                       - IPv4
                       - IPv6
+                      maxLength: 4
                       type: string
                     type: array
                   ipFamilyPolicy:
@@ -16412,6 +16417,7 @@ spec:
                     - SingleStack
                     - PreferDualStack
                     - RequireDualStack
+                    maxLength: 16
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -16440,7 +16446,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
-                    maxLength: 15
+                    maxLength: 12
                     type: string
                 type: object
               shutdown:
@@ -18086,14 +18092,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           ipFamilies:
                             items:
@@ -18103,6 +18109,7 @@ spec:
                               enum:
                               - IPv4
                               - IPv6
+                              maxLength: 4
                               type: string
                             type: array
                           ipFamilyPolicy:
@@ -18111,6 +18118,7 @@ spec:
                             - SingleStack
                             - PreferDualStack
                             - RequireDualStack
+                            maxLength: 16
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -18139,7 +18147,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
-                            maxLength: 15
+                            maxLength: 12
                             type: string
                         type: object
                       tolerations:
@@ -18422,7 +18430,7 @@ spec:
                           enum:
                           - ASCII
                           - AlphaNumeric
-                          maxLength: 15
+                          maxLength: 12
                           type: string
                       required:
                       - type
@@ -18511,6 +18519,7 @@ spec:
                       - "True"
                       - "False"
                       - Unknown
+                      maxLength: 7
                       type: string
                     type:
                       description: type of condition in CamelCase or in foo.example.com/CamelCase.
@@ -26898,7 +26907,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
-                maxLength: 15
+                maxLength: 12
                 type: string
               imagePullSecrets:
                 description: |-
@@ -31779,7 +31788,7 @@ spec:
                         - INFO
                         - DEBUG
                         - NOTSET
-                        maxLength: 10
+                        maxLength: 8
                         type: string
                       storageLimit:
                         description: |-
@@ -31824,7 +31833,7 @@ spec:
                         enum:
                         - Switchover
                         - Failover
-                        maxLength: 15
+                        maxLength: 10
                         type: string
                     required:
                     - enabled
@@ -34738,14 +34747,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           ipFamilies:
                             items:
@@ -34755,6 +34764,7 @@ spec:
                               enum:
                               - IPv4
                               - IPv6
+                              maxLength: 4
                               type: string
                             type: array
                           ipFamilyPolicy:
@@ -34763,6 +34773,7 @@ spec:
                             - SingleStack
                             - PreferDualStack
                             - RequireDualStack
+                            maxLength: 16
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -34791,7 +34802,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
-                            maxLength: 15
+                            maxLength: 12
                             type: string
                         type: object
                       sidecars:
@@ -35139,14 +35150,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   ipFamilies:
                     items:
@@ -35156,6 +35167,7 @@ spec:
                       enum:
                       - IPv4
                       - IPv6
+                      maxLength: 4
                       type: string
                     type: array
                   ipFamilyPolicy:
@@ -35164,6 +35176,7 @@ spec:
                     - SingleStack
                     - PreferDualStack
                     - RequireDualStack
+                    maxLength: 16
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -35192,7 +35205,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
-                    maxLength: 15
+                    maxLength: 12
                     type: string
                 type: object
               service:
@@ -35204,14 +35217,14 @@ spec:
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   internalTrafficPolicy:
                     description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                     enum:
                     - Cluster
                     - Local
-                    maxLength: 10
+                    maxLength: 7
                     type: string
                   ipFamilies:
                     items:
@@ -35221,6 +35234,7 @@ spec:
                       enum:
                       - IPv4
                       - IPv6
+                      maxLength: 4
                       type: string
                     type: array
                   ipFamilyPolicy:
@@ -35229,6 +35243,7 @@ spec:
                     - SingleStack
                     - PreferDualStack
                     - RequireDualStack
+                    maxLength: 16
                     type: string
                   metadata:
                     description: Metadata contains metadata for custom resources
@@ -35257,7 +35272,7 @@ spec:
                     - ClusterIP
                     - NodePort
                     - LoadBalancer
-                    maxLength: 15
+                    maxLength: 12
                     type: string
                 type: object
               shutdown:
@@ -36903,14 +36918,14 @@ spec:
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           internalTrafficPolicy:
                             description: 'More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies'
                             enum:
                             - Cluster
                             - Local
-                            maxLength: 10
+                            maxLength: 7
                             type: string
                           ipFamilies:
                             items:
@@ -36920,6 +36935,7 @@ spec:
                               enum:
                               - IPv4
                               - IPv6
+                              maxLength: 4
                               type: string
                             type: array
                           ipFamilyPolicy:
@@ -36928,6 +36944,7 @@ spec:
                             - SingleStack
                             - PreferDualStack
                             - RequireDualStack
+                            maxLength: 16
                             type: string
                           metadata:
                             description: Metadata contains metadata for custom resources
@@ -36956,7 +36973,7 @@ spec:
                             - ClusterIP
                             - NodePort
                             - LoadBalancer
-                            maxLength: 15
+                            maxLength: 12
                             type: string
                         type: object
                       tolerations:
@@ -37236,7 +37253,7 @@ spec:
                           enum:
                           - ASCII
                           - AlphaNumeric
-                          maxLength: 15
+                          maxLength: 12
                           type: string
                       required:
                       - type
@@ -37302,6 +37319,7 @@ spec:
                       - "True"
                       - "False"
                       - Unknown
+                      maxLength: 7
                       type: string
                     type:
                       description: type of condition in CamelCase or in foo.example.com/CamelCase.

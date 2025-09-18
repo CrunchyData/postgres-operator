@@ -90,7 +90,7 @@ spec:
                 - aws
                 - azure
                 - gcp
-                maxLength: 10
+                maxLength: 5
                 type: string
                 x-kubernetes-validations:
                 - message: immutable
@@ -199,6 +199,7 @@ spec:
                       - "True"
                       - "False"
                       - Unknown
+                      maxLength: 7
                       type: string
                     type:
                       description: type of condition in CamelCase or in foo.example.com/CamelCase.

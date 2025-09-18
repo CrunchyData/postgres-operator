@@ -1610,7 +1610,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
-                maxLength: 15
+                maxLength: 12
                 type: string
               imagePullSecrets:
                 description: |-
@@ -2579,7 +2579,7 @@ spec:
                       enum:
                       - Administrator
                       - User
-                      maxLength: 15
+                      maxLength: 13
                       type: string
                     username:
                       description: |-
@@ -2694,6 +2694,7 @@ spec:
                       - "True"
                       - "False"
                       - Unknown
+                      maxLength: 7
                       type: string
                     type:
                       description: type of condition in CamelCase or in foo.example.com/CamelCase.

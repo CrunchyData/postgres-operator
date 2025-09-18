@@ -244,10 +244,6 @@ type ServiceSpec struct {
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	//
 	// +optional
 	// +kubebuilder:default=ClusterIP
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
@@ -265,11 +261,6 @@ type ServiceSpec struct {
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=10
-	// +kubebuilder:validation:Type=string
-	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
 	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicy `json:"internalTrafficPolicy,omitempty"`
@@ -277,10 +268,6 @@ type ServiceSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
 	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=10
-	// +kubebuilder:validation:Type=string
-	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
 	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicy `json:"externalTrafficPolicy,omitempty"`
