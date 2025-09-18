@@ -10,14 +10,20 @@
 # https://jqlang.org/manual#multiplication-division-modulo
 def merge(stream): reduce stream as $i ({}; . * $i);
 
+# Kubernetes assumes the evaluation cost of an enum value is very large: https://issue.k8s.io/119511
+# Look at every schema that has a populated "enum" property.
+reduce paths(try .enum | length > 0) as $path (.;
+  getpath($path) as $schema |
+  setpath($path; $schema + { maxLength: ($schema.enum | map(length) | max) })
+) |
+
 # Kubernetes does not consider "allOf" when estimating CEL cost: https://issue.k8s.io/134029
 # controller-gen might produce "allOf" when combining markers:
 # https://github.com/kubernetes-sigs/controller-tools/issues/1270
 #
 # This (partially) addresses both by keeping only the smallest max, largest min, etc.
-#
-# Look at every schema that has an "allOf" property.
-reduce paths(try .allOf) as $path (.;
+# Look at every schema that has a populated "allOf" property.
+reduce paths(try .allOf | length > 0) as $path (.;
   (
     getpath($path) | merge(
       .,

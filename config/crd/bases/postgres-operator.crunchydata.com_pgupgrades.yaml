@@ -971,7 +971,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
-                maxLength: 15
+                maxLength: 12
                 type: string
               imagePullSecrets:
                 description: |-
@@ -1133,7 +1133,7 @@ spec:
                 - Copy
                 - CopyFileRange
                 - Link
-                maxLength: 15
+                maxLength: 13
                 type: string
             required:
             - fromPostgresVersion
@@ -1195,6 +1195,7 @@ spec:
                       - "True"
                       - "False"
                       - Unknown
+                      maxLength: 7
                       type: string
                     type:
                       description: type of condition in CamelCase or in foo.example.com/CamelCase.
