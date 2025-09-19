@@ -64,4 +64,22 @@ reduce paths(try .["x-kubernetes-int-or-string"] == true) as $path (.;
   end
 ) |
 
+# Rename Kubebuilder annotations and move them to the top-level.
+# The caller can turn these into YAML comments.
+. += (.metadata.annotations | with_entries(select(.key | startswith("controller-gen.kubebuilder")) | .key = "# \(.key)")) |
+.metadata.annotations |= with_entries(select(.key | startswith("controller-gen.kubebuilder") | not)) |
+
+# Remove nulls and empty objects from metadata.
+# Some very old generators would set a null creationTimestamp.
+#
+# https://github.com/kubernetes-sigs/controller-tools/issues/402
+# https://issue.k8s.io/67610
+del(.metadata | .. | select(length == 0)) |
+
+# Remove status to avoid conflicts with the CRD controller.
+# Some very old generators would set this field.
+#
+# https://github.com/kubernetes-sigs/controller-tools/issues/456
+del(.status) |
+
 .
