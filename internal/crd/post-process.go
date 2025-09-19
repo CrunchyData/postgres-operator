@@ -12,6 +12,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/itchyny/gojq"
 	"sigs.k8s.io/yaml"
@@ -44,8 +45,12 @@ func main() {
 				panic(err)
 			}
 
+			// Turn top-level strings that start with octothorpe U+0023 into YAML comments by removing their quotes.
+			yamlData := need(yaml.Marshal(v))
+			yamlData = regexp.MustCompile(`(?m)^'(#[^']*)'(.*)$`).ReplaceAll(yamlData, []byte("$1$2"))
+
 			slog.Info("Writing", "file", yamlName)
-			must(os.WriteFile(yamlPath, append([]byte("---\n"), need(yaml.Marshal(v))...), 0o644))
+			must(os.WriteFile(yamlPath, append([]byte("---\n"), yamlData...), 0o644))
 		}
 
 		if _, ok := result.Next(); ok {
