@@ -18,9 +18,11 @@ import (
 	"time"
 
 	"gotest.tools/v3/assert"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -599,4 +601,45 @@ pg_rewind -K "$(postgres -C encryption_key_command)" "$@"
 EOF
 chmod +x /tmp/pg_rewind_tde.sh`))
 	})
+}
+
+func TestReloadCommand(t *testing.T) {
+	shellcheck := require.ShellCheck(t)
+
+	pgdataSize := resource.MustParse("1Gi")
+	pgwalSize := resource.MustParse("2Gi")
+
+	command := reloadCommand(
+		"some-name",
+		&v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				Trigger: initialize.Int32(10),
+				MaxGrow: &pgdataSize,
+			},
+		},
+		&v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				Trigger: initialize.Int32(20),
+				MaxGrow: &pgwalSize,
+			},
+		},
+	)
+
+	// Expect a bash command with an inline script.
+	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+	assert.Assert(t, len(command) > 3)
+
+	// Write out that inline script.
+	dir := t.TempDir()
+	file := filepath.Join(dir, "script.bash")
+	assert.NilError(t, os.WriteFile(file, []byte(command[3]), 0o600))
+
+	// Expect shellcheck to be happy.
+	cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", file)
+	output, err := cmd.CombinedOutput()
+	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"pgdata\" \"10\" \"1024\""))
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"pgwal\" \"20\" \"2048\""))
+
 }
