@@ -15,6 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -152,7 +153,7 @@ func (r *CrunchyBridgeClusterReconciler) reconcilePostgresRoleSecrets(
 			roleSecrets[roleName], err = r.generatePostgresRoleSecret(cluster, role, clusterRole)
 		}
 		if err == nil {
-			err = errors.WithStack(r.apply(ctx, roleSecrets[roleName]))
+			err = errors.WithStack(runtime.Apply(ctx, r.Writer, roleSecrets[roleName]))
 		}
 		if err != nil {
 			log.Error(err, "Issue creating role secret.")

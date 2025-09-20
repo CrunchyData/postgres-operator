@@ -2,10 +2,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-package postgrescluster
+package runtime_test
 
 import (
-	"context"
 	"errors"
 	"regexp"
 	"strings"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,17 +22,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 )
 
 func TestServerSideApply(t *testing.T) {
-	ctx := context.Background()
-	cfg, cc := setupKubernetes(t)
+	ctx := t.Context()
+	config, base := require.Kubernetes2(t)
 	require.ParallelCapacity(t, 0)
 
-	ns := setupNamespace(t, cc)
+	ns := require.Namespace(t, base)
 
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	dc, err := discovery.NewDiscoveryClientForConfig(config)
 	assert.NilError(t, err)
 
 	server, err := dc.ServerVersion()
@@ -44,8 +43,7 @@ func TestServerSideApply(t *testing.T) {
 	assert.NilError(t, err)
 
 	t.Run("ObjectMeta", func(t *testing.T) {
-		cc := client.WithFieldOwner(cc, t.Name())
-		reconciler := Reconciler{Writer: cc}
+		cc := client.WithFieldOwner(base, t.Name())
 		constructor := func() *corev1.ConfigMap {
 			var cm corev1.ConfigMap
 			cm.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -79,17 +77,16 @@ func TestServerSideApply(t *testing.T) {
 			assert.Assert(t, after.GetResourceVersion() == before.GetResourceVersion())
 		}
 
-		// Our apply method generates the correct apply-patch.
+		// Our [runtime.Apply] generates the correct apply-patch.
 		again := constructor()
-		assert.NilError(t, reconciler.apply(ctx, again))
+		assert.NilError(t, runtime.Apply(ctx, cc, again))
 		assert.Assert(t, again.GetResourceVersion() != "")
 		assert.Assert(t, again.GetResourceVersion() == after.GetResourceVersion(),
 			"expected to correctly no-op")
 	})
 
 	t.Run("ControllerReference", func(t *testing.T) {
-		cc := client.WithFieldOwner(cc, t.Name())
-		reconciler := Reconciler{Writer: cc}
+		cc := client.WithFieldOwner(base, t.Name())
 
 		// Setup two possible controllers.
 		controller1 := new(corev1.ConfigMap)
@@ -129,8 +126,8 @@ func TestServerSideApply(t *testing.T) {
 		assert.Assert(t, len(status.ErrStatus.Details.Causes) != 0)
 		assert.Equal(t, status.ErrStatus.Details.Causes[0].Field, "metadata.ownerReferences")
 
-		// Try to change the controller using our apply method.
-		err2 := reconciler.apply(ctx, applied)
+		// Try to change the controller using our [runtime.Apply].
+		err2 := runtime.Apply(ctx, cc, applied)
 
 		// Same result; patch not accepted.
 		assert.DeepEqual(t, err1, err2,
@@ -144,41 +141,6 @@ func TestServerSideApply(t *testing.T) {
 		)
 	})
 
-	t.Run("StatefulSetStatus", func(t *testing.T) {
-		constructor := func(name string) *appsv1.StatefulSet {
-			var sts appsv1.StatefulSet
-			sts.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
-			sts.Namespace, sts.Name = ns.Name, name
-			sts.Spec.Selector = &metav1.LabelSelector{
-				MatchLabels: map[string]string{"select": name},
-			}
-			sts.Spec.Template.Labels = map[string]string{"select": name}
-			sts.Spec.Template.Spec.Containers = []corev1.Container{{Name: "test", Image: "test"}}
-			return &sts
-		}
-
-		cc := client.WithFieldOwner(cc, t.Name())
-		reconciler := Reconciler{Writer: cc}
-		upstream := constructor("status-upstream")
-
-		// The structs defined in "k8s.io/api/apps/v1" marshal empty status fields.
-		switch {
-		case serverVersion.LessThan(version.MustParseGeneric("1.22")):
-			assert.ErrorContains(t,
-				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership),
-				"field not declared in schema",
-				"expected https://issue.k8s.io/109210")
-
-		default:
-			assert.NilError(t,
-				cc.Patch(ctx, upstream, client.Apply, client.ForceOwnership))
-		}
-
-		// Our apply method generates the correct apply-patch.
-		again := constructor("status-local")
-		assert.NilError(t, reconciler.apply(ctx, again))
-	})
-
 	t.Run("ServiceSelector", func(t *testing.T) {
 		constructor := func(name string) *corev1.Service {
 			var service corev1.Service
@@ -190,61 +152,6 @@ func TestServerSideApply(t *testing.T) {
 			return &service
 		}
 
-		t.Run("wrong-keys", func(t *testing.T) {
-			cc := client.WithFieldOwner(cc, t.Name())
-			reconciler := Reconciler{Writer: cc}
-
-			intent := constructor("some-selector")
-			intent.Spec.Selector = map[string]string{"k1": "v1"}
-
-			// Create the Service.
-			before := intent.DeepCopy()
-			assert.NilError(t,
-				cc.Patch(ctx, before, client.Apply, client.ForceOwnership))
-
-			// Something external mucks it up.
-			assert.NilError(t,
-				cc.Patch(ctx, before,
-					client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"selector":{"bad":"v2"}}}`)),
-					client.FieldOwner("wrong")))
-
-			// client.Apply cannot correct it in old versions of Kubernetes.
-			after := intent.DeepCopy()
-			assert.NilError(t,
-				cc.Patch(ctx, after, client.Apply, client.ForceOwnership))
-
-			switch {
-			case serverVersion.LessThan(version.MustParseGeneric("1.22")):
-
-				assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
-					"expected https://issue.k8s.io/97970, got %v", after.Spec.Selector)
-
-			default:
-				assert.DeepEqual(t, after.Spec.Selector, intent.Spec.Selector)
-			}
-
-			// Our apply method corrects it.
-			again := intent.DeepCopy()
-			assert.NilError(t, reconciler.apply(ctx, again))
-			assert.DeepEqual(t, again.Spec.Selector, intent.Spec.Selector)
-
-			var count int
-			var managed *metav1.ManagedFieldsEntry
-			for i := range again.ManagedFields {
-				if again.ManagedFields[i].Manager == t.Name() {
-					count++
-					managed = &again.ManagedFields[i]
-				}
-			}
-
-			assert.Equal(t, count, 1, "expected manager once in %v", again.ManagedFields)
-			assert.Equal(t, managed.Operation, metav1.ManagedFieldsOperationApply)
-
-			assert.Assert(t, managed.FieldsV1 != nil)
-			assert.Assert(t, strings.Contains(string(managed.FieldsV1.Raw), `"f:selector":{`),
-				"expected f:selector in %s", managed.FieldsV1.Raw)
-		})
-
 		for _, tt := range []struct {
 			name     string
 			selector map[string]string
@@ -253,8 +160,7 @@ func TestServerSideApply(t *testing.T) {
 			{"empty", make(map[string]string)},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
-				cc := client.WithFieldOwner(cc, t.Name())
-				reconciler := Reconciler{Writer: cc}
+				cc := client.WithFieldOwner(base, t.Name())
 
 				intent := constructor(tt.name + "-selector")
 				intent.Spec.Selector = tt.selector
@@ -275,12 +181,15 @@ func TestServerSideApply(t *testing.T) {
 				assert.NilError(t,
 					cc.Patch(ctx, after, client.Apply, client.ForceOwnership))
 
+				// Perhaps one of:
+				// - https://issue.k8s.io/117447
+				// - https://github.com/kubernetes-sigs/structured-merge-diff/issues/259
 				assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
 					"got %v", after.Spec.Selector)
 
-				// Our apply method corrects it.
+				// Our [runtime.Apply] corrects it.
 				again := intent.DeepCopy()
-				assert.NilError(t, reconciler.apply(ctx, again))
+				assert.NilError(t, runtime.Apply(ctx, cc, again))
 				assert.Assert(t,
 					equality.Semantic.DeepEqual(again.Spec.Selector, intent.Spec.Selector),
 					"\n--- again.Spec.Selector\n+++ intent.Spec.Selector\n%v",

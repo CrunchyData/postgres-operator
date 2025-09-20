@@ -453,7 +453,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// TODO: error from apply could mean that the job exists with a different spec.
 	if err == nil && !upgradeJobComplete {
-		err = errors.WithStack(r.apply(ctx,
+		err = errors.WithStack(runtime.Apply(ctx, r.Writer,
 			r.generateUpgradeJob(ctx, upgrade, world.ClusterPrimary, config.FetchKeyCommand(&world.Cluster.Spec))))
 	}
 
@@ -464,7 +464,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if err == nil && upgradeJobComplete && !removeDataJobsComplete {
 		for _, sts := range world.ClusterReplicas {
 			if err == nil {
-				err = r.apply(ctx, r.generateRemoveDataJob(ctx, upgrade, sts))
+				err = runtime.Apply(ctx, r.Writer, r.generateRemoveDataJob(ctx, upgrade, sts))
 			}
 		}
 	}

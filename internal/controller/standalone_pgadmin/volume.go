@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -32,7 +33,7 @@ func (r *PGAdminReconciler) reconcilePGAdminDataVolume(
 
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(pgadmin,
-			errors.WithStack(r.apply(ctx, pvc)))
+			errors.WithStack(runtime.Apply(ctx, r.Writer, pvc)))
 	}
 
 	return pvc, err
