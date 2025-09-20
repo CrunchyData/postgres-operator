@@ -475,6 +475,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -1534,6 +1535,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ttlSecondsAfterFinished:
                             description: |-
                               Limit the lifetime of a Job that has finished.
@@ -2795,6 +2797,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           topologySpreadConstraints:
                             description: |-
                               Topology spread constraints of a Dedicated repo host pod. Changing this
@@ -4408,6 +4411,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           volumes:
                             description: Volumes to add to Restore Job Pods
                             properties:
@@ -4933,6 +4937,7 @@ spec:
                           type: object
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                   parameters:
                     additionalProperties:
                       x-kubernetes-int-or-string: true
@@ -6376,6 +6381,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -6810,6 +6816,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -7926,6 +7933,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -11070,6 +11078,7 @@ spec:
                             type: string
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     topologySpreadConstraints:
                       description: |-
                         Topology spread constraints of a PostgreSQL pod. Changing this value causes
@@ -12793,6 +12802,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           customTLSSecret:
                             description: |-
                               Projected secret containing custom TLS certificates to encrypt output from the exporter
@@ -14320,6 +14330,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           global:
                             additionalProperties:
                               type: string
@@ -16079,6 +16090,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a PgBouncer pod. Changing this value causes
@@ -17761,6 +17773,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ldapBindPassword:
                             description: |-
                               A Secret containing the value for the LDAP_BIND_PASSWORD setting.
@@ -18192,6 +18205,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a pgAdmin pod. Changing this value causes
@@ -19332,6 +19346,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -20391,6 +20406,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ttlSecondsAfterFinished:
                             description: |-
                               Limit the lifetime of a Job that has finished.
@@ -21652,6 +21668,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           topologySpreadConstraints:
                             description: |-
                               Topology spread constraints of a Dedicated repo host pod. Changing this
@@ -23265,6 +23282,7 @@ spec:
                                   type: string
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           volumes:
                             description: Volumes to add to Restore Job Pods
                             properties:
@@ -23775,6 +23793,7 @@ spec:
                           type: object
                       type: object
                     type: array
+                    x-kubernetes-list-type: atomic
                   parameters:
                     additionalProperties:
                       x-kubernetes-int-or-string: true
@@ -25211,6 +25230,7 @@ spec:
                               type: object
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       global:
                         additionalProperties:
                           type: string
@@ -25645,6 +25665,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -26761,6 +26782,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       volumes:
                         description: Volumes to add to Restore Job Pods
                         properties:
@@ -29905,6 +29927,7 @@ spec:
                             type: string
                         type: object
                       type: array
+                      x-kubernetes-list-type: atomic
                     topologySpreadConstraints:
                       description: |-
                         Topology spread constraints of a PostgreSQL pod. Changing this value causes
@@ -31627,6 +31650,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           customTLSSecret:
                             description: |-
                               Projected secret containing custom TLS certificates to encrypt output from the exporter
@@ -33154,6 +33178,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           global:
                             additionalProperties:
                               type: string
@@ -34913,6 +34938,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a PgBouncer pod. Changing this value causes
@@ -36589,6 +36615,7 @@ spec:
                                   type: object
                               type: object
                             type: array
+                            x-kubernetes-list-type: atomic
                           ldapBindPassword:
                             description: |-
                               A Secret containing the value for the LDAP_BIND_PASSWORD setting.
@@ -37020,6 +37047,7 @@ spec:
                               type: string
                           type: object
                         type: array
+                        x-kubernetes-list-type: atomic
                       topologySpreadConstraints:
                         description: |-
                           Topology spread constraints of a pgAdmin pod. Changing this value causes

@@ -12,6 +12,11 @@ import (
 type PGAdminConfiguration struct {
 	// Files allows the user to mount projected volumes into the pgAdmin
 	// container so that files can be referenced by pgAdmin as needed.
+	// ---
+	// [corev1.ProjectedVolumeSource.Sources]
+	// +listType=atomic
+	//
+	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 
 	// A Secret containing the value for the LDAP_BIND_PASSWORD setting.
@@ -84,6 +89,10 @@ type PGAdminPodSpec struct {
 
 	// Tolerations of a pgAdmin pod. Changing this value causes pgAdmin to restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 

@@ -19,6 +19,10 @@ type ExporterSpec struct {
 	// any volume projected using this field, it will be loaded using the "extend.query-path" flag:
 	// https://github.com/prometheus-community/postgres_exporter#flags
 	// Changing the values of field causes PostgreSQL and the exporter to restart.
+	// ---
+	// [corev1.ProjectedVolumeSource.Sources]
+	// +listType=atomic
+	//
 	// +optional
 	Configuration []corev1.VolumeProjection `json:"configuration,omitempty"`
 

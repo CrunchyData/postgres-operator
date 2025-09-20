@@ -18,6 +18,10 @@ type PGBouncerConfiguration struct {
 	// PgBouncer to restart, but changes to the file contents are automatically
 	// reloaded.
 	// More info: https://www.pgbouncer.org/config.html#include-directive
+	// ---
+	// [corev1.ProjectedVolumeSource.Sources]
+	// +listType=atomic
+	//
 	// +optional
 	Files []corev1.VolumeProjection `json:"files,omitempty"`
 
@@ -130,6 +134,10 @@ type PGBouncerPodSpec struct {
 	// Tolerations of a PgBouncer pod. Changing this value causes PgBouncer to
 	// restart.
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// ---
+	// [corev1.PodSpec.Tolerations]
+	// +listType=atomic
+	//
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 
