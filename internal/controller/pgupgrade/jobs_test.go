@@ -222,8 +222,11 @@ spec:
           (set -x && [[ "$("${old_bin}/postgres" --version)" =~ ") ${old_version}"($|[^0-9]) ]])
           (set -x && [[ "$("${new_bin}/initdb" --version)"   =~ ") ${new_version}"($|[^0-9]) ]])
           cd "${data_volume}"
+          control=$(LC_ALL=C PGDATA="${old_data}" "${old_bin}/pg_controldata")
+          read -r checksums <<< "${control##*page checksum version:}"
+          checksums=$(if [[ "${checksums}" -gt 0 ]]; then echo '--data-checksums'; elif [[ "${new_version}" -ge 18 ]]; then echo '--no-data-checksums'; fi)
           section 'Step 3 of 7: Initializing new data directory...'
-          PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access --data-checksums
+          PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access ${checksums}
           section 'Step 4 of 7: Copying shared_preload_libraries parameter...'
           value=$(LC_ALL=C PGDATA="${old_data}" "${old_bin}/postgres" -C shared_preload_libraries)
           echo >> "${new_data}/postgresql.conf" "shared_preload_libraries = '${value//$'\''/$'\'\''}'"
@@ -272,7 +275,7 @@ status: {}
 
 	tdeJob := reconciler.generateUpgradeJob(ctx, upgrade, startup, "echo testKey")
 	assert.Assert(t, cmp.MarshalContains(tdeJob,
-		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access --data-checksums --encryption-key-command='echo testKey'`))
+		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access ${checksums} --encryption-key-command='echo testKey'`))
 }
 
 func TestGenerateRemoveDataJob(t *testing.T) {

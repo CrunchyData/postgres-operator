@@ -117,8 +117,28 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		// steps used and command flag specifics can be found in the documentation:
 		// - https://www.postgresql.org/docs/current/pgupgrade.html
 
+		// Examine the old data directory.
+		`control=$(LC_ALL=C PGDATA="${old_data}" "${old_bin}/pg_controldata")`,
+		`read -r checksums <<< "${control##*page checksum version:}"`,
+
+		// Data checksums on the old and new data directories must match.
+		// Configuring these checksums depends on the version of initdb:
+		//
+		// - PostgreSQL v17 and earlier: disabled by default, enable with "--data-checksums"
+		// - PostgreSQL v18: enabled by default, enable with "--data-checksums", disable with "--no-data-checksums"
+		//
+		// https://www.postgresql.org/docs/release/18#RELEASE-18-MIGRATION
+		//
+		// Data page checksum version zero means checksums are disabled.
+		// Produce an initdb argument that enables or disables data checksums.
+		//
+		// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_11_0;f=src/bin/pg_verify_checksums/pg_verify_checksums.c#l303
+		// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_12_0;f=src/bin/pg_checksums/pg_checksums.c#l523
+		// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_18_0;f=src/bin/pg_checksums/pg_checksums.c#l571
+		`checksums=$(if [[ "${checksums}" -gt 0 ]]; then echo '--data-checksums'; elif [[ "${new_version}" -ge 18 ]]; then echo '--no-data-checksums'; fi)`,
+
 		`section 'Step 3 of 7: Initializing new data directory...'`,
-		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access --data-checksums` + argEncryptionKeyCommand,
+		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access ${checksums}` + argEncryptionKeyCommand,
 
 		// Read the configured value then quote it; every single-quote U+0027 is replaced by two.
 		//
