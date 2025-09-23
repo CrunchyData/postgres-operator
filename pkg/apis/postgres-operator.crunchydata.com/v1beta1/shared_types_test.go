@@ -45,6 +45,25 @@ func TestAdditionalVolumeAsVolume(t *testing.T) {
 			assert.DeepEqual(t, out, expected)
 		})
 	})
+
+	t.Run("Image", func(t *testing.T) {
+		in := v1beta1.AdditionalVolume{Image: &corev1.ImageVolumeSource{
+			Reference:  "jkl;",
+			PullPolicy: corev1.PullAlways,
+		}}
+		out := in.AsVolume("asdf")
+
+		var expected corev1.Volume
+		assert.NilError(t, yaml.Unmarshal([]byte(`{
+			name: asdf,
+			image: {
+				reference: jkl;,
+				pullPolicy: Always,
+			},
+		}`), &expected))
+
+		assert.DeepEqual(t, out, expected)
+	})
 }
 
 func TestDurationAsDuration(t *testing.T) {
