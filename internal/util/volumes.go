@@ -58,7 +58,13 @@ func addVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.AdditionalVolume
 	missingContainers := []string{}
 
 	for _, spec := range volumes {
-		mount := namer(spec.Name, spec.ReadOnly)
+		// If it is an image volume, override readOnly to true
+		readOnly := spec.ReadOnly
+		if spec.Image != nil {
+			readOnly = true
+		}
+
+		mount := namer(spec.Name, readOnly)
 		pod.Volumes = append(pod.Volumes, spec.AsVolume(mount.Name))
 
 		// Create a set of all the requested containers,

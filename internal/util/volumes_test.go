@@ -207,6 +207,60 @@ func TestAddAdditionalVolumesAndMounts(t *testing.T) {
     claimName: required
     readOnly: true`,
 		expectedMissing: []string{},
+	}, {
+		tcName: "image volumes - readOnly overridden true",
+		additionalVolumes: []v1beta1.AdditionalVolume{{
+			Containers: []string{"database"},
+			Image: &corev1.ImageVolumeSource{
+				Reference:  "some-image-name",
+				PullPolicy: corev1.PullAlways,
+			},
+			Name:     "required",
+			ReadOnly: true,
+		}, {
+			Image: &corev1.ImageVolumeSource{
+				Reference:  "another-image-name",
+				PullPolicy: corev1.PullAlways,
+			},
+			Name:     "other",
+			ReadOnly: false,
+		}},
+		expectedContainers: `- name: database
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/required
+    name: volumes-required
+    readOnly: true
+  - mountPath: /volumes/other
+    name: volumes-other
+    readOnly: true
+- name: other
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/other
+    name: volumes-other
+    readOnly: true`,
+		expectedInitContainers: `- name: startup
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/other
+    name: volumes-other
+    readOnly: true
+- name: config
+  resources: {}
+  volumeMounts:
+  - mountPath: /volumes/other
+    name: volumes-other
+    readOnly: true`,
+		expectedVolumes: `- image:
+    pullPolicy: Always
+    reference: some-image-name
+  name: volumes-required
+- image:
+    pullPolicy: Always
+    reference: another-image-name
+  name: volumes-other`,
+		expectedMissing: []string{},
 	}}
 
 	for _, tc := range testCases {

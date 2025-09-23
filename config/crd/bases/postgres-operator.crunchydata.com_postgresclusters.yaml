@@ -1567,6 +1567,27 @@ spec:
                                       maxItems: 10
                                       type: array
                                       x-kubernetes-list-type: set
+                                    image:
+                                      description: Details for adding an image volume
+                                      properties:
+                                        pullPolicy:
+                                          description: |-
+                                            Policy for pulling OCI objects. Possible values are:
+                                            Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                            Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                            IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                            Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                          type: string
+                                        reference:
+                                          description: |-
+                                            Required: Image or artifact reference to be used.
+                                            Behaves in the same way as pod.spec.containers[*].image.
+                                            Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                            More info: https://kubernetes.io/docs/concepts/containers/images
+                                            This field is optional to allow higher level config management to default or override
+                                            container images in workload controllers like Deployments and StatefulSets.
+                                          type: string
+                                      type: object
                                     name:
                                       description: |-
                                         The name of the directory in which to mount this volume.
@@ -1580,10 +1601,20 @@ spec:
                                         otherwise read-write. Defaults to false.
                                       type: boolean
                                   required:
-                                  - claimName
                                   - name
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                  x-kubernetes-validations:
+                                  - message: you must set only one of image or claimName
+                                    rule: has(self.claimName) != has(self.image)
+                                  - message: readOnly cannot be set false when using
+                                      an ImageVolumeSource
+                                    rule: '!has(self.image) || !has(self.readOnly)
+                                      || self.readOnly'
+                                  - message: if using an ImageVolumeSource, you must
+                                      set a reference
+                                    rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                      && self.image.reference.size() > 0)'
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-map-keys:
@@ -2999,6 +3030,27 @@ spec:
                                       maxItems: 10
                                       type: array
                                       x-kubernetes-list-type: set
+                                    image:
+                                      description: Details for adding an image volume
+                                      properties:
+                                        pullPolicy:
+                                          description: |-
+                                            Policy for pulling OCI objects. Possible values are:
+                                            Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                            Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                            IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                            Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                          type: string
+                                        reference:
+                                          description: |-
+                                            Required: Image or artifact reference to be used.
+                                            Behaves in the same way as pod.spec.containers[*].image.
+                                            Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                            More info: https://kubernetes.io/docs/concepts/containers/images
+                                            This field is optional to allow higher level config management to default or override
+                                            container images in workload controllers like Deployments and StatefulSets.
+                                          type: string
+                                      type: object
                                     name:
                                       description: |-
                                         The name of the directory in which to mount this volume.
@@ -3012,10 +3064,20 @@ spec:
                                         otherwise read-write. Defaults to false.
                                       type: boolean
                                   required:
-                                  - claimName
                                   - name
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                  x-kubernetes-validations:
+                                  - message: you must set only one of image or claimName
+                                    rule: has(self.claimName) != has(self.image)
+                                  - message: readOnly cannot be set false when using
+                                      an ImageVolumeSource
+                                    rule: '!has(self.image) || !has(self.readOnly)
+                                      || self.readOnly'
+                                  - message: if using an ImageVolumeSource, you must
+                                      set a reference
+                                    rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                      && self.image.reference.size() > 0)'
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-map-keys:
@@ -4434,6 +4496,27 @@ spec:
                                       maxItems: 10
                                       type: array
                                       x-kubernetes-list-type: set
+                                    image:
+                                      description: Details for adding an image volume
+                                      properties:
+                                        pullPolicy:
+                                          description: |-
+                                            Policy for pulling OCI objects. Possible values are:
+                                            Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                            Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                            IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                            Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                          type: string
+                                        reference:
+                                          description: |-
+                                            Required: Image or artifact reference to be used.
+                                            Behaves in the same way as pod.spec.containers[*].image.
+                                            Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                            More info: https://kubernetes.io/docs/concepts/containers/images
+                                            This field is optional to allow higher level config management to default or override
+                                            container images in workload controllers like Deployments and StatefulSets.
+                                          type: string
+                                      type: object
                                     name:
                                       description: |-
                                         The name of the directory in which to mount this volume.
@@ -4447,10 +4530,20 @@ spec:
                                         otherwise read-write. Defaults to false.
                                       type: boolean
                                   required:
-                                  - claimName
                                   - name
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                  x-kubernetes-validations:
+                                  - message: you must set only one of image or claimName
+                                    rule: has(self.claimName) != has(self.image)
+                                  - message: readOnly cannot be set false when using
+                                      an ImageVolumeSource
+                                    rule: '!has(self.image) || !has(self.readOnly)
+                                      || self.readOnly'
+                                  - message: if using an ImageVolumeSource, you must
+                                      set a reference
+                                    rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                      && self.image.reference.size() > 0)'
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-map-keys:
@@ -6836,6 +6929,27 @@ spec:
                                   maxItems: 10
                                   type: array
                                   x-kubernetes-list-type: set
+                                image:
+                                  description: Details for adding an image volume
+                                  properties:
+                                    pullPolicy:
+                                      description: |-
+                                        Policy for pulling OCI objects. Possible values are:
+                                        Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                        Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                        IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                        Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                      type: string
+                                    reference:
+                                      description: |-
+                                        Required: Image or artifact reference to be used.
+                                        Behaves in the same way as pod.spec.containers[*].image.
+                                        Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                        More info: https://kubernetes.io/docs/concepts/containers/images
+                                        This field is optional to allow higher level config management to default or override
+                                        container images in workload controllers like Deployments and StatefulSets.
+                                      type: string
+                                  type: object
                                 name:
                                   description: |-
                                     The name of the directory in which to mount this volume.
@@ -6849,10 +6963,20 @@ spec:
                                     otherwise read-write. Defaults to false.
                                   type: boolean
                               required:
-                              - claimName
                               - name
                               type: object
                               x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: you must set only one of image or claimName
+                                rule: has(self.claimName) != has(self.image)
+                              - message: readOnly cannot be set false when using an
+                                  ImageVolumeSource
+                                rule: '!has(self.image) || !has(self.readOnly) ||
+                                  self.readOnly'
+                              - message: if using an ImageVolumeSource, you must set
+                                  a reference
+                                rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                  && self.image.reference.size() > 0)'
                             maxItems: 10
                             type: array
                             x-kubernetes-list-map-keys:
@@ -7952,6 +8076,27 @@ spec:
                                   maxItems: 10
                                   type: array
                                   x-kubernetes-list-type: set
+                                image:
+                                  description: Details for adding an image volume
+                                  properties:
+                                    pullPolicy:
+                                      description: |-
+                                        Policy for pulling OCI objects. Possible values are:
+                                        Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                        Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                        IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                        Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                      type: string
+                                    reference:
+                                      description: |-
+                                        Required: Image or artifact reference to be used.
+                                        Behaves in the same way as pod.spec.containers[*].image.
+                                        Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                        More info: https://kubernetes.io/docs/concepts/containers/images
+                                        This field is optional to allow higher level config management to default or override
+                                        container images in workload controllers like Deployments and StatefulSets.
+                                      type: string
+                                  type: object
                                 name:
                                   description: |-
                                     The name of the directory in which to mount this volume.
@@ -7965,10 +8110,20 @@ spec:
                                     otherwise read-write. Defaults to false.
                                   type: boolean
                               required:
-                              - claimName
                               - name
                               type: object
                               x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: you must set only one of image or claimName
+                                rule: has(self.claimName) != has(self.image)
+                              - message: readOnly cannot be set false when using an
+                                  ImageVolumeSource
+                                rule: '!has(self.image) || !has(self.readOnly) ||
+                                  self.readOnly'
+                              - message: if using an ImageVolumeSource, you must set
+                                  a reference
+                                rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                  && self.image.reference.size() > 0)'
                             maxItems: 10
                             type: array
                             x-kubernetes-list-map-keys:
@@ -11273,6 +11428,27 @@ spec:
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-type: set
+                              image:
+                                description: Details for adding an image volume
+                                properties:
+                                  pullPolicy:
+                                    description: |-
+                                      Policy for pulling OCI objects. Possible values are:
+                                      Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                      Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                      IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                      Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                    type: string
+                                  reference:
+                                    description: |-
+                                      Required: Image or artifact reference to be used.
+                                      Behaves in the same way as pod.spec.containers[*].image.
+                                      Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                      More info: https://kubernetes.io/docs/concepts/containers/images
+                                      This field is optional to allow higher level config management to default or override
+                                      container images in workload controllers like Deployments and StatefulSets.
+                                    type: string
+                                type: object
                               name:
                                 description: |-
                                   The name of the directory in which to mount this volume.
@@ -11286,10 +11462,19 @@ spec:
                                   otherwise read-write. Defaults to false.
                                 type: boolean
                             required:
-                            - claimName
                             - name
                             type: object
                             x-kubernetes-map-type: atomic
+                            x-kubernetes-validations:
+                            - message: you must set only one of image or claimName
+                              rule: has(self.claimName) != has(self.image)
+                            - message: readOnly cannot be set false when using an
+                                ImageVolumeSource
+                              rule: '!has(self.image) || !has(self.readOnly) || self.readOnly'
+                            - message: if using an ImageVolumeSource, you must set
+                                a reference
+                              rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                && self.image.reference.size() > 0)'
                           maxItems: 10
                           type: array
                           x-kubernetes-list-map-keys:
@@ -16283,6 +16468,27 @@ spec:
                                   maxItems: 10
                                   type: array
                                   x-kubernetes-list-type: set
+                                image:
+                                  description: Details for adding an image volume
+                                  properties:
+                                    pullPolicy:
+                                      description: |-
+                                        Policy for pulling OCI objects. Possible values are:
+                                        Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                        Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                        IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                        Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                      type: string
+                                    reference:
+                                      description: |-
+                                        Required: Image or artifact reference to be used.
+                                        Behaves in the same way as pod.spec.containers[*].image.
+                                        Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                        More info: https://kubernetes.io/docs/concepts/containers/images
+                                        This field is optional to allow higher level config management to default or override
+                                        container images in workload controllers like Deployments and StatefulSets.
+                                      type: string
+                                  type: object
                                 name:
                                   description: |-
                                     The name of the directory in which to mount this volume.
@@ -16296,10 +16502,20 @@ spec:
                                     otherwise read-write. Defaults to false.
                                   type: boolean
                               required:
-                              - claimName
                               - name
                               type: object
                               x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: you must set only one of image or claimName
+                                rule: has(self.claimName) != has(self.image)
+                              - message: readOnly cannot be set false when using an
+                                  ImageVolumeSource
+                                rule: '!has(self.image) || !has(self.readOnly) ||
+                                  self.readOnly'
+                              - message: if using an ImageVolumeSource, you must set
+                                  a reference
+                                rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                  && self.image.reference.size() > 0)'
                             maxItems: 10
                             type: array
                             x-kubernetes-list-map-keys:
@@ -20424,6 +20640,27 @@ spec:
                                       maxItems: 10
                                       type: array
                                       x-kubernetes-list-type: set
+                                    image:
+                                      description: Details for adding an image volume
+                                      properties:
+                                        pullPolicy:
+                                          description: |-
+                                            Policy for pulling OCI objects. Possible values are:
+                                            Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                            Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                            IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                            Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                          type: string
+                                        reference:
+                                          description: |-
+                                            Required: Image or artifact reference to be used.
+                                            Behaves in the same way as pod.spec.containers[*].image.
+                                            Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                            More info: https://kubernetes.io/docs/concepts/containers/images
+                                            This field is optional to allow higher level config management to default or override
+                                            container images in workload controllers like Deployments and StatefulSets.
+                                          type: string
+                                      type: object
                                     name:
                                       description: |-
                                         The name of the directory in which to mount this volume.
@@ -20437,10 +20674,20 @@ spec:
                                         otherwise read-write. Defaults to false.
                                       type: boolean
                                   required:
-                                  - claimName
                                   - name
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                  x-kubernetes-validations:
+                                  - message: you must set only one of image or claimName
+                                    rule: has(self.claimName) != has(self.image)
+                                  - message: readOnly cannot be set false when using
+                                      an ImageVolumeSource
+                                    rule: '!has(self.image) || !has(self.readOnly)
+                                      || self.readOnly'
+                                  - message: if using an ImageVolumeSource, you must
+                                      set a reference
+                                    rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                      && self.image.reference.size() > 0)'
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-map-keys:
@@ -21856,6 +22103,27 @@ spec:
                                       maxItems: 10
                                       type: array
                                       x-kubernetes-list-type: set
+                                    image:
+                                      description: Details for adding an image volume
+                                      properties:
+                                        pullPolicy:
+                                          description: |-
+                                            Policy for pulling OCI objects. Possible values are:
+                                            Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                            Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                            IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                            Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                          type: string
+                                        reference:
+                                          description: |-
+                                            Required: Image or artifact reference to be used.
+                                            Behaves in the same way as pod.spec.containers[*].image.
+                                            Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                            More info: https://kubernetes.io/docs/concepts/containers/images
+                                            This field is optional to allow higher level config management to default or override
+                                            container images in workload controllers like Deployments and StatefulSets.
+                                          type: string
+                                      type: object
                                     name:
                                       description: |-
                                         The name of the directory in which to mount this volume.
@@ -21869,10 +22137,20 @@ spec:
                                         otherwise read-write. Defaults to false.
                                       type: boolean
                                   required:
-                                  - claimName
                                   - name
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                  x-kubernetes-validations:
+                                  - message: you must set only one of image or claimName
+                                    rule: has(self.claimName) != has(self.image)
+                                  - message: readOnly cannot be set false when using
+                                      an ImageVolumeSource
+                                    rule: '!has(self.image) || !has(self.readOnly)
+                                      || self.readOnly'
+                                  - message: if using an ImageVolumeSource, you must
+                                      set a reference
+                                    rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                      && self.image.reference.size() > 0)'
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-map-keys:
@@ -23291,6 +23569,27 @@ spec:
                                       maxItems: 10
                                       type: array
                                       x-kubernetes-list-type: set
+                                    image:
+                                      description: Details for adding an image volume
+                                      properties:
+                                        pullPolicy:
+                                          description: |-
+                                            Policy for pulling OCI objects. Possible values are:
+                                            Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                            Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                            IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                            Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                          type: string
+                                        reference:
+                                          description: |-
+                                            Required: Image or artifact reference to be used.
+                                            Behaves in the same way as pod.spec.containers[*].image.
+                                            Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                            More info: https://kubernetes.io/docs/concepts/containers/images
+                                            This field is optional to allow higher level config management to default or override
+                                            container images in workload controllers like Deployments and StatefulSets.
+                                          type: string
+                                      type: object
                                     name:
                                       description: |-
                                         The name of the directory in which to mount this volume.
@@ -23304,10 +23603,20 @@ spec:
                                         otherwise read-write. Defaults to false.
                                       type: boolean
                                   required:
-                                  - claimName
                                   - name
                                   type: object
                                   x-kubernetes-map-type: atomic
+                                  x-kubernetes-validations:
+                                  - message: you must set only one of image or claimName
+                                    rule: has(self.claimName) != has(self.image)
+                                  - message: readOnly cannot be set false when using
+                                      an ImageVolumeSource
+                                    rule: '!has(self.image) || !has(self.readOnly)
+                                      || self.readOnly'
+                                  - message: if using an ImageVolumeSource, you must
+                                      set a reference
+                                    rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                      && self.image.reference.size() > 0)'
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-map-keys:
@@ -25671,6 +25980,27 @@ spec:
                                   maxItems: 10
                                   type: array
                                   x-kubernetes-list-type: set
+                                image:
+                                  description: Details for adding an image volume
+                                  properties:
+                                    pullPolicy:
+                                      description: |-
+                                        Policy for pulling OCI objects. Possible values are:
+                                        Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                        Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                        IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                        Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                      type: string
+                                    reference:
+                                      description: |-
+                                        Required: Image or artifact reference to be used.
+                                        Behaves in the same way as pod.spec.containers[*].image.
+                                        Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                        More info: https://kubernetes.io/docs/concepts/containers/images
+                                        This field is optional to allow higher level config management to default or override
+                                        container images in workload controllers like Deployments and StatefulSets.
+                                      type: string
+                                  type: object
                                 name:
                                   description: |-
                                     The name of the directory in which to mount this volume.
@@ -25684,10 +26014,20 @@ spec:
                                     otherwise read-write. Defaults to false.
                                   type: boolean
                               required:
-                              - claimName
                               - name
                               type: object
                               x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: you must set only one of image or claimName
+                                rule: has(self.claimName) != has(self.image)
+                              - message: readOnly cannot be set false when using an
+                                  ImageVolumeSource
+                                rule: '!has(self.image) || !has(self.readOnly) ||
+                                  self.readOnly'
+                              - message: if using an ImageVolumeSource, you must set
+                                  a reference
+                                rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                  && self.image.reference.size() > 0)'
                             maxItems: 10
                             type: array
                             x-kubernetes-list-map-keys:
@@ -26787,6 +27127,27 @@ spec:
                                   maxItems: 10
                                   type: array
                                   x-kubernetes-list-type: set
+                                image:
+                                  description: Details for adding an image volume
+                                  properties:
+                                    pullPolicy:
+                                      description: |-
+                                        Policy for pulling OCI objects. Possible values are:
+                                        Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                        Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                        IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                        Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                      type: string
+                                    reference:
+                                      description: |-
+                                        Required: Image or artifact reference to be used.
+                                        Behaves in the same way as pod.spec.containers[*].image.
+                                        Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                        More info: https://kubernetes.io/docs/concepts/containers/images
+                                        This field is optional to allow higher level config management to default or override
+                                        container images in workload controllers like Deployments and StatefulSets.
+                                      type: string
+                                  type: object
                                 name:
                                   description: |-
                                     The name of the directory in which to mount this volume.
@@ -26800,10 +27161,20 @@ spec:
                                     otherwise read-write. Defaults to false.
                                   type: boolean
                               required:
-                              - claimName
                               - name
                               type: object
                               x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: you must set only one of image or claimName
+                                rule: has(self.claimName) != has(self.image)
+                              - message: readOnly cannot be set false when using an
+                                  ImageVolumeSource
+                                rule: '!has(self.image) || !has(self.readOnly) ||
+                                  self.readOnly'
+                              - message: if using an ImageVolumeSource, you must set
+                                  a reference
+                                rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                  && self.image.reference.size() > 0)'
                             maxItems: 10
                             type: array
                             x-kubernetes-list-map-keys:
@@ -30108,6 +30479,27 @@ spec:
                                 maxItems: 10
                                 type: array
                                 x-kubernetes-list-type: set
+                              image:
+                                description: Details for adding an image volume
+                                properties:
+                                  pullPolicy:
+                                    description: |-
+                                      Policy for pulling OCI objects. Possible values are:
+                                      Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                      Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                      IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                      Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                    type: string
+                                  reference:
+                                    description: |-
+                                      Required: Image or artifact reference to be used.
+                                      Behaves in the same way as pod.spec.containers[*].image.
+                                      Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                      More info: https://kubernetes.io/docs/concepts/containers/images
+                                      This field is optional to allow higher level config management to default or override
+                                      container images in workload controllers like Deployments and StatefulSets.
+                                    type: string
+                                type: object
                               name:
                                 description: |-
                                   The name of the directory in which to mount this volume.
@@ -30121,10 +30513,19 @@ spec:
                                   otherwise read-write. Defaults to false.
                                 type: boolean
                             required:
-                            - claimName
                             - name
                             type: object
                             x-kubernetes-map-type: atomic
+                            x-kubernetes-validations:
+                            - message: you must set only one of image or claimName
+                              rule: has(self.claimName) != has(self.image)
+                            - message: readOnly cannot be set false when using an
+                                ImageVolumeSource
+                              rule: '!has(self.image) || !has(self.readOnly) || self.readOnly'
+                            - message: if using an ImageVolumeSource, you must set
+                                a reference
+                              rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                && self.image.reference.size() > 0)'
                           maxItems: 10
                           type: array
                           x-kubernetes-list-map-keys:
@@ -35117,6 +35518,27 @@ spec:
                                   maxItems: 10
                                   type: array
                                   x-kubernetes-list-type: set
+                                image:
+                                  description: Details for adding an image volume
+                                  properties:
+                                    pullPolicy:
+                                      description: |-
+                                        Policy for pulling OCI objects. Possible values are:
+                                        Always: the kubelet always attempts to pull the reference. Container creation will fail If the pull fails.
+                                        Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
+                                        IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
+                                        Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                                      type: string
+                                    reference:
+                                      description: |-
+                                        Required: Image or artifact reference to be used.
+                                        Behaves in the same way as pod.spec.containers[*].image.
+                                        Pull secrets will be assembled in the same way as for the container image by looking up node credentials, SA image pull secrets, and pod spec image pull secrets.
+                                        More info: https://kubernetes.io/docs/concepts/containers/images
+                                        This field is optional to allow higher level config management to default or override
+                                        container images in workload controllers like Deployments and StatefulSets.
+                                      type: string
+                                  type: object
                                 name:
                                   description: |-
                                     The name of the directory in which to mount this volume.
@@ -35130,10 +35552,20 @@ spec:
                                     otherwise read-write. Defaults to false.
                                   type: boolean
                               required:
-                              - claimName
                               - name
                               type: object
                               x-kubernetes-map-type: atomic
+                              x-kubernetes-validations:
+                              - message: you must set only one of image or claimName
+                                rule: has(self.claimName) != has(self.image)
+                              - message: readOnly cannot be set false when using an
+                                  ImageVolumeSource
+                                rule: '!has(self.image) || !has(self.readOnly) ||
+                                  self.readOnly'
+                              - message: if using an ImageVolumeSource, you must set
+                                  a reference
+                                rule: '!has(self.image) || (self.?image.reference.hasValue()
+                                  && self.image.reference.size() > 0)'
                             maxItems: 10
                             type: array
                             x-kubernetes-list-map-keys:
