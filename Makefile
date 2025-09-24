@@ -132,6 +132,7 @@ deploy-dev: createnamespaces
 
 .PHONY: build
 build: ## Build a postgres-operator image
+build: get-pgmonitor
 	$(BUILDAH) build --tag localhost/postgres-operator \
 		--label org.opencontainers.image.authors='Crunchy Data' \
 		--label org.opencontainers.image.description='Crunchy PostgreSQL Operator' \
