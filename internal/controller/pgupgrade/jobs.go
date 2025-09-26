@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -80,11 +81,14 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		// - https://cwrap.org/nss_wrapper.html
 		`export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD`,
 
-		// Expect Postgres executables at the Red Hat paths.
+		// Find directories that contain the desired Postgres executables.
+		`old_bin=$(` + postgres.ShellPath(oldVersion) + ` && command -v postgres)`,
+		`old_bin="${old_bin%/postgres}"`,
+		`new_bin=$(` + postgres.ShellPath(newVersion) + ` && command -v initdb)`,
+		`new_bin="${new_bin%/initdb}"`,
+
 		`old_data="${data_volume}/pg${old_version}"`,
 		`new_data="${data_volume}/pg${new_version}"`,
-		`old_bin="/usr/pgsql-${old_version}/bin"`,
-		`new_bin="/usr/pgsql-${new_version}/bin"`,
 
 		// Below is the pg_upgrade script used to upgrade a PostgresCluster from
 		// one major version to another. Additional information concerning the
@@ -243,7 +247,7 @@ func removeDataCommand(upgrade *v1beta1.PGUpgrade) []string {
 		`delete() (set -x && rm -rf -- "$@")`,
 
 		`old_data="${data_volume}/pg${old_version}"`,
-		`control=$(LC_ALL=C /usr/pgsql-${old_version}/bin/pg_controldata "${old_data}")`,
+		`control=$(` + postgres.ShellPath(oldVersion) + ` && LC_ALL=C pg_controldata "${old_data}")`,
 		`read -r state <<< "${control##*cluster state:}"`,
 
 		// We expect exactly one state for a replica that has been stopped.

@@ -209,10 +209,12 @@ spec:
           (sed "/^postgres:x:/ d; /^[^:]*:x:${uid}:/ d" /etc/passwd
           echo "postgres:x:${uid}:${gid%% *}::${data_volume}:") > "${NSS_WRAPPER_PASSWD}"
           export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD
+          old_bin=$(PATH="/usr/lib/postgresql/19/bin:/usr/libexec/postgresql19:/usr/pgsql-19/bin${PATH+:${PATH}}" && command -v postgres)
+          old_bin="${old_bin%/postgres}"
+          new_bin=$(PATH="/usr/lib/postgresql/25/bin:/usr/libexec/postgresql25:/usr/pgsql-25/bin${PATH+:${PATH}}" && command -v initdb)
+          new_bin="${new_bin%/initdb}"
           old_data="${data_volume}/pg${old_version}"
           new_data="${data_volume}/pg${new_version}"
-          old_bin="/usr/pgsql-${old_version}/bin"
-          new_bin="/usr/pgsql-${new_version}/bin"
           cd "${data_volume}" || exit
           section 'Initializing new data directory...'
           PGDATA="${new_data}" "${new_bin}/initdb" --data-checksums
@@ -347,7 +349,7 @@ spec:
           printf 'Removing PostgreSQL %s data...\n\n' "$@"
           delete() (set -x && rm -rf -- "$@")
           old_data="${data_volume}/pg${old_version}"
-          control=$(LC_ALL=C /usr/pgsql-${old_version}/bin/pg_controldata "${old_data}")
+          control=$(PATH="/usr/lib/postgresql/19/bin:/usr/libexec/postgresql19:/usr/pgsql-19/bin${PATH+:${PATH}}" && LC_ALL=C pg_controldata "${old_data}")
           read -r state <<< "${control##*cluster state:}"
           [[ "${state}" == 'shut down in recovery' ]] || { printf >&2 'Unexpected state! %q\n' "${state}"; exit 1; }
           delete "${old_data}/pg_wal/"
