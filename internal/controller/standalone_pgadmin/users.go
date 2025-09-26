@@ -258,6 +258,8 @@ cd $PGADMIN_DIR
 					log.Error(err, "PodExec failed: ")
 					intentUsers = append(intentUsers, existingUser)
 					continue
+				} else if strings.Contains(strings.TrimSpace(stderr.String()), "UserWarning: pkg_resources is deprecated as an API") {
+					log.Info(stderr.String())
 				} else if strings.TrimSpace(stderr.String()) != "" {
 					log.Error(errors.New(stderr.String()), fmt.Sprintf("pgAdmin setup.py error for %s: ",
 						intentUser.Username))
@@ -292,7 +294,9 @@ cd $PGADMIN_DIR
 				log.Error(err, "PodExec failed: ")
 				continue
 			}
-			if strings.TrimSpace(stderr.String()) != "" {
+			if strings.Contains(strings.TrimSpace(stderr.String()), "UserWarning: pkg_resources is deprecated as an API") {
+				log.Info(stderr.String())
+			} else if strings.TrimSpace(stderr.String()) != "" {
 				log.Error(errors.New(stderr.String()), fmt.Sprintf("pgAdmin setup.py error for %s: ",
 					intentUser.Username))
 				continue
