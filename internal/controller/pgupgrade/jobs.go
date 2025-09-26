@@ -21,6 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -86,12 +87,24 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		`id; [[ "$(id -nu)" == 'postgres' && "$(id -ng)" == 'postgres' ]]`,
 
 		`section 'Step 2 of 7: Finding data and tools...'`,
-
-		// Expect Postgres executables at the Red Hat paths.
-		`old_bin="/usr/pgsql-${old_version}/bin" && [[ -x "${old_bin}/postgres" ]]`,
-		`new_bin="/usr/pgsql-${new_version}/bin" && [[ -x "${new_bin}/initdb" ]]`,
 		`old_data="${data_volume}/pg${old_version}" && [[ -d "${old_data}" ]]`,
 		`new_data="${data_volume}/pg${new_version}"`,
+
+		// Search for Postgres executables matching the old and new versions.
+		// Use `command -v` to look through all of PATH, then trim the executable name from the absolute path.
+		`old_bin=$(` + postgres.ShellPath(oldVersion) + ` && command -v postgres)`,
+		`old_bin="${old_bin%/postgres}"`,
+		`new_bin=$(` + postgres.ShellPath(newVersion) + ` && command -v pg_upgrade)`,
+		`new_bin="${new_bin%/pg_upgrade}"`,
+
+		// The executables found might not be the versions we need, so do a cursory check before writing to disk.
+		// pg_upgrade checks every executable thoroughly since PostgreSQL v14.
+		//
+		// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_10_0;f=src/bin/pg_upgrade/exec.c#l355
+		// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_14_0;f=src/bin/pg_upgrade/exec.c#l358
+		// https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_18_0;f=src/bin/pg_upgrade/exec.c#l370
+		`(set -x && [[ "$("${old_bin}/postgres" --version)" =~ ") ${old_version}"($|[^0-9]) ]])`,
+		`(set -x && [[ "$("${new_bin}/initdb" --version)"   =~ ") ${new_version}"($|[^0-9]) ]])`,
 
 		// pg_upgrade writes its files in "${new_data}/pg_upgrade_output.d" since PostgreSQL v15.
 		// Change to a writable working directory to be compatible with PostgreSQL v14 and earlier.
@@ -115,6 +128,9 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		`value=$(LC_ALL=C PGDATA="${old_data}" "${old_bin}/postgres" -C shared_preload_libraries)`,
 		`echo >> "${new_data}/postgresql.conf" "shared_preload_libraries = '${value//$'\''/$'\'\''}'"`,
 
+		// NOTE: The default for --new-bindir is the directory of pg_upgrade since PostgreSQL v13.
+		//
+		// https://www.postgresql.org/docs/release/13#id-1.11.6.28.5.11
 		`section 'Step 5 of 7: Checking for potential issues...'`,
 		`"${new_bin}/pg_upgrade" --check` + argMethod + argJobs + ` \`,
 		`--old-bindir="${old_bin}" --old-datadir="${old_data}" \`,
@@ -253,7 +269,7 @@ func removeDataCommand(upgrade *v1beta1.PGUpgrade) []string {
 		`delete() (set -x && rm -rf -- "$@")`,
 
 		`old_data="${data_volume}/pg${old_version}"`,
-		`control=$(LC_ALL=C /usr/pgsql-${old_version}/bin/pg_controldata "${old_data}")`,
+		`control=$(` + postgres.ShellPath(oldVersion) + ` && LC_ALL=C pg_controldata "${old_data}")`,
 		`read -r state <<< "${control##*cluster state:}"`,
 
 		// We expect exactly one state for a replica that has been stopped.

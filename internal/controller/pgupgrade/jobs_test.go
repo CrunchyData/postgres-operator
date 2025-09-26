@@ -213,10 +213,14 @@ spec:
           export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD
           id; [[ "$(id -nu)" == 'postgres' && "$(id -ng)" == 'postgres' ]]
           section 'Step 2 of 7: Finding data and tools...'
-          old_bin="/usr/pgsql-${old_version}/bin" && [[ -x "${old_bin}/postgres" ]]
-          new_bin="/usr/pgsql-${new_version}/bin" && [[ -x "${new_bin}/initdb" ]]
           old_data="${data_volume}/pg${old_version}" && [[ -d "${old_data}" ]]
           new_data="${data_volume}/pg${new_version}"
+          old_bin=$(PATH="/usr/lib/postgresql/19/bin:/usr/libexec/postgresql19:/usr/pgsql-19/bin${PATH+:${PATH}}" && command -v postgres)
+          old_bin="${old_bin%/postgres}"
+          new_bin=$(PATH="/usr/lib/postgresql/25/bin:/usr/libexec/postgresql25:/usr/pgsql-25/bin${PATH+:${PATH}}" && command -v pg_upgrade)
+          new_bin="${new_bin%/pg_upgrade}"
+          (set -x && [[ "$("${old_bin}/postgres" --version)" =~ ") ${old_version}"($|[^0-9]) ]])
+          (set -x && [[ "$("${new_bin}/initdb" --version)"   =~ ") ${new_version}"($|[^0-9]) ]])
           cd "${data_volume}"
           section 'Step 3 of 7: Initializing new data directory...'
           PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access --data-checksums
@@ -352,7 +356,7 @@ spec:
           printf 'Removing PostgreSQL %s data...\n\n' "$@"
           delete() (set -x && rm -rf -- "$@")
           old_data="${data_volume}/pg${old_version}"
-          control=$(LC_ALL=C /usr/pgsql-${old_version}/bin/pg_controldata "${old_data}")
+          control=$(PATH="/usr/lib/postgresql/19/bin:/usr/libexec/postgresql19:/usr/pgsql-19/bin${PATH+:${PATH}}" && LC_ALL=C pg_controldata "${old_data}")
           read -r state <<< "${control##*cluster state:}"
           [[ "${state}" == 'shut down in recovery' ]] || { printf >&2 'Unexpected state! %q\n' "${state}"; exit 1; }
           delete "${old_data}/pg_wal/"
