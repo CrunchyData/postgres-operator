@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 -->
 
-# Custom Resource Definitions
+# Custom Resource Definition Schemas
 
 These directories contain Go types that serve as [DTO]s for communicating with the Kubernetes API.
 We use the [controller-gen] tool to produce [CRD]s with schemas that match the Go types.
@@ -15,7 +15,7 @@ The CRD schema tells Kubernetes what fields and values are allowed in our API ob
 
 CRD schemas are modified OpenAPI 3.0 [validation] schemas.
 Much of the schema defines what fields, types, and values are *allowed*.
-`controller-gen` considers the [Go type] of a field and its [validation markers] for this.
+`controller-gen` considers the field's [Go type] and [validation markers] for this.
 
 Kubernetes uses its own algorithm to consider and accept changes to API objects: [Server-Side Apply], SSA.
 CRD schemas contain non-standard attributes that affect SSA.
@@ -112,6 +112,9 @@ The optional field syntax is only available in K8s 1.29+.
 
 ## CEL Availability
 
+Kubernetes' capabilities with CEL are continuously expanding.
+Different versions of Kubernetes have different CEL functions, syntax, and features.
+
 ```asciidoc
 :controller-tools: https://github.com/kubernetes-sigs/controller-tools/releases
 
@@ -133,11 +136,11 @@ The optional field syntax is only available in K8s 1.29+.
 
 | 1.29 GA | OCP 4.16 |
 
-| 1.30 link:https://pr.k8s.io/123475[fixed fieldPath]…
+| 1.30 enables link:#validation-ratcheting[validation ratcheting]; link:https://pr.k8s.io/123475[fixes fieldPath]…
 | OCP 4.17
-| n/a
+| link:{controller-tools}/v0.17.3[v0.17.3] adds `optionalOldSelf` to the `XValidation` marker
 
-| 1.34 link:https://pr.k8s.io/132837[fixed IntOrString cost]
+| 1.34 link:https://pr.k8s.io/132837[fixes IntOrString cost]
 | ?
 | link:{controller-tools}/v0.18.0[v0.18.0] allows validation on IntOrString
 
@@ -150,7 +153,7 @@ The optional field syntax is only available in K8s 1.29+.
 
 <!-- TODO: long-form; describe each library -->
 
-https://pr.k8s.io/130660
+Some details are missing from the Go package documentation: https://pr.k8s.io/130660
 
 | CEL [libraries](https://code.k8s.io/staging/src/k8s.io/apiserver/pkg/cel/library), extensions, etc. | Kubernetes | OpenShift |
 | --- | --- | --- |
@@ -169,3 +172,25 @@ https://pr.k8s.io/130660
 | [strings](https://pkg.go.dev/github.com/google/cel-go/ext#Strings) v2 | 1.30 | 4.17 |
 | [sets](https://pkg.go.dev/github.com/google/cel-go/ext#Sets) | 1.30 | 4.17 |
 | [two-variable comprehension](https://pkg.go.dev/github.com/google/cel-go/ext#TwoVarComprehensions) | 1.33 |
+
+
+# Validation Ratcheting
+
+> **Feature Gate:** `CRDValidationRatcheting`
+>
+> Enabled in Kubernetes 1.30 and GA in 1.33 (OpenShift 4.17 and ~4.20)
+
+[Validation ratcheting] allows update operations to succeed when unchanged fields are invalid.
+This allows CRDs to add or "tighten" validation without breaking existing CR objects.
+
+Some schema changes are not ratcheted:
+
+- OpenAPI `allOf`, `oneOf`, `anyOf`, `not`; values in fields with these must be valid
+- OpenAPI `required`; required fields are always required
+- Removing `additionalProperties`; undefined fields are always dropped
+- Adding or removing fields (names) in `properties`; undefined fields are dropped, and new field values must be valid
+- Changes to `x-kubernetes-list-type` or `x-kubernetes-list-map-keys`; values in these fields must be valid
+- Rules containing `oldSelf`; these are [transition rules] and should do their own ratcheting
+
+[transition rules]: https://docs.k8s.io/tasks/extend-kubernetes/custom-resources/custom-resource-definitions#transition-rules
+[Validation ratcheting]: https://docs.k8s.io/tasks/extend-kubernetes/custom-resources/custom-resource-definitions#validation-ratcheting
