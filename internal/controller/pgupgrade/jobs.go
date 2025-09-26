@@ -21,10 +21,10 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
-
-// Upgrade job
 
 // pgUpgradeJob returns the ObjectMeta for the pg_upgrade Job utilized to
 // upgrade from one major PostgreSQL version to another
@@ -48,19 +48,19 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 	oldVersion := spec.FromPostgresVersion
 	newVersion := spec.ToPostgresVersion
 
-	// if the fetch key command is set for TDE, provide the value during initialization
-	initdb := `/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"`
+	var argEncryptionKeyCommand string
 	if fetchKeyCommand != "" {
-		initdb += ` --encryption-key-command "` + fetchKeyCommand + `"`
+		argEncryptionKeyCommand = ` --encryption-key-command=` + shell.QuoteWord(fetchKeyCommand)
 	}
 
 	args := []string{fmt.Sprint(oldVersion), fmt.Sprint(newVersion)}
 	script := strings.Join([]string{
 		`declare -r data_volume='/pgdata' old_version="$1" new_version="$2"`,
-		`printf 'Performing PostgreSQL upgrade from version "%s" to "%s" ...\n\n' "$@"`,
+		`printf 'Performing PostgreSQL upgrade from version "%s" to "%s" ...\n' "$@"`,
+		`section() { printf '\n\n%s\n' "$@"; }`,
 
-		// Note: Rather than import the nss_wrapper init container, as we do in
-		// the main postgres-operator, this job does the required nss_wrapper
+		// NOTE: Rather than import the nss_wrapper init container, as we do in
+		// the PostgresCluster controller, this job does the required nss_wrapper
 		// settings here.
 
 		// Create a copy of the system group definitions, but remove the "postgres"
@@ -81,49 +81,52 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		// - https://cwrap.org/nss_wrapper.html
 		`export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD`,
 
+		// Find directories that contain the desired Postgres executables.
+		`old_bin=$(` + postgres.ShellPath(oldVersion) + ` && command -v postgres)`,
+		`old_bin="${old_bin%/postgres}"`,
+		`new_bin=$(` + postgres.ShellPath(newVersion) + ` && command -v initdb)`,
+		`new_bin="${new_bin%/initdb}"`,
+
+		`old_data="${data_volume}/pg${old_version}"`,
+		`new_data="${data_volume}/pg${new_version}"`,
+
 		// Below is the pg_upgrade script used to upgrade a PostgresCluster from
 		// one major version to another. Additional information concerning the
 		// steps used and command flag specifics can be found in the documentation:
 		// - https://www.postgresql.org/docs/current/pgupgrade.html
 
-		// To begin, we first move to the mounted /pgdata directory and create a
-		// new version directory which is then initialized with the initdb command.
-		`cd /pgdata || exit`,
-		`echo -e "Step 1: Making new pgdata directory...\n"`,
-		`mkdir /pgdata/pg"${new_version}"`,
-		`echo -e "Step 2: Initializing new pgdata directory...\n"`,
-		initdb,
+		// pg_upgrade writes its files in "${new_data}/pg_upgrade_output.d" since PostgreSQL v15.
+		// Change to a writable working directory to be compatible with PostgreSQL v14 and earlier.
+		//
+		// https://www.postgresql.org/docs/release/15#id-1.11.6.20.5.11.3
+		`cd "${data_volume}" || exit`,
 
-		// Before running the upgrade check, which ensures the clusters are compatible,
-		// proper permissions have to be set on the old pgdata directory and the
-		// preload library settings must be copied over.
-		`echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"`,
-		`chmod 750 /pgdata/pg"${old_version}"`,
-		`echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"`,
-		`echo "shared_preload_libraries = '$(/usr/pgsql-"""${old_version}"""/bin/postgres -D \`,
-		`/pgdata/pg"""${old_version}""" -C shared_preload_libraries)'" >> /pgdata/pg"${new_version}"/postgresql.conf`,
+		`section 'Initializing new data directory...'`,
+		`PGDATA="${new_data}" "${new_bin}/initdb" --data-checksums` + argEncryptionKeyCommand,
 
-		// Before the actual upgrade is run, we will run the upgrade --check to
-		// verify everything before actually changing any data.
-		`echo -e "Step 5: Running pg_upgrade check...\n"`,
-		`time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \`,
-		`--new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}"\`,
-		` --new-datadir /pgdata/pg"${new_version}" --check` + argMethod + argJobs,
+		// Read the configured value then quote it; every single-quote U+0027 is replaced by two.
+		//
+		// https://www.postgresql.org/docs/current/config-setting.html
+		// https://www.gnu.org/software/bash/manual/bash.html#ANSI_002dC-Quoting
+		`section 'Copying shared_preload_libraries parameter...'`,
+		`value=$(LC_ALL=C PGDATA="${old_data}" "${old_bin}/postgres" -C shared_preload_libraries)`,
+		`echo >> "${new_data}/postgresql.conf" "shared_preload_libraries = '${value//$'\''/$'\'\''}'"`,
 
-		// Assuming the check completes successfully, the pg_upgrade command will
-		// be run that actually prepares the upgraded pgdata directory.
-		`echo -e "\nStep 6: Running pg_upgrade...\n"`,
-		`time /usr/pgsql-"${new_version}"/bin/pg_upgrade --old-bindir /usr/pgsql-"${old_version}"/bin \`,
-		`--new-bindir /usr/pgsql-"${new_version}"/bin --old-datadir /pgdata/pg"${old_version}" \`,
-		`--new-datadir /pgdata/pg"${new_version}"` + argMethod + argJobs,
+		`section 'Checking for potential issues...'`,
+		`"${new_bin}/pg_upgrade" --check` + argMethod + argJobs + ` \`,
+		`--old-bindir="${old_bin}" --old-datadir="${old_data}" \`,
+		`--new-bindir="${new_bin}" --new-datadir="${new_data}"`,
 
-		// Since we have cleared the Patroni cluster step by removing the EndPoints, we copy patroni.dynamic.json
-		// from the old data dir to help retain PostgreSQL parameters you had set before.
-		// - https://patroni.readthedocs.io/en/latest/existing_data.html#major-upgrade-of-postgresql-version
-		`echo -e "\nStep 7: Copying patroni.dynamic.json...\n"`,
-		`cp /pgdata/pg"${old_version}"/patroni.dynamic.json /pgdata/pg"${new_version}"`,
+		`section 'Performing upgrade...'`,
+		`(set -x && time "${new_bin}/pg_upgrade"` + argMethod + argJobs + ` \`,
+		`--old-bindir="${old_bin}" --old-datadir="${old_data}" \`,
+		`--new-bindir="${new_bin}" --new-datadir="${new_data}")`,
 
-		`echo -e "\npg_upgrade Job Complete!"`,
+		// https://patroni.readthedocs.io/en/latest/existing_data.html#major-upgrade-of-postgresql-version
+		`section 'Seeding Patroni settings...'`,
+		`(set -x && cp "${old_data}/patroni.dynamic.json" "${new_data}")`,
+
+		`section 'Success!'`,
 	}, "\n")
 
 	return append([]string{"bash", "-ceu", "--", script, "upgrade"}, args...)
@@ -232,35 +235,30 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 // We currently target the `pgdata/pg{old_version}` and `pgdata/pg{old_version}_wal`
 // directories for removal.
 func removeDataCommand(upgrade *v1beta1.PGUpgrade) []string {
-	oldVersion := fmt.Sprint(upgrade.Spec.FromPostgresVersion)
+	oldVersion := upgrade.Spec.FromPostgresVersion
 
 	// Before removing the directories (both data and wal), we check that
 	// the directory is not in use by running `pg_controldata` and making sure
 	// the server state is "shut down in recovery"
-	// TODO(benjaminjb): pg_controldata seems pretty stable, but might want to
-	// experiment with a few more versions.
-	args := []string{oldVersion}
+	args := []string{fmt.Sprint(oldVersion)}
 	script := strings.Join([]string{
-		`declare -r old_version="$1"`,
-		`printf 'Removing PostgreSQL data dir for pg%s...\n\n' "$@"`,
-		`echo -e "Checking the directory exists and isn't being used...\n"`,
-		`cd /pgdata || exit`,
-		// The string `shut down in recovery` is the dbstate that postgres sets from
-		// at least version 10 to 14 when a replica has been shut down.
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/bin/pg_controldata/pg_controldata.c;h=f911f98d946d83f1191abf35239d9b4455c5f52a;hb=HEAD#l59
-		// Note: `pg_controldata` is actually used by `pg_upgrade` before upgrading
-		// to make sure that the server in question is shut down as a primary;
-		// that aligns with our use here, where we're making sure that the server in question
-		// was shut down as a replica.
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/bin/pg_upgrade/controldata.c;h=41b8f69b8cbe4f40e6098ad84c2e8e987e24edaf;hb=HEAD#l122
-		`if [ "$(/usr/pgsql-"${old_version}"/bin/pg_controldata /pgdata/pg"${old_version}" | grep -c "shut down in recovery")" -ne 1 ]; then echo -e "Directory in use, cannot remove..."; exit 1; fi`,
-		`echo -e "Removing old pgdata directory...\n"`,
-		// When deleting the wal directory, use `realpath` to resolve the symlink from
-		// the pgdata directory. This is necessary because the wal directory can be
-		// mounted at different places depending on if an external wal PVC is used,
-		// i.e. `/pgdata/pg14_wal` vs `/pgwal/pg14_wal`
-		`rm -rf /pgdata/pg"${old_version}" "$(realpath /pgdata/pg${old_version}/pg_wal)"`,
-		`echo -e "Remove Data Job Complete!"`,
+		`declare -r data_volume='/pgdata' old_version="$1"`,
+		`printf 'Removing PostgreSQL %s data...\n\n' "$@"`,
+		`delete() (set -x && rm -rf -- "$@")`,
+
+		`old_data="${data_volume}/pg${old_version}"`,
+		`control=$(` + postgres.ShellPath(oldVersion) + ` && LC_ALL=C pg_controldata "${old_data}")`,
+		`read -r state <<< "${control##*cluster state:}"`,
+
+		// We expect exactly one state for a replica that has been stopped.
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_10_0;f=src/bin/pg_controldata/pg_controldata.c#l55
+		// - https://git.postgresql.org/gitweb/?p=postgresql.git;hb=refs/tags/REL_17_0;f=src/bin/pg_controldata/pg_controldata.c#l58
+		`[[ "${state}" == 'shut down in recovery' ]] || { printf >&2 'Unexpected state! %q\n' "${state}"; exit 1; }`,
+
+		// "rm" does not follow symbolic links.
+		// Delete the old data directory after subdirectories that contain versioned data.
+		`delete "${old_data}/pg_wal/"`,
+		`delete "${old_data}" && echo 'Success!'`,
 	}, "\n")
 
 	return append([]string{"bash", "-ceu", "--", script, "remove"}, args...)
