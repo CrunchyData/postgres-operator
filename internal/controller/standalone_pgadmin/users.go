@@ -85,10 +85,20 @@ func (r *PGAdminReconciler) reconcilePGAdminUsers(ctx context.Context, pgadmin *
 	if pgadmin.Status.MajorVersion == 0 || pgadmin.Status.MinorVersion == "" ||
 		pgadmin.Status.ImageSHA != pgAdminImageSha {
 
-		pgadminMinorVersion, err := r.reconcilePGAdminVersion(ctx, podExecutor)
-		if err != nil {
+		// exec into the pgAdmin pod and retrieve the pgAdmin minor version
+		script := fmt.Sprintf(`
+PGADMIN_DIR=%s
+cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_VERSION)"
+`, pgAdminDir)
+
+		var stdin, stdout, stderr bytes.Buffer
+
+		if err := podExecutor(ctx, &stdin, &stdout, &stderr,
+			[]string{"bash", "-ceu", "--", script}...); err != nil {
 			return err
 		}
+
+		pgadminMinorVersion := strings.TrimSpace(stdout.String())
 
 		// ensure minor version is valid before storing in status
 		parsedMinorVersion, err := strconv.ParseFloat(pgadminMinorVersion, 64)
@@ -121,25 +131,6 @@ func (r *PGAdminReconciler) reconcilePGAdminUsers(ctx context.Context, pgadmin *
 	}
 
 	return r.writePGAdminUsers(ctx, pgadmin, podExecutor)
-}
-
-// reconcilePGAdminVersion execs into the pgAdmin pod and retrieves the pgAdmin minor version
-func (r *PGAdminReconciler) reconcilePGAdminVersion(ctx context.Context, exec Executor) (string, error) {
-	script := fmt.Sprintf(`
-PGADMIN_DIR=%s
-cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_VERSION)"
-`, pgAdminDir)
-
-	var stdin, stdout, stderr bytes.Buffer
-
-	err := exec(ctx, &stdin, &stdout, &stderr,
-		[]string{"bash", "-ceu", "--", script}...)
-
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(stdout.String()), nil
 }
 
 // writePGAdminUsers takes the users in the pgAdmin spec and writes (adds or updates) their data
@@ -187,7 +178,7 @@ cd $PGADMIN_DIR
 	}
 
 	var olderThan9_3 bool
-	versionFloat, err := strconv.ParseFloat(pgadmin.Status.MinorVersion, 32)
+	versionFloat, err := strconv.ParseFloat(pgadmin.Status.MinorVersion, 64)
 	if err != nil {
 		return err
 	}
@@ -198,6 +189,8 @@ cd $PGADMIN_DIR
 	intentUsers := []pgAdminUserForJson{}
 	for _, user := range pgadmin.Spec.Users {
 		var stdin, stdout, stderr bytes.Buffer
+		// starting in pgAdmin 9.3, custom roles are supported and a new flag is used
+		// - https://github.com/pgadmin-org/pgadmin4/pull/8631
 		typeFlag := "--role User"
 		if olderThan9_3 {
 			typeFlag = "--nonadmin"
@@ -257,10 +250,13 @@ cd $PGADMIN_DIR
 					log.Error(err, "PodExec failed: ")
 					intentUsers = append(intentUsers, existingUser)
 					continue
+
 				} else if strings.Contains(strings.TrimSpace(stderr.String()), "UserWarning: pkg_resources is deprecated as an API") {
+					// Started seeing this error with pgAdmin 9.7 when using Python 3.11.
+					// Issue appears to resolve with Python 3.13.
 					log.Info(stderr.String())
 				} else if strings.TrimSpace(stderr.String()) != "" {
-					log.Error(errors.New(stderr.String()), fmt.Sprintf("pgAdmin setup.py error for %s: ",
+					log.Error(errors.New(stderr.String()), fmt.Sprintf("pgAdmin setup.py update-user error for %s: ",
 						intentUser.Username))
 					intentUsers = append(intentUsers, existingUser)
 					continue
@@ -294,9 +290,11 @@ cd $PGADMIN_DIR
 				continue
 			}
 			if strings.Contains(strings.TrimSpace(stderr.String()), "UserWarning: pkg_resources is deprecated as an API") {
+				// Started seeing this error with pgAdmin 9.7 when using Python 3.11.
+				// Issue appears to resolve with Python 3.13.
 				log.Info(stderr.String())
 			} else if strings.TrimSpace(stderr.String()) != "" {
-				log.Error(errors.New(stderr.String()), fmt.Sprintf("pgAdmin setup.py error for %s: ",
+				log.Error(errors.New(stderr.String()), fmt.Sprintf("pgAdmin setup.py add-user error for %s: ",
 					intentUser.Username))
 				continue
 			}
