@@ -1,3 +1,7 @@
+// Copyright 2024 - 2025 Crunchy Data Solutions, Inc.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 //go:build go1.21
 
 package main
@@ -94,9 +98,9 @@ the environment: https://go.dev/ref/mod#module-cache`,
 				data, err = os.ReadFile(license)
 			}
 			if err == nil {
-				//nolint:gosec // gosec warns on permissions more open than 600
-				// but we need these licenses to be readable by all
-				err = os.WriteFile(destination, data, 0o644)
+				// When we copy the licenses in the Dockerfiles, make sure
+				// to `--chmod` them to an appropriate permissions, e.g., 0o444
+				err = os.WriteFile(destination, data, 0o600)
 			}
 			if err == nil {
 				fmt.Fprintln(os.Stdout, license, "=>", destination)
@@ -194,7 +198,7 @@ func identifyModules(ctx context.Context, executables ...string) []string {
 
 	// Use `go version -m` to read the embedded module information as a text table.
 	// - https://go.dev/ref/mod#go-version-m
-	//nolint:gosec // Suppressing unnecessary warning re: potentially tainted inputs (G204)
+	//gosec:disable G204 -- Use this environment variable to switch Go versions without touching PATH
 	cmd := exec.CommandContext(ctx, os.Getenv("GO"), append([]string{"version", "-m"}, executables...)...)
 	if cmd.Path == "" {
 		cmd.Path, cmd.Err = exec.LookPath("go")
