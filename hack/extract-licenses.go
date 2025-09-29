@@ -99,8 +99,7 @@ the environment: https://go.dev/ref/mod#module-cache`,
 				err = os.WriteFile(destination, data, 0o644)
 			}
 			if err == nil {
-				//nolint:forbidigo // This is an intentional print to console to inform the user
-				fmt.Println(license, "=>", destination)
+				fmt.Fprintln(os.Stdout, license, "=>", destination)
 			}
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
@@ -115,7 +114,7 @@ func downloadModules(ctx context.Context, modules ...string) map[string]string {
 
 	// Download modules and read their details into a series of JSON objects.
 	// - https://go.dev/ref/mod#go-mod-download
-	//nolint:gosec // Suppressing unnecessary warning re: potentially tainted inputs (G204)
+	//gosec:disable G204 -- Use this environment variable to switch Go versions without touching PATH
 	cmd := exec.CommandContext(ctx, os.Getenv("GO"), append([]string{"mod", "download", "-json"}, modules...)...)
 	if cmd.Path == "" {
 		cmd.Path, cmd.Err = exec.LookPath("go")
