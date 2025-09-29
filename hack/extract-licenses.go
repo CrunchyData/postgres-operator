@@ -72,8 +72,7 @@ the environment: https://go.dev/ref/mod#module-cache`,
 	// [proxy]: https://go.dev/ref/mod#module-proxy
 	// [replace]: https://go.dev/ref/mod#go-mod-file-replace
 	modules = slices.DeleteFunc(modules, func(s string) bool {
-		return strings.HasPrefix(s, "git.crunchydata.com/") ||
-			strings.HasPrefix(s, "github.com/crunchydata/")
+		return strings.HasPrefix(s, "github.com/crunchydata/")
 	})
 
 	// Download modules to the Go module cache.
@@ -81,7 +80,7 @@ the environment: https://go.dev/ref/mod#module-cache`,
 
 	// Gather license files from every module into the target directory.
 	for module, directory := range directories {
-		for _, license := range findLicenses(ctx, directory) {
+		for _, license := range findLicenses(directory) {
 			relative := module + strings.TrimPrefix(license, directory)
 			destination := filepath.Join(flags.Arg(0), relative)
 
@@ -95,9 +94,12 @@ the environment: https://go.dev/ref/mod#module-cache`,
 				data, err = os.ReadFile(license)
 			}
 			if err == nil {
+				//nolint:gosec // gosec warns on permissions more open than 600
+				// but we need these licenses to be readable by all
 				err = os.WriteFile(destination, data, 0o644)
 			}
 			if err == nil {
+				//nolint:forbidigo // This is an intentional print to console to inform the user
 				fmt.Println(license, "=>", destination)
 			}
 			if err != nil {
@@ -113,6 +115,7 @@ func downloadModules(ctx context.Context, modules ...string) map[string]string {
 
 	// Download modules and read their details into a series of JSON objects.
 	// - https://go.dev/ref/mod#go-mod-download
+	//nolint:gosec // Suppressing unnecessary warning re: potentially tainted inputs (G204)
 	cmd := exec.CommandContext(ctx, os.Getenv("GO"), append([]string{"mod", "download", "-json"}, modules...)...)
 	if cmd.Path == "" {
 		cmd.Path, cmd.Err = exec.LookPath("go")
@@ -132,7 +135,11 @@ func downloadModules(ctx context.Context, modules ...string) map[string]string {
 	// - https://go.dev/ref/mod#module-cache
 	// - https://go.dev/ref/mod#module-path
 	for {
-		var module struct{ Path, Version, Dir string }
+		var module struct {
+			Path    string `json:"path,omitempty"`
+			Version string `json:"version,omitempty"`
+			Dir     string `json:"dir,omitempty"`
+		}
 		err := decoder.Decode(&module)
 
 		if err == nil {
@@ -150,7 +157,7 @@ func downloadModules(ctx context.Context, modules ...string) map[string]string {
 	return results
 }
 
-func findLicenses(ctx context.Context, directory string) []string {
+func findLicenses(directory string) []string {
 	var results []string
 
 	// Syft maintains a list of license filenames that began as a list maintained by
@@ -188,6 +195,7 @@ func identifyModules(ctx context.Context, executables ...string) []string {
 
 	// Use `go version -m` to read the embedded module information as a text table.
 	// - https://go.dev/ref/mod#go-version-m
+	//nolint:gosec // Suppressing unnecessary warning re: potentially tainted inputs (G204)
 	cmd := exec.CommandContext(ctx, os.Getenv("GO"), append([]string{"version", "-m"}, executables...)...)
 	if cmd.Path == "" {
 		cmd.Path, cmd.Err = exec.LookPath("go")
