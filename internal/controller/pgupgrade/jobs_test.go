@@ -208,11 +208,15 @@ spec:
           (sed "/^postgres:x:/ d; /^[^:]*:x:${uid}:/ d" /etc/passwd
           echo "postgres:x:${uid}:${gid%% *}::${data_volume}:") > "${NSS_WRAPPER_PASSWD}"
           export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD
+          id; [[ "$(id -nu)" == 'postgres' && "$(id -ng)" == 'postgres' ]]
+          [[ -x /usr/pgsql-"${old_version}"/bin/postgres ]]
+          [[ -x /usr/pgsql-"${new_version}"/bin/initdb ]]
+          [[ -d /pgdata/pg"${old_version}" ]]
           cd /pgdata || exit
           echo -e "Step 1: Making new pgdata directory...\n"
           mkdir /pgdata/pg"${new_version}"
           echo -e "Step 2: Initializing new pgdata directory...\n"
-          /usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"
+          /usr/pgsql-"${new_version}"/bin/initdb --allow-group-access -k -D /pgdata/pg"${new_version}"
           echo -e "\nStep 3: Setting the expected permissions on the old pgdata directory...\n"
           chmod 750 /pgdata/pg"${old_version}"
           echo -e "Step 4: Copying shared_preload_libraries setting to new postgresql.conf file...\n"
@@ -263,7 +267,7 @@ status: {}
 
 	tdeJob := reconciler.generateUpgradeJob(ctx, upgrade, startup, "echo testKey")
 	assert.Assert(t, cmp.MarshalContains(tdeJob,
-		`/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}" --encryption-key-command "echo testKey"`))
+		`/usr/pgsql-"${new_version}"/bin/initdb --allow-group-access -k -D /pgdata/pg"${new_version}" --encryption-key-command "echo testKey"`))
 }
 
 func TestGenerateRemoveDataJob(t *testing.T) {

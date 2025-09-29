@@ -49,7 +49,7 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 	newVersion := spec.ToPostgresVersion
 
 	// if the fetch key command is set for TDE, provide the value during initialization
-	initdb := `/usr/pgsql-"${new_version}"/bin/initdb -k -D /pgdata/pg"${new_version}"`
+	initdb := `/usr/pgsql-"${new_version}"/bin/initdb --allow-group-access -k -D /pgdata/pg"${new_version}"`
 	if fetchKeyCommand != "" {
 		initdb += ` --encryption-key-command "` + fetchKeyCommand + `"`
 	}
@@ -80,6 +80,12 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		// Enable nss_wrapper so the current UID and GID resolve to "postgres".
 		// - https://cwrap.org/nss_wrapper.html
 		`export LD_PRELOAD='libnss_wrapper.so' NSS_WRAPPER_GROUP NSS_WRAPPER_PASSWD`,
+		`id; [[ "$(id -nu)" == 'postgres' && "$(id -ng)" == 'postgres' ]]`,
+
+		// Expect Postgres executables at the Red Hat paths.
+		`[[ -x /usr/pgsql-"${old_version}"/bin/postgres ]]`,
+		`[[ -x /usr/pgsql-"${new_version}"/bin/initdb ]]`,
+		`[[ -d /pgdata/pg"${old_version}" ]]`,
 
 		// Below is the pg_upgrade script used to upgrade a PostgresCluster from
 		// one major version to another. Additional information concerning the
