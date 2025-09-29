@@ -405,7 +405,7 @@ func startupCommand(
 	instance *v1beta1.PostgresInstanceSetSpec,
 	parameters *ParameterSet,
 ) []string {
-	version := fmt.Sprint(cluster.Spec.PostgresVersion)
+	version := cluster.Spec.PostgresVersion
 	dataDir := DataDirectory(cluster)
 	logDir := parameters.Value("log_directory")
 	walDir := WALDirectory(cluster, instance)
@@ -463,7 +463,7 @@ chmod +x /tmp/pg_rewind_tde.sh
 `
 	}
 
-	args := []string{version, walDir}
+	args := []string{fmt.Sprint(version), walDir}
 	script := strings.Join([]string{
 		`declare -r expected_major_version="$1" pgwal_directory="$2"`,
 
@@ -484,6 +484,9 @@ chmod +x /tmp/pg_rewind_tde.sh
 
 		// Function to change a directory symlink while keeping the directory contents.
 		strings.TrimSpace(bashSafeLink),
+
+		// Prioritize executables for this major version of Postgres.
+		ShellPath(version),
 
 		// Log the effective user ID and all the group IDs.
 		`echo Initializing ...`,
