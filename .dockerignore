@@ -3,4 +3,5 @@
 /.git
 /bin
 /hack
+!/hack/extract-licenses.go
 !/hack/tools/queries
