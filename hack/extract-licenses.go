@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build go1.21
-
 package main
 
 import (
