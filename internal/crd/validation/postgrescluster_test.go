@@ -14,6 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	v1 "github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -110,6 +111,7 @@ func TestPostgresUserInterfaceAcrossVersions(t *testing.T) {
 func TestAdditionalVolumes(t *testing.T) {
 	ctx := context.Background()
 	cc := require.KubernetesAtLeast(t, "1.30")
+	dryrun := client.NewDryRunClient(cc)
 	t.Parallel()
 
 	namespace := require.Namespace(t, cc)
@@ -154,8 +156,13 @@ func TestAdditionalVolumes(t *testing.T) {
 					}]
 				}
 			}]`, "spec", "instances")
-		err := cc.Create(ctx, tmp.DeepCopy(), client.DryRunAll)
+
+		err := dryrun.Create(ctx, tmp.DeepCopy())
 		assert.Assert(t, apierrors.IsInvalid(err))
+
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 1))
+		assert.Equal(t, details.Causes[0].Field, "spec.instances[0].volumes.additional[0]")
 		assert.ErrorContains(t, err, "you must set only one of image or claimName")
 	})
 
@@ -178,9 +185,14 @@ func TestAdditionalVolumes(t *testing.T) {
 					}]
 				}
 			}]`, "spec", "instances")
-		err := cc.Create(ctx, tmp.DeepCopy(), client.DryRunAll)
+
+		err := dryrun.Create(ctx, tmp.DeepCopy())
 		assert.Assert(t, apierrors.IsInvalid(err))
-		assert.ErrorContains(t, err, "readOnly cannot be set false when using an ImageVolumeSource")
+
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 1))
+		assert.Equal(t, details.Causes[0].Field, "spec.instances[0].volumes.additional[0]")
+		assert.ErrorContains(t, err, "image volumes must be readOnly")
 	})
 
 	t.Run("Reference must be set when using image volume", func(t *testing.T) {
@@ -201,9 +213,15 @@ func TestAdditionalVolumes(t *testing.T) {
 					}]
 				}
 			}]`, "spec", "instances")
-		err := cc.Create(ctx, tmp.DeepCopy(), client.DryRunAll)
+
+		err := dryrun.Create(ctx, tmp.DeepCopy())
 		assert.Assert(t, apierrors.IsInvalid(err))
-		assert.ErrorContains(t, err, "if using an ImageVolumeSource, you must set a reference")
+
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 2))
+		assert.Assert(t, cmp.Equal(details.Causes[0].Field, "spec.instances[0].volumes.additional[0].image.reference"))
+		assert.Assert(t, cmp.Equal(details.Causes[0].Type, "FieldValueRequired"))
+		assert.ErrorContains(t, err, "Required")
 	})
 
 	t.Run("Reference cannot be an empty string when using image volume", func(t *testing.T) {
@@ -225,9 +243,15 @@ func TestAdditionalVolumes(t *testing.T) {
 					}]
 				}
 			}]`, "spec", "instances")
-		err := cc.Create(ctx, tmp.DeepCopy(), client.DryRunAll)
+
+		err := dryrun.Create(ctx, tmp.DeepCopy())
 		assert.Assert(t, apierrors.IsInvalid(err))
-		assert.ErrorContains(t, err, "if using an ImageVolumeSource, you must set a reference")
+
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 1))
+		assert.Assert(t, cmp.Equal(details.Causes[0].Field, "spec.instances[0].volumes.additional[0].image.reference"))
+		assert.Assert(t, cmp.Equal(details.Causes[0].Type, "FieldValueInvalid"))
+		assert.ErrorContains(t, err, "at least 1 chars long")
 	})
 
 	t.Run("ReadOnly can be omitted or set true when using image volume", func(t *testing.T) {
@@ -265,6 +289,6 @@ func TestAdditionalVolumes(t *testing.T) {
 					}]
 				}
 			}]`, "spec", "instances")
-		assert.NilError(t, cc.Create(ctx, tmp.DeepCopy(), client.DryRunAll))
+		assert.NilError(t, dryrun.Create(ctx, tmp.DeepCopy()))
 	})
 }

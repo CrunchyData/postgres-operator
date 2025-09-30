@@ -3,12 +3,25 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # This [jq] filter modifies a Kubernetes CustomResourceDefinition.
+# Use the controller-gen "+kubebuilder:title" marker to identify schemas that need special manipulation.
 #
 # [jq]: https://jqlang.org
 
 # merge recursively combines a stream of objects.
 # https://jqlang.org/manual#multiplication-division-modulo
 def merge(stream): reduce stream as $i ({}; . * $i);
+
+# https://pkg.go.dev/k8s.io/api/core/v1#ImageVolumeSource
+reduce paths(try .title == "$corev1.ImageVolumeSource") as $path (.;
+  getpath($path) as $schema |
+  setpath($path; $schema * {
+    required: (["reference"] + ($schema.required // []) | sort),
+    properties: {
+      pullPolicy: { enum: ["Always", "Never", "IfNotPresent"] },
+      reference: { minLength: 1 }
+    }
+  } | del(.title))
+) |
 
 # Kubernetes assumes the evaluation cost of an enum value is very large: https://issue.k8s.io/119511
 # Look at every schema that has a populated "enum" property.

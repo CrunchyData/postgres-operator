@@ -2620,7 +2620,9 @@ spec:
                           type: array
                           x-kubernetes-list-type: set
                         image:
-                          description: Details for adding an image volume
+                          description: |-
+                            Reference to an image or OCI artifact.
+                            More info: https://kubernetes.io/docs/concepts/storage/volumes#image
                           properties:
                             pullPolicy:
                               description: |-
@@ -2629,6 +2631,11 @@ spec:
                                 Never: the kubelet never pulls the reference and only uses a local image or artifact. Container creation will fail if the reference isn't present.
                                 IfNotPresent: the kubelet pulls if the reference isn't already present on disk. Container creation will fail if the reference isn't present and the pull fails.
                                 Defaults to Always if :latest tag is specified, or IfNotPresent otherwise.
+                              enum:
+                              - Always
+                              - Never
+                              - IfNotPresent
+                              maxLength: 12
                               type: string
                             reference:
                               description: |-
@@ -2638,7 +2645,10 @@ spec:
                                 More info: https://kubernetes.io/docs/concepts/containers/images
                                 This field is optional to allow higher level config management to default or override
                                 container images in workload controllers like Deployments and StatefulSets.
+                              minLength: 1
                               type: string
+                          required:
+                          - reference
                           type: object
                         name:
                           description: |-
@@ -2659,11 +2669,8 @@ spec:
                       x-kubernetes-validations:
                       - message: you must set only one of image or claimName
                         rule: has(self.claimName) != has(self.image)
-                      - message: readOnly cannot be set false when using an ImageVolumeSource
+                      - message: image volumes must be readOnly
                         rule: '!has(self.image) || !has(self.readOnly) || self.readOnly'
-                      - message: if using an ImageVolumeSource, you must set a reference
-                        rule: '!has(self.image) || (self.?image.reference.hasValue()
-                          && self.image.reference.size() > 0)'
                     maxItems: 10
                     type: array
                     x-kubernetes-list-map-keys:

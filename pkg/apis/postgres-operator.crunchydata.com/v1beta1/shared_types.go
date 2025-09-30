@@ -313,8 +313,7 @@ func (meta *Metadata) GetAnnotationsOrNil() map[string]string {
 // +structType=atomic
 //
 // +kubebuilder:validation:XValidation:rule=`has(self.claimName) != has(self.image)`,message=`you must set only one of image or claimName`
-// +kubebuilder:validation:XValidation:rule=`!has(self.image) || !has(self.readOnly) || self.readOnly`,message=`readOnly cannot be set false when using an ImageVolumeSource`
-// +kubebuilder:validation:XValidation:rule=`!has(self.image) || (self.?image.reference.hasValue() && self.image.reference.size() > 0)`,message=`if using an ImageVolumeSource, you must set a reference`
+// +kubebuilder:validation:XValidation:rule=`!has(self.image) || !has(self.readOnly) || self.readOnly`,message=`image volumes must be readOnly`
 type AdditionalVolume struct {
 	// Name of an existing PersistentVolumeClaim.
 	// ---
@@ -337,9 +336,11 @@ type AdditionalVolume struct {
 	// +optional
 	Containers []DNS1123Label `json:"containers"`
 
-	// Details for adding an image volume
+	// Reference to an image or OCI artifact.
+	// More info: https://kubernetes.io/docs/concepts/storage/volumes#image
 	// ---
-	// https://docs.k8s.io/concepts/storage/volumes#image
+	// Use "title" to add more validation in [internal/crd/post-process.jq].
+	// +kubebuilder:title=$corev1.ImageVolumeSource
 	//
 	// +optional
 	Image *corev1.ImageVolumeSource `json:"image,omitempty"`
