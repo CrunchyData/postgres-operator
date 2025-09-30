@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
@@ -38,6 +39,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -137,7 +139,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 	// When we delete the StatefulSet, we will leave its Pods in place. They will be claimed by
 	// the StatefulSet that gets created in the next reconcile.
 	existing := &appsv1.StatefulSet{}
-	if err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(repo), existing)); err != nil {
+	if err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(repo), existing)); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, err
 		}
@@ -150,7 +152,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 			exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 			propagate := client.PropagationPolicy(metav1.DeletePropagationOrphan)
 
-			return repo, errors.WithStack(r.Client.Delete(ctx, existing, exactly, propagate))
+			return repo, errors.WithStack(r.Writer.Delete(ctx, existing, exactly, propagate))
 		}
 	}
 
@@ -248,7 +250,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	for _, gvk := range gvks {
 		uList := &unstructured.UnstructuredList{}
 		uList.SetGroupVersionKind(gvk)
-		if err := r.Client.List(ctx, uList,
+		if err := r.Reader.List(ctx, uList,
 			client.InNamespace(postgresCluster.GetNamespace()),
 			client.MatchingLabelsSelector{Selector: selector}); err != nil {
 			return nil, errors.WithStack(err)
@@ -398,7 +400,7 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 
 		// If nothing has specified that the resource should not be deleted, then delete
 		if delete {
-			if err := r.Client.Delete(ctx, &ownedResources[i],
+			if err := r.Writer.Delete(ctx, &ownedResources[i],
 				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 				return []unstructured.Unstructured{}, errors.WithStack(err)
 			}
@@ -608,7 +610,8 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		},
 	}
 
-	if repoHost := postgresCluster.Spec.Backups.PGBackRest.RepoHost; repoHost != nil {
+	repoHost := postgresCluster.Spec.Backups.PGBackRest.RepoHost
+	if repoHost != nil {
 		repo.Spec.Template.Spec.Affinity = repoHost.Affinity
 		repo.Spec.Template.Spec.Tolerations = repoHost.Tolerations
 		repo.Spec.Template.Spec.TopologySpreadConstraints = repoHost.TopologySpreadConstraints
@@ -670,9 +673,9 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 	// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
 	repo.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
-	// pgBackRest does not make any Kubernetes API calls. Use the default
-	// ServiceAccount and do not mount its credentials.
-	repo.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
+	// pgBackRest does not make any Kubernetes API calls but the script that
+	// manages the auto-grow annotation does, so we need to mount the SA token.
+	repo.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(true)
 
 	// Do not add environment variables describing services in this namespace.
 	repo.Spec.Template.Spec.EnableServiceLinks = initialize.Bool(false)
@@ -686,7 +689,7 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 	// add the init container to make the pgBackRest repo volume log directory
 	pgBackRestLogPath := pgbackrest.MakePGBackrestLogDir(&repo.Spec.Template, postgresCluster)
 
-	containersToAdd := []string{naming.PGBackRestRepoContainerName}
+	containersToAdd := []string{naming.PGBackRestRepoContainerName, naming.ContainerPGBackRestConfig}
 
 	// If OpenTelemetryLogs is enabled, we want to add the collector to the pod
 	// and also add the RepoVolumes to the container.
@@ -717,6 +720,16 @@ func (r *Reconciler) generateRepoHostIntent(ctx context.Context, postgresCluster
 		&repo.Spec.Template)
 
 	AddTMPEmptyDir(&repo.Spec.Template)
+
+	// mount additional volumes to the repo host containers
+	if repoHost != nil && repoHost.Volumes != nil && len(repoHost.Volumes.Additional) > 0 {
+		missingContainers := util.AddAdditionalVolumesAndMounts(&repo.Spec.Template.Spec, repoHost.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following Repo Host Pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+		}
+	}
 
 	// set ownership references
 	if err := r.setControllerReference(postgresCluster, repo); err != nil {
@@ -810,11 +823,18 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 			{Name: "SELECTOR", Value: naming.PGBackRestDedicatedSelector(postgresCluster.GetName()).String()},
 		}
 	} else {
-		container.Command = []string{"/bin/pgbackrest", "backup"}
+		mkdirCommand := ""
+		cloudLogPath := getCloudLogPath(postgresCluster)
+		if cloudLogPath != "" {
+			mkdirCommand += shell.MakeDirectories(cloudLogPath, cloudLogPath) + "; "
+		}
+
+		container.Command = []string{"sh", "-c", "--", mkdirCommand + `exec "$@"`, "--", "/bin/pgbackrest", "backup"}
 		container.Command = append(container.Command, cmdOpts...)
 	}
 
-	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
+	jobs := postgresCluster.Spec.Backups.PGBackRest.Jobs
+	if jobs != nil {
 		container.Resources = postgresCluster.Spec.Backups.PGBackRest.Jobs.Resources
 	}
 
@@ -848,12 +868,9 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 		},
 	}
 
-	if jobs := postgresCluster.Spec.Backups.PGBackRest.Jobs; jobs != nil {
+	// set the job lifetime, priority class name, tolerations, and affinity, if they exist
+	if jobs != nil {
 		jobSpec.TTLSecondsAfterFinished = jobs.TTLSecondsAfterFinished
-	}
-
-	// set the priority class name, tolerations, and affinity, if they exist
-	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil {
 		jobSpec.Template.Spec.Tolerations = postgresCluster.Spec.Backups.PGBackRest.Jobs.Tolerations
 		jobSpec.Template.Spec.Affinity = postgresCluster.Spec.Backups.PGBackRest.Jobs.Affinity
 		jobSpec.Template.Spec.PriorityClassName =
@@ -875,25 +892,39 @@ func (r *Reconciler) generateBackupJobSpecIntent(ctx context.Context, postgresCl
 		jobSpec.Template.Spec.SecurityContext = postgres.PodSecurityContext(postgresCluster)
 		pgbackrest.AddConfigToCloudBackupJob(postgresCluster, &jobSpec.Template)
 
-		// If the user has specified a PVC to use as a log volume via the PGBackRestCloudLogVolume
-		// annotation, check for the PVC. If we find it, mount it to the backup job.
-		// Otherwise, create a warning event.
-		if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
-			logVolume := &corev1.PersistentVolumeClaim{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      logVolumeName,
-					Namespace: postgresCluster.GetNamespace(),
-				},
+		// If the "pgbackrest-cloud-log-volume" annotation has a value, check if it is the
+		// same as any of the additional volume names. If there is a collision of names,
+		// create a warning event. If there is no name collision, mount the volume referenced
+		// by the annotation.
+		if logVolume := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolume != "" {
+			var collisionFound bool
+			if jobs != nil && jobs.Volumes != nil {
+				for _, volume := range jobs.Volumes.Additional {
+					if volume.Name == logVolume {
+						collisionFound = true
+						r.Recorder.Event(postgresCluster, corev1.EventTypeWarning,
+							"DuplicateCloudBackupVolume", "The volume name specified in the "+
+								"pgbackrest-cloud-log-volume annotation is the same as one "+
+								"specified in spec.backups.pgbackrest.jobs.volumes.additional. "+
+								"Cannot mount duplicate volume names. Defaulting to the "+
+								"additional volume.")
+						break
+					}
+				}
 			}
-			err := errors.WithStack(r.Client.Get(ctx,
-				client.ObjectKeyFromObject(logVolume), logVolume))
-			if err != nil {
-				// PVC not retrieved, create warning event
-				r.Recorder.Event(postgresCluster, corev1.EventTypeWarning, "PGBackRestCloudLogVolumeNotFound", err.Error())
-			} else {
-				// We successfully found the specified PVC, so we will add it to the backup job
-				util.AddVolumeAndMountsToPod(&jobSpec.Template.Spec, logVolume)
+			if !collisionFound {
+				util.AddCloudLogVolumeToPod(&jobSpec.Template.Spec, logVolume)
 			}
+		}
+	}
+
+	// mount additional volumes to the job containers
+	if jobs != nil && jobs.Volumes != nil && len(jobs.Volumes.Additional) > 0 {
+		missingContainers := util.AddAdditionalVolumesAndMounts(&jobSpec.Template.Spec, jobs.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(postgresCluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following Backup Job Pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
 		}
 	}
 
@@ -916,7 +947,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	// lookup the various patroni endpoints
 	leaderEP, dcsEP, failoverEP := corev1.Endpoints{}, corev1.Endpoints{}, corev1.Endpoints{}
 	currentEndpoints := []corev1.Endpoints{}
-	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
+	if err := r.Reader.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
 		&leaderEP); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, nil, errors.WithStack(err)
@@ -924,7 +955,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	} else {
 		currentEndpoints = append(currentEndpoints, leaderEP)
 	}
-	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
+	if err := r.Reader.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
 		&dcsEP); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, nil, errors.WithStack(err)
@@ -932,7 +963,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	} else {
 		currentEndpoints = append(currentEndpoints, dcsEP)
 	}
-	if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
+	if err := r.Reader.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
 		&failoverEP); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, nil, errors.WithStack(err)
@@ -942,7 +973,7 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 	}
 
 	restoreJobs := &batchv1.JobList{}
-	if err := r.Client.List(ctx, restoreJobs, &client.ListOptions{
+	if err := r.Reader.List(ctx, restoreJobs, &client.ListOptions{
 		Namespace:     cluster.Namespace,
 		LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
 	}); err != nil {
@@ -990,26 +1021,26 @@ func (r *Reconciler) observeRestoreEnv(ctx context.Context,
 			// by the restore job. Clean them up if they still exist.
 			selector := naming.PGBackRestRestoreConfigSelector(cluster.GetName())
 			restoreConfigMaps := &corev1.ConfigMapList{}
-			if err := r.Client.List(ctx, restoreConfigMaps, &client.ListOptions{
+			if err := r.Reader.List(ctx, restoreConfigMaps, &client.ListOptions{
 				Namespace:     cluster.Namespace,
 				LabelSelector: selector,
 			}); err != nil {
 				return nil, nil, errors.WithStack(err)
 			}
 			for i := range restoreConfigMaps.Items {
-				if err := r.Client.Delete(ctx, &restoreConfigMaps.Items[i]); err != nil {
+				if err := r.Writer.Delete(ctx, &restoreConfigMaps.Items[i]); err != nil {
 					return nil, nil, errors.WithStack(err)
 				}
 			}
 			restoreSecrets := &corev1.SecretList{}
-			if err := r.Client.List(ctx, restoreSecrets, &client.ListOptions{
+			if err := r.Reader.List(ctx, restoreSecrets, &client.ListOptions{
 				Namespace:     cluster.Namespace,
 				LabelSelector: selector,
 			}); err != nil {
 				return nil, nil, errors.WithStack(err)
 			}
 			for i := range restoreSecrets.Items {
-				if err := r.Client.Delete(ctx, &restoreSecrets.Items[i]); err != nil {
+				if err := r.Writer.Delete(ctx, &restoreSecrets.Items[i]); err != nil {
 					return nil, nil, errors.WithStack(err)
 				}
 			}
@@ -1101,7 +1132,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 	// remove any existing restore Jobs
 	if restoreJob != nil {
 		setPreparingClusterCondition("removing restore job")
-		if err := r.Client.Delete(ctx, restoreJob,
+		if err := r.Writer.Delete(ctx, restoreJob,
 			client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 			return errors.WithStack(err)
 		}
@@ -1111,7 +1142,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 	if clusterRunning {
 		setPreparingClusterCondition("removing runners")
 		for _, runner := range runners {
-			err := r.Client.Delete(ctx, runner,
+			err := r.Writer.Delete(ctx, runner,
 				client.PropagationPolicy(metav1.DeletePropagationForeground))
 			if client.IgnoreNotFound(err) != nil {
 				return errors.WithStack(err)
@@ -1142,7 +1173,7 @@ func (r *Reconciler) prepareForRestore(ctx context.Context,
 	setPreparingClusterCondition("removing DCS")
 	// delete any Endpoints
 	for i := range currentEndpoints {
-		if err := r.Client.Delete(ctx, &currentEndpoints[i]); client.IgnoreNotFound(err) != nil {
+		if err := r.Writer.Delete(ctx, &currentEndpoints[i]); client.IgnoreNotFound(err) != nil {
 			return errors.WithStack(err)
 		}
 	}
@@ -1388,6 +1419,15 @@ func (r *Reconciler) generateRestoreJobIntent(cluster *v1beta1.PostgresCluster,
 	// set the priority class name, if it exists
 	job.Spec.Template.Spec.PriorityClassName = initialize.FromPointer(dataSource.PriorityClassName)
 
+	if dataSource.Volumes != nil && len(dataSource.Volumes.Additional) > 0 {
+		missingContainers := util.AddAdditionalVolumesAndMounts(&job.Spec.Template.Spec, dataSource.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following Restore Pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+		}
+	}
+
 	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
 	if err := errors.WithStack(r.setControllerReference(cluster, job)); err != nil {
 		return err
@@ -1478,7 +1518,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// reconcile all pgbackrest repository repos
 	replicaCreateRepo, err := r.reconcileRepos(ctx, postgresCluster, configHashes, repoResources)
 	if err != nil {
-		log.Error(err, "unable to reconcile pgBackRest repo host")
+		log.Error(err, "unable to reconcile pgBackRest repos")
 		result.Requeue = true
 		return result, nil
 	}
@@ -1659,7 +1699,7 @@ func (r *Reconciler) reconcilePostgresClusterDataSource(ctx context.Context,
 				"PostgreSQL data for the cluster: %w", err)
 		}
 	} else {
-		if err := r.Client.Get(ctx,
+		if err := r.Reader.Get(ctx,
 			client.ObjectKey{Name: sourceClusterName, Namespace: sourceClusterNamespace},
 			sourceCluster); err != nil {
 			if apierrors.IsNotFound(err) {
@@ -1821,6 +1861,7 @@ func (r *Reconciler) reconcileCloudBasedDataSource(ctx context.Context,
 		Affinity:          dataSource.Affinity,
 		Tolerations:       dataSource.Tolerations,
 		PriorityClassName: dataSource.PriorityClassName,
+		Volumes:           dataSource.Volumes,
 	}
 
 	// reconcile the pgBackRest restore Job to populate the cluster's data directory
@@ -1860,7 +1901,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 	sourceConfig := &corev1.ConfigMap{ObjectMeta: naming.PGBackRestConfig(sourceCluster)}
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(sourceConfig), sourceConfig))
+			r.Reader.Get(ctx, client.ObjectKeyFromObject(sourceConfig), sourceConfig))
 	}
 
 	// Retrieve the pgBackRest Secret of the source cluster if it has one. When
@@ -1868,7 +1909,7 @@ func (r *Reconciler) copyRestoreConfiguration(ctx context.Context,
 	sourceSecret := &corev1.Secret{ObjectMeta: naming.PGBackRestSecret(sourceCluster)}
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(sourceSecret), sourceSecret))
+			r.Reader.Get(ctx, client.ObjectKeyFromObject(sourceSecret), sourceSecret))
 
 		if apierrors.IsNotFound(err) {
 			sourceSecret, err = nil, nil
@@ -1956,7 +1997,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 			// Get the existing Secret for the copy, if it exists. It **must**
 			// exist if not configured as optional.
 			if secretProjection.Optional != nil && *secretProjection.Optional {
-				if err := errors.WithStack(r.Client.Get(ctx, secretName,
+				if err := errors.WithStack(r.Reader.Get(ctx, secretName,
 					secretCopy)); apierrors.IsNotFound(err) {
 					continue
 				} else {
@@ -1964,7 +2005,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 				}
 			} else {
 				if err := errors.WithStack(
-					r.Client.Get(ctx, secretName, secretCopy)); err != nil {
+					r.Reader.Get(ctx, secretName, secretCopy)); err != nil {
 					return err
 				}
 			}
@@ -2010,7 +2051,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 			// Get the existing ConfigMap for the copy, if it exists. It **must**
 			// exist if not configured as optional.
 			if configMapProjection.Optional != nil && *configMapProjection.Optional {
-				if err := errors.WithStack(r.Client.Get(ctx, configMapName,
+				if err := errors.WithStack(r.Reader.Get(ctx, configMapName,
 					configMapCopy)); apierrors.IsNotFound(err) {
 					continue
 				} else {
@@ -2018,7 +2059,7 @@ func (r *Reconciler) copyConfigurationResources(ctx context.Context, cluster,
 				}
 			} else {
 				if err := errors.WithStack(
-					r.Client.Get(ctx, configMapName, configMapCopy)); err != nil {
+					r.Reader.Get(ctx, configMapName, configMapCopy)); err != nil {
 					return err
 				}
 			}
@@ -2062,28 +2103,7 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	repoHostName, configHash, serviceName, serviceNamespace string,
 	instanceNames []string) error {
 
-	// If the user has specified a PVC to use as a log volume for cloud backups via the
-	// PGBackRestCloudLogVolume annotation, check for the PVC. If we find it, set the cloud
-	// log path. If the user has specified a PVC, but we can't find it, create a warning event.
-	cloudLogPath := ""
-	if logVolumeName := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolumeName != "" {
-		logVolume := &corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      logVolumeName,
-				Namespace: postgresCluster.GetNamespace(),
-			},
-		}
-		err := errors.WithStack(r.Client.Get(ctx,
-			client.ObjectKeyFromObject(logVolume), logVolume))
-		if err != nil {
-			// PVC not retrieved, create warning event
-			r.Recorder.Event(postgresCluster, corev1.EventTypeWarning,
-				"PGBackRestCloudLogVolumeNotFound", err.Error())
-		} else {
-			// We successfully found the specified PVC, so we will set the log path
-			cloudLogPath = "/volumes/" + logVolumeName
-		}
-	}
+	cloudLogPath := getCloudLogPath(postgresCluster)
 
 	backrestConfig, err := pgbackrest.CreatePGBackRestConfigMapIntent(ctx, postgresCluster, repoHostName,
 		configHash, serviceName, serviceNamespace, cloudLogPath, instanceNames)
@@ -2124,7 +2144,7 @@ func (r *Reconciler) reconcilePGBackRestSecret(ctx context.Context,
 
 	existing := &corev1.Secret{}
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(intent), existing)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(intent), existing)))
 
 	if err == nil {
 		err = r.setControllerReference(cluster, intent)
@@ -2223,7 +2243,19 @@ func (r *Reconciler) reconcileRepoHostRBAC(ctx context.Context,
 	sa := &corev1.ServiceAccount{ObjectMeta: naming.RepoHostRBAC(postgresCluster)}
 	sa.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ServiceAccount"))
 
+	role := &rbacv1.Role{ObjectMeta: naming.RepoHostRBAC(postgresCluster)}
+	role.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("Role"))
+
+	binding := &rbacv1.RoleBinding{ObjectMeta: naming.RepoHostRBAC(postgresCluster)}
+	binding.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("RoleBinding"))
+
 	if err := r.setControllerReference(postgresCluster, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.setControllerReference(postgresCluster, binding); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.setControllerReference(postgresCluster, role); err != nil {
 		return nil, errors.WithStack(err)
 	}
 
@@ -2232,8 +2264,35 @@ func (r *Reconciler) reconcileRepoHostRBAC(ctx context.Context,
 	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
 		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
+	binding.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	binding.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+	role.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetAnnotationsOrNil())
+	role.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Backups.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+
+	binding.RoleRef = rbacv1.RoleRef{
+		APIGroup: rbacv1.SchemeGroupVersion.Group,
+		Kind:     role.Kind,
+		Name:     role.Name,
+	}
+	binding.Subjects = []rbacv1.Subject{{
+		Kind: sa.Kind,
+		Name: sa.Name,
+	}}
+	role.Rules = pgbackrest.RepoHostPermissions(postgresCluster)
 
 	if err := r.apply(ctx, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.apply(ctx, role); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.apply(ctx, binding); err != nil {
 		return nil, errors.WithStack(err)
 	}
 
@@ -2361,7 +2420,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 		// per a new value for the annotation (unless the user manually deletes the Job).
 		if completed || failed {
 			if manualAnnotation != "" && backupID != manualAnnotation {
-				return errors.WithStack(r.Client.Delete(ctx, currentBackupJob,
+				return errors.WithStack(r.Writer.Delete(ctx, currentBackupJob,
 					client.PropagationPolicy(metav1.DeletePropagationBackground)))
 			}
 		}
@@ -2634,7 +2693,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		if failed || replicaCreateRepoChanged ||
 			(job.GetAnnotations()[naming.PGBackRestCurrentConfig] != containerName) ||
 			(job.GetAnnotations()[naming.PGBackRestConfigHash] != configHash) {
-			if err := r.Client.Delete(ctx, job,
+			if err := r.Writer.Delete(ctx, job,
 				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 				return errors.WithStack(err)
 			}
@@ -2704,8 +2763,15 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 
 	errors := []error{}
 	errMsg := "reconciling repository volume"
-	repoVols := []*corev1.PersistentVolumeClaim{}
+	repoVols := make(map[string]*corev1.PersistentVolumeClaim)
 	var replicaCreateRepo v1beta1.PGBackRestRepo
+
+	if feature.Enabled(ctx, feature.AutoGrowVolumes) && pgbackrest.RepoHostVolumeDefined(postgresCluster) {
+		// get the autogrow annotations so that the correct volume size values can be
+		// used and the cluster status can be updated
+		errors = append(errors, r.writeRepoVolumeSizeRequestStatus(ctx, postgresCluster))
+	}
+
 	for i, repo := range postgresCluster.Spec.Backups.PGBackRest.Repos {
 		// the repo at index 0 is the replica creation repo
 		if i == 0 {
@@ -2715,24 +2781,74 @@ func (r *Reconciler) reconcileRepos(ctx context.Context,
 		if repo.Volume == nil {
 			continue
 		}
-		repo, err := r.applyRepoVolumeIntent(ctx, postgresCluster,
-			repo.Volume.VolumeClaimSpec.AsPersistentVolumeClaimSpec(),
+
+		// set the correct volume size on the PVC spec before applying
+		spec := repo.Volume.VolumeClaimSpec.AsPersistentVolumeClaimSpec()
+		r.setVolumeSize(ctx, postgresCluster, &spec, repo.Name, "repo-host")
+
+		// Clear any set limit before applying PVC. This is needed to allow the limit
+		// value to change later.
+		spec.Resources.Limits = nil
+
+		repoPVC, err := r.applyRepoVolumeIntent(ctx, postgresCluster, spec,
 			repo.Name, repoResources)
 		if err != nil {
 			log.Error(err, errMsg)
 			errors = append(errors, err)
-			continue
 		}
-		if repo != nil {
-			repoVols = append(repoVols, repo)
-		}
+		// Store the repo volume after apply. If nil, that indicates a problem
+		// and the existing status should be preserved.
+		repoVols[repo.Name] = repoPVC
 	}
 
 	postgresCluster.Status.PGBackRest.Repos =
-		getRepoVolumeStatus(postgresCluster.Status.PGBackRest.Repos, repoVols, extConfigHashes,
-			replicaCreateRepo.Name)
+		getRepoVolumeStatus(postgresCluster.Status.PGBackRest.Repos, repoVols,
+			extConfigHashes, replicaCreateRepo.Name)
 
 	return replicaCreateRepo, utilerrors.NewAggregate(errors)
+}
+
+// +kubebuilder:rbac:groups="",resources="pods",verbs={list}
+
+// writeRepoVolumeSizeRequestStatus gets the pgBackRest repo host volume request annotations
+// from the repo host Pod and stores them in the Postgres Cluster object's status.
+// If there is no repo host or there are no annotations, this function returns
+// without updating the status.
+func (r *Reconciler) writeRepoVolumeSizeRequestStatus(ctx context.Context,
+	cluster *v1beta1.PostgresCluster) error {
+
+	pods := &corev1.PodList{}
+	if err := errors.WithStack(
+		r.Reader.List(ctx, pods,
+			client.InNamespace(cluster.Namespace),
+			client.MatchingLabelsSelector{
+				Selector: naming.PGBackRestDedicatedLabels(cluster.Name).AsSelector()},
+		)); err != nil {
+		return err
+	}
+
+	// there should only ever be one repo host Pod
+	if len(pods.Items) != 1 {
+		return errors.Errorf("Found %d pgBackRest repo host Pods. Expected 1.", len(pods.Items))
+	}
+	repoHost := pods.Items[0]
+
+	if cluster.Status.PGBackRest != nil {
+		var backupRequest string
+		for i := range cluster.Status.PGBackRest.Repos {
+			if repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"] != "" {
+				// get the backup request from the status, if it is set
+				backupRequest = cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume
+
+				value := r.storeDesiredRequest(ctx, cluster, cluster.Status.PGBackRest.Repos[i].Name, "repo-host",
+					repoHost.Annotations["suggested-"+cluster.Status.PGBackRest.Repos[i].Name+"-pvc-size"], backupRequest)
+
+				cluster.Status.PGBackRest.Repos[i].DesiredRepoVolume = value
+			}
+		}
+	}
+
+	return nil
 }
 
 // +kubebuilder:rbac:groups="",resources="pods",verbs={get,list}
@@ -2880,7 +2996,7 @@ func getRepoHostStatus(repoHost *appsv1.StatefulSet) *v1beta1.RepoHostStatus {
 // existing/current status for any repos in the cluster, the repository volumes
 // (i.e. PVCs) reconciled  for the cluster, and the hashes calculated for the configuration for any
 // external repositories defined for the cluster.
-func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.PersistentVolumeClaim,
+func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes map[string]*corev1.PersistentVolumeClaim,
 	configHashes map[string]string, replicaCreateRepoName string) []v1beta1.RepoStatus {
 
 	// the new repository status that will be generated and returned
@@ -2888,11 +3004,18 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*corev1.
 
 	// Update the repo status based on the repo volumes (PVCs) that were reconciled.  This includes
 	// updating the status for any existing repository volumes, and adding status for any new
-	// repository volumes.
-	for _, rv := range repoVolumes {
+	// repository volumes. If there was a problem with the volume when an apply was attempted,
+	// the existing status is preserved.
+	for repoName, rv := range repoVolumes {
 		newRepoVolStatus := true
-		repoName := rv.Labels[naming.LabelPGBackRestRepo]
 		for _, rs := range repoStatus {
+			// Preserve the previous status if it exists and the apply failed.
+			if rs.Name == repoName && rv == nil {
+				updatedRepoStatus = append(updatedRepoStatus, rs)
+				newRepoVolStatus = false
+				break
+			}
+
 			// treat as new status if contains properties of a cloud (s3, gcr or azure) repo
 			if rs.Name == repoName && rs.RepoOptionsHash == "" {
 				newRepoVolStatus = false
@@ -3216,7 +3339,7 @@ func (r *Reconciler) ObserveBackupUniverse(ctx context.Context,
 		},
 	}
 	err = errors.WithStack(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 	repoHostStatefulSetNotFound = apierrors.IsNotFound(err)
 
 	// If we have an error that is not related to a missing repo-host StatefulSet,
@@ -3240,4 +3363,25 @@ func authorizeBackupRemovalAnnotationPresent(postgresCluster *v1beta1.PostgresCl
 		}
 	}
 	return false
+}
+
+// getCloudLogPath is responsible for determining the appropriate log path for pgbackrest
+// in cloud backup jobs. If the user specified a log path via the spec, use it. Otherwise,
+// if the user specified a log volume for cloud backups via the PGBackRestCloudLogVolume
+// annotation, we will use that. If neither scenario is true, return an empty string.
+//
+// This function assumes that the backups/pgbackrest spec is present in postgresCluster.
+func getCloudLogPath(postgresCluster *v1beta1.PostgresCluster) string {
+	cloudLogPath := ""
+	if postgresCluster.Spec.Backups.PGBackRest.Jobs != nil &&
+		postgresCluster.Spec.Backups.PGBackRest.Jobs.Log != nil &&
+		postgresCluster.Spec.Backups.PGBackRest.Jobs.Log.Path != "" {
+		// TODO: I know it should be caught by CEL validation, but is it worthwhile to also
+		// check that Log.Path ~= "/volumes/" + existingAdditionalVolume.name here??
+
+		cloudLogPath = filepath.Clean(postgresCluster.Spec.Backups.PGBackRest.Jobs.Log.Path)
+	} else if logVolume := postgresCluster.Annotations[naming.PGBackRestCloudLogVolume]; logVolume != "" {
+		cloudLogPath = "/volumes/" + logVolume
+	}
+	return cloudLogPath
 }

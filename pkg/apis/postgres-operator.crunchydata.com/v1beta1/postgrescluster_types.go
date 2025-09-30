@@ -59,6 +59,7 @@ type PostgresClusterSpec struct {
 	// namespace as the cluster.
 	// +optional
 	DatabaseInitSQL *DatabaseInitSQL `json:"databaseInitSQL,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should use the defined default
 	// scheduling constraints. If the field is unset or false, the default
 	// scheduling constraints will be used in addition to any custom constraints
@@ -80,11 +81,6 @@ type PostgresClusterSpec struct {
 	// pull (download) container images.
 	// More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	// +kubebuilder:validation:Type=string
-	//
 	// +kubebuilder:validation:Enum={Always,Never,IfNotPresent}
 	// +optional
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
@@ -133,7 +129,7 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Minimum=11
 	// +kubebuilder:validation:Maximum=17
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
-	PostgresVersion int `json:"postgresVersion"`
+	PostgresVersion int32 `json:"postgresVersion"`
 
 	// The PostGIS extension version installed in the PostgreSQL image.
 	// When image is not set, indicates a PostGIS enabled image will be used.
@@ -308,6 +304,10 @@ type PostgresClusterDataSource struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Volumes to add to Restore Job Pods
+	// +optional
+	Volumes *PGBackRestVolumesSpec `json:"volumes,omitempty"`
 }
 
 // Default defines several key default values for a Postgres cluster.
@@ -375,7 +375,7 @@ type PostgresClusterStatus struct {
 	// Stores the current PostgreSQL major version following a successful
 	// major PostgreSQL upgrade.
 	// +optional
-	PostgresVersion int `json:"postgresVersion"`
+	PostgresVersion int32 `json:"postgresVersion"`
 
 	// Current state of the PostgreSQL proxy.
 	// +optional
@@ -471,7 +471,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// ---
 	// +required
-	DataVolumeClaimSpec VolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	DataVolumeClaimSpec VolumeClaimSpecWithAutoGrow `json:"dataVolumeClaimSpec"`
 
 	// Priority class name for the PostgreSQL pod. Changing this value causes
 	// PostgreSQL to restart.
@@ -513,7 +513,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// ---
 	// +optional
-	WALVolumeClaimSpec *VolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
+	WALVolumeClaimSpec *VolumeClaimSpecWithAutoGrow `json:"walVolumeClaimSpec,omitempty"`
 
 	// The list of tablespaces volumes to mount for this postgrescluster
 	// This field requires enabling TablespaceVolumes feature gate
@@ -522,6 +522,8 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
 
+	// Volumes to be added to the instance set.
+	// +optional
 	Volumes *PostgresVolumesSpec `json:"volumes,omitempty"`
 }
 
@@ -539,38 +541,6 @@ type PostgresVolumesSpec struct {
 	// ---
 	// +optional
 	Temp *VolumeClaimSpec `json:"temp,omitempty"`
-}
-
-type AdditionalVolume struct {
-	// A reference to a preexisting PVC.
-	// ---
-	// +required
-	ClaimName DNS1123Subdomain `json:"claimName"`
-
-	// The containers to attach this volume to.
-	// An omitted `Containers` field matches all containers.
-	// An empty `Containers` field matches no containers.
-	// ---
-	// +optional
-	// +listType=atomic
-	// +kubebuilder:validation:MaxItems=10
-	Containers []string `json:"containers,omitempty"`
-
-	// The name of the volume used for mounting path.
-	// Volumes are mounted in the pods at `volumes/<NAME>`
-	// Must be unique.
-	// ---
-	// The `Name` field is a `DNS1123Label` type to enforce
-	// the max length.
-	// +required
-	// Max length is less than max 63 to allow prepending `volumes-` to name
-	// +kubebuilder:validation:MaxLength=55
-	Name DNS1123Label `json:"name"`
-
-	// Sets the write/read mode of the volume
-	// ---
-	// +optional
-	ReadOnly bool `json:"readOnly,omitempty"`
 }
 
 type TablespaceVolume struct {
@@ -633,6 +603,10 @@ type PostgresInstanceSetStatus struct {
 	// Desired Size of the pgData volume
 	// +optional
 	DesiredPGDataVolume map[string]string `json:"desiredPGDataVolume,omitempty"`
+
+	// Desired Size of the pgWAL volume
+	// +optional
+	DesiredPGWALVolume map[string]string `json:"desiredPGWALVolume,omitempty"`
 }
 
 // PostgresProxySpec is a union of the supported PostgreSQL proxies.

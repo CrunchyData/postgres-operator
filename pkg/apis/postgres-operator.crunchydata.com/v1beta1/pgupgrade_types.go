@@ -29,11 +29,6 @@ type PGUpgradeSpec struct {
 	// pull (download) container images.
 	// More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	// +kubebuilder:validation:Type=string
-	//
 	// +kubebuilder:validation:Enum={Always,Never,IfNotPresent}
 	// +optional
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
@@ -109,10 +104,6 @@ type PGUpgradeSettings struct {
 	// - Copy and Link forever:  https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_upgrade/pg_upgrade.h;hb=REL_10_0#l232
 	// - Clone since 12:         https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_upgrade/pg_upgrade.h;hb=REL_12_0#l232
 	// - CopyFileRange since 17: https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/bin/pg_upgrade/pg_upgrade.h;hb=REL_17_0#l251
-	//
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
 	//
 	// +kubebuilder:validation:Enum={Clone,Copy,CopyFileRange,Link}
 	// +optional

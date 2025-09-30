@@ -21,7 +21,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/version"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -39,7 +38,7 @@ func TestDeleteControlled(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	ns := setupNamespace(t, cc)
-	reconciler := Reconciler{Client: cc}
+	reconciler := Reconciler{Writer: cc}
 
 	cluster := testCluster()
 	cluster.Namespace = ns.Name
@@ -118,6 +117,7 @@ spec:
 var _ = Describe("PostgresCluster Reconciler", func() {
 	var test struct {
 		Namespace  *corev1.Namespace
+		Owner      string
 		Reconciler Reconciler
 		Recorder   *record.FakeRecorder
 	}
@@ -129,13 +129,17 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		test.Namespace.Name = "postgres-operator-test-" + rand.String(6)
 		Expect(suite.Client.Create(ctx, test.Namespace)).To(Succeed())
 
+		test.Owner = "asdf"
 		test.Recorder = record.NewFakeRecorder(100)
 		test.Recorder.IncludeObject = true
 
-		test.Reconciler.Client = suite.Client
-		test.Reconciler.Owner = "asdf"
+		client := client.WithFieldOwner(suite.Client, test.Owner)
+
+		test.Reconciler.Reader = client
 		test.Reconciler.Recorder = test.Recorder
 		test.Reconciler.Registration = nil
+		test.Reconciler.StatusWriter = client.Status()
+		test.Reconciler.Writer = client
 	})
 
 	AfterEach(func() {
@@ -161,9 +165,7 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 	reconcile := func(cluster *v1beta1.PostgresCluster) reconcile.Result {
 		ctx := context.Background()
 
-		result, err := test.Reconciler.Reconcile(ctx,
-			reconcile.Request{NamespacedName: client.ObjectKeyFromObject(cluster)},
-		)
+		result, err := test.Reconciler.Reconcile(ctx, cluster)
 		Expect(err).ToNot(HaveOccurred(), func() string {
 			var t interface{ StackTrace() errors.StackTrace }
 			if errors.As(err, &t) {
@@ -284,7 +286,7 @@ spec:
 			))
 			Expect(ccm.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -308,7 +310,7 @@ spec:
 			))
 			Expect(cps.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -337,59 +339,32 @@ spec:
 			//
 			// The "metadata.finalizers" field is also okay.
 			// - https://book.kubebuilder.io/reference/using-finalizers.html
-			//
-			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
-			// managed fields on the status subresource: https://issue.k8s.io/88901
-			switch {
-			case suite.ServerVersion.LessThan(version.MustParseGeneric("1.22")):
-
-				// Kubernetes 1.22 began tracking subresources in managed fields.
-				// - https://pr.k8s.io/100970
-				Expect(existing.ManagedFields).To(ContainElement(
-					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(string(test.Reconciler.Owner)),
-						"FieldsV1": PointTo(MatchAllFields(Fields{
-							"Raw": WithTransform(func(in []byte) (out map[string]any) {
-								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
-								return out
-							}, MatchAllKeys(Keys{
-								"f:metadata": MatchAllKeys(Keys{
-									"f:finalizers": Not(BeZero()),
-								}),
-								"f:status": Not(BeZero()),
-							})),
+			Expect(existing.ManagedFields).To(ContainElements(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager": Equal(test.Owner),
+					"FieldsV1": PointTo(MatchAllFields(Fields{
+						"Raw": WithTransform(func(in []byte) (out map[string]any) {
+							Expect(yaml.Unmarshal(in, &out)).To(Succeed())
+							return out
+						}, MatchAllKeys(Keys{
+							"f:metadata": MatchAllKeys(Keys{
+								"f:finalizers": Not(BeZero()),
+							}),
 						})),
-					}),
-				), `controller should manage only "finalizers" and "status"`)
-
-			default:
-				Expect(existing.ManagedFields).To(ContainElements(
-					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(string(test.Reconciler.Owner)),
-						"FieldsV1": PointTo(MatchAllFields(Fields{
-							"Raw": WithTransform(func(in []byte) (out map[string]any) {
-								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
-								return out
-							}, MatchAllKeys(Keys{
-								"f:metadata": MatchAllKeys(Keys{
-									"f:finalizers": Not(BeZero()),
-								}),
-							})),
+					})),
+				}),
+				MatchFields(IgnoreExtras, Fields{
+					"Manager": Equal(test.Owner),
+					"FieldsV1": PointTo(MatchAllFields(Fields{
+						"Raw": WithTransform(func(in []byte) (out map[string]any) {
+							Expect(yaml.Unmarshal(in, &out)).To(Succeed())
+							return out
+						}, MatchAllKeys(Keys{
+							"f:status": Not(BeZero()),
 						})),
-					}),
-					MatchFields(IgnoreExtras, Fields{
-						"Manager": Equal(string(test.Reconciler.Owner)),
-						"FieldsV1": PointTo(MatchAllFields(Fields{
-							"Raw": WithTransform(func(in []byte) (out map[string]any) {
-								Expect(yaml.Unmarshal(in, &out)).To(Succeed())
-								return out
-							}, MatchAllKeys(Keys{
-								"f:status": Not(BeZero()),
-							})),
-						})),
-					}),
-				), `controller should manage only "finalizers" and "status"`)
-			}
+					})),
+				}),
+			), `controller should manage only "finalizers" and "status"`)
 		})
 
 		Specify("Patroni Distributed Configuration", func() {
@@ -409,7 +384,7 @@ spec:
 			))
 			Expect(ds.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -501,7 +476,7 @@ spec:
 			))
 			Expect(icm.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))
@@ -522,7 +497,7 @@ spec:
 			))
 			Expect(instance.ManagedFields).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Manager":   Equal(test.Owner),
 					"Operation": Equal(metav1.ManagedFieldsOperationApply),
 				}),
 			))

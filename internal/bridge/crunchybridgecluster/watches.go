@@ -26,7 +26,7 @@ func (r *CrunchyBridgeClusterReconciler) findCrunchyBridgeClustersForSecret(
 	// namespace, we can configure the [manager.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
-	if err := r.List(ctx, &clusters, &client.ListOptions{
+	if err := r.Reader.List(ctx, &clusters, &client.ListOptions{
 		Namespace: secret.Namespace,
 	}); err == nil {
 		for i := range clusters.Items {

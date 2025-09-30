@@ -142,6 +142,10 @@ func TestPod(t *testing.T) {
 	t.Parallel()
 
 	features := feature.NewGate()
+	assert.NilError(t, features.SetFromMap(map[string]bool{
+		feature.OpenTelemetryLogs:    true,
+		feature.OpenTelemetryMetrics: true,
+	}))
 	ctx := feature.NewContext(context.Background(), features)
 
 	cluster := new(v1beta1.PostgresCluster)
@@ -149,8 +153,9 @@ func TestPod(t *testing.T) {
 	primaryCertificate := new(corev1.SecretProjection)
 	secret := new(corev1.Secret)
 	template := new(corev1.PodTemplateSpec)
+	logfile := ""
 
-	call := func() { Pod(ctx, cluster, configMap, primaryCertificate, secret, template) }
+	call := func() { Pod(ctx, cluster, configMap, primaryCertificate, secret, template, logfile) }
 
 	t.Run("Disabled", func(t *testing.T) {
 		before := template.DeepCopy()
@@ -170,6 +175,11 @@ func TestPod(t *testing.T) {
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   name: pgbouncer
@@ -280,6 +290,299 @@ volumes:
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
+  - pgbouncer
+  - /etc/pgbouncer/~postgres-operator.ini
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer
+  ports:
+  - containerPort: 5432
+    name: pgbouncer
+    protocol: TCP
+  resources:
+    requests:
+      cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:||:)
+    while read -r -t 5 -u "${fd}" ||:; do
+      if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && pkill -HUP --exact pgbouncer
+      then
+        exec {fd}>&- && exec {fd}<> <(:||:)
+        stat --format='Loaded configuration dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbouncer-config
+  - /etc/pgbouncer
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer-config
+  resources:
+    limits:
+      cpu: 5m
+      memory: 16Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+volumes:
+- name: pgbouncer-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbouncer-empty
+          path: pgbouncer.ini
+    - configMap:
+        items:
+        - key: pgbouncer.ini
+          path: ~postgres-operator.ini
+    - secret:
+        items:
+        - key: pgbouncer-users.txt
+          path: ~postgres-operator/users.txt
+    - secret:
+        items:
+        - key: k1
+          path: ~postgres-operator/frontend-tls.crt
+        - key: k2
+          path: ~postgres-operator/frontend-tls.key
+        name: tls-name
+    - secret:
+        items:
+        - key: ca.crt
+          path: ~postgres-operator/backend-ca.crt
+			`))
+	})
+
+	t.Run("WithOtelNoLogSet", func(t *testing.T) {
+		cluster.Spec.Instrumentation = &v1beta1.InstrumentationSpec{}
+		logfile = "/tmp/pgbouncer.log"
+
+		call()
+
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
+  - pgbouncer
+  - /etc/pgbouncer/~postgres-operator.ini
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer
+  ports:
+  - containerPort: 5432
+    name: pgbouncer
+    protocol: TCP
+  resources:
+    requests:
+      cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |-
+    monitor() {
+    exec {fd}<> <(:||:)
+    while read -r -t 5 -u "${fd}" ||:; do
+      if [[ "${directory}" -nt "/proc/self/fd/${fd}" ]] && pkill -HUP --exact pgbouncer
+      then
+        exec {fd}>&- && exec {fd}<> <(:||:)
+        stat --format='Loaded configuration dated %y' "${directory}"
+      fi
+    done
+    }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbouncer-config
+  - /etc/pgbouncer
+  image: image-town
+  imagePullPolicy: Always
+  name: pgbouncer-config
+  resources:
+    limits:
+      cpu: 5m
+      memory: 16Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - "monitor() {\n\nmkdir -p '/tmp/receiver' && { chmod 0775 '/tmp/receiver' || :;
+    }\nOTEL_PIDFILE=/tmp/otel.pid\n\nstart_otel_collector() {\n\techo \"Starting OTel
+    Collector\"\n\t/otelcol-contrib --config /etc/otel-collector/config.yaml &\n\techo
+    $! > $OTEL_PIDFILE\n}\nstart_otel_collector\n\nexec {fd}<> <(:||:)\nwhile read
+    -r -t 5 -u \"${fd}\" ||:; do\n\tlogrotate -s /tmp/logrotate.status /etc/logrotate.d/logrotate.conf\n\tif
+    [[ \"${directory}\" -nt \"/proc/self/fd/${fd}\" ]] && kill -HUP $(head -1 ${OTEL_PIDFILE?});\n\tthen\n\t\techo
+    \"OTel configuration changed...\"\n\t\texec {fd}>&- && exec {fd}<> <(:||:)\n\t\tstat
+    --format='Loaded configuration dated %y' \"${directory}\"\n\tfi\n\tif [[ ! -e
+    /proc/$(head -1 ${OTEL_PIDFILE?}) ]] ; then\n\t\tstart_otel_collector\n\tfi\ndone\n};
+    export directory=\"$1\"; export -f monitor; exec -a \"$0\" bash -ceu monitor"
+  - collector
+  - /etc/otel-collector
+  env:
+  - name: K8S_POD_NAMESPACE
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.namespace
+  - name: K8S_POD_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: metadata.name
+  - name: PGPASSWORD
+  imagePullPolicy: Always
+  name: collector
+  ports:
+  - containerPort: 9187
+    name: otel-metrics
+    protocol: TCP
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+  - mountPath: /etc/otel-collector
+    name: collector-config
+    readOnly: true
+  - mountPath: /etc/logrotate.d
+    name: logrotate-config
+    readOnly: true
+volumes:
+- name: pgbouncer-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbouncer-empty
+          path: pgbouncer.ini
+    - configMap:
+        items:
+        - key: pgbouncer.ini
+          path: ~postgres-operator.ini
+    - secret:
+        items:
+        - key: pgbouncer-users.txt
+          path: ~postgres-operator/users.txt
+    - secret:
+        items:
+        - key: k1
+          path: ~postgres-operator/frontend-tls.crt
+        - key: k2
+          path: ~postgres-operator/frontend-tls.key
+        name: tls-name
+    - secret:
+        items:
+        - key: ca.crt
+          path: ~postgres-operator/backend-ca.crt
+- name: logrotate-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: logrotate.conf
+          path: logrotate.conf
+- name: collector-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: collector.yaml
+          path: config.yaml
+			`))
+	})
+
+	t.Run("CustomizationWithLogSet", func(t *testing.T) {
+		cluster.Spec.Proxy.PGBouncer.Config.Global = map[string]string{
+			"logfile": "/volumes/required/mylog.log",
+		}
+		logfile = "/volumes/required/mylog.log"
+		// Reset the instrumentation from the previous test
+		cluster.Spec.Instrumentation = nil
+
+		call()
+
+		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/required' && { chmod 0775 '/volumes/required' || :; }; exec
+    "$@"
+  - --
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   image: image-town
@@ -385,11 +688,19 @@ volumes:
 			},
 		}
 
+		// reset logfile from previous test
+		logfile = ""
+
 		call()
 
 		assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
   image: image-town

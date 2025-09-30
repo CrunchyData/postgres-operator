@@ -99,11 +99,10 @@ func testPostgresAuthenticationCommon(t *testing.T, cc client.Client, base unstr
 		err := cc.Create(ctx, cluster, client.DryRunAll)
 		assert.Assert(t, apierrors.IsInvalid(err))
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 2))
 
-		for i, cause := range status.Details.Causes {
+		for i, cause := range details.Causes {
 			assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d]", i))
 			assert.Assert(t, cmp.Contains(cause.Message, "cannot be combined"))
 		}
@@ -122,11 +121,10 @@ func testPostgresAuthenticationCommon(t *testing.T, cc client.Client, base unstr
 		err := cc.Create(ctx, cluster, client.DryRunAll)
 		assert.Assert(t, apierrors.IsInvalid(err))
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 3))
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 3))
 
-		for i, cause := range status.Details.Causes {
+		for i, cause := range details.Causes {
 			assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d].hba", i))
 			assert.Assert(t, cmp.Contains(cause.Message, "cannot include"))
 		}
@@ -145,11 +143,10 @@ func testPostgresAuthenticationCommon(t *testing.T, cc client.Client, base unstr
 		err := cc.Create(ctx, cluster, client.DryRunAll)
 		assert.Assert(t, apierrors.IsInvalid(err))
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 3))
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 3))
 
-		for i, cause := range status.Details.Causes {
+		for i, cause := range details.Causes {
 			assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d].method", i))
 			assert.Assert(t, cmp.Contains(cause.Message, "unsafe"))
 		}
@@ -169,11 +166,10 @@ func testPostgresAuthenticationCommon(t *testing.T, cc client.Client, base unstr
 			err := cc.Create(ctx, cluster, client.DryRunAll)
 			assert.Assert(t, apierrors.IsInvalid(err))
 
-			status := require.StatusError(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, cmp.Len(status.Details.Causes, 3))
+			details := require.StatusErrorDetails(t, err)
+			assert.Assert(t, cmp.Len(details.Causes, 3))
 
-			for i, cause := range status.Details.Causes {
+			for i, cause := range details.Causes {
 				assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d]", i), "%#v", cause)
 				assert.Assert(t, cmp.Contains(cause.Message, `"ldap" method requires`))
 			}
@@ -205,11 +201,10 @@ func testPostgresAuthenticationCommon(t *testing.T, cc client.Client, base unstr
 			err := cc.Create(ctx, cluster, client.DryRunAll)
 			assert.Assert(t, apierrors.IsInvalid(err))
 
-			status := require.StatusError(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+			details := require.StatusErrorDetails(t, err)
+			assert.Assert(t, cmp.Len(details.Causes, 2))
 
-			for i, cause := range status.Details.Causes {
+			for i, cause := range details.Causes {
 				assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d]", i), "%#v", cause)
 				assert.Assert(t, cmp.Regexp(`cannot use .+? options with .+? options`, cause.Message))
 			}
@@ -246,11 +241,10 @@ func testPostgresAuthenticationCommon(t *testing.T, cc client.Client, base unstr
 			err := cc.Create(ctx, cluster, client.DryRunAll)
 			assert.Assert(t, apierrors.IsInvalid(err))
 
-			status := require.StatusError(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, cmp.Len(status.Details.Causes, 5))
+			details := require.StatusErrorDetails(t, err)
+			assert.Assert(t, cmp.Len(details.Causes, 5))
 
-			for i, cause := range status.Details.Causes {
+			for i, cause := range details.Causes {
 				assert.Equal(t, cause.Field, fmt.Sprintf("spec.authentication.rules[%d]", i), "%#v", cause)
 				assert.Assert(t, cmp.Contains(cause.Message, `"radius" method requires`))
 			}

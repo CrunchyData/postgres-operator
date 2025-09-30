@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"path"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,10 +18,43 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/shell"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
+	// bashDataDirectory is a Bash function that ensures a directory has the correct permissions for PostgreSQL data.
+	//
+	// Postgres requires its data directories be writable by only itself.
+	// Pod "securityContext.fsGroup" sets g+w on directories for *some* storage providers.
+	// Ensure the current user owns the directory, and remove group-write permission.
+	//
+	// - https://www.postgresql.org/docs/current/creating-cluster.html
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/postmaster/postmaster.c;hb=REL_10_0#l1522
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_11_0#l142
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_17_0#l386
+	// - https://issue.k8s.io/93802#issuecomment-717646167
+	//
+	// During CREATE TABLESPACE, Postgres sets the permissions of a tablespace directory to match the data directory.
+	//
+	// - https://www.postgresql.org/docs/current/manage-ag-tablespaces.html
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/commands/tablespace.c;hb=REL_14_0#l600
+	// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/common/file_perm.c;hb=REL_14_0#l27
+	//
+	bashDataDirectory = `dataDirectory() {` +
+		// When the directory does not exist, create it with the correct permissions.
+		// When the directory has the correct owner, set the correct permissions.
+		` if [[ ! -e "$1" || -O "$1" ]]; then install --directory --mode=0750 "$1";` +
+		//
+		// The directory exists but its owner is wrong.
+		// When it is writable, the set-group-ID bit indicates that "fsGroup" probably ran on its contents making them safe to use.
+		// In this case, we can make a new directory (owned by this user) and refill it.
+		` elif [[ -w "$1" && -g "$1" ]]; then recreate "$1" '0750';` +
+		//
+		// The directory exists, its owner is wrong, and it is not writable.
+		// This is probably fatal, but indicate failure to let the caller decide.
+		` else false; fi; }`
+
 	// bashHalt is a Bash function that prints its arguments to stderr then
 	// exits with a non-zero status. It uses the exit status of the prior
 	// command if that was not zero.
@@ -89,13 +123,13 @@ func ConfigDirectory(cluster *v1beta1.PostgresCluster) string {
 // DataDirectory returns the absolute path to the "data_directory" of cluster.
 // - https://www.postgresql.org/docs/current/runtime-config-file-locations.html
 func DataDirectory(cluster *v1beta1.PostgresCluster) string {
-	return fmt.Sprintf("%s/pg%d", dataMountPath, cluster.Spec.PostgresVersion)
+	return fmt.Sprintf("%s/pg%d", DataStorage(cluster), cluster.Spec.PostgresVersion)
 }
 
-// LogDirectory returns the absolute path to the "log_directory" of cluster.
-// - https://www.postgresql.org/docs/current/runtime-config-logging.html
-func LogDirectory() string {
-	return fmt.Sprintf("%s/logs/postgres", dataMountPath)
+// DataStorage returns the absolute path to the disk where cluster stores its data.
+// Use [DataDirectory] for the exact directory that Postgres uses.
+func DataStorage(cluster *v1beta1.PostgresCluster) string {
+	return dataMountPath
 }
 
 // LogRotation returns parameters that rotate log files while keeping a minimum amount.
@@ -230,10 +264,29 @@ func Environment(cluster *v1beta1.PostgresCluster) []corev1.EnvVar {
 	}
 }
 
+// ShellPath returns a POSIX shell command that prepends typical Postgres executable paths to the PATH variable.
+func ShellPath(postgresVersion int32) string {
+	return fmt.Sprintf(`PATH="`+
+		strings.Join([]string{
+			`/usr/lib/postgresql/%[1]d/bin`, // Debian
+			`/usr/libexec/postgresql%[1]d`,  // Alpine
+			`/usr/pgsql-%[1]d/bin`,          // Red Hat
+		}, ":")+
+		`${PATH+:${PATH}}"`, postgresVersion)
+}
+
 // reloadCommand returns an entrypoint that convinces PostgreSQL to reload
 // certificate files when they change. The process will appear as name in `ps`
 // and `top`.
-func reloadCommand(name string) []string {
+func reloadCommand(
+	name string,
+	pgdataAutoGrowVolumeSpec *v1beta1.VolumeClaimSpecWithAutoGrow,
+	pgwalAutoGrowVolumeSpec *v1beta1.VolumeClaimSpecWithAutoGrow,
+) []string {
+
+	pgdataTrigger, pgdataMaxGrow := util.GetAutoGrowFromSpec(pgdataAutoGrowVolumeSpec)
+	pgwalTrigger, pgwalMaxGrow := util.GetAutoGrowFromSpec(pgwalAutoGrowVolumeSpec)
+
 	// Use a Bash loop to periodically check the mtime of the mounted
 	// certificate volume. When it changes, copy the replication certificate,
 	// signal PostgreSQL, and print the observed timestamp.
@@ -256,13 +309,57 @@ func reloadCommand(name string) []string {
 	// descriptor gets closed and reopened to use the builtin `[ -nt` to check
 	// mtimes.
 	// - https://unix.stackexchange.com/a/407383
+	//
+	// In the manageAutogrowAnnotation function below, df is used to return the
+	// relevant volume size in Mebibytes. The 'read' variable gets the value from
+	// the '1M-blocks' output (second column) and the 'use' variable gets the value
+	// from the 'Use%' column (fifth column). This value is grabbed after stripping
+	// out the column headers (before the '\n') and then getting the respective
+	// value delimited by the white spaces by using the 'read -r' command.
+	// The underscores (_) discard fields and the variables store them. This allows
+	// for selective parsing of the provided lines. The percent value is stripped of
+	// the '%' and then used to determine if a expansion should be triggered by
+	// setting the calculated volume size using the 'size' variable.
 	script := fmt.Sprintf(`
 # Parameters for curl when managing autogrow annotation.
 APISERVER="https://kubernetes.default.svc"
 SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
-NAMESPACE=$(cat ${SERVICEACCOUNT}/namespace)
-TOKEN=$(cat ${SERVICEACCOUNT}/token)
-CACERT=${SERVICEACCOUNT}/ca.crt
+NAMESPACE=$(cat "${SERVICEACCOUNT}/namespace")
+TOKEN=$(cat "${SERVICEACCOUNT}/token")
+CACERT="${SERVICEACCOUNT}/ca.crt"
+
+# Manage autogrow annotation.
+# Return size in Mebibytes.
+manageAutogrowAnnotation() {
+  local volume=$1
+  local trigger=$2
+  local maxGrow=$3
+
+  size=$(df --block-size=M /"${volume}")
+  read -r _ size _ <<< "${size#*$'\n'}"
+  use=$(df /"${volume}")
+  read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
+  sizeInt="${size//M/}"
+  # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+  useInt=${use//[[:punct:]]/}
+  triggerExpansion="$((useInt > trigger))"
+  if [[ ${triggerExpansion} -eq 1 ]]; then
+    newSize="$(((sizeInt / 2)+sizeInt))"
+    # Only compare with maxGrow if it is set (not empty)
+    if [[ -n "${maxGrow}" ]]; then
+        # check to see how much we would normally grow
+        sizeDiff=$((newSize - sizeInt))
+
+        # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+        if [[ ${sizeDiff} -gt ${maxGrow} ]]; then
+            newSize=$((sizeInt + maxGrow))
+        fi
+    fi
+    newSizeMi="${newSize}Mi"
+    d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
+    curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
+  fi
+}
 
 declare -r directory=%q
 exec {fd}<> <(:||:)
@@ -276,19 +373,11 @@ while read -r -t 5 -u "${fd}" ||:; do
     stat --format='Loaded certificates dated %%y' "${directory}"
   fi
 
-  # Manage autogrow annotation.
-  # Return size in Mebibytes.
-  size=$(df --human-readable --block-size=M /pgdata | awk 'FNR == 2 {print $2}')
-  use=$(df --human-readable /pgdata | awk 'FNR == 2 {print $5}')
-  sizeInt="${size//M/}"
-  # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
-  useInt=$(echo $use | sed 's/[[:punct:]]//g')
-  triggerExpansion="$((useInt > 75))"
-  if [ $triggerExpansion -eq 1 ]; then
-    newSize="$(((sizeInt / 2)+sizeInt))"
-    newSizeMi="${newSize}Mi"
-    d='[{"op": "add", "path": "/metadata/annotations/suggested-pgdata-pvc-size", "value": "'"$newSizeMi"'"}]'
-    curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
+  # manage autogrow annotation for the pgData volume
+  manageAutogrowAnnotation "pgdata" "%s" "%s"
+  # manage autogrow annotation for the pgWAL volume, if it exists
+  if [[ -d /pgwal ]]; then
+    manageAutogrowAnnotation "pgwal" "%s" "%s"
   fi
 done
 `,
@@ -297,6 +386,8 @@ done
 		naming.ReplicationCertPath,
 		naming.ReplicationPrivateKeyPath,
 		naming.ReplicationCACertPath,
+		pgdataTrigger, pgdataMaxGrow,
+		pgwalTrigger, pgwalMaxGrow,
 	)
 
 	// Elide the above script from `ps` and `top` by wrapping it in a function
@@ -310,51 +401,55 @@ done
 // PostgreSQL.
 func startupCommand(
 	ctx context.Context,
-	cluster *v1beta1.PostgresCluster, instance *v1beta1.PostgresInstanceSetSpec,
+	cluster *v1beta1.PostgresCluster,
+	instance *v1beta1.PostgresInstanceSetSpec,
+	parameters *ParameterSet,
 ) []string {
 	version := fmt.Sprint(cluster.Spec.PostgresVersion)
+	dataDir := DataDirectory(cluster)
+	logDir := parameters.Value("log_directory")
 	walDir := WALDirectory(cluster, instance)
 
-	// If the user requests tablespaces, we want to make sure the directories exist with the
-	// correct owner and permissions.
-	tablespaceCmd := ""
-	if feature.Enabled(ctx, feature.TablespaceVolumes) {
-		// This command checks if a dir exists and if not, creates it;
-		// if the dir does exist, then we `recreate` it to make sure the owner is correct;
-		// if the dir exists with the wrong owner and is not writeable, we error.
-		// This is the same behavior we use for the main PGDATA directory.
-		// Note: Postgres requires the tablespace directory to be "an existing, empty directory
-		// that is owned by the PostgreSQL operating system user."
-		// - https://www.postgresql.org/docs/current/manage-ag-tablespaces.html
-		// However, unlike the PGDATA directory, Postgres will _not_ error out
-		// if the permissions are wrong on the tablespace directory.
-		// Instead, when a tablespace is created in Postgres, Postgres will `chmod` the
-		// tablespace directory to match permissions on the PGDATA directory (either 700 or 750).
-		// Postgres setting the tablespace directory permissions:
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/commands/tablespace.c;hb=REL_14_0#l600
-		// Postgres choosing directory permissions:
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/common/file_perm.c;hb=REL_14_0#l27
-		// Note: This permission change seems to happen only when the tablespace is created in Postgres.
-		// If the user manually `chmod`'ed the directory after the creation of the tablespace, Postgres
-		// would not attempt to change the directory permissions.
-		// Note: as noted below, we mount the tablespace directory to the mountpoint `/tablespaces/NAME`,
-		// and so we add the subdirectory `data` in order to set the permissions.
-		checkInstallRecreateCmd := strings.Join([]string{
-			`if [[ ! -e "${tablespace_dir}" || -O "${tablespace_dir}" ]]; then`,
-			`install --directory --mode=0750 "${tablespace_dir}"`,
-			`elif [[ -w "${tablespace_dir}" && -g "${tablespace_dir}" ]]; then`,
-			`recreate "${tablespace_dir}" '0750'`,
-			`else (halt Permissions!); fi ||`,
-			`halt "$(permissions "${tablespace_dir}" ||:)"`,
-		}, "\n")
+	mkdirs := make([]string, 0, 9+len(instance.TablespaceVolumes))
+	mkdirs = append(mkdirs, `dataDirectory "${postgres_data_directory}" || halt "$(permissions "${postgres_data_directory}" ||:)"`)
 
+	// If the user requests tablespaces, we want to make sure the directories exist with the correct owner and permissions.
+	//
+	// The path for tablespaces volumes is /tablespaces/NAME/data -- the `data` directory is so we can arrange the permissions.
+	if feature.Enabled(ctx, feature.TablespaceVolumes) {
 		for _, tablespace := range instance.TablespaceVolumes {
-			// The path for tablespaces volumes is /tablespaces/NAME/data
-			// -- the `data` path is added so that we can arrange the permissions.
-			tablespaceCmd = tablespaceCmd + "\ntablespace_dir=/tablespaces/" + tablespace.Name + "/data" + "\n" +
-				checkInstallRecreateCmd
+			dir := shell.QuoteWord("/tablespaces/" + tablespace.Name + "/data")
+			mkdirs = append(mkdirs, `dataDirectory `+dir+` || halt "$(permissions `+dir+` ||:)"`)
 		}
 	}
+
+	// Postgres creates "log_directory" but does *not* create any of its parent directories.
+	// Postgres omits group-write S_IWGRP permission when creating the directory.
+	//
+	// Do both here while being careful to *not* touch "data_directory" contents until after
+	// `initdb` or Patroni bootstrap; those abort unless "data_directory" is entirely empty.
+	if path.IsAbs(logDir) && !strings.HasPrefix(logDir, dataDir) {
+		mkdirs = append(mkdirs,
+			`(`+shell.MakeDirectories(dataMountPath, logDir)+`) ||`,
+			`halt "$(permissions `+shell.QuoteWord(logDir)+` ||:)"`,
+		)
+	} else {
+		// Postgres interprets "log_directory" relative to "data_directory" so do the same here.
+		mkdirs = append(mkdirs,
+			`[[ ! -f `+shell.QuoteWord(path.Join(dataDir, "PG_VERSION"))+` ]] ||`,
+			`(`+shell.MakeDirectories(dataDir, logDir)+`) ||`,
+			`halt "$(permissions `+shell.QuoteWord(path.Join(dataDir, logDir))+` ||:)"`,
+		)
+	}
+
+	// These directories are outside "data_directory" and can be created.
+	mkdirs = append(mkdirs,
+		`(`+shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath)+`) ||`,
+		`halt "$(permissions `+shell.QuoteWord(naming.PatroniPGDataLogPath)+` ||:)"`,
+
+		`(`+shell.MakeDirectories(dataMountPath, util.GetPGBackRestLogPathForInstance(cluster))+`) ||`,
+		`halt "$(permissions `+shell.QuoteWord(util.GetPGBackRestLogPathForInstance(cluster))+` ||:)"`,
+	)
 
 	pg_rewind_override := ""
 	if config.FetchKeyCommand(&cluster.Spec) != "" {
@@ -371,6 +466,9 @@ chmod +x /tmp/pg_rewind_tde.sh
 	args := []string{version, walDir}
 	script := strings.Join([]string{
 		`declare -r expected_major_version="$1" pgwal_directory="$2"`,
+
+		// Function to create a Postgres data directory.
+		bashDataDirectory,
 
 		// Function to print the permissions of a file or directory and its parents.
 		bashPermissions,
@@ -413,42 +511,10 @@ chmod +x /tmp/pg_rewind_tde.sh
 
 		// Determine if the data directory has been prepared for bootstrapping the cluster
 		`bootstrap_dir="${postgres_data_directory}_bootstrap"`,
-		`[[ -d "${bootstrap_dir}" ]] && results 'bootstrap directory' "${bootstrap_dir}"`,
-		`[[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}"`,
+		`[[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}" && results 'bootstrap directory' "${bootstrap_dir}"`,
 
-		// PostgreSQL requires its directory to be writable by only itself.
-		// Pod "securityContext.fsGroup" sets g+w on directories for *some*
-		// storage providers. Ensure the current user owns the directory, and
-		// remove group-write permission.
-		// - https://www.postgresql.org/docs/current/creating-cluster.html
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/postmaster/postmaster.c;hb=REL_10_0#l1522
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_11_0#l142
-		// - https://git.postgresql.org/gitweb/?p=postgresql.git;f=src/backend/utils/init/miscinit.c;hb=REL_17_0#l386
-		// - https://issue.k8s.io/93802#issuecomment-717646167
-		//
-		// When the directory does not exist, create it with the correct permissions.
-		// When the directory has the correct owner, set the correct permissions.
-		`if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then`,
-		`install --directory --mode=0750 "${postgres_data_directory}"`,
-		//
-		// The directory exists but its owner is wrong. When it is writable,
-		// the set-group-ID bit indicates that "fsGroup" probably ran on its
-		// contents making them safe to use. In this case, we can make a new
-		// directory (owned by this user) and refill it.
-		`elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then`,
-		`recreate "${postgres_data_directory}" '0750'`,
-		//
-		// The directory exists, its owner is wrong, and it is not writable.
-		`else (halt Permissions!); fi ||`,
-		`halt "$(permissions "${postgres_data_directory}" ||:)"`,
-
-		// Create log directories.
-		`(` + shell.MakeDirectories(dataMountPath, naming.PGBackRestPGDataLogPath) + `) ||`,
-		`halt "$(permissions ` + naming.PGBackRestPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(dataMountPath, naming.PatroniPGDataLogPath) + `) ||`,
-		`halt "$(permissions ` + naming.PatroniPGDataLogPath + ` ||:)"`,
-		`(` + shell.MakeDirectories(dataMountPath, LogDirectory()) + `) ||`,
-		`halt "$(permissions ` + LogDirectory() + ` ||:)"`,
+		// Create directories for and related to the data directory.
+		strings.Join(mkdirs, "\n"),
 
 		// Copy replication client certificate files
 		// from the /pgconf/tls/replication directory to the /tmp/replication directory in order
@@ -466,7 +532,6 @@ chmod +x /tmp/pg_rewind_tde.sh
 		// Add the pg_rewind wrapper script, if TDE is enabled.
 		pg_rewind_override,
 
-		tablespaceCmd,
 		// When the data directory is empty, there's nothing more to do.
 		`[[ -f "${postgres_data_directory}/PG_VERSION" ]] || exit 0`,
 

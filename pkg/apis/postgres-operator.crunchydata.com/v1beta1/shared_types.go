@@ -8,9 +8,12 @@ import (
 	"encoding/json"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
+
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 )
 
 // ---
@@ -23,7 +26,7 @@ import (
 type ConfigDataKey = string
 
 // ---
-// https://docs.k8s.io/concepts/overview/working-with-objects/names/#dns-subdomain-names
+// https://docs.k8s.io/concepts/overview/working-with-objects/names#dns-subdomain-names
 // https://pkg.go.dev/k8s.io/apimachinery/pkg/util/validation#IsDNS1123Subdomain
 // https://pkg.go.dev/k8s.io/apiserver/pkg/cel/library#Format
 //
@@ -149,6 +152,66 @@ func (spec *VolumeClaimSpec) AsPersistentVolumeClaimSpec() corev1.PersistentVolu
 	return out
 }
 
+// VolumeClaimSpecWithAutoGrow extends VolumeClaimSpec with options for
+// automatic volume growth.
+// +structType=atomic
+type VolumeClaimSpecWithAutoGrow struct {
+	VolumeClaimSpec `json:",inline"`
+
+	// +optional
+	AutoGrow *AutoGrowSpec `json:"autoGrow,omitempty"`
+}
+
+// AutoGrowSpec provides options to tune volume auto-growing behavior.
+// Auto grow requires that a limit be set on the PVC.
+type AutoGrowSpec struct {
+	// Trigger is the percentage of used space at which to trigger a volume
+	// expansion.
+	// +optional
+	// +kubebuilder:default=75
+	// +kubebuilder:validation:Minimum=50
+	// +kubebuilder:validation:Maximum=90
+	Trigger *int32 `json:"trigger,omitempty"`
+
+	// MaxGrow is the maximum size to which the volume can be automatically
+	// expanded. If not set, the volume will grow by 50% of the original size each
+	// time the Trigger threshold is exceeded.
+	// +optional
+	MaxGrow *resource.Quantity `json:"maxGrow,omitempty"`
+}
+
+func (spec *AutoGrowSpec) Default() {
+	if spec.Trigger == nil {
+		spec.Trigger = initialize.Int32(75)
+	}
+}
+
+func (spec *VolumeClaimSpecWithAutoGrow) DeepCopyInto(out *VolumeClaimSpecWithAutoGrow) {
+	spec.VolumeClaimSpec.DeepCopyInto(&out.VolumeClaimSpec)
+	if spec.AutoGrow != nil {
+		out.AutoGrow = new(AutoGrowSpec)
+		spec.AutoGrow.DeepCopyInto(out.AutoGrow)
+	} else {
+		out.AutoGrow = nil
+	}
+}
+
+// DeepCopyInto copies the receiver into out. Both must be non-nil.
+func (spec *AutoGrowSpec) DeepCopyInto(out *AutoGrowSpec) {
+	*out = *spec
+	if spec.MaxGrow != nil {
+		q := spec.MaxGrow.DeepCopy()
+		out.MaxGrow = &q
+	} else {
+		out.MaxGrow = nil
+	}
+}
+
+// AsPersistentVolumeClaimSpec returns a copy of the embedded VolumeClaimSpec as a [corev1.PersistentVolumeClaimSpec].
+func (spec *VolumeClaimSpecWithAutoGrow) AsPersistentVolumeClaimSpec() corev1.PersistentVolumeClaimSpec {
+	return spec.VolumeClaimSpec.AsPersistentVolumeClaimSpec()
+}
+
 // ---
 // SchemalessObject is a map compatible with JSON object.
 //
@@ -181,10 +244,6 @@ type ServiceSpec struct {
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	//
 	// +optional
 	// +kubebuilder:default=ClusterIP
 	// +kubebuilder:validation:Enum={ClusterIP,NodePort,LoadBalancer}
@@ -202,11 +261,6 @@ type ServiceSpec struct {
 
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=10
-	// +kubebuilder:validation:Type=string
-	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
 	InternalTrafficPolicy *corev1.ServiceInternalTrafficPolicy `json:"internalTrafficPolicy,omitempty"`
@@ -214,10 +268,6 @@ type ServiceSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
 	// ---
 	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=10
-	// +kubebuilder:validation:Type=string
-	//
 	// +optional
 	// +kubebuilder:validation:Enum={Cluster,Local}
 	ExternalTrafficPolicy *corev1.ServiceExternalTrafficPolicy `json:"externalTrafficPolicy,omitempty"`
@@ -255,4 +305,88 @@ func (meta *Metadata) GetAnnotationsOrNil() map[string]string {
 		return nil
 	}
 	return meta.Annotations
+}
+
+// ---
+// Only one applier should be managing each volume definition.
+// https://docs.k8s.io/reference/using-api/server-side-apply#merge-strategy
+// +structType=atomic
+//
+// +kubebuilder:validation:XValidation:rule=`has(self.claimName) != has(self.image)`,message=`you must set only one of image or claimName`
+// +kubebuilder:validation:XValidation:rule=`!has(self.image) || !has(self.readOnly) || self.readOnly`,message=`readOnly cannot be set false when using an ImageVolumeSource`
+// +kubebuilder:validation:XValidation:rule=`!has(self.image) || (self.?image.reference.hasValue() && self.image.reference.size() > 0)`,message=`if using an ImageVolumeSource, you must set a reference`
+type AdditionalVolume struct {
+	// Name of an existing PersistentVolumeClaim.
+	// ---
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePersistentVolumeClaim
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePersistentVolumeName
+	//
+	// +optional
+	ClaimName DNS1123Subdomain `json:"claimName,omitempty"`
+
+	// The names of containers in which to mount this volume.
+	// The default mounts the volume in *all* containers. An empty list does not mount the volume to any containers.
+	// ---
+	// These are matched against [corev1.Container.Name] in a PodSpec, which is a [DNS1123Label].
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePodSpec
+	//
+	// Container names are unique within a Pod, so this list can be, too.
+	// +listType=set
+	//
+	// +kubebuilder:validation:MaxItems=10
+	// +optional
+	Containers []DNS1123Label `json:"containers"`
+
+	// Details for adding an image volume
+	// ---
+	// https://docs.k8s.io/concepts/storage/volumes#image
+	//
+	// +optional
+	Image *corev1.ImageVolumeSource `json:"image,omitempty"`
+
+	// The name of the directory in which to mount this volume.
+	// Volumes are mounted in containers at `/volumes/{name}`.
+	// ---
+	// This also goes into the [corev1.Volume.Name] field, which is a [DNS1123Label].
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidatePodSpec
+	// https://pkg.go.dev/k8s.io/kubernetes/pkg/apis/core/validation#ValidateVolumes
+	//
+	// We prepend "volumes-" to avoid collisions with other [corev1.PodSpec.Volumes],
+	// so the maximum is 8 less than the inherited 63.
+	// +kubebuilder:validation:MaxLength=55
+	//
+	// +required
+	Name DNS1123Label `json:"name"`
+
+	// When true, mount the volume read-only, otherwise read-write. Defaults to false.
+	// ---
+	// [corev1.VolumeMount.ReadOnly]
+	//
+	// +optional
+	ReadOnly bool `json:"readOnly,omitempty"`
+}
+
+// AsVolume returns a copy of this as a [corev1.Volume].
+func (in *AdditionalVolume) AsVolume(name string) corev1.Volume {
+	var out corev1.Volume
+	out.Name = name
+
+	switch {
+	case len(in.ClaimName) > 0:
+		out.PersistentVolumeClaim = &corev1.PersistentVolumeClaimVolumeSource{
+			ClaimName: in.ClaimName,
+			ReadOnly:  in.ReadOnly,
+		}
+	case in.Image != nil:
+		out.Image = in.Image.DeepCopy()
+	}
+
+	return out
+}
+
+// LoggingConfiguration provides logging configuration for various components
+type LoggingConfiguration struct {
+	// +kubebuilder:validation:MaxLength=256
+	// +optional
+	Path string `json:"path,omitempty"`
 }

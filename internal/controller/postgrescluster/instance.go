@@ -17,7 +17,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -37,6 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -300,14 +300,14 @@ func (r *Reconciler) observeInstances(
 	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, pods,
+			r.Reader.List(ctx, pods,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
 	}
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, runners,
+			r.Reader.List(ctx, runners,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			))
@@ -318,11 +318,17 @@ func (r *Reconciler) observeInstances(
 	// Save desired volume size values in case the status is removed.
 	// This may happen in cases where the Pod is restarted, the cluster
 	// is shutdown, etc. Only save values for instances defined in the spec.
-	previousDesiredRequests := make(map[string]string)
+	previousPGDataDesiredRequests := make(map[string]string)
+	previousPGWALDesiredRequests := make(map[string]string)
 	if autogrow {
 		for _, statusIS := range cluster.Status.InstanceSets {
 			if statusIS.DesiredPGDataVolume != nil {
-				maps.Copy(previousDesiredRequests, statusIS.DesiredPGDataVolume)
+				maps.Copy(previousPGDataDesiredRequests, statusIS.DesiredPGDataVolume)
+			}
+		}
+		for _, statusIS := range cluster.Status.InstanceSets {
+			if statusIS.DesiredPGWALVolume != nil {
+				maps.Copy(previousPGWALDesiredRequests, statusIS.DesiredPGWALVolume)
 			}
 		}
 	}
@@ -332,6 +338,7 @@ func (r *Reconciler) observeInstances(
 	for _, name := range sets.List(observed.setNames) {
 		status := v1beta1.PostgresInstanceSetStatus{Name: name}
 		status.DesiredPGDataVolume = make(map[string]string)
+		status.DesiredPGWALVolume = make(map[string]string)
 
 		for _, instance := range observed.bySet[name] {
 			//nolint:gosec // This slice is always small.
@@ -344,24 +351,51 @@ func (r *Reconciler) observeInstances(
 				status.UpdatedReplicas++
 			}
 			if autogrow {
-				// Store desired pgData volume size for each instance Pod.
-				// The 'suggested-pgdata-pvc-size' annotation value is stored in the PostgresCluster
-				// status so that 1) it is available to the function 'reconcilePostgresDataVolume'
-				// and 2) so that the value persists after Pod restart and cluster shutdown events.
+				// Store desired pgData and pgWAL volume sizes for each instance Pod.
+				// The 'suggested-pgdata-pvc-size' and 'suggested-pgwal-pvc-size' annotation
+				// values are stored in the PostgresCluster status so that 1) they are available
+				// to the 'reconcilePostgresDataVolume' and 'reconcilePostgresWALVolume' functions
+				// and 2) so that the values persist after Pod restart and cluster shutdown events.
 				for _, pod := range instance.Pods {
 					// don't set an empty status
 					if pod.Annotations["suggested-pgdata-pvc-size"] != "" {
 						status.DesiredPGDataVolume[instance.Name] = pod.Annotations["suggested-pgdata-pvc-size"]
 					}
+					if pod.Annotations["suggested-pgwal-pvc-size"] != "" {
+						status.DesiredPGWALVolume[instance.Name] = pod.Annotations["suggested-pgwal-pvc-size"]
+					}
 				}
 			}
 		}
 
-		// If autogrow is enabled, get the desired volume size for each instance.
+		// If autogrow is enabled, determine the desired volume size for each instance
+		// now that all the pod annotations have been collected. This final value will be
+		// checked to ensure that the value from the annotations can be parsed to a valid
+		// value. Otherwise the previous value, if available, will be used. If a limit is
+		// not defined for the given volume and an empty string has been returned, nothing
+		// will be stored in the status. In the event that the value is empty, any existing
+		// request value will be removed.
 		if autogrow {
 			for _, instance := range observed.bySet[name] {
-				status.DesiredPGDataVolume[instance.Name] = r.storeDesiredRequest(ctx, cluster,
-					name, status.DesiredPGDataVolume[instance.Name], previousDesiredRequests[instance.Name])
+				if pgDataRequest := r.storeDesiredRequest(
+					ctx, cluster, "pgData", name,
+					status.DesiredPGDataVolume[instance.Name],
+					previousPGDataDesiredRequests[instance.Name],
+				); pgDataRequest != "" {
+					status.DesiredPGDataVolume[instance.Name] = pgDataRequest
+				} else {
+					delete(status.DesiredPGDataVolume, instance.Name)
+				}
+
+				if pgWALRequest := r.storeDesiredRequest(
+					ctx, cluster, "pgWAL", name,
+					status.DesiredPGWALVolume[instance.Name],
+					previousPGWALDesiredRequests[instance.Name],
+				); pgWALRequest != "" {
+					status.DesiredPGWALVolume[instance.Name] = pgWALRequest
+				} else {
+					delete(status.DesiredPGWALVolume, instance.Name)
+				}
 			}
 		}
 
@@ -369,67 +403,6 @@ func (r *Reconciler) observeInstances(
 	}
 
 	return observed, err
-}
-
-// storeDesiredRequest saves the appropriate request value to the PostgresCluster
-// status. If the value has grown, create an Event.
-func (r *Reconciler) storeDesiredRequest(
-	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	instanceSetName, desiredRequest, desiredRequestBackup string,
-) string {
-	var current resource.Quantity
-	var previous resource.Quantity
-	var err error
-	log := logging.FromContext(ctx)
-
-	// Parse the desired request from the cluster's status.
-	if desiredRequest != "" {
-		current, err = resource.ParseQuantity(desiredRequest)
-		if err != nil {
-			log.Error(err, "Unable to parse pgData volume request from status ("+
-				desiredRequest+") for "+cluster.Name+"/"+instanceSetName)
-			// If there was an error parsing the value, treat as unset (equivalent to zero).
-			desiredRequest = ""
-			current, _ = resource.ParseQuantity("")
-
-		}
-	}
-
-	// Parse the desired request from the status backup.
-	if desiredRequestBackup != "" {
-		previous, err = resource.ParseQuantity(desiredRequestBackup)
-		if err != nil {
-			log.Error(err, "Unable to parse pgData volume request from status backup ("+
-				desiredRequestBackup+") for "+cluster.Name+"/"+instanceSetName)
-			// If there was an error parsing the value, treat as unset (equivalent to zero).
-			desiredRequestBackup = ""
-			previous, _ = resource.ParseQuantity("")
-
-		}
-	}
-
-	// Determine if the limit is set for this instance set.
-	var limitSet bool
-	for _, specInstance := range cluster.Spec.InstanceSets {
-		if specInstance.Name == instanceSetName {
-			limitSet = !specInstance.DataVolumeClaimSpec.Resources.Limits.Storage().IsZero()
-		}
-	}
-
-	if limitSet && current.Value() > previous.Value() {
-		r.Recorder.Eventf(cluster, corev1.EventTypeNormal, "VolumeAutoGrow",
-			"pgData volume expansion to %v requested for %s/%s.",
-			current.String(), cluster.Name, instanceSetName)
-	}
-
-	// If the desired size was not observed, update with previously stored value.
-	// This can happen in scenarios where the annotation on the Pod is missing
-	// such as when the cluster is shutdown or a Pod is in the middle of a restart.
-	if desiredRequest == "" {
-		desiredRequest = desiredRequestBackup
-	}
-
-	return desiredRequest
 }
 
 // +kubebuilder:rbac:groups="",resources="pods",verbs={list}
@@ -445,7 +418,7 @@ func (r *Reconciler) deleteInstances(
 	instances, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
 	if err == nil {
 		err = errors.WithStack(
-			r.Client.List(ctx, pods,
+			r.Reader.List(ctx, pods,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: instances},
 			))
@@ -483,7 +456,7 @@ func (r *Reconciler) deleteInstances(
 		// apps/v1.Deployment, apps/v1.ReplicaSet, and apps/v1.StatefulSet all
 		// have a "spec.replicas" field with the same meaning.
 		patch := client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"replicas":0}}`))
-		err := errors.WithStack(r.patch(ctx, instance, patch))
+		err := errors.WithStack(r.Writer.Patch(ctx, instance, patch))
 
 		// When the pod controller is missing, requeue rather than return an
 		// error. The garbage collector will stop the pod, and it is not our
@@ -559,7 +532,7 @@ func (r *Reconciler) deleteInstance(
 			uList.SetGroupVersionKind(gvk)
 
 			err = errors.WithStack(
-				r.Client.List(ctx, uList,
+				r.Reader.List(ctx, uList,
 					client.InNamespace(cluster.GetNamespace()),
 					client.MatchingLabelsSelector{Selector: selector},
 				))
@@ -593,6 +566,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 	otelConfig *collector.Config,
+	pgParameters *postgres.ParameterSet,
 ) error {
 
 	// Go through the observed instances and check if a primary has been determined.
@@ -630,7 +604,7 @@ func (r *Reconciler) reconcileInstanceSets(
 			patroniLeaderService, primaryCertificate,
 			findAvailableInstanceNames(*set, instances, clusterVolumes),
 			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound, otelConfig,
+			backupsSpecFound, otelConfig, pgParameters,
 		)
 
 		if err == nil {
@@ -676,7 +650,7 @@ func (r *Reconciler) cleanupPodDisruptionBudgets(
 
 	pdbList := &policyv1.PodDisruptionBudgetList{}
 	if err == nil {
-		err = r.Client.List(ctx, pdbList,
+		err = r.Reader.List(ctx, pdbList,
 			client.InNamespace(cluster.Namespace), client.MatchingLabelsSelector{
 				Selector: selector,
 			})
@@ -873,7 +847,7 @@ func (r *Reconciler) rolloutInstance(
 	// NOTE(cbandy): This could return an apierrors.IsConflict() which should be
 	// retried by another reconcile (not ignored).
 	return errors.WithStack(
-		r.Client.Delete(ctx, pod, client.Preconditions{
+		r.Writer.Delete(ctx, pod, client.Preconditions{
 			UID:             &pod.UID,
 			ResourceVersion: &pod.ResourceVersion,
 		}))
@@ -1066,6 +1040,7 @@ func (r *Reconciler) scaleUpInstances(
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 	otelConfig *collector.Config,
+	pgParameters *postgres.ParameterSet,
 ) ([]*appsv1.StatefulSet, error) {
 	log := logging.FromContext(ctx)
 
@@ -1112,7 +1087,7 @@ func (r *Reconciler) scaleUpInstances(
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate, instances[i],
 			numInstancePods, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound, otelConfig,
+			backupsSpecFound, otelConfig, pgParameters,
 		)
 	}
 	if err == nil {
@@ -1144,6 +1119,7 @@ func (r *Reconciler) reconcileInstance(
 	exporterQueriesConfig, exporterWebConfig *corev1.ConfigMap,
 	backupsSpecFound bool,
 	otelConfig *collector.Config,
+	pgParameters *postgres.ParameterSet,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
 	ctx = logging.NewContext(ctx, log)
@@ -1187,7 +1163,7 @@ func (r *Reconciler) reconcileInstance(
 		postgres.InstancePod(
 			ctx, cluster, spec,
 			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret),
-			postgresDataVolume, postgresWALVolume, tablespaceVolumes,
+			postgresDataVolume, postgresWALVolume, tablespaceVolumes, pgParameters,
 			&instance.Spec.Template)
 
 		if backupsSpecFound {
@@ -1212,7 +1188,7 @@ func (r *Reconciler) reconcileInstance(
 			// Create new err variable to avoid abandoning the rest of the reconcile loop if there
 			// is an error getting the monitoring user secret
 			err := errors.WithStack(
-				r.Client.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
+				r.Reader.Get(ctx, client.ObjectKeyFromObject(monitoringUserSecret), monitoringUserSecret))
 			if err == nil {
 				pgPassword = string(monitoringUserSecret.Data["password"])
 			}
@@ -1223,9 +1199,13 @@ func (r *Reconciler) reconcileInstance(
 		// set includeLogrotate to true, but only if backups are enabled
 		// and local volumes are available.
 		includeLogrotate := backupsSpecFound && pgbackrest.RepoHostVolumeDefined(cluster)
+
+		// The log directories here do not include Postgres "log_directory" because it might be a subdirectory of "data_directory".
+		// In that case, the "log_directory" must be created *after* initdb runs, not during container startup here.
+		// TODO(sidecar): Create these directories sometime other than startup.
 		collector.AddToPod(ctx, cluster.Spec.Instrumentation, cluster.Spec.ImagePullPolicy, instanceConfigMap, &instance.Spec.Template,
 			[]corev1.VolumeMount{postgres.DataVolumeMount()}, pgPassword,
-			[]string{naming.PGBackRestPGDataLogPath}, includeLogrotate, true)
+			[]string{util.GetPGBackRestLogPathForInstance(cluster)}, includeLogrotate, true)
 	}
 
 	// Add postgres-exporter to the instance Pod spec
@@ -1255,11 +1235,11 @@ func (r *Reconciler) reconcileInstance(
 
 	// mount additional volumes to the Postgres instance containers
 	if err == nil && spec.Volumes != nil && len(spec.Volumes.Additional) > 0 {
-		missingContainers := addAdditionalVolumesToSpecifiedContainers(&instance.Spec.Template, spec.Volumes.Additional)
+		missingContainers := util.AddAdditionalVolumesAndMounts(&instance.Spec.Template.Spec, spec.Volumes.Additional)
 
 		if len(missingContainers) > 0 {
 			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
-				"The following containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+				"The following Postgres pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
 		}
 	}
 
@@ -1453,7 +1433,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 			collector.AddLogrotateConfigs(ctx, cluster.Spec.Instrumentation,
 				instanceConfigMap,
 				[]collector.LogrotateConfig{{
-					LogFiles: []string{naming.PGBackRestPGDataLogPath + "/*.log"},
+					LogFiles: []string{util.GetPGBackRestLogPathForInstance(cluster) + "/*.log"},
 				}})
 		}
 	}
@@ -1479,7 +1459,7 @@ func (r *Reconciler) reconcileInstanceCertificates(
 ) (*corev1.Secret, error) {
 	existing := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
+		r.Reader.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
 	instanceCerts := &corev1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	instanceCerts.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
@@ -1567,7 +1547,7 @@ func (r *Reconciler) reconcileInstanceSetPodDisruptionBudget(
 		scaled, err = intstr.GetScaledValueFromIntOrPercent(minAvailable, int(*spec.Replicas), true)
 	}
 	if err == nil && scaled <= 0 {
-		err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(pdb), pdb))
+		err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(pdb), pdb))
 		if err == nil {
 			err = errors.WithStack(r.deleteControlled(ctx, cluster, pdb))
 		}

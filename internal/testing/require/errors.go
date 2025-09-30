@@ -16,12 +16,23 @@ import (
 // StatusError returns the [metav1.Status] within err's tree.
 // It calls t.Fatal when err is nil or there is no status.
 func StatusError(t testing.TB, err error) metav1.Status {
-	status, ok := err.(apierrors.APIStatus)
+	t.Helper()
 
+	status, ok := err.(apierrors.APIStatus)
 	assert.Assert(t, ok || errors.As(err, &status),
 		"%T does not implement %T", err, status)
 
 	return status.Status()
+}
+
+// StatusErrorDetails returns the details of [metav1.Status] within err's tree.
+// It calls t.Fatal when err is nil, there is no status, or its Details field is nil.
+func StatusErrorDetails(t testing.TB, err error) metav1.StatusDetails {
+	t.Helper()
+
+	status := StatusError(t, err)
+	assert.Assert(t, status.Details != nil)
+	return *status.Details
 }
 
 // Value returns v or panics when err is not nil.

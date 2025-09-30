@@ -375,7 +375,10 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{
@@ -391,14 +394,14 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 			},
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{
+							corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}},
 				},
 			}},
 			Backups: v1beta1.Backups{
@@ -407,14 +410,16 @@ func TestReconcileConfigureExistingPVCs(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{
-									corev1.ReadWriteMany},
-								Resources: corev1.VolumeResourceRequirements{
-									Requests: map[corev1.ResourceName]resource.
-										Quantity{
-										corev1.ResourceStorage: resource.
-											MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{
+										corev1.ReadWriteMany},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: map[corev1.ResourceName]resource.
+											Quantity{
+											corev1.ResourceStorage: resource.
+												MustParse("1Gi"),
+										},
 									},
 								},
 							},
@@ -635,7 +640,10 @@ func TestReconcileMoveDirectories(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	ns := setupNamespace(t, tClient)
 	cluster := &v1beta1.PostgresCluster{
@@ -674,14 +682,14 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					},
 				},
 				PriorityClassName: initialize.String("some-priority-class"),
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{
-						corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{
+							corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}},
 				},
 			}},
 			Backups: v1beta1.Backups{
@@ -698,14 +706,16 @@ func TestReconcileMoveDirectories(t *testing.T) {
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{
-									corev1.ReadWriteMany},
-								Resources: corev1.VolumeResourceRequirements{
-									Requests: map[corev1.ResourceName]resource.
-										Quantity{
-										corev1.ResourceStorage: resource.
-											MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{
+										corev1.ReadWriteMany},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: map[corev1.ResourceName]resource.
+											Quantity{
+											corev1.ResourceStorage: resource.
+												MustParse("1Gi"),
+										},
 									},
 								},
 							},
@@ -728,7 +738,7 @@ func TestReconcileMoveDirectories(t *testing.T) {
 	assert.Assert(t, returnEarly)
 
 	moveJobs := &batchv1.JobList{}
-	err = r.Client.List(ctx, moveJobs, &client.ListOptions{
+	err = tClient.List(ctx, moveJobs, &client.ListOptions{
 		Namespace:     cluster.Namespace,
 		LabelSelector: naming.DirectoryMoveJobLabels(cluster.Name).AsSelector(),
 	})
@@ -744,12 +754,17 @@ containers:
 - command:
   - bash
   - -ceu
-  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pgdata_pvc=testpgdata\"\n
-    \   echo \"Current PG data directory volume contents:\" \n    ls -lh \"/pgdata\"\n
-    \   echo \"Now updating PG data directory...\"\n    [ -d \"/pgdata/testpgdatadir\"
-    ] && mv \"/pgdata/testpgdatadir\" \"/pgdata/pg13_bootstrap\"\n    rm -f \"/pgdata/pg13/patroni.dynamic.json\"\n
-    \   echo \"Updated PG data directory contents:\" \n    ls -lh \"/pgdata\"\n    echo
-    \"PG Data directory preparation complete\"\n    "
+  - |-
+    echo "Preparing cluster testcluster volumes for PGO v5.x"
+    echo "pgdata_pvc=testpgdata"
+    echo "Current PG data directory volume contents:"
+    ls -lh "/pgdata"
+    echo "Now updating PG data directory..."
+    [ -d "/pgdata/testpgdatadir" ] && mv "/pgdata/testpgdatadir" "/pgdata/pg13_bootstrap"
+    rm -f "/pgdata/pg13/patroni.dynamic.json"
+    echo "Updated PG data directory contents:"
+    ls -lh "/pgdata"
+    echo "PG Data directory preparation complete"
   image: example.com/crunchy-postgres-ha:test
   imagePullPolicy: Always
   name: pgdata-move-job
@@ -804,12 +819,16 @@ containers:
 - command:
   - bash
   - -ceu
-  - "echo \"Preparing cluster testcluster volumes for PGO v5.x\"\n    echo \"pg_wal_pvc=testwal\"\n
-    \   echo \"Current PG WAL directory volume contents:\"\n    ls -lh \"/pgwal\"\n
-    \   echo \"Now updating PG WAL directory...\"\n    [ -d \"/pgwal/testwaldir\"
-    ] && mv \"/pgwal/testwaldir\" \"/pgwal/testcluster-wal\"\n    echo \"Updated PG
-    WAL directory contents:\"\n    ls -lh \"/pgwal\"\n    echo \"PG WAL directory
-    preparation complete\"\n    "
+  - |-
+    echo "Preparing cluster testcluster volumes for PGO v5.x"
+    echo "pg_wal_pvc=testwal"
+    echo "Current PG WAL directory volume contents:"
+    ls -lh "/pgwal"
+    echo "Now updating PG WAL directory..."
+    [ -d "/pgwal/testwaldir" ] && mv "/pgwal/testwaldir" "/pgwal/testcluster-wal"
+    echo "Updated PG WAL directory contents:"
+    ls -lh "/pgwal"
+    echo "PG WAL directory preparation complete"
   image: example.com/crunchy-postgres-ha:test
   imagePullPolicy: Always
   name: pgwal-move-job
@@ -864,14 +883,19 @@ containers:
 - command:
   - bash
   - -ceu
-  - "echo \"Preparing cluster testcluster pgBackRest repo volume for PGO v5.x\"\n
-    \   echo \"repo_pvc=testrepo\"\n    echo \"pgbackrest directory:\"\n    ls -lh
-    /pgbackrest\n    echo \"Current pgBackRest repo directory volume contents:\" \n
-    \   ls -lh \"/pgbackrest/testrepodir\"\n    echo \"Now updating repo directory...\"\n
-    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/archive\"\n
-    \   [ -d \"/pgbackrest/testrepodir\" ] && mv -t \"/pgbackrest/\" \"/pgbackrest/testrepodir/backup\"\n
-    \   echo \"Updated /pgbackrest directory contents:\"\n    ls -lh \"/pgbackrest\"\n
-    \   echo \"Repo directory preparation complete\"\n    "
+  - |-
+    echo "Preparing cluster testcluster pgBackRest repo volume for PGO v5.x"
+    echo "repo_pvc=testrepo"
+    echo "pgbackrest directory:"
+    ls -lh /pgbackrest
+    echo "Current pgBackRest repo directory volume contents:"
+    ls -lh "/pgbackrest/testrepodir"
+    echo "Now updating repo directory..."
+    [ -d "/pgbackrest/testrepodir" ] && mv -t "/pgbackrest/" "/pgbackrest/testrepodir/archive"
+    [ -d "/pgbackrest/testrepodir" ] && mv -t "/pgbackrest/" "/pgbackrest/testrepodir/backup"
+    echo "Updated /pgbackrest directory contents:"
+    ls -lh "/pgbackrest"
+    echo "Repo directory preparation complete"
   image: example.com/crunchy-pgbackrest:test
   imagePullPolicy: Always
   name: repo-move-job

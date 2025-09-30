@@ -971,7 +971,7 @@ spec:
                 - Always
                 - Never
                 - IfNotPresent
-                maxLength: 15
+                maxLength: 12
                 type: string
               imagePullSecrets:
                 description: |-
@@ -1060,9 +1060,6 @@ spec:
                     x-kubernetes-list-type: map
                   limits:
                     additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
                       pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                       x-kubernetes-int-or-string: true
                     description: |-
@@ -1071,9 +1068,6 @@ spec:
                     type: object
                   requests:
                     additionalProperties:
-                      anyOf:
-                      - type: integer
-                      - type: string
                       pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                       x-kubernetes-int-or-string: true
                     description: |-
@@ -1139,7 +1133,7 @@ spec:
                 - Copy
                 - CopyFileRange
                 - Link
-                maxLength: 15
+                maxLength: 13
                 type: string
             required:
             - fromPostgresVersion
@@ -1201,6 +1195,7 @@ spec:
                       - "True"
                       - "False"
                       - Unknown
+                      maxLength: 7
                       type: string
                     type:
                       description: type of condition in CamelCase or in foo.example.com/CamelCase.

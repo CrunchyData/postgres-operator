@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -36,7 +37,7 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 	// need to delete any existing service(s). At the start of every reconcile
 	// get all services that match the current pgAdmin labels.
 	services := corev1.ServiceList{}
-	if err := r.List(ctx, &services,
+	if err := r.Reader.List(ctx, &services,
 		client.InNamespace(pgadmin.Namespace),
 		client.MatchingLabels{
 			naming.LabelStandalonePGAdmin: pgadmin.Name,
@@ -62,7 +63,7 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 	if pgadmin.Spec.ServiceName != "" {
 		// Look for an existing service with name ServiceName in the namespace
 		existingService := &corev1.Service{}
-		err := r.Get(ctx, types.NamespacedName{
+		err := r.Reader.Get(ctx, types.NamespacedName{
 			Name:      pgadmin.Spec.ServiceName,
 			Namespace: pgadmin.GetNamespace(),
 		}, existingService)
@@ -100,7 +101,7 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 			return err
 		}
 
-		return errors.WithStack(r.apply(ctx, service))
+		return errors.WithStack(runtime.Apply(ctx, r.Writer, service))
 	}
 
 	// If we get here then ServiceName was not provided through the spec

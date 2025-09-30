@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-logr/logr/funcr"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -30,16 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
-	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
-	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -257,121 +253,6 @@ func TestNewObservedInstances(t *testing.T) {
 		assert.Equal(t, observed.byName["the-name"], instance)
 		assert.DeepEqual(t, observed.bySet["00"], []*Instance{instance})
 		assert.DeepEqual(t, sets.List(observed.setNames), []string{"00"})
-	})
-}
-
-func TestStoreDesiredRequest(t *testing.T) {
-	ctx := context.Background()
-
-	setupLogCapture := func(ctx context.Context) (context.Context, *[]string) {
-		calls := []string{}
-		testlog := funcr.NewJSON(func(object string) {
-			calls = append(calls, object)
-		}, funcr.Options{
-			Verbosity: 1,
-		})
-		return logging.NewContext(ctx, testlog), &calls
-	}
-
-	cluster := v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "rhino",
-			Namespace: "test-namespace",
-		},
-		Spec: v1beta1.PostgresClusterSpec{
-			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				Name:     "red",
-				Replicas: initialize.Int32(1),
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-					Resources: corev1.VolumeResourceRequirements{
-						Limits: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						}}},
-			}, {
-				Name:     "blue",
-				Replicas: initialize.Int32(1),
-			}}}}
-
-	t.Run("BadRequestNoBackup", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "woot", "")
-
-		assert.Equal(t, value, "")
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status"))
-	})
-
-	t.Run("BadRequestWithBackup", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "foo", "1Gi")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(recorder.Events), 0)
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status (foo) for rhino/red"))
-	})
-
-	t.Run("NoLimitNoEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "blue", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 0)
-	})
-
-	t.Run("BadBackupRequest", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "2Gi", "bar")
-
-		assert.Equal(t, value, "2Gi")
-		assert.Equal(t, len(*logs), 1)
-		assert.Assert(t, cmp.Contains((*logs)[0], "Unable to parse pgData volume request from status backup (bar) for rhino/red"))
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
-		assert.Equal(t, recorder.Events[0].Note, "pgData volume expansion to 2Gi requested for rhino/red.")
-	})
-
-	t.Run("ValueUpdateWithEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "red", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "VolumeAutoGrow")
-		assert.Equal(t, recorder.Events[0].Note, "pgData volume expansion to 1Gi requested for rhino/red.")
-	})
-
-	t.Run("NoLimitNoEvent", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		reconciler := &Reconciler{Recorder: recorder}
-		ctx, logs := setupLogCapture(ctx)
-
-		value := reconciler.storeDesiredRequest(ctx, &cluster, "blue", "1Gi", "")
-
-		assert.Equal(t, value, "1Gi")
-		assert.Equal(t, len(*logs), 0)
-		assert.Equal(t, len(recorder.Events), 0)
 	})
 }
 
@@ -665,6 +546,46 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   - --
   - |-
     monitor() {
+    # Parameters for curl when managing autogrow annotation.
+    APISERVER="https://kubernetes.default.svc"
+    SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
+    NAMESPACE=$(cat "${SERVICEACCOUNT}"/namespace)
+    TOKEN=$(cat "${SERVICEACCOUNT}"/token)
+    CACERT=${SERVICEACCOUNT}/ca.crt
+
+    # Manage autogrow annotation.
+    # Return size in Mebibytes.
+    manageAutogrowAnnotation() {
+      local volume=$1
+      local trigger=$2
+      local maxGrow=$3
+
+      size=$(df --block-size=M "/pgbackrest/${volume}")
+      read -r _ size _ <<< "${size#*$'\n'}"
+      use=$(df "/pgbackrest/${volume}")
+      read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
+      sizeInt="${size//M/}"
+      # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+      useInt=${use//[[:punct:]]/}
+      triggerExpansion="$((useInt > trigger))"
+      if [[ ${triggerExpansion} -eq 1 ]]; then
+        newSize="$(((sizeInt / 2)+sizeInt))"
+        # Only compare with maxGrow if it is set (not empty)
+        if [[ -n "${maxGrow}" ]]; then
+            # check to see how much we would normally grow
+            sizeDiff=$((newSize - sizeInt))
+
+            # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+            if [[ ${sizeDiff} -gt ${maxGrow} ]]; then
+                newSize=$((sizeInt + maxGrow))
+            fi
+        fi
+        newSizeMi="${newSize}Mi"
+        d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
+        curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
+      fi
+    }
+
     exec {fd}<> <(:||:)
     until read -r -t 5 -u "${fd}"; do
       if
@@ -682,6 +603,27 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
         exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded certificates dated %y' "${directory}"
       fi
+
+      # manage autogrow annotation for the repo1 volume, if it exists
+      if [[ -d /pgbackrest/repo1 ]]; then
+        manageAutogrowAnnotation "repo1" "75" ""
+      fi
+
+      # manage autogrow annotation for the repo2 volume, if it exists
+      if [[ -d /pgbackrest/repo2 ]]; then
+        manageAutogrowAnnotation "repo2" "75" ""
+      fi
+
+      # manage autogrow annotation for the repo3 volume, if it exists
+      if [[ -d /pgbackrest/repo3 ]]; then
+        manageAutogrowAnnotation "repo3" "75" ""
+      fi
+
+      # manage autogrow annotation for the repo4 volume, if it exists
+      if [[ -d /pgbackrest/repo4 ]]; then
+        manageAutogrowAnnotation "repo4" "75" ""
+      fi
+
     done
     }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
   - pgbackrest-config
@@ -782,6 +724,46 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
   - --
   - |-
     monitor() {
+    # Parameters for curl when managing autogrow annotation.
+    APISERVER="https://kubernetes.default.svc"
+    SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
+    NAMESPACE=$(cat "${SERVICEACCOUNT}"/namespace)
+    TOKEN=$(cat "${SERVICEACCOUNT}"/token)
+    CACERT=${SERVICEACCOUNT}/ca.crt
+
+    # Manage autogrow annotation.
+    # Return size in Mebibytes.
+    manageAutogrowAnnotation() {
+      local volume=$1
+      local trigger=$2
+      local maxGrow=$3
+
+      size=$(df --block-size=M "/pgbackrest/${volume}")
+      read -r _ size _ <<< "${size#*$'\n'}"
+      use=$(df "/pgbackrest/${volume}")
+      read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
+      sizeInt="${size//M/}"
+      # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+      useInt=${use//[[:punct:]]/}
+      triggerExpansion="$((useInt > trigger))"
+      if [[ ${triggerExpansion} -eq 1 ]]; then
+        newSize="$(((sizeInt / 2)+sizeInt))"
+        # Only compare with maxGrow if it is set (not empty)
+        if [[ -n "${maxGrow}" ]]; then
+            # check to see how much we would normally grow
+            sizeDiff=$((newSize - sizeInt))
+
+            # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+            if [[ ${sizeDiff} -gt ${maxGrow} ]]; then
+                newSize=$((sizeInt + maxGrow))
+            fi
+        fi
+        newSizeMi="${newSize}Mi"
+        d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
+        curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
+      fi
+    }
+
     exec {fd}<> <(:||:)
     until read -r -t 5 -u "${fd}"; do
       if
@@ -799,6 +781,27 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
         exec {fd}>&- && exec {fd}<> <(:||:)
         stat --format='Loaded certificates dated %y' "${directory}"
       fi
+
+      # manage autogrow annotation for the repo1 volume, if it exists
+      if [[ -d /pgbackrest/repo1 ]]; then
+        manageAutogrowAnnotation "repo1" "75" ""
+      fi
+
+      # manage autogrow annotation for the repo2 volume, if it exists
+      if [[ -d /pgbackrest/repo2 ]]; then
+        manageAutogrowAnnotation "repo2" "75" ""
+      fi
+
+      # manage autogrow annotation for the repo3 volume, if it exists
+      if [[ -d /pgbackrest/repo3 ]]; then
+        manageAutogrowAnnotation "repo3" "75" ""
+      fi
+
+      # manage autogrow annotation for the repo4 volume, if it exists
+      if [[ -d /pgbackrest/repo4 ]]; then
+        manageAutogrowAnnotation "repo4" "75" ""
+      fi
+
     done
     }; export directory="$1" authority="$2" filename="$3"; export -f monitor; exec -a "$0" bash -ceu monitor
   - pgbackrest-config
@@ -1209,33 +1212,32 @@ func TestDeleteInstance(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{
-		Client:   cc,
-		Owner:    client.FieldOwner(t.Name()),
-		Recorder: new(record.FakeRecorder),
+		Reader:       cc,
+		Recorder:     new(record.FakeRecorder),
+		StatusWriter: client.WithFieldOwner(cc, t.Name()).Status(),
+		Writer:       client.WithFieldOwner(cc, t.Name()),
 	}
 
 	// Define, Create, and Reconcile a cluster to get an instance running in kube
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
 
-	assert.NilError(t, reconciler.Client.Create(ctx, cluster))
+	assert.NilError(t, cc.Create(ctx, cluster))
 	t.Cleanup(func() {
 		// Remove finalizers, if any, so the namespace can terminate.
 		assert.Check(t, client.IgnoreNotFound(
-			reconciler.Client.Patch(ctx, cluster, client.RawPatch(
+			cc.Patch(ctx, cluster, client.RawPatch(
 				client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
 	})
 
 	// Reconcile the entire cluster so that we don't have to create all the
 	// resources needed to reconcile a single instance (cm,secrets,svc, etc.)
-	result, err := reconciler.Reconcile(ctx, reconcile.Request{
-		NamespacedName: client.ObjectKeyFromObject(cluster),
-	})
+	result, err := reconciler.Reconcile(ctx, cluster)
 	assert.NilError(t, err)
 	assert.Assert(t, result.Requeue == false)
 
 	stsList := &appsv1.StatefulSetList{}
-	assert.NilError(t, reconciler.Client.List(ctx, stsList,
+	assert.NilError(t, cc.List(ctx, stsList,
 		client.InNamespace(cluster.Namespace),
 		client.MatchingLabels{
 			naming.LabelCluster:     cluster.Name,
@@ -1268,7 +1270,7 @@ func TestDeleteInstance(t *testing.T) {
 			err := wait.PollUntilContextTimeout(ctx, time.Second*3, Scale(time.Second*30), false, func(ctx context.Context) (bool, error) {
 				uList := &unstructured.UnstructuredList{}
 				uList.SetGroupVersionKind(gvk)
-				assert.NilError(t, reconciler.Client.List(ctx, uList,
+				assert.NilError(t, cc.List(ctx, uList,
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
 
@@ -1534,7 +1536,7 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 					InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 						Name:                "instance1",
 						Replicas:            initialize.Int32(1),
-						DataVolumeClaimSpec: testVolumeClaimSpec(),
+						DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 						TopologySpreadConstraints: []corev1.TopologySpreadConstraint{{
 							MaxSkew:           int32(1),
 							TopologyKey:       "kubernetes.io/hostname",
@@ -1723,7 +1725,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1750,7 +1752,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1774,7 +1776,7 @@ func TestFindAvailableInstanceNames(t *testing.T) {
 		expectedInstanceNames: []string{"instance1-def"},
 	}, {
 		set: v1beta1.PostgresInstanceSetSpec{Name: "instance1",
-			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpec{}},
+			WALVolumeClaimSpec: &v1beta1.VolumeClaimSpecWithAutoGrow{}},
 		fakeObservedInstances: newObservedInstances(
 			&v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
@@ -1812,8 +1814,8 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	foundPDB := func(
@@ -1821,7 +1823,7 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		spec *v1beta1.PostgresInstanceSetSpec,
 	) bool {
 		got := &policyv1.PodDisruptionBudget{}
-		err := r.Client.Get(ctx,
+		err := cc.Get(ctx,
 			naming.AsObjectKey(naming.InstanceSet(cluster, spec)),
 			got)
 		return !apierrors.IsNotFound(err)
@@ -1853,8 +1855,8 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		spec := &cluster.Spec.InstanceSets[0]
 		spec.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
 		assert.Assert(t, foundPDB(cluster, spec))
@@ -1880,8 +1882,8 @@ func TestReconcileInstanceSetPodDisruptionBudget(t *testing.T) {
 		spec := &cluster.Spec.InstanceSets[0]
 		spec.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcileInstanceSetPodDisruptionBudget(ctx, cluster, spec))
 		assert.Assert(t, foundPDB(cluster, spec))
@@ -1930,8 +1932,8 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)
@@ -1960,14 +1962,14 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 	createPDB := func(
 		pdb *policyv1.PodDisruptionBudget,
 	) error {
-		return r.Client.Create(ctx, pdb)
+		return cc.Create(ctx, pdb)
 	}
 
 	foundPDB := func(
 		pdb *policyv1.PodDisruptionBudget,
 	) bool {
 		return !apierrors.IsNotFound(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(pdb),
+			cc.Get(ctx, client.ObjectKeyFromObject(pdb),
 				&policyv1.PodDisruptionBudget{}))
 	}
 
@@ -1982,8 +1984,8 @@ func TestCleanupDisruptionBudgets(t *testing.T) {
 		spec := &cluster.Spec.InstanceSets[0]
 		spec.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		expectedPDB := generatePDB(t, cluster, spec,
 			initialize.Pointer(intstr.FromInt32(1)))
@@ -2027,8 +2029,7 @@ func TestReconcileInstanceConfigMap(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	t.Run("LocalVolumeOtelDisabled", func(t *testing.T) {

@@ -20,16 +20,10 @@ import (
 )
 
 func TestGeneratePostgresRoleSecret(t *testing.T) {
-	tClient := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
-	}
+	reconciler := &CrunchyBridgeClusterReconciler{}
 
 	cluster := testCluster()
-	cluster.Namespace = setupNamespace(t, tClient).Name
+	cluster.Namespace = "asdf"
 
 	spec := &v1beta1.CrunchyBridgeClusterRoleSpec{
 		Name:       "application",
@@ -77,8 +71,8 @@ func TestReconcilePostgresRoleSecrets(t *testing.T) {
 	ns := setupNamespace(t, tClient).Name
 
 	reconciler := &CrunchyBridgeClusterReconciler{
-		Client: tClient,
-		Owner:  "crunchybridgecluster-controller",
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
 	}
 
 	t.Run("DuplicateSecretNameInSpec", func(t *testing.T) {

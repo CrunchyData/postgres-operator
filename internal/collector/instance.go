@@ -7,7 +7,6 @@ package collector
 import (
 	"context"
 	"fmt"
-	"path"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -182,11 +181,8 @@ func AddToPod(
 // startCommand generates the command script used by the collector container
 func startCommand(logDirectories []string, includeLogrotate bool) []string {
 	var mkdirScript string
-	if len(logDirectories) != 0 {
-		for _, logDir := range logDirectories {
-			mkdirScript = mkdirScript + `
-` + shell.MakeDirectories(logDir, path.Join(logDir, "receiver"))
-		}
+	for _, logDir := range logDirectories {
+		mkdirScript += "\n" + shell.MakeDirectories(logDir, "receiver")
 	}
 
 	var logrotateCommand string

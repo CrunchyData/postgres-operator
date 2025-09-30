@@ -68,10 +68,6 @@ type PatroniLogConfig struct {
 	// The Patroni log level.
 	// More info: https://docs.python.org/3/library/logging.html#levels
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=10
-	//
 	// +default="INFO"
 	// +kubebuilder:validation:Enum={CRITICAL,ERROR,WARNING,INFO,DEBUG,NOTSET}
 	// +optional
@@ -96,10 +92,6 @@ type PatroniSwitchover struct {
 	// factors. A TargetInstance must be specified to failover.
 	// NOTE: The Failover type is reserved as the "last resort" case.
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	//
 	// +kubebuilder:validation:Enum={Switchover,Failover}
 	// +kubebuilder:default:=Switchover
 	// +optional

@@ -33,3 +33,19 @@ func Permissions(cluster *v1beta1.PostgresCluster) []rbacv1.PolicyRule {
 
 	return rules
 }
+
+// +kubebuilder:rbac:groups="",resources="pods",verbs={patch}
+
+// RepoHostPermissions returns the RBAC rules the pgBackRest repo host needs.
+func RepoHostPermissions(cluster *v1beta1.PostgresCluster) []rbacv1.PolicyRule {
+
+	rules := make([]rbacv1.PolicyRule, 0, 1)
+
+	rules = append(rules, rbacv1.PolicyRule{
+		APIGroups: []string{corev1.SchemeGroupVersion.Group},
+		Resources: []string{"pods"},
+		Verbs:     []string{"patch"},
+	})
+
+	return rules
+}

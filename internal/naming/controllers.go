@@ -5,6 +5,9 @@
 package naming
 
 const (
-	ControllerBridge  = "bridge-controller"
-	ControllerPGAdmin = "pgadmin-controller"
+	ControllerBridge               = "bridge-controller"
+	ControllerCrunchyBridgeCluster = "crunchybridgecluster-controller"
+	ControllerPGAdmin              = "pgadmin-controller"
+	ControllerPGUpgrade            = "pgupgrade-controller"
+	ControllerPostgresCluster      = "postgrescluster-controller"
 )

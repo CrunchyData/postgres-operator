@@ -29,10 +29,7 @@ import (
 )
 
 func TestGeneratePGAdminConfigMap(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "some-ns"
@@ -118,11 +115,7 @@ ownerReferences:
 }
 
 func TestGeneratePGAdminService(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
 	reconciler := &Reconciler{
-		Client:   cc,
 		Recorder: new(record.FakeRecorder),
 	}
 
@@ -354,7 +347,10 @@ func TestReconcilePGAdminService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
+	}
 
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
@@ -456,7 +452,10 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
+	}
 
 	ns := setupNamespace(t, cc)
 	cluster := pgAdminTestCluster(*ns)
@@ -670,8 +669,7 @@ func TestReconcilePGAdminDataVolume(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	reconciler := &Reconciler{
-		Client: tClient,
-		Owner:  client.FieldOwner(t.Name()),
+		Writer: client.WithFieldOwner(tClient, t.Name()),
 	}
 
 	ns := setupNamespace(t, tClient)
@@ -721,7 +719,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 
 	t.Run("NoPods", func(t *testing.T) {
 		r := new(Reconciler)
-		r.Client = fake.NewClientBuilder().Build()
+		r.Reader = fake.NewClientBuilder().Build()
 		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
 	})
 
@@ -737,7 +735,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 		pod.Status.ContainerStatuses = nil
 
 		r := new(Reconciler)
-		r.Client = fake.NewClientBuilder().WithObjects(pod).Build()
+		r.Reader = fake.NewClientBuilder().WithObjects(pod).Build()
 
 		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
 	})
@@ -757,7 +755,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 			new(corev1.ContainerStateRunning)
 
 		r := new(Reconciler)
-		r.Client = fake.NewClientBuilder().WithObjects(pod).Build()
+		r.Reader = fake.NewClientBuilder().WithObjects(pod).Build()
 
 		assert.NilError(t, r.reconcilePGAdminUsers(ctx, cluster, nil, nil))
 	})
@@ -773,7 +771,7 @@ func TestReconcilePGAdminUsers(t *testing.T) {
 			new(corev1.ContainerStateRunning)
 
 		r := new(Reconciler)
-		r.Client = fake.NewClientBuilder().WithObjects(pod).Build()
+		r.Reader = fake.NewClientBuilder().WithObjects(pod).Build()
 
 		calls := 0
 		r.PodExec = func(
@@ -846,18 +844,20 @@ func pgAdminTestCluster(ns corev1.Namespace) *v1beta1.PostgresCluster {
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 13,
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
-				DataVolumeClaimSpec: testVolumeClaimSpec(),
+				DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 			}},
 			Backups: v1beta1.Backups{
 				PGBackRest: v1beta1.PGBackRestArchive{
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
 						Volume: &v1beta1.RepoPVC{
-							VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-								AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-								Resources: corev1.VolumeResourceRequirements{
-									Requests: corev1.ResourceList{
-										corev1.ResourceStorage: resource.MustParse("1Gi"),
+							VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+								VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+									AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+									Resources: corev1.VolumeResourceRequirements{
+										Requests: corev1.ResourceList{
+											corev1.ResourceStorage: resource.MustParse("1Gi"),
+										},
 									},
 								},
 							},

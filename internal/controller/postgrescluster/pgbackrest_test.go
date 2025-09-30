@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -65,13 +66,13 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 			Image: "example.com/crunchy-postgres-ha:test",
 			InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 				Name: "instance1",
-				DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: corev1.ResourceList{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
-						},
-					},
+				DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							}}},
 				},
 			}},
 			Backups: v1beta1.Backups{
@@ -116,11 +117,13 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 		postgresCluster.Spec.Backups.PGBackRest.Repos[0] = v1beta1.PGBackRestRepo{
 			Name: "repo1",
 			Volume: &v1beta1.RepoPVC{
-				VolumeClaimSpec: v1beta1.VolumeClaimSpec{
-					AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-					Resources: corev1.VolumeResourceRequirements{
-						Requests: map[corev1.ResourceName]resource.Quantity{
-							corev1.ResourceStorage: resource.MustParse("1Gi"),
+				VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+						Resources: corev1.VolumeResourceRequirements{
+							Requests: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceStorage: resource.MustParse("1Gi"),
+							},
 						},
 					},
 				},
@@ -178,9 +181,9 @@ func TestReconcilePGBackRest(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Reader:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -317,7 +320,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 			// set to true (as done in instance StatefulSet tests).
 			assert.Assert(t, cmp.MarshalMatches(template.Spec, `
 affinity: {}
-automountServiceAccountToken: false
+automountServiceAccountToken: true
 containers: null
 dnsPolicy: ClusterFirst
 enableServiceLinks: false
@@ -678,7 +681,7 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Writer: client.WithFieldOwner(tClient, t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -729,12 +732,15 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 }
 
 func TestReconcileRepoHostRBAC(t *testing.T) {
-
+	// Garbage collector cleans up test resources before the test completes
+	if strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+		t.Skip("USE_EXISTING_CLUSTER: Test fails due to garbage collection")
+	}
 	ctx := context.Background()
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Reader: tClient, Writer: client.WithFieldOwner(tClient, t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -768,6 +774,30 @@ func TestReconcileRepoHostRBAC(t *testing.T) {
 	}, sa)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, sa.Annotations, annotations)
+
+	role := &rbacv1.Role{}
+	err = tClient.Get(ctx, types.NamespacedName{
+		Name:      naming.RepoHostRBAC(postgresCluster).Name,
+		Namespace: postgresCluster.GetNamespace(),
+	}, role)
+	assert.NilError(t, err)
+	assert.Assert(t, len(role.Rules) > 0)
+
+	roleBinding := &rbacv1.RoleBinding{}
+	err = tClient.Get(ctx, types.NamespacedName{
+		Name:      naming.RepoHostRBAC(postgresCluster).Name,
+		Namespace: postgresCluster.GetNamespace(),
+	}, roleBinding)
+	assert.NilError(t, err)
+	assert.Assert(t, roleBinding.RoleRef.Name == role.GetName())
+
+	var foundSubject bool
+	for _, subject := range roleBinding.Subjects {
+		if subject.Name == sa.GetName() {
+			foundSubject = true
+		}
+	}
+	assert.Assert(t, foundSubject)
 }
 
 func TestReconcileStanzaCreate(t *testing.T) {
@@ -777,9 +807,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -898,7 +926,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Writer: client.WithFieldOwner(tClient, t.Name())}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -1059,9 +1087,8 @@ func TestReconcileManualBackup(t *testing.T) {
 	r := &Reconciler{}
 	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -1497,7 +1524,10 @@ func TestGetPGBackRestResources(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -1680,7 +1710,9 @@ func TestGetPGBackRestResources(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: corev1.PodSpec{},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{Name: "test", Image: "test"}},
+						},
 					},
 				},
 			},
@@ -1718,7 +1750,9 @@ func TestGetPGBackRestResources(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: corev1.PodSpec{},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{Name: "test", Image: "test"}},
+						},
 					},
 				},
 			},
@@ -1754,7 +1788,9 @@ func TestGetPGBackRestResources(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Labels: naming.PGBackRestDedicatedLabels(clusterName),
 						},
-						Spec: corev1.PodSpec{},
+						Spec: corev1.PodSpec{
+							Containers: []corev1.Container{{Name: "test", Image: "test"}},
+						},
 					},
 				},
 			},
@@ -1803,9 +1839,9 @@ func TestReconcilePostgresClusterDataSource(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Reader:   tClient,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Writer:   client.WithFieldOwner(tClient, controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -2182,9 +2218,9 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   tClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Reader:   tClient,
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Writer:   client.WithFieldOwner(tClient, controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -2358,7 +2394,10 @@ func TestCopyConfigurationResources(t *testing.T) {
 	ctx := context.Background()
 	require.ParallelCapacity(t, 2)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Reader: tClient,
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 
 	ns1 := setupNamespace(t, tClient)
 	ns2 := setupNamespace(t, tClient)
@@ -2395,13 +2434,13 @@ func TestCopyConfigurationResources(t *testing.T) {
 				Image:           "example.com/crunchy-postgres-ha:test",
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
-							},
-						},
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							Resources: corev1.VolumeResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								}}},
 					},
 				}},
 				Backups: v1beta1.Backups{
@@ -2447,13 +2486,13 @@ func TestCopyConfigurationResources(t *testing.T) {
 				},
 				InstanceSets: []v1beta1.PostgresInstanceSetSpec{{
 					Name: "instance1",
-					DataVolumeClaimSpec: v1beta1.VolumeClaimSpec{
-						AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-						Resources: corev1.VolumeResourceRequirements{
-							Requests: corev1.ResourceList{
-								corev1.ResourceStorage: resource.MustParse("1Gi"),
-							},
-						},
+					DataVolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							Resources: corev1.VolumeResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								}}},
 					},
 				}},
 				Backups: v1beta1.Backups{
@@ -2607,8 +2646,7 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 	ns := setupNamespace(t, cc)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  ControllerName,
+		Reader: cc,
 	}
 
 	ctx := context.Background()
@@ -2627,6 +2665,11 @@ func TestGenerateBackupJobIntent(t *testing.T) {
 		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - exec "$@"
+  - --
   - /bin/pgbackrest
   - backup
   - --stanza=db
@@ -2683,7 +2726,7 @@ volumes:
 		spec := r.generateBackupJobSpecIntent(ctx,
 			&cluster, v1beta1.PGBackRestRepo{
 				Volume: &v1beta1.RepoPVC{
-					VolumeClaimSpec: v1beta1.VolumeClaimSpec{},
+					VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{},
 				},
 			},
 			"",
@@ -2913,79 +2956,7 @@ volumes:
 		})
 	})
 
-	t.Run("CloudLogVolumeAnnotationNoPvc", func(t *testing.T) {
-		recorder := events.NewRecorder(t, runtime.Scheme)
-		r.Recorder = recorder
-
-		cluster.Namespace = ns.Name
-		cluster.Annotations = map[string]string{}
-		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "some-pvc"
-		spec := r.generateBackupJobSpecIntent(ctx,
-			&cluster, v1beta1.PGBackRestRepo{},
-			"",
-			nil, nil,
-		)
-		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
-containers:
-- command:
-  - /bin/pgbackrest
-  - backup
-  - --stanza=db
-  - --repo=
-  name: pgbackrest
-  resources: {}
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-      - ALL
-    privileged: false
-    readOnlyRootFilesystem: true
-    runAsNonRoot: true
-    seccompProfile:
-      type: RuntimeDefault
-  volumeMounts:
-  - mountPath: /etc/pgbackrest/conf.d
-    name: pgbackrest-config
-    readOnly: true
-  - mountPath: /tmp
-    name: tmp
-enableServiceLinks: false
-restartPolicy: Never
-securityContext:
-  fsGroup: 26
-  fsGroupChangePolicy: OnRootMismatch
-volumes:
-- name: pgbackrest-config
-  projected:
-    sources:
-    - configMap:
-        items:
-        - key: pgbackrest_cloud.conf
-          path: pgbackrest_cloud.conf
-        name: hippo-test-pgbackrest-config
-    - secret:
-        items:
-        - key: pgbackrest.ca-roots
-          path: ~postgres-operator/tls-ca.crt
-        - key: pgbackrest-client.crt
-          path: ~postgres-operator/client-tls.crt
-        - key: pgbackrest-client.key
-          mode: 384
-          path: ~postgres-operator/client-tls.key
-        name: hippo-test-pgbackrest
-- emptyDir:
-    sizeLimit: 16Mi
-  name: tmp
-		`))
-
-		assert.Equal(t, len(recorder.Events), 1)
-		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
-		assert.Equal(t, recorder.Events[0].Reason, "PGBackRestCloudLogVolumeNotFound")
-		assert.Equal(t, recorder.Events[0].Note, "persistentvolumeclaims \"some-pvc\" not found")
-	})
-
-	t.Run("CloudLogVolumeAnnotationPvcInPlace", func(t *testing.T) {
+	t.Run("CloudLogVolumeAnnotation", func(t *testing.T) {
 		recorder := events.NewRecorder(t, runtime.Scheme)
 		r.Recorder = recorder
 
@@ -2993,16 +2964,6 @@ volumes:
 		cluster.Annotations = map[string]string{}
 		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
 
-		pvc := &corev1.PersistentVolumeClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "another-pvc",
-				Namespace: ns.Name,
-			},
-			Spec: corev1.PersistentVolumeClaimSpec(testVolumeClaimSpec()),
-		}
-		err := r.Client.Create(ctx, pvc)
-		assert.NilError(t, err)
-
 		spec := r.generateBackupJobSpecIntent(ctx,
 			&cluster, v1beta1.PGBackRestRepo{},
 			"",
@@ -3011,6 +2972,12 @@ volumes:
 		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
 containers:
 - command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/another-pvc' && { chmod 0775 '/volumes/another-pvc' || :; };
+    exec "$@"
+  - --
   - /bin/pgbackrest
   - backup
   - --stanza=db
@@ -3070,14 +3037,412 @@ volumes:
 		// No events created
 		assert.Equal(t, len(recorder.Events), 0)
 	})
+
+	t.Run("AdditionalVolumes", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Log: &v1beta1.LoggingConfiguration{
+				Path: "/volumes/stuff/log",
+			},
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Name:      "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff/log' && { chmod 0775 '/volumes/stuff/log' || :; }; exec
+    "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// No events created
+		assert.Equal(t, len(recorder.Events), 0)
+	})
+
+	t.Run("AdditionalVolumesMissingContainers", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Log: &v1beta1.LoggingConfiguration{
+				Path: "/volumes/stuff/log",
+			},
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Containers: []v1beta1.DNS1123Label{
+							"pgbackrest",
+							"non-existent-container",
+						},
+						Name: "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff/log' && { chmod 0775 '/volumes/stuff/log' || :; }; exec
+    "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// Missing containers warning event created
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "SpecifiedContainerNotFound")
+		assert.Equal(t, recorder.Events[0].Note, "The following Backup Job Pod "+
+			"containers were specified for additional volumes but cannot be "+
+			"found: [non-existent-container].")
+	})
+
+	t.Run("AnnotationAndAdditionalVolumeWithPath", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
+		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "stuff"
+
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Log: &v1beta1.LoggingConfiguration{
+				Path: "/volumes/stuff/log",
+			},
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Name:      "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff/log' && { chmod 0775 '/volumes/stuff/log' || :; }; exec
+    "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// Annotation/additional volume collision warning event created
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "DuplicateCloudBackupVolume")
+		assert.Equal(t, recorder.Events[0].Note, "The volume name specified in "+
+			"the pgbackrest-cloud-log-volume annotation is the same as one "+
+			"specified in spec.backups.pgbackrest.jobs.volumes.additional. Cannot "+
+			"mount duplicate volume names. Defaulting to the additional volume.")
+	})
+
+	t.Run("AnnotationAndAdditionalVolumeNoPath", func(t *testing.T) {
+		recorder := events.NewRecorder(t, runtime.Scheme)
+		r.Recorder = recorder
+
+		cluster := cluster.DeepCopy()
+		cluster.Namespace = ns.Name
+		cluster.Annotations = map[string]string{}
+		cluster.Annotations[naming.PGBackRestCloudLogVolume] = "stuff"
+
+		cluster.Spec.Backups.PGBackRest.Jobs = &v1beta1.BackupJobs{
+			Volumes: &v1beta1.PGBackRestVolumesSpec{
+				Additional: []v1beta1.AdditionalVolume{
+					{
+						ClaimName: "additional-pvc",
+						Name:      "stuff",
+					},
+				},
+			},
+		}
+
+		spec := r.generateBackupJobSpecIntent(ctx,
+			cluster, v1beta1.PGBackRestRepo{},
+			"",
+			nil, nil,
+		)
+
+		assert.Assert(t, cmp.MarshalMatches(spec.Template.Spec, `
+containers:
+- command:
+  - sh
+  - -c
+  - --
+  - mkdir -p '/volumes/stuff' && { chmod 0775 '/volumes/stuff' || :; }; exec "$@"
+  - --
+  - /bin/pgbackrest
+  - backup
+  - --stanza=db
+  - --repo=
+  name: pgbackrest
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumeMounts:
+  - mountPath: /etc/pgbackrest/conf.d
+    name: pgbackrest-config
+    readOnly: true
+  - mountPath: /tmp
+    name: tmp
+  - mountPath: /volumes/stuff
+    name: volumes-stuff
+enableServiceLinks: false
+restartPolicy: Never
+securityContext:
+  fsGroup: 26
+  fsGroupChangePolicy: OnRootMismatch
+volumes:
+- name: pgbackrest-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbackrest_cloud.conf
+          path: pgbackrest_cloud.conf
+        name: hippo-test-pgbackrest-config
+    - secret:
+        items:
+        - key: pgbackrest.ca-roots
+          path: ~postgres-operator/tls-ca.crt
+        - key: pgbackrest-client.crt
+          path: ~postgres-operator/client-tls.crt
+        - key: pgbackrest-client.key
+          mode: 384
+          path: ~postgres-operator/client-tls.key
+        name: hippo-test-pgbackrest
+- emptyDir:
+    sizeLimit: 16Mi
+  name: tmp
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+
+		// Annotation/additional volume collision warning event created
+		assert.Equal(t, len(recorder.Events), 1)
+		assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+		assert.Equal(t, recorder.Events[0].Reason, "DuplicateCloudBackupVolume")
+		assert.Equal(t, recorder.Events[0].Note, "The volume name specified in "+
+			"the pgbackrest-cloud-log-volume annotation is the same as one "+
+			"specified in spec.backups.pgbackrest.jobs.volumes.additional. Cannot "+
+			"mount duplicate volume names. Defaulting to the additional volume.")
+	})
 }
 
 func TestGenerateRepoHostIntent(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
 	ctx := context.Background()
-	r := Reconciler{Client: cc}
+	r := Reconciler{}
 
 	t.Run("empty", func(t *testing.T) {
 		_, err := r.generateRepoHostIntent(ctx, &v1beta1.PostgresCluster{}, "", &RepoResources{},
@@ -3092,7 +3457,7 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 	t.Run("ServiceAccount", func(t *testing.T) {
 		assert.Equal(t, sts.Spec.Template.Spec.ServiceAccountName, "")
 		if assert.Check(t, sts.Spec.Template.Spec.AutomountServiceAccountToken != nil) {
-			assert.Equal(t, *sts.Spec.Template.Spec.AutomountServiceAccountToken, false)
+			assert.Equal(t, *sts.Spec.Template.Spec.AutomountServiceAccountToken, true)
 		}
 	})
 
@@ -3123,15 +3488,47 @@ func TestGenerateRepoHostIntent(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Equal(t, *sts.Spec.Replicas, int32(0))
 	})
+
+	t.Run("AdditionalVolumes", func(t *testing.T) {
+		cluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						RepoHost: &v1beta1.PGBackRestRepoHost{
+							Volumes: &v1beta1.PGBackRestVolumesSpec{
+								Additional: []v1beta1.AdditionalVolume{
+									{
+										ClaimName: "additional-pvc",
+										Name:      "stuff",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		observed := &observedInstances{forCluster: []*Instance{{}}}
+		sts, err := r.generateRepoHostIntent(ctx, cluster, "", &RepoResources{}, observed, "")
+		assert.NilError(t, err)
+
+		for _, container := range sts.Spec.Template.Spec.Containers {
+			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
+				`
+- mountPath: /volumes/stuff
+  name: volumes-stuff`))
+		}
+
+		assert.Assert(t, cmp.MarshalContains(sts.Spec.Template.Spec.Volumes,
+			`
+- name: volumes-stuff
+  persistentVolumeClaim:
+    claimName: additional-pvc`))
+	})
 }
 
 func TestGenerateRestoreJobIntent(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	r := Reconciler{
-		Client: cc,
-	}
+	r := Reconciler{}
 
 	t.Run("empty", func(t *testing.T) {
 		err := r.generateRestoreJobIntent(&v1beta1.PostgresCluster{}, "", "",
@@ -3174,6 +3571,14 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 			Operator: "Exist",
 		}},
 		PriorityClassName: initialize.String("some-priority-class"),
+		Volumes: &v1beta1.PGBackRestVolumesSpec{
+			Additional: []v1beta1.AdditionalVolume{
+				{
+					ClaimName: "additional-pvc",
+					Name:      "stuff",
+				},
+			},
+		},
 	}
 	cluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -3266,6 +3671,9 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 								assert.DeepEqual(t, job.Spec.Template.Spec.Containers[0].VolumeMounts,
 									[]corev1.VolumeMount{{
 										Name: "mount",
+									}, {
+										Name:      "volumes-stuff",
+										MountPath: "/volumes/stuff",
 									}})
 							})
 							t.Run("Env", func(t *testing.T) {
@@ -3289,6 +3697,13 @@ func TestGenerateRestoreJobIntent(t *testing.T) {
 							assert.DeepEqual(t, job.Spec.Template.Spec.Volumes,
 								[]corev1.Volume{{
 									Name: "volume",
+								}, {
+									Name: "volumes-stuff",
+									VolumeSource: corev1.VolumeSource{
+										PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+											ClaimName: "additional-pvc",
+										},
+									},
 								}})
 						})
 						t.Run("Affinity", func(t *testing.T) {
@@ -3335,7 +3750,7 @@ func TestObserveRestoreEnv(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Reader: tClient}
 	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string, completed, failed *bool) *batchv1.Job {
@@ -3435,18 +3850,18 @@ func TestObserveRestoreEnv(t *testing.T) {
 				fakeLeaderEP := &corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
+				assert.NilError(t, tClient.Create(ctx, fakeLeaderEP))
 				fakeDCSEP := &corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
+				assert.NilError(t, tClient.Create(ctx, fakeDCSEP))
 				fakeFailoverEP := &corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
+				assert.NilError(t, tClient.Create(ctx, fakeFailoverEP))
 
 				job := generateJob(cluster.Name, initialize.Bool(false), initialize.Bool(false))
-				assert.NilError(t, r.Client.Create(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob:          true,
@@ -3459,15 +3874,15 @@ func TestObserveRestoreEnv(t *testing.T) {
 				fakeLeaderEP := &corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeLeaderEP))
+				assert.NilError(t, tClient.Create(ctx, fakeLeaderEP))
 				fakeDCSEP := &corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeDCSEP))
+				assert.NilError(t, tClient.Create(ctx, fakeDCSEP))
 				fakeFailoverEP := &corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, fakeFailoverEP))
+				assert.NilError(t, tClient.Create(ctx, fakeFailoverEP))
 			},
 			result: testResult{
 				foundRestoreJob:          false,
@@ -3478,7 +3893,7 @@ func TestObserveRestoreEnv(t *testing.T) {
 			desc: "restore job only exists",
 			createResources: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
 				job := generateJob(cluster.Name, initialize.Bool(false), initialize.Bool(false))
-				assert.NilError(t, r.Client.Create(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob:          true,
@@ -3492,8 +3907,8 @@ func TestObserveRestoreEnv(t *testing.T) {
 					t.Skip("requires mocking of Job conditions")
 				}
 				job := generateJob(cluster.Name, initialize.Bool(true), nil)
-				assert.NilError(t, r.Client.Create(ctx, job.DeepCopy()))
-				assert.NilError(t, r.Client.Status().Update(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job.DeepCopy()))
+				assert.NilError(t, tClient.Status().Update(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob: true,
@@ -3512,8 +3927,8 @@ func TestObserveRestoreEnv(t *testing.T) {
 					t.Skip("requires mocking of Job conditions")
 				}
 				job := generateJob(cluster.Name, nil, initialize.Bool(true))
-				assert.NilError(t, r.Client.Create(ctx, job.DeepCopy()))
-				assert.NilError(t, r.Client.Status().Update(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job.DeepCopy()))
+				assert.NilError(t, tClient.Status().Update(ctx, job))
 			},
 			result: testResult{
 				foundRestoreJob: true,
@@ -3563,7 +3978,9 @@ func TestPrepareForRestore(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{
+		Writer: client.WithFieldOwner(tClient, t.Name()),
+	}
 	namespace := setupNamespace(t, tClient).Name
 
 	generateJob := func(clusterName string) *batchv1.Job {
@@ -3617,7 +4034,7 @@ func TestPrepareForRestore(t *testing.T) {
 			createResources: func(t *testing.T,
 				cluster *v1beta1.PostgresCluster) (*batchv1.Job, []corev1.Endpoints) {
 				job := generateJob(cluster.Name)
-				assert.NilError(t, r.Client.Create(ctx, job))
+				assert.NilError(t, tClient.Create(ctx, job))
 				return job, nil
 			},
 			result: testResult{
@@ -3637,15 +4054,15 @@ func TestPrepareForRestore(t *testing.T) {
 				fakeLeaderEP := corev1.Endpoints{}
 				fakeLeaderEP.ObjectMeta = naming.PatroniLeaderEndpoints(cluster)
 				fakeLeaderEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, &fakeLeaderEP))
+				assert.NilError(t, tClient.Create(ctx, &fakeLeaderEP))
 				fakeDCSEP := corev1.Endpoints{}
 				fakeDCSEP.ObjectMeta = naming.PatroniDistributedConfiguration(cluster)
 				fakeDCSEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, &fakeDCSEP))
+				assert.NilError(t, tClient.Create(ctx, &fakeDCSEP))
 				fakeFailoverEP := corev1.Endpoints{}
 				fakeFailoverEP.ObjectMeta = naming.PatroniTrigger(cluster)
 				fakeFailoverEP.Namespace = namespace
-				assert.NilError(t, r.Client.Create(ctx, &fakeFailoverEP))
+				assert.NilError(t, tClient.Create(ctx, &fakeFailoverEP))
 				return nil, []corev1.Endpoints{fakeLeaderEP, fakeDCSEP, fakeFailoverEP}
 			},
 			result: testResult{
@@ -3752,19 +4169,19 @@ func TestPrepareForRestore(t *testing.T) {
 
 				leaderEP, dcsEP, failoverEP := corev1.Endpoints{}, corev1.Endpoints{}, corev1.Endpoints{}
 				currentEndpoints := []corev1.Endpoints{}
-				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
+				if err := tClient.Get(ctx, naming.AsObjectKey(naming.PatroniLeaderEndpoints(cluster)),
 					&leaderEP); err != nil {
 					assert.NilError(t, client.IgnoreNotFound(err))
 				} else {
 					currentEndpoints = append(currentEndpoints, leaderEP)
 				}
-				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
+				if err := tClient.Get(ctx, naming.AsObjectKey(naming.PatroniDistributedConfiguration(cluster)),
 					&dcsEP); err != nil {
 					assert.NilError(t, client.IgnoreNotFound(err))
 				} else {
 					currentEndpoints = append(currentEndpoints, dcsEP)
 				}
-				if err := r.Client.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
+				if err := tClient.Get(ctx, naming.AsObjectKey(naming.PatroniTrigger(cluster)),
 					&failoverEP); err != nil {
 					assert.NilError(t, client.IgnoreNotFound(err))
 				} else {
@@ -3772,7 +4189,7 @@ func TestPrepareForRestore(t *testing.T) {
 				}
 
 				restoreJobs := &batchv1.JobList{}
-				assert.NilError(t, r.Client.List(ctx, restoreJobs, &client.ListOptions{
+				assert.NilError(t, tClient.List(ctx, restoreJobs, &client.ListOptions{
 					Namespace:     cluster.Namespace,
 					LabelSelector: naming.PGBackRestRestoreJobSelector(cluster.GetName()),
 				}))
@@ -3808,9 +4225,9 @@ func TestReconcileScheduledBackups(t *testing.T) {
 	r := &Reconciler{}
 	_, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Reader:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -4071,7 +4488,7 @@ func TestSetScheduledJobStatus(t *testing.T) {
 	_, tClient := setupKubernetes(t)
 	require.ParallelCapacity(t, 0)
 
-	r := &Reconciler{Client: tClient, Owner: client.FieldOwner(t.Name())}
+	r := &Reconciler{Reader: tClient}
 
 	clusterName := "hippocluster"
 	clusterUID := "hippouid"
@@ -4144,9 +4561,9 @@ func TestBackupsEnabled(t *testing.T) {
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   mgr.GetClient(),
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Owner:    ControllerName,
+			Reader:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(controllerName),
+			Writer:   client.WithFieldOwner(mgr.GetClient(), controllerName),
 		}
 	})
 	t.Cleanup(func() { teardownManager(cancel, t) })
@@ -4292,5 +4709,208 @@ func TestBackupsEnabled(t *testing.T) {
 		assert.NilError(t, err)
 		assert.Assert(t, !backupsSpecFound)
 		assert.Assert(t, backupsReconciliationAllowed)
+	})
+}
+
+func TestGetRepoHostVolumeRequests(t *testing.T) {
+
+	ctx := context.Background()
+	_, tClient := setupKubernetes(t)
+	require.ParallelCapacity(t, 1)
+
+	reconciler := &Reconciler{
+		Reader:   tClient,
+		Recorder: new(record.FakeRecorder),
+	}
+
+	testCases := []struct {
+		tcName         string
+		repoHostExists bool
+		annotations    map[string]string
+		repoStatus     []v1beta1.RepoStatus
+		results        map[string]string
+	}{{
+		tcName:         "no repo host",
+		repoHostExists: false,
+	}, {
+		tcName:         "one repo volume",
+		repoHostExists: true,
+		annotations: map[string]string{
+			"suggested-repo1-pvc-size": "2Gi"},
+		repoStatus: []v1beta1.RepoStatus{
+			{Name: "repo1", DesiredRepoVolume: "1Gi"}},
+		results: map[string]string{
+			"repo1": "2Gi"},
+	}, {
+		tcName:         "multiple repo volumes",
+		repoHostExists: true,
+		annotations: map[string]string{
+			"suggested-repo2-pvc-size": "2Gi",
+			"suggested-repo3-pvc-size": "3Gi"},
+		repoStatus: []v1beta1.RepoStatus{
+			{Name: "repo2", DesiredRepoVolume: "1Gi"},
+			{Name: "repo3", DesiredRepoVolume: "1Gi"}},
+		results: map[string]string{
+			"repo2": "2Gi",
+			"repo3": "3Gi"},
+	}, {
+		tcName:         "bad annotation use backup from status",
+		repoHostExists: true,
+		annotations: map[string]string{
+			"suggested-repo4-pvc-size": "seagull"},
+		repoStatus: []v1beta1.RepoStatus{
+			{Name: "repo4", DesiredRepoVolume: "8Gi"}},
+		results: map[string]string{
+			"repo4": "8Gi"},
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.tcName, func(t *testing.T) {
+
+			namespace := setupNamespace(t, tClient).Name
+
+			if tc.repoHostExists {
+				repoHost := &corev1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "orange-repo-host-0",
+						Namespace: namespace,
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/cluster":              "orange",
+							"postgres-operator.crunchydata.com/data":                 "pgbackrest",
+							"postgres-operator.crunchydata.com/pgbackrest":           "",
+							"postgres-operator.crunchydata.com/pgbackrest-dedicated": "",
+						},
+						Annotations: tc.annotations,
+					},
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Name:  "test-container",
+							Image: "some-image",
+						}},
+					},
+				}
+
+				assert.NilError(t, tClient.Create(ctx, repoHost))
+				t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, repoHost)) })
+			}
+
+			// A limit is expected otherwise an empty string ("") is returned
+			testRepoPVC := func() *v1beta1.RepoPVC {
+				return &v1beta1.RepoPVC{
+					VolumeClaimSpec: v1beta1.VolumeClaimSpecWithAutoGrow{
+						VolumeClaimSpec: v1beta1.VolumeClaimSpec{
+							AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+							Resources: corev1.VolumeResourceRequirements{
+								Limits: map[corev1.ResourceName]resource.Quantity{
+									corev1.ResourceStorage: resource.MustParse("1Gi"),
+								},
+							},
+						},
+					}}
+			}
+
+			cluster := &v1beta1.PostgresCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "orange",
+					Namespace: namespace,
+				},
+				Spec: v1beta1.PostgresClusterSpec{
+					Backups: v1beta1.Backups{
+						PGBackRest: v1beta1.PGBackRestArchive{
+							Repos: []v1beta1.PGBackRestRepo{
+								{
+									Name:   "repo1",
+									Volume: testRepoPVC(),
+								}, {
+									Name:   "repo2",
+									Volume: testRepoPVC(),
+								}, {
+									Name:   "repo3",
+									Volume: testRepoPVC(),
+								}, {
+									Name:   "repo4",
+									Volume: testRepoPVC(),
+								},
+							}}}},
+				Status: v1beta1.PostgresClusterStatus{
+					PGBackRest: &v1beta1.PGBackRestStatus{},
+				},
+			}
+
+			// only add a status if the repo host exists
+			if tc.repoHostExists {
+				cluster.Status.PGBackRest.Repos = tc.repoStatus
+			}
+
+			err := reconciler.writeRepoVolumeSizeRequestStatus(ctx, cluster)
+
+			if tc.repoHostExists {
+				assert.NilError(t, err)
+			} else {
+				assert.ErrorContains(t, err, "Found 0 pgBackRest repo host Pods. Expected 1.")
+			}
+
+			assert.Assert(t, cluster.Status.PGBackRest != nil)
+
+			var i int
+			for _, repo := range cluster.Status.PGBackRest.Repos {
+
+				assert.Assert(t, tc.results[repo.Name] == repo.DesiredRepoVolume)
+				if tc.results[repo.Name] == repo.DesiredRepoVolume && repo.DesiredRepoVolume != "" {
+					i++
+				}
+			}
+			assert.Assert(t, len(tc.annotations) == i)
+		})
+	}
+}
+
+func TestGetCloudLogPath(t *testing.T) {
+	t.Run("NoAnnotationNoSpecPath", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{}
+		assert.Equal(t, getCloudLogPath(postgrescluster), "")
+	})
+
+	t.Run("AnnotationSetNoSpecPath", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{}
+		postgrescluster.Annotations = map[string]string{}
+		postgrescluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/another-pvc")
+	})
+
+	t.Run("NoAnnotationSpecPathSet", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Jobs: &v1beta1.BackupJobs{
+							Log: &v1beta1.LoggingConfiguration{
+								Path: "/volumes/test/log/",
+							},
+						},
+					},
+				},
+			},
+		}
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/test/log")
+	})
+
+	t.Run("BothAnnotationAndSpecPathSet", func(t *testing.T) {
+		postgrescluster := &v1beta1.PostgresCluster{
+			Spec: v1beta1.PostgresClusterSpec{
+				Backups: v1beta1.Backups{
+					PGBackRest: v1beta1.PGBackRestArchive{
+						Jobs: &v1beta1.BackupJobs{
+							Log: &v1beta1.LoggingConfiguration{
+								Path: "/volumes/test/log/",
+							},
+						},
+					},
+				},
+			},
+		}
+		postgrescluster.Annotations = map[string]string{}
+		postgrescluster.Annotations[naming.PGBackRestCloudLogVolume] = "another-pvc"
+		assert.Equal(t, getCloudLogPath(postgrescluster), "/volumes/test/log")
 	})
 }

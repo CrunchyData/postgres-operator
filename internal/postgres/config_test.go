@@ -18,9 +18,11 @@ import (
 	"time"
 
 	"gotest.tools/v3/assert"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -38,6 +40,13 @@ func TestDataDirectory(t *testing.T) {
 	cluster.Spec.PostgresVersion = 12
 
 	assert.Equal(t, DataDirectory(cluster), "/pgdata/pg12")
+}
+
+func TestDataStorage(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Spec.PostgresVersion = rand.Int32N(20)
+
+	assert.Equal(t, DataStorage(cluster), "/pgdata")
 }
 
 func TestLogRotation(t *testing.T) {
@@ -129,7 +138,7 @@ func TestWALDirectory(t *testing.T) {
 	assert.Equal(t, WALDirectory(cluster, instance), "/pgdata/pg13_wal")
 
 	// with WAL volume
-	instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpec)
+	instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpecWithAutoGrow)
 	assert.Equal(t, WALDirectory(cluster, instance), "/pgwal/pg13_wal")
 }
 
@@ -249,7 +258,10 @@ func TestBashRecreateDirectory(t *testing.T) {
 		filepath.Join(dir, "d"), "0740")
 	// The assertion below expects alphabetically sorted filenames.
 	// Set an empty environment to always use the default/standard locale.
-	cmd.Env = []string{}
+	cmd.Env = []string{
+		// Preserve the path to find bash tools (i.e., mktemp)
+		"PATH=" + os.Getenv("PATH"),
+	}
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, string(output))
 	assert.Assert(t, cmp.Regexp(`^`+
@@ -535,6 +547,37 @@ func TestBashSafeLink(t *testing.T) {
 	})
 }
 
+func TestShellPath(t *testing.T) {
+	t.Parallel()
+
+	script := ShellPath(11)
+
+	assert.Assert(t, cmp.Contains(script, `/usr/lib/postgresql/11/bin`))
+	assert.Assert(t, cmp.Contains(script, `/usr/libexec/postgresql11`))
+	assert.Assert(t, cmp.Contains(script, `/usr/pgsql-11/bin`))
+
+	t.Run("ShellCheckPOSIX", func(t *testing.T) {
+		shellcheck := require.ShellCheck(t)
+
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.sh")
+		assert.NilError(t, os.WriteFile(file, []byte(script), 0o600))
+
+		// Expect ShellCheck for "sh" to be happy.
+		// - https://www.shellcheck.net/wiki/SC2148
+		cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", "--shell=sh", file)
+		output, err := cmd.CombinedOutput()
+		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+	})
+
+	t.Run("PrettyYAML", func(t *testing.T) {
+		b, err := yaml.Marshal(script)
+		assert.NilError(t, err)
+		assert.Assert(t, !strings.Contains(string(b), `\n`), "expected literal flow scalar, got:\n%s", b)
+		assert.Equal(t, 1, strings.Count(string(b), "\n"), "expected one trailing newline, got:\n%s", b)
+	})
+}
+
 func TestStartupCommand(t *testing.T) {
 	shellcheck := require.ShellCheck(t)
 	t.Parallel()
@@ -543,8 +586,10 @@ func TestStartupCommand(t *testing.T) {
 	cluster.Spec.PostgresVersion = 13
 	instance := new(v1beta1.PostgresInstanceSetSpec)
 
+	parameters := NewParameters().Default
+
 	ctx := context.Background()
-	command := startupCommand(ctx, cluster, instance)
+	command := startupCommand(ctx, cluster, instance, parameters)
 
 	// Expect a bash command with an inline script.
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
@@ -579,7 +624,7 @@ func TestStartupCommand(t *testing.T) {
 				},
 			},
 		}
-		command := startupCommand(ctx, cluster, instance)
+		command := startupCommand(ctx, cluster, instance, parameters)
 		assert.Assert(t, len(command) > 3)
 		assert.Assert(t, strings.Contains(command[3], `cat << "EOF" > /tmp/pg_rewind_tde.sh
 #!/bin/sh
@@ -587,4 +632,45 @@ pg_rewind -K "$(postgres -C encryption_key_command)" "$@"
 EOF
 chmod +x /tmp/pg_rewind_tde.sh`))
 	})
+}
+
+func TestReloadCommand(t *testing.T) {
+	shellcheck := require.ShellCheck(t)
+
+	pgdataSize := resource.MustParse("1Gi")
+	pgwalSize := resource.MustParse("2Gi")
+
+	command := reloadCommand(
+		"some-name",
+		&v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				Trigger: initialize.Int32(10),
+				MaxGrow: &pgdataSize,
+			},
+		},
+		&v1beta1.VolumeClaimSpecWithAutoGrow{
+			AutoGrow: &v1beta1.AutoGrowSpec{
+				Trigger: initialize.Int32(20),
+				MaxGrow: &pgwalSize,
+			},
+		},
+	)
+
+	// Expect a bash command with an inline script.
+	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+	assert.Assert(t, len(command) > 3)
+
+	// Write out that inline script.
+	dir := t.TempDir()
+	file := filepath.Join(dir, "script.bash")
+	assert.NilError(t, os.WriteFile(file, []byte(command[3]), 0o600))
+
+	// Expect shellcheck to be happy.
+	cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", file)
+	output, err := cmd.CombinedOutput()
+	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"pgdata\" \"10\" \"1024\""))
+	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"pgwal\" \"20\" \"2048\""))
+
 }

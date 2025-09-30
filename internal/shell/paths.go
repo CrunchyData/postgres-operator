@@ -36,6 +36,8 @@ func CleanFileName(path string) string {
 // exists. It creates every directory leading to path from (but not including)
 // base and sets their permissions for Kubernetes, regardless of umask.
 //
+// Relative paths are expanded relative to base.
+//
 // See:
 //   - https://pubs.opengroup.org/onlinepubs/9799919799/utilities/chmod.html
 //   - https://pubs.opengroup.org/onlinepubs/9799919799/utilities/mkdir.html
@@ -47,8 +49,19 @@ func MakeDirectories(base string, paths ...string) string {
 		return `test -d ` + QuoteWord(base)
 	}
 
-	allPaths := slices.Clone(paths)
-	for _, p := range paths {
+	// Expand each path relative to the base path.
+	expandedPaths := make([]string, len(paths))
+	for i, p := range paths {
+		if filepath.IsAbs(p) {
+			expandedPaths[i] = p
+		} else {
+			expandedPaths[i] = filepath.Join(base, p)
+		}
+	}
+
+	// Gather parent directories of each path.
+	allPaths := slices.Clone(expandedPaths)
+	for _, p := range expandedPaths {
 		if r, err := filepath.Rel(base, p); err == nil && filepath.IsLocal(r) {
 			// The result of [filepath.Rel] is a shorter representation of the full path; skip it.
 			r = filepath.Dir(r)
@@ -72,7 +85,7 @@ func MakeDirectories(base string, paths ...string) string {
 
 	return `` +
 		// Create all the paths and any missing parents.
-		`mkdir -p ` + strings.Join(QuoteWords(paths...), " ") +
+		`mkdir -p ` + strings.Join(QuoteWords(expandedPaths...), " ") +
 
 		// Try to set the permissions of every path and each parent.
 		// This swallows the exit status of `chmod` because not all filesystems

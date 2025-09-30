@@ -27,11 +27,7 @@ import (
 )
 
 func TestGeneratePGBouncerService(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
 	reconciler := &Reconciler{
-		Client:   cc,
 		Recorder: new(record.FakeRecorder),
 	}
 
@@ -263,7 +259,10 @@ func TestReconcilePGBouncerService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
+	}
 
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
@@ -365,11 +364,8 @@ func TestReconcilePGBouncerService(t *testing.T) {
 }
 
 func TestGeneratePGBouncerDeployment(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
 	ctx := context.Background()
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns3"
@@ -382,7 +378,7 @@ func TestGeneratePGBouncerDeployment(t *testing.T) {
 			cluster := cluster.DeepCopy()
 			cluster.Spec.Proxy = spec
 
-			deploy, specified, err := reconciler.generatePGBouncerDeployment(ctx, cluster, nil, nil, nil)
+			deploy, specified, err := reconciler.generatePGBouncerDeployment(ctx, cluster, nil, nil, nil, "")
 			assert.NilError(t, err)
 			assert.Assert(t, !specified)
 
@@ -415,7 +411,7 @@ namespace: ns3
 		}
 
 		deploy, specified, err := reconciler.generatePGBouncerDeployment(
-			ctx, cluster, primary, configmap, secret)
+			ctx, cluster, primary, configmap, secret, "")
 		assert.NilError(t, err)
 		assert.Assert(t, specified)
 
@@ -456,7 +452,7 @@ namespace: ns3
 
 	t.Run("PodSpec", func(t *testing.T) {
 		deploy, specified, err := reconciler.generatePGBouncerDeployment(
-			ctx, cluster, primary, configmap, secret)
+			ctx, cluster, primary, configmap, secret, "")
 		assert.NilError(t, err)
 		assert.Assert(t, specified)
 
@@ -478,6 +474,7 @@ containers: null
 enableServiceLinks: false
 restartPolicy: Always
 securityContext:
+  fsGroup: 2
   fsGroupChangePolicy: OnRootMismatch
 shareProcessNamespace: true
 topologySpreadConstraints:
@@ -502,12 +499,42 @@ topologySpreadConstraints:
 			cluster.Spec.DisableDefaultPodScheduling = initialize.Bool(true)
 
 			deploy, specified, err := reconciler.generatePGBouncerDeployment(
-				ctx, cluster, primary, configmap, secret)
+				ctx, cluster, primary, configmap, secret, "")
 			assert.NilError(t, err)
 			assert.Assert(t, specified)
 
 			assert.Assert(t, deploy.Spec.Template.Spec.TopologySpreadConstraints == nil)
 		})
+	})
+
+	t.Run("PodSpecWithAdditionalVolumes", func(t *testing.T) {
+		cluster := cluster.DeepCopy()
+		cluster.Spec.Proxy.PGBouncer.Volumes = &v1beta1.PGBouncerVolumesSpec{
+			Additional: []v1beta1.AdditionalVolume{{
+				ClaimName: "required",
+				Name:      "required",
+			}},
+		}
+
+		deploy, specified, err := reconciler.generatePGBouncerDeployment(
+			ctx, cluster, primary, configmap, secret, "")
+
+		assert.NilError(t, err)
+		assert.Assert(t, specified)
+
+		for _, container := range deploy.Spec.Template.Spec.Containers {
+			assert.Assert(t, cmp.MarshalContains(container.VolumeMounts,
+				`
+- mountPath: /volumes/required
+  name: volumes-required`))
+		}
+
+		assert.Assert(t, cmp.MarshalContains(
+			deploy.Spec.Template.Spec.Volumes,
+			`
+- name: volumes-required
+  persistentVolumeClaim:
+    claimName: required`))
 	})
 }
 
@@ -517,15 +544,15 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 	require.ParallelCapacity(t, 0)
 
 	r := &Reconciler{
-		Client: cc,
-		Owner:  client.FieldOwner(t.Name()),
+		Reader: cc,
+		Writer: client.WithFieldOwner(cc, t.Name()),
 	}
 
 	foundPDB := func(
 		cluster *v1beta1.PostgresCluster,
 	) bool {
 		got := &policyv1.PodDisruptionBudget{}
-		err := r.Client.Get(ctx,
+		err := cc.Get(ctx,
 			naming.AsObjectKey(naming.ClusterPGBouncer(cluster)),
 			got)
 		return !apierrors.IsNotFound(err)
@@ -564,8 +591,8 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
 		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromInt32(1))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
 		assert.Assert(t, foundPDB(cluster))
@@ -591,8 +618,8 @@ func TestReconcilePGBouncerDisruptionBudget(t *testing.T) {
 		cluster.Spec.Proxy.PGBouncer.Replicas = initialize.Int32(1)
 		cluster.Spec.Proxy.PGBouncer.MinAvailable = initialize.Pointer(intstr.FromString("50%"))
 
-		assert.NilError(t, r.Client.Create(ctx, cluster))
-		t.Cleanup(func() { assert.Check(t, r.Client.Delete(ctx, cluster)) })
+		assert.NilError(t, cc.Create(ctx, cluster))
+		t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, cluster)) })
 
 		assert.NilError(t, r.reconcilePGBouncerPodDisruptionBudget(ctx, cluster))
 		assert.Assert(t, foundPDB(cluster))

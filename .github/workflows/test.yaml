@@ -6,21 +6,16 @@ on:
     branches:
       - main
 
-env:
-  # Use the Go toolchain installed by setup-go
-  # https://github.com/actions/setup-go/issues/457
-  GOTOOLCHAIN: local
-
 jobs:
   go-test:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - name: Ensure go.mod is tidy
-        run: go mod tidy && git diff --exit-code -- go.mod
+        run: go mod tidy --diff
       - name: Ensure generated files are committed
         run: make check-generate
       - run: make check
@@ -34,7 +29,7 @@ jobs:
         kubernetes: ['default']
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - run: go mod download
@@ -58,10 +53,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.33, v1.28]
+        kubernetes: [v1.30, v1.33]
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - name: Start k3s
@@ -69,9 +64,9 @@ jobs:
         with:
           k3s-channel: "${{ matrix.kubernetes }}"
           prefetch-images: |
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.9-2520
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.10-2534
 
       - run: make createnamespaces check-envtest-existing
         env:
@@ -92,10 +87,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.33, v1.28]
+        kubernetes: [v1.30, v1.33]
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
 
       - name: Start k3s
@@ -103,15 +98,16 @@ jobs:
         with:
           k3s-channel: "${{ matrix.kubernetes }}"
           prefetch-images: |
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.17.1-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.5-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.9-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.9-3.3-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.9-3.4-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.5-2520
-            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.5-3.4-2520
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.17.1-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.10-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.10-3.3-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.10-3.4-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.6-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.4-2534
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.5-2534
 
       - name: Get pgMonitor files.
         run: make get-pgmonitor
@@ -131,17 +127,18 @@ jobs:
             --env 'CHECK_FOR_UPGRADES=false' \
             --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
             --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
-            --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.54.2-2520' \
-            --env 'RELATED_IMAGE_PGBOUNCER=registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2520' \
-            --env 'RELATED_IMAGE_PGEXPORTER=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.17.1-2520' \
-            --env 'RELATED_IMAGE_PGUPGRADE=registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.5-2520' \
-            --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.9-2520' \
-            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.9-3.3-2520' \
-            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.9-3.4-2520' \
-            --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.5-2520' \
-            --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.5-3.4-2520' \
-            --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.2-2520' \
-            --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.2-0' \
+            --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2534' \
+            --env 'RELATED_IMAGE_PGBOUNCER=registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2534' \
+            --env 'RELATED_IMAGE_PGEXPORTER=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.17.1-2534' \
+            --env 'RELATED_IMAGE_PGUPGRADE=registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.6-2534' \
+            --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.10-2534' \
+            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.3=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.10-3.3-2534' \
+            --env 'RELATED_IMAGE_POSTGRES_16_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.10-3.4-2534' \
+            --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2534' \
+            --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.4=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.4-2534' \
+            --env 'RELATED_IMAGE_POSTGRES_17_GIS_3.5=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.6-3.5-2534' \
+            --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.2-2534' \
+            --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.3-0' \
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
             --name 'postgres-operator' localhost/postgres-operator
 
@@ -157,7 +154,7 @@ jobs:
           KUTTL_PG_UPGRADE_TO_VERSION: '17'
           KUTTL_PG_VERSION: '16'
           KUTTL_POSTGIS_VERSION: '3.4'
-          KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.9-2520'
+          KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.10-2534'
       - run: |
           make check-kuttl && exit
           failed=$?
@@ -175,7 +172,7 @@ jobs:
       - kubernetes-k3d
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
       - uses: actions/download-artifact@v5
         with: { path: download }

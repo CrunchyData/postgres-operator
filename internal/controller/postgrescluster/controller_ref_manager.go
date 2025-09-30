@@ -12,12 +12,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -28,21 +27,17 @@ import (
 func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	obj client.Object) error {
 
-	if err := controllerutil.SetControllerReference(postgresCluster, obj,
-		r.Client.Scheme()); err != nil {
+	if err := r.setControllerReference(postgresCluster, obj); err != nil {
 		return err
 	}
 
-	patchBytes, err := kubeapi.NewMergePatch().
+	patchBytes, err := runtime.NewMergePatch().
 		Add("metadata", "ownerReferences")(obj.GetOwnerReferences()).Bytes()
 	if err != nil {
 		return err
 	}
 
-	return r.Client.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType,
-		patchBytes), &client.PatchOptions{
-		FieldManager: ControllerName,
-	})
+	return r.Writer.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType, patchBytes))
 }
 
 // claimObject is responsible for adopting or releasing Objects based on their current
@@ -129,7 +124,7 @@ func (r *Reconciler) getPostgresClusterForObject(ctx context.Context,
 	}
 
 	postgresCluster := &v1beta1.PostgresCluster{}
-	if err := r.Client.Get(ctx, types.NamespacedName{
+	if err := r.Reader.Get(ctx, types.NamespacedName{
 		Name:      clusterName,
 		Namespace: obj.GetNamespace(),
 	}, postgresCluster); err != nil {
@@ -165,8 +160,8 @@ func (r *Reconciler) manageControllerRefs(ctx context.Context,
 func (r *Reconciler) releaseObject(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster, obj client.Object) error {
 
-	// TODO create a strategic merge type in kubeapi instead of using Merge7386
-	patch, err := kubeapi.NewMergePatch().
+	// TODO create a strategic merge type instead of using Merge7386
+	patch, err := runtime.NewMergePatch().
 		Add("metadata", "ownerReferences")([]map[string]string{{
 		"$patch": "delete",
 		"uid":    string(postgresCluster.GetUID()),
@@ -175,7 +170,7 @@ func (r *Reconciler) releaseObject(ctx context.Context,
 		return err
 	}
 
-	return r.Client.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType, patch))
+	return r.Writer.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType, patch))
 }
 
 // controllerRefHandlerFuncs returns the handler funcs that should be utilized to watch

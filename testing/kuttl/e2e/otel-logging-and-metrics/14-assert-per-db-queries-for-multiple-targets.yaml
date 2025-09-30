@@ -21,7 +21,7 @@ commands:
     }
 
     scrape_metrics=$(kubectl exec "${pod}" -c collector -n "${NAMESPACE}" -- \
-      curl --insecure --silent http://localhost:9187/metrics)
+      curl --insecure --silent http://localhost:9187/metrics | grep 'ccp_table_size_bytes')
     { contains "${scrape_metrics}" 'ccp_table_size_bytes{dbname="pikachu"'; } || {
       retry "ccp_table_size_bytes not found for pikachu"
       exit 1

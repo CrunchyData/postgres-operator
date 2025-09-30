@@ -8,10 +8,6 @@ on:
       - main
 
 env:
-  # Use the Go toolchain installed by setup-go
-  # https://github.com/actions/setup-go/issues/457
-  GOTOOLCHAIN: local
-
   # Use the committed Trivy configuration files.
   TRIVY_IGNOREFILE: .trivyignore.yaml
   TRIVY_SECRET_CONFIG: trivy-secret.yaml
@@ -48,7 +44,7 @@ jobs:
       - uses: actions/checkout@v5
 
       # Trivy needs a populated Go module cache to detect Go module licenses.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with: { go-version: stable }
       - run: go mod download
 

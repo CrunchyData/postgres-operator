@@ -69,6 +69,8 @@ func TestInstancePod(t *testing.T) {
 	cluster.Spec.ImagePullPolicy = corev1.PullAlways
 	cluster.Spec.PostgresVersion = 11
 
+	parameters := NewParameters().Default
+
 	dataVolume := new(corev1.PersistentVolumeClaim)
 	dataVolume.Name = "datavol"
 
@@ -117,7 +119,7 @@ func TestInstancePod(t *testing.T) {
 	// without WAL volume nor WAL volume spec
 	pod := new(corev1.PodTemplateSpec)
 	InstancePod(ctx, cluster, instance,
-		serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+		serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 	assert.Assert(t, cmp.MarshalMatches(pod.Spec, `
 containers:
@@ -171,9 +173,42 @@ containers:
     # Parameters for curl when managing autogrow annotation.
     APISERVER="https://kubernetes.default.svc"
     SERVICEACCOUNT="/var/run/secrets/kubernetes.io/serviceaccount"
-    NAMESPACE=$(cat ${SERVICEACCOUNT}/namespace)
-    TOKEN=$(cat ${SERVICEACCOUNT}/token)
-    CACERT=${SERVICEACCOUNT}/ca.crt
+    NAMESPACE=$(cat "${SERVICEACCOUNT}/namespace")
+    TOKEN=$(cat "${SERVICEACCOUNT}/token")
+    CACERT="${SERVICEACCOUNT}/ca.crt"
+
+    # Manage autogrow annotation.
+    # Return size in Mebibytes.
+    manageAutogrowAnnotation() {
+      local volume=$1
+      local trigger=$2
+      local maxGrow=$3
+
+      size=$(df --block-size=M /"${volume}")
+      read -r _ size _ <<< "${size#*$'\n'}"
+      use=$(df /"${volume}")
+      read -r _ _ _ _ use _ <<< "${use#*$'\n'}"
+      sizeInt="${size//M/}"
+      # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
+      useInt=${use//[[:punct:]]/}
+      triggerExpansion="$((useInt > trigger))"
+      if [[ ${triggerExpansion} -eq 1 ]]; then
+        newSize="$(((sizeInt / 2)+sizeInt))"
+        # Only compare with maxGrow if it is set (not empty)
+        if [[ -n "${maxGrow}" ]]; then
+            # check to see how much we would normally grow
+            sizeDiff=$((newSize - sizeInt))
+
+            # Compare the size difference to the maxGrow; if it is greater, cap it to maxGrow
+            if [[ ${sizeDiff} -gt ${maxGrow} ]]; then
+                newSize=$((sizeInt + maxGrow))
+            fi
+        fi
+        newSizeMi="${newSize}Mi"
+        d='[{"op": "add", "path": "/metadata/annotations/suggested-'"${volume}"'-pvc-size", "value": "'"${newSizeMi}"'"}]'
+        curl --cacert "${CACERT}" --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "${d}"
+      fi
+    }
 
     declare -r directory="/pgconf/tls"
     exec {fd}<> <(:||:)
@@ -187,19 +222,11 @@ containers:
         stat --format='Loaded certificates dated %y' "${directory}"
       fi
 
-      # Manage autogrow annotation.
-      # Return size in Mebibytes.
-      size=$(df --human-readable --block-size=M /pgdata | awk 'FNR == 2 {print $2}')
-      use=$(df --human-readable /pgdata | awk 'FNR == 2 {print $5}')
-      sizeInt="${size//M/}"
-      # Use the sed punctuation class, because the shell will not accept the percent sign in an expansion.
-      useInt=$(echo $use | sed 's/[[:punct:]]//g')
-      triggerExpansion="$((useInt > 75))"
-      if [ $triggerExpansion -eq 1 ]; then
-        newSize="$(((sizeInt / 2)+sizeInt))"
-        newSizeMi="${newSize}Mi"
-        d='[{"op": "add", "path": "/metadata/annotations/suggested-pgdata-pvc-size", "value": "'"$newSizeMi"'"}]'
-        curl --cacert ${CACERT} --header "Authorization: Bearer ${TOKEN}" -XPATCH "${APISERVER}/api/v1/namespaces/${NAMESPACE}/pods/${HOSTNAME}?fieldManager=kubectl-annotate" -H "Content-Type: application/json-patch+json" --data "$d"
+      # manage autogrow annotation for the pgData volume
+      manageAutogrowAnnotation "pgdata" "75" ""
+      # manage autogrow annotation for the pgWAL volume, if it exists
+      if [[ -d /pgwal ]]; then
+        manageAutogrowAnnotation "pgwal" "75" ""
       fi
     done
     }; export -f monitor; exec -a "$0" bash -ceu monitor
@@ -232,6 +259,7 @@ initContainers:
   - --
   - |-
     declare -r expected_major_version="$1" pgwal_directory="$2"
+    dataDirectory() { if [[ ! -e "$1" || -O "$1" ]]; then install --directory --mode=0750 "$1"; elif [[ -w "$1" && -g "$1" ]]; then recreate "$1" '0750'; else false; fi; }
     permissions() { while [[ -n "$1" ]]; do set "${1%/*}" "$@"; done; shift; stat -Lc '%A %4u %4g %n' "$@"; }
     halt() { local rc=$?; >&2 echo "$@"; exit "${rc/#0/1}"; }
     results() { printf '::postgres-operator: %s::%s\n' "$@"; }
@@ -260,22 +288,15 @@ initContainers:
     [[ "${postgres_data_directory}" == "${PGDATA}" ]] ||
     halt Expected matching config and data directories
     bootstrap_dir="${postgres_data_directory}_bootstrap"
-    [[ -d "${bootstrap_dir}" ]] && results 'bootstrap directory' "${bootstrap_dir}"
-    [[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}"
-    if [[ ! -e "${postgres_data_directory}" || -O "${postgres_data_directory}" ]]; then
-    install --directory --mode=0750 "${postgres_data_directory}"
-    elif [[ -w "${postgres_data_directory}" && -g "${postgres_data_directory}" ]]; then
-    recreate "${postgres_data_directory}" '0750'
-    else (halt Permissions!); fi ||
-    halt "$(permissions "${postgres_data_directory}" ||:)"
-    (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
-    halt "$(permissions /pgdata/pgbackrest/log ||:)"
-    (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
-    halt "$(permissions /pgdata/patroni/log ||:)"
+    [[ -d "${bootstrap_dir}" ]] && postgres_data_directory="${bootstrap_dir}" && results 'bootstrap directory' "${bootstrap_dir}"
+    dataDirectory "${postgres_data_directory}" || halt "$(permissions "${postgres_data_directory}" ||:)"
     (mkdir -p '/pgdata/logs/postgres' && { chmod 0775 '/pgdata/logs/postgres' '/pgdata/logs' || :; }) ||
-    halt "$(permissions /pgdata/logs/postgres ||:)"
+    halt "$(permissions '/pgdata/logs/postgres' ||:)"
+    (mkdir -p '/pgdata/patroni/log' && { chmod 0775 '/pgdata/patroni/log' '/pgdata/patroni' || :; }) ||
+    halt "$(permissions '/pgdata/patroni/log' ||:)"
+    (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
+    halt "$(permissions '/pgdata/pgbackrest/log' ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
-
 
     [[ -f "${postgres_data_directory}/PG_VERSION" ]] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
@@ -385,7 +406,7 @@ volumes:
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
@@ -486,7 +507,7 @@ volumes:
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, clusterWithConfig, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
@@ -523,7 +544,7 @@ volumes:
 
 		t.Run("SidecarNotEnabled", func(t *testing.T) {
 			InstancePod(ctx, cluster, sidecarInstance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 			assert.Equal(t, len(pod.Spec.Containers), 2, "expected 2 containers in Pod")
 		})
@@ -536,7 +557,7 @@ volumes:
 			ctx := feature.NewContext(ctx, gate)
 
 			InstancePod(ctx, cluster, sidecarInstance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 			assert.Equal(t, len(pod.Spec.Containers), 3, "expected 3 containers in Pod")
 
@@ -573,7 +594,7 @@ volumes:
 		tablespaceVolumes := []*corev1.PersistentVolumeClaim{tablespaceVolume1, tablespaceVolume2}
 
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, nil, tablespaceVolumes, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, tablespaceVolumes, parameters, pod)
 
 		assert.Assert(t, cmp.MarshalMatches(pod.Spec.Containers[0].VolumeMounts, `
 - mountPath: /pgconf/tls
@@ -607,11 +628,11 @@ volumes:
 		walVolume.Name = "walvol"
 
 		instance := new(v1beta1.PostgresInstanceSetSpec)
-		instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpec)
+		instance.WALVolumeClaimSpec = new(v1beta1.VolumeClaimSpecWithAutoGrow)
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, walVolume, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, len(pod.Spec.InitContainers) > 0)
@@ -713,7 +734,7 @@ volumes:
 
 		pod := new(corev1.PodTemplateSpec)
 		InstancePod(ctx, cluster, instance,
-			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, pod)
+			serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, pod)
 
 		assert.Assert(t, len(pod.Spec.Containers) > 0)
 		assert.Assert(t, cmp.MarshalContains(pod.Spec.Containers[0].VolumeMounts, `
@@ -743,7 +764,7 @@ volumes:
 			annotated.Labels = map[string]string{"gg": "asdf"}
 
 			InstancePod(ctx, cluster, instance,
-				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, annotated)
+				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, parameters, annotated)
 
 			assert.Assert(t, cmp.MarshalContains(annotated.Spec.Volumes, `
 - ephemeral:

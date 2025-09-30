@@ -15,6 +15,17 @@ import (
 )
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
+// ---
+//
+// # Postgres Logging
+//
+// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "volumes.temp" to log in "/pgtmp"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgtmp/logs/postgres") || self.instances.all(i, i.?volumes.temp.hasValue())).orValue(true)`
+// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need "walVolumeClaimSpec" to log in "/pgwal"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/pgwal/logs/postgres") || self.instances.all(i, i.?walVolumeClaimSpec.hasValue())).orValue(true)`
+// +kubebuilder:validation:XValidation:fieldPath=`.config.parameters.log_directory`,message=`all instances need an additional volume to log in "/volumes"`,rule=`self.?config.parameters.log_directory.optMap(v, type(v) != string || !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue() && i.volumes.additional.exists(volume, v.startsWith("/volumes/" + volume.name)))).orValue(true)`
+//
+// # pgBackRest Logging
+//
+// +kubebuilder:validation:XValidation:fieldPath=`.backups.pgbackrest.log.path`,message=`all instances need an additional volume for pgbackrest sidecar to log in "/volumes"`,rule=`self.?backups.pgbackrest.log.path.optMap(v, !v.startsWith("/volumes") || self.instances.all(i, i.?volumes.additional.hasValue() && i.volumes.additional.exists(volume, v.startsWith("/volumes/" + volume.name)))).orValue(true)`
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *v1beta1.Metadata `json:"metadata,omitempty"`
@@ -33,7 +44,7 @@ type PostgresClusterSpec struct {
 
 	// General configuration of the PostgreSQL server
 	// +optional
-	Config *v1beta1.PostgresConfigSpec `json:"config,omitempty"`
+	Config *PostgresConfigSpec `json:"config,omitempty"`
 
 	// The secret containing the Certificates and Keys to encrypt PostgreSQL
 	// traffic will need to contain the server TLS certificate, TLS key and the
@@ -61,6 +72,7 @@ type PostgresClusterSpec struct {
 	// namespace as the cluster.
 	// +optional
 	DatabaseInitSQL *DatabaseInitSQL `json:"databaseInitSQL,omitempty"`
+
 	// Whether or not the PostgreSQL cluster should use the defined default
 	// scheduling constraints. If the field is unset or false, the default
 	// scheduling constraints will be used in addition to any custom constraints
@@ -82,11 +94,6 @@ type PostgresClusterSpec struct {
 	// pull (download) container images.
 	// More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	// +kubebuilder:validation:Type=string
-	//
 	// +kubebuilder:validation:Enum={Always,Never,IfNotPresent}
 	// +optional
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
@@ -99,9 +106,11 @@ type PostgresClusterSpec struct {
 
 	// Specifies one or more sets of PostgreSQL pods that replicate data for
 	// this cluster.
+	// ---
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MaxItems=16
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=2
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 
@@ -135,7 +144,7 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Minimum=11
 	// +kubebuilder:validation:Maximum=17
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
-	PostgresVersion int `json:"postgresVersion"`
+	PostgresVersion int32 `json:"postgresVersion"`
 
 	// The PostGIS extension version installed in the PostgreSQL image.
 	// When image is not set, indicates a PostGIS enabled image will be used.
@@ -311,6 +320,10 @@ type PostgresClusterDataSource struct {
 	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
 	// +optional
 	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+
+	// Volumes to add to Restore Job Pods
+	// +optional
+	Volumes *v1beta1.PGBackRestVolumesSpec `json:"volumes,omitempty"`
 }
 
 // Default defines several key default values for a Postgres cluster.
@@ -343,7 +356,7 @@ type Backups struct {
 
 	// pgBackRest archive configuration
 	// +optional
-	PGBackRest v1beta1.PGBackRestArchive `json:"pgbackrest"`
+	PGBackRest PGBackRestArchive `json:"pgbackrest"`
 
 	// VolumeSnapshot configuration
 	// +optional
@@ -378,7 +391,7 @@ type PostgresClusterStatus struct {
 	// Stores the current PostgreSQL major version following a successful
 	// major PostgreSQL upgrade.
 	// +optional
-	PostgresVersion int `json:"postgresVersion"`
+	PostgresVersion int32 `json:"postgresVersion"`
 
 	// Current state of the PostgreSQL proxy.
 	// +optional
@@ -474,7 +487,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes
 	// ---
 	// +required
-	DataVolumeClaimSpec v1beta1.VolumeClaimSpec `json:"dataVolumeClaimSpec"`
+	DataVolumeClaimSpec v1beta1.VolumeClaimSpecWithAutoGrow `json:"dataVolumeClaimSpec"`
 
 	// Priority class name for the PostgreSQL pod. Changing this value causes
 	// PostgreSQL to restart.
@@ -516,7 +529,7 @@ type PostgresInstanceSetSpec struct {
 	// More info: https://www.postgresql.org/docs/current/wal.html
 	// ---
 	// +optional
-	WALVolumeClaimSpec *v1beta1.VolumeClaimSpec `json:"walVolumeClaimSpec,omitempty"`
+	WALVolumeClaimSpec *v1beta1.VolumeClaimSpecWithAutoGrow `json:"walVolumeClaimSpec,omitempty"`
 
 	// The list of tablespaces volumes to mount for this postgrescluster
 	// This field requires enabling TablespaceVolumes feature gate
@@ -525,23 +538,9 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	TablespaceVolumes []TablespaceVolume `json:"tablespaceVolumes,omitempty"`
 
-	Volumes *PostgresVolumesSpec `json:"volumes,omitempty"`
-}
-
-type PostgresVolumesSpec struct {
-	// Additional pre-existing volumes to add to the pod.
-	// ---
+	// Volumes to be added to the instance set.
 	// +optional
-	// +listType=map
-	// +listMapKey=name
-	// +kubebuilder:validation:MaxItems=10
-	Additional []v1beta1.AdditionalVolume `json:"additional,omitempty"`
-
-	// An ephemeral volume for temporary files.
-	// More info: https://kubernetes.io/docs/concepts/storage/ephemeral-volumes
-	// ---
-	// +optional
-	Temp *v1beta1.VolumeClaimSpec `json:"temp,omitempty"`
+	Volumes *v1beta1.PostgresVolumesSpec `json:"volumes,omitempty"`
 }
 
 type TablespaceVolume struct {
@@ -604,13 +603,17 @@ type PostgresInstanceSetStatus struct {
 	// Desired Size of the pgData volume
 	// +optional
 	DesiredPGDataVolume map[string]string `json:"desiredPGDataVolume,omitempty"`
+
+	// Desired Size of the pgWAL volume
+	// +optional
+	DesiredPGWALVolume map[string]string `json:"desiredPGWALVolume,omitempty"`
 }
 
 // PostgresProxySpec is a union of the supported PostgreSQL proxies.
 type PostgresProxySpec struct {
 
 	// Defines a PgBouncer proxy and connection pooler.
-	PGBouncer *v1beta1.PGBouncerPodSpec `json:"pgBouncer"`
+	PGBouncer *PGBouncerPodSpec `json:"pgBouncer"`
 }
 
 // Default sets the defaults for any proxies that are set.

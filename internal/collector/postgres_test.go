@@ -31,9 +31,9 @@ func TestEnablePostgresLogging(t *testing.T) {
 		}`)
 
 		config := NewConfig(nil)
-		params := postgres.NewParameterSet()
+		params := postgres.NewParameters()
 
-		EnablePostgresLogging(ctx, cluster, config, params)
+		EnablePostgresLogging(ctx, cluster, params.Default, config)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)
@@ -293,9 +293,9 @@ service:
 		cluster.Spec.Instrumentation = testInstrumentationSpec()
 
 		config := NewConfig(cluster.Spec.Instrumentation)
-		params := postgres.NewParameterSet()
+		params := postgres.NewParameters()
 
-		EnablePostgresLogging(ctx, cluster, config, params)
+		EnablePostgresLogging(ctx, cluster, params.Default, config)
 
 		result, err := config.ToYAML()
 		assert.NilError(t, err)

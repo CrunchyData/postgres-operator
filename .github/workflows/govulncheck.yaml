@@ -10,6 +10,8 @@ on:
 env:
   # Use the Go toolchain installed by setup-go
   # https://github.com/actions/setup-go/issues/457
+  #
+  # TODO(govulncheck): Remove when "golang/govulncheck-action" uses "actions/setup-go" v6 or newer
   GOTOOLCHAIN: local
 
 jobs:

@@ -20,6 +20,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
@@ -33,30 +34,64 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// assertNoError panics when err is not nil.
-func assertNoError(err error) {
+// must panics when err is not nil.
+func must(err error) { need(0, err) }
+func need[V any](v V, err error) V {
 	if err != nil {
 		panic(err)
 	}
+	return v
+}
+
+func initClient() (*rest.Config, error) {
+	config, err := runtime.GetConfig()
+
+	if err == nil && userAgent == "" {
+		err = errors.New("call initVersion first")
+	}
+	if err == nil {
+		config.UserAgent = userAgent
+		config.Wrap(otelTransportWrapper())
+
+		// Log Kubernetes API warnings encountered by client-go at a high verbosity.
+		// See [rest.WarningLogger].
+		handler := runtime.WarningHandler(func(ctx context.Context, code int, _ string, message string) {
+			if code == 299 && len(message) != 0 {
+				logging.FromContext(ctx).V(2).WithName("client-go").Info(message)
+			}
+		})
+		config.WarningHandler = handler
+		config.WarningHandlerWithContext = handler
+	}
+
+	return config, err
 }
 
 func initLogging() {
-	// Configure a singleton that treats logging.Logger.V(1) as logrus.DebugLevel.
+	debug := strings.TrimSpace(os.Getenv("CRUNCHY_DEBUG"))
+
 	var verbosity int
-	if strings.EqualFold(os.Getenv("CRUNCHY_DEBUG"), "true") {
+	if strings.EqualFold(debug, "true") {
 		verbosity = 1
+	} else if i, err := strconv.Atoi(debug); err == nil && i > 0 {
+		verbosity = i
 	}
+
+	// Configure a singleton that treats logging.Logger.V(1) as logrus.DebugLevel.
 	logging.SetLogSink(logging.Logrus(os.Stdout, versionString, 1, verbosity))
 
 	global := logging.FromContext(context.Background())
 	runtime.SetLogger(global)
+
+	// [k8s.io/client-go/tools/leaderelection] logs to the global [klog] instance.
+	// - https://github.com/kubernetes-sigs/controller-runtime/issues/2656
+	klog.SetLoggerWithOptions(global, klog.ContextualLogger(true))
 }
 
 //+kubebuilder:rbac:groups="coordination.k8s.io",resources="leases",verbs={get,create,update,watch}
@@ -64,7 +99,7 @@ func initLogging() {
 //+kubebuilder:rbac:groups="authorization.k8s.io",resources="subjectaccessreviews",verbs={create}
 
 func initManager(ctx context.Context) (runtime.Options, error) {
-	log := logging.FromContext(ctx)
+	log := logging.FromContext(ctx).WithName("manager")
 
 	options := runtime.Options{}
 	options.Cache.SyncPeriod = initialize.Pointer(time.Hour)
@@ -173,7 +208,7 @@ func main() {
 	}
 
 	features := feature.NewGate()
-	assertNoError(features.Set(os.Getenv("PGO_FEATURE_GATES")))
+	must(features.Set(os.Getenv("PGO_FEATURE_GATES")))
 
 	running = feature.NewContext(running, features)
 	log.Info("feature gates",
@@ -183,32 +218,18 @@ func main() {
 		"enabled", feature.ShowEnabled(running))
 
 	// Initialize OpenTelemetry and flush data when there is a panic.
-	otelFinish, err := initOpenTelemetry(running)
-	assertNoError(err)
+	otelFinish := need(initOpenTelemetry(running))
 	defer func(ctx context.Context) { _ = otelFinish(ctx) }(running)
 
 	tracing.SetDefaultTracer(tracing.New("github.com/CrunchyData/postgres-operator"))
 
-	cfg, err := runtime.GetConfig()
-	assertNoError(err)
-
-	cfg.UserAgent = userAgent
-	cfg.Wrap(otelTransportWrapper())
-
-	// TODO(controller-runtime): Set config.WarningHandler instead after v0.19.0.
-	// Configure client-go to suppress warnings when warning headers are encountered. This prevents
-	// warnings from being logged over and over again during reconciliation (e.g. this will suppress
-	// deprecation warnings when using an older version of a resource for backwards compatibility).
-	rest.SetDefaultWarningHandler(rest.NoWarnings{})
-
-	k8s, err := kubernetes.NewDiscoveryRunner(cfg)
-	assertNoError(err)
-	assertNoError(k8s.Read(running))
-
+	// Load Kubernetes client configuration and ensure it works.
+	config := need(initClient())
+	k8s := need(kubernetes.NewDiscoveryRunner(config))
+	must(k8s.Read(running))
 	log.Info("connected to Kubernetes", "api", k8s.Version().String(), "openshift", k8s.IsOpenShift())
 
-	options, err := initManager(running)
-	assertNoError(err)
+	options := need(initManager(running))
 
 	// Add to the Context that Manager passes to Reconciler.Start, Runnable.Start,
 	// and eventually Reconciler.Reconcile.
@@ -219,51 +240,49 @@ func main() {
 		return ctx
 	}
 
-	mgr, err := runtime.NewManager(cfg, options)
-	assertNoError(err)
-	assertNoError(mgr.Add(k8s))
+	manager := need(runtime.NewManager(config, options))
+	must(manager.Add(k8s))
 
-	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning)
-	assertNoError(err)
-	assertNoError(mgr.Add(registrar))
+	registrar := need(registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning))
+	must(manager.Add(registrar))
 	token, _ := registrar.CheckToken()
 
+	bridgeURL := os.Getenv("PGO_BRIDGE_URL")
+	bridgeClient := func() *bridge.Client {
+		client := bridge.NewClient(bridgeURL, versionString)
+		client.Transport = otelTransportWrapper()(http.DefaultTransport)
+		return client
+	}
+
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, log, registrar)
+	must(pgupgrade.ManagedReconciler(manager, registrar))
+	must(postgrescluster.ManagedReconciler(manager, registrar))
+	must(standalone_pgadmin.ManagedReconciler(manager))
+	must(crunchybridgecluster.ManagedReconciler(manager, func() bridge.ClientInterface {
+		return bridgeClient()
+	}))
 
 	if features.Enabled(feature.BridgeIdentifiers) {
-		constructor := func() *bridge.Client {
-			client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
-			client.Transport = otelTransportWrapper()(http.DefaultTransport)
-			return client
-		}
-
-		assertNoError(bridge.ManagedInstallationReconciler(mgr, constructor))
+		must(bridge.ManagedInstallationReconciler(manager, bridgeClient))
 	}
 
 	// Enable upgrade checking
 	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
 	if !upgradeCheckingDisabled {
 		log.Info("upgrade checking enabled")
-		// get the URL for the check for upgrades endpoint if set in the env
-		assertNoError(
-			upgradecheck.ManagedScheduler(
-				mgr,
-				os.Getenv("CHECK_FOR_UPGRADES_URL"),
-				versionString,
-				token,
-			))
+		url := os.Getenv("CHECK_FOR_UPGRADES_URL")
+		must(upgradecheck.ManagedScheduler(manager, url, versionString, token))
 	} else {
 		log.Info("upgrade checking disabled")
 	}
 
 	// Enable health probes
-	assertNoError(mgr.AddHealthzCheck("health", healthz.Ping))
-	assertNoError(mgr.AddReadyzCheck("check", healthz.Ping))
+	must(manager.AddHealthzCheck("health", healthz.Ping))
+	must(manager.AddReadyzCheck("check", healthz.Ping))
 
 	// Start the manager and wait for its context to be canceled.
 	stopped := make(chan error, 1)
-	go func() { stopped <- mgr.Start(running) }()
+	go func() { stopped <- manager.Start(running) }()
 	<-running.Done()
 
 	// Set a deadline for graceful termination.
@@ -272,6 +291,7 @@ func main() {
 	defer cancel()
 
 	// Wait for the manager to return or the deadline to pass.
+	var err error
 	select {
 	case err = <-stopped:
 	case <-stopping.Done():
@@ -283,63 +303,5 @@ func main() {
 		log.Error(err, "shutdown failed")
 	} else {
 		log.Info("shutdown complete")
-	}
-}
-
-// addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
-// runtime manager.
-func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg registration.Registration) {
-	pgReconciler := &postgrescluster.Reconciler{
-		Client:       mgr.GetClient(),
-		Owner:        postgrescluster.ControllerName,
-		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
-		Registration: reg,
-	}
-
-	if err := pgReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PostgresCluster controller")
-		os.Exit(1)
-	}
-
-	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
-		Client:       mgr.GetClient(),
-		Owner:        "pgupgrade-controller",
-		Recorder:     mgr.GetEventRecorderFor("pgupgrade-controller"),
-		Registration: reg,
-	}
-
-	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PGUpgrade controller")
-		os.Exit(1)
-	}
-
-	pgAdminReconciler := &standalone_pgadmin.PGAdminReconciler{
-		Client:   mgr.GetClient(),
-		Owner:    "pgadmin-controller",
-		Recorder: mgr.GetEventRecorderFor(naming.ControllerPGAdmin),
-	}
-
-	if err := pgAdminReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create PGAdmin controller")
-		os.Exit(1)
-	}
-
-	constructor := func() bridge.ClientInterface {
-		client := bridge.NewClient(os.Getenv("PGO_BRIDGE_URL"), versionString)
-		client.Transport = otelTransportWrapper()(http.DefaultTransport)
-		return client
-	}
-
-	crunchyBridgeClusterReconciler := &crunchybridgecluster.CrunchyBridgeClusterReconciler{
-		Client: mgr.GetClient(),
-		Owner:  "crunchybridgecluster-controller",
-		// TODO(crunchybridgecluster): recorder?
-		// Recorder: mgr.GetEventRecorderFor(naming...),
-		NewClient: constructor,
-	}
-
-	if err := crunchyBridgeClusterReconciler.SetupWithManager(mgr); err != nil {
-		log.Error(err, "unable to create CrunchyBridgeCluster controller")
-		os.Exit(1)
 	}
 }

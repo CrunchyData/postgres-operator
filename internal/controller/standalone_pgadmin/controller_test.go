@@ -24,7 +24,7 @@ func TestDeleteControlled(t *testing.T) {
 	require.ParallelCapacity(t, 1)
 
 	ns := setupNamespace(t, cc)
-	reconciler := PGAdminReconciler{Client: cc}
+	reconciler := PGAdminReconciler{Writer: cc}
 
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Namespace = ns.Name

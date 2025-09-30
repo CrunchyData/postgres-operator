@@ -21,7 +21,7 @@ commands:
     }
 
     scrape_metrics=$(kubectl exec "${pod}" -c collector -n "${NAMESPACE}" -- \
-      curl --insecure --silent http://localhost:9187/metrics)
+      curl --insecure --silent http://localhost:9187/metrics | grep 'ccp_pgbouncer_clients_wait_seconds')
     { contains "${scrape_metrics}" 'ccp_pgbouncer_clients_wait_seconds'; } || {
       retry "pgbouncer metric not found"
       exit 1

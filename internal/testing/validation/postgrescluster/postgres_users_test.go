@@ -103,11 +103,10 @@ func testPostgresUserOptionsCommon(t *testing.T, cc client.Client, base unstruct
 		assert.Assert(t, apierrors.IsInvalid(err))
 		assert.ErrorContains(t, err, "cannot contain comments")
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 3))
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 3))
 
-		for i, cause := range status.Details.Causes {
+		for i, cause := range details.Causes {
 			assert.Equal(t, cause.Field, fmt.Sprintf("spec.users[%d].options", i))
 			assert.Assert(t, cmp.Contains(cause.Message, "cannot contain comments"))
 		}
@@ -126,11 +125,10 @@ func testPostgresUserOptionsCommon(t *testing.T, cc client.Client, base unstruct
 		assert.Assert(t, apierrors.IsInvalid(err))
 		assert.ErrorContains(t, err, "cannot assign password")
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 2))
 
-		for i, cause := range status.Details.Causes {
+		for i, cause := range details.Causes {
 			assert.Equal(t, cause.Field, fmt.Sprintf("spec.users[%d].options", i))
 			assert.Assert(t, cmp.Contains(cause.Message, "cannot assign password"))
 		}
@@ -148,10 +146,9 @@ func testPostgresUserOptionsCommon(t *testing.T, cc client.Client, base unstruct
 		assert.Assert(t, apierrors.IsInvalid(err))
 		assert.ErrorContains(t, err, "should match")
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 1))
-		assert.Equal(t, status.Details.Causes[0].Field, "spec.users[0].options")
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 1))
+		assert.Equal(t, details.Causes[0].Field, "spec.users[0].options")
 	})
 
 	t.Run("Valid", func(t *testing.T) {

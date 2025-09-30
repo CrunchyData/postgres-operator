@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
@@ -82,26 +81,25 @@ func TestCustomLabels(t *testing.T) {
 	require.ParallelCapacity(t, 2)
 
 	reconciler := &Reconciler{
-		Client:   cc,
-		Owner:    client.FieldOwner(t.Name()),
-		Recorder: new(record.FakeRecorder),
+		Reader:       cc,
+		Recorder:     new(record.FakeRecorder),
+		StatusWriter: client.WithFieldOwner(cc, t.Name()).Status(),
+		Writer:       client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
-		assert.NilError(t, reconciler.Client.Create(ctx, cluster))
+		assert.NilError(t, cc.Create(ctx, cluster))
 		t.Cleanup(func() {
 			// Remove finalizers, if any, so the namespace can terminate.
 			assert.Check(t, client.IgnoreNotFound(
-				reconciler.Client.Patch(ctx, cluster, client.RawPatch(
+				cc.Patch(ctx, cluster, client.RawPatch(
 					client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
 		})
 
 		// Reconcile the cluster
-		result, err := reconciler.Reconcile(ctx, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(cluster),
-		})
+		result, err := reconciler.Reconcile(ctx, cluster)
 		assert.NilError(t, err)
 		assert.Assert(t, result.Requeue == false)
 	}
@@ -142,11 +140,11 @@ func TestCustomLabels(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "daisy-instance1",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}, {
 			Name:                "daisy-instance2",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Spec.Metadata = &v1beta1.Metadata{
 			Labels: map[string]string{"my.cluster.label": "daisy"},
@@ -168,7 +166,7 @@ func TestCustomLabels(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -190,14 +188,14 @@ func TestCustomLabels(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "max-instance",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 			Metadata: &v1beta1.Metadata{
 				Labels: map[string]string{"my.instance.label": "max"},
 			},
 		}, {
 			Name:                "lucy-instance",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 			Metadata: &v1beta1.Metadata{
 				Labels: map[string]string{"my.instance.label": "lucy"},
 			},
@@ -216,7 +214,7 @@ func TestCustomLabels(t *testing.T) {
 				for _, gvk := range gvks {
 					uList := &unstructured.UnstructuredList{}
 					uList.SetGroupVersionKind(gvk)
-					assert.NilError(t, reconciler.Client.List(ctx, uList,
+					assert.NilError(t, cc.List(ctx, uList,
 						client.InNamespace(cluster.Namespace),
 						client.MatchingLabelsSelector{Selector: selector}))
 
@@ -263,7 +261,7 @@ func TestCustomLabels(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -298,7 +296,7 @@ func TestCustomLabels(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -320,26 +318,25 @@ func TestCustomAnnotations(t *testing.T) {
 	require.ParallelCapacity(t, 2)
 
 	reconciler := &Reconciler{
-		Client:   cc,
-		Owner:    client.FieldOwner(t.Name()),
-		Recorder: new(record.FakeRecorder),
+		Reader:       cc,
+		Recorder:     new(record.FakeRecorder),
+		StatusWriter: client.WithFieldOwner(cc, t.Name()).Status(),
+		Writer:       client.WithFieldOwner(cc, t.Name()),
 	}
 
 	ns := setupNamespace(t, cc)
 
 	reconcileTestCluster := func(cluster *v1beta1.PostgresCluster) {
-		assert.NilError(t, reconciler.Client.Create(ctx, cluster))
+		assert.NilError(t, cc.Create(ctx, cluster))
 		t.Cleanup(func() {
 			// Remove finalizers, if any, so the namespace can terminate.
 			assert.Check(t, client.IgnoreNotFound(
-				reconciler.Client.Patch(ctx, cluster, client.RawPatch(
+				cc.Patch(ctx, cluster, client.RawPatch(
 					client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
 		})
 
 		// Reconcile the cluster
-		result, err := reconciler.Reconcile(ctx, reconcile.Request{
-			NamespacedName: client.ObjectKeyFromObject(cluster),
-		})
+		result, err := reconciler.Reconcile(ctx, cluster)
 		assert.NilError(t, err)
 		assert.Assert(t, result.Requeue == false)
 	}
@@ -380,11 +377,11 @@ func TestCustomAnnotations(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "daisy-instance1",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}, {
 			Name:                "daisy-instance2",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 		}}
 		cluster.Spec.Metadata = &v1beta1.Metadata{
 			Annotations: map[string]string{"my.cluster.annotation": "daisy"},
@@ -407,7 +404,7 @@ func TestCustomAnnotations(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -429,14 +426,14 @@ func TestCustomAnnotations(t *testing.T) {
 		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{
 			Name:                "max-instance",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 			Metadata: &v1beta1.Metadata{
 				Annotations: map[string]string{"my.instance.annotation": "max"},
 			},
 		}, {
 			Name:                "lucy-instance",
 			Replicas:            initialize.Int32(1),
-			DataVolumeClaimSpec: testVolumeClaimSpec(),
+			DataVolumeClaimSpec: testVolumeClaimSpecWithAutoGrow(),
 			Metadata: &v1beta1.Metadata{
 				Annotations: map[string]string{"my.instance.annotation": "lucy"},
 			},
@@ -455,7 +452,7 @@ func TestCustomAnnotations(t *testing.T) {
 				for _, gvk := range gvks {
 					uList := &unstructured.UnstructuredList{}
 					uList.SetGroupVersionKind(gvk)
-					assert.NilError(t, reconciler.Client.List(ctx, uList,
+					assert.NilError(t, cc.List(ctx, uList,
 						client.InNamespace(cluster.Namespace),
 						client.MatchingLabelsSelector{Selector: selector}))
 
@@ -502,7 +499,7 @@ func TestCustomAnnotations(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -537,7 +534,7 @@ func TestCustomAnnotations(t *testing.T) {
 		for _, gvk := range gvks {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			assert.NilError(t, reconciler.Client.List(ctx, uList,
+			assert.NilError(t, cc.List(ctx, uList,
 				client.InNamespace(cluster.Namespace),
 				client.MatchingLabelsSelector{Selector: selector}))
 
@@ -554,10 +551,7 @@ func TestCustomAnnotations(t *testing.T) {
 }
 
 func TestGenerateClusterPrimaryService(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns2"
@@ -658,7 +652,7 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 	_, cc := setupKubernetes(t)
 	require.ParallelCapacity(t, 1)
 
-	reconciler := &Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+	reconciler := &Reconciler{Writer: client.WithFieldOwner(cc, t.Name())}
 
 	cluster := testCluster()
 	cluster.Namespace = setupNamespace(t, cc).Name
@@ -676,10 +670,7 @@ func TestReconcileClusterPrimaryService(t *testing.T) {
 }
 
 func TestGenerateClusterReplicaServiceIntent(t *testing.T) {
-	_, cc := setupKubernetes(t)
-	require.ParallelCapacity(t, 0)
-
-	reconciler := &Reconciler{Client: cc}
+	reconciler := &Reconciler{}
 
 	cluster := &v1beta1.PostgresCluster{}
 	cluster.Namespace = "ns1"

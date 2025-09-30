@@ -15,6 +15,7 @@ CONTROLLER ?= $(GO) tool sigs.k8s.io/controller-tools/cmd/controller-gen
 # Run tests using the latest tools.
 CHAINSAW ?= $(GO) run github.com/kyverno/chainsaw@latest
 CHAINSAW_TEST ?= $(CHAINSAW) test
+CRD_CHECKER ?= $(GO) run github.com/openshift/crd-schema-checker/cmd/crd-schema-checker@latest
 ENVTEST ?= $(GO) run sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/cmd/kubectl-kuttl@latest
 KUTTL_TEST ?= $(KUTTL) test
@@ -108,16 +109,15 @@ undeploy: ## Undeploy the PostgreSQL Operator
 
 .PHONY: deploy-dev
 deploy-dev: ## Deploy the PostgreSQL Operator locally
-deploy-dev: PGO_FEATURE_GATES ?= "AllAlpha=true"
 deploy-dev: get-pgmonitor
 deploy-dev: createnamespaces
 	kubectl apply --server-side -k ./config/dev
 	hack/create-kubeconfig.sh postgres-operator pgo
 	env \
-		QUERIES_CONFIG_DIR="${QUERIES_CONFIG_DIR}" \
-		CRUNCHY_DEBUG=true \
-		PGO_FEATURE_GATES="${PGO_FEATURE_GATES}" \
-		CHECK_FOR_UPGRADES='$(if $(CHECK_FOR_UPGRADES),$(CHECK_FOR_UPGRADES),false)' \
+		QUERIES_CONFIG_DIR='$(QUERIES_CONFIG_DIR)' \
+		CRUNCHY_DEBUG="$${CRUNCHY_DEBUG:-true}" \
+		PGO_FEATURE_GATES="$${PGO_FEATURE_GATES:-AllAlpha=true}" \
+		CHECK_FOR_UPGRADES="$${CHECK_FOR_UPGRADES:-false}" \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		PGO_NAMESPACE='postgres-operator' \
 		PGO_INSTALLER='deploy-dev' \
@@ -134,6 +134,7 @@ deploy-dev: createnamespaces
 
 .PHONY: build
 build: ## Build a postgres-operator image
+build: get-pgmonitor
 	$(BUILDAH) build --tag '$(IMAGE)' \
 		--label org.opencontainers.image.authors='Crunchy Data' \
 		--label org.opencontainers.image.description='Crunchy PostgreSQL Operator' \
@@ -159,6 +160,12 @@ image.tar: build
 check: ## Run basic go tests with coverage output
 check: get-pgmonitor
 	QUERIES_CONFIG_DIR="$(CURDIR)/${QUERIES_CONFIG_DIR}" $(GO_TEST) -cover ./...
+
+# Informational only; no criteria to enforce at this time.
+.PHONY: check-crd
+check-crd:
+	$(foreach CRD, $(wildcard config/crd/bases/*.yaml), \
+		$(CRD_CHECKER) check-manifests --new-crd-filename '$(CRD)' 2>&1 | awk -f hack/check-manifests.awk $(newline))
 
 # Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
@@ -211,22 +218,15 @@ generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 16
 generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 17
 generate-kuttl: export KUTTL_PG_VERSION ?= 16
 generate-kuttl: export KUTTL_POSTGIS_VERSION ?= 3.4
-generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.5-2520
+generate-kuttl: export KUTTL_PSQL_IMAGE ?= registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2534
 generate-kuttl: export KUTTL_TEST_DELETE_NAMESPACE ?= kuttl-test-delete-namespace
 generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	bash -ceu ' \
-	case $(KUTTL_PG_VERSION) in \
-	16 ) export KUTTL_BITNAMI_IMAGE_TAG=16.0.0-debian-11-r3 ;; \
-	15 ) export KUTTL_BITNAMI_IMAGE_TAG=15.0.0-debian-11-r4 ;; \
-	14 ) export KUTTL_BITNAMI_IMAGE_TAG=14.5.0-debian-11-r37 ;; \
-	13 ) export KUTTL_BITNAMI_IMAGE_TAG=13.8.0-debian-11-r39 ;; \
-	12 ) export KUTTL_BITNAMI_IMAGE_TAG=12.12.0-debian-11-r40 ;; \
-	esac; \
 	render() { envsubst '"'"' \
 		$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION \
 		$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE \
-		$$KUTTL_BITNAMI_IMAGE_TAG $$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \
+		$$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \
 	while [ $$# -gt 0 ]; do \
 		source="$${1}" target="$${1/e2e/e2e-generated}"; \
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
@@ -252,10 +252,10 @@ generate: generate-rbac
 
 .PHONY: generate-crd
 generate-crd: ## Generate Custom Resource Definitions (CRDs)
-	$(CONTROLLER) \
-		crd:crdVersions='v1' \
-		paths='./pkg/apis/...' \
-		output:dir='config/crd/bases' # {directory}/{group}_{plural}.yaml
+	$(CONTROLLER) $(\
+		) crd paths='./pkg/apis/...' $(\
+		) output:dir='config/crd/bases' # {directory}/{group}_{plural}.yaml
+	$(GO) generate ./internal/crd
 
 .PHONY: generate-collector
 generate-collector: ## Generate OTel Collector files
@@ -263,13 +263,19 @@ generate-collector: ## Generate OTel Collector files
 
 .PHONY: generate-deepcopy
 generate-deepcopy: ## Generate DeepCopy functions
-	$(CONTROLLER) \
-		object:headerFile='hack/boilerplate.go.txt' \
-		paths='./pkg/apis/postgres-operator.crunchydata.com/...'
+	$(CONTROLLER) $(\
+		) object:headerFile='hack/boilerplate.go.txt' $(\
+		) paths='./pkg/apis/postgres-operator.crunchydata.com/...'
 
 .PHONY: generate-rbac
 generate-rbac: ## Generate RBAC
-	$(CONTROLLER) \
-		rbac:roleName='postgres-operator' \
-		paths='./cmd/...' paths='./internal/...' \
-		output:dir='config/rbac' # {directory}/role.yaml
+	$(CONTROLLER) $(\
+		) rbac:roleName='postgres-operator' $(\
+		) paths='./cmd/...' paths='./internal/...' $(\
+		) output:dir='config/rbac' # {directory}/role.yaml
+
+# https://www.gnu.org/software/make/manual/make.html#Multi_002dLine
+define newline
+
+
+endef

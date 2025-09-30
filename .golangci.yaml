@@ -63,6 +63,11 @@ linters:
     - zerologlint
 
   settings:
+    dupword:
+      ignore:
+        # We might see duplicate instances of 'fi' if we end two bash 'if' statements
+        - fi
+
     depguard:
       rules:
         everything:
@@ -85,6 +90,8 @@ linters:
               desc: Should be used only in tests.
             - pkg: testing/*
               desc: The "testing" packages should be used only in tests.
+            - pkg: github.com/crunchydata/postgres-operator/internal/crd/*
+              desc: The "internal/crd" packages should be used only in tests.
             - pkg: github.com/crunchydata/postgres-operator/internal/testing/*
               desc: The "internal/testing" packages should be used only in tests.
             - pkg: k8s.io/client-go/discovery
@@ -111,6 +118,8 @@ linters:
     gomodguard:
       blocked:
         modules:
+          - go.yaml.in/yaml/v2: { recommendations: [sigs.k8s.io/yaml] }
+          - go.yaml.in/yaml/v3: { recommendations: [sigs.k8s.io/yaml] }
           - gopkg.in/yaml.v2: { recommendations: [sigs.k8s.io/yaml] }
           - gopkg.in/yaml.v3: { recommendations: [sigs.k8s.io/yaml] }
           - gotest.tools: { recommendations: [gotest.tools/v3] }

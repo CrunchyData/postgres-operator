@@ -33,6 +33,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/registration"
@@ -40,46 +41,42 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-const (
-	// ControllerName is the name of the PostgresCluster controller
-	ControllerName = "postgrescluster-controller"
-)
+const controllerName = naming.ControllerPostgresCluster
 
 // Reconciler holds resources for the PostgresCluster reconciler
 type Reconciler struct {
-	Client  client.Client
-	Owner   client.FieldOwner
 	PodExec func(
 		ctx context.Context, namespace, pod, container string,
 		stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error
+
+	Reader interface {
+		Get(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
+		List(context.Context, client.ObjectList, ...client.ListOption) error
+	}
+	Writer interface {
+		Delete(context.Context, client.Object, ...client.DeleteOption) error
+		DeleteAllOf(context.Context, client.Object, ...client.DeleteAllOfOption) error
+		Patch(context.Context, client.Object, client.Patch, ...client.PatchOption) error
+		Update(context.Context, client.Object, ...client.UpdateOption) error
+	}
+	StatusWriter interface {
+		Patch(context.Context, client.Object, client.Patch, ...client.SubResourcePatchOption) error
+	}
+
 	Recorder     record.EventRecorder
 	Registration registration.Registration
 }
 
 // +kubebuilder:rbac:groups="",resources="events",verbs={create,patch}
-// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list,watch}
 // +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters/status",verbs={patch}
 
-// Reconcile reconciles a ConfigMap in a namespace managed by the PostgreSQL Operator
 func (r *Reconciler) Reconcile(
-	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
+	ctx context.Context, cluster *v1beta1.PostgresCluster) (reconcile.Result, error,
 ) {
 	ctx, span := tracing.Start(ctx, "reconcile-postgrescluster")
 	log := logging.FromContext(ctx)
 	defer span.End()
-
-	// get the postgrescluster from the cache
-	cluster := &v1beta1.PostgresCluster{}
-	if err := r.Client.Get(ctx, request.NamespacedName, cluster); err != nil {
-		// NotFound cannot be fixed by requeuing so ignore it. During background
-		// deletion, we receive delete events from cluster's dependents after
-		// cluster is deleted.
-		if err = client.IgnoreNotFound(err); err != nil {
-			log.Error(err, "unable to fetch PostgresCluster")
-		}
-		return runtime.ErrorWithBackoff(tracing.Escape(span, err))
-	}
 
 	// Set any defaults that may not have been stored in the API. No DeepCopy
 	// is necessary because controller-runtime makes a copy before returning
@@ -177,8 +174,7 @@ func (r *Reconciler) Reconcile(
 		if !equality.Semantic.DeepEqual(before.Status, cluster.Status) {
 			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
 			// managed fields on the status subresource: https://issue.k8s.io/88901
-			if err := r.Client.Status().Patch(
-				ctx, cluster, client.MergeFrom(before), r.Owner); err != nil {
+			if err := r.StatusWriter.Patch(ctx, cluster, client.MergeFrom(before)); err != nil {
 				log.Error(err, "patching cluster status")
 				return err
 			}
@@ -339,7 +335,7 @@ func (r *Reconciler) Reconcile(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret, rootCA,
 			clusterPodService, instanceServiceAccount, instances, patroniLeaderService,
 			primaryCertificate, clusterVolumes, exporterQueriesConfig, exporterWebConfig,
-			backupsSpecFound, otelConfig,
+			backupsSpecFound, otelConfig, pgParameters,
 		)
 	}
 
@@ -402,22 +398,10 @@ func (r *Reconciler) deleteControlled(
 		version := object.GetResourceVersion()
 		exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 
-		return r.Client.Delete(ctx, object, exactly)
+		return r.Writer.Delete(ctx, object, exactly)
 	}
 
 	return nil
-}
-
-// patch sends patch to object's endpoint in the Kubernetes API and updates
-// object with any returned content. The fieldManager is set to r.Owner, but
-// can be overridden in options.
-// - https://docs.k8s.io/reference/using-api/server-side-apply/#managers
-func (r *Reconciler) patch(
-	ctx context.Context, object client.Object,
-	patch client.Patch, options ...client.PatchOption,
-) error {
-	options = append([]client.PatchOption{r.Owner}, options...)
-	return r.Client.Patch(ctx, object, patch, options...)
 }
 
 // The owner reference created by controllerutil.SetControllerReference blocks
@@ -433,7 +417,7 @@ func (r *Reconciler) patch(
 func (r *Reconciler) setControllerReference(
 	owner *v1beta1.PostgresCluster, controlled client.Object,
 ) error {
-	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
+	return controllerutil.SetControllerReference(owner, controlled, runtime.Scheme)
 }
 
 // setOwnerReference sets an OwnerReference on the object without setting the
@@ -441,7 +425,7 @@ func (r *Reconciler) setControllerReference(
 func (r *Reconciler) setOwnerReference(
 	owner *v1beta1.PostgresCluster, controlled client.Object,
 ) error {
-	return controllerutil.SetOwnerReference(owner, controlled, r.Client.Scheme())
+	return controllerutil.SetOwnerReference(owner, controlled, runtime.Scheme)
 }
 
 // +kubebuilder:rbac:groups="",resources="configmaps",verbs={get,list,watch}
@@ -457,18 +441,24 @@ func (r *Reconciler) setOwnerReference(
 // +kubebuilder:rbac:groups="rbac.authorization.k8s.io",resources="rolebindings",verbs={get,list,watch}
 // +kubebuilder:rbac:groups="batch",resources="cronjobs",verbs={get,list,watch}
 // +kubebuilder:rbac:groups="policy",resources="poddisruptionbudgets",verbs={get,list,watch}
+// +kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list,watch}
 
-// SetupWithManager adds the PostgresCluster controller to the provided runtime manager
-func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
-	if r.PodExec == nil {
-		var err error
-		r.PodExec, err = runtime.NewPodExecutor(mgr.GetConfig())
-		if err != nil {
-			return err
-		}
+// ManagedReconciler creates a [Reconciler] and adds it to m.
+func ManagedReconciler(m manager.Manager, r registration.Registration) error {
+	exec, err := runtime.NewPodExecutor(m.GetConfig())
+	kubernetes := client.WithFieldOwner(m.GetClient(), naming.ControllerPostgresCluster)
+	recorder := m.GetEventRecorderFor(naming.ControllerPostgresCluster)
+
+	reconciler := &Reconciler{
+		PodExec:      exec,
+		Reader:       kubernetes,
+		Recorder:     recorder,
+		Registration: r,
+		StatusWriter: kubernetes.Status(),
+		Writer:       kubernetes,
 	}
 
-	return builder.ControllerManagedBy(mgr).
+	return errors.Join(err, builder.ControllerManagedBy(m).
 		For(&v1beta1.PostgresCluster{}).
 		Owns(&corev1.ConfigMap{}).
 		Owns(&corev1.Endpoints{}).
@@ -483,8 +473,8 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&batchv1.CronJob{}).
 		Owns(&policyv1.PodDisruptionBudget{}).
-		Watches(&corev1.Pod{}, r.watchPods()).
+		Watches(&corev1.Pod{}, reconciler.watchPods()).
 		Watches(&appsv1.StatefulSet{},
-			r.controllerRefHandlerFuncs()). // watch all StatefulSets
-		Complete(r)
+			reconciler.controllerRefHandlerFuncs()). // watch all StatefulSets
+		Complete(reconcile.AsReconciler(kubernetes, reconciler)))
 }

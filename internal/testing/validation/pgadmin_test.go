@@ -47,15 +47,14 @@ func TestPGAdminDataVolume(t *testing.T) {
 		assert.ErrorContains(t, err, "dataVolumeClaimSpec")
 		assert.ErrorContains(t, err, "Required")
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 2))
 
-		assert.Equal(t, status.Details.Causes[0].Field, "spec.dataVolumeClaimSpec")
-		assert.Assert(t, cmp.Contains(status.Details.Causes[0].Message, "Required"))
+		assert.Equal(t, details.Causes[0].Field, "spec.dataVolumeClaimSpec")
+		assert.Assert(t, cmp.Contains(details.Causes[0].Message, "Required"))
 
-		assert.Equal(t, string(status.Details.Causes[1].Type), "FieldValueInvalid")
-		assert.Assert(t, cmp.Contains(status.Details.Causes[1].Message, "rules were not checked"))
+		assert.Equal(t, string(details.Causes[1].Type), "FieldValueInvalid")
+		assert.Assert(t, cmp.Contains(details.Causes[1].Message, "rules were not checked"))
 	})
 
 	t.Run("AccessModes", func(t *testing.T) {
@@ -150,11 +149,10 @@ func TestPGAdminInstrumentation(t *testing.T) {
 					assert.ErrorContains(t, err, "minRecords")
 					assert.ErrorContains(t, err, "maxDelay")
 
-					status := require.StatusError(t, err)
-					assert.Assert(t, status.Details != nil)
-					assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+					details := require.StatusErrorDetails(t, err)
+					assert.Assert(t, cmp.Len(details.Causes, 1))
 
-					for _, cause := range status.Details.Causes {
+					for _, cause := range details.Causes {
 						assert.Equal(t, cause.Field, "spec.instrumentation.logs.batches")
 						assert.Assert(t, cmp.Contains(cause.Message, "disable batching"))
 						assert.Assert(t, cmp.Contains(cause.Message, "minRecords and maxDelay must be zero"))
@@ -176,11 +174,10 @@ func TestPGAdminInstrumentation(t *testing.T) {
 			assert.ErrorContains(t, err, "maxDelay")
 			assert.ErrorContains(t, err, "5m")
 
-			status := require.StatusError(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+			details := require.StatusErrorDetails(t, err)
+			assert.Assert(t, cmp.Len(details.Causes, 1))
 
-			for _, cause := range status.Details.Causes {
+			for _, cause := range details.Causes {
 				assert.Equal(t, cause.Field, "spec.instrumentation.logs.batches.maxDelay")
 			}
 		})
@@ -200,11 +197,10 @@ func TestPGAdminInstrumentation(t *testing.T) {
 			assert.ErrorContains(t, err, "maxRecords")
 			assert.ErrorContains(t, err, "greater than or equal to 1")
 
-			status := require.StatusError(t, err)
-			assert.Assert(t, status.Details != nil)
-			assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+			details := require.StatusErrorDetails(t, err)
+			assert.Assert(t, cmp.Len(details.Causes, 2))
 
-			for _, cause := range status.Details.Causes {
+			for _, cause := range details.Causes {
 				switch cause.Field {
 				case "spec.instrumentation.logs.batches.maxRecords":
 					assert.Assert(t, cmp.Contains(cause.Message, "0"))
@@ -233,11 +229,10 @@ func TestPGAdminInstrumentation(t *testing.T) {
 					assert.ErrorContains(t, err, "minRecords")
 					assert.ErrorContains(t, err, "maxRecords")
 
-					status := require.StatusError(t, err)
-					assert.Assert(t, status.Details != nil)
-					assert.Assert(t, cmp.Len(status.Details.Causes, 1))
+					details := require.StatusErrorDetails(t, err)
+					assert.Assert(t, cmp.Len(details.Causes, 1))
 
-					for _, cause := range status.Details.Causes {
+					for _, cause := range details.Causes {
 						assert.Equal(t, cause.Field, "spec.instrumentation.logs.batches")
 						assert.Assert(t, cmp.Contains(cause.Message, "minRecords cannot be larger than maxRecords"))
 					}
@@ -260,11 +255,10 @@ func TestPGAdminInstrumentation(t *testing.T) {
 		assert.ErrorContains(t, err, "hour|day|week")
 		assert.ErrorContains(t, err, "one hour")
 
-		status := require.StatusError(t, err)
-		assert.Assert(t, status.Details != nil)
-		assert.Assert(t, cmp.Len(status.Details.Causes, 2))
+		details := require.StatusErrorDetails(t, err)
+		assert.Assert(t, cmp.Len(details.Causes, 2))
 
-		for _, cause := range status.Details.Causes {
+		for _, cause := range details.Causes {
 			assert.Equal(t, cause.Field, "spec.instrumentation.logs.retentionPeriod")
 		}
 

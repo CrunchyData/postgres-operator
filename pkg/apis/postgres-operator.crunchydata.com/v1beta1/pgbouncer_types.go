@@ -26,7 +26,14 @@ type PGBouncerConfiguration struct {
 
 	// Settings that apply to the entire PgBouncer process.
 	// More info: https://www.pgbouncer.org/config.html
+	// ---
+	// # Logging
+	// +kubebuilder:validation:XValidation:rule=`!has(self.logfile) || self.logfile.endsWith('.log')`,message=`logfile config must end with '.log'`
+	// +kubebuilder:validation:MaxProperties=50
+	// See also XValidation rule on v1 PostgresProxySpec
+	//
 	// +optional
+	// +mapType=granular
 	Global map[string]string `json:"global,omitempty"`
 
 	// PgBouncer database definitions. The key is the database requested by a
@@ -131,6 +138,19 @@ type PGBouncerPodSpec struct {
 	// More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
 	// +optional
 	TopologySpreadConstraints []corev1.TopologySpreadConstraint `json:"topologySpreadConstraints,omitempty"`
+
+	Volumes *PGBouncerVolumesSpec `json:"volumes,omitempty"`
+}
+
+// PGBouncerVolumesSpec defines the configuration for pgBouncer additional volumes
+type PGBouncerVolumesSpec struct {
+	// Additional pre-existing volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	Additional []AdditionalVolume `json:"additional,omitempty"`
 }
 
 // PGBouncerSidecars defines the configuration for pgBouncer sidecar containers

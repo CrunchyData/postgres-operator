@@ -18,7 +18,7 @@ func TestDefaults(t *testing.T) {
 
 	assert.Assert(t, false == gate.Enabled(AppendCustomQueries))
 	assert.Assert(t, true == gate.Enabled(AutoCreateUserSchema))
-	assert.Assert(t, false == gate.Enabled(AutoGrowVolumes))
+	assert.Assert(t, true == gate.Enabled(AutoGrowVolumes))
 	assert.Assert(t, false == gate.Enabled(BridgeIdentifiers))
 	assert.Assert(t, true == gate.Enabled(InstanceSidecars))
 	assert.Assert(t, false == gate.Enabled(OpenTelemetryLogs))

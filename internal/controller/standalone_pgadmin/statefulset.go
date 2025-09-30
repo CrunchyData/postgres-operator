@@ -16,8 +16,10 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -26,7 +28,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	ctx context.Context, pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap, dataVolume *corev1.PersistentVolumeClaim,
 ) error {
-	sts := statefulset(ctx, pgadmin, configmap, dataVolume)
+	sts := r.statefulset(ctx, pgadmin, configmap, dataVolume)
 
 	// Previous versions of PGO used a StatefulSet Pod Management Policy that could leave the Pod
 	// in a failed state. When we see that it has the wrong policy, we will delete the StatefulSet
@@ -34,7 +36,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	// When we delete the StatefulSet, we will leave its Pods in place. They will be claimed by
 	// the StatefulSet that gets created in the next reconcile.
 	existing := &appsv1.StatefulSet{}
-	if err := errors.WithStack(r.Get(ctx, client.ObjectKeyFromObject(sts), existing)); err != nil {
+	if err := errors.WithStack(r.Reader.Get(ctx, client.ObjectKeyFromObject(sts), existing)); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -47,18 +49,18 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 			exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 			propagate := client.PropagationPolicy(metav1.DeletePropagationOrphan)
 
-			return errors.WithStack(client.IgnoreNotFound(r.Delete(ctx, existing, exactly, propagate)))
+			return errors.WithStack(client.IgnoreNotFound(r.Writer.Delete(ctx, existing, exactly, propagate)))
 		}
 	}
 
 	if err := errors.WithStack(r.setControllerReference(pgadmin, sts)); err != nil {
 		return err
 	}
-	return errors.WithStack(r.apply(ctx, sts))
+	return errors.WithStack(runtime.Apply(ctx, r.Writer, sts))
 }
 
 // statefulset defines the StatefulSet needed to run pgAdmin.
-func statefulset(
+func (r *PGAdminReconciler) statefulset(
 	ctx context.Context,
 	pgadmin *v1beta1.PGAdmin,
 	configmap *corev1.ConfigMap,
@@ -137,6 +139,16 @@ func statefulset(
 	}
 
 	postgrescluster.AddTMPEmptyDir(&sts.Spec.Template)
+
+	// mount additional volumes to the Postgres instance containers
+	if pgadmin.Spec.Volumes != nil && len(pgadmin.Spec.Volumes.Additional) > 0 {
+		missingContainers := util.AddAdditionalVolumesAndMounts(&sts.Spec.Template.Spec, pgadmin.Spec.Volumes.Additional)
+
+		if len(missingContainers) > 0 {
+			r.Recorder.Eventf(pgadmin, corev1.EventTypeWarning, "SpecifiedContainerNotFound",
+				"The following pgAdmin pod containers were specified for additional volumes but cannot be found: %s.", missingContainers)
+		}
+	}
 
 	return sts
 }

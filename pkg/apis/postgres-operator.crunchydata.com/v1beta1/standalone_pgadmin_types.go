@@ -105,11 +105,6 @@ type PGAdminSpec struct {
 	// pull (download) container images.
 	// More info: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	// +kubebuilder:validation:Type=string
-	//
 	// +kubebuilder:validation:Enum={Always,Never,IfNotPresent}
 	// +optional
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
@@ -167,6 +162,19 @@ type PGAdminSpec struct {
 	// https://kubernetes.io/docs/concepts/services-networking/service/
 	// +optional
 	ServiceName string `json:"serviceName,omitempty"`
+
+	Volumes *PGAdminVolumesSpec `json:"volumes,omitempty"`
+}
+
+// PGAdminVolumesSpec defines the configuration for pgAdmin additional volumes
+type PGAdminVolumesSpec struct {
+	// Additional pre-existing volumes to add to the pod.
+	// ---
+	// +optional
+	// +listType=map
+	// +listMapKey=name
+	// +kubebuilder:validation:MaxItems=10
+	Additional []AdditionalVolume `json:"additional,omitempty"`
 }
 
 // +kubebuilder:validation:XValidation:rule=`[has(self.postgresClusterName),has(self.postgresClusterSelector)].exists_one(x,x)`,message=`exactly one of "postgresClusterName" or "postgresClusterSelector" is required`
@@ -194,10 +202,6 @@ type PGAdminUser struct {
 	// Role determines whether the user has admin privileges or not.
 	// Defaults to User. Valid options are Administrator and User.
 	// ---
-	// Kubernetes assumes the evaluation cost of an enum value is very large.
-	// TODO(k8s-1.29): Drop MaxLength after Kubernetes 1.29; https://issue.k8s.io/119511
-	// +kubebuilder:validation:MaxLength=15
-	//
 	// +kubebuilder:validation:Enum={Administrator,User}
 	// +optional
 	Role string `json:"role,omitempty"`
@@ -226,6 +230,10 @@ type PGAdminStatus struct {
 	// MajorVersion represents the major version of the running pgAdmin.
 	// +optional
 	MajorVersion int `json:"majorVersion,omitempty"`
+
+	// MinorVersion represents the minor version of the running pgAdmin.
+	// +optional
+	MinorVersion string `json:"minorVersion,omitempty"`
 
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional

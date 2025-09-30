@@ -39,7 +39,7 @@ inputs:
       The value "skip" fetches no Trivy data at all.
 
   setup:
-    default: v0.62.1,cache
+    default: v0.65.0,cache
     description: >-
       How to install Trivy; one or more of version, none, or cache.
       The value "none" does not install Trivy at all.
@@ -84,7 +84,7 @@ runs:
     # Install Trivy as requested.
     # NOTE: `setup-trivy` can download a "latest" version but cannot cache it.
     - if: ${{ ! contains(fromJSON(steps.parsed.outputs.setup), 'none') }}
-      uses: aquasecurity/setup-trivy@v0.2.3
+      uses: aquasecurity/setup-trivy@v0.2.4
       with:
         cache: ${{ contains(fromJSON(steps.parsed.outputs.setup), 'cache') }}
         version: ${{ steps.parsed.outputs.version }}
