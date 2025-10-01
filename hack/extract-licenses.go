@@ -208,10 +208,12 @@ func identifyModules(ctx context.Context, executables ...string) []string {
 		os.Exit(cmd.ProcessState.ExitCode())
 	}
 
-	// Parse the tab-separated table without checking row lengths.
+	// Parse the tab-separated table without checking row lengths
+	// and without enforcing strict quote mark rules.
 	reader := csv.NewReader(&stdout)
 	reader.Comma = '\t'
 	reader.FieldsPerRecord = -1
+	reader.LazyQuotes = true
 
 	lines, _ := reader.ReadAll()
 	result := make([]string, 0, len(lines))
