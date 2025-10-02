@@ -1260,17 +1260,15 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 		}
 	}
 
-	// Check to see if huge pages have been requested in the spec. If they have, include 'huge_pages = try'
-	// in the restore command. If they haven't, include 'huge_pages = off'.
-	hugePagesSetting := "off"
-	if postgres.HugePagesRequested(cluster) {
-		hugePagesSetting = "try"
+	params := postgres.NewParameterSet()
+	postgres.SetHugePages(cluster, params)
+	if fetchKeyCommand := config.FetchKeyCommand(&cluster.Spec); fetchKeyCommand != "" {
+		params.Add("encryption_key_command", fetchKeyCommand)
 	}
 
 	// NOTE (andrewlecuyer): Forcing users to put each argument separately might prevent the need
 	// to do any escaping or use eval.
-	cmd := pgbackrest.RestoreCommand(pgdata, hugePagesSetting, config.FetchKeyCommand(&cluster.Spec),
-		pgtablespaceVolumes, strings.Join(opts, " "))
+	cmd := pgbackrest.RestoreCommand(pgdata, params, strings.Join(opts, " "))
 
 	// create the volume resources required for the postgres data directory
 	dataVolumeMount := postgres.DataVolumeMount()

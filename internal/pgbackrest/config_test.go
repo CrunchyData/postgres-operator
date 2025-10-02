@@ -18,6 +18,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -789,11 +790,7 @@ func TestReloadCommandPrettyYAML(t *testing.T) {
 func TestRestoreCommand(t *testing.T) {
 	shellcheck := require.ShellCheck(t)
 
-	pgdata := "/pgdata/pg13"
-	opts := []string{
-		"--stanza=" + DefaultStanzaName, "--pg1-path=" + pgdata,
-		"--repo=1"}
-	command := RestoreCommand(pgdata, "try", "", nil, strings.Join(opts, " "))
+	command := RestoreCommand("/pgdata/pg13", postgres.NewParameterSet(), "--repo=1")
 
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
 	assert.Assert(t, len(command) > 3)
@@ -810,17 +807,20 @@ func TestRestoreCommand(t *testing.T) {
 func TestRestoreCommandPrettyYAML(t *testing.T) {
 	assert.Assert(t,
 		cmp.MarshalContains(
-			RestoreCommand("/dir", "try", "", nil, "--options"),
+			RestoreCommand("/dir", postgres.NewParameterSet(), "--options"),
 			"\n- |",
 		),
 		"expected literal block scalar")
 }
 
 func TestRestoreCommandTDE(t *testing.T) {
+	params := postgres.NewParameterSet()
+	params.Add("encryption_key_command", "whatever")
+
 	assert.Assert(t,
 		cmp.MarshalContains(
-			RestoreCommand("/dir", "try", "echo testValue", nil, "--options"),
-			"encryption_key_command = 'echo testValue'",
+			RestoreCommand("/dir", params, "--options"),
+			"encryption_key_command = 'whatever'",
 		),
 		"expected encryption_key_command setting")
 }
