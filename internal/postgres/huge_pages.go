@@ -16,11 +16,11 @@ import (
 // This function looks for a valid huge_pages resource request. If it finds one,
 // it sets the PostgreSQL parameter "huge_pages" to "try". If it doesn't find
 // one, it sets "huge_pages" to "off".
-func SetHugePages(cluster *v1beta1.PostgresCluster, pgParameters *Parameters) {
+func SetHugePages(cluster *v1beta1.PostgresCluster, params *ParameterSet) {
 	if HugePagesRequested(cluster) {
-		pgParameters.Default.Add("huge_pages", "try")
+		params.Add("huge_pages", "try")
 	} else {
-		pgParameters.Default.Add("huge_pages", "off")
+		params.Add("huge_pages", "off")
 	}
 }
 
