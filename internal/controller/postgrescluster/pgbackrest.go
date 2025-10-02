@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -1190,35 +1191,36 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	pgdataVolume, pgwalVolume *corev1.PersistentVolumeClaim,
 	pgtablespaceVolumes []*corev1.PersistentVolumeClaim,
 	dataSource *v1beta1.PostgresClusterDataSource,
-	instanceName, instanceSetName, configHash, stanzaName string) error {
-
+	instanceName, instanceSetName, configHash, stanzaName string,
+) error {
+	hasFlag := make(map[string]bool)
+	matchFlag := regexp.MustCompile(`--[^ =]+`)
 	repoName := dataSource.RepoName
-	options := dataSource.Options
+
+	for _, input := range dataSource.Options {
+		for _, match := range matchFlag.FindAllString(input, -1) {
+			hasFlag[match] = true
+		}
+	}
 
 	// ensure options are properly set
 	// TODO (andrewlecuyer): move validation logic to a webhook
-	for _, opt := range options {
+	{
 		var msg string
 		switch {
-		// Since '--repo' can be set with or without an equals ('=') sign, we check for both
-		// usage patterns.
-		case strings.Contains(opt, "--repo=") || strings.Contains(opt, "--repo "):
+		case hasFlag["--repo"]:
 			msg = "Option '--repo' is not allowed: please use the 'repoName' field instead."
-		case strings.Contains(opt, "--stanza"):
-			msg = "Option '--stanza' is not allowed: the operator will automatically set this " +
-				"option"
-		case strings.Contains(opt, "--pg1-path"):
-			msg = "Option '--pg1-path' is not allowed: the operator will automatically set this " +
-				"option"
-		case strings.Contains(opt, "--target-action"):
-			msg = "Option '--target-action' is not allowed: the operator will automatically set this " +
-				"option "
-		case strings.Contains(opt, "--link-map"):
-			msg = "Option '--link-map' is not allowed: the operator will automatically set this " +
-				"option "
+		case hasFlag["--stanza"]:
+			msg = "Option '--stanza' is not allowed: the operator will automatically set this option"
+		case hasFlag["--pg1-path"]:
+			msg = "Option '--pg1-path' is not allowed: the operator will automatically set this option"
+		case hasFlag["--target-action"]:
+			msg = "Option '--target-action' is not allowed: the operator will automatically set this option"
+		case hasFlag["--link-map"]:
+			msg = "Option '--link-map' is not allowed: the operator will automatically set this option"
 		}
 		if msg != "" {
-			r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "InvalidDataSource", msg, repoName)
+			r.Recorder.Event(cluster, corev1.EventTypeWarning, "InvalidDataSource", msg)
 			return nil
 		}
 	}
@@ -1226,27 +1228,12 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	pgdata := postgres.DataDirectory(cluster)
 	// combine options provided by user in the spec with those populated by the operator for a
 	// successful restore
-	opts := append(options, []string{
-		"--stanza=" + stanzaName,
-		"--pg1-path=" + pgdata,
-		"--repo=" + regexRepoIndex.FindString(repoName)}...)
-
-	// Look specifically for the "--target" flag, NOT flags that contain
-	// "--target" (e.g. "--target-timeline")
-	targetRegex, err := regexp.Compile("--target[ =]")
-	if err != nil {
-		return err
-	}
-	var deltaOptFound, foundTarget bool
-	for _, opt := range opts {
-		switch {
-		case targetRegex.MatchString(opt):
-			foundTarget = true
-		case strings.Contains(opt, "--delta"):
-			deltaOptFound = true
-		}
-	}
-	if !deltaOptFound {
+	opts := append(slices.Clone(dataSource.Options), shell.QuoteWords(
+		"--stanza="+stanzaName,
+		"--pg1-path="+pgdata,
+		"--repo="+regexRepoIndex.FindString(repoName),
+	)...)
+	if !hasFlag["--delta"] {
 		opts = append(opts, "--delta")
 	}
 
@@ -1262,14 +1249,14 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	// - https://github.com/pgbackrest/pgbackrest/blob/bb03b3f41942d0b781931092a76877ad309001ef/src/command/restore/restore.c#L1623
 	// - https://github.com/pgbackrest/pgbackrest/issues/1314
 	// - https://github.com/pgbackrest/pgbackrest/issues/987
-	if foundTarget {
+	if hasFlag["--target"] {
 		opts = append(opts, "--target-action=promote")
 	}
 
 	for i, instanceSpec := range cluster.Spec.InstanceSets {
 		if instanceSpec.Name == instanceSetName {
-			opts = append(opts, "--link-map=pg_wal="+postgres.WALDirectory(cluster,
-				&cluster.Spec.InstanceSets[i]))
+			opts = append(opts, "--link-map=pg_wal="+
+				postgres.WALDirectory(cluster, &cluster.Spec.InstanceSets[i]))
 		}
 	}
 
