@@ -790,10 +790,13 @@ func TestReloadCommandPrettyYAML(t *testing.T) {
 func TestRestoreCommand(t *testing.T) {
 	shellcheck := require.ShellCheck(t)
 
-	command := RestoreCommand("/pgdata/pg13", postgres.NewParameterSet(), "--repo=1")
+	command := RestoreCommand(19, "/pgdata/pg13", postgres.NewParameterSet(), "--repo=1")
 
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
 	assert.Assert(t, len(command) > 3)
+
+	assert.Assert(t, cmp.Contains(command[3], "/usr/pgsql-19/bin"),
+		"expected path to PostgreSQL binaries")
 
 	dir := t.TempDir()
 	file := filepath.Join(dir, "script.bash")
@@ -807,7 +810,7 @@ func TestRestoreCommand(t *testing.T) {
 func TestRestoreCommandPrettyYAML(t *testing.T) {
 	assert.Assert(t,
 		cmp.MarshalContains(
-			RestoreCommand("/dir", postgres.NewParameterSet(), "--options"),
+			RestoreCommand(9, "/dir", postgres.NewParameterSet(), "--options"),
 			"\n- |",
 		),
 		"expected literal block scalar")
@@ -819,7 +822,7 @@ func TestRestoreCommandTDE(t *testing.T) {
 
 	assert.Assert(t,
 		cmp.MarshalContains(
-			RestoreCommand("/dir", params, "--options"),
+			RestoreCommand(20, "/dir", params, "--options"),
 			"encryption_key_command = 'whatever'",
 		),
 		"expected encryption_key_command setting")

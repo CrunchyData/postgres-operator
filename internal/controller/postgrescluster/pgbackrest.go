@@ -1268,7 +1268,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 
 	// NOTE (andrewlecuyer): Forcing users to put each argument separately might prevent the need
 	// to do any escaping or use eval.
-	cmd := pgbackrest.RestoreCommand(pgdata, params, strings.Join(opts, " "))
+	cmd := pgbackrest.RestoreCommand(cluster.Spec.PostgresVersion, pgdata, params, strings.Join(opts, " "))
 
 	// create the volume resources required for the postgres data directory
 	dataVolumeMount := postgres.DataVolumeMount()
