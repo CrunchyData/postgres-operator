@@ -4,9 +4,6 @@
 
 FROM docker.io/library/golang:bookworm AS build
 
-COPY licenses /licenses
-COPY hack/tools/queries /opt/crunchy/conf
-
 WORKDIR /usr/src/app
 COPY . .
 
@@ -17,12 +14,15 @@ RUN --mount=type=cache,target=/var/cache \
 set -e
 go build ./cmd/postgres-operator
 go run ./hack/extract-licenses.go licenses postgres-operator
+
+find ./hack/tools/queries '(' -type d -exec chmod 0555 '{}' + ')' -o '(' -type f -exec chmod 0444 '{}' + ')'
+find ./licenses '(' -type d -exec chmod 0555 '{}' + ')' -o '(' -type f -exec chmod 0444 '{}' + ')'
 SHELL
 
 FROM docker.io/library/debian:bookworm
 
-COPY --from=build --chmod=0444 /usr/src/app/licenses /licenses
-COPY --from=build --chmod=0444 /opt/crunchy/conf /opt/crunchy/conf
+COPY --from=build /usr/src/app/licenses /licenses
+COPY --from=build /usr/src/app/hack/tools/queries /opt/crunchy/conf
 COPY --from=build /usr/src/app/postgres-operator /usr/local/bin
 
 USER 2
