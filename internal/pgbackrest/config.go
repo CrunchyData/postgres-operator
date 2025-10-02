@@ -212,7 +212,7 @@ func MakePGBackrestLogDir(template *corev1.PodTemplateSpec,
 //   - Renames the data directory as needed to bootstrap the cluster using the restored database.
 //     This ensures compatibility with the "existing" bootstrap method that is included in the
 //     Patroni config when bootstrapping a cluster using an existing data directory.
-func RestoreCommand(pgdata string, params *postgres.ParameterSet, args ...string) []string {
+func RestoreCommand(postgresVersion int32, pgdata string, params *postgres.ParameterSet, args ...string) []string {
 	ps := params.DeepCopy()
 	ps.Add("data_directory", pgdata)
 
@@ -266,6 +266,7 @@ func RestoreCommand(pgdata string, params *postgres.ParameterSet, args ...string
 
 	script := strings.Join([]string{
 		`declare -r PGDATA="$1" opts="$2"; export PGDATA PGHOST`,
+		postgres.ShellPath(postgresVersion),
 
 		// Remove any "postmaster.pid" file leftover from a prior failure.
 		`rm -f "${PGDATA}/postmaster.pid"`,
