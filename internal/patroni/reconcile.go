@@ -105,7 +105,14 @@ func InstancePod(ctx context.Context,
 		}
 	}
 
-	container.Command = []string{"patroni", configDirectory}
+	// Start Patroni in an environment that prioritizes executables of the specified Postgres version.
+	// NOTE: Patroni ignores PATH when "postgresql.bin_dir" is set.
+	//
+	// https://patroni.readthedocs.io/en/latest/yaml_configuration.html#postgresql
+	container.Command = []string{
+		"sh", "-c", "--", postgres.ShellPath(inCluster.Spec.PostgresVersion) + ` && exec "$@"`, "--",
+		"patroni", configDirectory,
+	}
 
 	container.Env = append(container.Env,
 		instanceEnvironment(inCluster, inClusterPodService, inPatroniLeaderService,
