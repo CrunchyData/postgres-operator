@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -2355,7 +2356,8 @@ func TestReconcileCloudBasedDataSource(t *testing.T) {
 					LabelSelector: naming.PGBackRestRestoreJobSelector(clusterName),
 					Namespace:     cluster.Namespace,
 				}))
-				assert.Assert(t, tc.result.jobCount == len(restoreJobs.Items))
+				assert.Equal(t, tc.result.jobCount, len(restoreJobs.Items),
+					"got:\n%s", require.Value(yaml.Marshal(restoreJobs.Items)))
 				if len(restoreJobs.Items) == 1 {
 					assert.Assert(t, restoreJobs.Items[0].Labels[naming.LabelStartupInstance] != "")
 					assert.Assert(t, restoreJobs.Items[0].Annotations[naming.PGBackRestConfigHash] != "")

@@ -134,7 +134,7 @@ func (r *Reconciler) generatePostgresParameters(
 	pgaudit.PostgreSQLParameters(&builtin)
 	pgbackrest.PostgreSQLParameters(cluster, &builtin, backupsSpecFound)
 	pgmonitor.PostgreSQLParameters(ctx, cluster, &builtin)
-	postgres.SetHugePages(cluster, &builtin)
+	postgres.SetHugePages(cluster, builtin.Default)
 
 	// Last write wins, so start with the recommended defaults.
 	result := cmp.Or(builtin.Default.DeepCopy(), postgres.NewParameterSet())

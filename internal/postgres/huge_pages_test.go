@@ -27,11 +27,11 @@ func TestSetHugePages(t *testing.T) {
 			},
 		}}
 
-		pgParameters := NewParameters()
-		SetHugePages(cluster, &pgParameters)
+		params := NewParameterSet()
+		SetHugePages(cluster, params)
 
-		assert.Equal(t, pgParameters.Default.Has("huge_pages"), true)
-		assert.Equal(t, pgParameters.Default.Value("huge_pages"), "off")
+		assert.Equal(t, params.Has("huge_pages"), true)
+		assert.Equal(t, params.Value("huge_pages"), "off")
 	})
 
 	t.Run("hugepages quantity not set", func(t *testing.T) {
@@ -48,11 +48,11 @@ func TestSetHugePages(t *testing.T) {
 			},
 		}}
 
-		pgParameters := NewParameters()
-		SetHugePages(cluster, &pgParameters)
+		params := NewParameterSet()
+		SetHugePages(cluster, params)
 
-		assert.Equal(t, pgParameters.Default.Has("huge_pages"), true)
-		assert.Equal(t, pgParameters.Default.Value("huge_pages"), "off")
+		assert.Equal(t, params.Has("huge_pages"), true)
+		assert.Equal(t, params.Value("huge_pages"), "off")
 	})
 
 	t.Run("hugepages set to zero", func(t *testing.T) {
@@ -68,11 +68,11 @@ func TestSetHugePages(t *testing.T) {
 			},
 		}}
 
-		pgParameters := NewParameters()
-		SetHugePages(cluster, &pgParameters)
+		params := NewParameterSet()
+		SetHugePages(cluster, params)
 
-		assert.Equal(t, pgParameters.Default.Has("huge_pages"), true)
-		assert.Equal(t, pgParameters.Default.Value("huge_pages"), "off")
+		assert.Equal(t, params.Has("huge_pages"), true)
+		assert.Equal(t, params.Value("huge_pages"), "off")
 	})
 
 	t.Run("hugepages set correctly", func(t *testing.T) {
@@ -88,11 +88,11 @@ func TestSetHugePages(t *testing.T) {
 			},
 		}}
 
-		pgParameters := NewParameters()
-		SetHugePages(cluster, &pgParameters)
+		params := NewParameterSet()
+		SetHugePages(cluster, params)
 
-		assert.Equal(t, pgParameters.Default.Has("huge_pages"), true)
-		assert.Equal(t, pgParameters.Default.Value("huge_pages"), "try")
+		assert.Equal(t, params.Has("huge_pages"), true)
+		assert.Equal(t, params.Value("huge_pages"), "try")
 	})
 
 }
