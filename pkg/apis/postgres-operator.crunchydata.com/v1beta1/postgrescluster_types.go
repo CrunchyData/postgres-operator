@@ -73,6 +73,9 @@ type PostgresClusterSpec struct {
 	// e.g. RELATED_IMAGE_POSTGRES_13. For PostGIS enabled PostgreSQL images,
 	// the format is RELATED_IMAGE_POSTGRES_{postgresVersion}_GIS_{postGISVersion},
 	// e.g. RELATED_IMAGE_POSTGRES_13_GIS_3.1.
+	// ---
+	// [corev1.Container.Image]
+	//
 	// +optional
 	// +operator-sdk:csv:customresourcedefinitions:type=spec,order=1
 	Image string `json:"image,omitempty"`
