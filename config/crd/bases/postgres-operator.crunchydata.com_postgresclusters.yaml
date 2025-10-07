@@ -13250,7 +13250,7 @@ spec:
                 description: The major version of PostgreSQL installed in the PostgreSQL
                   image
                 format: int32
-                maximum: 17
+                maximum: 18
                 minimum: 11
                 type: integer
               proxy:
@@ -32335,7 +32335,7 @@ spec:
                 description: The major version of PostgreSQL installed in the PostgreSQL
                   image
                 format: int32
-                maximum: 17
+                maximum: 18
                 minimum: 11
                 type: integer
               proxy:
