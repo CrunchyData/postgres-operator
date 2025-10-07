@@ -84,7 +84,7 @@ type PGUpgradeSettings struct {
 	// The major version of PostgreSQL before the upgrade.
 	// ---
 	// +kubebuilder:validation:Minimum=11
-	// +kubebuilder:validation:Maximum=17
+	// +kubebuilder:validation:Maximum=18
 	// +required
 	FromPostgresVersion int32 `json:"fromPostgresVersion"`
 
@@ -98,7 +98,7 @@ type PGUpgradeSettings struct {
 	// The major version of PostgreSQL to be upgraded to.
 	// ---
 	// +kubebuilder:validation:Minimum=11
-	// +kubebuilder:validation:Maximum=17
+	// +kubebuilder:validation:Maximum=18
 	// +required
 	ToPostgresVersion int32 `json:"toPostgresVersion"`
 

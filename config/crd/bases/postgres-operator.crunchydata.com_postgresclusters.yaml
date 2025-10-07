@@ -12823,7 +12823,7 @@ spec:
               postgresVersion:
                 description: The major version of PostgreSQL installed in the PostgreSQL
                   image
-                maximum: 17
+                maximum: 18
                 minimum: 11
                 type: integer
               proxy:
