@@ -31,7 +31,7 @@ commands:
       contains "${queries_files}" "queries.yml" &&
       !(contains "${queries_files}" "defaultQueries.yml")
     } || {
-      echo >&2 'The /conf directory should contain the queries.yml file. Instead it has:'
+      echo >&2 'The /conf directory should only contain the queries.yml file. Instead it has:'
       echo "${queries_files}"
       exit 1
     }

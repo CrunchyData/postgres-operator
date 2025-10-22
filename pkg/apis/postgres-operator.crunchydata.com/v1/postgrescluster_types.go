@@ -382,12 +382,6 @@ type PostgresClusterStatus struct {
 	// +optional
 	PGBackRest *v1beta1.PGBackRestStatus `json:"pgbackrest,omitempty"`
 
-	// +optional
-	RegistrationRequired *RegistrationRequirementStatus `json:"registrationRequired,omitempty"`
-
-	// +optional
-	TokenRequired string `json:"tokenRequired,omitempty"`
-
 	// Stores the current PostgreSQL major version following a successful
 	// major PostgreSQL upgrade.
 	// +optional
@@ -442,7 +436,6 @@ const (
 	PersistentVolumeResizeError = "PersistentVolumeResizeError"
 	PostgresClusterProgressing  = "Progressing"
 	ProxyAvailable              = "ProxyAvailable"
-	Registered                  = "Registered"
 )
 
 type PostgresInstanceSetSpec struct {
@@ -621,10 +614,6 @@ func (s *PostgresProxySpec) Default() {
 	if s.PGBouncer != nil {
 		s.PGBouncer.Default()
 	}
-}
-
-type RegistrationRequirementStatus struct {
-	PGOVersion string `json:"pgoVersion,omitempty"`
 }
 
 type PostgresProxyStatus struct {

@@ -23,7 +23,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -34,8 +33,7 @@ const (
 
 // PGUpgradeReconciler reconciles a PGUpgrade object
 type PGUpgradeReconciler struct {
-	Recorder     record.EventRecorder
-	Registration registration.Registration
+	Recorder record.EventRecorder
 
 	Reader interface {
 		Get(context.Context, client.ObjectKey, client.Object, ...client.GetOption) error
@@ -55,14 +53,13 @@ type PGUpgradeReconciler struct {
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="postgresclusters",verbs={get,list,watch}
 
 // ManagedReconciler creates a [PGUpgradeReconciler] and adds it to m.
-func ManagedReconciler(m ctrl.Manager, r registration.Registration) error {
+func ManagedReconciler(m ctrl.Manager) error {
 	kubernetes := client.WithFieldOwner(m.GetClient(), naming.ControllerPGUpgrade)
 	recorder := m.GetEventRecorderFor(naming.ControllerPGUpgrade)
 
 	reconciler := &PGUpgradeReconciler{
 		Reader:       kubernetes,
 		Recorder:     recorder,
-		Registration: r,
 		StatusWriter: kubernetes.Status(),
 		Writer:       kubernetes,
 	}
@@ -148,10 +145,6 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, upgrade *v1beta1.PG
 		ConditionPGUpgradeSucceeded)
 	if succeeded != nil && succeeded.Reason == "PGUpgradeSucceeded" {
 		return
-	}
-
-	if !r.UpgradeAuthorized(upgrade) {
-		return ctrl.Result{}, nil
 	}
 
 	// Set progressing condition to true if it doesn't exist already

@@ -124,7 +124,6 @@ jobs:
           hack/create-kubeconfig.sh postgres-operator pgo
           docker run --detach --network host --read-only \
             --volume "$(pwd):/mnt" --workdir '/mnt' \
-            --env 'CHECK_FOR_UPGRADES=false' \
             --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
             --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
             --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2534' \
