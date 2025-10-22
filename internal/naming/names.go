@@ -570,11 +570,3 @@ func StandalonePGAdmin(pgadmin *v1beta1.PGAdmin) metav1.ObjectMeta {
 		Name:      fmt.Sprintf("pgadmin-%s", pgadmin.UID),
 	}
 }
-
-// UpgradeCheckConfigMap returns the ObjectMeta for the PGO ConfigMap
-func UpgradeCheckConfigMap() metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Namespace: config.PGONamespace(),
-		Name:      "pgo-upgrade-check",
-	}
-}

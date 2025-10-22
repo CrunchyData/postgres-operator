@@ -34,9 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
-	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -243,10 +241,6 @@ func main() {
 	manager := need(runtime.NewManager(config, options))
 	must(manager.Add(k8s))
 
-	registrar := need(registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning))
-	must(manager.Add(registrar))
-	token, _ := registrar.CheckToken()
-
 	bridgeURL := os.Getenv("PGO_BRIDGE_URL")
 	bridgeClient := func() *bridge.Client {
 		client := bridge.NewClient(bridgeURL, versionString)
@@ -255,8 +249,8 @@ func main() {
 	}
 
 	// add all PostgreSQL Operator controllers to the runtime manager
-	must(pgupgrade.ManagedReconciler(manager, registrar))
-	must(postgrescluster.ManagedReconciler(manager, registrar))
+	must(pgupgrade.ManagedReconciler(manager))
+	must(postgrescluster.ManagedReconciler(manager))
 	must(standalone_pgadmin.ManagedReconciler(manager))
 	must(crunchybridgecluster.ManagedReconciler(manager, func() bridge.ClientInterface {
 		return bridgeClient()
@@ -264,16 +258,6 @@ func main() {
 
 	if features.Enabled(feature.BridgeIdentifiers) {
 		must(bridge.ManagedInstallationReconciler(manager, bridgeClient))
-	}
-
-	// Enable upgrade checking
-	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
-	if !upgradeCheckingDisabled {
-		log.Info("upgrade checking enabled")
-		url := os.Getenv("CHECK_FOR_UPGRADES_URL")
-		must(upgradecheck.ManagedScheduler(manager, url, versionString, token))
-	} else {
-		log.Info("upgrade checking disabled")
 	}
 
 	// Enable health probes
