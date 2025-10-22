@@ -115,7 +115,7 @@ deploy-dev: createnamespaces
 	env \
 		QUERIES_CONFIG_DIR='$(QUERIES_CONFIG_DIR)' \
 		CRUNCHY_DEBUG="$${CRUNCHY_DEBUG:-true}" \
-		PGO_FEATURE_GATES="$${PGO_FEATURE_GATES:-AllAlpha=true}" \
+		PGO_FEATURE_GATES="$${PGO_FEATURE_GATES:-AllAlpha=true,AppendCustomQueries=false}" \
 		CHECK_FOR_UPGRADES="$${CHECK_FOR_UPGRADES:-false}" \
 		KUBECONFIG=hack/.kube/postgres-operator/pgo \
 		PGO_NAMESPACE='postgres-operator' \
