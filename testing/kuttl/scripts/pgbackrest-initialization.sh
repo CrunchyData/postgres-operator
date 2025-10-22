@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 EXPECTED_STATUS=$1
 EXPECTED_NUM_BACKUPS=$2
