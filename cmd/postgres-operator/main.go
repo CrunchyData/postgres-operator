@@ -34,9 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubernetes"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/internal/tracing"
-	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -223,13 +221,8 @@ func main() {
 	assertNoError(err)
 	assertNoError(mgr.Add(k8s))
 
-	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), stopRunning)
-	assertNoError(err)
-	assertNoError(mgr.Add(registrar))
-	token, _ := registrar.CheckToken()
-
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, log, registrar)
+	addControllersToManager(mgr, log)
 
 	if features.Enabled(feature.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -239,22 +232,6 @@ func main() {
 		}
 
 		assertNoError(bridge.ManagedInstallationReconciler(mgr, constructor))
-	}
-
-	// Enable upgrade checking
-	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
-	if !upgradeCheckingDisabled {
-		log.Info("upgrade checking enabled")
-		// get the URL for the check for upgrades endpoint if set in the env
-		assertNoError(
-			upgradecheck.ManagedScheduler(
-				mgr,
-				os.Getenv("CHECK_FOR_UPGRADES_URL"),
-				versionString,
-				token,
-			))
-	} else {
-		log.Info("upgrade checking disabled")
 	}
 
 	// Enable health probes
@@ -288,12 +265,11 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg registration.Registration) {
+func addControllersToManager(mgr runtime.Manager, log logging.Logger) {
 	pgReconciler := &postgrescluster.Reconciler{
-		Client:       mgr.GetClient(),
-		Owner:        postgrescluster.ControllerName,
-		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
-		Registration: reg,
+		Client:   mgr.GetClient(),
+		Owner:    postgrescluster.ControllerName,
+		Recorder: mgr.GetEventRecorderFor(postgrescluster.ControllerName),
 	}
 
 	if err := pgReconciler.SetupWithManager(mgr); err != nil {
@@ -302,10 +278,9 @@ func addControllersToManager(mgr runtime.Manager, log logging.Logger, reg regist
 	}
 
 	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
-		Client:       mgr.GetClient(),
-		Owner:        "pgupgrade-controller",
-		Recorder:     mgr.GetEventRecorderFor("pgupgrade-controller"),
-		Registration: reg,
+		Client:   mgr.GetClient(),
+		Owner:    "pgupgrade-controller",
+		Recorder: mgr.GetEventRecorderFor("pgupgrade-controller"),
 	}
 
 	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {

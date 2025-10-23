@@ -18601,11 +18601,6 @@ spec:
                         type: integer
                     type: object
                 type: object
-              registrationRequired:
-                properties:
-                  pgoVersion:
-                    type: string
-                type: object
               startupInstance:
                 description: |-
                   The instance that should be started first when bootstrapping and/or starting a
@@ -18613,8 +18608,6 @@ spec:
                 type: string
               startupInstanceSet:
                 description: The instance set associated with the startupInstance
-                type: string
-              tokenRequired:
                 type: string
               userInterface:
                 description: Current state of the PostgreSQL user interface.
