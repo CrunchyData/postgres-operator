@@ -657,6 +657,11 @@ type PostgresStandbySpec struct {
 	// +optional
 	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
+
+	// UseAAD indicates whether to use Azure AD Pod Identity instead of a storage account key.
+	// When true, a secret with storage credentials is not required.
+	// +optional
+	UseAAD bool `json:"useAAD,omitempty"`
 }
 
 // UserInterfaceSpec is a union of the supported PostgreSQL user interfaces.
