@@ -40,7 +40,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgmonitor"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -59,9 +58,8 @@ type Reconciler struct {
 		ctx context.Context, namespace, pod, container string,
 		stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error
-	Recorder     record.EventRecorder
-	Registration registration.Registration
-	Tracer       trace.Tracer
+	Recorder record.EventRecorder
+	Tracer   trace.Tracer
 }
 
 // +kubebuilder:rbac:groups="",resources="events",verbs={create,patch}
@@ -194,12 +192,6 @@ func (r *Reconciler) Reconcile(
 		}
 		return nil
 	}
-
-	if r.Registration != nil && r.Registration.Required(r.Recorder, cluster, &cluster.Status.Conditions) {
-		registration.SetAdvanceWarning(r.Recorder, cluster, &cluster.Status.Conditions)
-	}
-	cluster.Status.RegistrationRequired = nil
-	cluster.Status.TokenRequired = ""
 
 	// if the cluster is paused, set a condition and return
 	if cluster.Spec.Paused != nil && *cluster.Spec.Paused {

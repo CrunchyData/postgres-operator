@@ -22,7 +22,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	"github.com/crunchydata/postgres-operator/internal/registration"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -35,8 +34,7 @@ type PGUpgradeReconciler struct {
 	Client client.Client
 	Owner  client.FieldOwner
 
-	Recorder     record.EventRecorder
-	Registration registration.Registration
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups="batch",resources="jobs",verbs={list,watch}
@@ -163,10 +161,6 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		ConditionPGUpgradeSucceeded)
 	if succeeded != nil && succeeded.Reason == "PGUpgradeSucceeded" {
 		return
-	}
-
-	if !r.UpgradeAuthorized(upgrade) {
-		return ctrl.Result{}, nil
 	}
 
 	// Set progressing condition to true if it doesn't exist already

@@ -30,8 +30,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/internal/registration"
-	"github.com/crunchydata/postgres-operator/internal/upgradecheck"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -121,7 +119,7 @@ func initManager() (runtime.Options, error) {
 
 func main() {
 	// This context is canceled by SIGINT, SIGTERM, or by calling shutdown.
-	ctx, shutdown := context.WithCancel(runtime.SignalHandler())
+	ctx := runtime.SignalHandler()
 
 	otelFlush, err := initOpenTelemetry()
 	assertNoError(err)
@@ -171,13 +169,8 @@ func main() {
 		log.Info("detected OpenShift environment")
 	}
 
-	registrar, err := registration.NewRunner(os.Getenv("RSA_KEY"), os.Getenv("TOKEN_PATH"), shutdown)
-	assertNoError(err)
-	assertNoError(mgr.Add(registrar))
-	token, _ := registrar.CheckToken()
-
 	// add all PostgreSQL Operator controllers to the runtime manager
-	addControllersToManager(mgr, openshift, log, registrar)
+	addControllersToManager(mgr, openshift, log)
 
 	if features.Enabled(feature.BridgeIdentifiers) {
 		constructor := func() *bridge.Client {
@@ -187,23 +180,6 @@ func main() {
 		}
 
 		assertNoError(bridge.ManagedInstallationReconciler(mgr, constructor))
-	}
-
-	// Enable upgrade checking
-	upgradeCheckingDisabled := strings.EqualFold(os.Getenv("CHECK_FOR_UPGRADES"), "false")
-	if !upgradeCheckingDisabled {
-		log.Info("upgrade checking enabled")
-		// get the URL for the check for upgrades endpoint if set in the env
-		assertNoError(
-			upgradecheck.ManagedScheduler(
-				mgr,
-				openshift,
-				os.Getenv("CHECK_FOR_UPGRADES_URL"),
-				versionString,
-				token,
-			))
-	} else {
-		log.Info("upgrade checking disabled")
 	}
 
 	// Enable health probes
@@ -218,14 +194,13 @@ func main() {
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.
-func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Logger, reg registration.Registration) {
+func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Logger) {
 	pgReconciler := &postgrescluster.Reconciler{
-		Client:       mgr.GetClient(),
-		IsOpenShift:  openshift,
-		Owner:        postgrescluster.ControllerName,
-		Recorder:     mgr.GetEventRecorderFor(postgrescluster.ControllerName),
-		Registration: reg,
-		Tracer:       otel.Tracer(postgrescluster.ControllerName),
+		Client:      mgr.GetClient(),
+		IsOpenShift: openshift,
+		Owner:       postgrescluster.ControllerName,
+		Recorder:    mgr.GetEventRecorderFor(postgrescluster.ControllerName),
+		Tracer:      otel.Tracer(postgrescluster.ControllerName),
 	}
 
 	if err := pgReconciler.SetupWithManager(mgr); err != nil {
@@ -234,10 +209,9 @@ func addControllersToManager(mgr runtime.Manager, openshift bool, log logging.Lo
 	}
 
 	upgradeReconciler := &pgupgrade.PGUpgradeReconciler{
-		Client:       mgr.GetClient(),
-		Owner:        "pgupgrade-controller",
-		Recorder:     mgr.GetEventRecorderFor("pgupgrade-controller"),
-		Registration: reg,
+		Client:   mgr.GetClient(),
+		Owner:    "pgupgrade-controller",
+		Recorder: mgr.GetEventRecorderFor("pgupgrade-controller"),
 	}
 
 	if err := upgradeReconciler.SetupWithManager(mgr); err != nil {
