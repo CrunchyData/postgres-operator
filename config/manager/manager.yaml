@@ -22,6 +22,8 @@ spec:
               fieldPath: metadata.namespace
         - name: CRUNCHY_DEBUG
           value: "true"
+        - name: RELATED_IMAGE_POSTGRES_15
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-15.14-2534"
         - name: RELATED_IMAGE_POSTGRES_16
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi8-16.10-2534"
         - name: RELATED_IMAGE_POSTGRES_16_GIS_3.3
