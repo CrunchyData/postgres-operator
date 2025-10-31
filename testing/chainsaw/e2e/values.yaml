@@ -2,4 +2,4 @@ versions:
   postgres: '17'
 
 images:
-  psql: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2534'
+  psql: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2542'
