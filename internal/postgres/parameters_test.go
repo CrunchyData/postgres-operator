@@ -97,3 +97,43 @@ func TestParameterSetAppendToList(t *testing.T) {
 	ps.AppendToList("full", "a", "cd", `"e"`)
 	assert.Equal(t, ps.Value("full"), `a,b,a,cd,"e"`)
 }
+
+func TestParameterSetEqual(t *testing.T) {
+	var Nil *ParameterSet
+	ps1 := NewParameterSet()
+	ps2 := NewParameterSet()
+
+	// nil equals nil, and empty does not equal nil
+	assert.Assert(t, Nil.Equal(nil))
+	assert.Assert(t, !Nil.Equal(ps1))
+	assert.Assert(t, !ps1.Equal(nil))
+
+	// empty equals empty
+	assert.Assert(t, ps1.Equal(ps2))
+	assert.Assert(t, ps2.Equal(ps1))
+
+	// different keys are not equal
+	ps1.Add("a", "b")
+	assert.Assert(t, !ps1.Equal(nil))
+	assert.Assert(t, !Nil.Equal(ps1))
+	assert.Assert(t, !ps1.Equal(ps2))
+	assert.Assert(t, !ps2.Equal(ps1))
+
+	// different values are not equal
+	ps2.Add("a", "c")
+	assert.Assert(t, !ps1.Equal(ps2))
+	assert.Assert(t, !ps2.Equal(ps1))
+
+	// normalized keys+values are equal
+	ps1.Add("A", "c")
+	assert.Assert(t, ps1.Equal(ps2))
+	assert.Assert(t, ps2.Equal(ps1))
+
+	// [assert.DeepEqual] can only compare exported fields.
+	// When present, the `(T) Equal(T) bool` method is used instead.
+	//
+	// https://pkg.go.dev/github.com/google/go-cmp/cmp#Equal
+	t.Run("DeepEqual", func(t *testing.T) {
+		assert.DeepEqual(t, NewParameterSet(), NewParameterSet())
+	})
+}
