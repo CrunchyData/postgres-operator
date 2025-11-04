@@ -15,7 +15,7 @@ CONTROLLER ?= $(GO) tool sigs.k8s.io/controller-tools/cmd/controller-gen
 CHAINSAW ?= $(GO) run github.com/kyverno/chainsaw@latest
 CHAINSAW_TEST ?= $(CHAINSAW) test
 CRD_CHECKER ?= $(GO) run github.com/openshift/crd-schema-checker/cmd/crd-schema-checker@latest
-ENVTEST ?= $(GO) run sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+ENVTEST ?= $(GO) run sigs.k8s.io/controller-runtime/tools/setup-envtest@release-0.22
 KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/cmd/kubectl-kuttl@latest
 KUTTL_TEST ?= $(KUTTL) test
 
