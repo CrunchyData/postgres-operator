@@ -89,7 +89,7 @@ func (*Recorder) AnnotatedEventf(object runtime.Object, annotations map[string]s
 }
 func (r *Recorder) Event(object runtime.Object, eventtype, reason, message string) {
 	if r.eventf != nil {
-		r.eventf(object, nil, eventtype, reason, "", message)
+		r.eventf(object, nil, eventtype, reason, "", "%v", message)
 	}
 }
 func (r *Recorder) Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...any) {
