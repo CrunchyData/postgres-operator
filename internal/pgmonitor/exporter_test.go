@@ -38,6 +38,12 @@ func TestGenerateDefaultExporterQueries(t *testing.T) {
 		assert.Assert(t, strings.Contains(queries, "ccp_pg_stat_statements_reset"),
 			"Queries do not contain 'ccp_pg_stat_statements_reset' query when they should.")
 	})
+
+	t.Run("PG>17", func(t *testing.T) {
+		cluster.Spec.PostgresVersion = 18
+		queries := GenerateDefaultExporterQueries(ctx, cluster)
+		assert.Equal(t, queries, "")
+	})
 }
 
 func TestExporterStartCommand(t *testing.T) {

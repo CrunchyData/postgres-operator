@@ -20,10 +20,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
+	"github.com/crunchydata/postgres-operator/internal/testing/events"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -551,8 +553,7 @@ func TestReconcilePGMonitorExporter(t *testing.T) {
 		observed := &observedInstances{forCluster: instances}
 
 		called = false
-		assert.NilError(t, reconciler.reconcilePGMonitorExporter(ctx,
-			cluster, observed, nil))
+		assert.NilError(t, reconciler.reconcilePGMonitorExporter(ctx, cluster, observed, nil))
 		assert.Assert(t, called, "PodExec was not called.")
 		assert.Assert(t, cluster.Status.Monitoring.ExporterConfiguration != "", "ExporterConfiguration was empty.")
 	})
@@ -830,6 +831,147 @@ func TestReconcileExporterQueriesConfig(t *testing.T) {
 			actual, err = reconciler.reconcileExporterQueriesConfig(ctx, cluster)
 			assert.NilError(t, err)
 			assert.Assert(t, actual.Data["defaultQueries.yml"] == existing.Data["defaultQueries.yml"], "Data does not align.")
+			assert.Assert(t, actual.Data["defaultQueries.yml"] != "", "Data should not be empty.")
+		})
+
+		t.Run("Pg>17", func(t *testing.T) {
+			cluster.Spec.PostgresVersion = 18
+			actual, err = reconciler.reconcileExporterQueriesConfig(ctx, cluster)
+			assert.NilError(t, err)
+			assert.Assert(t, actual.Data["defaultQueries.yml"] == "", "Data should be empty")
 		})
 	})
+}
+
+// TestReconcileExporterSqlSetup checks that the setup script returned
+// by reconcileExporterSqlSetup is either empty or not depending on
+// which exporter is enabled and what the postgres version is.
+func TestReconcileExporterSqlSetup(t *testing.T) {
+	ctx := context.Background()
+
+	monitoringSpec := &v1beta1.MonitoringSpec{
+		PGMonitor: &v1beta1.PGMonitorSpec{
+			Exporter: &v1beta1.ExporterSpec{
+				Image: "image",
+			},
+		},
+	}
+
+	instrumentationSpec := &v1beta1.InstrumentationSpec{
+		Image: "image",
+	}
+
+	testCases := []struct {
+		tcName             string
+		postgresVersion    int
+		exporterEnabled    bool
+		otelMetricsEnabled bool
+		errorPresent       bool
+		setupEmpty         bool
+		expectedNumEvents  int
+		expectedEvent      string
+	}{{
+		tcName:             "ExporterEnabledOtelDisabled",
+		postgresVersion:    17,
+		exporterEnabled:    true,
+		otelMetricsEnabled: false,
+		errorPresent:       false,
+		setupEmpty:         false,
+		expectedNumEvents:  0,
+		expectedEvent:      "",
+	}, {
+		tcName:             "ExporterDisabledOtelEnabled",
+		postgresVersion:    17,
+		exporterEnabled:    false,
+		otelMetricsEnabled: true,
+		errorPresent:       false,
+		setupEmpty:         false,
+		expectedNumEvents:  0,
+		expectedEvent:      "",
+	}, {
+		tcName:             "BothEnabled",
+		postgresVersion:    17,
+		exporterEnabled:    true,
+		otelMetricsEnabled: true,
+		errorPresent:       false,
+		setupEmpty:         false,
+		expectedNumEvents:  0,
+		expectedEvent:      "",
+	}, {
+		tcName:             "ExporterEnabledOtelDisabledPostgres18",
+		postgresVersion:    18,
+		exporterEnabled:    true,
+		otelMetricsEnabled: false,
+		errorPresent:       false,
+		setupEmpty:         true,
+		expectedNumEvents:  1,
+		expectedEvent:      "postgres_exporter not supported for pg18; use OTel for postgres 18 and later",
+	}, {
+		tcName:             "ExporterDisabledOtelEnabledPostgres18",
+		postgresVersion:    18,
+		exporterEnabled:    false,
+		otelMetricsEnabled: true,
+		errorPresent:       false,
+		setupEmpty:         false,
+		expectedNumEvents:  0,
+		expectedEvent:      "",
+	}, {
+		tcName:             "BothEnabledPostgres18",
+		postgresVersion:    18,
+		exporterEnabled:    true,
+		otelMetricsEnabled: true,
+		errorPresent:       false,
+		setupEmpty:         false,
+		expectedNumEvents:  0,
+		expectedEvent:      "",
+	}, {
+		tcName:             "ExporterEnabledOtelDisabledBadPostgresVersion",
+		postgresVersion:    1,
+		exporterEnabled:    true,
+		otelMetricsEnabled: false,
+		errorPresent:       true,
+		setupEmpty:         true,
+		expectedNumEvents:  0,
+		expectedEvent:      "",
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.tcName, func(t *testing.T) {
+			cluster := testCluster()
+			cluster.Spec.PostgresVersion = tc.postgresVersion
+
+			recorder := events.NewRecorder(t, runtime.Scheme)
+			r := &Reconciler{Recorder: recorder}
+
+			gate := feature.NewGate()
+			assert.NilError(t, gate.SetFromMap(map[string]bool{
+				feature.OpenTelemetryMetrics: tc.otelMetricsEnabled,
+			}))
+			ctx := feature.NewContext(ctx, gate)
+
+			if tc.otelMetricsEnabled {
+				cluster.Spec.Instrumentation = instrumentationSpec
+			}
+
+			if tc.exporterEnabled {
+				cluster.Spec.Monitoring = monitoringSpec
+			}
+
+			setup, err := r.reconcileExporterSqlSetup(ctx, cluster)
+			if tc.errorPresent {
+				assert.Assert(t, err != nil)
+			} else {
+				assert.NilError(t, err)
+			}
+			assert.Equal(t, setup == "", tc.setupEmpty)
+
+			assert.Equal(t, len(recorder.Events), tc.expectedNumEvents)
+			if tc.expectedNumEvents == 1 {
+				assert.Equal(t, recorder.Events[0].Regarding.Name, cluster.Name)
+				assert.Equal(t, recorder.Events[0].Reason, "ExporterNotSupportedForPostgresVersion")
+				assert.Equal(t, recorder.Events[0].Note, tc.expectedEvent)
+				assert.Equal(t, recorder.Events[0].Type, corev1.EventTypeWarning)
+			}
+		})
+	}
 }

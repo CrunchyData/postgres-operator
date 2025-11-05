@@ -66,6 +66,12 @@ func GenerateDefaultExporterQueries(ctx context.Context, cluster *v1beta1.Postgr
 		queries += string(queriesContents) + "\n"
 	}
 
+	// pgMonitor will not be adding support for postgres_exporter for postgres
+	// versions past 17. If pg version is greater than 17, return an empty string.
+	if cluster.Spec.PostgresVersion > 17 {
+		return ""
+	}
+
 	// Add general queries for specific postgres version
 	queriesGeneral, err := os.ReadFile(fmt.Sprintf("%s/pg%d/queries_general.yml", queriesConfigDir, cluster.Spec.PostgresVersion))
 	if err != nil {
