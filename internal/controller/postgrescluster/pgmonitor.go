@@ -43,6 +43,7 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	monitoringSecret *corev1.Secret) error {
 
 	var (
+		err              error
 		writableInstance *Instance
 		writablePod      *corev1.Pod
 		setup            string
@@ -64,21 +65,9 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	// that function against an updated and running pod.
 
 	if pgmonitor.ExporterEnabled(ctx, cluster) || collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
-		sql, err := os.ReadFile(fmt.Sprintf("%s/pg%d/setup.sql", pgmonitor.GetQueriesConfigDir(ctx), cluster.Spec.PostgresVersion))
+		setup, err = r.reconcileExporterSqlSetup(ctx, cluster)
 		if err != nil {
 			return err
-		}
-
-		if collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
-			setup = metricsSetupForOTelCollector
-		} else {
-			// TODO: Revisit how pgbackrest_info.sh is used with pgMonitor.
-			// pgMonitor queries expect a path to a script that runs pgBackRest
-			// info and provides json output. In the queries yaml for pgBackRest
-			// the default path is `/usr/bin/pgbackrest-info.sh`. We update
-			// the path to point to the script in our database image.
-			setup = strings.ReplaceAll(string(sql), "/usr/bin/pgbackrest-info.sh",
-				"/opt/crunchy/bin/postgres/pgbackrest_info.sh")
 		}
 
 		for _, containerStatus := range writablePod.Status.ContainerStatuses {
@@ -143,6 +132,47 @@ func (r *Reconciler) reconcilePGMonitorExporter(ctx context.Context,
 	}
 
 	return err
+}
+
+// reconcileExporterSqlSetup generates the setup.sql string based on
+// whether the OTel metrics feature is enabled or not and the postgres
+// version being used. This function assumes that at least one of
+// OTel metrics or postgres_exporter are enabled.
+func (r *Reconciler) reconcileExporterSqlSetup(ctx context.Context,
+	cluster *v1beta1.PostgresCluster) (string, error) {
+
+	// If OTel Metrics is enabled we always want to use it. Otherwise,
+	// we can assume that postgres_exporter is enabled and we should
+	// use that
+	if collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
+		return metricsSetupForOTelCollector, nil
+	}
+
+	// pgMonitor will not be adding support for postgres_exporter for postgres
+	// versions past 17. If using postgres 18 or later with the postgres_exporter,
+	// create a warning event and set the sql setup to an empty string
+	pgVersion := cluster.Spec.PostgresVersion
+	if pgVersion > 17 {
+		r.Recorder.Eventf(cluster, corev1.EventTypeWarning, "ExporterNotSupportedForPostgresVersion",
+			"postgres_exporter not supported for pg%d; use OTel for postgres 18 and later",
+			pgVersion)
+		return "", nil
+	}
+
+	// OTel Metrics is not enabled and postgres is version 17 or less,
+	// go ahead and read the appropriate sql file, format the string,
+	// and return it
+	sql, err := os.ReadFile(fmt.Sprintf("%s/pg%d/setup.sql", pgmonitor.GetQueriesConfigDir(ctx), pgVersion))
+	if err != nil {
+		return "", err
+	}
+	// TODO: Revisit how pgbackrest_info.sh is used with pgMonitor.
+	// pgMonitor queries expect a path to a script that runs pgBackRest
+	// info and provides json output. In the queries yaml for pgBackRest
+	// the default path is `/usr/bin/pgbackrest-info.sh`. We update
+	// the path to point to the script in our database image.
+	return strings.ReplaceAll(string(sql), "/usr/bin/pgbackrest-info.sh",
+		"/opt/crunchy/bin/postgres/pgbackrest_info.sh"), nil
 }
 
 // reconcileMonitoringSecret reconciles the secret containing authentication
