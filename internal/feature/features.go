@@ -75,9 +75,6 @@ const (
 	// Support automatically growing volumes
 	AutoGrowVolumes = "AutoGrowVolumes"
 
-	// Deprecated
-	BridgeIdentifiers = "BridgeIdentifiers"
-
 	// Support custom sidecars for PostgreSQL instance Pods
 	InstanceSidecars = "InstanceSidecars"
 
@@ -108,7 +105,6 @@ func NewGate() MutableGate {
 		AppendCustomQueries:     {Default: false, PreRelease: featuregate.Alpha},
 		AutoCreateUserSchema:    {Default: true, PreRelease: featuregate.Beta},
 		AutoGrowVolumes:         {Default: true, PreRelease: featuregate.Alpha},
-		BridgeIdentifiers:       {Default: false, PreRelease: featuregate.Deprecated},
 		InstanceSidecars:        {Default: true, PreRelease: featuregate.Alpha},
 		OpenTelemetryLogs:       {Default: false, PreRelease: featuregate.Alpha},
 		OpenTelemetryMetrics:    {Default: false, PreRelease: featuregate.Alpha},

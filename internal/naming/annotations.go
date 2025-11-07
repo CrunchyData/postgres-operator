@@ -63,13 +63,6 @@ const (
 	// disables all postgres_exporter defaults. Disabling the defaults may cause errors in dashboards.
 	PostgresExporterCollectorsAnnotation = annotationPrefix + "postgres-exporter-collectors"
 
-	// CrunchyBridgeClusterAdoptionAnnotation is an annotation used to allow users to "adopt" or take
-	// control over an existing Bridge Cluster with a CrunchyBridgeCluster CR. Essentially, if a
-	// CrunchyBridgeCluster CR does not have a status.ID, but the name matches the name of an existing
-	// bridge cluster, the user must add this annotation to the CR to allow the CR to take control of
-	// the Bridge Cluster. The Value assigned to the annotation must be the ID of existing cluster.
-	CrunchyBridgeClusterAdoptionAnnotation = annotationPrefix + "adopt-bridge-cluster"
-
 	// AutoCreateUserSchemaAnnotation is an annotation used to allow users to control whether the cluster
 	// has schemas automatically created for the users defined in `spec.users` for all of the databases
 	// listed for that user.
