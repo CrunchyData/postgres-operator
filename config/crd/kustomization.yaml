@@ -1,7 +1,6 @@
 kind: Kustomization
 
 resources:
-- bases/postgres-operator.crunchydata.com_crunchybridgeclusters.yaml
 - bases/postgres-operator.crunchydata.com_postgresclusters.yaml
 - bases/postgres-operator.crunchydata.com_pgupgrades.yaml
 - bases/postgres-operator.crunchydata.com_pgadmins.yaml
