@@ -37,7 +37,7 @@ type PostgresConfigSpec struct {
 	//
 	// +kubebuilder:validation:XValidation:rule=`!has(self.listen_addresses)`,message=`network connectivity is always enabled: listen_addresses`
 	// +kubebuilder:validation:XValidation:rule=`!has(self.port)`,message=`change port using .spec.port instead`
-	// +kubebuilder:validation:XValidation:rule=`!has(self.ssl) && !self.exists(k, k.startsWith("ssl_"))`,message=`TLS is always enabled`
+	// +kubebuilder:validation:XValidation:rule=`!has(self.ssl) && !self.exists(k, k.startsWith("ssl_") && !(k == 'ssl_groups' || k == 'ssl_ecdh_curve'))`,message=`TLS is always enabled`
 	// +kubebuilder:validation:XValidation:rule=`!self.exists(k, k.startsWith("unix_socket_"))`,message=`domain socket paths cannot be changed`
 	//
 	// # Write Ahead Log
