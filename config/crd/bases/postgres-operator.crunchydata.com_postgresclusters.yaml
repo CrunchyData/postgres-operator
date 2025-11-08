@@ -18700,6 +18700,9 @@ spec:
             - postgresVersion
             type: object
             x-kubernetes-validations:
+            - message: The ssl_groups parameter is only available in pg18 and greater
+              rule: '!has(self.?config.parameters.ssl_groups) || self.postgresVersion
+                > 17'
             - fieldPath: .config.parameters.log_directory
               message: all instances need "volumes.temp" to log in "/pgtmp"
               rule: self.?config.parameters.log_directory.optMap(v, type(v) != string
@@ -37769,6 +37772,10 @@ spec:
             - instances
             - postgresVersion
             type: object
+            x-kubernetes-validations:
+            - message: The ssl_groups parameter is only available in pg18 and greater
+              rule: '!has(self.?config.parameters.ssl_groups) || self.postgresVersion
+                > 17'
           status:
             description: PostgresClusterStatus defines the observed state of PostgresCluster
             properties:
