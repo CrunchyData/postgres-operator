@@ -4822,7 +4822,8 @@ spec:
                     - message: change port using .spec.port instead
                       rule: '!has(self.port)'
                     - message: TLS is always enabled
-                      rule: '!has(self.ssl) && !self.exists(k, k.startsWith("ssl_"))'
+                      rule: '!has(self.ssl) && !self.exists(k, k.startsWith("ssl_")
+                        && !(k == ''ssl_groups'' || k == ''ssl_ecdh_curve''))'
                     - message: domain socket paths cannot be changed
                       rule: '!self.exists(k, k.startsWith("unix_socket_"))'
                     - message: wal_level must be "replica" or higher
