@@ -41,6 +41,7 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 			resources: { requests: { storage: 1Gi } },
 		},
 	}`)
+	pgadmin.Spec.Image = initialize.String("some-image")
 
 	assert.NilError(t, cc.Create(ctx, pgadmin))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pgadmin)) })
@@ -117,6 +118,7 @@ terminationGracePeriodSeconds: 30
 				resources: { requests: { storage: 1Gi } },
 			},
 		}`)
+		custompgadmin.Spec.Image = initialize.String("some-image")
 
 		// annotation and label
 		custompgadmin.Spec.Metadata = &v1beta1.Metadata{

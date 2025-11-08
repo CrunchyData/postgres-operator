@@ -17,6 +17,7 @@ GO_BUILD = $(GO) build
 GO_TEST ?= $(GO) test
 KUTTL ?= kubectl-kuttl
 KUTTL_TEST ?= $(KUTTL) test
+ENVTEST_K8S_VERSION ?= 1.34
 
 ##@ General
 
