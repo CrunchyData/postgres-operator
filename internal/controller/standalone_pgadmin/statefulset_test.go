@@ -35,6 +35,7 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 	pgadmin := new(v1beta1.PGAdmin)
 	pgadmin.Name = "test-standalone-pgadmin"
 	pgadmin.Namespace = ns.Name
+	pgadmin.Spec.Image = initialize.String("some-image")
 
 	assert.NilError(t, cc.Create(ctx, pgadmin))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, pgadmin)) })
@@ -103,6 +104,7 @@ terminationGracePeriodSeconds: 30
 		// add pod level customizations
 		custompgadmin.Name = "custom-pgadmin"
 		custompgadmin.Namespace = ns.Name
+		custompgadmin.Spec.Image = initialize.String("some-image")
 
 		// annotation and label
 		custompgadmin.Spec.Metadata = &v1beta1.Metadata{
