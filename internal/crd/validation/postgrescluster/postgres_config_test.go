@@ -76,43 +76,24 @@ func TestPostgresConfigParametersV1beta1(t *testing.T) {
 		})
 	})
 
-	t.Run("ssl_groups and ssl_ecdh_curve", func(t *testing.T) {
-		t.Run("ssl_groups not allowed for pg17", func(t *testing.T) {
+	t.Run("SSL Settings", func(t *testing.T) {
+		t.Run("Allowed", func(t *testing.T) {
 			for _, tt := range []struct {
-				key   string
-				value any
+				key             string
+				value           any
+				postgresVersion int
 			}{
-				{key: "ssl_groups", value: "anything"},
+				// ssl_ecdh_curve is allowed for all supported Postgres versions
+				{key: "ssl_ecdh_curve", value: "anything", postgresVersion: 17},
+				{key: "ssl_ecdh_curve", value: "anything", postgresVersion: 18},
+
+				// ssl_groups is only supported for Postgres 18 and greater
+				{key: "ssl_groups", value: "anything", postgresVersion: 18},
 			} {
 				t.Run(tt.key, func(t *testing.T) {
 					cluster := u.DeepCopy()
 					require.UnmarshalIntoField(t, cluster,
-						require.Value(yaml.Marshal(17)),
-						"spec", "postgresVersion")
-					require.UnmarshalIntoField(t, cluster,
-						require.Value(yaml.Marshal(tt.value)),
-						"spec", "config", "parameters", tt.key)
-
-					err := cc.Create(ctx, cluster, client.DryRunAll)
-					assert.Assert(t, apierrors.IsInvalid(err))
-
-					details := require.StatusErrorDetails(t, err)
-					assert.Assert(t, cmp.Len(details.Causes, 1))
-				})
-			}
-		})
-
-		t.Run("ssl_groups allowed for pg18", func(t *testing.T) {
-			for _, tt := range []struct {
-				key   string
-				value any
-			}{
-				{key: "ssl_groups", value: "anything"},
-			} {
-				t.Run(tt.key, func(t *testing.T) {
-					cluster := u.DeepCopy()
-					require.UnmarshalIntoField(t, cluster,
-						require.Value(yaml.Marshal(18)),
+						require.Value(yaml.Marshal(tt.postgresVersion)),
 						"spec", "postgresVersion")
 					require.UnmarshalIntoField(t, cluster,
 						require.Value(yaml.Marshal(tt.value)),
@@ -123,48 +104,39 @@ func TestPostgresConfigParametersV1beta1(t *testing.T) {
 			}
 		})
 
-		t.Run("ssl_ecdh_curve allowed for both", func(t *testing.T) {
+		t.Run("Not Allowed", func(t *testing.T) {
 			for _, tt := range []struct {
-				key   string
-				value any
+				key             string
+				value           any
+				postgresVersion int
 			}{
-				{key: "ssl_ecdh_curve", value: "anything"},
+				// setting "ssl" is not allowed for any Postgres version
+				{key: "ssl", value: "anything", postgresVersion: 17},
+				{key: "ssl", value: "anything", postgresVersion: 18},
+
+				// setting any parameter with an "ssl_" prefix that is not
+				// "ssl_ecdh_curve" or "ssl_groups" is not allowed for any version
+				{key: "ssl_anything", value: "anything", postgresVersion: 17},
+				{key: "ssl_anything", value: "anything", postgresVersion: 18},
+
+				// setting "ssl_ecdh_curve" with any additional suffix is not
+				// allowed for any version
+				{key: "ssl_ecdh_curve_bad", value: "anything", postgresVersion: 17},
+				{key: "ssl_ecdh_curve_bad", value: "anything", postgresVersion: 18},
+
+				// setting "ssl_groups" is not allowed for Postgres versions 17
+				// or earlier
+				{key: "ssl_groups", value: "anything", postgresVersion: 17},
+
+				// setting "ssl_groups" with any additional suffix is not
+				// allowed for any version
+				{key: "ssl_groups_bad", value: "anything", postgresVersion: 17},
+				{key: "ssl_groups_bad", value: "anything", postgresVersion: 18},
 			} {
 				t.Run(tt.key, func(t *testing.T) {
 					cluster := u.DeepCopy()
 					require.UnmarshalIntoField(t, cluster,
-						require.Value(yaml.Marshal(17)),
-						"spec", "postgresVersion")
-					require.UnmarshalIntoField(t, cluster,
-						require.Value(yaml.Marshal(tt.value)),
-						"spec", "config", "parameters", tt.key)
-
-					assert.NilError(t, cc.Create(ctx, cluster, client.DryRunAll))
-
-					cluster2 := u.DeepCopy()
-					require.UnmarshalIntoField(t, cluster2,
-						require.Value(yaml.Marshal(18)),
-						"spec", "postgresVersion")
-					require.UnmarshalIntoField(t, cluster2,
-						require.Value(yaml.Marshal(tt.value)),
-						"spec", "config", "parameters", tt.key)
-
-					assert.NilError(t, cc.Create(ctx, cluster2, client.DryRunAll))
-				})
-			}
-		})
-
-		t.Run("other ssl_* parameters not allowed for any pg version", func(t *testing.T) {
-			for _, tt := range []struct {
-				key   string
-				value any
-			}{
-				{key: "ssl_anything", value: "anything"},
-			} {
-				t.Run(tt.key, func(t *testing.T) {
-					cluster := u.DeepCopy()
-					require.UnmarshalIntoField(t, cluster,
-						require.Value(yaml.Marshal(17)),
+						require.Value(yaml.Marshal(tt.postgresVersion)),
 						"spec", "postgresVersion")
 					require.UnmarshalIntoField(t, cluster,
 						require.Value(yaml.Marshal(tt.value)),
@@ -174,20 +146,6 @@ func TestPostgresConfigParametersV1beta1(t *testing.T) {
 					assert.Assert(t, apierrors.IsInvalid(err))
 
 					details := require.StatusErrorDetails(t, err)
-					assert.Assert(t, cmp.Len(details.Causes, 1))
-
-					cluster1 := u.DeepCopy()
-					require.UnmarshalIntoField(t, cluster1,
-						require.Value(yaml.Marshal(18)),
-						"spec", "postgresVersion")
-					require.UnmarshalIntoField(t, cluster1,
-						require.Value(yaml.Marshal(tt.value)),
-						"spec", "config", "parameters", tt.key)
-
-					err = cc.Create(ctx, cluster1, client.DryRunAll)
-					assert.Assert(t, apierrors.IsInvalid(err))
-
-					details = require.StatusErrorDetails(t, err)
 					assert.Assert(t, cmp.Len(details.Causes, 1))
 				})
 			}
