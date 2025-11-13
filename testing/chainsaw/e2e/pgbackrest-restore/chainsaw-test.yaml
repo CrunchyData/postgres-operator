@@ -19,6 +19,10 @@ spec:
     - name: volume
       value: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
 
+    - name: postgrescluster
+      value:
+        apiVersion: (join('', ['postgres-operator.crunchydata.com/', $values.versions.postgrescluster]))
+
   steps:
     - name: 'Create Cluster with replica, tablespace'
       use:
@@ -85,7 +89,7 @@ spec:
             deletionPropagationPolicy: Background
             expect: [{ check: { (`true`): true } }]
             ref:
-              apiVersion: postgres-operator.crunchydata.com/v1beta1
+              apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
               name: clone-one
 
@@ -162,7 +166,7 @@ spec:
             deletionPropagationPolicy: Background
             expect: [{ check: { (`true`): true } }]
             ref:
-              apiVersion: postgres-operator.crunchydata.com/v1beta1
+              apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
               name: clone-two
 

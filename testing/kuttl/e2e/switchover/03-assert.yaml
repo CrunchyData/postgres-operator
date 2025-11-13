@@ -24,7 +24,7 @@ metadata:
 
 ---
 # All instances should be healthy.
-apiVersion: postgres-operator.crunchydata.com/v1beta1
+apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
 kind: PostgresCluster
 metadata:
   name: switchover

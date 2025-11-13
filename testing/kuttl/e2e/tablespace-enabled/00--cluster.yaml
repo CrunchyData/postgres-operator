@@ -7,7 +7,7 @@ data:
     CREATE TABLESPACE trial OWNER "tablespace-enabled" LOCATION '/tablespaces/library/data';
     CREATE TABLESPACE castle OWNER "tablespace-enabled" LOCATION '/tablespaces/user/data';
 ---
-apiVersion: postgres-operator.crunchydata.com/v1beta1
+apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
 kind: PostgresCluster
 metadata:
   name: tablespace-enabled

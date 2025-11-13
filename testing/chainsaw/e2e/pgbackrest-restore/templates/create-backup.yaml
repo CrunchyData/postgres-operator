@@ -12,7 +12,7 @@ spec:
         Annotate the cluster to trigger a backup
       patch:
         resource:
-          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          apiVersion: ($postgrescluster.apiVersion)
           kind: PostgresCluster
           metadata:
             name: original

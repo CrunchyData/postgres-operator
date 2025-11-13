@@ -1,6 +1,6 @@
 ---
 # Create a cluster with multiple instances and manual switchover enabled.
-apiVersion: postgres-operator.crunchydata.com/v1beta1
+apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
 kind: PostgresCluster
 metadata:
   name: switchover
