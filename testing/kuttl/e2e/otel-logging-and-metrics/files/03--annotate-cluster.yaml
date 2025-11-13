@@ -1,6 +1,6 @@
 ---
 # Annotate the cluster to trigger a backup.
-apiVersion: postgres-operator.crunchydata.com/v1beta1
+apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
 kind: PostgresCluster
 metadata:
   name: otel-cluster

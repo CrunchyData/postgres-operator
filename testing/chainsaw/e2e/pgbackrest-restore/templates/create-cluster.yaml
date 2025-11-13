@@ -10,7 +10,7 @@ spec:
         and some parameters that require attention during PostgreSQL recovery
       apply:
         resource:
-          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          apiVersion: ($postgrescluster.apiVersion)
           kind: PostgresCluster
           metadata:
             name: original
@@ -40,7 +40,7 @@ spec:
         Wait for the replica backup to complete
       assert:
         resource:
-          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          apiVersion: ($postgrescluster.apiVersion)
           kind: PostgresCluster
           metadata:
             name: original

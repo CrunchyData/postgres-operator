@@ -201,6 +201,7 @@ check-kuttl: ## example command: make check-kuttl KUTTL_TEST='
 		--config testing/kuttl/kuttl-test.yaml
 
 .PHONY: generate-kuttl
+generate-kuttl: export KUTTL_PGCLUSTER_API_VERSION ?= v1
 generate-kuttl: export KUTTL_PG_UPGRADE_FROM_VERSION ?= 16
 generate-kuttl: export KUTTL_PG_UPGRADE_TO_VERSION ?= 17
 generate-kuttl: export KUTTL_PG_VERSION ?= 16
@@ -211,6 +212,7 @@ generate-kuttl: ## Generate kuttl tests
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	bash -ceu ' \
 	render() { envsubst '"'"' \
+		$$KUTTL_PGCLUSTER_API_VERSION \
 		$$KUTTL_PG_UPGRADE_FROM_VERSION $$KUTTL_PG_UPGRADE_TO_VERSION \
 		$$KUTTL_PG_VERSION $$KUTTL_POSTGIS_VERSION $$KUTTL_PSQL_IMAGE \
 		$$KUTTL_TEST_DELETE_NAMESPACE'"'"'; }; \

@@ -1,6 +1,6 @@
 ---
 # Create the cluster we will do an actual upgrade on
-apiVersion: postgres-operator.crunchydata.com/v1beta1
+apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
 kind: PostgresCluster
 metadata:
   name: wal-pvc-pgupgrade
