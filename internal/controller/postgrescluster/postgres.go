@@ -153,14 +153,18 @@ func (r *Reconciler) generatePostgresParameters(
 
 	// Overwrite the above with mandatory values.
 	if builtin.Mandatory != nil {
-		// This parameter is a comma-separated list. Rather than overwrite the
+		// These parameters are comma-separated lists. Rather than overwrite the
 		// user-defined value, we want to combine it with the mandatory one.
+		destination := result.Value("log_destination")
 		preload := result.Value("shared_preload_libraries")
 
 		for k, v := range builtin.Mandatory.AsMap() {
 			// Load mandatory libraries ahead of user-defined libraries.
 			if k == "shared_preload_libraries" && len(v) > 0 && len(preload) > 0 {
 				v = v + "," + preload
+			}
+			if k == "log_destination" && len(v) > 0 && len(destination) > 0 {
+				v = v + "," + destination
 			}
 
 			result.Add(k, v)

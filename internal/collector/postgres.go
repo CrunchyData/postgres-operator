@@ -54,13 +54,19 @@ func PostgreSQLParameters(ctx context.Context,
 		// https://www.postgresql.org/docs/current/runtime-config-logging.html
 		outParameters.Mandatory.Add("logging_collector", "on")
 
-		// PostgreSQL v8.3 adds support for CSV logging, and
-		// PostgreSQL v15 adds support for JSON logging.
-		// The latter is preferred because newlines are escaped as "\n", U+005C + U+006E.
-		if version >= 15 {
-			outParameters.Mandatory.Add("log_destination", "jsonlog")
-		} else {
+		// Enable structured logging. This setting is combined with any specified on the cluster.
+		//
+		// The JSON format of PostgreSQL v15 delimits messages with newline U+000A
+		// and escapes newlines in message content as "\n", U+005C + U+006E.
+		// JSON keys take up space on disk, but newline-delimited is easy to parse.
+		outParameters.Mandatory.Add("log_destination", "jsonlog")
+
+		// The only structured format prior to PostgreSQL v15 is the CSV format, added in PostgreSQL v8.3.
+		// This format does *not* escape newlines, so the Collector must search for the beginning of each message.
+		// Forcing the UTC timezone ensures a consistent beginning to each message.
+		if version < 15 {
 			outParameters.Mandatory.Add("log_destination", "csvlog")
+			outParameters.Mandatory.Add("log_timezone", "UTC")
 		}
 
 		// Log in a timezone the OpenTelemetry Collector understands.
@@ -211,7 +217,7 @@ func EnablePostgresLogging(
 
 				// https://github.com/open-telemetry/semantic-conventions/blob/v1.29.0/docs/database#readme
 				{"action": "insert", "key": "db.system", "value": "postgresql"},
-				{"action": "insert", "key": "db.version", "value": fmt.Sprint(inCluster.Spec.PostgresVersion)},
+				{"action": "insert", "key": "db.version", "value": fmt.Sprint(version)},
 			},
 		}
 
@@ -227,13 +233,15 @@ func EnablePostgresLogging(
 			exporters = slices.Clone(spec.Exporters)
 		}
 
+		// JSON logs are preferable since PostgreSQL v15. These are enabled in [PostgreSQLParameters].
+		receivers := []ComponentID{"filelog/postgres_jsonlog"}
+		if version < 15 {
+			receivers = []ComponentID{"filelog/postgres_csvlog"}
+		}
+
 		outConfig.Pipelines["logs/postgres"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/postgres_logs"},
-			// TODO(logs): Choose only one receiver, maybe?
-			Receivers: []ComponentID{
-				"filelog/postgres_csvlog",
-				"filelog/postgres_jsonlog",
-			},
+			Receivers:  receivers,
 			Processors: []ComponentID{
 				"resource/postgres",
 				"transform/postgres_logs",

@@ -162,7 +162,7 @@ func TestGeneratePostgresHBAs(t *testing.T) {
 }
 
 func TestGeneratePostgresParameters(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	reconciler := &Reconciler{}
 
 	builtin := reconciler.generatePostgresParameters(ctx, v1beta1.NewPostgresCluster(), false)
@@ -242,6 +242,39 @@ func TestGeneratePostgresParameters(t *testing.T) {
 		assert.Equal(t, result.Value("something"), "replaced") // Config
 		assert.Equal(t, result.Value("unrelated"), "used")     // Config
 		assert.Equal(t, result.Value("jit"), "on")             // Config
+	})
+
+	t.Run("log_destination", func(t *testing.T) {
+		t.Run("passthrough without instrumentation", func(t *testing.T) {
+			cluster := v1beta1.NewPostgresCluster()
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					log_destination: stderr
+				},
+			}`)
+
+			result := reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Equal(t, result.Value("log_destination"), "stderr")
+		})
+
+		t.Run("combine with intrumentation", func(t *testing.T) {
+			gate := feature.NewGate()
+			assert.NilError(t, gate.SetFromMap(map[string]bool{
+				feature.OpenTelemetryLogs: true,
+			}))
+			ctx := feature.NewContext(t.Context(), gate)
+
+			cluster := v1beta1.NewPostgresCluster()
+			require.UnmarshalInto(t, &cluster.Spec.Instrumentation, `{}`)
+			require.UnmarshalInto(t, &cluster.Spec.Config, `{
+				parameters: {
+					log_destination: stderr
+				},
+			}`)
+
+			result := reconciler.generatePostgresParameters(ctx, cluster, false)
+			assert.Equal(t, result.Value("log_destination"), "csvlog,stderr")
+		})
 	})
 
 	t.Run("shared_preload_libraries", func(t *testing.T) {

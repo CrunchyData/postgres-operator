@@ -106,6 +106,17 @@ func (ps *ParameterSet) DeepCopy() *ParameterSet {
 	}
 }
 
+func (ps *ParameterSet) Equal(other *ParameterSet) bool {
+	if ps == nil && other == nil {
+		return true
+	}
+	if ps == nil || other == nil {
+		return false
+	}
+
+	return maps.Equal(ps.values, other.values)
+}
+
 // Add sets parameter name to value.
 func (ps *ParameterSet) Add(name, value string) {
 	ps.values[ps.normalize(name)] = value

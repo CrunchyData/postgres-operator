@@ -276,7 +276,6 @@ service:
       - batch/logs
       - groupbyattrs/compact
       receivers:
-      - filelog/postgres_csvlog
       - filelog/postgres_jsonlog
 `)
 	})
@@ -542,7 +541,6 @@ service:
       - batch/logs
       - groupbyattrs/compact
       receivers:
-      - filelog/postgres_csvlog
       - filelog/postgres_jsonlog
 `)
 	})
@@ -678,6 +676,75 @@ service:
       - sqlquery/5s
       - sqlquery/300s
 `)
+	})
+}
 
+func TestPostgresParameters(t *testing.T) {
+	t.Run("NoInstrumentation", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.PostgresVersion = 99
+
+		before := postgres.NewParameters()
+		params := postgres.NewParameters()
+		PostgreSQLParameters(t.Context(), cluster, &params)
+
+		assert.DeepEqual(t, before, params)
+	})
+
+	t.Run("Specified", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.PostgresVersion = 99
+		require.UnmarshalInto(t, &cluster.Spec.Instrumentation, `{}`)
+
+		// Feature disabled
+		{
+			before := postgres.NewParameters()
+			params := postgres.NewParameters()
+			PostgreSQLParameters(t.Context(), cluster, &params)
+
+			assert.DeepEqual(t, before, params)
+		}
+
+		// Feature enabled
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(t.Context(), gate)
+
+		params := postgres.NewParameters()
+		PostgreSQLParameters(ctx, cluster, &params)
+
+		assert.Equal(t, params.Mandatory.Value("log_destination"), "jsonlog")
+		assert.Assert(t, params.Mandatory.Value("log_filename") != "")
+		assert.Assert(t, params.Mandatory.Value("log_rotation_age") != "")
+		assert.Assert(t, params.Mandatory.Value("log_rotation_size") != "")
+		assert.Equal(t, params.Mandatory.Value("log_timezone"), "UTC")
+		assert.Equal(t, params.Mandatory.Value("log_truncate_on_rotation"), "on")
+		assert.Equal(t, params.Mandatory.Value("logging_collector"), "on")
+	})
+
+	t.Run("OldPostgres", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.PostgresVersion = 10
+		require.UnmarshalInto(t, &cluster.Spec.Instrumentation, `{}`)
+
+		// Feature enabled
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(t.Context(), gate)
+
+		params := postgres.NewParameters()
+		PostgreSQLParameters(ctx, cluster, &params)
+
+		assert.Equal(t, params.Mandatory.Value("log_destination"), "csvlog")
+		assert.Assert(t, params.Mandatory.Value("log_filename") != "")
+		assert.Assert(t, params.Mandatory.Value("log_rotation_age") != "")
+		assert.Assert(t, params.Mandatory.Value("log_rotation_size") != "")
+		assert.Equal(t, params.Mandatory.Value("log_timezone"), "UTC")
+		assert.Equal(t, params.Mandatory.Value("log_truncate_on_rotation"), "on")
+		assert.Equal(t, params.Mandatory.Value("logging_collector"), "on")
 	})
 }
