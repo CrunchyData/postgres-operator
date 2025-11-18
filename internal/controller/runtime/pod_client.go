@@ -30,7 +30,7 @@ func newPodClient(config *rest.Config) (rest.Interface, error) {
 	if err != nil {
 		return nil, err
 	}
-	return apiutil.RESTClientForGVK(gvk, false, config, codecs, httpClient)
+	return apiutil.RESTClientForGVK(gvk, false, false, config, codecs, httpClient)
 }
 
 // +kubebuilder:rbac:groups="",resources="pods/exec",verbs={create}
