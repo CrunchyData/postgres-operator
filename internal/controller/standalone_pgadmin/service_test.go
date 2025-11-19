@@ -39,7 +39,6 @@ kind: Service
 	assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
 annotations:
   test-annotation: test-annotation-val
-creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/pgadmin: daisy
   postgres-operator.crunchydata.com/role: pgadmin

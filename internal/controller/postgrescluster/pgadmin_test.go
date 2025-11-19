@@ -67,7 +67,7 @@ apiVersion: v1
 kind: ConfigMap
 		`))
 		assert.Assert(t, cmp.MarshalMatches(configmap.ObjectMeta, `
-creationTimestamp: null
+
 labels:
   postgres-operator.crunchydata.com/cluster: pg1
   postgres-operator.crunchydata.com/role: pgadmin
@@ -135,7 +135,7 @@ func TestGeneratePGAdminService(t *testing.T) {
 			assert.Assert(t, !specified)
 
 			assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
-creationTimestamp: null
+
 name: my-cluster-pgadmin
 namespace: my-ns
 			`))
@@ -152,7 +152,7 @@ apiVersion: v1
 kind: Service
 		`))
 		assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
-creationTimestamp: null
+
 labels:
   postgres-operator.crunchydata.com/cluster: my-cluster
   postgres-operator.crunchydata.com/role: pgadmin
@@ -501,7 +501,6 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 annotations:
   kubectl.kubernetes.io/default-container: pgadmin
-creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: test-cluster
   postgres-operator.crunchydata.com/data: pgadmin
@@ -615,7 +614,6 @@ terminationGracePeriodSeconds: 30
 annotations:
   annotation1: annotationvalue
   kubectl.kubernetes.io/default-container: pgadmin
-creationTimestamp: null
 labels:
   label1: labelvalue
   postgres-operator.crunchydata.com/cluster: custom-cluster

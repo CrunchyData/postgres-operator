@@ -213,7 +213,7 @@ apiVersion: v1
 kind: ConfigMap
 		`))
 		assert.Assert(t, cmp.MarshalMatches(configmap.ObjectMeta, `
-creationTimestamp: null
+
 labels:
   postgres-operator.crunchydata.com/pgadmin: pg1
   postgres-operator.crunchydata.com/role: pgadmin

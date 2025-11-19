@@ -84,7 +84,6 @@ func TestReconcilePGAdminStatefulSet(t *testing.T) {
 		assert.Assert(t, cmp.MarshalMatches(template.ObjectMeta, `
 annotations:
   kubectl.kubernetes.io/default-container: pgadmin
-creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/data: pgadmin
   postgres-operator.crunchydata.com/pgadmin: test-standalone-pgadmin
@@ -189,7 +188,6 @@ terminationGracePeriodSeconds: 30
 annotations:
   annotation1: annotationvalue
   kubectl.kubernetes.io/default-container: pgadmin
-creationTimestamp: null
 labels:
   label1: labelvalue
   postgres-operator.crunchydata.com/data: pgadmin
