@@ -34,6 +34,22 @@ spec:
                   - name: repo1
                     volume:
                       volumeClaimSpec: ($volume)
+    - 
+      description: >
+        Wait for the cluster to come online
+      assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: original
+              postgres-operator.crunchydata.com/data: postgres
+          status:
+            phase: Running
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
 
     -
       description: >
@@ -71,5 +87,9 @@ spec:
 
   catch:
     - podLogs:
-        selector: (concat('postgres-operator.crunchydata.com/cluster=', 'original'))
+        selector: postgres-operator.crunchydata.com/cluster in (original)
         tail: 50
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: postgres-operator.crunchydata.com/cluster in (original)
