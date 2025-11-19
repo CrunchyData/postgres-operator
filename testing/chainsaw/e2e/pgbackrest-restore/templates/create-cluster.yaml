@@ -71,5 +71,5 @@ spec:
 
   catch:
     - podLogs:
-        selector: postgres-operator.crunchydata.com/cluster in (original)
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', 'original'))
         tail: 50
