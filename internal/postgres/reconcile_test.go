@@ -274,7 +274,6 @@ initContainers:
       set -x; mv --no-target-directory "${current}" "${desired}"
       ln --no-dereference --force --symbolic "${desired}" "${name}"
     )
-    PATH="/usr/lib/postgresql/11/bin:/usr/libexec/postgresql11:/usr/pgsql-11/bin${PATH+:${PATH}}"
     echo Initializing ...
     results 'uid' "$(id -u ||:)" 'gid' "$(id -G ||:)"
     if [[ "${pgwal_directory}" == *"pgwal/"* ]] && [[ ! -d "/pgwal/pgbackrest-spool" ]];then rm -rf "/pgdata/pgbackrest-spool" && mkdir -p "/pgwal/pgbackrest-spool" && ln --force --symbolic "/pgwal/pgbackrest-spool" "/pgdata/pgbackrest-spool";fi

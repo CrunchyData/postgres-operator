@@ -484,6 +484,8 @@ func instanceYAML(
 	}
 
 	postgresql := map[string]any{
+		// TODO(cbandy): "bin_dir"
+
 		// Missing here is "connect_address" which cannot be known until the
 		// instance Pod is created. That value should be injected using the downward
 		// API and the PATRONI_POSTGRESQL_CONNECT_ADDRESS environment variable.
