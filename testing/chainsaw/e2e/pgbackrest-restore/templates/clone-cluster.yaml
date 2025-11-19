@@ -13,7 +13,7 @@ spec:
         Clone the cluster using a pgBackRest restore
       apply:
         resource:
-          apiVersion: ($postgrescluster.apiVersion)
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           metadata:
             name: ($name)
@@ -39,7 +39,7 @@ spec:
         Wait for the cluster to come online
       assert:
         resource:
-          apiVersion: ($postgrescluster.apiVersion)
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           metadata:
             name: ($name)

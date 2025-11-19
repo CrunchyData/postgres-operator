@@ -1,7 +1,7 @@
 ---
 # Once the pgupgrade is finished, update the version and set shutdown to false
 # in the postgres cluster
-apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   name: wal-pvc-pgupgrade

@@ -1,6 +1,6 @@
 ---
 # Shutdown the cluster -- but without the annotation.
-apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   name: wal-pvc-pgupgrade

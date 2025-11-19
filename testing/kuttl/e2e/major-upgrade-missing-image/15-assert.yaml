@@ -1,6 +1,6 @@
 ---
 # Wait for the instances to be ready with the target Postgres version.
-apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   name: major-upgrade-empty-image

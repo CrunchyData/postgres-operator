@@ -52,7 +52,7 @@ spec:
         Update the cluster with parameters that require attention during recovery
       patch:
         resource:
-          apiVersion: ($postgrescluster.apiVersion)
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           metadata:
             name: original

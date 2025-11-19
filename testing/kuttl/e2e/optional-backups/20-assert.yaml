@@ -1,5 +1,5 @@
 # It should be possible to turn backups back on.
-apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   name: created-without-backups

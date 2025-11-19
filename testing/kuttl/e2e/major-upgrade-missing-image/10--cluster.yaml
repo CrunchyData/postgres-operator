@@ -1,7 +1,7 @@
 ---
 # Create the cluster we will do an actual upgrade on, but set the postgres version
 # to '10' to force a missing image scenario
-apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   name: major-upgrade-empty-image

@@ -1,6 +1,6 @@
 ---
 # Create a cluster that is already at the correct version
-apiVersion: postgres-operator.crunchydata.com/${KUTTL_PGCLUSTER_API_VERSION}
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   name: major-upgrade

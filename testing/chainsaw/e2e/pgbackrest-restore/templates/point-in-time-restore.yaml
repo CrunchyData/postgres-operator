@@ -25,7 +25,7 @@ spec:
         Trigger an in-place point-in-time restore (PITR)
       patch:
         resource:
-          apiVersion: ($postgrescluster.apiVersion)
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           metadata:
             name: original
@@ -46,7 +46,7 @@ spec:
         Wait for the restore to complete and the cluster to come online
       assert:
         resource:
-          apiVersion: ($postgrescluster.apiVersion)
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
           kind: PostgresCluster
           metadata:
             name: original
