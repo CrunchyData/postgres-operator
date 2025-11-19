@@ -35,6 +35,7 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPostgresUser))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelStandalonePGAdmin))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelStartupInstance))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelCrunchyBridgeClusterPostgresRole))
 }
 
 func TestLabelValuesValid(t *testing.T) {
@@ -54,6 +55,7 @@ func TestLabelValuesValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsValidLabelValue(string(BackupReplicaCreate)))
 	assert.Assert(t, nil == validation.IsValidLabelValue(string(BackupScheduled)))
 	assert.Assert(t, nil == validation.IsValidLabelValue(RoleMonitoring))
+	assert.Assert(t, nil == validation.IsValidLabelValue(RoleCrunchyBridgeClusterPostgresRole))
 }
 
 func TestMerge(t *testing.T) {

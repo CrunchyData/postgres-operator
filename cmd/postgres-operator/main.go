@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -23,6 +24,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/filters"
 
+	"github.com/crunchydata/postgres-operator/internal/bridge"
+	"github.com/crunchydata/postgres-operator/internal/bridge/crunchybridgecluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/pgupgrade"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -238,10 +241,24 @@ func main() {
 	manager := need(runtime.NewManager(config, options))
 	must(manager.Add(k8s))
 
+	bridgeURL := os.Getenv("PGO_BRIDGE_URL")
+	bridgeClient := func() *bridge.Client {
+		client := bridge.NewClient(bridgeURL, versionString)
+		client.Transport = otelTransportWrapper()(http.DefaultTransport)
+		return client
+	}
+
 	// add all PostgreSQL Operator controllers to the runtime manager
 	must(pgupgrade.ManagedReconciler(manager))
 	must(postgrescluster.ManagedReconciler(manager))
 	must(standalone_pgadmin.ManagedReconciler(manager))
+	must(crunchybridgecluster.ManagedReconciler(manager, func() bridge.ClientInterface {
+		return bridgeClient()
+	}))
+
+	if features.Enabled(feature.BridgeIdentifiers) {
+		must(bridge.ManagedInstallationReconciler(manager, bridgeClient))
+	}
 
 	// Enable health probes
 	must(manager.AddHealthzCheck("health", healthz.Ping))
