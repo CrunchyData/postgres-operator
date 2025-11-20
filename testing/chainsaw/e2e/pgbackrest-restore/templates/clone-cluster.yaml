@@ -51,6 +51,28 @@ spec:
                 updatedReplicas: 1
 
   catch:
+    - description: Describe the PostgresCluster to see its status
+      describe:
+        apiVersion: ($postgrescluster.apiVersion)
+        kind: PostgresCluster
+        name: ($name)
+
+    - description: Get all pods in the namespace to see what's running
+      describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (join('', ['postgres-operator.crunchydata.com/cluster=', $name]))
+
+    - description: Get all jobs to check restore status
+      describe:
+        apiVersion: batch/v1
+        kind: Job
+        selector: (join('', ['postgres-operator.crunchydata.com/cluster=', $name]))
+
+    - description: Get events related to the cluster
+      script:
+        content: kubectl get events --field-selector (join('', ['involvedObject.name=', $name])) -o wide
+
     - description: Read all log lines from job pods
       podLogs:
         selector: (join('', ['batch.kubernetes.io/job-name,', 'postgres-operator.crunchydata.com/cluster=', $name]))
@@ -60,3 +82,9 @@ spec:
       podLogs:
         selector: (join('', ['postgres-operator.crunchydata.com/instance,', 'postgres-operator.crunchydata.com/cluster=', $name]))
         tail: -1
+
+    - description: Check PVCs for the cluster
+      describe:
+        apiVersion: v1
+        kind: PersistentVolumeClaim
+        selector: (join('', ['postgres-operator.crunchydata.com/cluster=', $name]))
