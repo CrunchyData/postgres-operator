@@ -40,9 +40,12 @@ spec:
 
     - description: Check PVC provisioning status early
       script:
+        env:
+        - name: CLUSTER_NAME
+          value: ($name)
         content: |
-          echo "=== PVCs for ($name) ==="
-          kubectl get pvc -l postgres-operator.crunchydata.com/cluster=($name) -o wide || true
+          echo "=== PVCs for ${CLUSTER_NAME} ==="
+          kubectl get pvc -l postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME} -o wide || true
           echo ""
           echo "=== All PVC Events ==="
           kubectl get events --field-selector involvedObject.kind=PersistentVolumeClaim -o wide | tail -20 || true
