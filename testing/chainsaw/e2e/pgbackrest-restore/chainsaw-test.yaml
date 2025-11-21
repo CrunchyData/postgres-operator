@@ -87,11 +87,13 @@ spec:
       try:
         - delete:
             deletionPropagationPolicy: Foreground
+            timeout: 3m
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
               name: clone-one
         - script:
+            timeout: 3m
             content: |
               echo "Waiting for clone-one PVCs to be deleted..."
               kubectl wait --for=delete pvc -l postgres-operator.crunchydata.com/cluster=clone-one --timeout=2m || true
@@ -168,11 +170,13 @@ spec:
       try:
         - delete:
             deletionPropagationPolicy: Foreground
+            timeout: 3m
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
               name: clone-two
         - script:
+            timeout: 3m
             content: |
               echo "Waiting for clone-two PVCs to be deleted..."
               kubectl wait --for=delete pvc -l postgres-operator.crunchydata.com/cluster=clone-two --timeout=2m || true
