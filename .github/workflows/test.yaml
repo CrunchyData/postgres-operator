@@ -135,11 +135,47 @@ jobs:
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
             --name 'postgres-operator' localhost/postgres-operator
 
+      - name: Check initial environment health
+        run: |
+          echo "::group::Docker system info"
+          docker system df
+          docker info | grep -E 'Storage Driver|Data Space'
+          echo "::endgroup::"
+          echo "::group::k3d node disk space"
+          docker exec k3d-k3s-default-server-0 df -h
+          echo "::endgroup::"
+          echo "::group::Storage provisioner status"
+          kubectl get storageclass -o wide
+          kubectl get pods -n kube-system -l app=local-path-provisioner -o wide
+          echo "::endgroup::"
+
+      - name: Start resource monitoring
+        run: |
+          nohup .github/actions/k3d/monitor-resources.sh 30 600 chainsaw-resource-monitor.log &
+          echo $! > monitor.pid
+
       - run: |
           make check-chainsaw && exit
           failed=$?
           echo '::group::PGO logs'; docker logs 'postgres-operator'; echo '::endgroup::'
           exit $failed
+
+      - name: Stop resource monitoring
+        if: always()
+        run: |
+          if [ -f monitor.pid ]; then
+            kill $(cat monitor.pid) 2>/dev/null || true
+            rm monitor.pid
+          fi
+
+      - name: Upload resource monitoring logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "chainsaw-resource-monitor-k8s=${{ matrix.kubernetes }}"
+          path: chainsaw-resource-monitor.log
+          retention-days: 7
+          if-no-files-found: ignore
 
       - run: make generate-kuttl
         env:
