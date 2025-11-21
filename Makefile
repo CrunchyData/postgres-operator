@@ -249,6 +249,12 @@ generate-kuttl: ## Generate kuttl tests
 		mkdir -p "$${target%/*}"; render < "$${source}" > "$${target}"; \
 		shift; \
 	done' - testing/kuttl/e2e/*/*.yaml testing/kuttl/e2e/*/*/*.yaml
+	if [ "$$KUTTL_PG_VERSION" -ge "18" ]; then \
+		[ ! -d testing/kuttl/e2e-generated/exporter-custom-queries ] || rm -rf testing/kuttl/e2e-generated/exporter-custom-queries; \
+		[ ! -d testing/kuttl/e2e-generated/exporter-no-tls ] || rm -rf testing/kuttl/e2e-generated/exporter-no-tls; \
+		[ ! -d testing/kuttl/e2e-generated/exporter-tls ] || rm -rf testing/kuttl/e2e-generated/exporter-tls; \
+		[ ! -d testing/kuttl/e2e-generated/exporter-password-change ] || rm -rf testing/kuttl/e2e-generated/exporter-password-change; \
+	fi
 
 ##@ Generate
 
