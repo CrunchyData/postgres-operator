@@ -17,7 +17,7 @@ spec:
         connect: { name: PGCONNECT_TIMEOUT, value: '5' }
 
     - name: volume
-      value: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 1Gi } } }
+      value: { accessModes: [ReadWriteOnce], resources: { requests: { storage: 256Mi } } }
 
     - name: postgrescluster
       value:
@@ -83,15 +83,19 @@ spec:
 
     - name: 'Delete Cluster #1'
       description: >
-        Delete this clone in the background to free up resources
+        Delete this clone and wait for PVCs to be cleaned up to free disk space
       try:
         - delete:
-            deletionPropagationPolicy: Background
-            expect: [{ check: { (`true`): true } }]
+            deletionPropagationPolicy: Foreground
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
               name: clone-one
+        - script:
+            content: |
+              echo "Waiting for clone-one PVCs to be deleted..."
+              kubectl wait --for=delete pvc -l postgres-operator.crunchydata.com/cluster=clone-one --timeout=2m || true
+              sleep 5
 
     - name: 'Update Cluster'
       description: >
@@ -160,15 +164,19 @@ spec:
 
     - name: 'Delete Cluster #2'
       description: >
-        Delete this clone in the background to free up resources
+        Delete this clone and wait for PVCs to be cleaned up to free disk space
       try:
         - delete:
-            deletionPropagationPolicy: Background
-            expect: [{ check: { (`true`): true } }]
+            deletionPropagationPolicy: Foreground
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
               name: clone-two
+        - script:
+            content: |
+              echo "Waiting for clone-two PVCs to be deleted..."
+              kubectl wait --for=delete pvc -l postgres-operator.crunchydata.com/cluster=clone-two --timeout=2m || true
+              sleep 5
 
     - name: 'Lose Data'
       description: >
