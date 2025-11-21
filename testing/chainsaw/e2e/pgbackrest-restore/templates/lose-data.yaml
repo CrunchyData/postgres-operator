@@ -31,6 +31,12 @@ spec:
           - name: PRIMARY
             value: ($primary)
         content: |
+          # Wait for PostgreSQL to be ready
+          until kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qAt --command 'SELECT 1' 2>/dev/null; do
+            sleep 1
+          done
+
           OBJECTIVE=$(
             kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
               -- psql -qAt --command 'SELECT clock_timestamp()'
