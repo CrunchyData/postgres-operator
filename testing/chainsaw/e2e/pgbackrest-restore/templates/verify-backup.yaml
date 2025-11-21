@@ -17,6 +17,12 @@ spec:
                 postgres-operator.crunchydata.com/role=master'
           )
 
+          # Wait for PostgreSQL to be ready
+          until kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qAt --command 'SELECT 1' 2>/dev/null; do
+            sleep 1
+          done
+
           kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
             -- psql --command 'SELECT pg_switch_wal()' --pset footer=off
 

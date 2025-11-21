@@ -81,6 +81,12 @@ spec:
                 postgres-operator.crunchydata.com/role=master'
           )
 
+          # Wait for PostgreSQL to be ready
+          until kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qAt --command 'SELECT 1' 2>/dev/null; do
+            sleep 1
+          done
+
           kubectl exec --stdin --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -q --file=- <<'SQL'
             CREATE TABLESPACE barn LOCATION '/tablespaces/barn/data';
             GRANT ALL ON TABLESPACE barn TO public;
