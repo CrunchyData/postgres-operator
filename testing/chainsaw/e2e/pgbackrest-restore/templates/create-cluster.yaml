@@ -55,6 +55,7 @@ spec:
       description: >
         Wait for the replica backup to complete
       assert:
+        timeout: 5m
         resource:
           apiVersion: ($postgrescluster.apiVersion)
           kind: PostgresCluster

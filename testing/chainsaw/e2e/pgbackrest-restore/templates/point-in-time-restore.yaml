@@ -45,6 +45,7 @@ spec:
       description: >
         Wait for the restore to complete and the cluster to come online
       assert:
+        timeout: 5m
         resource:
           apiVersion: ($postgrescluster.apiVersion)
           kind: PostgresCluster

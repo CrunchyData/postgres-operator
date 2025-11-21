@@ -38,6 +38,7 @@ spec:
       description: >
         Wait for the cluster to come online
       assert:
+        timeout: 5m
         resource:
           apiVersion: ($postgrescluster.apiVersion)
           kind: PostgresCluster
