@@ -23,6 +23,7 @@ spec:
       description: >
         Wait for the backup to complete
       assert:
+        timeout: 5m
         resource:
           apiVersion: batch/v1
           kind: Job
