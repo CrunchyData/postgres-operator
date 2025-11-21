@@ -16,7 +16,7 @@ inputs:
     description: >
       Each line is the name of an image to fetch onto all Kubernetes nodes
   prefetch-timeout:
-    default: 90s
+    default: 3m
     required: true
     description: >
       Amount of time to wait for images to be fetched
