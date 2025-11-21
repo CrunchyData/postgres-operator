@@ -81,7 +81,7 @@ jobs:
           path: envtest-existing.coverage.gz
           retention-days: 1
 
-  e2e-k3d:
+  e2e-k3d-chainsaw:
     runs-on: ubuntu-24.04
     needs: [go-test]
     strategy:
@@ -130,47 +130,63 @@ jobs:
             --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
             --name 'postgres-operator' localhost/postgres-operator
 
-      - name: Check initial environment health
-        run: |
-          echo "::group::Docker system info"
-          docker system df
-          docker info | grep -E 'Storage Driver|Data Space'
-          echo "::endgroup::"
-          echo "::group::k3d node disk space"
-          docker exec k3d-k3s-default-server-0 df -h
-          echo "::endgroup::"
-          echo "::group::Storage provisioner status"
-          kubectl get storageclass -o wide
-          kubectl get pods -n kube-system -l app=local-path-provisioner -o wide
-          echo "::endgroup::"
-
-      - name: Start resource monitoring
-        run: |
-          nohup .github/actions/k3d/monitor-resources.sh 30 600 chainsaw-resource-monitor.log &
-          echo $! > monitor.pid
-
       - run: |
           make check-chainsaw && exit
           failed=$?
           echo '::group::PGO logs'; docker logs 'postgres-operator'; echo '::endgroup::'
           exit $failed
 
-      - name: Stop resource monitoring
-        if: always()
-        run: |
-          if [ -f monitor.pid ]; then
-            kill $(cat monitor.pid) 2>/dev/null || true
-            rm monitor.pid
-          fi
+      - name: Stop PGO
+        run: docker stop 'postgres-operator' || true
 
-      - name: Upload resource monitoring logs
-        if: always()
-        uses: actions/upload-artifact@v4
+  e2e-k3d-kuttl:
+    runs-on: ubuntu-24.04
+    needs: [go-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes: [v1.30, v1.33]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: stable }
+
+      - name: Start k3s
+        uses: ./.github/actions/k3d
         with:
-          name: "chainsaw-resource-monitor-k8s=${{ matrix.kubernetes }}"
-          path: chainsaw-resource-monitor.log
-          retention-days: 7
-          if-no-files-found: ignore
+          k3s-channel: "${{ matrix.kubernetes }}"
+          prefetch-images: |
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2542
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2542
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.10-2542
+
+      - name: Get pgMonitor files.
+        run: make get-pgmonitor
+        env:
+          PGMONITOR_DIR: "${{ github.workspace }}/hack/tools/pgmonitor"
+          QUERIES_CONFIG_DIR: "${{ github.workspace }}/hack/tools/queries"
+
+      # Start a Docker container with the working directory mounted.
+      - run: make build BUILDAH=docker
+      - name: Start PGO
+        run: |
+          kubectl apply --server-side -k ./config/namespace
+          kubectl apply --server-side -k ./config/dev
+          hack/create-kubeconfig.sh postgres-operator pgo
+          docker run --detach --network host --read-only \
+            --volume "$(pwd):/mnt" --workdir '/mnt' \
+            --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
+            --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
+            --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2542' \
+            --env 'RELATED_IMAGE_PGBOUNCER=registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2542' \
+            --env 'RELATED_IMAGE_PGEXPORTER=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.17.1-2542' \
+            --env 'RELATED_IMAGE_PGUPGRADE=registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-18.0-2542' \
+            --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.10-2542' \
+            --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2542' \
+            --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.8-2542' \
+            --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.4-0' \
+            --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
+            --name 'postgres-operator' localhost/postgres-operator
 
       - run: make generate-kuttl
         env:
@@ -194,6 +210,8 @@ jobs:
     needs:
       - kubernetes-api
       - kubernetes-k3d
+      - e2e-k3d-chainsaw
+      - e2e-k3d-kuttl
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
