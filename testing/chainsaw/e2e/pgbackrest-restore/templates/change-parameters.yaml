@@ -28,6 +28,21 @@ spec:
 
     -
       description: >
+        Wait for PostgreSQL to be ready
+      script:
+        skipCommandOutput: true
+        timeout: 2m
+        env:
+          - name: PRIMARY
+            value: ($primary)
+        content: |
+          until kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" \
+            -- psql -qAt --command 'SELECT 1' 2>/dev/null; do
+            sleep 1
+          done
+
+    -
+      description: >
         Read the timestamp at which PostgreSQL last started
       command:
         outputs:
