@@ -83,11 +83,9 @@ spec:
 
     - name: 'Delete Cluster #1'
       description: >
-        Delete this clone and wait for PVCs to be cleaned up to free disk space
+        Delete this clone
       try:
         - delete:
-            deletionPropagationPolicy: Foreground
-            timeout: 3m
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
@@ -160,11 +158,9 @@ spec:
 
     - name: 'Delete Cluster #2'
       description: >
-        Delete this clone and wait for PVCs to be cleaned up to free disk space
+        Delete this clone
       try:
         - delete:
-            deletionPropagationPolicy: Foreground
-            timeout: 3m
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
