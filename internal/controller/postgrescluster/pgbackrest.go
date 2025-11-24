@@ -1262,9 +1262,6 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 
 	params := postgres.NewParameterSet()
 	postgres.SetHugePages(cluster, params)
-	if fetchKeyCommand := config.FetchKeyCommand(&cluster.Spec); fetchKeyCommand != "" {
-		params.Add("encryption_key_command", fetchKeyCommand)
-	}
 
 	// NOTE (andrewlecuyer): Forcing users to put each argument separately might prevent the need
 	// to do any escaping or use eval.

@@ -107,7 +107,6 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 	cm.Data[CMInstanceKey] = iniGeneratedWarning +
 		populatePGInstanceConfigurationMap(
 			serviceName, serviceNamespace, repoHostName, pgdataDir,
-			config.FetchKeyCommand(&postgresCluster.Spec),
 			fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 			pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
@@ -128,8 +127,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 		cm.Data[CMRepoKey] = iniGeneratedWarning +
 			populateRepoHostConfigurationMap(
 				serviceName, serviceNamespace,
-				pgdataDir, config.FetchKeyCommand(&postgresCluster.Spec),
-				fmt.Sprint(postgresCluster.Spec.PostgresVersion),
+				pgdataDir, fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 				pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
@@ -159,7 +157,6 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 		cm.Data[CMCloudRepoKey] = iniGeneratedWarning +
 			populateCloudRepoConfigurationMap(
 				serviceName, serviceNamespace, pgdataDir,
-				config.FetchKeyCommand(&postgresCluster.Spec),
 				fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 				cloudLogPath, pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
@@ -365,8 +362,7 @@ exit 1`
 // a PostgreSQL instance
 func populatePGInstanceConfigurationMap(
 	serviceName, serviceNamespace, repoHostName, pgdataDir,
-	fetchKeyCommand, postgresVersion string,
-	pgPort int32, repos []v1beta1.PGBackRestRepo,
+	postgresVersion string, pgPort int32, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string, pgBackRestLogPath string,
 ) iniSectionSet {
 
@@ -419,12 +415,6 @@ func populatePGInstanceConfigurationMap(
 	stanza.Set("pg1-port", fmt.Sprint(pgPort))
 	stanza.Set("pg1-socket-path", postgres.SocketDirectory)
 
-	if fetchKeyCommand != "" {
-		stanza.Set("archive-header-check", "n")
-		stanza.Set("page-header-check", "n")
-		stanza.Set("pg-version-force", postgresVersion)
-	}
-
 	return iniSectionSet{
 		"global":          global,
 		DefaultStanzaName: stanza,
@@ -434,8 +424,7 @@ func populatePGInstanceConfigurationMap(
 // populateRepoHostConfigurationMap returns options representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
 func populateRepoHostConfigurationMap(
-	serviceName, serviceNamespace, pgdataDir,
-	fetchKeyCommand, postgresVersion string,
+	serviceName, serviceNamespace, pgdataDir, postgresVersion string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string, logPath string,
 ) iniSectionSet {
@@ -484,12 +473,6 @@ func populateRepoHostConfigurationMap(
 		stanza.Set(fmt.Sprintf("pg%d-path", i+1), pgdataDir)
 		stanza.Set(fmt.Sprintf("pg%d-port", i+1), fmt.Sprint(pgPort))
 		stanza.Set(fmt.Sprintf("pg%d-socket-path", i+1), postgres.SocketDirectory)
-
-		if fetchKeyCommand != "" {
-			stanza.Set("archive-header-check", "n")
-			stanza.Set("page-header-check", "n")
-			stanza.Set("pg-version-force", postgresVersion)
-		}
 	}
 
 	return iniSectionSet{
@@ -499,8 +482,7 @@ func populateRepoHostConfigurationMap(
 }
 
 func populateCloudRepoConfigurationMap(
-	serviceName, serviceNamespace, pgdataDir,
-	fetchKeyCommand, postgresVersion, logPath string,
+	serviceName, serviceNamespace, pgdataDir, postgresVersion, logPath string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string,
 ) iniSectionSet {
@@ -547,12 +529,6 @@ func populateCloudRepoConfigurationMap(
 		stanza.Set(fmt.Sprintf("pg%d-path", i+1), pgdataDir)
 		stanza.Set(fmt.Sprintf("pg%d-port", i+1), fmt.Sprint(pgPort))
 		stanza.Set(fmt.Sprintf("pg%d-socket-path", i+1), postgres.SocketDirectory)
-
-		if fetchKeyCommand != "" {
-			stanza.Set("archive-header-check", "n")
-			stanza.Set("page-header-check", "n")
-			stanza.Set("pg-version-force", postgresVersion)
-		}
 	}
 
 	return iniSectionSet{

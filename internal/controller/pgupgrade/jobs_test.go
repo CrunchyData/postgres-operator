@@ -85,7 +85,7 @@ func TestUpgradeCommand(t *testing.T) {
 			{Spec: 10, Args: "--jobs=10"},
 		} {
 			spec := &v1beta1.PGUpgradeSettings{Jobs: tt.Spec}
-			command := upgradeCommand(spec, "")
+			command := upgradeCommand(spec)
 			assert.Assert(t, len(command) > 3)
 			assert.DeepEqual(t, []string{"bash", "-c", "--"}, command[:3])
 
@@ -109,7 +109,7 @@ func TestUpgradeCommand(t *testing.T) {
 			{Spec: "CopyFileRange", Args: "--copy-file-range"},
 		} {
 			spec := &v1beta1.PGUpgradeSettings{TransferMethod: tt.Spec}
-			command := upgradeCommand(spec, "")
+			command := upgradeCommand(spec)
 			assert.Assert(t, len(command) > 3)
 			assert.DeepEqual(t, []string{"bash", "-c", "--"}, command[:3])
 
@@ -158,7 +158,7 @@ func TestGenerateUpgradeJob(t *testing.T) {
 		},
 	}
 
-	job := reconciler.generateUpgradeJob(ctx, upgrade, startup, "")
+	job := reconciler.generateUpgradeJob(ctx, upgrade, startup)
 	assert.Assert(t, cmp.MarshalMatches(job, `
 apiVersion: batch/v1
 kind: Job
@@ -267,13 +267,9 @@ status: {}
 		}))
 		ctx := feature.NewContext(context.Background(), gate)
 
-		job := reconciler.generateUpgradeJob(ctx, upgrade, startup, "")
+		job := reconciler.generateUpgradeJob(ctx, upgrade, startup)
 		assert.Assert(t, cmp.MarshalContains(job, `--jobs=2`))
 	})
-
-	tdeJob := reconciler.generateUpgradeJob(ctx, upgrade, startup, "echo testKey")
-	assert.Assert(t, cmp.MarshalContains(tdeJob,
-		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access ${checksums} --encryption-key-command='echo testKey'`))
 }
 
 func TestGenerateRemoveDataJob(t *testing.T) {

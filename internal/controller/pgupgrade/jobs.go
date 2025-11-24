@@ -22,7 +22,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/internal/shell"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -37,7 +36,7 @@ func pgUpgradeJob(upgrade *v1beta1.PGUpgrade) metav1.ObjectMeta {
 
 // upgradeCommand returns an entrypoint that prepares the filesystem for
 // and performs a PostgreSQL major version upgrade using pg_upgrade.
-func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []string {
+func upgradeCommand(spec *v1beta1.PGUpgradeSettings) []string {
 	argJobs := fmt.Sprintf(` --jobs=%d`, max(1, spec.Jobs))
 	argMethod := cmp.Or(map[string]string{
 		"Clone":         ` --clone`,
@@ -47,11 +46,6 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 
 	oldVersion := spec.FromPostgresVersion
 	newVersion := spec.ToPostgresVersion
-
-	var argEncryptionKeyCommand string
-	if fetchKeyCommand != "" {
-		argEncryptionKeyCommand = ` --encryption-key-command=` + shell.QuoteWord(fetchKeyCommand)
-	}
 
 	args := []string{fmt.Sprint(oldVersion), fmt.Sprint(newVersion)}
 	script := strings.Join([]string{
@@ -138,7 +132,7 @@ func upgradeCommand(spec *v1beta1.PGUpgradeSettings, fetchKeyCommand string) []s
 		`checksums=$(if [[ "${checksums}" -gt 0 ]]; then echo '--data-checksums'; elif [[ "${new_version}" -ge 18 ]]; then echo '--no-data-checksums'; fi)`,
 
 		`section 'Step 3 of 7: Initializing new data directory...'`,
-		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access ${checksums}` + argEncryptionKeyCommand,
+		`PGDATA="${new_data}" "${new_bin}/initdb" --allow-group-access ${checksums}`,
 
 		// Read the configured value then quote it; every single-quote U+0027 is replaced by two.
 		//
@@ -186,8 +180,7 @@ func largestWholeCPU(resources corev1.ResourceRequirements) int64 {
 // directory of the startup instance.
 func (r *PGUpgradeReconciler) generateUpgradeJob(
 	ctx context.Context, upgrade *v1beta1.PGUpgrade,
-	startup *appsv1.StatefulSet, fetchKeyCommand string,
-) *batchv1.Job {
+	startup *appsv1.StatefulSet) *batchv1.Job {
 	job := &batchv1.Job{}
 	job.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
 
@@ -252,7 +245,7 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 		VolumeMounts:    database.VolumeMounts,
 
 		// Use our upgrade command and the specified image and resources.
-		Command:         upgradeCommand(settings, fetchKeyCommand),
+		Command:         upgradeCommand(settings),
 		Image:           pgUpgradeContainerImage(upgrade),
 		ImagePullPolicy: upgrade.Spec.ImagePullPolicy,
 		Resources:       upgrade.Spec.Resources,

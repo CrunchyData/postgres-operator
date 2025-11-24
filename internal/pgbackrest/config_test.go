@@ -596,56 +596,6 @@ pg1-socket-path = /tmp/postgres
 			"postgres-operator.crunchydata.com/pgbackrest-config": "",
 		})
 	})
-
-	t.Run("EnabledTDE", func(t *testing.T) {
-		cluster := cluster.DeepCopy()
-		cluster.Spec.Patroni = &v1beta1.PatroniSpec{
-			DynamicConfiguration: map[string]any{
-				"postgresql": map[string]any{
-					"parameters": map[string]any{
-						"encryption_key_command": "echo test",
-					},
-				},
-			},
-		}
-
-		configmap, err := CreatePGBackRestConfigMapIntent(context.Background(), cluster,
-			"", "number", "pod-service-name", "test-ns", "",
-			[]string{"some-instance"})
-
-		assert.NilError(t, err)
-		assert.Assert(t,
-			cmp.Contains(configmap.Data["pgbackrest_instance.conf"],
-				"archive-header-check = n"))
-		assert.Assert(t,
-			cmp.Contains(configmap.Data["pgbackrest_instance.conf"],
-				"page-header-check = n"))
-		assert.Assert(t,
-			cmp.Contains(configmap.Data["pgbackrest_instance.conf"],
-				"pg-version-force"))
-
-		cluster.Spec.Backups.PGBackRest.Repos = []v1beta1.PGBackRestRepo{
-			{
-				Name:   "repo1",
-				Volume: &v1beta1.RepoPVC{},
-			},
-		}
-
-		configmap, err = CreatePGBackRestConfigMapIntent(context.Background(), cluster,
-			"repo1", "number", "pod-service-name", "test-ns", "",
-			[]string{"some-instance"})
-
-		assert.NilError(t, err)
-		assert.Assert(t,
-			cmp.Contains(configmap.Data["pgbackrest_repo.conf"],
-				"archive-header-check = n"))
-		assert.Assert(t,
-			cmp.Contains(configmap.Data["pgbackrest_repo.conf"],
-				"page-header-check = n"))
-		assert.Assert(t,
-			cmp.Contains(configmap.Data["pgbackrest_repo.conf"],
-				"pg-version-force"))
-	})
 }
 
 func TestMakePGBackrestLogDir(t *testing.T) {
@@ -814,18 +764,6 @@ func TestRestoreCommandPrettyYAML(t *testing.T) {
 			"\n- |",
 		),
 		"expected literal block scalar")
-}
-
-func TestRestoreCommandTDE(t *testing.T) {
-	params := postgres.NewParameterSet()
-	params.Add("encryption_key_command", "whatever")
-
-	assert.Assert(t,
-		cmp.MarshalContains(
-			RestoreCommand(20, "/dir", params, "--options"),
-			"encryption_key_command = 'whatever'",
-		),
-		"expected encryption_key_command setting")
 }
 
 func TestDedicatedSnapshotVolumeRestoreCommand(t *testing.T) {
