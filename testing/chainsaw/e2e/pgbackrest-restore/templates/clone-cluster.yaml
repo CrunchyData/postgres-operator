@@ -89,36 +89,3 @@ spec:
         apiVersion: v1
         kind: PersistentVolumeClaim
         selector: (join('', ['postgres-operator.crunchydata.com/cluster=', $name]))
-
-    - description: Get all PVC events to diagnose provisioning failures
-      script:
-        content: kubectl get events --all-namespaces --field-selector involvedObject.kind=PersistentVolumeClaim -o wide
-
-    - description: Check storage provisioner status
-      script:
-        content: |
-          echo "=== Storage Classes ==="
-          kubectl get storageclass -o wide
-          echo ""
-          echo "=== Local Path Provisioner Pods ==="
-          kubectl get pods -n kube-system -l app=local-path-provisioner -o wide
-          echo ""
-          echo "=== Local Path Provisioner Logs ==="
-          kubectl logs -n kube-system -l app=local-path-provisioner --tail=100 --prefix=true
-
-    - description: Check node resources and disk space
-      script:
-        content: |
-          echo "=== Node Resources ==="
-          kubectl describe nodes
-          echo ""
-          echo "=== Node Disk Usage (via docker) ==="
-          docker exec k3d-k3s-default-server-0 df -h
-
-    - description: Check all PVs and their status
-      script:
-        content: kubectl get pv -o wide
-
-    - description: Check for stuck PVCs across all namespaces
-      script:
-        content: kubectl get pvc --all-namespaces -o wide
