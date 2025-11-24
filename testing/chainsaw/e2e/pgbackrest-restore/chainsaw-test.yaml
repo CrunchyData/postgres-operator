@@ -83,9 +83,11 @@ spec:
 
     - name: 'Delete Cluster #1'
       description: >
-        Delete this clone
+        Delete this clone in the background to free up resources
       try:
         - delete:
+            deletionPropagationPolicy: Background
+            expect: [{ check: { (`true`): true } }]
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
@@ -158,9 +160,11 @@ spec:
 
     - name: 'Delete Cluster #2'
       description: >
-        Delete this clone
+        Delete this clone in the background to free up resources
       try:
         - delete:
+            deletionPropagationPolicy: Background
+            expect: [{ check: { (`true`): true } }]
             ref:
               apiVersion: ($postgrescluster.apiVersion)
               kind: PostgresCluster
