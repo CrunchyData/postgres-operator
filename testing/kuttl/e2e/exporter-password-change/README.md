@@ -1,6 +1,6 @@
 # Exporter Password Change
 
-## 00--create-cluster:
+## 00-create-cluster:
 The TestStep will:
 
 1) Apply the `files/inital-postgrescluster.yaml` file to create a cluster with monitoring enabled
@@ -13,7 +13,7 @@ The TestStep will:
 
 This TestAssert will loop through a script until:
 1) the instance pod has the `ContainersReady` condition with status `true`
-2) the asserts from `00--create-cluster` are met.
+2) the asserts from `00-create-cluster` are met.
 
 ## 01-assert:
 
