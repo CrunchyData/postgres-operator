@@ -13,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/yaml"
 
-	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -226,14 +225,6 @@ func DynamicConfiguration(
 	postgresql := map[string]any{
 		// TODO(cbandy): explain this. requires an archive, perhaps.
 		"use_slots": false,
-	}
-
-	// When TDE is configured, override the pg_rewind binary name to point
-	// to the wrapper script.
-	if config.FetchKeyCommand(spec) != "" {
-		postgresql["bin_name"] = map[string]any{
-			"pg_rewind": "/tmp/pg_rewind_tde.sh",
-		}
 	}
 
 	// Copy the "postgresql" section over the above defaults.
@@ -573,11 +564,6 @@ func instanceYAML(
 
 				// NOTE: The "--waldir" option was introduced in PostgreSQL v10.
 				"waldir=" + postgres.WALDirectory(cluster, instance),
-			}
-
-			// Append the encryption key command, if provided.
-			if ekc := config.FetchKeyCommand(&cluster.Spec); ekc != "" {
-				initdb = append(initdb, fmt.Sprintf("encryption-key-command=%s", ekc))
 			}
 
 			// Populate some "bootstrap" fields to initialize the cluster.

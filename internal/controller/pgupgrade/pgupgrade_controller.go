@@ -19,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -431,7 +430,7 @@ func (r *PGUpgradeReconciler) Reconcile(ctx context.Context, upgrade *v1beta1.PG
 	// TODO: error from apply could mean that the job exists with a different spec.
 	if err == nil && !upgradeJobComplete {
 		err = errors.WithStack(runtime.Apply(ctx, r.Writer,
-			r.generateUpgradeJob(ctx, upgrade, world.ClusterPrimary, config.FetchKeyCommand(&world.Cluster.Spec))))
+			r.generateUpgradeJob(ctx, upgrade, world.ClusterPrimary)))
 	}
 
 	// Create the jobs to remove the data from the replicas, as long as

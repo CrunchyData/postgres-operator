@@ -298,7 +298,6 @@ initContainers:
     (mkdir -p '/pgdata/pgbackrest/log' && { chmod 0775 '/pgdata/pgbackrest/log' '/pgdata/pgbackrest' || :; }) ||
     halt "$(permissions '/pgdata/pgbackrest/log' ||:)"
     install -D --mode=0600 -t "/tmp/replication" "/pgconf/tls/replication"/{tls.crt,tls.key,ca.crt}
-
     [[ -f "${postgres_data_directory}/PG_VERSION" ]] || exit 0
     results 'data version' "${postgres_data_version:=$(< "${postgres_data_directory}/PG_VERSION")}"
     [[ "${postgres_data_version}" == "${expected_major_version}" ]] ||

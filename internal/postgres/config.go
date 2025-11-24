@@ -14,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/shell"
@@ -451,18 +450,6 @@ func startupCommand(
 		`halt "$(permissions `+shell.QuoteWord(util.GetPGBackRestLogPathForInstance(cluster))+` ||:)"`,
 	)
 
-	pg_rewind_override := ""
-	if config.FetchKeyCommand(&cluster.Spec) != "" {
-		// Quoting "EOF" disables parameter substitution during write.
-		// - https://tldp.org/LDP/abs/html/here-docs.html#EX71C
-		pg_rewind_override = `cat << "EOF" > /tmp/pg_rewind_tde.sh
-#!/bin/sh
-pg_rewind -K "$(postgres -C encryption_key_command)" "$@"
-EOF
-chmod +x /tmp/pg_rewind_tde.sh
-`
-	}
-
 	args := []string{fmt.Sprint(version), walDir}
 	script := strings.Join([]string{
 		`declare -r expected_major_version="$1" pgwal_directory="$2"`,
@@ -531,9 +518,6 @@ chmod +x /tmp/pg_rewind_tde.sh
 			naming.ReplicationTmp, naming.CertMountPath+naming.ReplicationDirectory,
 			naming.ReplicationCert, naming.ReplicationPrivateKey,
 			naming.ReplicationCACert),
-
-		// Add the pg_rewind wrapper script, if TDE is enabled.
-		pg_rewind_override,
 
 		// When the data directory is empty, there's nothing more to do.
 		`[[ -f "${postgres_data_directory}/PG_VERSION" ]] || exit 0`,
