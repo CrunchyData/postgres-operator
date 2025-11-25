@@ -1,0 +1,32 @@
+name: Linters
+
+on:
+  pull_request:
+    branches:
+      - REL_5_8
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: stable }
+
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          args: --timeout=5m
+
+      # Count issues reported by disabled linters. The command always
+      # exits zero to ensure it does not fail the pull request check.
+      - name: Count non-blocking issues
+        run: |
+          golangci-lint run --config .golangci.next.yaml --show-stats >> "${GITHUB_STEP_SUMMARY}" \
+            --max-issues-per-linter=0 \
+            --max-same-issues=0 \
+            --uniq-by-line=0 \
+            --output.text.path=/dev/null ||:

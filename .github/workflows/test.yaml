@@ -1,0 +1,199 @@
+name: Tests
+
+on:
+  pull_request:
+    branches:
+      - REL_5_8
+  push:
+    branches:
+      - REL_5_8
+
+jobs:
+  go-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: stable }
+
+      - name: Ensure go.mod is tidy
+        run: go mod tidy --diff
+      - name: Ensure generated files are committed
+        run: make check-generate
+      - run: make check
+
+  kubernetes-api:
+    runs-on: ubuntu-24.04
+    needs: [go-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes: ['default']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: stable }
+
+      - run: go mod download
+      - run: ENVTEST_K8S_VERSION="${KUBERNETES#default}" make check-envtest
+        env:
+          KUBERNETES: "${{ matrix.kubernetes }}"
+          GO_TEST: go test --coverprofile 'envtest.coverage' --coverpkg ./internal/...
+
+      # Upload coverage to GitHub
+      - run: gzip envtest.coverage
+      - uses: actions/upload-artifact@v5
+        with:
+          name: "~coverage~kubernetes-api=${{ matrix.kubernetes }}"
+          path: envtest.coverage.gz
+          retention-days: 1
+
+  kubernetes-k3d:
+    if: "${{ github.repository == 'CrunchyData/postgres-operator' }}"
+    runs-on: ubuntu-24.04
+    needs: [go-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes: [v1.30, v1.34]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: stable }
+
+      - name: Start k3s
+        uses: ./.github/actions/k3d
+        with:
+          k3s-channel: "${{ matrix.kubernetes }}"
+          prefetch-images: |
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.11-2547
+
+      - run: make createnamespaces check-envtest-existing
+        env:
+          PGO_TEST_TIMEOUT_SCALE: 1.2
+          GO_TEST: go test --coverprofile 'envtest-existing.coverage' --coverpkg ./internal/...
+
+      # Upload coverage to GitHub
+      - run: gzip envtest-existing.coverage
+      - uses: actions/upload-artifact@v5
+        with:
+          name: "~coverage~kubernetes-k3d=${{ matrix.kubernetes }}"
+          path: envtest-existing.coverage.gz
+          retention-days: 1
+
+  e2e-k3d-kuttl:
+    runs-on: ubuntu-24.04
+    needs: [go-test]
+    strategy:
+      fail-fast: false
+      matrix:
+        kubernetes: [v1.30, v1.34]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: stable }
+
+      - name: Start k3s
+        uses: ./.github/actions/k3d
+        with:
+          k3s-channel: "${{ matrix.kubernetes }}"
+          prefetch-timeout: 5m
+          prefetch-images: |
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.7-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.11-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.18.1-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-18.1-2547
+            registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.8-2547
+
+      - name: Get pgMonitor files.
+        run: make get-pgmonitor
+        env:
+          PGMONITOR_DIR: "${{ github.workspace }}/hack/tools/pgmonitor"
+          QUERIES_CONFIG_DIR: "${{ github.workspace }}/hack/tools/queries"
+
+      - run: go mod download
+      - name: Build executable
+        run: PGO_VERSION='${{ github.sha }}' make build-postgres-operator
+
+      # Start a Docker container with the working directory mounted.
+      - name: Start PGO
+        run: |
+          kubectl apply --server-side -k ./config/namespace
+          kubectl apply --server-side -k ./config/dev
+          hack/create-kubeconfig.sh postgres-operator pgo
+          docker run --detach --network host --read-only \
+            --volume "$(pwd):/mnt" --workdir '/mnt' --env 'PATH=/mnt/bin' \
+            --env 'QUERIES_CONFIG_DIR=/mnt/hack/tools/queries' \
+            --env 'KUBECONFIG=hack/.kube/postgres-operator/pgo' \
+            --env 'RELATED_IMAGE_PGBACKREST=registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2547' \
+            --env 'RELATED_IMAGE_PGBOUNCER=registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2547' \
+            --env 'RELATED_IMAGE_PGEXPORTER=registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.18.1-2547' \
+            --env 'RELATED_IMAGE_PGUPGRADE=registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-18.1-2547' \
+            --env 'RELATED_IMAGE_POSTGRES_16=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.11-2547' \
+            --env 'RELATED_IMAGE_POSTGRES_17=registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.7-2547' \
+            --env 'RELATED_IMAGE_STANDALONE_PGADMIN=registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.8-2547' \
+            --env 'RELATED_IMAGE_COLLECTOR=registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.5-0' \
+            --env 'PGO_FEATURE_GATES=TablespaceVolumes=true,OpenTelemetryLogs=true,OpenTelemetryMetrics=true' \
+            --name 'postgres-operator' ubuntu \
+            postgres-operator
+
+      - run: make generate-kuttl
+        env:
+          KUTTL_PG_UPGRADE_FROM_VERSION: '16'
+          KUTTL_PG_UPGRADE_TO_VERSION: '17'
+          KUTTL_PG_VERSION: '16'
+          KUTTL_POSTGIS_VERSION: '3.4'
+          KUTTL_PSQL_IMAGE: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.11-2547'
+      - run: |
+          make check-kuttl && exit
+          failed=$?
+          echo '::group::PGO logs'; docker logs 'postgres-operator'; echo '::endgroup::'
+          exit $failed
+
+      - name: Stop PGO
+        run: docker stop 'postgres-operator' || true
+
+  coverage-report:
+    if: ${{ success() || contains(needs.*.result, 'success') }}
+    runs-on: ubuntu-24.04
+    needs:
+      - kubernetes-api
+      - kubernetes-k3d
+      - e2e-k3d-kuttl
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with: { go-version: stable }
+      - uses: actions/download-artifact@v6
+        with: { path: download }
+
+      # Combine the coverage profiles by taking the mode line from any one file
+      # and the data from all files. Write a list of functions with less than
+      # 100% coverage to the job summary, and upload a complete HTML report.
+      - name: Generate report
+        run: |
+          gunzip --keep download/*/*.gz
+          ( sed -e '1q' download/*/*.coverage
+            tail -qn +2 download/*/*.coverage ) > total.coverage
+          go tool cover --func total.coverage -o total-coverage.txt
+          go tool cover --html total.coverage -o total-coverage.html
+
+          awk < total-coverage.txt '
+            END { print "<details><summary>Total Coverage: <code>" $3 " " $2 "</code></summary>" }
+          ' >> "${GITHUB_STEP_SUMMARY}"
+
+          sed < total-coverage.txt -e '/100.0%/d' -e "s,$(go list -m)/,," | column -t | awk '
+            NR == 1 { print "\n\n```" } { print } END { if (NR > 0) print "```\n\n"; print "</details>" }
+          ' >> "${GITHUB_STEP_SUMMARY}"
+
+      # Upload coverage to GitHub
+      - run: gzip total-coverage.html
+      - uses: actions/upload-artifact@v5
+        with:
+          name: coverage-report=html
+          path: total-coverage.html.gz
+          retention-days: 15
