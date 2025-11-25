@@ -16,7 +16,7 @@ resources:
 images:
 - name: postgres-operator
   newName: registry.developers.crunchydata.com/crunchydata/postgres-operator
-  newTag: ubi8-5.7.5-0
+  newTag: ubi8-5.7.9-0
 
 patches:
 - path: manager-target.yaml
