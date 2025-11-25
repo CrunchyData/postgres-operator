@@ -107,7 +107,6 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 	cm.Data[CMInstanceKey] = iniGeneratedWarning +
 		populatePGInstanceConfigurationMap(
 			serviceName, serviceNamespace, repoHostName, pgdataDir,
-			fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 			pgPort, postgresCluster.Spec.Backups.PGBackRest.Repos,
 			postgresCluster.Spec.Backups.PGBackRest.Global,
 			util.GetPGBackRestLogPathForInstance(postgresCluster),
@@ -127,8 +126,7 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 		cm.Data[CMRepoKey] = iniGeneratedWarning +
 			populateRepoHostConfigurationMap(
 				serviceName, serviceNamespace,
-				pgdataDir, fmt.Sprint(postgresCluster.Spec.PostgresVersion),
-				pgPort, instanceNames,
+				pgdataDir, pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
 				pgBackRestLogPath,
@@ -157,7 +155,6 @@ func CreatePGBackRestConfigMapIntent(ctx context.Context, postgresCluster *v1bet
 		cm.Data[CMCloudRepoKey] = iniGeneratedWarning +
 			populateCloudRepoConfigurationMap(
 				serviceName, serviceNamespace, pgdataDir,
-				fmt.Sprint(postgresCluster.Spec.PostgresVersion),
 				cloudLogPath, pgPort, instanceNames,
 				postgresCluster.Spec.Backups.PGBackRest.Repos,
 				postgresCluster.Spec.Backups.PGBackRest.Global,
@@ -361,8 +358,8 @@ exit 1`
 // populatePGInstanceConfigurationMap returns options representing the pgBackRest configuration for
 // a PostgreSQL instance
 func populatePGInstanceConfigurationMap(
-	serviceName, serviceNamespace, repoHostName, pgdataDir,
-	postgresVersion string, pgPort int32, repos []v1beta1.PGBackRestRepo,
+	serviceName, serviceNamespace, repoHostName, pgdataDir string,
+	pgPort int32, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string, pgBackRestLogPath string,
 ) iniSectionSet {
 
@@ -424,7 +421,7 @@ func populatePGInstanceConfigurationMap(
 // populateRepoHostConfigurationMap returns options representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
 func populateRepoHostConfigurationMap(
-	serviceName, serviceNamespace, pgdataDir, postgresVersion string,
+	serviceName, serviceNamespace, pgdataDir string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string, logPath string,
 ) iniSectionSet {
@@ -482,7 +479,7 @@ func populateRepoHostConfigurationMap(
 }
 
 func populateCloudRepoConfigurationMap(
-	serviceName, serviceNamespace, pgdataDir, postgresVersion, logPath string,
+	serviceName, serviceNamespace, pgdataDir, logPath string,
 	pgPort int32, pgHosts []string, repos []v1beta1.PGBackRestRepo,
 	globalConfig map[string]string,
 ) iniSectionSet {
