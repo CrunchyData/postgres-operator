@@ -37,11 +37,11 @@ spec:
         - name: RELATED_IMAGE_PGBOUNCER
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.24-2547"
         - name: RELATED_IMAGE_PGEXPORTER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.17.1-2547"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.18.1-2547"
         - name: RELATED_IMAGE_PGUPGRADE
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-17.7-2547"
         - name: RELATED_IMAGE_STANDALONE_PGADMIN
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.2-2547"
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.8-2547"
         - name: RELATED_IMAGE_COLLECTOR
           value: "registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.5-0"
         securityContext:
