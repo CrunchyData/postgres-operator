@@ -4,37 +4,95 @@
 # Rules that should be enforced immediately belong in [.golangci.yaml].
 #
 # Both files are used by [.github/workflows/lint.yaml].
+version: "2"
 
+# https://golangci-lint.run/usage/linters
 linters:
-  disable-all: true
-  enable:
-    - contextcheck
-    - err113
+  default: all
+  disable:
+    - asasalint
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - dupword
+    - durationcheck
     - errchkjson
-    - gocritic
-    - godot
-    - godox
-    - gofumpt
-    - gosec # exclude-use-default
-    - nilnil
+    - errname
+    - errorlint
+    - exhaustive
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - ginkgolinter
+    - gocheckcompilerdirectives
+    - gochecksumtype
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosmopolitan
+    - grouper
+    - iface
+    - importas
+    - interfacebloat
+    - intrange
+    - loggercheck
+    - makezero
+    - mirror
+    - misspell
+    - musttag
+    - nilerr
+    - nilnesserr
+    - noctx
     - nolintlint
-    - predeclared
-    - revive
-    - staticcheck # exclude-use-default
-    - tenv
-    - thelper
-    - tparallel
+    - nosprintfhostport
+    - prealloc
+    - promlinter
+    - protogetter
+    - reassign
+    - recvcheck
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - tagalign
+    - testifylint
+    - unconvert
+    - unparam
+    - usestdlibvars
+    - usetesting
     - wastedassign
+    - wsl
+    - zerologlint
+
+  settings:
+    thelper:
+      # https://github.com/kulti/thelper/issues/27
+      tb:   { begin: true, first: true }
+      test: { begin: true, first: true, name: true }
+
+  exclusions:
+    warn-unused: true
+    # Ignore built-in exclusions
+    presets: []
+    rules:
+      # We call external linters when they are installed: Flake8, ShellCheck, etc.
+      - linters: [gosec]
+        path: '_test[.]go$'
+        text: 'G204: Subprocess launched with variable'
+
+# https://golangci-lint.run/usage/formatters
+formatters:
+  enable:
+    - gofumpt
 
 issues:
-  # https://github.com/golangci/golangci-lint/issues/2239
-  exclude-use-default: false
+  # Fix only when requested
+  fix: false
 
-linters-settings:
-  errchkjson:
-    check-error-free-encoding: true
-
-  thelper:
-    # https://github.com/kulti/thelper/issues/27
-    tb:   { begin: true, first: true }
-    test: { begin: true, first: true, name: true }
+  # Show all issues at once
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  uniq-by-line: false
