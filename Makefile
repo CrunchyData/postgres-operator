@@ -15,7 +15,7 @@ BUILDAH_BUILD ?= buildah bud
 GO ?= go
 GO_BUILD = $(GO) build
 GO_TEST ?= $(GO) test
-KUTTL ?= kubectl-kuttl
+KUTTL ?= $(GO) run github.com/kudobuilder/kuttl/cmd/kubectl-kuttl@latest
 KUTTL_TEST ?= $(KUTTL) test
 ENVTEST_K8S_VERSION ?= 1.34
 
