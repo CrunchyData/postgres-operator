@@ -1,0 +1,63 @@
+# Copyright 2024 - 2025 Crunchy Data Solutions, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# documentation: https://docs.github.com/code-security/dependabot/dependabot-version-updates
+# schema documentation: https://docs.github.com/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+# yaml-language-server: $schema=https://json.schemastore.org/dependabot-2.0.json
+#
+# Dependabot allows only one schedule per package-ecosystem, directory, and target-branch.
+# Configurations that lack a "target-branch" field also affect security updates.
+#
+# There is a hack to have *two* schedules: https://github.com/dependabot/dependabot-core/issues/1778#issuecomment-1988140219
+---
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directories:
+      # "/" is a special case that includes ".github/workflows/*"
+      - '/'
+      - '.github/actions/*'
+    registries: '*'
+    schedule:
+      interval: weekly
+      day: tuesday
+    labels:
+      - dependencies
+    groups:
+      # Group security updates into one pull request
+      action-vulnerabilities:
+        applies-to: security-updates
+        patterns: ['*']
+
+      # Group version updates into one pull request
+      github-actions:
+        applies-to: version-updates
+        patterns: ['*']
+
+  - package-ecosystem: gomod
+    directory: '/'
+    registries: '*'
+    schedule:
+      interval: weekly
+      day: wednesday
+    labels:
+      - dependencies
+    groups:
+      # Group security updates into one pull request
+      go-vulnerabilities:
+        applies-to: security-updates
+        patterns: ['*']
+
+      # Group Kubernetes and OpenTelemetry version updates into separate pull requests
+      kubernetes:
+        patterns: ['k8s.io/*', 'sigs.k8s.io/*']
+      opentelemetry:
+        patterns: ['go.opentelemetry.io/*']
+      go-dependencies:
+        patterns: ['*']
+        exclude-patterns:
+          - 'k8s.io/*'
+          - 'sigs.k8s.io/*'
+          - 'go.opentelemetry.io/*'
