@@ -3,4 +3,4 @@ versions:
   postgrescluster: 'v1'
 
 images:
-  psql: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.6-2547'
+  psql: 'registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.7-2547'
