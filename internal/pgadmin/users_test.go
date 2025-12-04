@@ -180,7 +180,7 @@ with create_app().app_context():
 
 			// Expect flake8 to be happy. Ignore "E402 module level import not
 			// at top of file" in addition to the defaults.
-			cmd := exec.Command(flake8, "--extend-ignore=E402", file)
+			cmd := exec.CommandContext(ctx, flake8, "--extend-ignore=E402", file)
 			output, err := cmd.CombinedOutput()
 			assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 

@@ -67,6 +67,8 @@ linters:
       ignore:
         # We might see duplicate instances of 'fi' if we end two bash 'if' statements
         - fi
+        # We use "local all all peer" in some hba tests
+        - all
 
     depguard:
       rules:
@@ -94,8 +96,7 @@ linters:
               desc: The "internal/crd" packages should be used only in tests.
             - pkg: github.com/crunchydata/postgres-operator/internal/testing/*
               desc: The "internal/testing" packages should be used only in tests.
-            - pkg: k8s.io/client-go/discovery
-              desc: Use the "internal/kubernetes" package instead.
+
         tests:
           files: ['$test']
           list-mode: lax

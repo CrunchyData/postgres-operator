@@ -338,7 +338,7 @@ func pgUpgradeContainerImage(upgrade *v1beta1.PGUpgrade) string {
 // spec is defined. If it is undefined, an error is returned.
 func verifyUpgradeImageValue(upgrade *v1beta1.PGUpgrade) error {
 	if pgUpgradeContainerImage(upgrade) == "" {
-		return fmt.Errorf("Missing crunchy-upgrade image")
+		return fmt.Errorf("missing crunchy-upgrade image")
 	}
 	return nil
 }

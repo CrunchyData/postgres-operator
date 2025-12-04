@@ -87,7 +87,7 @@ func (r *Reconciler) claimObject(ctx context.Context, postgresCluster *v1beta1.P
 
 	// At this point the resource has no controller ref and is therefore an orphan.  Ignore if
 	// either the PostgresCluster resource or the orphaned resource is being deleted, or if the selector
-	// for the orphaned resource doesn't doesn't include the proper PostgresCluster label
+	// for the orphaned resource doesn't include the proper PostgresCluster label
 	_, hasPGClusterLabel := obj.GetLabels()[naming.LabelCluster]
 	if postgresCluster.GetDeletionTimestamp() != nil || !hasPGClusterLabel {
 		return nil

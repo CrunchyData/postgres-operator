@@ -23,7 +23,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	pgoRuntime "github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -57,7 +56,7 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 		// Potentially replace with different requeue times, remove the Watch function
 		// Smarter: retry after a certain time for each cluster: https://gist.github.com/cbandy/a5a604e3026630c5b08cfbcdfffd2a13
 		WatchesRawSource(
-			pgoRuntime.NewTickerImmediate(5*time.Minute, event.GenericEvent{}, r.Watch()),
+			runtime.NewTickerImmediate(5*time.Minute, event.GenericEvent{}, r.Watch()),
 		).
 		// Watch secrets and filter for secrets mentioned by CrunchyBridgeClusters
 		Watches(
@@ -80,7 +79,7 @@ func (r *CrunchyBridgeClusterReconciler) SetupWithManager(
 func (r *CrunchyBridgeClusterReconciler) setControllerReference(
 	owner *v1beta1.CrunchyBridgeCluster, controlled client.Object,
 ) error {
-	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
+	return controllerutil.SetControllerReference(owner, controlled, r.Scheme())
 }
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="crunchybridgeclusters",verbs={get,patch,update}
@@ -671,7 +670,7 @@ func (r *CrunchyBridgeClusterReconciler) GetSecretKeys(
 	}}
 
 	err := errors.WithStack(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing))
+		r.Get(ctx, client.ObjectKeyFromObject(existing), existing))
 
 	if err == nil {
 		if existing.Data["key"] != nil && existing.Data["team"] != nil {
@@ -694,7 +693,7 @@ func (r *CrunchyBridgeClusterReconciler) deleteControlled(
 		version := object.GetResourceVersion()
 		exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 
-		return r.Client.Delete(ctx, object, exactly)
+		return r.Delete(ctx, object, exactly)
 	}
 
 	return nil

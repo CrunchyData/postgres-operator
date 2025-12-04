@@ -999,7 +999,7 @@ func TestPGBackRestCreateReplicaCommand(t *testing.T) {
 		file := filepath.Join(dir, "command.sh")
 		assert.NilError(t, os.WriteFile(file, []byte(command), 0o600))
 
-		cmd := exec.Command(shellcheck, "--enable=all", "--shell=sh", file)
+		cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", "--shell=sh", file)
 		output, err := cmd.CombinedOutput()
 		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 	}
@@ -1021,7 +1021,7 @@ func TestPGBackRestCreateReplicaCommand(t *testing.T) {
 		file := filepath.Join(dir, "script.bash")
 		assert.NilError(t, os.WriteFile(file, []byte(script), 0o600))
 
-		cmd := exec.Command(shellcheck, "--enable=all", file)
+		cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", file)
 		output, err := cmd.CombinedOutput()
 		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 	}
@@ -1100,7 +1100,6 @@ func TestProbeTiming(t *testing.T) {
 			FailureThreshold: 1,
 		}},
 	} {
-		tt := tt
 		actual := probeTiming(&v1beta1.PatroniSpec{
 			LeaderLeaseDurationSeconds: &tt.lease,
 			SyncPeriodSeconds:          &tt.sync,

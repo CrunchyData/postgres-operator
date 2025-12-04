@@ -214,7 +214,7 @@ func TestReloadCommand(t *testing.T) {
 	assert.NilError(t, os.WriteFile(file, []byte(command[3]), 0o600))
 
 	// Expect shellcheck to be happy.
-	cmd := exec.Command(shellcheck, "--enable=all", file)
+	cmd := exec.CommandContext(t.Context(), shellcheck, "--enable=all", file)
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 }
