@@ -335,7 +335,7 @@ func (r *Reconciler) observeInstances(
 		status.DesiredPGDataVolume = make(map[string]string)
 
 		for _, instance := range observed.bySet[name] {
-			status.Replicas += int32(len(instance.Pods)) //nolint:gosec
+			status.Replicas += int32(len(instance.Pods))
 
 			if ready, known := instance.IsReady(); known && ready {
 				status.ReadyReplicas++
@@ -752,7 +752,7 @@ func findAvailableInstanceNames(set v1beta1.PostgresInstanceSetSpec,
 	}
 
 	// Determine whether or not the PVC is associated with an existing instance within the same
-	// instance set.  If not, then the instance name associated with that PVC can be be reused.
+	// instance set.  If not, then the instance name associated with that PVC can be reused.
 	for _, pvc := range setVolumes {
 		pvcInstanceName := pvc.GetLabels()[naming.LabelInstance]
 		instance := observedInstances.byName[pvcInstanceName]

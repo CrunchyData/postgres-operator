@@ -55,7 +55,7 @@ func TestGenerateAlphaNumericPassword(t *testing.T) {
 	}
 
 	previous := sets.Set[string]{}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		password, err := GenerateAlphaNumericPassword(5)
 
 		assert.NilError(t, err)
@@ -80,7 +80,7 @@ func TestGenerateASCIIPassword(t *testing.T) {
 	}
 
 	previous := sets.Set[string]{}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		password, err := GenerateASCIIPassword(5)
 
 		assert.NilError(t, err)

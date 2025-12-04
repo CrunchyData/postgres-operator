@@ -31,8 +31,8 @@ func TestClientBackoff(t *testing.T) {
 	client := NewClient("", "")
 	var total time.Duration
 
-	for i := 1; i <= 50 && client.Backoff.Steps > 0; i++ {
-		step := client.Backoff.Step()
+	for i := 1; i <= 50 && client.Steps > 0; i++ {
+		step := client.Step()
 		total += step
 
 		t.Logf("%02d:%20v%20v", i, step, total)
@@ -68,7 +68,7 @@ func TestClientDoWithBackoff(t *testing.T) {
 
 		// Client with one attempt, i.e. no backoff.
 		client := NewClient(server.URL, "xyz")
-		client.Backoff.Steps = 1
+		client.Steps = 1
 		assert.Equal(t, client.BaseURL.String(), server.URL)
 
 		ctx := context.Background()
@@ -113,8 +113,8 @@ func TestClientDoWithBackoff(t *testing.T) {
 
 		// Client with brief backoff.
 		client := NewClient(server.URL, "")
-		client.Backoff.Duration = time.Millisecond
-		client.Backoff.Steps = 5
+		client.Duration = time.Millisecond
+		client.Steps = 5
 		assert.Equal(t, client.BaseURL.String(), server.URL)
 
 		ctx := context.Background()
@@ -170,8 +170,8 @@ func TestClientDoWithBackoff(t *testing.T) {
 
 		// Client with brief backoff.
 		client := NewClient(server.URL, "")
-		client.Backoff.Duration = time.Millisecond
-		client.Backoff.Steps = 5
+		client.Duration = time.Millisecond
+		client.Steps = 5
 		assert.Equal(t, client.BaseURL.String(), server.URL)
 
 		ctx := context.Background()
@@ -190,8 +190,8 @@ func TestClientDoWithBackoff(t *testing.T) {
 
 		// Client with lots of brief backoff.
 		client := NewClient(server.URL, "")
-		client.Backoff.Duration = time.Millisecond
-		client.Backoff.Steps = 100
+		client.Duration = time.Millisecond
+		client.Steps = 100
 		assert.Equal(t, client.BaseURL.String(), server.URL)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)

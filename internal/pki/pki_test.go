@@ -194,7 +194,7 @@ func TestRootIsInvalid(t *testing.T) {
 		t.Cleanup(func() { currentTime = original })
 
 		currentTime = func() time.Time {
-			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.Local)
+			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.UTC)
 		}
 
 		root, err := NewRootCertificateAuthority()
@@ -395,7 +395,7 @@ func TestLeafIsInvalid(t *testing.T) {
 		t.Cleanup(func() { currentTime = original })
 
 		currentTime = func() time.Time {
-			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.Local)
+			return time.Date(2010, time.January, 1, 0, 0, 0, 0, time.UTC)
 		}
 
 		leaf, err := root.GenerateLeafCertificate("", nil)
@@ -439,7 +439,7 @@ func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf Certificate) {
 	verify := func(t testing.TB, args ...string) {
 		t.Helper()
 		// #nosec G204 -- args from this test
-		cmd := exec.Command(openssl, append([]string{"verify"}, args...)...)
+		cmd := exec.CommandContext(t.Context(), openssl, append([]string{"verify"}, args...)...)
 
 		output, err := cmd.CombinedOutput()
 		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
@@ -476,7 +476,7 @@ func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf Certificate) {
 }
 
 func strictOpenSSLVerify(t *testing.T, openssl string, root, leaf Certificate) {
-	output, _ := exec.Command(openssl, "verify", "-help").CombinedOutput()
+	output, _ := exec.CommandContext(t.Context(), openssl, "verify", "-help").CombinedOutput()
 	if !strings.Contains(string(output), "-x509_strict") {
 		t.Skip(`requires "-x509_strict" flag`)
 	}
@@ -487,7 +487,7 @@ func strictOpenSSLVerify(t *testing.T, openssl string, root, leaf Certificate) {
 	verify := func(t testing.TB, args ...string) {
 		t.Helper()
 		// #nosec G204 -- args from this test
-		cmd := exec.Command(openssl, append([]string{"verify",
+		cmd := exec.CommandContext(t.Context(), openssl, append([]string{"verify",
 			// Do not use the default trusted CAs.
 			"-no-CAfile", "-no-CApath",
 			// Disable "non-compliant workarounds for broken certificates".

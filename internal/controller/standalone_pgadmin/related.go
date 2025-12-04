@@ -7,12 +7,12 @@ package standalone_pgadmin
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-
-	"k8s.io/apimachinery/pkg/labels"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 //+kubebuilder:rbac:groups="postgres-operator.crunchydata.com",resources="pgadmins",verbs={list}
@@ -30,7 +30,7 @@ func (r *PGAdminReconciler) findPGAdminsForPostgresCluster(
 	// namespace, we can configure the [manager.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
-	if r.Client.List(ctx, &pgadmins, &client.ListOptions{
+	if r.List(ctx, &pgadmins, &client.ListOptions{
 		Namespace: cluster.GetNamespace(),
 	}) == nil {
 		for i := range pgadmins.Items {
@@ -64,7 +64,7 @@ func (r *PGAdminReconciler) findPGAdminsForSecret(
 	// namespace, we can configure the [manager.Manager] field indexer and pass a
 	// [fields.Selector] here.
 	// - https://book.kubebuilder.io/reference/watching-resources/externally-managed.html
-	if err := r.Client.List(ctx, &pgadmins, &client.ListOptions{
+	if err := r.List(ctx, &pgadmins, &client.ListOptions{
 		Namespace: secret.Namespace,
 	}); err == nil {
 		for i := range pgadmins.Items {
@@ -93,7 +93,7 @@ func (r *PGAdminReconciler) getClustersForPGAdmin(
 	for _, serverGroup := range pgAdmin.Spec.ServerGroups {
 		var cluster v1beta1.PostgresCluster
 		if serverGroup.PostgresClusterName != "" {
-			err = r.Client.Get(ctx, client.ObjectKey{
+			err = r.Get(ctx, client.ObjectKey{
 				Name:      serverGroup.PostgresClusterName,
 				Namespace: pgAdmin.GetNamespace(),
 			}, &cluster)
@@ -104,7 +104,7 @@ func (r *PGAdminReconciler) getClustersForPGAdmin(
 		}
 		if selector, err = naming.AsSelector(serverGroup.PostgresClusterSelector); err == nil {
 			var list v1beta1.PostgresClusterList
-			err = r.Client.List(ctx, &list,
+			err = r.List(ctx, &list,
 				client.InNamespace(pgAdmin.Namespace),
 				client.MatchingLabelsSelector{Selector: selector},
 			)
