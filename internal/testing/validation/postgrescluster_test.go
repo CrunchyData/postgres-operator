@@ -63,7 +63,6 @@ func TestPostgresUserOptions(t *testing.T) {
 		assert.Assert(t, apierrors.IsInvalid(err))
 		assert.ErrorContains(t, err, "cannot contain comments")
 
-		//nolint:errorlint // This is a test, and a panic is unlikely.
 		status := err.(apierrors.APIStatus).Status()
 		assert.Assert(t, status.Details != nil)
 		assert.Equal(t, len(status.Details.Causes), 3)
@@ -85,7 +84,6 @@ func TestPostgresUserOptions(t *testing.T) {
 		assert.Assert(t, apierrors.IsInvalid(err))
 		assert.ErrorContains(t, err, "cannot assign password")
 
-		//nolint:errorlint // This is a test, and a panic is unlikely.
 		status := err.(apierrors.APIStatus).Status()
 		assert.Assert(t, status.Details != nil)
 		assert.Equal(t, len(status.Details.Causes), 2)
@@ -106,7 +104,6 @@ func TestPostgresUserOptions(t *testing.T) {
 		assert.Assert(t, apierrors.IsInvalid(err))
 		assert.ErrorContains(t, err, "should match")
 
-		//nolint:errorlint // This is a test, and a panic is unlikely.
 		status := err.(apierrors.APIStatus).Status()
 		assert.Assert(t, status.Details != nil)
 		assert.Equal(t, len(status.Details.Causes), 1)

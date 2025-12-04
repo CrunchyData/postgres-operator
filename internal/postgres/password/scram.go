@@ -138,7 +138,7 @@ func (s *SCRAMPassword) isASCII() bool {
 	// iterate through each character of the plaintext password and determine if
 	// it is ASCII. if it is not ASCII, exit early
 	// per research, this loop is optimized to be fast for searching
-	for i := 0; i < len(s.password); i++ {
+	for i := range len(s.password) {
 		if s.password[i] > unicode.MaxASCII {
 			return false
 		}

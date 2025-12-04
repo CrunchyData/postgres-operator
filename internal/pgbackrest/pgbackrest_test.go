@@ -13,12 +13,10 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
-
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -94,7 +92,7 @@ fi
 	assert.NilError(t, os.WriteFile(file, []byte(shellCheckScript), 0o600))
 
 	// Expect shellcheck to be happy.
-	cmd := exec.Command(shellcheck, "--enable=all", file)
+	cmd := exec.CommandContext(ctx, shellcheck, "--enable=all", file)
 	output, err := cmd.CombinedOutput()
 	assert.NilError(t, err, "%q\n%s", cmd.Args, output)
 }

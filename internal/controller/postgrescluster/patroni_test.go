@@ -6,6 +6,7 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -14,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -97,12 +97,12 @@ ownerReferences:
 		assert.NilError(t, err)
 
 		// Annotations present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Annotations, map[string]string{
+		assert.DeepEqual(t, service.Annotations, map[string]string{
 			"a": "v1",
 		})
 
 		// Labels present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Labels, map[string]string{
+		assert.DeepEqual(t, service.Labels, map[string]string{
 			"b": "v2",
 			"postgres-operator.crunchydata.com/cluster": "pg2",
 			"postgres-operator.crunchydata.com/patroni": "pg2-ha",
@@ -125,13 +125,13 @@ ownerReferences:
 		assert.NilError(t, err)
 
 		// Annotations present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Annotations, map[string]string{
+		assert.DeepEqual(t, service.Annotations, map[string]string{
 			"a": "v1",
 			"c": "v3",
 		})
 
 		// Labels present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Labels, map[string]string{
+		assert.DeepEqual(t, service.Labels, map[string]string{
 			"b": "v2",
 			"d": "v4",
 			"postgres-operator.crunchydata.com/cluster": "pg2",
@@ -472,15 +472,15 @@ func TestReconcilePatroniStatus(t *testing.T) {
 			ObjectMeta: naming.PatroniDistributedConfiguration(postgresCluster),
 		}
 		if writeAnnotation {
-			endpoints.ObjectMeta.Annotations = make(map[string]string)
-			endpoints.ObjectMeta.Annotations["initialize"] = systemIdentifier
+			endpoints.Annotations = make(map[string]string)
+			endpoints.Annotations["initialize"] = systemIdentifier
 		}
 		assert.NilError(t, tClient.Create(ctx, endpoints, &client.CreateOptions{}))
 
 		instance := &Instance{
 			Name: instanceName, Runner: runner,
 		}
-		for i := 0; i < readyReplicas; i++ {
+		for range readyReplicas {
 			instance.Pods = append(instance.Pods, &corev1.Pod{
 				Status: corev1.PodStatus{
 					Conditions: []corev1.PodCondition{{

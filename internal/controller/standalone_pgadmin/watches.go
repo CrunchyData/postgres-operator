@@ -91,7 +91,7 @@ func (r *PGAdminReconciler) findPGAdminsForSecret(
 	}); err == nil {
 		for i := range pgadmins.Items {
 			for j := range pgadmins.Items[i].Spec.Users {
-				if pgadmins.Items[i].Spec.Users[j].PasswordRef.LocalObjectReference.Name == secret.Name {
+				if pgadmins.Items[i].Spec.Users[j].PasswordRef.Name == secret.Name {
 					matching = append(matching, &pgadmins.Items[i])
 					break
 				}

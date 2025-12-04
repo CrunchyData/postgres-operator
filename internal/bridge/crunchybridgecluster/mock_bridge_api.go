@@ -13,7 +13,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/bridge"
 	"github.com/crunchydata/postgres-operator/internal/initialize"
-
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 

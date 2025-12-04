@@ -24,7 +24,7 @@ func SQLQuoteIdentifier(identifier string) string {
 		identifier = identifier[:end]
 	}
 
-	return `"` + strings.Replace(identifier, `"`, `""`, -1) + `"`
+	return `"` + strings.ReplaceAll(identifier, `"`, `""`) + `"`
 }
 
 // SQLQuoteLiteral quotes a 'literal' (e.g. a parameter, often used to pass literal
@@ -45,14 +45,14 @@ func SQLQuoteLiteral(literal string) string {
 	// https://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/interfaces/libpq/fe-exec.c
 	//
 	// substitute any single-quotes (') with two single-quotes ('')
-	literal = strings.Replace(literal, `'`, `''`, -1)
+	literal = strings.ReplaceAll(literal, `'`, `''`)
 	// determine if the string has any backslashes (\) in it.
 	// if it does, replace any backslashes (\) with two backslashes (\\)
 	// then, we need to wrap the entire string with a PostgreSQL
 	// C-style escape. Per how "PQEscapeStringInternal" handles this case, we
 	// also add a space before the "E"
 	if strings.Contains(literal, `\`) {
-		literal = strings.Replace(literal, `\`, `\\`, -1)
+		literal = strings.ReplaceAll(literal, `\`, `\\`)
 		literal = ` E'` + literal + `'`
 	} else {
 		// otherwise, we can just wrap the literal with a pair of single quotes

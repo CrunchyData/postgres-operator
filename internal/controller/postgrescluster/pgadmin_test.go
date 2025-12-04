@@ -6,11 +6,11 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strconv"
 	"testing"
 
-	"github.com/pkg/errors"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -104,12 +104,12 @@ ownerReferences:
 		assert.Assert(t, specified)
 
 		// Annotations present in the metadata.
-		assert.DeepEqual(t, configmap.ObjectMeta.Annotations, map[string]string{
+		assert.DeepEqual(t, configmap.Annotations, map[string]string{
 			"a": "v5", "b": "v2", "e": "v6",
 		})
 
 		// Labels present in the metadata.
-		assert.DeepEqual(t, configmap.ObjectMeta.Labels, map[string]string{
+		assert.DeepEqual(t, configmap.Labels, map[string]string{
 			"c": "v7", "d": "v4", "f": "v8",
 			"postgres-operator.crunchydata.com/cluster": "pg1",
 			"postgres-operator.crunchydata.com/role":    "pgadmin",
@@ -194,12 +194,12 @@ ownerReferences:
 		assert.Assert(t, specified)
 
 		// Annotations present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Annotations, map[string]string{
+		assert.DeepEqual(t, service.Annotations, map[string]string{
 			"a": "v1",
 		})
 
 		// Labels present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Labels, map[string]string{
+		assert.DeepEqual(t, service.Labels, map[string]string{
 			"b": "v2",
 			"postgres-operator.crunchydata.com/cluster": "my-cluster",
 			"postgres-operator.crunchydata.com/role":    "pgadmin",
@@ -225,13 +225,13 @@ ownerReferences:
 		assert.Assert(t, specified)
 
 		// Annotations present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Annotations, map[string]string{
+		assert.DeepEqual(t, service.Annotations, map[string]string{
 			"a": "v1",
 			"c": "v3",
 		})
 
 		// Labels present in the metadata.
-		assert.DeepEqual(t, service.ObjectMeta.Labels, map[string]string{
+		assert.DeepEqual(t, service.Labels, map[string]string{
 			"b": "v2",
 			"d": "v4",
 			"postgres-operator.crunchydata.com/cluster": "my-cluster",

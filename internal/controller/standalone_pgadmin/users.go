@@ -53,7 +53,7 @@ func (r *PGAdminReconciler) reconcilePGAdminUsers(ctx context.Context, pgadmin *
 	pod := &corev1.Pod{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
 	pod.Name += "-0"
 
-	err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(pod), pod))
+	err := errors.WithStack(r.Get(ctx, client.ObjectKeyFromObject(pod), pod))
 	if err != nil {
 		return client.IgnoreNotFound(err)
 	}
@@ -142,7 +142,7 @@ func (r *PGAdminReconciler) writePGAdminUsers(ctx context.Context, pgadmin *v1be
 
 	existingUserSecret := &corev1.Secret{ObjectMeta: naming.StandalonePGAdmin(pgadmin)}
 	err := errors.WithStack(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existingUserSecret), existingUserSecret))
+		r.Get(ctx, client.ObjectKeyFromObject(existingUserSecret), existingUserSecret))
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
@@ -204,10 +204,10 @@ cd $PGADMIN_DIR
 		// Get password from secret
 		userPasswordSecret := &corev1.Secret{ObjectMeta: metav1.ObjectMeta{
 			Namespace: pgadmin.Namespace,
-			Name:      user.PasswordRef.LocalObjectReference.Name,
+			Name:      user.PasswordRef.Name,
 		}}
 		err := errors.WithStack(
-			r.Client.Get(ctx, client.ObjectKeyFromObject(userPasswordSecret), userPasswordSecret))
+			r.Get(ctx, client.ObjectKeyFromObject(userPasswordSecret), userPasswordSecret))
 		if err != nil {
 			log.Error(err, "Could not get user password secret")
 			continue
@@ -323,11 +323,7 @@ cd $PGADMIN_DIR
 	// to add a user, that user will not be in intentUsers. If errors occurred when attempting to
 	// update a user, the user will be in intentUsers as it existed before. We now want to marshal the
 	// intentUsers to json and write the users.json file to the secret.
-	usersJSON, err := json.Marshal(intentUsers)
-	if err != nil {
-		return err
-	}
-	intentUserSecret.Data["users.json"] = usersJSON
+	intentUserSecret.Data["users.json"], _ = json.Marshal(intentUsers)
 
 	err = errors.WithStack(r.setControllerReference(pgadmin, intentUserSecret))
 	if err == nil {

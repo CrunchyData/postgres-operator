@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
+	"github.com/pkg/errors" //nolint:depguard // This is testing the logging of stack frames.
 	"gotest.tools/v3/assert"
 )
 
