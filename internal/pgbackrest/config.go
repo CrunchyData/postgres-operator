@@ -251,7 +251,7 @@ func RestoreCommand(pgdata, hugePagesSetting, fetchKeyCommand string, _ []*corev
 		`read -r max_ptxn <<< "${control##*max_prepared_xacts setting:}"`,
 		`read -r max_work <<< "${control##*max_worker_processes setting:}"`,
 
-		// During recovery, only allow connections over the the domain socket.
+		// During recovery, only allow connections over the domain socket.
 		`echo > /tmp/pg_hba.restore.conf 'local all "postgres" peer'`,
 
 		// Combine parameters from Go with those detected in Bash.

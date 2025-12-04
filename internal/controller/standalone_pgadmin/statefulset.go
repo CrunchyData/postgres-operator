@@ -7,13 +7,12 @@ package standalone_pgadmin
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/pkg/errors"
 
 	"github.com/crunchydata/postgres-operator/internal/collector"
 	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
@@ -35,7 +34,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 	// When we delete the StatefulSet, we will leave its Pods in place. They will be claimed by
 	// the StatefulSet that gets created in the next reconcile.
 	existing := &appsv1.StatefulSet{}
-	if err := errors.WithStack(r.Client.Get(ctx, client.ObjectKeyFromObject(sts), existing)); err != nil {
+	if err := errors.WithStack(r.Get(ctx, client.ObjectKeyFromObject(sts), existing)); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
 		}
@@ -48,7 +47,7 @@ func (r *PGAdminReconciler) reconcilePGAdminStatefulSet(
 			exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
 			propagate := client.PropagationPolicy(metav1.DeletePropagationOrphan)
 
-			return errors.WithStack(client.IgnoreNotFound(r.Client.Delete(ctx, existing, exactly, propagate)))
+			return errors.WithStack(client.IgnoreNotFound(r.Delete(ctx, existing, exactly, propagate)))
 		}
 	}
 
@@ -123,7 +122,7 @@ func statefulset(
 
 	if collector.OpenTelemetryLogsEnabled(ctx, pgadmin) {
 		// Logs for gunicorn and pgadmin write to /var/lib/pgadmin/logs
-		// so the collector needs access to that that path.
+		// so the collector needs access to that path.
 		dataVolumeMount := corev1.VolumeMount{
 			Name:      "pgadmin-data",
 			MountPath: "/var/lib/pgadmin",

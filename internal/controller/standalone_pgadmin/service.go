@@ -7,15 +7,13 @@ package standalone_pgadmin
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/pkg/errors"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -38,7 +36,7 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 	// need to delete any existing service(s). At the start of every reconcile
 	// get all services that match the current pgAdmin labels.
 	services := corev1.ServiceList{}
-	if err := r.Client.List(ctx, &services,
+	if err := r.List(ctx, &services,
 		client.InNamespace(pgadmin.Namespace),
 		client.MatchingLabels{
 			naming.LabelStandalonePGAdmin: pgadmin.Name,
@@ -64,7 +62,7 @@ func (r *PGAdminReconciler) reconcilePGAdminService(
 	if pgadmin.Spec.ServiceName != "" {
 		// Look for an existing service with name ServiceName in the namespace
 		existingService := &corev1.Service{}
-		err := r.Client.Get(ctx, types.NamespacedName{
+		err := r.Get(ctx, types.NamespacedName{
 			Name:      pgadmin.Spec.ServiceName,
 			Namespace: pgadmin.GetNamespace(),
 		}, existingService)

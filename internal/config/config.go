@@ -173,7 +173,7 @@ func VerifyImageValues(cluster *v1beta1.PostgresCluster) error {
 	}
 
 	if len(images) > 0 {
-		return fmt.Errorf("Missing image(s): %s", images)
+		return fmt.Errorf("missing image(s): %s", images)
 	}
 
 	return nil

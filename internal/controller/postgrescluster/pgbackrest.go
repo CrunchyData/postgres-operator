@@ -1215,7 +1215,7 @@ func (r *Reconciler) reconcileRestoreJob(ctx context.Context,
 	var deltaOptFound, foundTarget bool
 	for _, opt := range opts {
 		switch {
-		case targetRegex.Match([]byte(opt)):
+		case targetRegex.MatchString(opt):
 			foundTarget = true
 		case strings.Contains(opt, "--delta"):
 			deltaOptFound = true
@@ -2303,7 +2303,7 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 
 	if isCreate {
 		r.Recorder.Eventf(postgresCluster, corev1.EventTypeNormal, EventRepoHostCreated,
-			"created pgBackRest repository host %s/%s", repoHost.TypeMeta.Kind, repoHostName)
+			"created pgBackRest repository host %s/%s", repoHost.Kind, repoHostName)
 	}
 
 	return repoHost, nil
@@ -2489,7 +2489,7 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 	backupJob := &batchv1.Job{}
 	backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
 	if currentBackupJob != nil {
-		backupJob.ObjectMeta.Name = currentBackupJob.ObjectMeta.Name
+		backupJob.Name = currentBackupJob.Name
 	}
 
 	var labels, annotations map[string]string
@@ -2502,8 +2502,8 @@ func (r *Reconciler) reconcileManualBackup(ctx context.Context,
 		map[string]string{
 			naming.PGBackRestBackup: manualAnnotation,
 		})
-	backupJob.ObjectMeta.Labels = labels
-	backupJob.ObjectMeta.Annotations = annotations
+	backupJob.Labels = labels
+	backupJob.Annotations = annotations
 
 	spec := r.generateBackupJobSpecIntent(ctx, postgresCluster, repo,
 		serviceAccount.GetName(), labels, annotations, backupOpts...)
@@ -2665,7 +2665,7 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	backupJob := &batchv1.Job{}
 	backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
 	if job != nil {
-		backupJob.ObjectMeta.Name = job.ObjectMeta.Name
+		backupJob.Name = job.Name
 	}
 
 	var labels, annotations map[string]string
@@ -2679,8 +2679,8 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 			naming.PGBackRestCurrentConfig: containerName,
 			naming.PGBackRestConfigHash:    configHash,
 		})
-	backupJob.ObjectMeta.Labels = labels
-	backupJob.ObjectMeta.Annotations = annotations
+	backupJob.Labels = labels
+	backupJob.Annotations = annotations
 
 	spec := r.generateBackupJobSpecIntent(ctx, postgresCluster, replicaCreateRepo,
 		serviceAccount.GetName(), labels, annotations)
@@ -2847,7 +2847,7 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	}
 	// Don't record event or return an error if configHashMismatch is true, since this just means
 	// configuration changes in ConfigMaps/Secrets have not yet propagated to the container.
-	// Therefore, just log an an info message and return an error to requeue and try again.
+	// Therefore, just log an info message and return an error to requeue and try again.
 	if configHashMismatch {
 
 		return true, nil

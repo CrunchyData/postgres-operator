@@ -128,7 +128,7 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 				for _, r := range tc.repos {
 					var foundVolume bool
 					for _, v := range template.Spec.Volumes {
-						if v.Name == r.Name && v.VolumeSource.PersistentVolumeClaim.ClaimName ==
+						if v.Name == r.Name && v.PersistentVolumeClaim.ClaimName ==
 							naming.PGBackRestRepoVolume(postgresCluster, r.Name).Name {
 							foundVolume = true
 							break
