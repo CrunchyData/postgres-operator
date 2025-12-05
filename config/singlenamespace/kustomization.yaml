@@ -15,23 +15,9 @@ labels:
 
 resources:
 - ../crd
-- ../rbac/cluster
+- ../rbac/namespace
 - ../manager
 
 components:
 - ../components/images-by-tag
-
-patches:
-- patch: |-
-    apiVersion: apps/v1
-    kind: Deployment
-    metadata:
-      name: pgo
-    spec:
-      template:
-        spec:
-          containers:
-          - name: operator
-            env:
-            - name: PGO_FEATURE_GATES
-              value: ""
+- ../components/single-namespace
