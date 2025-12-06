@@ -1,0 +1,68 @@
+# Copyright 2017 - 2025 Crunchy Data Solutions, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+FROM localhost/crunchy-postgres:latest
+
+ARG POSTGRES_UPGRADE_VERSIONS="13 14 15 16 17"
+ARG BASE_VERSION=ubi9
+
+USER 0
+
+RUN <<-'SHELL'
+set -e
+
+# Ensure PGDG repo exists (ignore if already installed)
+rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" || true
+
+# Disable module to avoid conflicts
+microdnf --assumeyes module disable postgresql || true
+
+# Build package list for all target versions
+PKGS="$(for POSTGRES_VERSION in ${POSTGRES_UPGRADE_VERSIONS}; do
+POSTGRES_MAJOR_VERSION="${POSTGRES_VERSION%.*}"
+
+case "$POSTGRES_MAJOR_VERSION" in
+    13) PGAUDIT_PKG=pgaudit15_13 ;;
+    14) PGAUDIT_PKG=pgaudit16_14 ;;
+    15) PGAUDIT_PKG=pgaudit17_15 ;;
+    *)  PGAUDIT_PKG="pgaudit_${POSTGRES_MAJOR_VERSION}" ;;
+esac
+
+cat <<EOF
+postgresql${POSTGRES_MAJOR_VERSION}
+postgresql${POSTGRES_MAJOR_VERSION}-contrib
+postgresql${POSTGRES_MAJOR_VERSION}-plpython*
+postgresql${POSTGRES_MAJOR_VERSION}-server
+orafce_${POSTGRES_MAJOR_VERSION}
+pg_cron_${POSTGRES_MAJOR_VERSION}-llvmjit
+pg_partman_${POSTGRES_MAJOR_VERSION}
+${PGAUDIT_PKG}
+set_user_${POSTGRES_MAJOR_VERSION}
+pgnodemx_${POSTGRES_MAJOR_VERSION}
+pgvector_${POSTGRES_MAJOR_VERSION}-llvmjit
+pg_jobmon_${POSTGRES_MAJOR_VERSION}
+hypopg_${POSTGRES_MAJOR_VERSION}
+hypopg_${POSTGRES_MAJOR_VERSION}-llvmjit
+wal2json_${POSTGRES_MAJOR_VERSION}-llvmjit
+EOF
+    done
+)"
+
+microdnf install -y --nodocs --setopt install_weak_deps=0 $PKGS
+microdnf remove -y "pgbackrest*"
+microdnf clean all
+rm -f /etc/yum.repos.d/redhat.repo
+SHELL
+
+# Ensure huge_pages is off by default for each version.
+# This setting can be overridden by updating your
+# postgresql.conf file or through a PostgresCluster Spec.
+RUN \
+    $(for POSTGRES_VERSION in ${POSTGRES_UPGRADE_VERSIONS}; do \
+        $(if [[ $(grep -L "huge_pages = off" "/usr/pgsql-${POSTGRES_VERSION%.*}/share/postgresql.conf.sample") ]]; then \
+           echo "huge_pages = off" >> /usr/pgsql-${POSTGRES_VERSION%.*}/share/postgresql.conf.sample \
+        ; fi) \
+    ; done)
+
+USER 26
