@@ -1,0 +1,120 @@
+# Copyright 2017 - 2025 Crunchy Data Solutions, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal
+
+ARG PATRONI_VERSION=4.0.6
+ARG PGBACKREST_VERSION=2.56.0
+ARG POSTGRES_VERSION=18
+
+# Trim any patch version from the provided POSTGRES_VERSION
+ENV POSTGRES_MAJOR_VERSION="${POSTGRES_VERSION%%.*}"
+
+RUN <<-SHELL
+set -e
+
+# pgAudit package name varies by PG version
+# see project for compatibility details:
+# https://github.com/pgaudit/pgaudit#postgresql-version-compatibility
+PGAUDIT_PKG="$(case "$POSTGRES_MAJOR_VERSION" in \
+    13) echo pgaudit15_13 ;; \
+    14) echo pgaudit16_14 ;; \
+    15) echo pgaudit17_15 ;; \
+    *)  echo "pgaudit_${POSTGRES_MAJOR_VERSION}" ;; \
+    esac)";
+
+# Enable the PostgreSQL Global Development Group (PGDG) repository
+rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pgdg-redhat-repo-latest.noarch.rpm"
+
+# EPEL repo is required for the pgbackrest package
+rpm -ivh "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
+
+# Disable the built-in PostgreSQL module to avoid conflicts with PGDG packages
+microdnf --assumeyes module disable postgresql || true
+
+# Ensure complete timezone database is present (some minimal UBI layers
+# can have tzdata partially pruned); reinstall guarantees fresh /usr/share/zoneinfo
+microdnf reinstall -y --nodocs 'tzdata'
+
+# Install PostgreSQL and related packages
+microdnf install -y --nodocs --setopt install_weak_deps=0 \
+    "postgresql${POSTGRES_MAJOR_VERSION}" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-contrib" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-server" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-llvmjit" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-plpython*"
+
+# Install Postgres extensions
+microdnf install -y --nodocs --setopt install_weak_deps=0 \
+    "${PGAUDIT_PKG}" \
+    "orafce_${POSTGRES_MAJOR_VERSION}" \
+    "pg_partman_${POSTGRES_MAJOR_VERSION}" \
+    "pg_cron_${POSTGRES_MAJOR_VERSION}-llvmjit" \
+    "pgnodemx_${POSTGRES_MAJOR_VERSION}" \
+    "pgvector_${POSTGRES_MAJOR_VERSION}-llvmjit" \
+    "pg_jobmon_${POSTGRES_MAJOR_VERSION}" \
+    "hypopg_${POSTGRES_MAJOR_VERSION}" \
+    "hypopg_${POSTGRES_MAJOR_VERSION}-llvmjit" \
+    "wal2json_${POSTGRES_MAJOR_VERSION}-llvmjit" \
+    "set_user_${POSTGRES_MAJOR_VERSION}"
+
+# Install other necessary packages
+microdnf install -y --nodocs --setopt install_weak_deps=0 \
+    'pgaudit_analyze' \
+    'bind-utils' \
+    'bzip2' \
+    'hostname' \
+    'iproute' \
+    'less' \
+    'lz4' \
+    'tar' \
+    'unzip' \
+    'gettext' \
+    'glibc-langpack-en' \
+    'krb5-workstation' \
+    'nss_wrapper-libs' \
+    'openldap' \
+    'openssl' \
+    'procps-ng' \
+    'vim-minimal'
+
+# Install pgBackRest (requires deps from EPEL)
+microdnf install -y --nodocs --setopt install_weak_deps=0 \
+    --enablerepo='epel' \
+    "pgbackrest-${PGBACKREST_VERSION}"
+
+# Install Python 3
+PYTHON_STREAM=3 && microdnf install -y --nodocs --setopt install_weak_deps=0 \
+    "python${PYTHON_STREAM}-pip" \
+    "python${PYTHON_STREAM}-psutil" \
+    "python${PYTHON_STREAM}-psycopg2" 
+
+# Clean up package manager cache to reduce image size
+microdnf clean all
+rm -f /etc/yum.repos.d/redhat.repo
+
+# Install Patroni and its dependencies
+python3 -m pip install --no-cache-dir setuptools
+python3 -m pip install --no-cache-dir \
+    "patroni[kubernetes,jsonlogger]==${PATRONI_VERSION}" \
+    # https://github.com/patroni/patroni/commit/3fd7c98d2ba394587409aa1d0ff9c447f75402ce \
+    $(if printf '%s\n3.3.0' "${PATRONI_VERSION}" | sort -uVC; then echo 'ydiff<1.3'; fi)
+
+SHELL
+    
+ENV LANG='en_US.utf-8' LC_ALL='en_US.utf-8' PAGER='less'
+ENV PATH="/usr/pgsql-${POSTGRES_MAJOR_VERSION}/bin:/usr/pgaudit_analyze/bin:${PATH}"
+
+# Remove the default pgbackrest spool directory and configuration file to ensure
+# no existing files interfere with pgbackrest operations
+RUN rm -rf /var/spool/pgbackrest
+RUN rm -f /etc/pgbackrest.conf
+
+# Ensure huge_pages is off by default. This setting can be overridden by
+# updating your postgresql.conf file or through a PostgresCluster Spec.
+RUN echo "huge_pages = off" >> "/usr/pgsql-${POSTGRES_MAJOR_VERSION}/share/postgresql.conf.sample"
+
+COPY bin/pgbackrest-info.sh /opt/crunchy/bin/postgres/pgbackrest_info.sh
+
+USER 26

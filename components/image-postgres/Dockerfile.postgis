@@ -1,0 +1,42 @@
+# Copyright 2017 - 2025 Crunchy Data Solutions, Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Postgres version in `crunchy-postgres:latest` must match POSTGRES_VERSION below
+FROM localhost/crunchy-postgres:latest
+
+ARG POSTGIS_VERSION=3.6.0
+ARG POSTGRES_VERSION=18
+
+USER 0
+
+# Derive major+minor without dot from full PostGIS version (e.g. 3.4.4 -> 34)
+ENV POSTGIS_VERSION_MAJOR_MINOR="${POSTGIS_VERSION%.*}"
+ENV POSTGIS_VERSION_MAJOR_MINOR="${POSTGIS_VERSION_MAJOR_MINOR//.}"
+
+# Normalize Postgres version (e.g. 17.2 -> 17)
+ENV POSTGRES_MAJOR_VERSION="${POSTGRES_VERSION%.*}"
+
+RUN <<-SHELL
+set -e
+
+# Ensure PGDG repo (may already exist in base image)
+rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" || true
+
+# Disable module to avoid conflicts
+microdnf --assumeyes module disable postgresql || true
+
+microdnf install -y --nodocs --setopt install_weak_deps=0 \
+    --enablerepo="codeready-builder-for-rhel-9-$(arch)-rpms" \
+    perl \
+    "postgis${POSTGIS_VERSION_MAJOR_MINOR}_${POSTGRES_MAJOR_VERSION}-client-${POSTGIS_VERSION}" \
+    "postgis${POSTGIS_VERSION_MAJOR_MINOR}_${POSTGRES_MAJOR_VERSION}-llvmjit-${POSTGIS_VERSION}" \
+    "pgrouting_${POSTGRES_MAJOR_VERSION}" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-plperl" \
+    "postgresql${POSTGRES_MAJOR_VERSION}-pltcl"
+
+microdnf clean all
+rm -f /etc/yum.repos.d/redhat.repo
+SHELL
+
+USER 26
