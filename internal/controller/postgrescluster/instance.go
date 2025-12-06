@@ -341,6 +341,7 @@ func (r *Reconciler) observeInstances(
 		status.DesiredPGWALVolume = make(map[string]string)
 
 		for _, instance := range observed.bySet[name] {
+			//nolint:gosec // This slice is always small.
 			status.Replicas += int32(len(instance.Pods))
 
 			if ready, known := instance.IsReady(); known && ready {
