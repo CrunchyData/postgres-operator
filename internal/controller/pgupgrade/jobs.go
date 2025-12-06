@@ -227,6 +227,7 @@ func (r *PGUpgradeReconciler) generateUpgradeJob(
 	settings := upgrade.Spec.PGUpgradeSettings.DeepCopy()
 
 	// When jobs is undefined, use one less than the number of CPUs.
+	//nolint:gosec // The CPU count is clamped to MaxInt32.
 	if settings.Jobs == 0 && feature.Enabled(ctx, feature.PGUpgradeCPUConcurrency) {
 		wholeCPUs := int32(min(math.MaxInt32, largestWholeCPU(upgrade.Spec.Resources)))
 		settings.Jobs = wholeCPUs - 1
