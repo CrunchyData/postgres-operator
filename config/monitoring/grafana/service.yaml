@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: crunchy-grafana
+spec:
+  type: ClusterIP
+  ports:
+  - name: grafana
+    port: 3000

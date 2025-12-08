@@ -1,0 +1,95 @@
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: pgbackrest
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: pgbackrest.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: pgbouncer-direct
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: pgbouncer_direct.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: pod-details
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: pod_details.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: postgresql-details
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: postgresql_details.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: postgresql-overview
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: postgresql_overview.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: postgresql-service-health
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: postgresql_service_health.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: prometheus-alerts
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: prometheus_alerts.json
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: query-statistics
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: crunchy-grafana
+  configMapRef:
+    name: grafana-dashboards
+    key: query_statistics.json

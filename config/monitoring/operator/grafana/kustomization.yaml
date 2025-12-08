@@ -1,0 +1,17 @@
+generatorOptions:
+  disableNameSuffixHash: true
+
+secretGenerator:
+- name: grafana-admin
+  literals:
+  - password=admin
+  - username=admin
+  type: Opaque
+
+resources:
+- rbac.yaml
+- grafana.yaml
+- datasources.yaml
+- ../../grafana/dashboards
+- dashboards.yaml
+

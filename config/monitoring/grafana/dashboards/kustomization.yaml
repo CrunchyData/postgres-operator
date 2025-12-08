@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# We must break the files up into two ConfigMaps as the total size
+# is too large for one ConfigMap
+configMapGenerator:
+- name: grafana-dashboards-1
+  files:
+  - pgbackrest.json
+  - pgbouncer_direct.json
+  - pod_details.json
+  - postgresql_details.json
+  - postgresql_overview.json
+  - postgresql_service_health.json
+  - prometheus_alerts.json
+- name: grafana-dashboards-2
+  files:
+  - crunchy_grafana_dashboards.yml
+  - query_statistics.json
+
+generatorOptions:
+  disableNameSuffixHash: true

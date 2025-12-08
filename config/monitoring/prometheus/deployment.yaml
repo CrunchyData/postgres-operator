@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crunchy-prometheus
+spec:
+  selector: {}
+  template:
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.54.1
+        ports:
+        - containerPort: 9090
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+        volumeMounts:
+        - mountPath: /etc/prometheus
+          name: prometheusconf
+        - mountPath: /prometheus
+          name: prometheusdata
+        - mountPath: /etc/prometheus/alert-rules.d
+          name: alertmanagerrules
+      securityContext:
+        fsGroup: 26
+        # supplementalGroups:
+        # - 65534
+      serviceAccountName: prometheus
+      volumes:
+      - name: prometheusconf
+        configMap:
+          defaultMode: 420
+          name: crunchy-prometheus
+      - name: prometheusdata
+        persistentVolumeClaim:
+          claimName: prometheusdata
+      - name: alertmanagerrules
+        configMap:
+          defaultMode: 420
+          name: alert-rules-config
