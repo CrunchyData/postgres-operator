@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crunchy-alertmanager
+spec:
+  selector: {}
+  template:
+    spec:
+      containers:
+      - name: alertmanager
+        image: prom/alertmanager:v0.28.1
+        args:
+        - --config.file=/etc/alertmanager/alertmanager.yml
+        - --storage.path=/alertmanager
+        - --log.level=info
+        - --cluster.advertise-address=0.0.0.0:9093
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9093
+          initialDelaySeconds: 25
+          periodSeconds: 20
+        ports:
+        - containerPort: 9093
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9093
+        volumeMounts:
+        - mountPath: /etc/alertmanager
+          name: alertmanagerconf
+        - mountPath: /alertmanager
+          name: alertmanagerdata
+      securityContext:
+        fsGroup: 26
+        # supplementalGroups:
+        # - 65534
+      serviceAccountName: alertmanager
+      volumes:
+      - name: alertmanagerdata
+        persistentVolumeClaim:
+          claimName: alertmanagerdata
+      - name: alertmanagerconf
+        configMap:
+          defaultMode: 420
+          name: alertmanager-config

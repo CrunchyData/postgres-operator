@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/component: crunchy-grafana
+
+resources:
+- deployment.yaml
+- pvc.yaml
+- service.yaml
+- serviceaccount.yaml
+- dashboards
+
+configMapGenerator:
+- name: grafana-datasources
+  files:
+  - config/crunchy_grafana_datasource.yml
+
+secretGenerator:
+- name: grafana-admin
+  literals:
+  - password=admin
+  - username=admin
+  type: Opaque
+
+generatorOptions:
+  disableNameSuffixHash: true

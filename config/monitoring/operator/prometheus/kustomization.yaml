@@ -1,0 +1,3 @@
+resources:
+- rbac.yaml
+- podmonitor.yaml

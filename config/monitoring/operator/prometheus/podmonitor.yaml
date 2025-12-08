@@ -1,0 +1,86 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: crunchy-otel-collector
+spec:
+  selector:
+    matchLabels:
+      postgres-operator.crunchydata.com/crunchy-otel-collector: "true"
+
+  # Uncomment to monitor a single namespace only      
+  # namespaceSelector:
+  #   matchNames:
+  #     - postgres-operator
+  
+  podMetricsEndpoints:
+  - port: otel-metrics
+    interval: 15s
+    scrapeTimeout: 15s
+    relabelings:
+      # Keep exporter port and drop all others
+      - sourceLabels: [__meta_kubernetes_pod_container_port_number]
+        action: keep
+        regex: "9187"
+      # Set label for namespace
+      - sourceLabels: [__meta_kubernetes_namespace]
+        targetLabel: kubernetes_namespace
+      # Set label for pod name
+      - sourceLabels: [__meta_kubernetes_pod_name]
+        targetLabel: pod
+      # Convert namespace and cluster name to pg_cluster=namespace:cluster
+      - sourceLabels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_cluster]
+        targetLabel: pg_cluster
+        separator: ":"
+        replacement: '$1$2'
+      # Convert kubernetes pod ip to ip
+      - sourceLabels: [__meta_kubernetes_pod_ip]
+        targetLabel: ip
+      # Convert postgres-operator.crunchydata.com/instance to deployment
+      - sourceLabels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_instance]
+        targetLabel: deployment
+      # Convert postgres-operator.crunchydata.com/role to role
+      - sourceLabels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_role]
+        targetLabel: role
+      # The following relabels should make it easier to use pgMonitor dashboards.
+      # Note: The following was added for the pgBouncer dashboard and what labels it requires.
+      # For pgBouncer, `exp_type` should be equal to role.
+      - sourceLabels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_role]
+        targetLabel: exp_type
+      # `cluster_name` is equivalent to `pg_cluster`
+      - sourceLabels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_cluster]
+        targetLabel: cluster_name
+        separator: ":"
+        replacement: '$1$2'
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: pgo-metrics
+spec:
+  selector:
+    matchExpressions:
+    - key: postgres-operator.crunchydata.com/control-plane
+      operator: Exists
+
+  # Uncomment to monitor a single namespace only      
+  # namespaceSelector:
+  #   matchNames:
+  #     - postgres-operator
+  
+  podMetricsEndpoints:
+  - port: metrics
+    interval: 15s
+    scrapeTimeout: 15s
+    # If you are running CPK v5.7 or earlier, you will need to change the scheme to 'http'
+    # and add a metrics port to the postgres-operator deployment that exposes port 8080.
+    scheme: https
+    authorization:
+      type: Bearer
+      credentials:
+        name: prometheus-pgo
+        key: token
+    tlsConfig:
+      # By default, the operator's metrics server automatically creates self-signed certs
+      # which cannot be verified, so `insecure_skip_verify` is set to `true`. See the
+      # documentation for providing your own signed certificates.
+      insecureSkipVerify: true

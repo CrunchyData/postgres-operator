@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crunchy-grafana
+spec:
+  selector: {}
+  template:
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:11.1.13
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_PATHS_DATA
+          value: /data/grafana/data
+        - name: GF_SECURITY_ADMIN_USER__FILE
+          value: /conf/admin/username
+        - name: GF_SECURITY_ADMIN_PASSWORD__FILE
+          value: /conf/admin/password
+        - name: PROM_HOST
+          value: crunchy-prometheus
+        - name: PROM_PORT
+          value: "9090"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 25
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+        volumeMounts:
+        - mountPath: /data
+          name: grafanadata
+        - mountPath: /conf/admin
+          name: grafana-admin
+        - mountPath: /etc/grafana/provisioning/datasources
+          name: grafana-datasources
+        - mountPath: /etc/grafana/provisioning/dashboards
+          name: grafana-dashboards
+      securityContext:
+        fsGroup: 26
+        # supplementalGroups:
+        # - 65534
+      serviceAccountName: grafana
+      volumes:
+      - name: grafanadata
+        persistentVolumeClaim:
+          claimName: grafanadata
+      - name: grafana-admin
+        secret:
+          defaultMode: 420
+          secretName: grafana-admin
+      - name: grafana-datasources
+        configMap:
+          defaultMode: 420
+          name: grafana-datasources
+      - name: grafana-dashboards
+        projected:
+          defaultMode: 420
+          sources:
+            - configMap:
+                name: grafana-dashboards-1
+            - configMap:
+                name: grafana-dashboards-2

@@ -1,0 +1,116 @@
+###
+#
+# Copyright © 2017-2025 Crunchy Data Solutions, Inc. All Rights Reserved.
+#
+###
+---
+global:
+  scrape_interval: 15s
+  scrape_timeout: 15s
+  evaluation_interval: 5s
+
+scrape_configs:
+- job_name: 'pgo-metrics'
+  # If you are running CPK v5.7 or earlier, you will need to change the scheme to 'http'
+  # and add a metrics port to the postgres-operator deployment that exposes port 8080.
+  scheme: https
+  authorization:
+    type: Bearer
+    credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+  tls_config:
+    # By default, the operator's metrics server automatically creates self-signed certs
+    # which cannot be verified, so `insecure_skip_verify` is set to `true`. See the
+    # documentation for providing your own signed certificates.
+    insecure_skip_verify: true
+  kubernetes_sd_configs:
+  - role: pod
+    selectors:
+    - role: pod
+      # Our kustomize installer sets this label to "postgres-operator"
+      # but our Helm installer sets this label to the name of the installation
+      # therefore we just check for the existence of this label.
+      label: postgres-operator.crunchydata.com/control-plane
+
+- job_name: 'crunchy-postgres-exporter'
+  kubernetes_sd_configs:
+  - role: pod
+    selectors:
+    - role: pod
+      label: postgres-operator.crunchydata.com/crunchy-postgres-exporter=true
+  relabel_configs:
+  # Keep exporter port and drop all others
+  - source_labels: [__meta_kubernetes_pod_container_port_number]
+    action: keep
+    regex: 9187
+  # Set label for namespace
+  - source_labels: [__meta_kubernetes_namespace]
+    target_label: kubernetes_namespace
+  # Set label for pod name
+  - source_labels: [__meta_kubernetes_pod_name]
+    target_label: pod
+  # Convert namespace and cluster name to pg_cluster=namespace:cluster
+  - source_labels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_cluster]
+    target_label: pg_cluster
+    separator: ":"
+    replacement: '$1$2'
+  # Convert kubernetes pod ip to ip
+  - source_labels: [__meta_kubernetes_pod_ip]
+    target_label: ip
+  # Convert postgres-operator.crunchydata.com/instance to deployment
+  - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_instance]
+    target_label: deployment
+  # Convert postgres-operator.crunchydata.com/role to role
+  - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_role]
+    target_label: role
+
+- job_name: 'crunchy-otel-collector'
+  kubernetes_sd_configs:
+  - role: pod
+    selectors:
+    - role: pod
+      label: postgres-operator.crunchydata.com/crunchy-otel-collector=true
+  relabel_configs:
+  # Keep exporter port and drop all others
+  - source_labels: [__meta_kubernetes_pod_container_port_number]
+    action: keep
+    regex: 9187
+  # Set label for namespace
+  - source_labels: [__meta_kubernetes_namespace]
+    target_label: kubernetes_namespace
+  # Set label for pod name
+  - source_labels: [__meta_kubernetes_pod_name]
+    target_label: pod
+  # Convert namespace and cluster name to pg_cluster=namespace:cluster
+  - source_labels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_cluster]
+    target_label: pg_cluster
+    separator: ":"
+    replacement: '$1$2'
+  # Convert kubernetes pod ip to ip
+  - source_labels: [__meta_kubernetes_pod_ip]
+    target_label: ip
+  # Convert postgres-operator.crunchydata.com/instance to deployment
+  - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_instance]
+    target_label: deployment
+  # Convert postgres-operator.crunchydata.com/role to role
+  - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_role]
+    target_label: role
+  # The following relabels should make it easier to use pgMonitor dashboards.
+  # Note: The following was added for the pgBouncer dashboard and what labels it requires.
+  # For pgBouncer, `exp_type` should be equal to role.
+  - source_labels: [__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_role]
+    target_label: exp_type
+  # `cluster_name` is equivalent to `pg_cluster`
+  - source_labels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_postgres_operator_crunchydata_com_cluster]
+    target_label: cluster_name
+    separator: ":"
+    replacement: '$1$2'
+
+rule_files:
+  - /etc/prometheus/alert-rules.d/*.yml
+alerting:
+  alertmanagers:
+  - kubernetes_sd_configs:
+    - role: pod
+      selectors:
+      - role: pod
+        label: app.kubernetes.io/component=crunchy-alertmanager
