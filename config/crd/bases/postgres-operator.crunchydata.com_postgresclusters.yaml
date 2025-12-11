@@ -18250,8 +18250,8 @@ spec:
             type: object
             x-kubernetes-validations:
             - message: The ssl_groups parameter is only available in pg18 and greater
-              rule: '!has(self.?config.parameters.ssl_groups) || self.postgresVersion
-                > 17'
+              rule: '!has(self.config) || !has(self.config.parameters) || !has(self.config.parameters.ssl_groups)
+                || self.postgresVersion > 17'
           status:
             description: PostgresClusterStatus defines the observed state of PostgresCluster
             properties:
