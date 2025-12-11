@@ -17,7 +17,7 @@ import (
 //
 // # Postgres 18
 //
-// +kubebuilder:validation:XValidation:rule=`!has(self.?config.parameters.ssl_groups) || self.postgresVersion > 17`,message=`The ssl_groups parameter is only available in pg18 and greater`
+// +kubebuilder:validation:XValidation:rule=`!has(self.config) || !has(self.config.parameters) || !has(self.config.parameters.ssl_groups) || self.postgresVersion > 17`,message=`The ssl_groups parameter is only available in pg18 and greater`
 type PostgresClusterSpec struct {
 	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
