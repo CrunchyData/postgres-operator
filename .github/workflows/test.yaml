@@ -157,6 +157,7 @@ jobs:
             registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.18.1-2550
             registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-18.1-2550
             registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.8-2550
+            registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-6.0.0-0
 
       - name: Get pgMonitor files.
         run: make get-pgmonitor
