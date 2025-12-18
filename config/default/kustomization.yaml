@@ -17,4 +17,4 @@ resources:
 images:
 - name: postgres-operator
   newName: registry.developers.crunchydata.com/crunchydata/postgres-operator
-  newTag: latest
+  newTag: ubi9-5.8.6-0
