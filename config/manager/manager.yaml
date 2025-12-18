@@ -22,6 +22,10 @@ spec:
               fieldPath: metadata.namespace
         - name: CRUNCHY_DEBUG
           value: "true"
+        - name: RELATED_IMAGE_POSTGRES_15
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-15.15-2550"
+        - name: RELATED_IMAGE_POSTGRES_15_GIS_3.3
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-15.15-3.3-2550"
         - name: RELATED_IMAGE_POSTGRES_16
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.11-2550"
         - name: RELATED_IMAGE_POSTGRES_16_GIS_3.3
@@ -32,6 +36,14 @@ spec:
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.7-2550"
         - name: RELATED_IMAGE_POSTGRES_17_GIS_3.4
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.7-3.4-2550"
+        - name: RELATED_IMAGE_POSTGRES_17_GIS_3.5
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.7-3.5-2550"
+        - name: RELATED_IMAGE_POSTGRES_17_GIS_3.6
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.7-3.6-2550"
+        - name: RELATED_IMAGE_POSTGRES_18
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-18.1-2550"
+        - name: RELATED_IMAGE_POSTGRES_18_GIS_3.6
+          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-18.1-3.6-2550"
         - name: RELATED_IMAGE_PGBACKREST
           value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2550"
         - name: RELATED_IMAGE_PGBOUNCER
