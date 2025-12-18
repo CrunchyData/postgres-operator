@@ -1,9 +1,9 @@
-apiVersion: postgres-operator.crunchydata.com/v1beta1
+apiVersion: postgres-operator.crunchydata.com/v1
 kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  postgresVersion: 17
+  postgresVersion: 18
   instances:
     - name: instance1
       dataVolumeClaimSpec:
