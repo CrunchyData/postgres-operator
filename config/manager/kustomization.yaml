@@ -9,3 +9,4 @@ resources:
 images:
   - name: postgres-operator
     newName: image-postgres-operator-5.8
+ 

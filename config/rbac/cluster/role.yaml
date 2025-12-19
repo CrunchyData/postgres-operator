@@ -19,6 +19,7 @@ rules:
   - list
   - patch
   - watch
+ 
 - apiGroups:
   - ""
   resources:
@@ -186,3 +187,4 @@ rules:
   - list
   - patch
   - watch
+  

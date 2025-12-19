@@ -10,3 +10,4 @@ images:
 - group: apps
   kind: Deployment
   path: spec/template/spec/containers/image
+ 

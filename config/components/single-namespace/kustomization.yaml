@@ -25,3 +25,4 @@ patches:
               valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.namespace } }
             - name: PGO_TARGET_NAMESPACE
               value: '$(CPK_TARGET_NAMESPACE)'
+ 
