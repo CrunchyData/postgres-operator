@@ -20,6 +20,11 @@ PGO is developed with many years of production experience in automating Postgres
 
 Have questions or looking for help? [Join our Discord group](https://discord.gg/a7vWKG8Ec9).
 
+# Build Instructions
+
+To build the various containers required by PGO, please see the build instructions found in the [components directory](https://github.com/CrunchyData/postgres-operator/tree/main/components) of this repository.
+These images are built using [packages](https://www.postgresql.org/download) developed by the PostgreSQL Global Development Group (PGDG).  Each subdirectory contains a `README` file describing how to build each of the various containers required by PGO.
+
 # Installation
 
 Crunchy Data makes PGO available as the orchestration behind Crunchy Postgres for Kubernetes. Crunchy Postgres for Kubernetes is the integrated product that includes PostgreSQL, PGO and a collection of PostgreSQL tools and extensions that includes the various [open source components listed in the documentation](https://access.crunchydata.com/documentation/postgres-operator/latest/references/components).
