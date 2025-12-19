@@ -1,0 +1,12 @@
+# This configures the built-in ImageTagTransformer to replace image identifiers
+# in Deployment environment variables as well as image fields.
+#
+# See: https://kubectl.docs.kubernetes.io/references/kustomize/builtins/
+
+images:
+- group: apps
+  kind: Deployment
+  path: spec/template/spec/containers/env/value
+- group: apps
+  kind: Deployment
+  path: spec/template/spec/containers/image

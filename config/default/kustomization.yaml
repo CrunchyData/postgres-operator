@@ -1,20 +1,37 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 namespace: postgres-operator
 
 labels:
-- includeSelectors: true
+- includeSelectors: false
+  includeTemplates: true
   pairs:
-    # Note: this label differs from the label set in postgres-operator-examples
+    app.kubernetes.io/name: pgo
+    app.kubernetes.io/version: 5.8.6
+- includeSelectors: true
+  includeTemplates: true
+  pairs:
     postgres-operator.crunchydata.com/control-plane: postgres-operator
 
 resources:
 - ../crd
-- ../rbac
+- ../rbac/cluster
 - ../manager
 
-images:
-- name: postgres-operator
-  newName: registry.developers.crunchydata.com/crunchydata/postgres-operator
-  newTag: ubi9-5.8.6-0
+components:
+- ../components/images-by-tag
+
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: pgo
+    spec:
+      template:
+        spec:
+          containers:
+          - name: operator
+            env:
+            - name: PGO_FEATURE_GATES
+              value: ""
