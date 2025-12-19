@@ -21,3 +21,4 @@ resources:
 components:
 - ../components/images-by-tag
 - ../components/single-namespace
+
