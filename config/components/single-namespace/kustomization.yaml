@@ -1,0 +1,27 @@
+kind: Component
+
+patches:
+- target:
+    kind: ClusterRole
+  patch: |-
+    - { op: replace, path: /kind, value: Role }
+- target:
+    kind: ClusterRoleBinding
+  patch: |-
+    - { op: replace, path: /kind, value: RoleBinding }
+    - { op: replace, path: /roleRef/kind, value: Role }
+- target:
+    kind: Deployment
+  patch: |-
+    kind: Deployment
+    metadata: { name: ignored }
+    spec:
+      template:
+        spec:
+          containers:
+          - name: operator
+            env:
+            - name: CPK_TARGET_NAMESPACE
+              valueFrom: { fieldRef: { apiVersion: v1, fieldPath: metadata.namespace } }
+            - name: PGO_TARGET_NAMESPACE
+              value: '$(CPK_TARGET_NAMESPACE)'
