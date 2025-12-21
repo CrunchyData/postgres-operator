@@ -8,6 +8,7 @@ spec:
   strategy: { type: Recreate }
   template:
     spec:
+      serviceAccountName: pgo
       containers:
       - name: operator
         image: postgres-operator
@@ -16,49 +17,65 @@ spec:
           value: kustomize
         - name: PGO_INSTALLER_ORIGIN
           value: postgres-operator-repo
+        - name: PGO_CONTROLLER_LEASE_NAME
+          value: cpk-leader-election-lease
         - name: PGO_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
+          valueFrom: { fieldRef: { fieldPath: metadata.namespace } }
         - name: CRUNCHY_DEBUG
           value: "true"
         - name: RELATED_IMAGE_POSTGRES_15
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-15.15-2550"
+          value: image-crunchy-postgres-15
         - name: RELATED_IMAGE_POSTGRES_15_GIS_3.3
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-15.15-3.3-2550"
+          value: image-crunchy-postgres-15-gis-3.3
         - name: RELATED_IMAGE_POSTGRES_16
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-16.11-2550"
+          value: image-crunchy-postgres-16
         - name: RELATED_IMAGE_POSTGRES_16_GIS_3.3
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.11-3.3-2550"
+          value: image-crunchy-postgres-16-gis-3.3
         - name: RELATED_IMAGE_POSTGRES_16_GIS_3.4
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-16.11-3.4-2550"
+          value: image-crunchy-postgres-16-gis-3.4
         - name: RELATED_IMAGE_POSTGRES_17
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-17.7-2550"
+          value: image-crunchy-postgres-17
         - name: RELATED_IMAGE_POSTGRES_17_GIS_3.4
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.7-3.4-2550"
+          value: image-crunchy-postgres-17-gis-3.4
         - name: RELATED_IMAGE_POSTGRES_17_GIS_3.5
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.7-3.5-2550"
+          value: image-crunchy-postgres-17-gis-3.5
         - name: RELATED_IMAGE_POSTGRES_17_GIS_3.6
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-17.7-3.6-2550"
+          value: image-crunchy-postgres-17-gis-3.6
         - name: RELATED_IMAGE_POSTGRES_18
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres:ubi9-18.1-2550"
+          value: image-crunchy-postgres-18
         - name: RELATED_IMAGE_POSTGRES_18_GIS_3.6
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-gis:ubi9-18.1-3.6-2550"
+          value: image-crunchy-postgres-18-gis-3.6
         - name: RELATED_IMAGE_PGBACKREST
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest:ubi9-2.56.0-2550"
+          value: image-pgbackrest
         - name: RELATED_IMAGE_PGBOUNCER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:ubi9-1.25-2550"
+          value: image-pgbouncer
         - name: RELATED_IMAGE_PGEXPORTER
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter:ubi9-0.18.1-2550"
+          value: image-postgres-exporter
         - name: RELATED_IMAGE_PGUPGRADE
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-upgrade:ubi9-18.1-2550"
+          value: image-crunchy-upgrade
         - name: RELATED_IMAGE_STANDALONE_PGADMIN
-          value: "registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4:ubi9-9.8-2550"
+          value: image-pgadmin
         - name: RELATED_IMAGE_COLLECTOR
-          value: "registry.developers.crunchydata.com/crunchydata/postgres-operator:ubi9-5.8.6-0"
+          value: image-postgres-operator-5.8
         securityContext:
+          seccompProfile:
+            type: RuntimeDefault
           allowPrivilegeEscalation: false
           capabilities: { drop: [ALL] }
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-      serviceAccountName: pgo
+        ports:
+        - containerPort: 8443
+          name: metrics
+        livenessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10

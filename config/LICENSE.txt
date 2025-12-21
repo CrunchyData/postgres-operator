@@ -1,0 +1,43 @@
+                                   Crunchy Data
+
+                  Crunchy PostgreSQL for Kubernetes Terms of Use
+
+Crunchy Data Solutions, Inc. (Crunchy Data) has integrated the Crunchy Data
+distribution of PostgreSQL and the PostgreSQL Operator as the commercial product,
+Crunchy PostgreSQL for Kubernetes. This Crunchy PostgreSQL for Kubernetes Terms
+of Use establishes a framework that will enable Crunchy Data to provide Crunchy
+Data packaged open source software, made available as a series of containers (the
+"Crunchy Data Software"), to users, subject to applicable terms and conditions.
+ 
+By using or accessing the Crunchy Data Software, the using or accessing party
+agrees to applicable terms and conditions and agrees that the applicable terms as
+set forth in this Crunchy PostgreSQL for Kubernetes Terms of Use will govern the
+use of the Crunchy Data Software unless otherwise agreed to in writing by Crunchy
+Data and the using or accessing party.  If at any time the applicable terms are
+no longer acceptable to the using or accessing party, the using or accessing
+party should immediately cease all use of the Crunchy Data Software.
+
+For users with a valid Crunchy Data subscription agreement, unless otherwise
+agreed to in writing, the use of Crunchy PostgreSQL for Kubernetes, including the
+use of each of the containers included therein, by users with a valid Crunchy
+Data subscription agreement, for both development and production purposes, is
+subject to the Crunchy Data Terms of Use (the "Crunchy Data Terms of Use")
+located at:
+
+ * https://access.crunchydata.com/EULA
+
+Crunchy PostgreSQL for Kubernetes constitutes Crunchy Data Software under the
+Crunchy Data Terms of Use and its use is not intended to prohibit the rights
+under any open source license.
+
+For users without a valid Crunchy Data subscription agreement, the Crunchy Data
+Software is provided for use under the Crunchy Data Developer Program.  Unless
+otherwise agreed to in writing, the use of Crunchy PostgreSQL for Kubernetes,
+including the use of each of the containers included therein, is subject to the
+Crunchy Data Developer Program Terms of Use (the "Developer Terms of Use"):
+
+ * https://www.crunchydata.com/developers/terms-of-use
+
+Crunchy PostgreSQL for Kubernetes constitutes Crunchy Developer Software under
+the Crunchy Data Developer Program Terms of Use and its use is not intended to
+prohibit the rights under any open source license.
