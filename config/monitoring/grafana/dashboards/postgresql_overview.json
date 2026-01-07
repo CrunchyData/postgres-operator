@@ -55,7 +55,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -179,7 +179,7 @@
           "$hashKey": "object:243",
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "sum(pg_up{pg_cluster=~\"$cluster\"})*100+sum(ccp_is_in_recovery_status{pg_cluster=~\"$cluster\"}) or sum(patroni_postgres_running{pg_cluster=~\"$cluster\"})*100+sum(ccp_is_in_recovery_status{pg_cluster=~\"$cluster\"})",
           "format": "time_series",
@@ -205,7 +205,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "PROMETHEUS"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(pg_cluster)",
         "hide": 1,
