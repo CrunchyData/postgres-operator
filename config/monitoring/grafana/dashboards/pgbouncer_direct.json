@@ -64,7 +64,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -146,7 +146,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(ccp_pgbouncer_pools_client_active{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\"})",
@@ -159,7 +159,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(ccp_pgbouncer_pools_client_waiting{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\"})",
@@ -172,7 +172,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(ccp_pgbouncer_pools_server_active{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\"})",
@@ -185,7 +185,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(ccp_pgbouncer_pools_server_idle{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\"})",
@@ -198,7 +198,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(ccp_pgbouncer_pools_server_used{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\"})",
@@ -215,7 +215,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -297,7 +297,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "ccp_pgbouncer_lists_item_count{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\"}",
@@ -314,7 +314,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -398,7 +398,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "ccp_pgbouncer_databases_current_connections{cluster_name=~\"[[cluster_name]]\", pod=~\"[[pgbnode]]\", name=~\"[[pool]]\"} / ccp_pgbouncer_databases_pool_size{cluster_name=~\"[[cluster_name]]\", pod=~\"[[pgbnode]]\", name=~\"[[pool]]\"}",
@@ -415,7 +415,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -498,7 +498,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(ccp_pgbouncer_clients_wait_seconds{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\", database=~\"[[pool]]\"}) by (pool,state)",
@@ -515,7 +515,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -597,7 +597,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(ccp_pgbouncer_servers_close_needed{cluster_name=~\"[[cluster_name]]\",pod=~\"[[pgbnode]]\", database=~\"[[pool]]\"}) by (state)",
@@ -623,7 +623,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "PROMETHEUS"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(up{exp_type='pgbouncer'},cluster_name)",
         "hide": 0,
@@ -649,7 +649,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "PROMETHEUS"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(up{cluster_name=\"[[cluster_name]]\",exp_type='pgbouncer'},pod)",
         "hide": 0,
@@ -675,7 +675,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "PROMETHEUS"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(ccp_pgbouncer_databases_pool_size{cluster_name=\"[[cluster_name]]\", pod=\"[[pgbnode]]\"},name)",
         "hide": 0,
