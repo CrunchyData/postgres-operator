@@ -8,7 +8,7 @@ images:
   newTag: ubi9-2.56.0-2550
 - name: image-pgbouncer
   newName: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer
-  newTag: ubi9-1.24-2550
+  newTag: ubi9-1.25-2550
 - name: image-postgres-exporter
   newName: registry.developers.crunchydata.com/crunchydata/crunchy-postgres-exporter
   newTag: ubi9-0.18.1-2550
