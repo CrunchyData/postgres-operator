@@ -1,16 +1,4 @@
-kind: Kustomization
-
 resources:
-- bases/postgres-operator.crunchydata.com_postgresclusters.yaml
-- bases/postgres-operator.crunchydata.com_pgupgrades.yaml
 - bases/postgres-operator.crunchydata.com_pgadmins.yaml
-
-patches:
-- target:
-    kind: CustomResourceDefinition
-  patch: |-
-    - op: add
-      path: /metadata/labels
-      value:
-        app.kubernetes.io/name: pgo
-        app.kubernetes.io/version: latest
+- bases/postgres-operator.crunchydata.com_pgupgrades.yaml
+- bases/postgres-operator.crunchydata.com_postgresclusters.yaml
