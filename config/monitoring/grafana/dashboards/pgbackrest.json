@@ -73,7 +73,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -126,7 +126,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "time()-ccp_backrest_oldest_full_backup_time_seconds{pg_cluster=\"[[cluster]]\", role=\"master\"}",
           "format": "table",
@@ -142,7 +142,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -316,7 +316,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_incr_backup_time_since_completion_seconds{pg_cluster=\"[[cluster]]\", role=\"master\"}) without(deployment,instance,ip,pod)",
           "format": "time_series",
@@ -329,7 +329,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_diff_backup_time_since_completion_seconds{pg_cluster=\"[[cluster]]\", role=\"master\"}) without(deployment, instance,ip,pod)",
           "hide": false,
@@ -340,7 +340,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_full_backup_time_since_completion_seconds{pg_cluster=\"[[cluster]]\", role=\"master\"}) without(deployment, instance,ip,pod)",
           "hide": false,
@@ -351,7 +351,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_archive_command_status_seconds_since_last_archive{pg_cluster=\"[[cluster]]\", role=\"master\"}) without(deployment, instance,ip,pod)",
           "hide": false,
@@ -366,7 +366,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -495,7 +495,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_info_backup_runtime_seconds{pg_cluster=\"[[cluster]]\", role=\"master\", backup_type=\"incr\"}) without (deployment,instance,pod,ip)",
           "format": "time_series",
@@ -508,7 +508,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_info_backup_runtime_seconds{pg_cluster=\"[[cluster]]\", role=\"master\", backup_type=\"diff\"}) without (deployment,instance,pod,ip)",
           "hide": false,
@@ -519,7 +519,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_info_backup_runtime_seconds{pg_cluster=\"[[cluster]]\", role=\"master\", backup_type=\"full\"}) without (deployment,instance,pod,ip)",
           "hide": false,
@@ -534,7 +534,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -664,7 +664,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_info_repo_backup_size_bytes{pg_cluster=\"[[cluster]]\", role=\"master\", backup_type=\"incr\"}) without (deployment, instance,pod,ip)",
           "format": "time_series",
@@ -677,7 +677,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_info_repo_backup_size_bytes{pg_cluster=\"[[cluster]]\", role=\"master\", backup_type=\"diff\"}) without (deployment,instance,pod,ip)",
           "hide": false,
@@ -688,7 +688,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "min(ccp_backrest_last_info_repo_backup_size_bytes{pg_cluster=\"[[cluster]]\", role=\"master\", backup_type=\"full\"}) without (deployment,instance,pod,ip)",
           "hide": false,
@@ -703,7 +703,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -879,7 +879,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "avg(idelta(ccp_archive_command_status_failed_count{pg_cluster=\"[[cluster]]\", role=\"master\"}[1m])) without (instance,ip)",
           "format": "time_series",
@@ -892,7 +892,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "expr": "avg(idelta(ccp_archive_command_status_archived_count{pg_cluster=\"[[cluster]]\", role=\"master\"}[1m])) without (instance,pod, ip)",
           "hide": false,
@@ -916,7 +916,7 @@
         "current": {},
         "datasource": {
           "type": "prometheus",
-          "uid": "PROMETHEUS"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(pg_cluster)",
         "hide": 0,
