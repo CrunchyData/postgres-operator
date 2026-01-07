@@ -233,8 +233,7 @@ generate-kuttl: ## Generate kuttl tests
 .PHONY: check-generate
 check-generate: ## Check everything generated is also committed
 check-generate: generate
-	git diff --exit-code -- config/crd
-	git diff --exit-code -- config/rbac
+	git diff --exit-code -- config/dev
 	git diff --exit-code -- internal/collector
 	git diff --exit-code -- pkg/apis
 
@@ -249,7 +248,7 @@ generate: generate-rbac
 generate-crd: ## Generate Custom Resource Definitions (CRDs)
 	$(CONTROLLER) $(\
 		) crd paths='./pkg/apis/...' $(\
-		) output:dir='config/crd/bases' # {directory}/{group}_{plural}.yaml
+		) output:dir='config/dev/crd/bases' # {directory}/{group}_{plural}.yaml
 	$(GO) generate ./internal/crd
 
 .PHONY: generate-collector
@@ -267,7 +266,7 @@ generate-rbac: ## Generate RBAC
 	$(CONTROLLER) $(\
 		) rbac:roleName='postgres-operator' $(\
 		) paths='./cmd/...' paths='./internal/...' $(\
-		) output:dir='config/rbac' # {directory}/role.yaml
+		) output:dir='config/dev/rbac/cluster' # {directory}/role.yaml
 
 # https://www.gnu.org/software/make/manual/make.html#Multi_002dLine
 define newline

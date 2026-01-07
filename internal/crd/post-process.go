@@ -20,7 +20,7 @@ import (
 
 func main() {
 	cwd := need(os.Getwd())
-	dir := filepath.Join(cwd, "..", "..", "config", "crd", "bases")
+	dir := filepath.Join(cwd, "..", "..", "config", "dev", "crd", "bases")
 	query := "post-process.jq"
 
 	slog.Info("Reading", "file", query)
