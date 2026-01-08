@@ -261,8 +261,7 @@ generate-kuttl: ## Generate kuttl tests
 .PHONY: check-generate
 check-generate: ## Check everything generated is also committed
 check-generate: generate
-	git diff --exit-code -- config/crd
-	git diff --exit-code -- config/rbac
+	git diff --exit-code -- config/dev
 	git diff --exit-code -- internal/collector
 	git diff --exit-code -- pkg/apis
 
@@ -279,7 +278,7 @@ generate-crd: tools/controller-gen
 	$(CONTROLLER) \
 		crd:crdVersions='v1' \
 		paths='./pkg/apis/...' \
-		output:dir='config/crd/bases' # {directory}/{group}_{plural}.yaml
+		output:dir='config/dev/crd/bases' # {directory}/{group}_{plural}.yaml
 
 .PHONY: generate-collector
 generate-collector: ## Generate OTel Collector files
@@ -298,7 +297,7 @@ generate-rbac: tools/controller-gen
 	$(CONTROLLER) \
 		rbac:roleName='postgres-operator' \
 		paths='./cmd/...' paths='./internal/...' \
-		output:dir='config/rbac' # {directory}/role.yaml
+		output:dir='config/dev/rbac/cluster' # {directory}/role.yaml
 
 ##@ Tools
 
