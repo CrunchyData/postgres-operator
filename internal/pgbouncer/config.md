@@ -1,5 +1,5 @@
 <!--
-# Copyright 2021 - 2025 Crunchy Data Solutions, Inc.
+# Copyright 2021 - 2026 Crunchy Data Solutions, Inc.
 #
 # SPDX-License-Identifier: Apache-2.0
 -->
