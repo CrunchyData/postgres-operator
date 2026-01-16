@@ -113,7 +113,7 @@ linters:
         SPDX-License-Identifier: Apache-2.0
       values:
         regexp:
-          DATES: ((201[7-9]|202[0-4]) - 2025|2025)
+          DATES: ((201[7-9]|202[0-5]) - 2026|2026)
 
     gomodguard:
       blocked:

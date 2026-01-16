@@ -1,4 +1,4 @@
-// Copyright 2022 - 2025 Crunchy Data Solutions, Inc.
+// Copyright 2022 - 2026 Crunchy Data Solutions, Inc.
 //
 // SPDX-License-Identifier: Apache-2.0
 
