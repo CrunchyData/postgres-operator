@@ -192,19 +192,20 @@ func podConfigFiles(
 	// Start with an empty file at /etc/pgbouncer/pgbouncer.ini. This file can
 	// be overridden by the user, but it must exist because our configuration
 	// file refers to it.
-	projections := []corev1.VolumeProjection{
-		{
-			ConfigMap: &corev1.ConfigMapProjection{
-				LocalObjectReference: corev1.LocalObjectReference{
-					Name: configmap.Name,
-				},
-				Items: []corev1.KeyToPath{{
-					Key:  emptyConfigMapKey,
-					Path: emptyFileProjectionPath,
-				}},
+	// Preallocate: 3 (empty ini file + configmap projection + secret projection)
+	// plus the number of specified files, len(config.Files)
+	projections := make([]corev1.VolumeProjection, 0, 3+len(config.Files))
+	projections = append(projections, corev1.VolumeProjection{
+		ConfigMap: &corev1.ConfigMapProjection{
+			LocalObjectReference: corev1.LocalObjectReference{
+				Name: configmap.Name,
 			},
+			Items: []corev1.KeyToPath{{
+				Key:  emptyConfigMapKey,
+				Path: emptyFileProjectionPath,
+			}},
 		},
-	}
+	})
 
 	// Add any specified projections. These may override the files above.
 	// - https://docs.k8s.io/concepts/storage/volumes/#projected
