@@ -951,7 +951,11 @@ func (r *Reconciler) scaleDownInstances(
 	}
 
 	// grab all pods for the cluster using the observed instances
-	pods := []corev1.Pod{}
+	var podCount int
+	for i := range observedInstances.forCluster {
+		podCount += len(observedInstances.forCluster[i].Pods)
+	}
+	pods := make([]corev1.Pod, 0, podCount)
 	for instanceIndex := range observedInstances.forCluster {
 		for podIndex := range observedInstances.forCluster[instanceIndex].Pods {
 			pods = append(pods, *observedInstances.forCluster[instanceIndex].Pods[podIndex])
@@ -1003,7 +1007,8 @@ func podsToKeep(instances []corev1.Pod, want map[string]int) []corev1.Pod {
 		return keep
 	}
 
-	keepPodList := []corev1.Pod{}
+	// preallocate with the total number of instance Pods
+	keepPodList := make([]corev1.Pod, 0, len(instances))
 	for name, num := range want {
 		list := []corev1.Pod{}
 		for _, instance := range instances {
