@@ -74,7 +74,11 @@ func (exec Executor) ExecInDatabasesFromQuery(
 	// database is passed via standard input while the database query is passed
 	// as the first argument. Remaining arguments are passed through to `psql`.
 	stdin := strings.NewReader(sql)
-	args := []string{databases}
+
+	// Using make to preallocate args (using 1 (databases) + len(variables)) triggered
+	// a CodeQL scanning error that a potentially large value might cause an overflow.
+	// To address this, don't preallocate args and have the linter ignore this line.
+	args := []string{databases} //nolint:prealloc
 	for k, v := range variables {
 		args = append(args, "--set="+k+"="+v)
 	}
