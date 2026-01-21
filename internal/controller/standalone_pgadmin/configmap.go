@@ -140,7 +140,7 @@ func generateClusterConfig(
 	// which we can do by
 	// a) sorting the ServerGroup name used as a key; and
 	// b) sorting the clusters by name;
-	keys := []string{}
+	keys := make([]string, 0, len(clusters))
 	for key := range clusters {
 		keys = append(keys, key)
 	}
