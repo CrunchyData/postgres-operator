@@ -178,11 +178,19 @@ cd $PGADMIN_DIR
 	}
 
 	var olderThan9_3 bool
-	versionFloat, err := strconv.ParseFloat(pgadmin.Status.MinorVersion, 64)
-	if err != nil {
-		return err
+
+	// Validate the pgAdmin minor version is in the format "X.Y"
+	parts := strings.Split(pgadmin.Status.MinorVersion, ".")
+	if len(parts) != 2 {
+		return errors.New("invalid pgAdmin minor version: " + pgadmin.Status.MinorVersion)
 	}
-	if versionFloat < 9.3 {
+
+	// Parse the major and minor versions
+	major, _ := strconv.Atoi(parts[0])
+	minor, _ := strconv.Atoi(parts[1])
+
+	// Check if the pgAdmin version is older than 9.3
+	if major < 9 || (major == 9 && minor < 3) {
 		olderThan9_3 = true
 	}
 
