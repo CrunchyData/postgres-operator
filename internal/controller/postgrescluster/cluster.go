@@ -403,10 +403,12 @@ func (r *Reconciler) reconcileDataSource(ctx context.Context,
 	var configs []string
 	switch {
 	case dataSource != nil:
-		configs = []string{dataSource.ClusterName, dataSource.RepoName}
+		configs = make([]string, 0, 2+len(dataSource.Options))
+		configs = append(configs, dataSource.ClusterName, dataSource.RepoName)
 		configs = append(configs, dataSource.Options...)
 	case cloudDataSource != nil:
-		configs = []string{cloudDataSource.Stanza, cloudDataSource.Repo.Name}
+		configs = make([]string, 0, 2+len(cloudDataSource.Options))
+		configs = append(configs, cloudDataSource.Stanza, cloudDataSource.Repo.Name)
 		configs = append(configs, cloudDataSource.Options...)
 	}
 	configHash, err := hashFunc(configs)

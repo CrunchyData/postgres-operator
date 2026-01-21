@@ -55,7 +55,11 @@ func AddCloudLogVolumeToPod(podSpec *corev1.PodSpec, pvcName string) {
 }
 
 func addVolumesAndMounts(pod *corev1.PodSpec, volumes []v1beta1.AdditionalVolume, namer func(string, bool) corev1.VolumeMount) []string {
-	missingContainers := []string{}
+	var containerRefCount int
+	for _, v := range volumes {
+		containerRefCount += len(v.Containers)
+	}
+	missingContainers := make([]string, 0, containerRefCount)
 
 	for _, spec := range volumes {
 		// If it is an image volume, override readOnly to true
