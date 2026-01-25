@@ -87,7 +87,7 @@ func (r *CrunchyBridgeClusterReconciler) Watch() handler.EventHandler {
 			log.Error(err, "Error listing CrunchyBridgeClusters.")
 		}
 
-		reconcileRequests := []reconcile.Request{}
+		reconcileRequests := make([]reconcile.Request, 0, len(crunchyBridgeClusterList.Items))
 		for index := range crunchyBridgeClusterList.Items {
 			reconcileRequests = append(reconcileRequests,
 				reconcile.Request{
