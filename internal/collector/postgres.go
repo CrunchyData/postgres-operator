@@ -134,12 +134,8 @@ func EnablePostgresLogging(
 	inParameters *postgres.ParameterSet,
 	outConfig *Config,
 ) {
-	var spec *v1beta1.InstrumentationLogsSpec
-	if inCluster != nil && inCluster.Spec.Instrumentation != nil {
-		spec = inCluster.Spec.Instrumentation.Logs
-	}
-
 	if OpenTelemetryLogsEnabled(ctx, inCluster) {
+		spec := inCluster.Spec.Instrumentation
 		directory := inParameters.Value("log_directory")
 		version := inCluster.Spec.PostgresVersion
 
@@ -229,8 +225,8 @@ func EnablePostgresLogging(
 		// If there are exporters to be added to the logs pipelines defined in
 		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
 		exporters := []ComponentID{DebugExporter}
-		if spec != nil && spec.Exporters != nil {
-			exporters = slices.Clone(spec.Exporters)
+		if spec.Logs != nil && spec.Logs.Exporters != nil {
+			exporters = slices.Clone(spec.Logs.Exporters)
 		}
 
 		// JSON logs are preferable since PostgreSQL v15. These are enabled in [PostgreSQLParameters].
@@ -239,17 +235,27 @@ func EnablePostgresLogging(
 			receivers = []ComponentID{"filelog/postgres_csvlog"}
 		}
 
+		postgresProcessors := []ComponentID{
+			"resource/postgres",
+			"transform/postgres_logs",
+		}
+
+		// We can only add the ResourceDetectionProcessor if there are detectors set,
+		// otherwise it will fail. This is due to a change in the following upstream commmit:
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/50cd2e8433cee1e292e7b7afac9758365f3a1298
+		if spec.Config != nil && spec.Config.Detectors != nil && len(spec.Config.Detectors) > 0 {
+			postgresProcessors = append(postgresProcessors, ResourceDetectionProcessor)
+		}
+
+		// Order of processors matter so we add the batching and compacting processors after
+		// potentially adding the resourcedetection processor
+		postgresProcessors = append(postgresProcessors, LogsBatchProcessor, CompactingProcessor)
+
 		outConfig.Pipelines["logs/postgres"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/postgres_logs"},
 			Receivers:  receivers,
-			Processors: []ComponentID{
-				"resource/postgres",
-				"transform/postgres_logs",
-				ResourceDetectionProcessor,
-				LogsBatchProcessor,
-				CompactingProcessor,
-			},
-			Exporters: exporters,
+			Processors: postgresProcessors,
+			Exporters:  exporters,
 		}
 
 		// pgBackRest pipeline
@@ -305,17 +311,27 @@ func EnablePostgresLogging(
 			"log_statements": slices.Clone(pgBackRestLogsTransforms),
 		}
 
+		pgbackrestProcessors := []ComponentID{
+			"resource/pgbackrest",
+			"transform/pgbackrest_logs",
+		}
+
+		// We can only add the ResourceDetectionProcessor if there are detectors set,
+		// otherwise it will fail. This is due to a change in the following upstream commmit:
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/50cd2e8433cee1e292e7b7afac9758365f3a1298
+		if spec.Config != nil && spec.Config.Detectors != nil && len(spec.Config.Detectors) > 0 {
+			pgbackrestProcessors = append(pgbackrestProcessors, ResourceDetectionProcessor)
+		}
+
+		// Order of processors matter so we add the batching and compacting processors after
+		// potentially adding the resourcedetection processor
+		pgbackrestProcessors = append(pgbackrestProcessors, LogsBatchProcessor, CompactingProcessor)
+
 		outConfig.Pipelines["logs/pgbackrest"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/pgbackrest_logs"},
 			Receivers:  []ComponentID{"filelog/pgbackrest_log"},
-			Processors: []ComponentID{
-				"resource/pgbackrest",
-				"transform/pgbackrest_logs",
-				ResourceDetectionProcessor,
-				LogsBatchProcessor,
-				CompactingProcessor,
-			},
-			Exporters: exporters,
+			Processors: pgbackrestProcessors,
+			Exporters:  exporters,
 		}
 	}
 }
