@@ -17,12 +17,8 @@ func EnablePatroniLogging(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	outConfig *Config,
 ) {
-	var spec *v1beta1.InstrumentationLogsSpec
-	if inCluster != nil && inCluster.Spec.Instrumentation != nil {
-		spec = inCluster.Spec.Instrumentation.Logs
-	}
-
 	if OpenTelemetryLogsEnabled(ctx, inCluster) {
+		spec := inCluster.Spec.Instrumentation
 		directory := naming.PatroniPGDataLogPath
 
 		// Keep track of what log records and files have been processed.
@@ -117,21 +113,31 @@ func EnablePatroniLogging(ctx context.Context,
 		// If there are exporters to be added to the logs pipelines defined in
 		// the spec, add them to the pipeline. Otherwise, add the DebugExporter.
 		exporters := []ComponentID{DebugExporter}
-		if spec != nil && spec.Exporters != nil {
-			exporters = slices.Clone(spec.Exporters)
+		if spec.Logs != nil && spec.Logs.Exporters != nil {
+			exporters = slices.Clone(spec.Logs.Exporters)
 		}
+
+		patroniProcessors := []ComponentID{
+			"resource/patroni",
+			"transform/patroni_logs",
+		}
+
+		// We can only add the ResourceDetectionProcessor if there are detectors set,
+		// otherwise it will fail. This is due to a change in the following upstream commmit:
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/50cd2e8433cee1e292e7b7afac9758365f3a1298
+		if spec.Config != nil && spec.Config.Detectors != nil && len(spec.Config.Detectors) > 0 {
+			patroniProcessors = append(patroniProcessors, ResourceDetectionProcessor)
+		}
+
+		// Order of processors matter so we add the batching and compacting processors after
+		// potentially adding the resourcedetection processor
+		patroniProcessors = append(patroniProcessors, LogsBatchProcessor, CompactingProcessor)
 
 		outConfig.Pipelines["logs/patroni"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/patroni_logs"},
 			Receivers:  []ComponentID{"filelog/patroni_jsonlog"},
-			Processors: []ComponentID{
-				"resource/patroni",
-				"transform/patroni_logs",
-				ResourceDetectionProcessor,
-				LogsBatchProcessor,
-				CompactingProcessor,
-			},
-			Exporters: exporters,
+			Processors: patroniProcessors,
+			Exporters:  exporters,
 		}
 	}
 }

@@ -103,17 +103,27 @@ func NewConfigForPgBackrestRepoHostPod(
 			exporters = slices.Clone(spec.Logs.Exporters)
 		}
 
+		pgbackrestProcessors := []ComponentID{
+			"resource/pgbackrest",
+			"transform/pgbackrest_logs",
+		}
+
+		// We can only add the ResourceDetectionProcessor if there are detectors set,
+		// otherwise it will fail. This is due to a change in the following upstream commmit:
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/50cd2e8433cee1e292e7b7afac9758365f3a1298
+		if spec.Config != nil && spec.Config.Detectors != nil && len(spec.Config.Detectors) > 0 {
+			pgbackrestProcessors = append(pgbackrestProcessors, ResourceDetectionProcessor)
+		}
+
+		// Order of processors matter so we add the batching and compacting processors after
+		// potentially adding the resourcedetection processor
+		pgbackrestProcessors = append(pgbackrestProcessors, LogsBatchProcessor, CompactingProcessor)
+
 		config.Pipelines["logs/pgbackrest"] = Pipeline{
 			Extensions: []ComponentID{"file_storage/pgbackrest_logs"},
 			Receivers:  []ComponentID{"filelog/pgbackrest_log"},
-			Processors: []ComponentID{
-				"resource/pgbackrest",
-				"transform/pgbackrest_logs",
-				ResourceDetectionProcessor,
-				LogsBatchProcessor,
-				CompactingProcessor,
-			},
-			Exporters: exporters,
+			Processors: pgbackrestProcessors,
+			Exporters:  exporters,
 		}
 	}
 	return config
