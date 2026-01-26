@@ -100,30 +100,34 @@ func EnablePgAdminLogging(ctx context.Context, spec *v1beta1.InstrumentationSpec
 		exporters = slices.Clone(spec.Logs.Exporters)
 	}
 
+	pgadminProcessors := []ComponentID{
+		"resource/pgadmin",
+		"transform/pgadmin_log",
+	}
+
+	// We can only add the ResourceDetectionProcessor if there are detectors set,
+	// otherwise it will fail. This is due to a change in the following upstream commmit:
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/commit/50cd2e8433cee1e292e7b7afac9758365f3a1298
+	if spec.Config != nil && spec.Config.Detectors != nil && len(spec.Config.Detectors) > 0 {
+		pgadminProcessors = append(pgadminProcessors, ResourceDetectionProcessor)
+	}
+
+	// Order of processors matter so we add the batching and compacting processors after
+	// potentially adding the resourcedetection processor
+	pgadminProcessors = append(pgadminProcessors, LogsBatchProcessor, CompactingProcessor)
+
 	otelConfig.Pipelines["logs/pgadmin"] = Pipeline{
 		Extensions: []ComponentID{"file_storage/pgadmin_data_logs"},
 		Receivers:  []ComponentID{"filelog/pgadmin"},
-		Processors: []ComponentID{
-			"resource/pgadmin",
-			"transform/pgadmin_log",
-			ResourceDetectionProcessor,
-			LogsBatchProcessor,
-			CompactingProcessor,
-		},
-		Exporters: exporters,
+		Processors: pgadminProcessors,
+		Exporters:  exporters,
 	}
 
 	otelConfig.Pipelines["logs/gunicorn"] = Pipeline{
 		Extensions: []ComponentID{"file_storage/pgadmin_data_logs"},
 		Receivers:  []ComponentID{"filelog/gunicorn"},
-		Processors: []ComponentID{
-			"resource/pgadmin",
-			"transform/pgadmin_log",
-			ResourceDetectionProcessor,
-			LogsBatchProcessor,
-			CompactingProcessor,
-		},
-		Exporters: exporters,
+		Processors: pgadminProcessors,
+		Exporters:  exporters,
 	}
 
 	otelYAML, err := otelConfig.ToYAML()
