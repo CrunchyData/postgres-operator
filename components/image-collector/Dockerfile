@@ -4,7 +4,7 @@
 
 # Rather than build the binary, retrieve the already-built binary from
 # the OpenTelemetry image
-FROM otel/opentelemetry-collector-contrib:0.139.0 AS collector
+FROM otel/opentelemetry-collector-contrib:0.144.0 AS collector
 
 # Aggregate the collector licenses from binary
 # and from root of the PGO repo
