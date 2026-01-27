@@ -18,7 +18,6 @@ set -e
 # see project for compatibility details:
 # https://github.com/pgaudit/pgaudit#postgresql-version-compatibility
 PGAUDIT_PKG="$(case "$POSTGRES_MAJOR_VERSION" in \
-    13) echo pgaudit15_13 ;; \
     14) echo pgaudit16_14 ;; \
     15) echo pgaudit17_15 ;; \
     *)  echo "pgaudit_${POSTGRES_MAJOR_VERSION}" ;; \
