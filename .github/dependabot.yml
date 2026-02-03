@@ -35,6 +35,7 @@ updates:
       github-actions:
         applies-to: version-updates
         patterns: ['*']
+    target-branch: "main"
 
   - package-ecosystem: gomod
     directory: '/'
@@ -61,3 +62,54 @@ updates:
           - 'k8s.io/*'
           - 'sigs.k8s.io/*'
           - 'go.opentelemetry.io/*'
+    target-branch: "main"
+
+  - package-ecosystem: github-actions
+    directories:
+      # "/" is a special case that includes ".github/workflows/*"
+      - '/'
+      - '.github/actions/*'
+    registries: '*'
+    schedule:
+      interval: weekly
+      day: tuesday
+    labels:
+      - dependencies
+    groups:
+      # Group security updates into one pull request
+      action-vulnerabilities:
+        applies-to: security-updates
+        patterns: ['*']
+
+      # Group version updates into one pull request
+      github-actions:
+        applies-to: version-updates
+        patterns: ['*']
+    target-branch: "REL_5_8"
+
+  - package-ecosystem: gomod
+    directory: '/'
+    registries: '*'
+    schedule:
+      interval: weekly
+      day: wednesday
+    labels:
+      - dependencies
+    groups:
+      # Group security updates into one pull request
+      go-vulnerabilities:
+        applies-to: security-updates
+        patterns: ['*']
+
+      # Group Kubernetes and OpenTelemetry version updates into separate pull requests
+      kubernetes:
+        patterns: ['k8s.io/*', 'sigs.k8s.io/*']
+      opentelemetry:
+        patterns: ['go.opentelemetry.io/*']
+      go-dependencies:
+        patterns: ['*']
+        exclude-patterns:
+          - 'k8s.io/*'
+          - 'sigs.k8s.io/*'
+          - 'go.opentelemetry.io/*'
+    target-branch: "REL_5_8"
