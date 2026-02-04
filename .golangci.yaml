@@ -179,6 +179,11 @@ linters:
         text: >-
           deprecated: Use `RequeueAfter` instead
 
+      - linters: [staticcheck]
+        path: (internal/controller/(postgrescluster|pgupgrade|standalone_pgadmin))|(cmd/postgres-operator)
+        text: >-
+           GetEventRecorderFor is deprecated
+
 # https://golangci-lint.run/usage/formatters
 formatters:
   enable:
