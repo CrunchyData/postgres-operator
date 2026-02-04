@@ -184,6 +184,11 @@ linters:
         text: >-
            GetEventRecorderFor is deprecated
 
+      - linters: [staticcheck]
+        path: internal/controller/(postgrescluster|pgupgrade|standalone_pgadmin)|(internal/bridge)
+        text: >-
+          client.Apply is deprecated
+
 # https://golangci-lint.run/usage/formatters
 formatters:
   enable:
