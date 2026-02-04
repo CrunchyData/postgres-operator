@@ -84,7 +84,7 @@ runs:
     # Install Trivy as requested.
     # NOTE: `setup-trivy` can download a "latest" version but cannot cache it.
     - if: ${{ ! contains(fromJSON(steps.parsed.outputs.setup), 'none') }}
-      uses: aquasecurity/setup-trivy@v0.2.4
+      uses: aquasecurity/setup-trivy@v0.2.5
       with:
         cache: ${{ contains(fromJSON(steps.parsed.outputs.setup), 'cache') }}
         version: ${{ steps.parsed.outputs.version }}
@@ -92,7 +92,7 @@ runs:
     # Restore a recent cache beginning with the prefix.
     - id: restore
       if: ${{ contains(fromJSON(steps.parsed.outputs.cache), 'restore') }}
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       with:
         path: ${{ inputs.cache-directory }}
         key: ${{ inputs.cache-prefix }}-
@@ -132,7 +132,7 @@ runs:
             (contains(fromJSON(steps.parsed.outputs.cache), 'success') && success())
           )
         }}
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         key: ${{ steps.trivy.outputs.cache-key }}
         path: ${{ inputs.cache-directory }}
