@@ -179,6 +179,11 @@ linters:
         text: >-
           deprecated: Use `RequeueAfter` instead
 
+      - linters: [staticcheck]
+        path: internal/controller/runtime
+        text: >-
+          client.Apply is deprecated
+
 # https://golangci-lint.run/usage/formatters
 formatters:
   enable:
