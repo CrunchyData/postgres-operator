@@ -64,6 +64,8 @@ func (r *Reconciler) reconcileRootCertificate(
 	intent.Namespace, intent.Name = cluster.Namespace, naming.RootCertSecret
 	intent.Data = make(map[string][]byte)
 	intent.OwnerReferences = existing.OwnerReferences
+	intent.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	intent.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil())
 
 	// A root secret is scoped to the namespace where postgrescluster(s)
 	// are deployed. For operator deployments with postgresclusters in more than
