@@ -51,7 +51,6 @@ apiVersion: v1
 kind: Service
 		`))
 		assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
-creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: pg2
   postgres-operator.crunchydata.com/patroni: pg2-ha

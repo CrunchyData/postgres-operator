@@ -722,9 +722,6 @@ volumes:
   name: postgres-temp
 `), "expected temp mount in %q container", pod.Spec.Containers[0].Name)
 
-		// NOTE: `creationTimestamp: null` appears in the resulting pod,
-		// but it does not affect the PVC or reconciliation events;
-		// possibly https://pr.k8s.io/100032
 		assert.Assert(t, cmp.MarshalContains(pod.Spec.Volumes, `- name: cert-volume
   projected:
     defaultMode: 384
