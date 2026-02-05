@@ -725,11 +725,63 @@ volumes:
 		// NOTE: `creationTimestamp: null` appears in the resulting pod,
 		// but it does not affect the PVC or reconciliation events;
 		// possibly https://pr.k8s.io/100032
-		assert.Assert(t, cmp.MarshalContains(pod.Spec.Volumes, `
+		assert.Assert(t, cmp.MarshalContains(pod.Spec.Volumes, `- name: cert-volume
+  projected:
+    defaultMode: 384
+    sources:
+    - secret:
+        items:
+        - key: tls.crt
+          path: tls.crt
+        - key: tls.key
+          path: tls.key
+        - key: ca.crt
+          path: ca.crt
+        name: srv-secret
+    - secret:
+        items:
+        - key: tls.crt
+          path: replication/tls.crt
+        - key: tls.key
+          path: replication/tls.key
+        name: repl-secret
+- name: postgres-data
+  persistentVolumeClaim:
+    claimName: datavol
+- downwardAPI:
+    items:
+    - path: cpu_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: limits.cpu
+    - path: cpu_request
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: requests.cpu
+    - path: mem_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: limits.memory
+    - path: mem_request
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: requests.memory
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.labels
+      path: labels
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.annotations
+      path: annotations
+  name: database-containerinfo
 - ephemeral:
     volumeClaimTemplate:
-      metadata:
-        creationTimestamp: null
+      metadata: {}
       spec:
         resources:
           requests:
@@ -746,13 +798,65 @@ volumes:
 			InstancePod(ctx, cluster, instance,
 				serverSecretProjection, clientSecretProjection, dataVolume, nil, nil, annotated)
 
-			assert.Assert(t, cmp.MarshalContains(annotated.Spec.Volumes, `
+			assert.Assert(t, cmp.MarshalContains(annotated.Spec.Volumes, `- name: cert-volume
+  projected:
+    defaultMode: 384
+    sources:
+    - secret:
+        items:
+        - key: tls.crt
+          path: tls.crt
+        - key: tls.key
+          path: tls.key
+        - key: ca.crt
+          path: ca.crt
+        name: srv-secret
+    - secret:
+        items:
+        - key: tls.crt
+          path: replication/tls.crt
+        - key: tls.key
+          path: replication/tls.key
+        name: repl-secret
+- name: postgres-data
+  persistentVolumeClaim:
+    claimName: datavol
+- downwardAPI:
+    items:
+    - path: cpu_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: limits.cpu
+    - path: cpu_request
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: requests.cpu
+    - path: mem_limit
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: limits.memory
+    - path: mem_request
+      resourceFieldRef:
+        containerName: database
+        divisor: "0"
+        resource: requests.memory
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.labels
+      path: labels
+    - fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.annotations
+      path: annotations
+  name: database-containerinfo
 - ephemeral:
     volumeClaimTemplate:
       metadata:
         annotations:
           n1: etc
-        creationTimestamp: null
         labels:
           gg: asdf
       spec:
