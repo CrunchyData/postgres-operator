@@ -10,13 +10,8 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/yaml"
 )
-
-func TestPostgresClusterWebhooks(t *testing.T) {
-	var _ webhook.Defaulter = new(PostgresCluster)
-}
 
 func TestPostgresClusterDefault(t *testing.T) {
 	t.Run("TypeMeta", func(t *testing.T) {
@@ -36,8 +31,7 @@ func TestPostgresClusterDefault(t *testing.T) {
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
-metadata:
-  creationTimestamp: null
+metadata: {}
 spec:
   backups:
     pgbackrest:
@@ -68,8 +62,7 @@ status:
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
-metadata:
-  creationTimestamp: null
+metadata: {}
 spec:
   backups:
     pgbackrest:

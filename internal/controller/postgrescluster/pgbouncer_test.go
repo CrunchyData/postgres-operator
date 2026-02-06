@@ -51,7 +51,6 @@ func TestGeneratePGBouncerService(t *testing.T) {
 			assert.Assert(t, !specified)
 
 			assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
-creationTimestamp: null
 name: pg7-pgbouncer
 namespace: ns5
 			`))
@@ -70,7 +69,6 @@ apiVersion: v1
 kind: Service
 		`))
 		assert.Assert(t, cmp.MarshalMatches(service.ObjectMeta, `
-creationTimestamp: null
 labels:
   postgres-operator.crunchydata.com/cluster: pg7
   postgres-operator.crunchydata.com/role: pgbouncer
@@ -387,7 +385,6 @@ func TestGeneratePGBouncerDeployment(t *testing.T) {
 			assert.Assert(t, !specified)
 
 			assert.Assert(t, cmp.MarshalMatches(deploy.ObjectMeta, `
-creationTimestamp: null
 name: test-cluster-pgbouncer
 namespace: ns3
 			`))

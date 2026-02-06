@@ -7,6 +7,7 @@ package runtime
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -31,6 +32,7 @@ type (
 	ClientPatch     func(context.Context, client.Object, client.Patch, ...client.PatchOption) error
 	ClientDeleteAll func(context.Context, client.Object, ...client.DeleteAllOfOption) error
 	ClientUpdate    func(context.Context, client.Object, ...client.UpdateOption) error
+	ClientApply     func(context.Context, runtime.ApplyConfiguration, ...client.ApplyOption) error
 )
 
 // ClientWriter implements [client.Writer] by composing assignable functions.
@@ -40,6 +42,7 @@ type ClientWriter struct {
 	ClientDeleteAll
 	ClientPatch
 	ClientUpdate
+	ClientApply
 }
 
 var _ client.Writer = ClientWriter{}
@@ -72,5 +75,9 @@ func (fn ClientPatch) Patch(ctx context.Context, obj client.Object, patch client
 }
 
 func (fn ClientUpdate) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+	return fn(ctx, obj, opts...)
+}
+
+func (fn ClientApply) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
 	return fn(ctx, obj, opts...)
 }
