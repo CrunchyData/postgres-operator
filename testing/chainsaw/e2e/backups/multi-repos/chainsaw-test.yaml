@@ -1,0 +1,151 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: multiple-repos
+spec:
+  description: |
+    Create simple cluster with multiple pgbackrest repos
+  bindings:
+  - name: cluster
+    value:
+      name: multiple-repos
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+  steps:
+  - name: Create cluster with 2 pgbackrest repos
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            backups:
+              pgbackrest:
+                manual:
+                  repoName: repo2
+                  options:
+                  - --type=full
+                repos:
+                - name: repo1
+                  volume:
+                    volumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+                # Adding a second PVC repo for testing, rather than test with S3/GCS/Azure
+                - name: repo2
+                  volume:
+                    volumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    ## SLeep so the backups can complete.
+    - sleep:
+        duration: 120s
+    ## Check the cluster to confirm the backup has completed.
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            pgbackrest:
+              repoHost:
+                apiVersion: apps/v1
+                kind: StatefulSet
+                ready: true
+              repos:
+              - bound: true
+                name: repo1
+                replicaCreateBackupComplete: true
+                stanzaCreated: true
+              - bound: true
+                name: repo2
+                stanzaCreated: true
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+          status:
+            succeeded: 1
+    ## Describe the job if failed
+    catch:
+    - describe:
+        apiVersion: batch/v1
+        kind: Job
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+
+  - name: Run the pgbackrest_initialization.sh script
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER
+          value: ($cluster.name)
+        - name: EXPSTATUS
+          value: "mixed"
+        - name: EXPNUM_BACKUPS
+          value: "1"
+        content: |
+          ../pgbackrest-initialization.sh
+
+  ## Annotate the cluster to take a manual backup
+  - name: Annotate the cluster to take a manual backup to repo2
+    try:
+    ## Patch and annotate the cluster to initiate the failover
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: kubectl annotate --namespace="${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" postgres-operator.crunchydata.com/pgbackrest-backup="manual"
+        check:
+          (contains($stdout, 'annotated')): true
+    # Manual backup job should have pushed to repo2
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/pgbackrest-backup: manual
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo2
+          status:
+            succeeded: 1
+    ## Describe the job if failed
+    catch:
+    - describe:
+        apiVersion: batch/v1
+        kind: Job
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+
+  - name: Run the pgbackrest_initialization.sh script
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER
+          value: ($cluster.name)
+        - name: EXPSTATUS
+          value: "ok"
+        - name: EXPNUM_BACKUPS
+          value: "2"
+        content: |
+          ../pgbackrest-initialization.sh
+    catch:
+    - describe:
+        apiVersion: batch/v1
+        kind: Job
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))

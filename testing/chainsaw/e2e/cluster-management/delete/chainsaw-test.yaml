@@ -1,0 +1,164 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: delete-cluster
+spec:
+  description: |
+    Create simple cluster and delete it
+  bindings:
+  - name: cluster
+    value:
+      name: delete-cluster
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+  steps:
+  - name: Create simple cluster
+    try:
+    - apply:
+        file: ../simple-cluster.yaml
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+          status:
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    - assert:
+        resource:
+          kind: PostgresCluster
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          metadata:
+            name: ($cluster.name)
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 1
+              replicas: 1
+              updatedReplicas: 1
+    - assert:
+        file: ./resource-check.yaml
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+    skipDelete: true
+  - name: Delete the Cluster
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: ($cluster.name)
+    - error:
+        file: ./resource-check.yaml
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  - name: Create simple cluster with replicas
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              replicas: 2
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+        # skipDelete: true
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+          status:
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    - assert:
+        resource:
+          kind: PostgresCluster
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          metadata:
+            name: ($cluster.name)
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 2
+              replicas: 2
+              updatedReplicas: 2
+    - assert:
+        file: ./resource-check.yaml
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+    skipDelete: true
+  - name: Delete the Cluster
+    try:
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: ($cluster.name)
+    - error:
+        file: ./resource-check.yaml
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  - name: Create a broken cluster
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            image: "example.com/does-not-exist"
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    - error:
+        resource:
+          kind: PostgresCluster
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          metadata:
+            name: ($cluster.name)
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 1
+              replicas: 1
+              updatedReplicas: 1
+    - delete:
+        ref:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          name: ($cluster.name)
+    - error:
+        file: ./resource-check.yaml
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+    skipDelete: true

@@ -1,0 +1,228 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: replicas
+spec:
+  description: |
+    Create simple cluster with multiple instances and add/remove replicas
+  bindings:
+  - name: cluster
+    value:
+      name: replicas
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+
+  steps:
+  ## Create cluster with 2 instances (instance1 and instance2) with local backups
+  - name: Create cluster with 2 instances
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            - name: instance2
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            backups:
+              pgbackrest:
+                repos:
+                - name: repo1
+                  volume:
+                    volumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    ## check to see if the database is running.
+    - assert:
+        resource:
+          kind: Pod
+          apiVersion: v1
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+          status:
+            phase: Running
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    ## check to see if the instances are created
+    - assert:
+        resource:
+          kind: PostgresCluster
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          metadata:
+            name: ($cluster.name)
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 1
+              replicas: 1
+              updatedReplicas: 1
+            - name: instance2
+              readyReplicas: 1
+              replicas: 1
+              updatedReplicas: 1
+    ## sleep because the backup takes about 2 mins to complete
+    - sleep:
+        duration: 120s
+    ## check to see if the backup stanza has been created and if the backup has completed.
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            pgbackrest:
+              repoHost:
+                apiVersion: apps/v1
+                kind: StatefulSet
+                ready: true
+              repos:
+              - bound: true
+                name: repo1
+                replicaCreateBackupComplete: true
+                stanzaCreated: true
+  ## Connect to the primary, create a table and add some data
+  - name: Create table and add some data
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          PRIMARY=$(kubectl get pod --namespace "${NAMESPACE}" --output name --selector \
+              "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/role=master")
+
+          echo $PRIMARY && kubectl exec -n "${NAMESPACE}" "${PRIMARY}" -c database -- psql -t --pset pager=off -c "create table date_test ( id serial, added_time TIMESTAMP not null default now(), random_string text); INSERT INTO date_test (random_string)  SELECT (substr(md5(RANDOM()::TEXT), 1, 7))||' BUNCH OF TEST DATA ' FROM generate_series(1, 1000); select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Query the replica instance
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          REPLICA=$(kubectl get pod --namespace "${NAMESPACE}" --output name --selector \
+              "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/role=replica")
+          kubectl exec -n "${NAMESPACE}" "${REPLICA}" -c database -- psql -t --pset pager=off -c "select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Describe the pods that fail
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Perform a failover
+  - name: Perform a failover
+    try:
+    ## Confirm the primary database is actually the primary database.
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: |
+          PRIMARY=$(kubectl get pod --namespace "${NAMESPACE}" --output name --selector \
+              "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/role=master")
+
+          kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -qAt --command 'SELECT pg_is_in_recovery()'
+        check:
+          (contains($stdout, 'f')): true
+        outputs:
+        - name: PRIMARY
+          value: (trim_space($stdout))
+    ## Patch and annotate the cluster to initiate the failover
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: |
+          kubectl patch --namespace "${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" \
+            --type 'merge' --patch '
+              {"spec":{"patroni":{"switchover":{
+                "enabled": true
+                }}}}'
+
+          kubectl annotate --namespace="${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" \
+            postgres-operator.crunchydata.com/trigger-switchover="$(date)"
+        check:
+          (contains($stdout, 'annotated')): true
+    ## Sleep while it fails over
+    - sleep:
+        duration: 30s
+    ## Confirm the old Primary is now the replica or "is in recovery"
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        - name: PRIMARY
+          value: ($PRIMARY)
+        content: >-
+          echo ${PRIMARY} kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -qAt --command 'SELECT pg_is_in_recovery()'
+        check:
+          (contains($stdout, 't')): true
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+
+  ## Next test: Add additional replicas to one or both of the instances.
+  - name: Add additional replicas
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              replicas: 2
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            - name: instance2
+              replicas: 3
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+
+    ## Check to see the replicas increased
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 2
+              replicas: 2
+              updatedReplicas: 2
+            - name: instance2
+              readyReplicas: 3
+              replicas: 3
+              updatedReplicas: 3
+    catch:
+    ## Describe the pods that fail
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))

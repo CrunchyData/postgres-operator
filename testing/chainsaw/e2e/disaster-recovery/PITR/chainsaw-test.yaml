@@ -1,0 +1,282 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pitr
+  labels:
+    backups: pitr
+spec:
+  description: |
+    Create simple cluster with a table, take a manual backup and then perform a PITR
+  bindings:
+  - name: cluster
+    value:
+      name: pitr
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+  ## Create a simple cluster with local backups and a manual backup configured to repo1
+  steps:
+  - name: Create a cluster
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - replicas: 1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            backups:
+              pgbackrest:
+                manual:
+                  repoName: repo1
+                  options:
+                  - --type=diff
+                repos:
+                - name: repo1
+                  volume:
+                    volumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    ## Confirm cluster has been created
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+          status:
+            phase: Running
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    ## Check to see the backup has completed
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            pgbackrest:
+              repoHost:
+                apiVersion: apps/v1
+                kind: StatefulSet
+                ready: true
+              repos:
+              - bound: true
+                name: repo1
+                replicaCreateBackupComplete: true
+                stanzaCreated: true
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Create a table and add some data
+  - name: Create table and add some data
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          echo $POD_NAME && kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "create table date_test ( id serial, added_time TIMESTAMP not null default now(), random_string text); INSERT INTO date_test (random_string)  SELECT (substr(md5(RANDOM()::TEXT), 1, 7))||' BUNCH OF TEST DATA ' FROM generate_series(1, 1000); select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Take a manual backup before PITR
+  - name: Take a manual backup before PITR
+    try:
+    ## Annotate the cluster with pgbackrest-backup=current date
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: |
+          kubectl annotate -n "${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" \
+          postgres-operator.crunchydata.com/pgbackrest-backup="$(date)"
+        check:
+          (contains($stdout, 'annotated')): true
+    ## Confirm the backup completed successfully 
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/pgbackrest-backup: manual
+          status:
+            containerStatuses:
+            - name: pgbackrest
+              state:
+                terminated:
+                  exitCode: 0
+                  reason: Completed
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Store the recovery point
+  - name: Store the recovery point and add more data
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: |
+          PRIMARY=$(kubectl get pod --namespace "${NAMESPACE}" --output name --selector \
+              "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/role=master")
+
+          OBJECTIVE=$(kubectl exec --namespace "${NAMESPACE}" "${PRIMARY}" -- psql -qAt --command 'SELECT clock_timestamp()' )
+          echo ${OBJECTIVE}
+
+          kubectl annotate --namespace "${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" "testing/objective=${OBJECTIVE}"
+
+        check:
+          (contains($stdout, 'annotated')): true
+    ## Add more data 
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    ## Confirm the data has been added
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          echo $POD_NAME && kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "INSERT INTO date_test (random_string)  SELECT (substr(md5(RANDOM()::TEXT), 1, 7))||' BUNCH OF TEST DATA ' FROM generate_series(1, 1000); select count(*) from date_test;"
+        check:
+          (contains($stdout, '2000')): true
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+
+  ## Restore the cluster
+  - name: Restore cluster
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: |
+          TARGET_JSON=$(kubectl get --namespace "${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" \
+            --output 'go-template={{ index .metadata.annotations "testing/objective" | printf "--target=%q" | printf "%q" }}')
+
+          kubectl patch --namespace "${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" \
+            --type 'merge' --patch '
+              {"spec":{"backups":{"pgbackrest":{"restore":{
+                "enabled": true,
+                "repoName": "repo1",
+                "options": ["--type=time", '"${TARGET_JSON}"']
+              }}}}}'
+
+          kubectl annotate --namespace="${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" \
+            "postgres-operator.crunchydata.com/pgbackrest-restore=pitr_one"
+    ## Sleep for 30s to allow the restore to complete
+    - sleep:
+        duration: 60s
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            pgbackrest:
+              restore:
+                id: pitr_one
+                finished: true
+    ## Confirm database is running again
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+          status:
+            phase: Running
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    ## Check to see if data is returned after restore
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          echo $POD_NAME && kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))

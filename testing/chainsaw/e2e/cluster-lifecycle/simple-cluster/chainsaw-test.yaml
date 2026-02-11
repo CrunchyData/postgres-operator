@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: simple-cluster
+spec:
+  description: |
+    Create simple cluster
+  bindings:
+  - name: cluster
+    value:
+      name: simple-cluster
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+
+  steps:
+  - name: Create simple cluster
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - replicas: 1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+          status:
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))

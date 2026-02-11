@@ -1,0 +1,169 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: standby
+  labels:
+    dr: standby
+spec:
+  description: |
+    Create simple cluster with a table, then create a standby
+  bindings:
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+
+  steps:
+  ## Create
+  - name: Create CustomTLS Secrets
+    try:
+    - apply:
+        file: ../tls_secret.yaml
+
+  ## Create a simple cluster with local backups and a manual backup configured to repo1
+  - name: Create a cluster using the CustomTLS Secrets
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: primary-cluster
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            customTLSSecret:
+              name: cluster-cert
+            customReplicationTLSSecret:
+              name: replication-cert
+            instances:
+            - name: instance1
+              dataVolumeClaimSpec: { accessModes: [ ReadWriteOnce ], resources: { requests: { storage: 1Gi } } }
+
+    ## Confirm cluster has been created
+    - assert:
+        resource:
+          kind: PostgresCluster
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          metadata:
+            name: primary-cluster
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 1
+              replicas: 1
+              updatedReplicas: 1
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: primary-cluster-primary
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', primary-cluster))
+  ## Create a table and add some data
+  - name: Create table and add some data
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: primary-cluster
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          echo $POD_NAME && kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "create table date_test ( id serial, added_time TIMESTAMP not null default now(), random_string text); INSERT INTO date_test (random_string)  SELECT (substr(md5(RANDOM()::TEXT), 1, 7))||' BUNCH OF TEST DATA ' FROM generate_series(1, 1000); select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', primary-cluster))
+  - name: Create the Standby cluster
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: standby-cluster
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            standby:
+              enabled: true
+              host: primary-cluster-primary
+            customTLSSecret:
+              name: cluster-cert
+            customReplicationTLSSecret:
+              name: replication-cert
+            instances:
+            - name: instance1
+              dataVolumeClaimSpec: { accessModes: [ ReadWriteOnce ], resources: { requests: { storage: 1Gi } } }
+    - sleep:
+        duration: 2m
+    ## Confirm cluster has been created
+    - assert:
+        resource:
+          kind: PostgresCluster
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          metadata:
+            name: standby-cluster
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 1
+              replicas: 1
+              updatedReplicas: 1
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: standby-cluster-primary
+    ## Check to see if data is returned after restore
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: standby-cluster
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          echo $POD_NAME && kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Describe upon failure
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', standby-cluster))

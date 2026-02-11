@@ -1,0 +1,160 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: backup-standby
+spec:
+  description: |
+    Create simple cluster with local pgbackrest backups
+  bindings:
+  - name: cluster
+    value:
+      name: backup-standby
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+
+  steps:
+
+  - name: Create cluster with standby backups, but replicas set to 1
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - replicas: 1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            backups:
+              pgbackrest:
+                global:
+                  backup-standby: "y"
+                repos:
+                - name: repo1
+                  volume:
+                    volumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    ## Make sure this fails because we don't have a replica to backup
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+          status:
+            phase: Failed
+    ## Check the cluster to confirm pgbackrest is running.
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            pgbackrest:
+              repoHost:
+                apiVersion: apps/v1
+                kind: StatefulSet
+                ready: true
+              repos:
+              - bound: true
+                name: repo1
+    ## Describe the pods if failed
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Run a script that will connect to the failed backup job pod to check the logs for "unable to find standby cluster - cannot proceed"
+  - name: Check backup logs
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: |
+          retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+          contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+          pods=$(kubectl get pods -o name -n "${NAMESPACE}" \
+            -l postgres-operator.crunchydata.com/cluster=pgbackrest-backup-standby \
+            -l postgres-operator.crunchydata.com/pgbackrest-backup=replica-create)
+          [ "$pods" = "" ] && retry "Pod not found" && exit 1
+
+          # There might be multiple failed backup job pods, so we need to select one.
+          # Use parameter expansion to remove everything after the first newline.
+          first_pod=${pods%%$'\n'*}
+          logs=$(kubectl logs "${first_pod}" --namespace "${NAMESPACE}")
+          { contains "${logs}" 'unable to find standby cluster - cannot proceed'; } || {
+            echo 'did not find expected standby cluster error '
+            exit 1
+          }
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Add a replica instance so that the backup job can complete. 
+  - name: Add a replica instance to allow backups to standby
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - replicas: 2
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            backups:
+              pgbackrest:
+                global:
+                  backup-standby: "y"
+                repos:
+                - name: repo1
+                  volume:
+                    volumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/pgbackrest-backup: replica-create
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+          status:
+            succeeded: 1
+    ## Check the cluster to confirm the backup has completed.
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            pgbackrest:
+              repoHost:
+                apiVersion: apps/v1
+                kind: StatefulSet
+                ready: true
+              repos:
+              - bound: true
+                name: repo1
+                replicaCreateBackupComplete: true
+                stanzaCreated: true
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))

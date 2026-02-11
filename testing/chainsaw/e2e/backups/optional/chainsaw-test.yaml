@@ -1,0 +1,465 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: optional-backups
+spec:
+  description: |
+    Create simple cluster with optional backups, 
+  bindings:
+  - name: cluster
+    value:
+      name: optional-backups
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+  steps:
+  - name: Create cluster without backups
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              replicas: 1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+
+    ## Check the status of the database 
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+          status:
+            phase: Running
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    ## Check the PVC to confirm it has been created for pgdata
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+              postgres-operator.crunchydata.com/instance-set: instance1
+              postgres-operator.crunchydata.com/role: pgdata
+    ## Check to see if archive_command is 'true'
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          echo $POD_NAME && kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "select current_setting('archive_command');"
+        check:
+          (contains($stdout, 'true')): true
+    - error:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: ($cluster.name)-repo1
+    - error:
+        resource:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: ($cluster.name)-repo-host
+    - error:
+        resource:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: ($cluster.name)-pgbackrest-config
+    - error:
+        resource:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: ($cluster.name)-pgbackrest
+    - error:
+        resource:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: ($cluster.name)-pgbackrest
+    - error:
+        resource:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: Role
+          metadata:
+            name: ($cluster.name)-pgbackrest
+    ## Describe the pods if failed
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Create a table and add some data, then query the replica instance
+  - name: Add data and a replica, confirm replication
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          PRIMARY=$(kubectl get pod --namespace "${NAMESPACE}" --output name --selector \
+              "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/role=master")
+
+          echo $PRIMARY && kubectl exec -n "${NAMESPACE}" "${PRIMARY}" -c database -- psql -t --pset pager=off -c "create table date_test ( id serial, added_time TIMESTAMP not null default now(), random_string text); INSERT INTO date_test (random_string)  SELECT (substr(md5(RANDOM()::TEXT), 1, 7))||' BUNCH OF TEST DATA ' FROM generate_series(1, 1000); select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Add a replica
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              replicas: 2
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    ## Check to see the replicas increased
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            instances:
+            - name: instance1
+              readyReplicas: 2
+              replicas: 2
+              updatedReplicas: 2
+    ## Query the replica instance
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          REPLICA=$(kubectl get pod --namespace "${NAMESPACE}" --output name --selector \
+              "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/role=replica")
+          kubectl exec -n "${NAMESPACE}" "${REPLICA}" -c database -- psql -t --pset pager=off -c "select count(*) from date_test;"
+        check:
+          (contains($stdout, '1000')): true
+    ## Describe the pods that fail
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Enable backups
+  - name: Add backups and confirm everything
+    try:
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+            - name: instance1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+            backups:
+              pgbackrest:
+                repos:
+                - name: repo1
+                  volume:
+                    volumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+    ## Confirm the backup stanza has been created and if the backup has completed.
+    - assert:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          status:
+            pgbackrest:
+              repoHost:
+                apiVersion: apps/v1
+                kind: StatefulSet
+                ready: true
+              repos:
+              - bound: true
+                name: repo1
+                replicaCreateBackupComplete: true
+                stanzaCreated: true
+    ## Confirm the status of the PVC for pgdata
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+              postgres-operator.crunchydata.com/instance-set: instance1
+              postgres-operator.crunchydata.com/role: pgdata
+    ## Confirm the statefulset for the cluster
+    - assert:
+        resource:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+              postgres-operator.crunchydata.com/instance-set: instance1
+    ## Confirm the PVC for the backrest repo
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            # name: ($cluster.name)-repo1
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: pgbackrest
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+    ## Check to see if archive_command is 'pgbackrest --stanza=db archive-push "%p"'
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "select current_setting('archive_command');"
+        check:
+          (contains($stdout, 'archive-push')): true
+    ## Describe the pods that fail
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  ## Patch the cluster to remove backups, but do not annotate to confirm the backups are not removed.
+  - name: Patch to remove backups, but do not annotate
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: |
+          kubectl patch --namespace "${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" \
+            --type 'merge' -p '{"spec":{"backups": null}}'
+        check:
+          (contains($stdout, 'patched')): true
+    ## Confirm the status of the PVC for pgdata
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+              postgres-operator.crunchydata.com/instance-set: instance1
+              postgres-operator.crunchydata.com/role: pgdata
+    ## Confirm the statefulset for the cluster
+    - assert:
+        resource:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+              postgres-operator.crunchydata.com/instance-set: instance1
+    ## Confirm the PVC for the backrest repo
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            # name: ($cluster.name)-repo1
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: pgbackrest
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+    ## Check to see if archive_command is 'pgbackrest --stanza=db archive-push "%p"'
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "select current_setting('archive_command');"
+        check:
+          (contains($stdout, 'archive-push')): true
+    ## Describe the pods that fail
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+  - name: Annotate the cluster and confirm backups are removed
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl annotate --namespace "${NAMESPACE}" postgrescluster "${CLUSTER_NAME}" postgres-operator.crunchydata.com/authorizeBackupRemoval="true"
+        check:
+          (contains($stdout, 'annotated')): true
+
+    - sleep:
+        duration: 30s
+    ## Check the PVC to confirm it has been created for pgdata
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+              postgres-operator.crunchydata.com/instance-set: instance1
+              postgres-operator.crunchydata.com/role: pgdata
+    ## Confirm database is running again
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: postgres
+          status:
+            phase: Running
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    ## Check to see if archive_command is 'true'
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: CLUSTER_NAME
+          value: ($cluster.name)
+        content: >-
+          kubectl get pod -n "${NAMESPACE}" -l "postgres-operator.crunchydata.com/cluster=${CLUSTER_NAME},postgres-operator.crunchydata.com/data=postgres" -o name
+        check:
+          (contains($stdout, 'pod/')): true
+        outputs:
+        - name: POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: POD_NAME
+          value: ($POD_NAME)
+        content: >-
+          echo $POD_NAME && kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -c database -- psql -t --pset pager=off -c "select current_setting('archive_command');"
+        check:
+          (contains($stdout, 'true')): true
+    - error:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            name: ($cluster.name)-repo1
+    - error:
+        resource:
+          apiVersion: apps/v1
+          kind: StatefulSet
+          metadata:
+            name: ($cluster.name)-repo-host
+    - error:
+        resource:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: ($cluster.name)-pgbackrest-config
+    - error:
+        resource:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: ($cluster.name)-pgbackrest
+    - error:
+        resource:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: ($cluster.name)-pgbackrest
+    - error:
+        resource:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: Role
+          metadata:
+            name: ($cluster.name)-pgbackrest
+    ## Describe the pods if failed
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
