@@ -1,0 +1,139 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: tablespace-enabled
+spec:
+  description: |
+    Create simple cluster with tablespace enabled
+  bindings:
+  - name: cluster
+    value:
+      name: tablespace-enabled
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+  - name: psql
+    value:
+      image: ($values.images.psql)
+      connect: { name: PGCONNECT_TIMEOUT, value: '5' }
+
+  steps:
+  - name: Create simple cluster with tablespace volumes
+    try:
+    - apply:
+        resource:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: tablespace-script
+          data:
+            script.sql: |
+              CREATE TABLESPACE trial OWNER "tablespace-enabled" LOCATION '/tablespaces/library/data';
+              CREATE TABLESPACE castle OWNER "tablespace-enabled" LOCATION '/tablespaces/user/data';
+    - apply:
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            databaseInitSQL:
+              name: tablespace-script
+              key: script.sql
+            instances:
+            - replicas: 1
+              dataVolumeClaimSpec: { accessModes: [ "ReadWriteOnce" ], resources: { requests: { storage: 1Gi } } }
+              tablespaceVolumes:
+              - name: user
+                dataVolumeClaimSpec:
+                  accessModes:
+                  - "ReadWriteOnce"
+                  resources:
+                    requests:
+                      storage: 1Gi
+              - name: library
+                dataVolumeClaimSpec:
+                  accessModes:
+                  - "ReadWriteOnce"
+                  resources:
+                    requests:
+                      storage: 1Gi
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: Pod
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+          status:
+            (containerStatuses[?name == 'database']):
+            - name: database
+              ready: true
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))
+
+  - name: Check for tablespaces
+    try:
+    - apply:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: psql-connect
+          spec:
+            backoffLimit: 6
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                - name: psql
+                  image: ($psql.image)
+                  env:
+                  - name: PGURI
+                    valueFrom: { secretKeyRef: { name: tablespace-enabled-pguser-tablespace-enabled, key: uri } }
+                  # Do not wait indefinitely.
+                  - ($psql.connect)
+                  # Note: the `$$$$` is reduced to `$$` by Kubernetes.
+                  # - https://kubernetes.io/docs/tasks/inject-data-application/
+                  command:
+                  - psql
+                  - $(PGURI)
+                  - --quiet
+                  - --echo-errors
+                  - --set=ON_ERROR_STOP=1
+                  - --command
+                  - |
+                    DO $$$$
+                    DECLARE
+                      tbsp_count integer;
+                    BEGIN
+                      SELECT COUNT(*) INTO tbsp_count FROM pg_tablespace WHERE spcname = 'trial';
+                      ASSERT tbsp_count = 1, 'tablespace not found';
+                      SELECT COUNT(*) INTO tbsp_count FROM pg_tablespace WHERE spcname = 'castle';
+                      ASSERT tbsp_count = 1, 'tablespace not found';
+                    END $$$$;
+                  - --command
+                  - |
+                    CREATE SCHEMA "tablespace-enabled";
+                    CREATE TABLE important (data) TABLESPACE trial AS VALUES ('treasure');
+                    CREATE TABLE also_important (data) TABLESPACE castle AS VALUES ('treasure');
+                    CREATE TABLE moving_important (data) AS VALUES ('treasure');
+                    ALTER TABLE moving_important SET TABLESPACE trial;
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: psql-connect
+          status:
+            succeeded: 1
+    catch:
+    - describe:
+        apiVersion: v1
+        kind: Pod
+        selector: (concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))

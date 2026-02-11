@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/kyverno/chainsaw/main/.schemas/json/test-chainsaw-v1alpha1.json
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: invalid-triggers
+spec:
+  description: |
+    Check that trigger values that are too large or small are rejected.
+  timeouts:
+    assert: 90s
+    exec: 15s
+  bindings:
+  - name: cluster
+    value:
+      name: invalid-triggers   
+  - name: postgres
+    value:
+      version: ($values.versions.postgres)
+
+  steps:
+  - name: Trigger is too large (500%)
+    try:
+    - apply:
+        expect:
+          - check:
+              ($error != null): true
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+              - name: instance1
+                dataVolumeClaimSpec:
+                  autoGrow: { trigger: 500 }
+                  accessModes: [ ReadWriteOnce ]
+                  resources:
+                    requests: { storage: 1Gi }
+                    limits: { storage: 5Gi }
+
+  - name: Trigger is invalid (49%)
+    try:
+    - apply:
+        expect:
+          - check:
+              ($error != null): true
+        resource:
+          apiVersion: postgres-operator.crunchydata.com/v1beta1
+          kind: PostgresCluster
+          metadata:
+            name: ($cluster.name)
+          spec:
+            postgresVersion: (to_number($postgres.version))
+            instances:
+              - name: instance1
+                dataVolumeClaimSpec:
+                  autoGrow: { trigger: 49 }
+                  accessModes: [ ReadWriteOnce ]
+                  resources:
+                    requests: { storage: 1Gi }
+                    limits: { storage: 5Gi }
