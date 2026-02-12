@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
-        with: { go-version: stable }
+        with: { go-version: '1.25.x' } # TODO: revert to stable when chainsaw supports Go 1.26 (missing testDeps.ModulePath)
 
       - name: Start k3s
         uses: ./.github/actions/k3d
@@ -142,7 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
-        with: { go-version: stable }
+        with: { go-version: '1.25.x' } # TODO: revert to stable when kuttl supports Go 1.26 (missing testDeps.ModulePath)
 
       - name: Start k3s
         uses: ./.github/actions/k3d
