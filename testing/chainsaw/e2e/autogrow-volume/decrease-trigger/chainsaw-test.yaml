@@ -2,21 +2,17 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
-  name: default-autogrow
+  name: autogrow-decrease-trigger
 spec:
   description: |
-    Create a cluster with the default autogrow settings.
-    Check that the trigger is hit when expected and
-    that volumes are expanded by 50%.
-    Since  default trigger is 75%, we write 750Mi to each 1Gi volume.
-    With GKE storage we expect the PVC request to be increased to 1461Mi
+    Create a cluster where the trigger percent is decreased
   timeouts:
     assert: 90s
     exec: 15s
   bindings:
   - name: cluster
     value:
-      name: default-trigger
+      name: decrease-trigger   
   - name: postgres
     value:
       version: ($values.versions.postgres)
@@ -33,7 +29,7 @@ spec:
               storageclass.kubernetes.io/is-default-class: "true"
           allowVolumeExpansion: true
 
-  - name: Create cluster with default autogrow settings
+  - name: Create cluster with an decreased trigger percent
     try:
     - apply:
         resource:
@@ -46,11 +42,13 @@ spec:
             instances:
               - name: instance1
                 dataVolumeClaimSpec:
+                  autoGrow: { trigger: 50 }
                   accessModes: [ ReadWriteOnce ]
                   resources:
                     requests: { storage: 1Gi }
                     limits: { storage: 5Gi }
                 walVolumeClaimSpec:
+                  autoGrow: { trigger: 50 }
                   accessModes: [ ReadWriteOnce ]
                   resources:
                     requests: { storage: 1Gi }
@@ -61,6 +59,7 @@ spec:
                   - name: repo1
                     volume:
                       volumeClaimSpec:
+                        autoGrow: { trigger: 50 }
                         accessModes: [ ReadWriteOnce ]
                         resources:
                           requests: { storage: 1Gi }
@@ -68,6 +67,7 @@ spec:
                   - name: repo2
                     volume:
                       volumeClaimSpec:
+                        autoGrow: { trigger: 50 }
                         accessModes: [ ReadWriteOnce ]
                         resources:
                           requests: { storage: 1Gi }
@@ -171,7 +171,7 @@ spec:
               storage: 1Gi
             phase: Bound
 
-  - name: Write to the instance volumes to trigger default limit
+  - name: Write to the volumes below the decreased trigger percent
     try:
     - script:
         env:
@@ -198,7 +198,7 @@ spec:
         content: >-
           kubectl exec "${PRIMARY_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgdata/testfile.$(date +%s) bs=1M count=750"
+          -- bash -c "dd if=/dev/zero of=/pgdata/testfile.$(date +%s) bs=1M count=100"
     - script:
         env:
         - name: NAMESPACE
@@ -208,9 +208,9 @@ spec:
         content: >-
           kubectl exec "${PRIMARY_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgwal/testfile.$(date +%s) bs=1M count=750"
+          -- bash -c "dd if=/dev/zero of=/pgwal/testfile.$(date +%s) bs=1M count=100"
 
-  - name: Write to the repo volumes to trigger default limit
+  - name: Write to the repo volumes below the decreased trigger percent
     try:
     - script:
         env:
@@ -237,7 +237,7 @@ spec:
         content: >-
           kubectl exec "${REPO_HOST_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo1/testfile.$(date +%s) bs=1M count=750"
+          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo1/testfile.$(date +%s) bs=1M count=100"
     - script:
         env:
         - name: NAMESPACE
@@ -247,7 +247,167 @@ spec:
         content: >-
           kubectl exec "${REPO_HOST_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo2/testfile.$(date +%s) bs=1M count=750"
+          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo2/testfile.$(date +%s) bs=1M count=100"
+
+  # Check that no volume expansion has been requested
+  - name: Check that the PVCs have not changed
+    try:
+    # Allow some time for any volume expansion to be processed in the reload script
+    - sleep:
+        duration: 15s
+    # Then check that the PVCs are unchanged
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/instance-set: instance1
+              postgres-operator.crunchydata.com/role: pgdata
+          spec:
+            resources:
+              requests: { storage: 1Gi }
+          status:
+            accessModes: [ ReadWriteOnce ]
+            capacity: { storage: 1Gi }
+            phase: Bound
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/instance-set: instance1
+              postgres-operator.crunchydata.com/role: pgwal
+          spec:
+            resources:
+              requests: { storage: 1Gi }
+          status:
+            accessModes: [ ReadWriteOnce ]
+            capacity: { storage: 1Gi }
+            phase: Bound
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: pgbackrest
+              postgres-operator.crunchydata.com/pgbackrest: ""
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo1
+              postgres-operator.crunchydata.com/pgbackrest-volume: ""
+          spec:
+            resources:
+              requests:
+                storage: 1Gi
+          status:
+            accessModes:
+            - ReadWriteOnce
+            capacity:
+              storage: 1Gi
+            phase: Bound
+    - assert:
+        resource:
+          apiVersion: v1
+          kind: PersistentVolumeClaim
+          metadata:
+            labels:
+              postgres-operator.crunchydata.com/cluster: ($cluster.name)
+              postgres-operator.crunchydata.com/data: pgbackrest
+              postgres-operator.crunchydata.com/pgbackrest: ""
+              postgres-operator.crunchydata.com/pgbackrest-repo: repo2
+              postgres-operator.crunchydata.com/pgbackrest-volume: ""
+          spec:
+            resources:
+              requests:
+                storage: 1Gi
+          status:
+            accessModes:
+            - ReadWriteOnce
+            capacity:
+              storage: 1Gi
+            phase: Bound
+
+  - name: Write to the instance volumes to trigger decreased percent
+    try:
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: SELECTOR
+          value: (join(',', ['postgres-operator.crunchydata.com/role=master',(concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))]))
+        content: >-
+          kubectl get pods
+          --namespace="${NAMESPACE}"
+          --selector=${SELECTOR}
+          --output=jsonpath={.items..metadata.name}
+        check:
+          (contains($stdout, 'instance1')): true
+        outputs:
+        - name: PRIMARY_POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: PRIMARY_POD_NAME
+          value: ($PRIMARY_POD_NAME)
+        content: >-
+          kubectl exec "${PRIMARY_POD_NAME}"
+          --namespace="${NAMESPACE}"
+          -- bash -c "dd if=/dev/zero of=/pgdata/testfile.$(date +%s) bs=1M count=400"
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: PRIMARY_POD_NAME
+          value: ($PRIMARY_POD_NAME)
+        content: >-
+          kubectl exec "${PRIMARY_POD_NAME}"
+          --namespace="${NAMESPACE}"
+          -- bash -c "dd if=/dev/zero of=/pgwal/testfile.$(date +%s) bs=1M count=400"
+
+  - name: Write to the repo volumes to trigger decreased percent
+    try:
+    - script:
+        env:
+          - name: NAMESPACE
+            value: ($namespace)
+          - name: SELECTOR
+            value: (join(',', ['postgres-operator.crunchydata.com/pgbackrest-dedicated',(concat('postgres-operator.crunchydata.com/cluster=', $cluster.name))]))
+        content: >-
+          kubectl get pods
+          --namespace="${NAMESPACE}"
+          --output=jsonpath={.items..metadata.name}
+          --selector="${SELECTOR}"
+        check:
+          (contains($stdout, 'repo-host')): true
+        outputs:
+        - name: REPO_HOST_POD_NAME
+          value: (trim_space($stdout))
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: REPO_HOST_POD_NAME
+          value: ($REPO_HOST_POD_NAME)
+        content: >-
+          kubectl exec "${REPO_HOST_POD_NAME}"
+          --namespace="${NAMESPACE}"
+          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo1/testfile.$(date +%s) bs=1M count=400"
+    - script:
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        - name: REPO_HOST_POD_NAME
+          value: ($REPO_HOST_POD_NAME)
+        content: >-
+          kubectl exec "${REPO_HOST_POD_NAME}"
+          --namespace="${NAMESPACE}"
+          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo2/testfile.$(date +%s) bs=1M count=400"
 
   - name: Check that default volume expansion has been requested
     try:
@@ -354,7 +514,7 @@ spec:
             capacity:
               storage: 2Gi
             phase: Bound
-
+  
   - name: Check for VolumeAutoGrow expansion events
     try:
     - script:
