@@ -169,7 +169,7 @@ SELECT pg_catalog.format('GRANT ALL PRIVILEGES ON DATABASE %I TO %I',
 	// The operator will attempt to write schemas for the users in the spec if
 	// 	* the feature gate is enabled and
 	// 	* the cluster is annotated.
-	if feature.Enabled(ctx, feature.AutoCreateUserSchema) {
+	if feature.Enabled(ctx, feature.AutoCreateUserSchema) && err == nil {
 		autoCreateUserSchemaAnnotationValue, annotationExists := cluster.Annotations[naming.AutoCreateUserSchemaAnnotation]
 		if annotationExists && strings.EqualFold(autoCreateUserSchemaAnnotationValue, "true") {
 			log.V(1).Info("Writing schemas for users.")
