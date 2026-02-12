@@ -124,7 +124,7 @@ jobs:
             --name 'postgres-operator' localhost/postgres-operator
 
       - run: |
-          make check-chainsaw && exit
+          make check-chainsaw CHAINSAW_EXTRA_ARGS='--exclude-test-regex chainsaw/.*autogrow.*' && exit
           failed=$?
           echo '::group::PGO logs'; docker logs 'postgres-operator'; echo '::endgroup::'
           exit $failed

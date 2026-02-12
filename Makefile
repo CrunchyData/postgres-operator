@@ -185,9 +185,14 @@ check-envtest-existing: createnamespaces
 #
 # https://kyverno.github.io/chainsaw/latest/operations/script#kubeconfig
 #
+# NOTE: The autogrow volume tests require a storage provider that supports real
+# volume expansion (e.g., GKE, EKS, AKS). They will fail on k3d/kind with the
+# default local-path provisioner. Use CHAINSAW_EXTRA_ARGS to skip them when needed:
+#   make check-chainsaw CHAINSAW_EXTRA_ARGS='--exclude-test-regex chainsaw/.*autogrow.*'
+#
 .PHONY: check-chainsaw
 check-chainsaw:
-	$(CHAINSAW_TEST) --config testing/chainsaw/e2e/config.yaml --values testing/chainsaw/e2e/values.yaml testing/chainsaw/e2e
+	$(CHAINSAW_TEST) --config testing/chainsaw/e2e/config.yaml --values testing/chainsaw/e2e/values.yaml $(CHAINSAW_EXTRA_ARGS) testing/chainsaw/e2e
 
 # Expects operator to be running
 #

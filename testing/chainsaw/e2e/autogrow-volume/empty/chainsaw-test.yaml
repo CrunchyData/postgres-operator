@@ -2,17 +2,19 @@
 apiVersion: chainsaw.kyverno.io/v1alpha1
 kind: Test
 metadata:
-  name: decrease-trigger
+  name: autogrow-empty
 spec:
   description: |
-    Create a cluster where the trigger percent is decreased
+    Create a cluster where the autogrow spec is provided but empty
+    Confirm that the default autogrow settings are applied and function as expected
+    (Mainly checking the trigger percentages match the default values)
   timeouts:
     assert: 90s
     exec: 15s
   bindings:
   - name: cluster
     value:
-      name: decrease-trigger   
+      name: empty-autogrow
   - name: postgres
     value:
       version: ($values.versions.postgres)
@@ -29,7 +31,7 @@ spec:
               storageclass.kubernetes.io/is-default-class: "true"
           allowVolumeExpansion: true
 
-  - name: Create cluster with an decreased trigger percent
+  - name: Create cluster with an empty autoGrow spec
     try:
     - apply:
         resource:
@@ -42,13 +44,13 @@ spec:
             instances:
               - name: instance1
                 dataVolumeClaimSpec:
-                  autoGrow: { trigger: 50 }
+                  autoGrow: {}
                   accessModes: [ ReadWriteOnce ]
                   resources:
                     requests: { storage: 1Gi }
                     limits: { storage: 5Gi }
                 walVolumeClaimSpec:
-                  autoGrow: { trigger: 50 }
+                  autoGrow: {}
                   accessModes: [ ReadWriteOnce ]
                   resources:
                     requests: { storage: 1Gi }
@@ -59,7 +61,7 @@ spec:
                   - name: repo1
                     volume:
                       volumeClaimSpec:
-                        autoGrow: { trigger: 50 }
+                        autoGrow: {}
                         accessModes: [ ReadWriteOnce ]
                         resources:
                           requests: { storage: 1Gi }
@@ -67,7 +69,7 @@ spec:
                   - name: repo2
                     volume:
                       volumeClaimSpec:
-                        autoGrow: { trigger: 50 }
+                        autoGrow: {}
                         accessModes: [ ReadWriteOnce ]
                         resources:
                           requests: { storage: 1Gi }
@@ -171,7 +173,7 @@ spec:
               storage: 1Gi
             phase: Bound
 
-  - name: Write to the volumes below the decreased trigger percent
+  - name: Write to the volumes below the trigger percentage
     try:
     - script:
         env:
@@ -198,7 +200,7 @@ spec:
         content: >-
           kubectl exec "${PRIMARY_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgdata/testfile.$(date +%s) bs=1M count=100"
+          -- bash -c "dd if=/dev/zero of=/pgdata/testfile.$(date +%s) bs=1M count=400"
     - script:
         env:
         - name: NAMESPACE
@@ -208,9 +210,9 @@ spec:
         content: >-
           kubectl exec "${PRIMARY_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgwal/testfile.$(date +%s) bs=1M count=100"
+          -- bash -c "dd if=/dev/zero of=/pgwal/testfile.$(date +%s) bs=1M count=400"
 
-  - name: Write to the repo volumes below the decreased trigger percent
+  - name: Write to the repo volumes below the trigger
     try:
     - script:
         env:
@@ -237,7 +239,7 @@ spec:
         content: >-
           kubectl exec "${REPO_HOST_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo1/testfile.$(date +%s) bs=1M count=100"
+          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo1/testfile.$(date +%s) bs=1M count=400"
     - script:
         env:
         - name: NAMESPACE
@@ -247,7 +249,7 @@ spec:
         content: >-
           kubectl exec "${REPO_HOST_POD_NAME}"
           --namespace="${NAMESPACE}"
-          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo2/testfile.$(date +%s) bs=1M count=100"
+          -- bash -c "dd if=/dev/zero of=/pgbackrest/repo2/testfile.$(date +%s) bs=1M count=400"
 
   # Check that no volume expansion has been requested
   - name: Check that the PVCs have not changed
@@ -331,7 +333,7 @@ spec:
               storage: 1Gi
             phase: Bound
 
-  - name: Write to the instance volumes to trigger decreased percent
+  - name: Write to the instance volumes to trigger default limit
     try:
     - script:
         env:
@@ -370,7 +372,7 @@ spec:
           --namespace="${NAMESPACE}"
           -- bash -c "dd if=/dev/zero of=/pgwal/testfile.$(date +%s) bs=1M count=400"
 
-  - name: Write to the repo volumes to trigger decreased percent
+  - name: Write to the repo volumes to trigger default limit
     try:
     - script:
         env:
