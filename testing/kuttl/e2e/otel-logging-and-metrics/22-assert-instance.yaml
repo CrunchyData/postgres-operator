@@ -4,6 +4,8 @@ commands:
 # First, check that all containers in the instance pod are ready.
 # Then, grab the collector metrics output and check that a postgres 
 # metric is present, as well as a patroni metric.
+# Then use psql to run a bad command in the database to get an error
+# and ensure that there is a postgres log to capture.
 # Then, check the collector logs for patroni, and postgres logs.
 # Finally, ensure the monitoring user exists and is configured.
 - script: |
@@ -34,6 +36,8 @@ commands:
       retry "patroni metric not found"
       exit 1
     }
+
+    kubectl exec "${pod}" -n "${NAMESPACE}" -- psql -c "SHOW DOES_NOT_EXIST;" 2>/dev/null || true
 
     logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}" -c collector | grep InstrumentationScope)
     { contains "${logs}" 'InstrumentationScope patroni'; } || {
