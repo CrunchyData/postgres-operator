@@ -7,7 +7,7 @@ labels:
   includeTemplates: true
   pairs:
     app.kubernetes.io/name: pgo
-    app.kubernetes.io/version: 6.0.1
+    app.kubernetes.io/version: 6.0.0
 - includeSelectors: true
   includeTemplates: true
   pairs:
