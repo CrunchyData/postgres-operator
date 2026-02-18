@@ -36,6 +36,7 @@ type pgAdminUserForJson struct {
 	IsAdmin bool `json:"isAdmin"`
 
 	// The user's password
+	//nolint:gosec // G117: This is a JSON serialization struct, not a hardcoded credential.
 	Password string `json:"password"`
 
 	// The username for User in pgAdmin.
