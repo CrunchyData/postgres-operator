@@ -53,6 +53,7 @@ the environment: https://go.dev/ref/mod#module-cache`,
 	go func() { <-signals; cancel() }()
 
 	// Create the target directory.
+	//nolint:gosec // G703: Path is provided by trusted command-line argument.
 	if err := os.MkdirAll(flags.Arg(0), 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -90,6 +91,7 @@ the environment: https://go.dev/ref/mod#module-cache`,
 			err := ctx.Err()
 
 			if err == nil {
+				//nolint:gosec // G703: Path is derived from module cache directory.
 				err = os.MkdirAll(filepath.Dir(destination), 0o755)
 			}
 			if err == nil {
@@ -98,9 +100,11 @@ the environment: https://go.dev/ref/mod#module-cache`,
 			if err == nil {
 				// When we copy the licenses in the Dockerfiles, make sure
 				// to `--chmod` them to an appropriate permissions, e.g., 0o444
+				//nolint:gosec // G703: Path is derived from module cache directory.
 				err = os.WriteFile(destination, data, 0o600)
 			}
 			if err == nil {
+				//nolint:gosec // G705: Output is file paths, not user input rendered in HTML.
 				fmt.Fprintln(os.Stdout, license, "=>", destination)
 			}
 			if err != nil {
@@ -116,7 +120,7 @@ func downloadModules(ctx context.Context, modules ...string) map[string]string {
 
 	// Download modules and read their details into a series of JSON objects.
 	// - https://go.dev/ref/mod#go-mod-download
-	//gosec:disable G204 -- Use this environment variable to switch Go versions without touching PATH
+	//nolint:gosec // G702: GO env var allows switching Go versions without touching PATH.
 	cmd := exec.CommandContext(ctx, os.Getenv("GO"), append([]string{"mod", "download", "-json"}, modules...)...)
 	if cmd.Path == "" {
 		cmd.Path, cmd.Err = exec.LookPath("go")
@@ -196,7 +200,7 @@ func identifyModules(ctx context.Context, executables ...string) []string {
 
 	// Use `go version -m` to read the embedded module information as a text table.
 	// - https://go.dev/ref/mod#go-version-m
-	//gosec:disable G204 -- Use this environment variable to switch Go versions without touching PATH
+	//nolint:gosec // G702: GO env var allows switching Go versions without touching PATH.
 	cmd := exec.CommandContext(ctx, os.Getenv("GO"), append([]string{"version", "-m"}, executables...)...)
 	if cmd.Path == "" {
 		cmd.Path, cmd.Err = exec.LookPath("go")
@@ -230,6 +234,7 @@ func identifyModules(ctx context.Context, executables ...string) []string {
 	// The `go version -m` command returns no information for empty files, and it
 	// is possible for a Go executable to have no main module and no dependencies.
 	if len(result) == 0 {
+		//nolint:gosec // G705: Output is file paths, not user input rendered in HTML.
 		fmt.Fprintf(os.Stderr, "no Go modules in %v\n", executables)
 		os.Exit(0)
 	}
