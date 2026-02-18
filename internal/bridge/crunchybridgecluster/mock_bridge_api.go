@@ -17,6 +17,7 @@ import (
 )
 
 type TestBridgeClient struct {
+	//nolint:gosec // G117: Test mock struct field, not a hardcoded credential.
 	ApiKey          string                                       `json:"apiKey,omitempty"`
 	TeamId          string                                       `json:"teamId,omitempty"`
 	Clusters        []*bridge.ClusterApiResource                 `json:"clusters,omitempty"`
