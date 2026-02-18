@@ -23,6 +23,7 @@ func TestNewParameters(t *testing.T) {
 
 		"wal_level": "logical",
 	})
+	//nolint:gosec // G101: "password_encryption" is a PostgreSQL parameter name, not a credential.
 	assert.DeepEqual(t, parameters.Default.AsMap(), map[string]string{
 		"jit": "off",
 
