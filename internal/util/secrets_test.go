@@ -20,6 +20,7 @@ func TestAccumulate(t *testing.T) {
 	called := 0
 	result, err := accumulate(10, func() (byte, error) {
 		called++
+		//nolint:gosec // G115: called is bounded by test iteration count, no overflow possible.
 		return byte('A' + called), nil
 	})
 
@@ -33,6 +34,7 @@ func TestAccumulate(t *testing.T) {
 		result, err := accumulate(10, func() (byte, error) {
 			called++
 			if called < 5 {
+				//nolint:gosec // G115: called is bounded by test iteration count, no overflow possible.
 				return byte('A' + called), nil
 			} else {
 				return 'Z', expected

@@ -190,6 +190,7 @@ func TestSCRAMSASLPrep(t *testing.T) {
 	tests := []stringStruct{
 		{password: "hippo", expected: "hippo"},
 		{password: "híppo", expected: "híppo"},
+		//nolint:gosec // G101: Test data for password normalization, not a credential.
 		{password: "こんにちは", expected: "こんにちは"},
 		{password: "hippo\u1680lake", expected: "hippo lake"},
 		{password: "hipp\ufe01o", expected: "hippo"},
