@@ -35,6 +35,7 @@ func initOpenTelemetry() (func(), error) {
 		options := []stdouttrace.Option{}
 
 		if filename != "" {
+			//nolint:gosec // G703: Path from OTEL_JSON_FILE env var is operator-controlled configuration.
 			file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 			if err != nil {
 				return nil, fmt.Errorf("unable to open exporter file: %w", err)
