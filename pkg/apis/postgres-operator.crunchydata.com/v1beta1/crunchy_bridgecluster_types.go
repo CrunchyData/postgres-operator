@@ -72,6 +72,7 @@ type CrunchyBridgeClusterSpec struct {
 
 	// The name of the secret containing the API key and team id
 	// +kubebuilder:validation:Required
+	//nolint:gosec // G117: Field holds secret name reference, not actual secret data.
 	Secret string `json:"secret"`
 
 	// The amount of storage available to the cluster in gigabytes.

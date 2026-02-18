@@ -35,6 +35,7 @@ func TestGeneratePostgresRoleSecret(t *testing.T) {
 		Name:       "application",
 		SecretName: "application-role-secret",
 	}
+	//nolint:gosec // G101: Test data with fake credentials for unit testing.
 	role := &bridge.ClusterRoleApiResource{
 		Name:     "application",
 		Password: "password",
@@ -148,6 +149,7 @@ func TestReconcilePostgresRoleSecrets(t *testing.T) {
 			Name:       "application",
 			SecretName: "application-role-secret",
 		}
+		//nolint:gosec // G101: "postgres" is a role name, not a credential.
 		postgresSpec := &v1beta1.CrunchyBridgeClusterRoleSpec{
 			Name:       "postgres",
 			SecretName: "postgres-role-secret",
