@@ -484,6 +484,7 @@ func instanceYAML(
 		},
 	}
 
+	//nolint:gosec // G101: "pgpass" is a Patroni configuration key for a file path, not a credential.
 	postgresql := map[string]any{
 		// TODO(cbandy): "bin_dir"
 
