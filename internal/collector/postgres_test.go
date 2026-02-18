@@ -12,6 +12,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -812,6 +813,85 @@ service:
       - filelog/postgres_csvlog
       - filelog/postgres_jsonlog
 `)
+	})
+
+	t.Run("LogsBatchesConfigured", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.PostgresVersion = 99
+		require.UnmarshalInto(t, &cluster.Spec, `{
+			instrumentation: {
+				logs: {
+					batches: {
+						maxDelay: 5min 12sec,
+						maxRecords: 123,
+						minRecords: 45,
+					},
+				},
+			},
+		}`)
+
+		config := NewConfig(cluster.Spec.Instrumentation)
+		params := postgres.NewParameters()
+
+		EnablePostgresLogging(ctx, cluster, config, params.Default)
+
+		result, err := config.ToYAML()
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Contains(result, `
+  batch/logs:
+    send_batch_max_size: 123
+    send_batch_size: 45
+    timeout: 5m12s
+`))
+	})
+
+	t.Run("DetectorsWithAttributes", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryLogs: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.PostgresVersion = 99
+		cluster.Spec.Instrumentation = testInstrumentationSpec()
+		cluster.Spec.Instrumentation.Config.Detectors = []v1beta1.OpenTelemetryResourceDetector{
+			{Name: "gcp"},
+			{Name: "aks", Attributes: map[string]bool{
+				"k8s.cluster.name": true,
+			}},
+		}
+
+		config := NewConfig(cluster.Spec.Instrumentation)
+		params := postgres.NewParameters()
+
+		EnablePostgresLogging(ctx, cluster, config, params.Default)
+
+		result, err := config.ToYAML()
+		assert.NilError(t, err)
+		assert.Assert(t, cmp.Contains(result, `
+  resourcedetection:
+    aks:
+      resource_attributes:
+        k8s.cluster.name:
+          enabled: true
+    detectors:
+    - gcp
+    - aks
+    override: false
+    timeout: 30s
+`))
+		// Verify resourcedetection is in the pipeline
+		assert.Assert(t, cmp.Contains(result, `
+      - resourcedetection
+      - batch/logs
+`))
 	})
 }
 
