@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-ARG PGBACKREST_VERSION=2.56.0
+ARG PGBACKREST_VERSION=2.58.0
 
 FROM registry.access.redhat.com/ubi9/go-toolset:latest AS build
 

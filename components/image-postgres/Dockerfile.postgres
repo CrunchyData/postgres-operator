@@ -5,7 +5,7 @@
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 
 ARG PATRONI_VERSION=4.0.6
-ARG PGBACKREST_VERSION=2.56.0
+ARG PGBACKREST_VERSION=2.58.0
 ARG POSTGRES_VERSION=18
 
 # Trim any patch version from the provided POSTGRES_VERSION
