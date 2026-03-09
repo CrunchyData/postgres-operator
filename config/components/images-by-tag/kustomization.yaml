@@ -2,7 +2,7 @@ kind: Component
 images:
 - name: image-pgadmin
   newName: registry.developers.crunchydata.com/crunchydata/crunchy-pgadmin4
-  newTag: ubi9-9.12-2610
+  newTag: ubi9-9.13-2610
 - name: image-pgbackrest
   newName: registry.developers.crunchydata.com/crunchydata/crunchy-pgbackrest
   newTag: ubi9-2.58.0-2610
