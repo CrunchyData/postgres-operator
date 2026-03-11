@@ -36,7 +36,6 @@ type pgAdminUserForJson struct {
 	IsAdmin bool `json:"isAdmin"`
 
 	// The user's password
-	//nolint:gosec // G117: This is a JSON serialization struct, not a hardcoded credential.
 	Password string `json:"password"`
 
 	// The username for User in pgAdmin.
@@ -333,6 +332,8 @@ cd $PGADMIN_DIR
 	// to add a user, that user will not be in intentUsers. If errors occurred when attempting to
 	// update a user, the user will be in intentUsers as it existed before. We now want to marshal the
 	// intentUsers to json and write the users.json file to the secret.
+
+	//nolint:gosec // G117: Password is intentionally stored in a Kubernetes Secret.
 	intentUserSecret.Data["users.json"], _ = json.Marshal(intentUsers)
 
 	err = errors.WithStack(r.setControllerReference(pgadmin, intentUserSecret))
