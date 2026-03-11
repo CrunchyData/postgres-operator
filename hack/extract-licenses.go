@@ -104,7 +104,6 @@ the environment: https://go.dev/ref/mod#module-cache`,
 				err = os.WriteFile(destination, data, 0o600)
 			}
 			if err == nil {
-				//nolint:gosec // G705: Output is file paths, not user input rendered in HTML.
 				fmt.Fprintln(os.Stdout, license, "=>", destination)
 			}
 			if err != nil {
@@ -234,7 +233,6 @@ func identifyModules(ctx context.Context, executables ...string) []string {
 	// The `go version -m` command returns no information for empty files, and it
 	// is possible for a Go executable to have no main module and no dependencies.
 	if len(result) == 0 {
-		//nolint:gosec // G705: Output is file paths, not user input rendered in HTML.
 		fmt.Fprintf(os.Stderr, "no Go modules in %v\n", executables)
 		os.Exit(0)
 	}
