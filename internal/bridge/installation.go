@@ -39,8 +39,7 @@ var self = new(struct {
 type AuthObject struct {
 	ID        string    `json:"id"`
 	ExpiresAt time.Time `json:"expires_at"`
-	//nolint:gosec // G117: JSON serialization field for API response, not a hardcoded credential.
-	Secret string `json:"secret"`
+	Secret    string    `json:"secret"`
 }
 
 type Installation struct {

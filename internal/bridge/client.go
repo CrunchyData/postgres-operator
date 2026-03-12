@@ -155,10 +155,9 @@ type ClusterRoleApiResource struct {
 	ClusterId    string `json:"cluster_id"`
 	Flavor       string `json:"flavor"`
 	Name         string `json:"name"`
-	//nolint:gosec // G117: JSON serialization field for API response, not a hardcoded credential.
-	Password string `json:"password"`
-	Team     string `json:"team_id"`
-	URI      string `json:"uri"`
+	Password     string `json:"password"`
+	Team         string `json:"team_id"`
+	URI          string `json:"uri"`
 }
 
 // ClusterRoleList holds a slice of ClusterRoleApiResource
@@ -279,8 +278,7 @@ func (c *Client) doWithBackoff(
 
 		if err == nil {
 			request.Header = headers.Clone()
-
-			//nolint:bodyclose,gosec // bodyclose: response returned to caller; G704: URL is from trusted Bridge API configuration.
+			//nolint:bodyclose // response returned to caller.
 			response, err = c.Do(request)
 		}
 
