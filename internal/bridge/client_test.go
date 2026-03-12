@@ -1229,6 +1229,7 @@ func TestGetClusterRole(t *testing.T) {
 	}
 
 	t.Run("WeSendCorrectData", func(t *testing.T) {
+		//nolint:gosec // G117: Password is part of the API resource struct, not a credential in test context.
 		responsePayloadJson, err := json.Marshal(clusterRoleApiResource)
 		assert.NilError(t, err)
 
@@ -1251,6 +1252,7 @@ func TestGetClusterRole(t *testing.T) {
 	})
 
 	t.Run("OkResponse", func(t *testing.T) {
+		//nolint:gosec // G117: Password is part of the API resource struct, not a credential in test context.
 		responsePayloadJson, err := json.Marshal(clusterRoleApiResource)
 		assert.NilError(t, err)
 
@@ -1269,6 +1271,7 @@ func TestGetClusterRole(t *testing.T) {
 	})
 
 	t.Run("ErrorResponse", func(t *testing.T) {
+		//nolint:gosec // G117: Password is part of the API resource struct, not a credential in test context.
 		responsePayloadJson, err := json.Marshal(clusterRoleApiResource)
 		assert.NilError(t, err)
 
