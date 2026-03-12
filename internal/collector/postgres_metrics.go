@@ -256,7 +256,7 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 // appendToJSONArray appends elements of a json.RawMessage containing an array
 // to another json.RawMessage containing an array.
 func appendToJSONArray(a1, a2 json.RawMessage) (json.RawMessage, error) {
-	var slc1 []json.RawMessage
+	var slc1 []json.RawMessage //nolint:prealloc // Populated by json.Unmarshal, not manual appends.
 	if err := json.Unmarshal(a1, &slc1); err != nil {
 		return nil, err
 	}
