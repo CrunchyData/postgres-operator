@@ -158,7 +158,13 @@ func (r *Reconciler) observePersistentVolumeClaims(
 				// See the "VolumeAttributesClass" feature gate.
 				// - https://git.k8s.io/enhancements/keps/sig-storage/3751-volume-attributes-class
 				corev1.PersistentVolumeClaimVolumeModifyingVolume,
-				corev1.PersistentVolumeClaimVolumeModifyVolumeError:
+				corev1.PersistentVolumeClaimVolumeModifyVolumeError,
+
+				// The "Unused" condition was added in Kubernetes v1.36 to indicate
+				// that a PVC is not currently bound to or used by any Pod. This
+				// has no bearing on volume resizing, so there's nothing to do.
+				// - https://git.k8s.io/enhancements/keps/sig-storage/4901-pvc-detection-of-stuck-pvcs
+				corev1.PersistentVolumeClaimUnused:
 			}
 		}
 	}

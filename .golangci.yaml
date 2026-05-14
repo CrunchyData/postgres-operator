@@ -189,6 +189,19 @@ linters:
         text: >-
           client.Apply is deprecated
 
+      # k8s.io/apimachinery v0.36 deprecated direct access to managed.FieldsV1.Raw
+      # in favor of GetRawBytes/SetRawBytes. Tests still use the old field.
+      - linters: [staticcheck]
+        path: internal/controller/postgrescluster/apply_test\.go
+        text: managed.FieldsV1.Raw is deprecated
+
+      # controller-runtime v0.24 deprecated scheme.Builder, but the recommended
+      # alternative requires restructuring our api packages. Allow current usage
+      # until a follow-up migrates to the new helper.
+      - linters: [staticcheck]
+        path: pkg/apis/postgres-operator.crunchydata.com/.*/groupversion_info\.go
+        text: scheme.Builder is deprecated
+
 # https://golangci-lint.run/usage/formatters
 formatters:
   enable:
