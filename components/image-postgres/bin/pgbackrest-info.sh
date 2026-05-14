@@ -4,6 +4,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set -e
+
 printf '|'
 pgbackrest info --output=json --log-level-console=info --log-level-stderr=warn
 echo
