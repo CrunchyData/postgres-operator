@@ -97,6 +97,7 @@ ARG BASE_VERSION
 
 RUN rpm -ivh "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${BASE_VERSION##ubi}.noarch.rpm" \
 && rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-${BASE_VERSION##ubi}-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" \
+&& microdnf update -y --nodocs \
 && microdnf install -y --nodocs --setopt install_weak_deps=0 \
 --enablerepo='epel' \
 'krb5-libs' \
