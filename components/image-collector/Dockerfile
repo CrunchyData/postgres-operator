@@ -34,6 +34,7 @@ FROM registry.access.redhat.com/ubi9/ubi-minimal
 COPY --from=build --chmod=0777 /otelcol-contrib /otelcol-contrib
 COPY --from=build /licenses /licenses
 
-RUN microdnf install -y 'logrotate' 'procps-ng'
+RUN microdnf update -y --nodocs \
+ && microdnf install -y 'logrotate' 'procps-ng'
 
 USER 2

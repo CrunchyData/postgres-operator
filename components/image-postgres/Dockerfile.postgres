@@ -32,6 +32,11 @@ rpm -ivh "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 # Disable the built-in PostgreSQL module to avoid conflicts with PGDG packages
 microdnf --assumeyes module disable postgresql || true
 
+# Refresh all base-image packages against the current RHEL/EPEL/PGDG repos so
+# the build picks up CVE patches that landed after ubi-minimal was last
+# republished.
+microdnf update -y --nodocs
+
 # Ensure complete timezone database is present (some minimal UBI layers
 # can have tzdata partially pruned); reinstall guarantees fresh /usr/share/zoneinfo
 microdnf reinstall -y --nodocs 'tzdata'
