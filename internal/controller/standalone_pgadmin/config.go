@@ -15,5 +15,5 @@ const (
 	pgAdminPort = 5050
 
 	// Directory for pgAdmin in container
-	pgAdminDir = "/usr/local/lib/python3.11/site-packages/pgadmin4"
+	pgAdminDir = "/usr/local/lib/python3.12/site-packages/pgadmin4"
 )
