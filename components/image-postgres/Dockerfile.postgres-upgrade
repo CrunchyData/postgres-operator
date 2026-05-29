@@ -18,6 +18,10 @@ rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pg
 # Disable module to avoid conflicts
 microdnf --assumeyes module disable postgresql || true
 
+# Refresh base packages so any CVE patches that landed in the upstream
+# repos after the parent crunchy-postgres image was built are picked up.
+microdnf update -y --nodocs
+
 # Build package list for all target versions
 PKGS="$(for POSTGRES_VERSION in ${POSTGRES_UPGRADE_VERSIONS}; do
 POSTGRES_MAJOR_VERSION="${POSTGRES_VERSION%.*}"

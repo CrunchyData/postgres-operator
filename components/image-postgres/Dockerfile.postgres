@@ -4,7 +4,7 @@
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 
-ARG PATRONI_VERSION=4.0.6
+ARG PATRONI_VERSION=4.1.3
 ARG PGBACKREST_VERSION=2.58.0
 ARG POSTGRES_VERSION=18
 
@@ -31,6 +31,11 @@ rpm -ivh "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
 
 # Disable the built-in PostgreSQL module to avoid conflicts with PGDG packages
 microdnf --assumeyes module disable postgresql || true
+
+# Refresh all base-image packages against the current RHEL/EPEL/PGDG repos so
+# the build picks up CVE patches that landed after ubi-minimal was last
+# republished.
+microdnf update -y --nodocs
 
 # Ensure complete timezone database is present (some minimal UBI layers
 # can have tzdata partially pruned); reinstall guarantees fresh /usr/share/zoneinfo

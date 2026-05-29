@@ -26,6 +26,10 @@ rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pg
 # Disable module to avoid conflicts
 microdnf --assumeyes module disable postgresql || true
 
+# Refresh base packages so any CVE patches that landed in the upstream
+# repos after the parent crunchy-postgres image was built are picked up.
+microdnf update -y --nodocs
+
 microdnf install -y --nodocs --setopt install_weak_deps=0 \
     --enablerepo="codeready-builder-for-rhel-9-$(arch)-rpms" \
     perl \

@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: postgresclusters.postgres-operator.crunchydata.com
   labels:
-    app.kubernetes.io/version: 6.0.1
+    app.kubernetes.io/version: 6.0.2
 spec:
   group: postgres-operator.crunchydata.com
   names:
@@ -10103,7 +10103,6 @@ spec:
                                     procMount denotes the type of proc mount to use for the containers.
                                     The default value is Default which uses the container runtime defaults for
                                     readonly paths and masked paths.
-                                    This requires the ProcMountType feature flag to be enabled.
                                     Note that this field cannot be set when spec.os.name is windows.
                                   type: string
                                 readOnlyRootFilesystem:
@@ -15673,7 +15672,6 @@ spec:
                                       procMount denotes the type of proc mount to use for the containers.
                                       The default value is Default which uses the container runtime defaults for
                                       readonly paths and masked paths.
-                                      This requires the ProcMountType feature flag to be enabled.
                                       Note that this field cannot be set when spec.os.name is windows.
                                     type: string
                                   readOnlyRootFilesystem:
@@ -29292,7 +29290,6 @@ spec:
                                     procMount denotes the type of proc mount to use for the containers.
                                     The default value is Default which uses the container runtime defaults for
                                     readonly paths and masked paths.
-                                    This requires the ProcMountType feature flag to be enabled.
                                     Note that this field cannot be set when spec.os.name is windows.
                                   type: string
                                 readOnlyRootFilesystem:
@@ -34861,7 +34858,6 @@ spec:
                                       procMount denotes the type of proc mount to use for the containers.
                                       The default value is Default which uses the container runtime defaults for
                                       readonly paths and masked paths.
-                                      This requires the ProcMountType feature flag to be enabled.
                                       Note that this field cannot be set when spec.os.name is windows.
                                     type: string
                                   readOnlyRootFilesystem:

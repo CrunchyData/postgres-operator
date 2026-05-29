@@ -38,6 +38,7 @@ RUN rpm -ivh \
 # Delete the repo file as it is large and unneeded.
 ARG PGBACKREST_VERSION
 RUN rpm -ivh "https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-$(arch)/pgdg-redhat-repo-latest.noarch.rpm" \
+ && microdnf update -y --nodocs \
  && microdnf install -y --nodocs --setopt install_weak_deps=0 'shadow-utils' \
  && groupadd --gid 26 postgres \
  && useradd  --gid 26 --uid 26 --no-log-init postgres \
