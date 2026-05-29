@@ -4,7 +4,7 @@
 
 ARG BASE_VERSION=ubi9
 ARG PGADMIN4_VERSION=9.13
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.12
 ARG PG_MAJOR=18
 
 # Some Python packages available in UBI repositories are too old for pgAdmin
@@ -114,11 +114,19 @@ RUN rpm -ivh "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${BASE_V
 #
 # - https://docs.python.org/3/whatsnew/3.12.html
 # - https://github.com/pgadmin-org/pgadmin4/blob/REL-8_14/requirements.txt#L57
+#
+# Install "wheel" and "packaging" alongside pip/setuptools so legacy pgAdmin
+# transitive deps (e.g. Flask-Principal) that ship as sdists without a
+# pyproject.toml can build via "setup.py bdist_wheel". Without these the
+# wheel package's bdist_wheel shim fails on Python 3.12 with UBI's older
+# rpm setuptools because its fallback path imports "packaging".
 ARG PGADMIN4_VERSION
 RUN \
 microdnf install -y --nodocs \
+"python${PYTHON_VERSION}-packaging" \
 "python${PYTHON_VERSION}-pip" \
 "python${PYTHON_VERSION}-setuptools" \
+"python${PYTHON_VERSION}-wheel" \
 && microdnf clean all \
 && rm -f /etc/yum.repos.d/redhat.repo \
 && "python${PYTHON_VERSION}" -m pip install --no-cache-dir \
@@ -127,6 +135,14 @@ microdnf install -y --nodocs \
 && rm -rf /root/.cache \
 && update-alternatives --install /usr/bin/python3 python3 "/usr/bin/python${PYTHON_VERSION}" 1 \
 && update-alternatives --set python3 "/usr/bin/python${PYTHON_VERSION}"
+
+# The operator invokes pgAdmin's setup.py CLI (add-user, update-user, load-servers,
+# setup-db) against the same install that gunicorn is serving. When setup.py runs
+# as a CLI, pgAdmin's Flask app.name ends with "-cli" and delete_adhoc_servers()
+# wipes servers users registered through the web UI. Gate that call so it only
+# runs for non-CLI invocations.
+RUN sed -i "s/delete_adhoc_servers()/if not app.name.endswith('-cli'): delete_adhoc_servers()/g" \
+    /usr/local/lib/python${PYTHON_VERSION}/site-packages/pgadmin4/pgadmin/__init__.py
 
 # config_local.py should be colocated with config.py
 COPY --chmod=0444 conf/config_local.py \
