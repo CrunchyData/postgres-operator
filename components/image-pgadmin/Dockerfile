@@ -137,12 +137,18 @@ microdnf install -y --nodocs \
 && update-alternatives --install /usr/bin/python3 python3 "/usr/bin/python${PYTHON_VERSION}" 1 \
 && update-alternatives --set python3 "/usr/bin/python${PYTHON_VERSION}"
 
-# The operator invokes pgAdmin's setup.py CLI (add-user, update-user, load-servers,
-# setup-db) against the same install that gunicorn is serving. When setup.py runs
-# as a CLI, pgAdmin's Flask app.name ends with "-cli" and delete_adhoc_servers()
-# wipes servers users registered through the web UI. Gate that call so it only
-# runs for non-CLI invocations.
-RUN sed -i "s/delete_adhoc_servers()/if not app.name.endswith('-cli'): delete_adhoc_servers()/g" \
+# Skip delete_adhoc_servers() when pgAdmin is invoked via its CLI entrypoints
+# (setup.py add-user / update-user / load-servers / setup-db). The CLI path
+# calls create_app() WITHOUT initializing login_manager, so as of pgAdmin 9.15
+# delete_adhoc_servers() crashes with:
+#   AttributeError: 'PgAdmin' object has no attribute 'login_manager'
+# (via current_user.is_authenticated -> _get_user -> current_app.login_manager).
+# An earlier `app.name.endswith('-cli')` guard is unreliable because Flask
+# derives app.name from the import name ("pgadmin"), not from the app_name arg
+# create_app receives. Gate on login_manager's actual presence instead:
+# True only for the gunicorn-served web app, False for every CLI invocation.
+# Tracked upstream: https://github.com/pgadmin-org/pgadmin4/issues/9987
+RUN sed -i "s/delete_adhoc_servers()/(hasattr(app, 'login_manager') and delete_adhoc_servers())/g" \
     /usr/local/lib/python${PYTHON_VERSION}/site-packages/pgadmin4/pgadmin/__init__.py
 
 # config_local.py should be colocated with config.py
