@@ -45,7 +45,7 @@ containers:
   - |-
     monitor() {
     export PGADMIN_SETUP_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32)"
-    PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
+    PGADMIN_DIR=/usr/local/lib/python3.12/site-packages/pgadmin4
     APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
     echo "Running pgAdmin4 Setup"
@@ -246,7 +246,7 @@ containers:
   - |-
     monitor() {
     export PGADMIN_SETUP_PASSWORD="$(date +%s | sha256sum | base64 | head -c 32)"
-    PGADMIN_DIR=/usr/local/lib/python3.11/site-packages/pgadmin4
+    PGADMIN_DIR=/usr/local/lib/python3.12/site-packages/pgadmin4
     APP_RELEASE=$(cd $PGADMIN_DIR && python3 -c "import config; print(config.APP_RELEASE)")
 
     echo "Running pgAdmin4 Setup"
