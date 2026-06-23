@@ -10,7 +10,7 @@ jobs:
   go-test:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with: { go-version: stable }
 
@@ -28,7 +28,7 @@ jobs:
       matrix:
         kubernetes: ['default']
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with: { go-version: stable }
 
@@ -55,7 +55,7 @@ jobs:
       matrix:
         kubernetes: [v1.32, v1.34]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with: { go-version: stable }
 
@@ -89,7 +89,7 @@ jobs:
       matrix:
         kubernetes: [v1.32, v1.34]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with: { go-version: stable }
 
@@ -140,7 +140,7 @@ jobs:
       matrix:
         kubernetes: [v1.32, v1.34]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with: { go-version: stable }
 
@@ -212,7 +212,7 @@ jobs:
       - e2e-k3d-chainsaw
       - e2e-k3d-kuttl
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v6
         with: { go-version: stable }
       - uses: actions/download-artifact@v8
