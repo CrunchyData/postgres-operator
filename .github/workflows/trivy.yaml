@@ -21,7 +21,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Download Trivy
         uses: ./.github/actions/trivy
         env:
@@ -41,10 +41,10 @@ jobs:
 
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Trivy needs a populated Go module cache to detect Go module licenses.
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with: { go-version: stable }
       - run: go mod download
 
@@ -67,7 +67,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Report success only when detected secrets are listed in [.trivyignore.yaml].
       - name: Scan secrets
@@ -89,7 +89,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # Print any detected secrets or vulnerabilities to the workflow log for
       # human consumption. This step fails only when Trivy is unable to scan.
