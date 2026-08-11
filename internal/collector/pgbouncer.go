@@ -191,8 +191,8 @@ func EnablePgBouncerMetrics(ctx context.Context, inCluster *v1beta1.PostgresClus
 		config.Receivers[SqlQuery] = map[string]any{
 			"driver": "postgres",
 			"datasource": fmt.Sprintf(
-				`host=localhost dbname=pgbouncer port=5432 user=%s password=${env:PGPASSWORD}`,
-				sqlQueryUsername),
+				`host=localhost dbname=pgbouncer port=%d user=%s password=${env:PGPASSWORD}`,
+				*inCluster.Spec.Proxy.PGBouncer.Port, sqlQueryUsername),
 			"queries": slices.Clone(pgBouncerMetricsQueries),
 		}
 
