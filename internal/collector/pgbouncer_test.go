@@ -11,7 +11,9 @@ import (
 	"gotest.tools/v3/assert"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -337,6 +339,10 @@ func TestEnablePgBouncerMetrics(t *testing.T) {
 
 		config := NewConfig(nil)
 		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.Proxy = &v1beta1.PostgresProxySpec{
+			PGBouncer: &v1beta1.PGBouncerPodSpec{},
+		}
+		cluster.Spec.Proxy.PGBouncer.Default() // Sets Port to 5432
 		require.UnmarshalInto(t, &cluster.Spec, `{
 			instrumentation: {}
 		}`)
@@ -513,6 +519,10 @@ service:
 		config := NewConfig(testInstrumentationSpec())
 
 		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.Proxy = &v1beta1.PostgresProxySpec{
+			PGBouncer: &v1beta1.PGBouncerPodSpec{},
+		}
+		cluster.Spec.Proxy.PGBouncer.Default() // Sets Port to 5432
 		cluster.Spec.Instrumentation = testInstrumentationSpec()
 
 		EnablePgBouncerMetrics(ctx, cluster, config, "test_user")
@@ -682,5 +692,31 @@ service:
       - sqlquery
 `)
 
+	})
+
+	t.Run("CustomPort", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryMetrics: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		config := NewConfig(nil)
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.Proxy = &v1beta1.PostgresProxySpec{
+			PGBouncer: &v1beta1.PGBouncerPodSpec{},
+		}
+		cluster.Spec.Proxy.PGBouncer.Default()
+		cluster.Spec.Proxy.PGBouncer.Port = initialize.Int32(6432) // Override default
+		require.UnmarshalInto(t, &cluster.Spec, `{
+			instrumentation: {}
+		}`)
+
+		EnablePgBouncerMetrics(ctx, cluster, config, "test_user")
+
+		// Verify datasource contains correct port
+		receiver := config.Receivers["sqlquery"].(map[string]any)
+		datasource := receiver["datasource"].(string)
+		assert.Assert(t, cmp.Contains(datasource, "port=6432"))
 	})
 }
