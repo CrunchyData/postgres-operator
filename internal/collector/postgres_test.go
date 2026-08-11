@@ -6,11 +6,13 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"gotest.tools/v3/assert"
 
 	"github.com/crunchydata/postgres-operator/internal/feature"
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/testing/cmp"
 	"github.com/crunchydata/postgres-operator/internal/testing/require"
@@ -905,6 +907,7 @@ func TestEnablePostgresMetrics(t *testing.T) {
 
 		cluster := new(v1beta1.PostgresCluster)
 		cluster.Spec.PostgresVersion = 99
+		cluster.Default() // Sets Port to 5432
 		require.UnmarshalInto(t, &cluster.Spec, `{
 			instrumentation: {}
 		}`)
@@ -969,6 +972,7 @@ service:
 
 		cluster := new(v1beta1.PostgresCluster)
 		cluster.Spec.PostgresVersion = 99
+		cluster.Default() // Sets Port to 5432
 		cluster.Spec.Instrumentation = testInstrumentationSpec()
 
 		config := NewConfig(cluster.Spec.Instrumentation)
@@ -1025,6 +1029,33 @@ service:
       - sqlquery/5s
       - sqlquery/300s
 `)
+	})
 
+	t.Run("CustomPort", func(t *testing.T) {
+		gate := feature.NewGate()
+		assert.NilError(t, gate.SetFromMap(map[string]bool{
+			feature.OpenTelemetryMetrics: true,
+		}))
+		ctx := feature.NewContext(context.Background(), gate)
+
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.PostgresVersion = 99
+		cluster.Default()
+		cluster.Spec.Port = initialize.Int32(5433) // Override default
+		require.UnmarshalInto(t, &cluster.Spec, `{
+			instrumentation: {}
+		}`)
+
+		config := NewConfig(nil)
+		EnablePostgresMetrics(ctx, cluster, config)
+
+		// Verify datasource contains correct port
+		receiver := config.Receivers["sqlquery/5s"].(map[string]any)
+		datasource := receiver["datasource"].(string)
+		assert.Assert(t, cmp.Contains(datasource, "port=5433"))
+
+		// Verify static_attributes.server contains correct port
+		queries := receiver["queries"].(json.RawMessage)
+		assert.Assert(t, cmp.Contains(string(queries), `"server":"localhost:5433"`))
 	})
 }
