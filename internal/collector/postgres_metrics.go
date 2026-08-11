@@ -59,6 +59,21 @@ type metric struct {
 	ValueType        string            `json:"value_type,omitempty"`
 }
 
+// updateServerAttribute updates the server static_attribute in all metrics
+// to use the actual Postgres port from the cluster spec.
+func updateServerAttribute(metrics []queryMetrics, port int32) {
+	serverValue := fmt.Sprintf("localhost:%d", port)
+	for i := range metrics {
+		for j := range metrics[i].Metrics {
+			if metrics[i].Metrics[j].StaticAttributes != nil {
+				if _, ok := metrics[i].Metrics[j].StaticAttributes["server"]; ok {
+					metrics[i].Metrics[j].StaticAttributes["server"] = serverValue
+				}
+			}
+		}
+	}
+}
+
 func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresCluster, config *Config) {
 	if OpenTelemetryMetricsEnabled(ctx, inCluster) {
 		log := logging.FromContext(ctx)
@@ -96,53 +111,46 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 			}
 		}
 
+		// Always parse JSON to update static_attributes.server with actual port
+		var fiveSecondMetricsArr []queryMetrics
+		if err := json.Unmarshal(fiveSecondMetricsClone, &fiveSecondMetricsArr); err != nil {
+			log.Error(err, "error parsing five second postgres metrics")
+		}
+		updateServerAttribute(fiveSecondMetricsArr, *inCluster.Spec.Port)
+
+		var fiveMinuteMetricsArr []queryMetrics
+		if err := json.Unmarshal(fiveMinuteMetricsClone, &fiveMinuteMetricsArr); err != nil {
+			log.Error(err, "error parsing five minute postgres metrics")
+		}
+		updateServerAttribute(fiveMinuteMetricsArr, *inCluster.Spec.Port)
+
+		var fiveMinutePerDBMetricsArr []queryMetrics
+		if err := json.Unmarshal(fiveMinutePerDBMetricsClone, &fiveMinutePerDBMetricsArr); err != nil {
+			log.Error(err, "error parsing per-db postgres metrics")
+		}
+		updateServerAttribute(fiveMinutePerDBMetricsArr, *inCluster.Spec.Port)
+
 		// Remove any queries that user has specified in the spec
 		if inCluster.Spec.Instrumentation != nil &&
 			inCluster.Spec.Instrumentation.Metrics != nil &&
 			inCluster.Spec.Instrumentation.Metrics.CustomQueries != nil &&
 			inCluster.Spec.Instrumentation.Metrics.CustomQueries.Remove != nil {
 
-			// Convert json to array of queryMetrics objects
-			var fiveSecondMetricsArr []queryMetrics
-			err := json.Unmarshal(fiveSecondMetricsClone, &fiveSecondMetricsArr)
-			if err != nil {
-				log.Error(err, "error compiling five second postgres metrics")
-			}
-
-			// Remove any specified metrics from the five second metrics
 			fiveSecondMetricsArr = removeMetricsFromQueries(
 				inCluster.Spec.Instrumentation.Metrics.CustomQueries.Remove, fiveSecondMetricsArr)
-
-			// Convert json to array of queryMetrics objects
-			var fiveMinuteMetricsArr []queryMetrics
-			err = json.Unmarshal(fiveMinuteMetricsClone, &fiveMinuteMetricsArr)
-			if err != nil {
-				log.Error(err, "error compiling five minute postgres metrics")
-			}
-
-			// Remove any specified metrics from the five minute metrics
 			fiveMinuteMetricsArr = removeMetricsFromQueries(
 				inCluster.Spec.Instrumentation.Metrics.CustomQueries.Remove, fiveMinuteMetricsArr)
-
-			// Convert json to array of queryMetrics objects
-			var fiveMinutePerDBMetricsArr []queryMetrics
-			err = json.Unmarshal(fiveMinutePerDBMetricsClone, &fiveMinutePerDBMetricsArr)
-			if err != nil {
-				log.Error(err, "error compiling per-db postgres metrics")
-			}
-
-			// Remove any specified metrics from the five minute per-db metrics
 			fiveMinutePerDBMetricsArr = removeMetricsFromQueries(
 				inCluster.Spec.Instrumentation.Metrics.CustomQueries.Remove, fiveMinutePerDBMetricsArr)
-
-			// Convert back to json data
-			// The error return value can be ignored as the errchkjson linter
-			// deems the []queryMetrics to be a safe argument:
-			// https://github.com/breml/errchkjson
-			fiveSecondMetricsClone, _ = json.Marshal(fiveSecondMetricsArr)
-			fiveMinuteMetricsClone, _ = json.Marshal(fiveMinuteMetricsArr)
-			fiveMinutePerDBMetricsClone, _ = json.Marshal(fiveMinutePerDBMetricsArr)
 		}
+
+		// Always marshal back to JSON
+		// The error return value can be ignored as the errchkjson linter
+		// deems the []queryMetrics to be a safe argument:
+		// https://github.com/breml/errchkjson
+		fiveSecondMetricsClone, _ = json.Marshal(fiveSecondMetricsArr)
+		fiveMinuteMetricsClone, _ = json.Marshal(fiveMinuteMetricsArr)
+		fiveMinutePerDBMetricsClone, _ = json.Marshal(fiveMinutePerDBMetricsArr)
 
 		// Add Prometheus exporter
 		config.Exporters[Prometheus] = map[string]any{
@@ -152,8 +160,8 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 		config.Receivers[FiveSecondSqlQuery] = map[string]any{
 			"driver": "postgres",
 			"datasource": fmt.Sprintf(
-				`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`,
-				MonitoringUser),
+				`host=localhost dbname=postgres port=%d user=%s password=${env:PGPASSWORD}`,
+				*inCluster.Spec.Port, MonitoringUser),
 			"collection_interval": "5s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "15s",
@@ -163,8 +171,8 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 		config.Receivers[FiveMinuteSqlQuery] = map[string]any{
 			"driver": "postgres",
 			"datasource": fmt.Sprintf(
-				`host=localhost dbname=postgres port=5432 user=%s password=${env:PGPASSWORD}`,
-				MonitoringUser),
+				`host=localhost dbname=postgres port=%d user=%s password=${env:PGPASSWORD}`,
+				*inCluster.Spec.Port, MonitoringUser),
 			"collection_interval": "300s",
 			// Give Postgres time to finish setup.
 			"initial_delay": "15s",
@@ -209,8 +217,9 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 						config.Receivers[receiverName] = map[string]any{
 							"driver": "postgres",
 							"datasource": fmt.Sprintf(
-								`host=localhost dbname=%s port=5432 user=%s password=${env:PGPASSWORD}`,
+								`host=localhost dbname=%s port=%d user=%s password=${env:PGPASSWORD}`,
 								db,
+								*inCluster.Spec.Port,
 								MonitoringUser),
 							"collection_interval": querySet.CollectionInterval,
 							// Give Postgres time to finish setup.
@@ -234,8 +243,9 @@ func EnablePostgresMetrics(ctx context.Context, inCluster *v1beta1.PostgresClust
 					config.Receivers[receiverName] = map[string]any{
 						"driver": "postgres",
 						"datasource": fmt.Sprintf(
-							`host=localhost dbname=%s port=5432 user=%s password=${env:PGPASSWORD}`,
+							`host=localhost dbname=%s port=%d user=%s password=${env:PGPASSWORD}`,
 							db,
+							*inCluster.Spec.Port,
 							MonitoringUser),
 						"collection_interval": "5m",
 						// Give Postgres time to finish setup.
