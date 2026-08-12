@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -145,7 +146,21 @@ func (r *Reconciler) reconcileExporterSqlSetup(ctx context.Context,
 	// we can assume that postgres_exporter is enabled and we should
 	// use that
 	if collector.OpenTelemetryMetricsEnabled(ctx, cluster) {
-		return metricsSetupForOTelCollector, nil
+		throttleMinutes := int32(10)
+		if cluster.Spec.Instrumentation != nil &&
+			cluster.Spec.Instrumentation.Metrics != nil &&
+			cluster.Spec.Instrumentation.Metrics.PGBackRestInfoThrottleMinutes != nil {
+			throttleMinutes = *cluster.Spec.Instrumentation.Metrics.PGBackRestInfoThrottleMinutes
+		}
+
+		withThrottle := strings.Replace(
+			metricsSetupForOTelCollector,
+			"__PGBACKREST_INFO_THROTTLE_MINUTES__",
+			strconv.FormatInt(int64(throttleMinutes), 10),
+			1,
+		)
+
+		return withThrottle, nil
 	}
 
 	// pgMonitor will not be adding support for postgres_exporter for postgres

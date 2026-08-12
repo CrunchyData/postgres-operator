@@ -98,7 +98,7 @@ DROP FUNCTION IF EXISTS get_pgbackrest_info();
 --- In the query, the --stanza argument matches DefaultStanzaName, defined in internal/pgbackrest/config.go.
 --- To match legacy postgres_exporter behavior, pgbackrest info output is refreshed
 --- at most once every 10 minutes and cached in monitor.pgbackrest_info_cache.
-CREATE FUNCTION get_pgbackrest_info(p_throttle_minutes integer DEFAULT 10)
+CREATE FUNCTION get_pgbackrest_info(p_throttle_minutes integer DEFAULT __PGBACKREST_INFO_THROTTLE_MINUTES__)
 RETURNS TABLE (
     last_diff_backup BIGINT,
     last_full_backup BIGINT,

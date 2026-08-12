@@ -2572,6 +2572,15 @@ spec:
                         items:
                           type: string
                         type: array
+                      pgBackRestInfoThrottleMinutes:
+                        default: 10
+                        description: |-
+                          Minimum number of minutes between pgBackRest info collection runs when
+                          OpenTelemetry metrics are enabled. Lower values update backup metrics more
+                          frequently but can increase cloud egress from object storage-backed repos.
+                        format: int32
+                        minimum: 0
+                        type: integer
                     type: object
                   resources:
                     description: Resources holds the resource requirements for the
