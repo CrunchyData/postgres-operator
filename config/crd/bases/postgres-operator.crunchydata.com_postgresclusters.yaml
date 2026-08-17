@@ -3,7 +3,7 @@ kind: CustomResourceDefinition
 metadata:
   name: postgresclusters.postgres-operator.crunchydata.com
   labels:
-    app.kubernetes.io/version: 6.0.2
+    app.kubernetes.io/version: 6.0.3
 spec:
   group: postgres-operator.crunchydata.com
   names:
