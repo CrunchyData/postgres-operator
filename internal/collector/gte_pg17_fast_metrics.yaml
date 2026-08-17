@@ -68,11 +68,11 @@
           s.slot_name
           , s.active::int
           , COALESCE(pg_wal_lsn_diff(CASE WHEN pg_is_in_recovery() THEN pg_last_wal_replay_lsn() ELSE pg_current_wal_insert_lsn() END, s.restart_lsn), 0) AS retained_bytes
-          , COALESCE(s.database, '')
+          , COALESCE(s.database, '') AS database
           , s.slot_type
-          , COALESCE(s.conflicting::int, 0)
-          , COALESCE(s.failover::int, 0)
-          , COALESCE(s.synced::int, 0)
+          , COALESCE(s.conflicting::int, 0) AS conflicting
+          , COALESCE(s.failover::int, 0) AS failover
+          , COALESCE(s.synced::int, 0) AS synced
       FROM pg_catalog.pg_replication_slots s;
     metrics:
       - metric_name: ccp_replication_slots_active
