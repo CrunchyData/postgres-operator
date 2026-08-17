@@ -25,9 +25,9 @@ RUN \
 <<-SHELL
 set -e
 
-wget https://github.com/prometheus-community/postgres_exporter/releases/download/v0.18.1/postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}.tar.gz
-tar -xzf postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}.tar.gz
-go run ./extract-licenses.go ./licenses postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}/postgres_exporter
+wget https://github.com/prometheus-community/postgres_exporter/releases/download/v0.19.1/postgres_exporter-0.19.1.${TARGETOS}-${TARGETARCH}.tar.gz
+tar -xzf postgres_exporter-0.19.1.${TARGETOS}-${TARGETARCH}.tar.gz
+go run ./extract-licenses.go ./licenses postgres_exporter-0.19.1.${TARGETOS}-${TARGETARCH}/postgres_exporter
 SHELL
 
 COPY licenses/LICENSE.txt licenses/LICENSE.txt
@@ -37,7 +37,7 @@ RUN \
 <<-SHELL
 set -e
 
-mv ./postgres_exporter-0.18.1.${TARGETOS}-${TARGETARCH}/LICENSE ./licenses
+mv ./postgres_exporter-0.19.1.${TARGETOS}-${TARGETARCH}/LICENSE ./licenses
 find ./licenses '(' -type d -exec chmod 0555 '{}' + ')'
 find ./licenses '(' -type f -exec chmod 0444 '{}' + ')'
 SHELL
