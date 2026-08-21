@@ -117,6 +117,15 @@ type InstrumentationMetricsSpec struct {
 	// +optional
 	CustomQueries *InstrumentationCustomQueriesSpec `json:"customQueries,omitempty"`
 
+	// Minimum number of minutes between pgBackRest info collection runs when
+	// OpenTelemetry metrics are enabled. Lower values update backup metrics more
+	// frequently but can increase cloud egress from object storage-backed repos.
+	// ---
+	// +kubebuilder:validation:Minimum=0
+	// +default=10
+	// +optional
+	PGBackRestInfoThrottleMinutes *int32 `json:"pgBackRestInfoThrottleMinutes,omitempty"`
+
 	// The names of exporters that should send metrics.
 	// ---
 	// +kubebuilder:validation:MinItems=1
