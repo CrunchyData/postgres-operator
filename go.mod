@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.42.1
 	github.com/pganalyze/pg_query_go/v6 v6.2.2
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	github.com/xdg-go/stringprep v1.0.4
 	go.opentelemetry.io/contrib/exporters/autoexport v0.70.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0
