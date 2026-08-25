@@ -273,6 +273,14 @@ func (r *Reconciler) generatePostgresUserSecret(
 			Path:     database,
 			RawQuery: query.Encode(),
 		}).String())
+		// The R2DBC driver requires a different URI scheme than the JDBC driver
+		// - https://r2dbc.io/spec/1.0.0.RELEASE/spec/html/#overview.connection.url
+		intent.Data["r2dbc-uri"] = []byte((&url.URL{
+			Scheme:   "r2dbc:postgresql",
+			Host:     net.JoinHostPort(hostname, port),
+			Path:     database,
+			RawQuery: query.Encode(),
+		}).String())
 	}
 
 	// When PgBouncer is enabled, include values for connecting through it.
@@ -305,6 +313,12 @@ func (r *Reconciler) generatePostgresUserSecret(
 			query.Set("prepareThreshold", "0")
 			intent.Data["pgbouncer-jdbc-uri"] = []byte((&url.URL{
 				Scheme:   "jdbc:postgresql",
+				Host:     net.JoinHostPort(hostname, port),
+				Path:     database,
+				RawQuery: query.Encode(),
+			}).String())
+			intent.Data["pgbouncer-r2dbc-uri"] = []byte((&url.URL{
+				Scheme:   "r2dbc:postgresql",
 				Host:     net.JoinHostPort(hostname, port),
 				Path:     database,
 				RawQuery: query.Encode(),
