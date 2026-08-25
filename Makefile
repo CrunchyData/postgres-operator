@@ -1,4 +1,5 @@
 
+IMAGE ?= localhost/postgres-operator:latest
 PGMONITOR_DIR ?= hack/tools/pgmonitor
 PGMONITOR_VERSION ?= v5.2.1
 QUERIES_CONFIG_DIR ?= hack/tools/queries
@@ -45,7 +46,7 @@ notes: ## List known issues and future considerations
 .PHONY: clean
 clean: ## Clean resources
 clean: clean-deprecated
-	rm -f bin/postgres-operator
+	rm -f bin/postgres-operator image.tar
 	rm -rf licenses/*/
 	[ ! -d testing/kuttl/e2e-generated ] || rm -r testing/kuttl/e2e-generated
 	[ ! -d hack/tools/envtest ] || { chmod -R u+w hack/tools/envtest && rm -r hack/tools/envtest; }
@@ -133,13 +134,24 @@ deploy-dev: createnamespaces
 .PHONY: build
 build: ## Build a postgres-operator image
 build: get-pgmonitor
-	$(BUILDAH) build --tag localhost/postgres-operator \
+	$(BUILDAH) build --tag '$(IMAGE)' \
 		--label org.opencontainers.image.authors='Crunchy Data' \
 		--label org.opencontainers.image.description='Crunchy PostgreSQL Operator' \
 		--label org.opencontainers.image.revision='$(shell git rev-parse HEAD)' \
 		--label org.opencontainers.image.source='https://github.com/CrunchyData/postgres-operator' \
 		--label org.opencontainers.image.title='Crunchy PostgreSQL Operator' \
 		.
+
+build-k3d: image.tar ; $(or $(K3D),k3d) image import $<
+build-kind: image.tar ; $(or $(KIND),kind) load image-archive $<
+build-minikube: image.tar ; $(or $(MINIKUBE),minikube) image load $<
+
+image.tar: build
+	set -x && \
+		case '$(BUILDAH)' in \
+		*docker*) $(BUILDAH) image save '--output=$@' '$(IMAGE)' ;; \
+		*) $(BUILDAH) push '$(IMAGE)' 'oci-archive:$@:$(IMAGE)' ;; \
+		esac
 
 ##@ Test
 
