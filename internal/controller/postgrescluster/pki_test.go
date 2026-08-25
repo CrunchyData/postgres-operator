@@ -137,6 +137,26 @@ func TestReconcileCerts(t *testing.T) {
 			assert.DeepEqual(t, *fromSecret, initialRoot.Certificate)
 		})
 
+		t.Run("check root CA secret labels", func(t *testing.T) {
+			err := tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
+			assert.NilError(t, err)
+
+			assert.Check(t, len(rootSecret.Labels) == 1, "root CA secret labels not set")
+
+			expectedLabel := map[string]string{"env-label": "test-label-value"}
+			assert.DeepEqual(t, rootSecret.Labels, expectedLabel)
+		})
+
+		t.Run("check root CA secret annotations", func(t *testing.T) {
+			err := tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
+			assert.NilError(t, err)
+
+			assert.Check(t, len(rootSecret.Annotations) == 1, "root CA secret annotations not set")
+
+			expectedAnnotation := map[string]string{"env-annotation": "test-annotation-value"}
+			assert.DeepEqual(t, rootSecret.Annotations, expectedAnnotation)
+		})
+
 		t.Run("root certificate changes", func(t *testing.T) {
 			// force the generation of a new root cert
 			// create an empty secret and apply the change
