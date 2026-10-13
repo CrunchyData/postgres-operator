@@ -1,0 +1,30 @@
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+commands:
+# First, find the backup job pods.
+# Then, check their logs for the 'unable to find standby cluster' line.
+# If this line isn't found, exit 1.
+- script: |
+    retry() { bash -ceu 'printf "$1\nSleeping...\n" && sleep 5' - "$@"; }
+    contains() { bash -ceu '[[ "$1" == *"$2"* ]]' - "$@"; }
+
+    pods=$(kubectl get pods -o name -n "${NAMESPACE}" \
+      -l postgres-operator.crunchydata.com/cluster=pgbackrest-backup-standby,postgres-operator.crunchydata.com/pgbackrest-backup=replica-create)
+    [ "$pods" = "" ] && retry "Pods not found" && exit 1
+
+    # The Job is meant to fail, so Kubernetes replaces its Pod and more than one
+    # Pod carries the label. Some of those Pods exit on the pgBackRest config
+    # hash comparison before a backup runs, so read every Pod rather than
+    # assuming the first one reached pgBackRest.
+    for pod in ${pods}; do
+      logs=$(kubectl logs "${pod}" --namespace "${NAMESPACE}") || true
+      contains "${logs}" 'unable to find standby cluster - cannot proceed' && found="${pod}" && break
+    done
+
+    [ -n "${found}" ] || {
+      retry "did not find expected standby cluster error"
+      exit 1
+    }
+collectors:
+- type: command
+  command: kubectl -n $NAMESPACE logs --prefix --tail=-1 --max-log-requests=10 --selector postgres-operator.crunchydata.com/cluster=pgbackrest-backup-standby,postgres-operator.crunchydata.com/pgbackrest-backup=replica-create
