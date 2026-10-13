@@ -3,16 +3,36 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 commands:
   - script: |
+      CERTIFICATE='/etc/pgbouncer/~postgres-operator/frontend-tls.crt'
+
+      ORIGINAL=$(kubectl exec --namespace "${NAMESPACE}" deployment.apps/proxied-pgbouncer \
+        --container pgbouncer-config -- cat "${CERTIFICATE}")
+
       BEFORE=$(date -u +%FT%TZ)
 
       # Wipe out the stored PgBouncer certificate.
       kubectl patch --namespace "${NAMESPACE}" secret/proxied-pgbouncer \
         --patch '{"data":{"pgbouncer-frontend.crt":""}}'
 
+      # Wait for the regenerated certificate to be mounted in the PgBouncer pod.
+      # The sidecar reloads and logs 'Loaded' for the wipe as well, so waiting on
+      # that log alone can accept the wipe and read the old certificate back in
+      # the next step. BEFORE keeps the timestamp of the last check that still
+      # saw the old certificate, so the reload that follows the regenerated one
+      # is always within --since-time below.
+      for _ in $(seq 60); do
+        CHECKED=$(date -u +%FT%TZ)
+        MOUNTED=$(kubectl exec --namespace "${NAMESPACE}" deployment.apps/proxied-pgbouncer \
+          --container pgbouncer-config -- cat "${CERTIFICATE}") || true
+        [ -n "${MOUNTED}" ] && [ "${MOUNTED}" != "${ORIGINAL}" ] && mounted=true && break
+        BEFORE="${CHECKED}"
+        sleep 1
+      done
+
       # Wait for the certificate to be regenerated then loaded.
       # Changing this from "wait until timeout" to "try X times"
       # so that we can get the logs before exiting 1 in case we cannot find the reload.
-      for _ in $(seq 120); do
+      for _ in $(seq 30); do
         kubectl logs --namespace "${NAMESPACE}" deployment.apps/proxied-pgbouncer \
           --container pgbouncer-config --since-time "${BEFORE}" | grep 'Loaded' && \
           found=true && break
@@ -23,6 +43,12 @@ commands:
       # To help debug, we set the pgBouncer verbosity to 1 (debug) and print the logs
       kubectl logs --namespace "${NAMESPACE}" deployment.apps/proxied-pgbouncer \
         --all-containers --prefix --timestamps
+
+      # If the regenerated certificate never reached the pod, exit with an error
+      if [ -z "$mounted" ]; then
+        echo "the regenerated certificate was not mounted in time"
+        exit 1;
+      fi
 
       # If we haven't found the `Loaded` log statement, exit with an error
       if [ -z "$found" ]; then 
