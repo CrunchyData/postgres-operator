@@ -171,8 +171,17 @@ linters:
         path: internal/pki/pki.go
         text: methods of "(Certificate|PrivateKey)"
 
+      # json.Marshaler must stay on the value receiver so encoding/json uses it
+      # for non-addressable Duration values. Pointer UnmarshalJSON/AsDuration
+      # are required by json.Unmarshaler and the API.
+      - linters: [recvcheck]
+        path: pkg/apis/postgres-operator.crunchydata.com/.*/shared_types\.go
+        text: methods of "Duration"
+
+      # Newer staticcheck names a deprecated symbol by import path; older
+      # versions used the alias in the offending file. Match either spelling.
       - linters: [staticcheck]
-        text: corev1.(Endpoints|EndpointSubset) is deprecated
+        text: (corev1|k8s\.io/api/core/v1)\.(Endpoints|EndpointSubset) is deprecated
 
       - linters: [staticcheck]
         path: internal/controller/
@@ -189,11 +198,11 @@ linters:
         text: >-
           client.Apply is deprecated
 
-      # k8s.io/apimachinery v0.36 deprecated direct access to managed.FieldsV1.Raw
+      # k8s.io/apimachinery v0.36 deprecated direct access to FieldsV1.Raw
       # in favor of GetRawBytes/SetRawBytes. Tests still use the old field.
       - linters: [staticcheck]
         path: internal/controller/postgrescluster/apply_test\.go
-        text: managed.FieldsV1.Raw is deprecated
+        text: (managed\.FieldsV1|\(k8s\.io/apimachinery/pkg/apis/meta/v1\.FieldsV1\))\.Raw is deprecated
 
       # controller-runtime v0.24 deprecated scheme.Builder, but the recommended
       # alternative requires restructuring our api packages. Allow current usage
