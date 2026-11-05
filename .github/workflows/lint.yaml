@@ -18,7 +18,9 @@ jobs:
 
       - uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          # Pin so a golangci-lint / staticcheck release cannot change SA1019
+          # wording and break exclusion regexes on every pull request.
+          version: v2.15.0
           args: --timeout=5m
 
       # Count issues reported by disabled linters. The command always
