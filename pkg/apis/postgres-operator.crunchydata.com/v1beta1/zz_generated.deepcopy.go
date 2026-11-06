@@ -416,6 +416,11 @@ func (in *InstrumentationMetricsSpec) DeepCopyInto(out *InstrumentationMetricsSp
 		*out = new(InstrumentationCustomQueriesSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.PGBackRestInfoThrottleMinutes != nil {
+		in, out := &in.PGBackRestInfoThrottleMinutes, &out.PGBackRestInfoThrottleMinutes
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Exporters != nil {
 		in, out := &in.Exporters, &out.Exporters
 		*out = make([]string, len(*in))

@@ -867,6 +867,8 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 		Image: "image",
 	}
 
+	throttleFive := int32(5)
+
 	testCases := []struct {
 		tcName             string
 		postgresVersion    int32
@@ -874,6 +876,7 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 		otelMetricsEnabled bool
 		errorPresent       bool
 		setupEmpty         bool
+		expectedThrottle   string
 		expectedNumEvents  int
 		expectedEvent      string
 	}{{
@@ -892,6 +895,17 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 		otelMetricsEnabled: true,
 		errorPresent:       false,
 		setupEmpty:         false,
+		expectedThrottle:   "DEFAULT 10",
+		expectedNumEvents:  0,
+		expectedEvent:      "",
+	}, {
+		tcName:             "ExporterDisabledOtelEnabledCustomThrottle",
+		postgresVersion:    17,
+		exporterEnabled:    false,
+		otelMetricsEnabled: true,
+		errorPresent:       false,
+		setupEmpty:         false,
+		expectedThrottle:   "DEFAULT 5",
 		expectedNumEvents:  0,
 		expectedEvent:      "",
 	}, {
@@ -901,6 +915,7 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 		otelMetricsEnabled: true,
 		errorPresent:       false,
 		setupEmpty:         false,
+		expectedThrottle:   "DEFAULT 10",
 		expectedNumEvents:  0,
 		expectedEvent:      "",
 	}, {
@@ -919,6 +934,7 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 		otelMetricsEnabled: true,
 		errorPresent:       false,
 		setupEmpty:         false,
+		expectedThrottle:   "DEFAULT 10",
 		expectedNumEvents:  0,
 		expectedEvent:      "",
 	}, {
@@ -928,6 +944,7 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 		otelMetricsEnabled: true,
 		errorPresent:       false,
 		setupEmpty:         false,
+		expectedThrottle:   "DEFAULT 10",
 		expectedNumEvents:  0,
 		expectedEvent:      "",
 	}, {
@@ -956,7 +973,12 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 			ctx := feature.NewContext(ctx, gate)
 
 			if tc.otelMetricsEnabled {
-				cluster.Spec.Instrumentation = instrumentationSpec
+				cluster.Spec.Instrumentation = instrumentationSpec.DeepCopy()
+				if tc.tcName == "ExporterDisabledOtelEnabledCustomThrottle" {
+					cluster.Spec.Instrumentation.Metrics = &v1beta1.InstrumentationMetricsSpec{
+						PGBackRestInfoThrottleMinutes: &throttleFive,
+					}
+				}
 			}
 
 			if tc.exporterEnabled {
@@ -970,6 +992,9 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 				assert.NilError(t, err)
 			}
 			assert.Equal(t, setup == "", tc.setupEmpty)
+			if tc.expectedThrottle != "" {
+				assert.Assert(t, strings.Contains(setup, tc.expectedThrottle))
+			}
 
 			assert.Equal(t, len(recorder.Events), tc.expectedNumEvents)
 			if tc.expectedNumEvents == 1 {
