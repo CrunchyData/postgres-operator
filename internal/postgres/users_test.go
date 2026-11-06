@@ -226,10 +226,15 @@ func TestWriteUsersSchemasInPostgreSQL(t *testing.T) {
 					Name:      "public",
 					Databases: []string{"db3"},
 				},
+				{
+					Name:      "postgres",
+					Databases: []string{"postgres"},
+				},
 			},
 		))
-		// The spec.users has four elements, but two will be skipped:
+		// The spec.users has five elements, but three will be skipped:
 		// 	* the user with the reserved name `public`
+		// 	* the user with the reserved name `postgres`
 		// 	* the user with 0 databases
 		assert.Equal(t, calls, 2)
 	})

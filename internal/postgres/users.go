@@ -25,6 +25,11 @@ var RESERVED_SCHEMA_NAMES = map[string]bool{
 	"public":    true, // This is here for documentation; Postgres will reject a role named `public` as reserved
 	"pgbouncer": true,
 	"monitor":   true,
+
+	// A "postgres" schema precedes "public" in the default search_path and
+	// would capture objects the superuser creates for "public", such as the
+	// "pg_stat_statements" view used by pgMonitor.
+	"postgres": true,
 }
 
 func sanitizeAlterRoleOptions(options string) string {
