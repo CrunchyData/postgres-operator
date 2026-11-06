@@ -98,7 +98,7 @@ DROP FUNCTION IF EXISTS get_pgbackrest_info();
 --- In the query, the --stanza argument matches DefaultStanzaName, defined in internal/pgbackrest/config.go.
 --- To match legacy postgres_exporter behavior, pgbackrest info output is refreshed
 --- at most once every 10 minutes and cached in monitor.pgbackrest_info_cache.
-CREATE FUNCTION get_pgbackrest_info(p_throttle_minutes integer DEFAULT __PGBACKREST_INFO_THROTTLE_MINUTES__)
+CREATE FUNCTION get_pgbackrest_info()
 RETURNS TABLE (
     last_diff_backup BIGINT,
     last_full_backup BIGINT,
@@ -113,7 +113,6 @@ RETURNS TABLE (
 ) AS $$
 DECLARE
     v_collected_timestamp timestamptz;
-    v_throttle interval;
 BEGIN
     IF pg_is_in_recovery() THEN
         RETURN QUERY
@@ -129,26 +128,38 @@ BEGIN
             0::bigint AS oldest_full_backup,
             'n/a' AS repo;
     ELSE
-        IF p_throttle_minutes < 0 THEN
-            p_throttle_minutes := 0;
-        END IF;
-
-        v_throttle := make_interval(mins := p_throttle_minutes);
-
         SELECT max(collected_at)
         INTO v_collected_timestamp
         FROM monitor.pgbackrest_info_cache;
 
-        IF v_collected_timestamp IS NULL OR ((CURRENT_TIMESTAMP - v_collected_timestamp) > v_throttle) THEN
-            DROP TABLE IF EXISTS pgbackrest_info_tmp;
-            CREATE TEMPORARY TABLE pgbackrest_info_tmp (data json);
-            COPY pgbackrest_info_tmp (data)
-            FROM PROGRAM 'export LC_ALL=C && printf "\f" && pgbackrest info --log-level-console=info --log-level-stderr=warn --output=json --stanza=db && printf "\f"'
-            WITH (FORMAT csv, HEADER false, QUOTE E'\f');
+        IF v_collected_timestamp IS NULL OR
+            CURRENT_TIMESTAMP - v_collected_timestamp > interval '10 minutes' THEN
+            IF pg_try_advisory_xact_lock(
+                hashtext('crunchydata.postgres-operator'),
+                hashtext('get_pgbackrest_info')
+            ) THEN
+                SELECT max(collected_at)
+                INTO v_collected_timestamp
+                FROM monitor.pgbackrest_info_cache;
 
-            DELETE FROM monitor.pgbackrest_info_cache;
-            INSERT INTO monitor.pgbackrest_info_cache(collected_at, data)
-            SELECT CURRENT_TIMESTAMP, data FROM pgbackrest_info_tmp;
+                IF v_collected_timestamp IS NULL OR
+                    CURRENT_TIMESTAMP - v_collected_timestamp > interval '10 minutes' THEN
+                    CREATE TEMPORARY TABLE IF NOT EXISTS pgbackrest_info_tmp (data json) ON COMMIT DROP;
+                    TRUNCATE TABLE pgbackrest_info_tmp;
+                    COPY pgbackrest_info_tmp (data)
+                    FROM PROGRAM 'export LC_ALL=C && printf "\f" && pgbackrest info --log-level-console=info --log-level-stderr=warn --output=json --stanza=db && printf "\f"'
+                    WITH (FORMAT csv, HEADER false, QUOTE E'\f');
+
+                    DELETE FROM monitor.pgbackrest_info_cache;
+                    IF EXISTS (SELECT 1 FROM pgbackrest_info_tmp) THEN
+                        INSERT INTO monitor.pgbackrest_info_cache(collected_at, data)
+                        SELECT CURRENT_TIMESTAMP, data FROM pgbackrest_info_tmp;
+                    ELSE
+                        INSERT INTO monitor.pgbackrest_info_cache(collected_at, data)
+                        VALUES (CURRENT_TIMESTAMP, '[]'::json);
+                    END IF;
+                END IF;
+            END IF;
         END IF;
 
         RETURN QUERY
