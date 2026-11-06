@@ -1,7 +1,7 @@
 module github.com/crunchydata/postgres-operator
 
 // If this is changing when you don't want it to, see hack/go-get.sh
-go 1.26.6
+go 1.27.3
 
 require (
 	github.com/go-logr/logr v1.4.4
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/sdk v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
-	golang.org/x/crypto v0.58.0
+	golang.org/x/crypto v0.58.1-0.20261009181718-2f1f834330b2
 	golang.org/x/tools v0.52.0
 	gotest.tools/v3 v3.5.2
 	k8s.io/api v0.36.2
