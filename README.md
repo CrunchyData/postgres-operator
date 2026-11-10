@@ -82,6 +82,7 @@ PGO runs containers with locked-down settings and provides Postgres credentials 
 #### [Monitoring][monitoring]
 
 [Track the health of your PostgreSQL clusters][monitoring] using the open source [pgMonitor][] library.
+With OpenTelemetry metrics enabled, pgBackRest-derived backup metrics, including `last_info_backup_error`, refresh every 10 minutes and may be stale by up to 10 minutes. Alerting should account for this delay.
 
 #### [Upgrade Management][update-postgres]
 
