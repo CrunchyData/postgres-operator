@@ -189,6 +189,19 @@ func (r *Reconciler) generatePostgresParameters(
 	return result
 }
 
+// postgresURI returns a libpq connection URI. Characters such as "," and "="
+// have special meaning to libpq and other clients, so everything but RFC 3986
+// unreserved characters is percent-encoded in the user and password, even
+// though RFC 3986 allows some of them there.
+// - https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING-URIS
+func postgresURI(username, password, hostname, port, database string) string {
+	escape := func(s string) string {
+		return strings.ReplaceAll(url.QueryEscape(s), "+", "%20")
+	}
+	return "postgresql://" + escape(username) + ":" + escape(password) + "@" +
+		net.JoinHostPort(hostname, port) + (&url.URL{Path: "/" + database}).EscapedPath()
+}
+
 // generatePostgresUserSecret returns a Secret containing a password and
 // connection details for the first database in spec. When existing is nil or
 // lacks a password or verifier, a new password and verifier are generated.
@@ -255,12 +268,8 @@ func (r *Reconciler) generatePostgresUserSecret(
 		database := spec.Databases[0]
 
 		intent.Data["dbname"] = []byte(database)
-		intent.Data["uri"] = []byte((&url.URL{
-			Scheme: "postgresql",
-			User:   url.UserPassword(username, string(intent.Data["password"])),
-			Host:   net.JoinHostPort(hostname, port),
-			Path:   database,
-		}).String())
+		intent.Data["uri"] = []byte(postgresURI(
+			username, string(intent.Data["password"]), hostname, port, database))
 
 		// The JDBC driver requires a different URI scheme and query component.
 		// - https://jdbc.postgresql.org/documentation/use/#connection-parameters
@@ -287,12 +296,8 @@ func (r *Reconciler) generatePostgresUserSecret(
 		if len(spec.Databases) > 0 {
 			database := spec.Databases[0]
 
-			intent.Data["pgbouncer-uri"] = []byte((&url.URL{
-				Scheme: "postgresql",
-				User:   url.UserPassword(username, string(intent.Data["password"])),
-				Host:   net.JoinHostPort(hostname, port),
-				Path:   database,
-			}).String())
+			intent.Data["pgbouncer-uri"] = []byte(postgresURI(
+				username, string(intent.Data["password"]), hostname, port, database))
 
 			// The JDBC driver requires a different URI scheme and query component.
 			// Disable prepared statements to be compatible with PgBouncer's
