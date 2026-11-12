@@ -1,7 +1,7 @@
 module github.com/crunchydata/postgres-operator
 
 // If this is changing when you don't want it to, see hack/go-get.sh
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/go-logr/logr v1.4.4
