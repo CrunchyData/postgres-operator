@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ARG BASE_VERSION=ubi9
-ARG PGADMIN4_VERSION=9.17
+ARG PGADMIN4_VERSION=9.19
 ARG PYTHON_VERSION=3.12
 ARG PG_MAJOR=18
 
@@ -24,6 +24,40 @@ microdnf install -y --nodocs --setopt install_weak_deps=0 \
 "python${PYTHON_VERSION}-pip" \
 'tar' \
 && microdnf clean all
+
+# The published pgadmin4 pip wheel is supposed to contain webpack output
+# under pgadmin/static/js/generated/. The 9.19 wheel on PyPI and
+# download.postgresql.org omitted it (0 files; 9.17 and 9.18 still had 49),
+# so /login 200s but the JS/CSS 404 and the UI spins forever. Rebuild the
+# bundle from the matching source tarball and copy it over the pip tree.
+# Node stays out of the final image. Drop this stage once an upstream wheel
+# ships generated/ again. Yarn 4 is not on the npm `yarn` package (that
+# stops at 1.x); install `@yarnpkg/cli-dist` instead of `yarn@4.15.0`.
+#
+# DL3006: the latest nodejs-20 UBI image is fine for this throwaway stage.
+# hadolint ignore=DL3006
+FROM registry.access.redhat.com/ubi9/nodejs-20 AS frontend
+ARG PGADMIN4_VERSION
+USER 0
+WORKDIR /tmp
+RUN dnf install -y --nodocs --setopt install_weak_deps=0 \
+        git tar gzip gcc gcc-c++ make python3 \
+    && dnf clean all \
+    && curl -fsSL \
+        "https://ftp.postgresql.org/pub/pgadmin/pgadmin4/v${PGADMIN4_VERSION}/source/pgadmin4-${PGADMIN4_VERSION}.tar.gz" \
+        | tar -xz \
+    && cd "pgadmin4-${PGADMIN4_VERSION}/web" \
+    && npm install -g @yarnpkg/cli-dist@4.15.0 \
+    && export PATH="$(npm prefix -g)/bin:${PATH}" \
+    && yarn --version \
+    && yarn install --immutable \
+    && NODE_ENV=production NODE_OPTIONS=--max-old-space-size=3072 yarn run webpacker \
+    && mkdir -p /generated \
+    && cp -a pgadmin/static/js/generated/. /generated/ \
+    && test -s /generated/pgadmin_commons.js \
+    && test -s /generated/vendor.react.js \
+    && test -s /generated/style.css \
+    && chmod -R a+rX /generated
 
 # We need to build the "gssapi" package for pgAdmin's Kerberos integration.
 #
@@ -137,6 +171,13 @@ microdnf install -y --nodocs \
 && update-alternatives --install /usr/bin/python3 python3 "/usr/bin/python${PYTHON_VERSION}" 1 \
 && update-alternatives --set python3 "/usr/bin/python${PYTHON_VERSION}"
 
+# Force cryptography>=50.0.0 to address CVE-2026-69247. It is a transitive
+# dependency of pgadmin4 (via its azure/boto/google extras) and is not
+# directly pinned upstream in this repo, so we override it here so the
+# fixed release lands in the final image. Revisit and remove this pin once
+# an upstream pgadmin4 release requires cryptography>=50.0.0 on its own.
+RUN "python${PYTHON_VERSION}" -m pip install --no-cache-dir --upgrade "cryptography>=50.0.0"
+
 # Skip delete_adhoc_servers() when pgAdmin is invoked via its CLI entrypoints
 # (setup.py add-user / update-user / load-servers / setup-db). The CLI path
 # calls create_app() WITHOUT initializing login_manager, so as of pgAdmin 9.15
@@ -150,6 +191,19 @@ microdnf install -y --nodocs \
 # Tracked upstream: https://github.com/pgadmin-org/pgadmin4/issues/9987
 RUN sed -i "s/delete_adhoc_servers()/(hasattr(app, 'login_manager') and delete_adhoc_servers())/g" \
     /usr/local/lib/python${PYTHON_VERSION}/site-packages/pgadmin4/pgadmin/__init__.py
+
+# Overlay webpack output from the frontend stage. Harmless when the pip
+# wheel already contains these files; required for 9.19. Copy to a temp
+# path first: Buildah does not always expand ARG in a COPY destination.
+COPY --from=frontend --chown=2:2 /generated /tmp/pgadmin-generated
+RUN dest="/usr/local/lib/python${PYTHON_VERSION}/site-packages/pgadmin4/pgadmin/static/js/generated" \
+    && mkdir -p "${dest}" \
+    && cp -a /tmp/pgadmin-generated/. "${dest}/" \
+    && rm -rf /tmp/pgadmin-generated \
+    && chmod -R a+rX "${dest}" \
+    && test -s "${dest}/pgadmin_commons.js" \
+    && test -s "${dest}/vendor.react.js" \
+    && test -s "${dest}/style.css"
 
 # config_local.py should be colocated with config.py
 COPY --chmod=0444 conf/config_local.py \
