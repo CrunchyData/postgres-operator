@@ -472,6 +472,21 @@ func TestGeneratePostgresUserSecret(t *testing.T) {
 				string(secret.Data["jdbc-uri"])))
 
 		}
+
+		// Special characters in the password are percent-encoded as libpq expects.
+		// - https://github.com/CrunchyData/postgres-operator/issues/4286
+		secret, err = reconciler.generatePostgresUserSecret(cluster, &spec, &corev1.Secret{
+			Data: map[string][]byte{
+				"password": []byte(`Lgrd}oKjF287_nUn6,=s<:O| @`),
+			},
+		})
+		assert.NilError(t, err)
+
+		if assert.Check(t, secret != nil) {
+			assert.Equal(t, string(secret.Data["uri"]),
+				`postgresql://some-user-name:Lgrd%7DoKjF287_nUn6%2C%3Ds%3C%3AO%7C%20%40`+
+					`@hippo2-primary.ns1.svc:9999/first`)
+		}
 	})
 
 	t.Run("PgBouncer", func(t *testing.T) {
