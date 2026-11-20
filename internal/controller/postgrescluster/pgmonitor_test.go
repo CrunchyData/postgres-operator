@@ -956,7 +956,7 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 			ctx := feature.NewContext(ctx, gate)
 
 			if tc.otelMetricsEnabled {
-				cluster.Spec.Instrumentation = instrumentationSpec
+				cluster.Spec.Instrumentation = instrumentationSpec.DeepCopy()
 			}
 
 			if tc.exporterEnabled {
@@ -970,6 +970,14 @@ func TestReconcileExporterSqlSetup(t *testing.T) {
 				assert.NilError(t, err)
 			}
 			assert.Equal(t, setup == "", tc.setupEmpty)
+			if tc.otelMetricsEnabled {
+				assert.Assert(t, strings.Contains(setup, "CREATE FUNCTION get_pgbackrest_info()"))
+				assert.Assert(t, !strings.Contains(setup, "__PGBACKREST_INFO_THROTTLE_MINUTES__"))
+				assert.Assert(t, !strings.Contains(setup, "p_throttle_minutes"))
+				assert.Assert(t, strings.Contains(setup, "interval '10 minutes'"))
+				assert.Assert(t, strings.Contains(setup, "pg_try_advisory_xact_lock("))
+				assert.Assert(t, strings.Contains(setup, "VALUES (CURRENT_TIMESTAMP, '[]'::json)"))
+			}
 
 			assert.Equal(t, len(recorder.Events), tc.expectedNumEvents)
 			if tc.expectedNumEvents == 1 {

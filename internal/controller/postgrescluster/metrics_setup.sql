@@ -30,6 +30,13 @@ CREATE TABLE monitor.pg_stat_statements_reset_info(
    reset_time timestamptz
 );
 
+DROP TABLE IF EXISTS monitor.pgbackrest_info_cache;
+-- Table to cache pgBackRest info output and avoid frequent cloud egress.
+CREATE TABLE monitor.pgbackrest_info_cache(
+    collected_at timestamptz DEFAULT now() NOT NULL,
+    data json NOT NULL
+);
+
 DROP FUNCTION IF EXISTS monitor.pg_stat_statements_reset_info(int);
 -- Function to reset pg_stat_statements periodically
 CREATE FUNCTION monitor.pg_stat_statements_reset_info(p_throttle_minutes integer DEFAULT 1440)
@@ -89,6 +96,8 @@ DROP FUNCTION IF EXISTS get_pgbackrest_info();
 --- get_pgbackrest_info is used by the OTel collector.
 --- get_pgbackrest_info is created as a function so that no ddl runs on a replica.
 --- In the query, the --stanza argument matches DefaultStanzaName, defined in internal/pgbackrest/config.go.
+--- To match legacy postgres_exporter behavior, pgbackrest info output is refreshed
+--- at most once every 10 minutes and cached in monitor.pgbackrest_info_cache.
 CREATE FUNCTION get_pgbackrest_info()
 RETURNS TABLE (
     last_diff_backup BIGINT,
@@ -102,6 +111,8 @@ RETURNS TABLE (
     oldest_full_backup BIGINT,
     repo TEXT
 ) AS $$
+DECLARE
+    v_collected_timestamp timestamptz;
 BEGIN
     IF pg_is_in_recovery() THEN
         RETURN QUERY
@@ -117,16 +128,45 @@ BEGIN
             0::bigint AS oldest_full_backup,
             'n/a' AS repo;
     ELSE
-        DROP TABLE IF EXISTS pgbackrest_info;
-        CREATE TEMPORARY TABLE pgbackrest_info (data json);
-        COPY pgbackrest_info (data)
-        FROM PROGRAM 'export LC_ALL=C && printf "\f" && pgbackrest info --log-level-console=info --log-level-stderr=warn --output=json --stanza=db && printf "\f"'
-        WITH (FORMAT csv, HEADER false, QUOTE E'\f');
+        SELECT max(collected_at)
+        INTO v_collected_timestamp
+        FROM monitor.pgbackrest_info_cache;
+
+        IF v_collected_timestamp IS NULL OR
+            CURRENT_TIMESTAMP - v_collected_timestamp > interval '10 minutes' THEN
+            IF pg_try_advisory_xact_lock(
+                hashtext('crunchydata.postgres-operator'),
+                hashtext('get_pgbackrest_info')
+            ) THEN
+                SELECT max(collected_at)
+                INTO v_collected_timestamp
+                FROM monitor.pgbackrest_info_cache;
+
+                IF v_collected_timestamp IS NULL OR
+                    CURRENT_TIMESTAMP - v_collected_timestamp > interval '10 minutes' THEN
+                    CREATE TEMPORARY TABLE IF NOT EXISTS pgbackrest_info_tmp (data json) ON COMMIT DROP;
+                    TRUNCATE TABLE pgbackrest_info_tmp;
+                    COPY pgbackrest_info_tmp (data)
+                    FROM PROGRAM 'export LC_ALL=C && printf "\f" && pgbackrest info --log-level-console=info --log-level-stderr=warn --output=json --stanza=db && printf "\f"'
+                    WITH (FORMAT csv, HEADER false, QUOTE E'\f');
+
+                    DELETE FROM monitor.pgbackrest_info_cache;
+                    IF EXISTS (SELECT 1 FROM pgbackrest_info_tmp) THEN
+                        INSERT INTO monitor.pgbackrest_info_cache(collected_at, data)
+                        SELECT CURRENT_TIMESTAMP, data FROM pgbackrest_info_tmp;
+                    ELSE
+                        INSERT INTO monitor.pgbackrest_info_cache(collected_at, data)
+                        VALUES (CURRENT_TIMESTAMP, '[]'::json);
+                    END IF;
+                END IF;
+            END IF;
+        END IF;
 
         RETURN QUERY
         WITH
         all_backups (data) AS (
-            SELECT jsonb_array_elements(to_jsonb(data)) FROM pgbackrest_info
+            SELECT jsonb_array_elements(to_jsonb(data))
+            FROM monitor.pgbackrest_info_cache
         ),
         stanza_backups (stanza, backup) AS (
             SELECT data->>'name', jsonb_array_elements(data->'backup') FROM all_backups
