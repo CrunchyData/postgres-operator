@@ -117,7 +117,11 @@ func testCluster() *v1beta1.PostgresCluster {
 		},
 		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 13,
-			Image:           CrunchyPostgresHAImage,
+			Metadata: &v1beta1.Metadata{
+				Labels:      map[string]string{"env-label": "test-label-value"},
+				Annotations: map[string]string{"env-annotation": "test-annotation-value"},
+			},
+			Image: CrunchyPostgresHAImage,
 			ImagePullSecrets: []corev1.LocalObjectReference{{
 				Name: "myImagePullSecret"},
 			},
