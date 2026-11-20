@@ -652,5 +652,7 @@ func TestReloadCommand(t *testing.T) {
 
 	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"pgdata\" \"10\" \"1024\""))
 	assert.Assert(t, cmp.Contains(command[3], "manageAutogrowAnnotation \"pgwal\" \"20\" \"2048\""))
+	assert.Assert(t, cmp.Contains(command[3], "curl --silent --show-error --output /dev/null"),
+		"expected successful autogrow annotation responses to be omitted from logs")
 
 }
